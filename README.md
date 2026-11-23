@@ -1,5 +1,7 @@
 # J-NOX
 
+한국어 · [English](README.en.md)
+
 **Just-enough Nucleus, Open eXtensions.** 기능안전을 목표로 하는 경량 실시간 마이크로커널과, 서비스·드라이버를 독립 실행 영역에서 확장하는 운영체제 프로젝트.
 
 첫 기준선은 **기획 초안 0.1**이다. 자동차 적용에서 ISO 26262 ASIL D 안전 목표를 지원할 수 있는 구성과 ISO/SAE 21434에 따른 사이버보안 개발을 목표로 한다. 첫 적용 시스템, 보드, 안전 상태 및 정량 시간 한계는 확정 전이며, 제품 적합성 평가와 인증은 아직 계획 단계다.
@@ -13,3 +15,5 @@
 | [검증 계획](docs/verification-plan.md) | 시험 방법, 합격 판정, 실기기 검증, 증거 형식 |
 | [개발 수명주기와 변경관리](docs/lifecycle.md) | 기획에서 구현·검증까지의 문서 연결, 변경 시 재설계 및 재승인 절차 |
 | [추적 링크](trace/links.csv) | 문서 간 관계를 자동 검사할 수 있는 데이터 |
+
+작업 양식은 [변경 요청](.github/ISSUE_TEMPLATE/change-request.md), [PR 인계](.github/pull_request_template.md), [검증 증거](docs/templates/verification-evidence.md)에서 확인할 수 있습니다.

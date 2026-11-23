@@ -1,5 +1,7 @@
 # J-NOX 아키텍처 초안
 
+한국어 · [English](architecture.en.md)
+
 ```mermaid
 flowchart TB
   CONTROL[제어 태스크와 안전 감시] --> IPC[권한 검사와 시간 제한이 있는 IPC]

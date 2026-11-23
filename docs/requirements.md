@@ -1,5 +1,7 @@
 # 시스템 요구사항 초안
 
+한국어 · [English](requirements.en.md)
+
 각 행은 승인 전 후보 요구사항이다. 제품별 수치는 안전 분석이나 보드 평가에서 배정하고, 배정 근거를 추적한다. `DES`는 [아키텍처](architecture.md), `VER`은 [검증 계획](verification-plan.md)에 정의한다.
 
 | 요구사항 | 출처 | 요구와 합격 기준 | 설계 · 검증 |

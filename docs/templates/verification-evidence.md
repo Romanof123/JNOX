@@ -1,5 +1,7 @@
 # 검증 증거 EVD-…
 
+한국어 · [English](verification-evidence.en.md)
+
 | 항목 | 기록 |
 | --- | --- |
 | 출처 | 기획 기준선, `REQ`, `VER`, `CHG` 및 검증 후보의 commit SHA |

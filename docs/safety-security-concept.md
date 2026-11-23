@@ -1,5 +1,7 @@
 # 안전·보안 개념 초안
 
+한국어 · [English](safety-security-concept.en.md)
+
 이 문서는 벤치 시나리오에 대한 초기 위험·위협 후보를 기록한다. 첫 제품의 기능 및 운용 상태를 확정하면 HARA로 위험을 평가하고 안전 목표와 ASIL을 배정한다. 동시에 자산, 공격 경로와 영향에 대한 TARA를 수행한다. J-NOX를 SEooC로 개발하는 경로는 적용 가정과 통합 책임을 문서화해 검토한다. [ISO 26262 소프트웨어 개발](https://www.iso.org/standard/68388.html) · [ISO 26262 지원 프로세스](https://www.iso.org/standard/68390.html) · [ISO/SAE 21434](https://www.iso.org/standard/70918.html)
 
 ## 위험·위협 후보

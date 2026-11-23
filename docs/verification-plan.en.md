@@ -1,0 +1,34 @@
+# Draft Verification Plan
+
+[한국어](verification-plan.md) · English
+
+The verification team reviews the acceptance criteria against the product plan and approved requirements. The team performs the first run without access to the implementation team's test conclusions. After recording an independent verdict, it reviews structure, coverage, and tools. It records the test environment, commands, inputs, raw logs, observed failures, and instructions for reproducing them.
+
+| Verification ID | Requirement under verification | Environment and acceptance criteria |
+| --- | --- | --- |
+| `VER-001` | `REQ-001` | Check CPU reads and writes across domain boundaries in emulation and on physical hardware. On the board, verify the DMA ranges assigned to Linux devices and the ranges blocked. Confirm that an invalid access preserves control data and ownership of resources at the boundary. |
+| `VER-002` | `REQ-002` | Use QEMU to verify the behavior of preemption, schedule and budget exhaustion, lock contention, and timer supervision. On the physical board, exercise CPU, IRQ, DMA, and bus contention together. Compare worst-case response times and the interference analysis with the product limits. |
+| `VER-003` | `REQ-003` | After a successful round trip, inject each condition in turn, including Linux or service stoppage, delayed, duplicate or stale data, and restart. Supply inputs with invalid length, version, or value range. Check deadlines, product-specific state transitions, rejection of prior-generation requests and invalid data, and the recovery procedure. |
+| `VER-004` | `REQ-004` | On a running Linux system, compare the device's baseline behavior with its behavior after integration. Compare the driver source version and hash with the original. The driver module SHA-256 must match in both environments. Record the versions and hashes of the Linux kernel, build configuration, firmware, and device configuration separately. Explain any permitted integration configuration changes. |
+| `VER-005` | `REQ-005` | On a single core, verify thread lifecycle, synchronization, and ordering. On SMP, check core affinity, contention, simultaneous termination and cancellation, interrupt handling, and extended operation. |
+| `VER-006` | `REQ-006` | Exercise AF_UNIX and both TCP and UDP over each of IPv4 and IPv6 concurrently across multiple processes and threads. Check readiness and timeouts in nonblocking I/O, partial reads, I/O during closure, and backpressure and resource release under saturation. |
+| `VER-007` | `REQ-007` | Confirm that identical script inputs produce the same static configuration and that invalid configurations are rejected. Test unbounded execution, allocation limits, and privilege requests in target-side scripts. |
+| `VER-008` | `REQ-008` | For each CPU and BSP, record the scope of support for boot, exceptions, memory protection, timers, SMP, and applicable devices. Track results for QEMU, the physical board, and the safety configuration separately. |
+| `VER-009` | `REQ-009` | Record the link map and boot and memory baselines for a fixed core configuration. On physical hardware, measure boot time, interrupt-to-task latency, context-switch latency, and IPC latency. Record test conditions and the maximum observed values. |
+| `VER-010` | `REQ-010` | Check rejection of tampered images, unapproved versions, and images signed with revoked keys. Test power loss at each update step and confirm recovery to an approved image. |
+| `VER-011` | `REQ-011` | Check permissions, queues, handles, and quotas for each domain. Under invalid requests and overload, confirm that safety queues, memory use, and processing time stay within their reserved limits. |
+| `VER-012` | `REQ-012` | Check upstream and downstream requirement links in both directions and look for orphan nodes. For each changed requirement or assumption, review the impact analysis and the tests that were rerun. |
+| `VER-013` | `REQ-013` | Review the actual assumptions of use, single-fault and dependent-failure analyses, physical hardware results, tool confidence, coverage, residual risks, configuration hashes, and independent review records. |
+| `VER-014` | `REQ-014` | Verify normal operation and error behavior for the approved API list. Measure whether safe operation and the ability to interpret evidence are preserved when logging saturates. |
+| `VER-015` | `REQ-015` | Check requests, IRQs, and error handling for a native Rust driver such as a virtual UART driver. On a supported physical device, verify DMA buffer reclamation and access blocking, restart after termination, and the independent operation of other services. |
+| `VER-016` | `REQ-016` | An independent reviewer compares the build configuration, dependencies, and final link to confirm that the kernel build excludes `std`. Check the inventory and invariants of `unsafe` code, compiler target, host, options and library scope, build reproducibility, and conditions that trigger a change review. |
+| `VER-017` | `REQ-017` | Conduct a vulnerability-response exercise from intake through impact assessment, response, and notification. Review the security patch's safety impact analysis, reverification status, SBOMs before and after the patch, signatures and provenance, and approved rollback or recovery material. |
+| `VER-018` | `REQ-018` | On a physical board or suitable hardware-in-the-loop (HIL) setup, inject kernel halts, timer and clock faults, monitoring-path failures, and reset failures according to the assumptions. Independently observe failure detection and the transition to safe output, measure their timing, and check the results against each product time budget and the conditions for resuming output. |
+
+## Verdicts and Evidence
+
+Record the verification level as document or design review, host unit testing, QEMU integration testing, physical board testing, product HIL, or independent review. Use QEMU for functional behavior and reproducibility. Verify actual timing bounds and board-level DMA, reset, and electrical independence in an appropriate environment. Report the measured latency distribution alongside the analytically established timing bound. Record coverage against the selected safety requirements and analysis methods.
+
+Each verification result records its `EVD` ID, baseline, `VER` and `REQ` IDs, who performed the test and when, source commit and image SHA-256, board, firmware, instrument and tool versions, procedure, inputs, expected results, raw log paths, verdict, and exceptions. Track the status as `Planned`, `Passed`, `Failed`, `Blocked`, or `Reverification required`. This document specifies planned tests. Product evidence receives an `EVD` record through the approved verification procedure.
+
+[Requirements](requirements.en.md) · [Safety and security concept](safety-security-concept.en.md) · [Trace links](../trace/links.csv)
