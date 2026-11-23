@@ -10,6 +10,7 @@
 | --- | --- |
 | [제품 기획](docs/product-plan.md) | 제품 목표, 지원 플랫폼, 범위, 단계별 산출물 |
 | [안전·보안 개념](docs/safety-security-concept.md) | 위험·위협 후보, 가정, 안전 경계와 초기 분석 계획 |
+| [기능안전팀의 첫 벤치 결정](docs/safety-parameters.md) | 가상 출력의 안전 상태와 시간 예산, 제품 값 확정에 필요한 근거 |
 | [시스템 요구사항](docs/requirements.md) | 추적 ID가 붙은 요구사항과 합격 기준 |
 | [시스템 아키텍처](docs/architecture.md) | 커널, Linux 드라이버 도메인, 스케줄링, 포팅, 서비스 설계 |
 | [검증 계획](docs/verification-plan.md) | 시험 방법, 합격 판정, 실기기 검증, 증거 형식 |

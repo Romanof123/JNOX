@@ -8,6 +8,8 @@ The first J-NOX product is an embedded operating system that gives control softw
 
 ## Product objectives
 
+In `ADR-001`, the functional safety team fixed the criteria for disabling a virtual output when a permit signal is lost on the first software bench. These criteria are design inputs for the first control task and its tests. For a product application, the functional safety and systems teams will derive the safe state and time limits from operating conditions and hazard analysis. [First bench decision](safety-parameters.en.md)
+
 | ID | Objective | Initial success criteria |
 | --- | --- | --- |
 | `OBJ-001` | Support ASIL D safety goals in a specified automotive system | An independent reviewer can examine the safety argument and verification evidence for the identified system, assumptions, board support package (BSP), toolchain, and build configuration. |

@@ -123,3 +123,8 @@ ASM-003,constrains,REQ-004
 ASM-004,constrains,REQ-010
 ASM-004,constrains,REQ-013
 ASM-004,constrains,REQ-017
+ASM-001,constrains,ADR-001
+REQ-002,refined-by,ADR-001
+REQ-003,refined-by,ADR-001
+ADR-001,verified-by,VER-002
+ADR-001,verified-by,VER-003

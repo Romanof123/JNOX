@@ -27,6 +27,8 @@ The verification team reviews the acceptance criteria against the product plan a
 
 ## Verdicts and Evidence
 
+The first bench case for `VER-002` and `VER-003` uses the timing budgets in `ADR-001`. The verification team records the fault injection (`t_fault`), the fault latch being set (`t_detect`), and the independently observed transition at the virtual device (`t_safe`) on the same monotonic clock. It evaluates both intervals and the end-to-end time. `VER-018` covers clock and reset fault testing on the target hardware or suitable HIL setup. [Bench acceptance criteria](safety-parameters.en.md)
+
 Record the verification level as document or design review, host unit testing, QEMU integration testing, physical board testing, product HIL, or independent review. Use QEMU for functional behavior and reproducibility. Verify actual timing bounds and board-level DMA, reset, and electrical independence in an appropriate environment. Report the measured latency distribution alongside the analytically established timing bound. Record coverage against the selected safety requirements and analysis methods.
 
 Each verification result records its `EVD` ID, baseline, `VER` and `REQ` IDs, who performed the test and when, source commit and image SHA-256, board, firmware, instrument and tool versions, procedure, inputs, expected results, raw log paths, verdict, and exceptions. Track the status as `Planned`, `Passed`, `Failed`, `Blocked`, or `Reverification required`. This document specifies planned tests. Product evidence receives an `EVD` record through the approved verification procedure.

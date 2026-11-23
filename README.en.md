@@ -10,6 +10,7 @@
 | --- | --- |
 | [Product plan](docs/product-plan.en.md) | Product objectives, target platforms, scope and milestone deliverables |
 | [Safety and cybersecurity concept](docs/safety-security-concept.en.md) | Candidate hazards and threats, assumptions, safety boundaries and initial analysis plan |
+| [First bench decision by the functional safety team](docs/safety-parameters.en.md) | Safe state and timing budget for a virtual output, and the evidence needed to set product values |
 | [System requirements](docs/requirements.en.md) | Requirements, trace IDs and acceptance criteria |
 | [System architecture](docs/architecture.en.md) | Kernel, Linux driver domain, scheduling, ports and user services |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
