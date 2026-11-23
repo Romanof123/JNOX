@@ -16,6 +16,12 @@ This document records candidate hazards and threats for the bench scenario. Once
 | `THR-002` | `OBJ-002` | A forged image or configuration, an obsolete version, or a component altered in the supply chain is put into operation. | Verify signatures, enforce version policy, recover to an approved image, and maintain build provenance and the software bill of materials (SBOM). |
 | `THR-003` | `OBJ-002`, `OBJ-006` | Socket, scripting, or management interfaces grant excessive privileges or resources. | Enforce authorization, runtime isolation, resource limits, and input validation. Record operational security events. |
 
+## Scope of the safety argument for IPC
+
+To address `HAZ-003`, `REQ-019` and `DES-010` propose receiver-side end-to-end checks for selected safety-related channels. The first case for `VER-019` is the virtual output permit in `ADR-001`. Inject corrupt, misrouted, duplicate, expired and prior-generation messages. Verify that a rejected message cannot change the last valid permit’s issue time or the accepted sequence number, or advance the rearm count. After valid permits stop, the verification team independently observes fault detection and the transition to inhibited output at the device while invalid messages continue to arrive.
+
+For each product channel, the Functional Safety Team reviews the fault model, the coverage and residual risk of the selected integrity check, and the independence of the receiver’s timebase and output path. For deliberate modification under `THR-001`, assess sender authentication and access control against the threat analysis. An authorized sender can supply a false value with a valid CRC. Substantiate values used in safety decisions with independent input or physical plausibility checks as required by the product hazard.
+
 ## Assumptions of use and integration obligations
 
 | ID | Source objectives | Assumption to confirm | Proposed owner |

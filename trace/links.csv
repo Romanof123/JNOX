@@ -128,3 +128,9 @@ REQ-002,refined-by,ADR-001
 REQ-003,refined-by,ADR-001
 ADR-001,verified-by,VER-002
 ADR-001,verified-by,VER-003
+OBJ-001,derives,REQ-019
+HAZ-003,derives,REQ-019
+THR-001,derives,REQ-019
+REQ-019,implemented-by-design,DES-010
+REQ-019,verified-by,VER-019
+ADR-001,verified-by,VER-019

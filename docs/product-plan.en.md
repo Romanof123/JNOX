@@ -8,6 +8,8 @@ The first J-NOX product is an embedded operating system that gives control softw
 
 ## Product objectives
 
+Safety tasks will be able to select a safety IPC channel for control data received from another task or through a Linux gateway. The first use case is a virtual output permit. When the last accepted permit expires, the receiver inhibits the output independently. [Safety IPC requirement](requirements.en.md)
+
 In `ADR-001`, the functional safety team fixed the criteria for disabling a virtual output when a permit signal is lost on the first software bench. These criteria are design inputs for the first control task and its tests. For a product application, the functional safety and systems teams will derive the safe state and time limits from operating conditions and hazard analysis. [First bench decision](safety-parameters.en.md)
 
 | ID | Objective | Initial success criteria |
