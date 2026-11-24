@@ -139,3 +139,5 @@ POL-012의 선택형 단일 코어 워크로드는 하나의 EEVDF 정책 인스
 CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd-035.md)를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)
 
 [#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).
+
+CHG-043 / IMP-041은 virt 단일 코어 POL-002 런타임에 계측을 추가한다. 부팅 코드가 프레임 구성 전에 스택을 채운다. CPU0는 IRQ를 마스킹한 상태에서 고정 길이 기록을 쓰며 호스트는 게스트 정지 후 읽는다. [측정 구간](fixed-cost.md)

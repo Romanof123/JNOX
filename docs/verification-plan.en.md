@@ -87,3 +87,5 @@ POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under D
 CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
 
 [Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
+
+Issue #90 plans EVD-041 for the FIFO/RR parts of VER-002/005/009/023. Compare linked footprints and repeated observed handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)

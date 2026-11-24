@@ -139,3 +139,5 @@ The opt-in POL-012 workload repeatedly blocks and wakes a linked worker through 
 CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
 
 [Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
+
+CHG-043 / IMP-041 instruments the single-core POL-002 runtime on virt. Boot owns the stack paint before frame construction. CPU0 writes the bounded event journal with IRQs masked, and the host reads it after the guest stops. [Measurement boundaries](fixed-cost.en.md)
