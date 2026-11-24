@@ -4,6 +4,8 @@
 
 `CHG-005` defines the acceptance case for `IMP-004`. Two threads, A and B, have the same fixed priority above LOW. A timer must take the CPU away from each peer while it is still executing. The public UART verdict and the exception trace from that same guest must agree.
 
+The independent verifier observed all six exception transitions in one guest. [EVD-004 and host regression results](evidence/evd-004.en.md)
+
 | Trace | Acceptance condition |
 | --- | --- |
 | `REQ-023` → `DES-012` → `IMP-004` → `VER-023` | Before starting LOW, execute the deterministic policy checks. Emit `POLICY RANK PASS` after the ready-task ranking checks pass and `POLICY SERVICE PASS` after the service and accounting checks pass. |
