@@ -13,6 +13,9 @@ impl<const N: usize> ReadyQueue<N> {
         }
     }
 
+    #[cfg(jnox_multilevel_trace)]
+    pub(crate) fn entries(&self) -> &[usize] { &self.ids[..self.len] }
+
     fn can_insert(&self, id: usize) -> bool {
         self.len < N && id < N && !self.ids[..self.len].contains(&id)
     }

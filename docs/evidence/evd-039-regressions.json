@@ -1,0 +1,220 @@
+{
+  "tree": "2aae6ccdc9c90b183ac8c4e1107af7f78f2cd420",
+  "kernel_tree": "885fa627908946a70e3406e0b8f5e459deeecbbf",
+  "tools_tree": "6b8f1abe635b84eaf3035700d2905dab4cfd556c",
+  "pinned_main": "d8aebafa959099cb9409ab701464e1cd817205a9",
+  "outputs": {
+    "batch-sjf": {
+      "elf_sha256": "bb9bcd38e375018434b4f6c3f1b011872ce6a974d77899b41297336eb7b1dd19",
+      "raw_sha256": "cdd55c27ccea5f33afe3c8cd47b70f6cea331bec4d8437c56d6fba5785e0212f",
+      "independent_elf_sha256": "bb9bcd38e375018434b4f6c3f1b011872ce6a974d77899b41297336eb7b1dd19",
+      "independent_raw_sha256": "cdd55c27ccea5f33afe3c8cd47b70f6cea331bec4d8437c56d6fba5785e0212f",
+      "identical": true
+    },
+    "batch-sjf-trace": {
+      "elf_sha256": "4627783e3f0af74ef4d0fba05babae077d45415ac5f82019ebf50d3419297590",
+      "raw_sha256": "059b7a1b61d279b1614cc40fe03af5c0916c1e55ad513a0717fe8e9e80a21cbc",
+      "independent_elf_sha256": "bdc424941cf9b21d55104cc51f5553ae1f67a8197967b34b22b3fff16fdbc892",
+      "independent_raw_sha256": "059b7a1b61d279b1614cc40fe03af5c0916c1e55ad513a0717fe8e9e80a21cbc",
+      "identical": true
+    },
+    "batch-srtf": {
+      "elf_sha256": "0fb0edd11935d7965a4e0b5095019514f16daf74221faf7228753df704016ee4",
+      "raw_sha256": "ae9f038fa32d48c4e60e20adfce9739ce4905100e47e6b69b76941c1ca67fe9a",
+      "independent_elf_sha256": "0fb0edd11935d7965a4e0b5095019514f16daf74221faf7228753df704016ee4",
+      "independent_raw_sha256": "ae9f038fa32d48c4e60e20adfce9739ce4905100e47e6b69b76941c1ca67fe9a",
+      "identical": true
+    },
+    "batch-srtf-trace": {
+      "elf_sha256": "e70eadb8eec174b5b938b77753be3e2f8cdeb2db2bbde6d487010c87ce2e2139",
+      "raw_sha256": "151e97cd5681c8c0af55e0abdbc0683367ce3ae4704beb12caede303fdf70aad",
+      "independent_elf_sha256": "80b6ba19899f8cb8cae8c864b13220a5a67108514842118d3c088b0e12e43570",
+      "independent_raw_sha256": "151e97cd5681c8c0af55e0abdbc0683367ce3ae4704beb12caede303fdf70aad",
+      "identical": true
+    },
+    "batch-hrrn": {
+      "elf_sha256": "f0071d57fbe891718c039223f218a7fd7b512ac64a77c2276f5f31dcf89433ce",
+      "raw_sha256": "0f715a2abeecbe790668db415757b3a06cba9c8967a34a974352a991e5417354",
+      "independent_elf_sha256": "f0071d57fbe891718c039223f218a7fd7b512ac64a77c2276f5f31dcf89433ce",
+      "independent_raw_sha256": "0f715a2abeecbe790668db415757b3a06cba9c8967a34a974352a991e5417354",
+      "identical": true
+    },
+    "batch-hrrn-trace": {
+      "elf_sha256": "c924076846cbf83e39a38ff43a85e77c1d192a1ffb9962de3ddb7e062186ba81",
+      "raw_sha256": "43e9622140f6f8e70400298aabd84223a8b5593311c29cc01e4c4f232017ea8e",
+      "independent_elf_sha256": "d70173d90c38baa36e5530a47067f691a05f0bf20f931bb8aab3ee3899850a09",
+      "independent_raw_sha256": "43e9622140f6f8e70400298aabd84223a8b5593311c29cc01e4c4f232017ea8e",
+      "identical": true
+    },
+    "ordinary-groups": {
+      "elf_sha256": "e8b841c2c5c2c3ee6f3711eb4de26d21ed29222cade17f4bbb37443f0e6c927d",
+      "raw_sha256": "bfc25c4a4c0b7369cde2090b023e8c394d7d4df857b8a9a9e71e0cd43a9cb3fd",
+      "independent_elf_sha256": "6a4cf3cdcb3871077877e1bf753bbe8d20178318b4efe50256c85c05a70229a8",
+      "independent_raw_sha256": "bfc25c4a4c0b7369cde2090b023e8c394d7d4df857b8a9a9e71e0cd43a9cb3fd",
+      "identical": true
+    },
+    "ordinary-groups-trace": {
+      "elf_sha256": "7d92063dc5604ea350e01ee9c58ef43f0bb8e38823eddc79ede7dfd7cab6a0b2",
+      "raw_sha256": "cfe456882493bfafc11634f219e47079afc91ce3698eb28fd7fca7c67f9d02e9",
+      "independent_elf_sha256": "4adc7b7412cb32d6cb2cbac48670c062c0d1730f4e542d78ea715697a177a700",
+      "independent_raw_sha256": "cfe456882493bfafc11634f219e47079afc91ce3698eb28fd7fca7c67f9d02e9",
+      "identical": true
+    },
+    "ordinary-groups-late": {
+      "elf_sha256": "ffa878b21465ccf834ff578c2c4510e53470ab4e6770790ceda026a34123bab7",
+      "raw_sha256": "11271a300d8b33f5da7289eb59cc3bead37828096380f790310dc779d7d29f46",
+      "independent_elf_sha256": "973ffeb843874b3f0a1e02eb58ef4e3749d3e3e90b867399fc6bb71f98d84334",
+      "independent_raw_sha256": "11271a300d8b33f5da7289eb59cc3bead37828096380f790310dc779d7d29f46",
+      "identical": true
+    },
+    "ordinary-groups-late-trace": {
+      "elf_sha256": "5e91d5b6cd76eb2bfd7894556251d5355c9f301b1cd5488d388a81107aa6d54d",
+      "raw_sha256": "440eab30ea26d752ccc3a641c5b9509154d1efee14452c45e0ab829ed1987c61",
+      "independent_elf_sha256": "f06bba7cd6dadbb6dade09be7cfaf95292bb194182ac3254a2cb5f52ad554ddf",
+      "independent_raw_sha256": "440eab30ea26d752ccc3a641c5b9509154d1efee14452c45e0ab829ed1987c61",
+      "identical": true
+    },
+    "eevdf-dynamic-bench": {
+      "elf_sha256": "f5996a6d111c52c1008f918e71c1abb0c22c3a143bc4b0c2751c645202a93886",
+      "raw_sha256": "91616853eaacb28b56d08c9cf8e8b9288b72b912bc081f4a159d8cda511088e5",
+      "independent_elf_sha256": "ce4584a03795a0a386c30e24c1281e3e24e0b1ce1ce84eca6400015e98b62f95",
+      "independent_raw_sha256": "91616853eaacb28b56d08c9cf8e8b9288b72b912bc081f4a159d8cda511088e5",
+      "identical": true
+    },
+    "eevdf-bench": {
+      "elf_sha256": "134614b9f2fb1617700108c4d97a1fbda6ba44a8adfadc4673caeea2038b0ca4",
+      "raw_sha256": "d205f582630f6dd08db71052687b54c146a0004153fe8dc2066038e1045061ad"
+    },
+    "eevdf-wake-bench": {
+      "elf_sha256": "c7af30eb62953c1ab0eb01ee8cfea61e350547eecccbb985625108e4e538c0eb",
+      "raw_sha256": "14821dcfdadff27e17067bf064e19755a357efb52530ba3379af5d2a0aecb312"
+    },
+    "hierarchy-bench": {
+      "elf_sha256": "43459356ed86c3dbedab503ec3817700a53d59ba8826a22e490799c08d30fdad",
+      "raw_sha256": "b2d8928e069eaa60636fb72f92070bd50846681b9048a755f05e9b89229a090d"
+    },
+    "coop-bench": {
+      "elf_sha256": "b1aa18ea8bf4589037f7c682b837a8b70a277ce3587f21ab24120a0df0375cfe",
+      "raw_sha256": "7089b50d5a6bcda6b78a3b46aed80316cde7d75814bbfbd76265780691dbfc1c"
+    },
+    "all": {
+      "elf_sha256": "85eab95c4465a0b067b16f4c3d7ad91a56d5c0955ecf19cd72e46adc7321d4dd",
+      "raw_sha256": "7089b50d5a6bcda6b78a3b46aed80316cde7d75814bbfbd76265780691dbfc1c"
+    },
+    "fixed-fifo": {
+      "elf_sha256": "e7259351f4d86fe9c9939882d2b39f93f91d8d3ac5bbaa22944e3b19c1152735",
+      "raw_sha256": "1c4a22e344b0bef6a571c0fcca8cb511cde982531a62ab3a68e9a0fcdee0ae30"
+    },
+    "coop-events": {
+      "elf_sha256": "26f37606098e31ef8f177a26ed3dfd833b5a10b97e6672225c8a38099d7a395c",
+      "raw_sha256": "cf03bc73f485c0aefd9493056a2c8c2752bf92f8f051e0f5146d7273e6dc066e",
+      "independent_elf_sha256": "0625e2f5a3e3b817f1cb106708fc767c2545c08b4c83e790f62d68a4764102ea",
+      "independent_raw_sha256": "cf03bc73f485c0aefd9493056a2c8c2752bf92f8f051e0f5146d7273e6dc066e",
+      "identical": true
+    },
+    "boot": {
+      "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "raw_sha256": "e4cf03f8b33cfd95e0f1ab36618eed96608893bfbbd4ceecb312be014a6adf40"
+    }
+  },
+  "host": {
+    "scheduling": 129,
+    "coop_service": 2,
+    "hierarchy": 5,
+    "python": 32
+  },
+  "unexpected_failures": [],
+  "expected_rejections": [
+    "batch-sjf-pi4-build",
+    "batch-sjf-feature-build",
+    "batch-sjf-wrong-trace-build",
+    "ordinary-groups-pi4-build",
+    "ordinary-groups-feature-build",
+    "ordinary-groups-wrong-trace-build",
+    "pi4-dynamic-build",
+    "fixed-dynamic-build"
+  ],
+  "passing_guests": [
+    "batch-sjf-boot",
+    "batch-sjf-trace-boot",
+    "batch-srtf-boot",
+    "batch-srtf-trace-boot",
+    "batch-hrrn-boot",
+    "batch-hrrn-trace-boot",
+    "ordinary-groups-boot",
+    "ordinary-groups-trace-boot",
+    "ordinary-groups-late-boot",
+    "ordinary-groups-late-trace-boot",
+    "eevdf-dynamic-bench-boot",
+    "eevdf-bench-boot",
+    "eevdf-wake-bench-boot",
+    "hierarchy-bench-boot",
+    "coop-bench-boot",
+    "all-boot",
+    "fixed-fifo-boot",
+    "coop-events-boot",
+    "boot-boot"
+  ],
+  "passing_replays": [
+    "batch-sjf-trace-replay",
+    "batch-srtf-trace-replay",
+    "batch-hrrn-trace-replay",
+    "ordinary-groups-trace-replay",
+    "ordinary-groups-late-trace-replay",
+    "eevdf-dynamic-bench-replay",
+    "coop-events-replay"
+  ],
+  "commands_sha256": "d41b7723fde57278f85648e3909dad5ec42ac45090b66161353e357918df6e2c",
+  "scope": "Host and single-CPU QEMU virt. Physical timing and boards unverified.",
+  "new_loadable_images_identical": [
+    "batch-sjf",
+    "batch-sjf-trace",
+    "batch-srtf",
+    "batch-srtf-trace",
+    "batch-hrrn",
+    "batch-hrrn-trace",
+    "ordinary-groups",
+    "ordinary-groups-trace",
+    "ordinary-groups-late",
+    "ordinary-groups-late-trace",
+    "eevdf-dynamic-bench"
+  ],
+  "all_features_matches_coop_raw": true,
+  "offline_group_controls": {
+    "accepted": 2,
+    "corruptions_rejected": 18
+  },
+  "batch_replay_rows": {
+    "batch-sjf": 20,
+    "batch-srtf": 20,
+    "batch-hrrn": 20
+  },
+  "dynamic_replay": {
+    "grants": [
+      122,
+      94,
+      40
+    ],
+    "frequency": 62500000,
+    "quantum": 625000,
+    "intervening_ranks": [
+      3,
+      6,
+      6,
+      6
+    ],
+    "physical_ranks": [
+      2230717,
+      4411004,
+      4418575,
+      4418575
+    ],
+    "error_sixtieths": [
+      108,
+      246,
+      256,
+      266
+    ],
+    "wakes": 20
+  }
+}

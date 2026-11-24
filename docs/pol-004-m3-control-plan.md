@@ -34,6 +34,8 @@ Planning baseline d8aebaf. QEMU virt, one Cortex-A72, GICv2, TCG, 128 MiB. Freez
 
 ### English decision
 
+For the frozen positive rearm case, actual permit issue times must be exactly 10 ms apart. The ordinary sender has nominal 10 ms releases; no issue-time tolerance has been approved. An off-nominal run leaves the positive case unqualified and establishes no product rejection requirement. An exact-timed injector may establish the initial enabled condition only when recorded issue and delivery ticks meet the declared timing. Then transfer sole ownership of the generation and next sequence to the ordinary sender and record the handoff. Label ordinary-sender evidence separately and retain the independent exact-boundary controls. Missing ticks invalidate the timing evidence; never backdate them or score the run as passing.
+
 Authorize implementation of a single 5 ms control job, deadline 5 ms, with two real freshness decisions per job. ADR-001 sets a maximum gap and permits an earlier expiry decision at or after age 20 ms. Additional observations must have no effect on sequence, generation, permit count or explicit command consumption merely because an unchanged input is read again. Both phases run the same expiry-first logic on current state, use the actual decision time and can latch inhibition immediately. Freeze sender T=D=10 ms for this workload. Retain every ADR-001 fault, rearm and verdict boundary in sections 4–5. A separate declared single-check boundary configuration must actually realize the specified consecutive 5 ms gap straddling expiry. Record its configuration and evidence separately from the two-phase workload.
 
 1. Fix phase targets at job release and +2.5 ms from a common epoch. Require each programmed target, actual timer IRQ entry, worker ready/resume, completed decision and job finish in the raw trace. Use a counter supporting exact targets. For this bench assign a maximum 0.5 ms target-to-IRQ lateness and a 1 ms target-to-completed-decision envelope inclusive of all delays and timestamp uncertainty. Early completions fail. These are test requirements. Consecutive completed decisions then have a maximum gap of 3.5 ms under the envelope, including across jobs. Independently check every actual gap ≤5 ms and each job finish by its own nominal deadline. Anchor the first check to the first nominal release while inhibited. Continue checks in the inhibited state. End with a declared observation horizon, a subsequent actual check covering the final gap, completion of the last scored job and independent confirmation of the required output state. Score all phases of all scored jobs.
@@ -44,6 +46,8 @@ Authorize implementation of a single 5 ms control job, deadline 5 ms, with two r
 <a id="decision-ko"></a>
 
 ### 한국어 결정
+
+동결한 재무장 성공 사례에서는 실제 허가 발행 시각의 간격이 정확히 10 ms여야 한다. 일반 송신 작업의 명목 릴리스 간격은 10 ms이며 발행 시각 허용 오차는 승인되지 않았다. 명목값에서 벗어난 실행으로는 성공 사례를 입증할 수 없으며, 그 결과가 제품의 거부 요건을 정하지 않는다. 정시 주입기는 실제 발행·전달 틱이 지정 시점을 충족한 경우에만 초기 활성 상태를 설정할 수 있다. 이후 해당 세대와 다음 순번의 단독 소유권을 일반 송신 작업에 인계하고 이를 기록한다. 일반 송신 작업의 증거는 따로 표시하고 정확한 경계 대조 시험도 별도로 유지한다. 누락 틱이 있으면 타이밍 증거는 무효이며 과거 시각을 부여하거나 합격 처리할 수 없다.
 
 QEMU 벤치에서 주기와 마감이 각각 5 ms인 단일 제어 작업에 실제 신선도 판정 두 회를 구현한다. ADR-001은 판정 간격의 최댓값을 정하므로 나이 20 ms 이상에서 더 일찍 만료를 발견할 수 있다. 같은 입력을 다시 읽어도 순번·세대·연속 허가 수·명령 소비 상태가 추가로 진행되어서는 안 된다. 두 위상 모두 현재 판정 시각으로 만료부터 검사하고 즉시 차단을 래치할 수 있다. 이 작업의 송신 주기·마감은 10 ms로 고정한다. 4–5절의 차단·재무장·한계 판정 사례를 모두 유지한다. 만료 한 틱 전부터 정확히 5 ms 간격인 연속 판정은 별도 단일 판정 구성에서 실제로 재현하고 두 위상 구성과 구별하여 기록한다.
 
