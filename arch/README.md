@@ -1,18 +1,33 @@
-# Kernel architecture selection
+# Build the kernel for AArch64
 
 [한국어](README.ko.md) · [System architecture](../docs/architecture.en.md)
 
-CHG-074 defines the build interface for the existing AArch64 kernel. The root selector and source layout are specified here for implementation. Build and boot verification for this change is pending.
-
-From the repository root, list registered backends or build the kernel for AArch64:
+AArch64 is the only implemented backend. From the repository root, use Python 3 to list the available architectures or build the release kernel with the pinned Rust toolchain.
 
 ```sh
 python tools/build_kernel.py --list-arches
 python tools/build_kernel.py --arch aarch64
 ```
 
-Listing must print only `aarch64` and exit without starting Cargo. When --arch is omitted, use JNOX_ARCH if set and otherwise default to aarch64. A conflicting CARGO_BUILD_TARGET must fail before Cargo starts. The selected build uses the existing `aarch64-unknown-none` target and Cortex-A72 compiler settings. Direct Cargo invocation from `kernel/` keeps its existing default. Both entry points preserve the board, profile and application choices supplied through `JNOX_BOARD`, `JNOX_PROFILE` and `JNOX_APP`. A board selects its linker layout and devices independently of the architecture. [Cargo configuration](../kernel/.cargo/config.toml)
+The first command prints `aarch64` without launching Cargo. The second builds for `aarch64-unknown-none`. Selection follows `--arch`, then `JNOX_ARCH`, then the default `aarch64`. An unknown name or a conflicting `CARGO_BUILD_TARGET` exits with an error before Cargo starts.
 
-Each listed backend must have one canonical descriptor identifying its name, Rust target and implemented source. The sole initial backend under `arch/aarch64/` supplies real startup assembly or early CPU hooks linked into the kernel. Listing and selection consume the same registration. A directory name alone does not register a backend. Reject an unknown architecture or a conflicting explicit/environment target with a nonzero exit and a diagnostic identifying the supported name or expected triple before launching Cargo. Validate the effective Cargo target on the direct build path before linking.
+Use `JNOX_BOARD` to select the machine, `JNOX_PROFILE` for the runtime profile and `JNOX_APP` for the workload. The launcher passes these settings to Cargo. For example, in a POSIX shell:
 
-For VER-008 compare the prior stock image, direct Cargo build and selected build with identical toolchain, board and workload inputs on QEMU virt and the Pi 4 model. Record actual target, linker entry, loaded ranges/bytes, raw Pi image and existing startup observations. Explain any differences against the baseline. Check listing and unsupported-name/target rejection independently, including that rejected wrapper inputs never launch Cargo. The qualification boundary is the exercised model configuration. [REQ-008](../docs/requirements.en.md) · [DES-004](../docs/architecture.en.md) · [VER-008](../docs/verification-plan.en.md)
+```sh
+JNOX_BOARD=pi4 JNOX_PROFILE=fixed JNOX_APP=fixed-fifo python tools/build_kernel.py --arch aarch64
+```
+
+To build directly with Cargo using the default architecture, run the following from the repository root. The same board, profile and application settings apply.
+
+```sh
+cd kernel
+cargo build --locked --release -j1
+```
+
+The [target descriptor](aarch64/target) contains the Rust target triple. The [Rust module](aarch64/mod.rs) binds the byte-preserved [startup assembly](aarch64/start.S) to the kernel entry. Board-specific linker and device choices stay with the board configuration.
+
+To add a backend, implement its startup code and register its target in `arch/<name>/target`. Wire the target configuration to that implementation, allow the matching Cargo target and provide a board linker layout. Verify entry, loaded bytes and startup on the intended machine before publishing the descriptor, since the launcher lists every descriptor it finds.
+
+## Verification
+
+Direct Cargo and the launcher produced the same default kernel. QEMU virt and the Pi 4 model both booted the AArch64 backend. Four build configurations matched the previous kernel in every loadable segment. The two scheduled images differed outside those segments. The launcher rejected unsupported names and conflicting targets. [CHG-074 independent verification](../docs/evidence/arch-base-first.md) · [REQ-008](../docs/requirements.en.md) · [DES-004](../docs/architecture.en.md) · [VER-008](../docs/verification-plan.en.md)
