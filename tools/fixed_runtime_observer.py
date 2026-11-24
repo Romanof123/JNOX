@@ -3,9 +3,9 @@
 MAX_BYTES = 512
 
 
-def validate(data, prefix):
+def validate(data, prefix, board=b"M1"):
     lines = data.split(b"\n")
-    if lines[:2] != [b"JNOX M1 BOOT", b"JNOX M1 READY"] or lines[-1:] != [b""]:
+    if lines[:2] != [b"JNOX " + board + b" BOOT", b"JNOX " + board + b" READY"] or lines[-1:] != [b""]:
         return False
     markers = lines[2:-1]
     tag = prefix + b" "

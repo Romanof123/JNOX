@@ -78,7 +78,7 @@ fn disable_timer() {
     }
 }
 
-extern "C" fn fail() -> ! {
+pub(super) extern "C" fn fail() -> ! {
     unsafe { asm!("msr daifset, #0xf", options(nostack, preserves_flags)) }
     disable_timer();
     super::uart_write(b"FIXED RUNTIME FAIL\n");
