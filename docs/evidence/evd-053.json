@@ -34,5 +34,10 @@
       "evidence_sha256": "ee0771b7068cb473206ba2672caaac8f6e5f8a1764d11b5b5411f7ae2c27b022",
       "reviewer_manifest_sha256": "f2c8804662fd513511f67422b93034fb0b01a255d899cc6bfdbc80b71730f008"
     }
-  ]
+  ],
+  "compiler_profile_supplement": {
+    "record": "evd-053-compiler.json",
+    "sha256": "2c9add13919b9ce754026791e401fb81c89875dc9d672fe60e3814678f0152e9",
+    "source": "aacdbebe958feca152b358ce8cf36033cd7d6749"
+  }
 }
