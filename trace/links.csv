@@ -972,3 +972,6 @@ CHG-046,affects,REQ-023
 CHG-047,affects,REQ-002
 CHG-047,affects,REQ-005
 CHG-047,affects,REQ-023
+POL-007,partially-implemented-by,IMP-045
+DES-003,implemented-by,IMP-045
+DES-012,implemented-by,IMP-045

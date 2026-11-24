@@ -11,7 +11,7 @@ mod aperiodic;
 mod amc;
 #[cfg(jnox_bench = "amc")]
 mod amc_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "aperiodic"))]
+#[cfg(any(jnox_ap, jnox_bench = "rr", jnox_bench = "aperiodic"))]
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
 mod batch;
@@ -41,7 +41,7 @@ mod coop_service;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -128,8 +128,10 @@ mod proportional_policy;
     jnox_bench = "periodic_overrun"
 ))]
 mod ready_queue;
-#[cfg(jnox_bench = "aperiodic")]
+#[cfg(any(jnox_ap, jnox_bench = "aperiodic"))]
 mod request_server;
+#[cfg(jnox_ap)]
+mod ordinary_server;
 #[cfg(any(jnox_bench = "scheduler", jnox_bench = "rr"))]
 mod sched;
 #[cfg(jnox_bench = "rr")]
@@ -175,15 +177,17 @@ extern "C" fn kernel_main() -> ! {
     fixed_apps::run();
     #[cfg(jnox_batch)]
     batch_app::run();
+    #[cfg(jnox_ap)]
+    ordinary_server::run();
     #[cfg(jnox_groups)]
     group_apps::run();
     #[cfg(jnox_multilevel)]
     multilevel_apps::run();
-    #[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+    #[cfg(not(any(jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+#[cfg(not(any(jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();
