@@ -35,6 +35,36 @@ def request(stream, command, **arguments):
         return answer["return"]
 
 
+def capture_halt(stream, out):
+    """Observe the CPU0 transition on this QMP connection before reading guest state."""
+    stage = "pre-stop query-status"
+    try:
+        status = request(stream, "query-status")
+        observation = {"status": status}
+        (out / "qmp.json").write_text(json.dumps(observation))
+        stage = "pre-stop query-cpus-fast"
+        cpus = request(stream, "query-cpus-fast")
+        observation["cpus"] = cpus
+        (out / "qmp.json").write_text(json.dumps(observation))
+        stage = "pre-stop state"
+        if not (isinstance(status, dict) and status.get("running") is True
+                and status.get("status") == "running" and isinstance(cpus, list)
+                and len(cpus) == 1 and isinstance(cpus[0], dict) and cpus[0].get("cpu-index") == 0):
+            raise ValueError("expected running CPU0")
+        stage = "stop"
+        request(stream, "stop")
+        stage = "post-stop query-status"
+        halted = request(stream, "query-status")
+        (out / "halted.json").write_text(json.dumps(halted))
+        stage = "post-stop state"
+        if not (isinstance(halted, dict) and halted.get("running") is False
+                and halted.get("status") == "paused"):
+            raise ValueError("expected paused VM before extraction")
+    except Exception as exc:
+        (out / "halt-error.json").write_text(json.dumps({"stage": stage, "error": str(exc)}))
+        raise
+
+
 def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, extra=(), *,
              freeze=False, audit_name="audit.bin", record_halt=False):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
@@ -44,13 +74,17 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, e
             if "QMP" not in json.loads(stream.readline()):
                 raise ValueError("invalid QMP greeting")
             request(stream, "qmp_capabilities")
-            status = request(stream, "query-status")
-            cpus = request(stream, "query-cpus-fast")
-            (out / "qmp.json").write_text(json.dumps({"status": status, "cpus": cpus}))
-            if not status["running"] and not record_halt:
-                raise ValueError("guest stopped before host termination")
-            if idle_range is not None or freeze:
-                request(stream, "stop")
+            if record_halt:
+                capture_halt(stream, out)
+            else:
+                status = request(stream, "query-status")
+                cpus = request(stream, "query-cpus-fast")
+                (out / "qmp.json").write_text(json.dumps({"status": status, "cpus": cpus}))
+                if not status["running"]:
+                    raise ValueError("guest stopped before host termination")
+                if idle_range is not None or freeze:
+                    request(stream, "stop")
+            if idle_range is not None or freeze or record_halt:
                 registers = request(stream, "human-monitor-command", **{"command-line": "info registers"})
                 (out / "registers.txt").write_text(registers)
             if idle_range is not None:
@@ -68,7 +102,7 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, e
 
 
 def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False,
-         extra_symbols=(), freeze=False, prepared_dir=None, audit_name="audit.bin"):
+         extra_symbols=(), freeze=False, prepared_dir=None, audit_name="audit.bin", record_halt=False):
     out = Path(os.environ[directory_variable]).resolve()
     if prepared_dir is None:
         out.mkdir(parents=True, exist_ok=False)
@@ -120,7 +154,7 @@ def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, req
                         raise RuntimeError(f"guest exited early: {guest.returncode}")
                     time.sleep(0.004)
                 snapshot(sock_path, out, address, size, idle_range, trace_range, extra,
-                         freeze=freeze, audit_name=audit_name, record_halt=prepared_dir is not None)
+                         freeze=freeze, audit_name=audit_name, record_halt=record_halt)
             finally:
                 if guest.poll() is None:
                     guest.terminate()

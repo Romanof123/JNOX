@@ -269,7 +269,8 @@ def decode(out):
     check((location(elf, "ordinary_multilevel_witness") is not None) ==
           bool(flags["JNOX_MULTILEVEL_TRACE"]), "ELF full-frame selector")
     state = load(out / "qmp.json")
-    check(state["status"]["running"] and len(state["cpus"]) == 1 and
+    check(state["status"]["running"] is True and state["status"]["status"] == "running"
+          and len(state["cpus"]) == 1 and
           state["cpus"][0]["cpu-index"] == 0, "CPU0 pre-halt status")
     halted = load(out / "halted.json")
     check(halted["running"] is False and halted["status"] == "paused", "halted extraction status")

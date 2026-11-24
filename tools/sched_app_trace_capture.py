@@ -52,7 +52,7 @@ def capture():
         metadata["result"] = qemu_capture.main(
             WITNESS, ENV, trace_symbol=SYMBOL if mode else None,
             require_trace=bool(mode), extra_symbols=extra, freeze=True, prepared_dir=out,
-            audit_name=WITNESS + ".bin")
+            audit_name=WITNESS + ".bin", record_halt=True)
         return metadata["result"]
     except Exception as error:
         metadata["error"] = str(error)
