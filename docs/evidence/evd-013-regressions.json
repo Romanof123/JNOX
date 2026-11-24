@@ -1,0 +1,108 @@
+[
+  {
+    "profile": "boot",
+    "features": [],
+    "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+    "uart": "UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "scheduler",
+    "features": [
+      "--features",
+      "sched-bench"
+    ],
+    "elf_sha256": "5252daab21006f8ef1b752ebaf5fd513e7ed81346c9c9c6352553838b600fa47",
+    "uart": "UART (101 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nSCHED HIGH RUN\\nSCHED LOW RESUMED\\nSCHED PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "edf",
+    "features": [
+      "--features",
+      "edf-bench"
+    ],
+    "elf_sha256": "21fd814504539f1643bf8d2f378fb7393fa0d079726534c4994099903846ddf1",
+    "uart": "UART (101 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nEDF URGENT RUN\\nSCHED LOW RESUMED\\nSCHED PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "fifo",
+    "features": [
+      "--features",
+      "edf-bench,fifo-bench"
+    ],
+    "elf_sha256": "4168d805641230f132870586052722eb4c993c40cbbfa13984dbc799d8e937e7",
+    "uart": "UART (142 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nFIFO A FIRST\\nFIFO B FIRST\\nFIFO A RESUMED\\nFIFO B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "rr",
+    "features": [
+      "--features",
+      "edf-bench,rr-bench"
+    ],
+    "elf_sha256": "877d010667dd4f78ab2486fcba83eb95f170ca28e6b79ae5ba3e63d15e3bed3b",
+    "uart": "UART (171 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPOLICY RANK PASS\\nPOLICY SERVICE PASS\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nRR A FIRST\\nRR B FIRST\\nRR A RESUMED\\nRR B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "periodic",
+    "features": [
+      "--features",
+      "rr-bench,periodic-bench"
+    ],
+    "elf_sha256": "afcaad268ccf3d8c15ab61a42acea3d8e9187b6dabe9d7b0586728550d176cf6",
+    "uart": "UART (111 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nRM 0 A\\nRM 0 B\\nRM 2 A\\nRM 3 B\\nRM 4 A\\nDM 0 B\\nDM 0 A\\nDM 2 A\\nDM 3 B\\nDM 4 A\\nPERIODIC PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "periodic-preempt",
+    "features": [
+      "--features",
+      "rr-bench,periodic-preempt-bench"
+    ],
+    "elf_sha256": "88589c0d20499eea0370757b68ceadc4cf0f0a769698f1dc60cf0fe147f092b5",
+    "uart": "UART (178 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nRM 0 A\\nRM 0 B\\nRM 2 A\\nRM 3 B\\nRM 4 A\\nDM 0 B\\nDM 0 A\\nDM 2 A\\nDM 3 B\\nDM 4 A\\nRM A START\\nRM A CONTINUE\\nRM B RUN\\nDM A START\\nDM B RUN\\nDM A CONTINUE\\nPREEMPT PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "cbs",
+    "features": [
+      "--features",
+      "cbs-bench,periodic-preempt-bench"
+    ],
+    "elf_sha256": "c541a3e17563ba0ef95cfb2a53488d494bbe5e0055b5c6720f49c490ef1519b9",
+    "uart": "UART (112 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCBS A FIRST\\nCBS B FIRST\\nCBS IDLE\\nCBS A RESUMED\\nCBS B RESUMED\\nCBS TIMER STOP\\nCBS PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "partition",
+    "features": [
+      "--features",
+      "partition-bench,cbs-bench"
+    ],
+    "elf_sha256": "6fee58ff0b07c427757d2494f2171fb72eeffed2b444b23d58330a04b39d81cc",
+    "uart": "UART (135 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPART A FIRST\\nPART IDLE FIRST\\nPART B READY\\nPART A RESUMED\\nPART B FIRST\\nPART IDLE RESUMED\\nPART STOP\\nPART PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "batch",
+    "features": [
+      "--features",
+      "partition-bench,batch-bench"
+    ],
+    "elf_sha256": "44bd6e3adb625f82282fe1fa712b7d0e326b05404485abc61dcad5ef430200b4",
+    "uart": "UART (301 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nBATCH SJF A FIRST\\nBATCH SJF IRQ B READY\\nBATCH SJF A RETAINED\\nBATCH SJF B FIRST\\nBATCH SRTF A FIRST\\nBATCH SRTF IRQ B READY\\nBATCH SRTF B FIRST\\nBATCH SRTF A RESUMED\\nBATCH HRRN A FIRST\\nBATCH HRRN IRQ C READY\\nBATCH HRRN A RETAINED\\nBATCH HRRN B FIRST\\nBATCH HRRN C FIRST\\nBATCH PASS\\n'",
+    "observer_exit": 0
+  },
+  {
+    "profile": "coop",
+    "features": [
+      "--all-features"
+    ],
+    "elf_sha256": "198d96713582772d9bd89a74b0e53675545d11fc3d7d2cb25026ecd9dfc5fb9c",
+    "uart": "UART (163 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCOOP A FIRST\\nCOOP IRQ B READY\\nCOOP A RETAINED\\nCOOP B FIRST\\nCOOP A RESUMED\\nCOOP B WOKEN\\nCOOP B RESUMED\\nEVENT 1\\nEVENT 2\\nEVENT 3\\nCOOP PASS\\n'",
+    "observer_exit": 0
+  }
+]

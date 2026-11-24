@@ -34,3 +34,5 @@ BATCH PASS
 ```
 
 Compare all three policies to an independent small workload oracle. Include tied estimates, a runnable underestimate, zero capacity, invalid and duplicate releases, invalid completions, clock regression, ID reuse and the maximum representable timestamp. Dispatch times in this fixture are model inputs. The three real IRQs establish asynchronous arrival and actual context selection. Hardware WCET, physical timing and product approval remain separate cases.
+
+[EVD-013](evidence/evd-013.en.md)

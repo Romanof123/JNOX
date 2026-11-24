@@ -1,0 +1,155 @@
+{
+  "commit": "cfe14130e02fc64099e930042f69cefabe203e73",
+  "tree": "8bb0119219f7e6306b3b2f1ea93c81d5c540a523",
+  "elf_sha256": "8148673a5b338f7ec091cf1367eaf70f85e098617842177a03c8597fd96e3a73",
+  "first_verdict": "PASS",
+  "observer_exit": 0,
+  "guest_runs": 1,
+  "observer_arguments": [
+    "python3",
+    "tools/qemu_boot.py",
+    "--profile",
+    "batch",
+    "--kernel",
+    "../target/aarch64-unknown-none/release/jnox-kernel",
+    "--qemu",
+    "../raw/qemu"
+  ],
+  "qemu": "WSL Ubuntu, /usr/bin/qemu-system-aarch64 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31), -d int -D raw/trace.log; remaining argv recorded in raw/qemu-arguments.txt",
+  "same_guest_artifacts": {
+    "raw/uart.bin": "c06f6e2c66ef863583ee45c8a0c9c3fd7c869b07cac4b8c0360c7ce7c76bc01a",
+    "raw/trace.log": "a6e42aa32fc871257abe15278b5d5b02d47ddb10dfffc47cf4a2acc7a0b181c5",
+    "raw/observer.txt": "f3eafe87b4e0a9d2bbbf8f75ac58ac49257042f34275a9a16354b03a100720f6",
+    "raw/status.txt": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+    "raw/qemu-arguments.txt": "ec8e879355cc1ae4b20aa1cfdcf982fe89329aea374d6338bc4914f9ffcf437a"
+  },
+  "uart": [
+    "JNOX M1 BOOT",
+    "JNOX M1 READY",
+    "BATCH SJF A FIRST",
+    "BATCH SJF IRQ B READY",
+    "BATCH SJF A RETAINED",
+    "BATCH SJF B FIRST",
+    "BATCH SRTF A FIRST",
+    "BATCH SRTF IRQ B READY",
+    "BATCH SRTF B FIRST",
+    "BATCH SRTF A RESUMED",
+    "BATCH HRRN A FIRST",
+    "BATCH HRRN IRQ C READY",
+    "BATCH HRRN A RETAINED",
+    "BATCH HRRN B FIRST",
+    "BATCH HRRN C FIRST",
+    "BATCH PASS"
+  ],
+  "events": [
+    {
+      "kind": "IRQ",
+      "vector": "0x40200a80",
+      "esr": "0x0/0x0",
+      "elr": "0x40201298",
+      "svc_pc": null,
+      "eret": "0x40201298",
+      "effect": "SJF A retained"
+    },
+    {
+      "kind": "SVC",
+      "vector": "0x40200a00",
+      "esr": "0x15/0x56000001",
+      "elr": "0x402012fc",
+      "svc_pc": "0x402012f8",
+      "eret": "0x40201300",
+      "effect": "SJF A completes, B enters"
+    },
+    {
+      "kind": "SVC",
+      "vector": "0x40200a00",
+      "esr": "0x15/0x56000001",
+      "elr": "0x40201324",
+      "svc_pc": "0x40201320",
+      "eret": "0x4020124c",
+      "effect": "SJF B completes, next epoch A enters"
+    },
+    {
+      "kind": "IRQ",
+      "vector": "0x40200a80",
+      "esr": "0x15/0x56000001",
+      "elr": "0x40201298",
+      "svc_pc": null,
+      "eret": "0x40201300",
+      "effect": "SRTF A preempted, B enters"
+    },
+    {
+      "kind": "SVC",
+      "vector": "0x40200a00",
+      "esr": "0x15/0x56000001",
+      "elr": "0x40201324",
+      "svc_pc": "0x40201320",
+      "eret": "0x40201298",
+      "effect": "SRTF B completes, A restored at interrupted add"
+    },
+    {
+      "kind": "SVC",
+      "vector": "0x40200a00",
+      "esr": "0x15/0x56000001",
+      "elr": "0x402012fc",
+      "svc_pc": "0x402012f8",
+      "eret": "0x4020124c",
+      "effect": "SRTF A completes, next epoch A enters"
+    },
+    {
+      "kind": "IRQ",
+      "vector": "0x40200a80",
+      "esr": "0x15/0x56000001",
+      "elr": "0x40201298",
+      "svc_pc": null,
+      "eret": "0x40201298",
+      "effect": "HRRN A retained"
+    },
+    {
+      "kind": "SVC",
+      "vector": "0x40200a00",
+      "esr": "0x15/0x56000001",
+      "elr": "0x402012fc",
+      "svc_pc": "0x402012f8",
+      "eret": "0x40201300",
+      "effect": "HRRN A completes, B enters"
+    },
+    {
+      "kind": "SVC",
+      "vector": "0x40200a00",
+      "esr": "0x15/0x56000001",
+      "elr": "0x40201324",
+      "svc_pc": "0x40201320",
+      "eret": "0x40201328",
+      "effect": "HRRN B completes, C enters"
+    },
+    {
+      "kind": "SVC",
+      "vector": "0x40200a00",
+      "esr": "0x15/0x56000001",
+      "elr": "0x4020134c",
+      "svc_pc": "0x40201348",
+      "eret": null,
+      "effect": "HRRN C completes, PASS and park"
+    }
+  ],
+  "negative_controls": {
+    "missing": "UART deadline exceeded (0.15s)",
+    "reordered": "unexpected UART bytes or marker order",
+    "extra": "unexpected UART bytes or marker order"
+  },
+  "criteria": {
+    "strict_transcript_quiet": "PASS 301 bytes; exact equality, public observer quiet 0.1s",
+    "async_dispatch": "PASS three IRQ entries in A at 0x40201298 (add x20,x20,#1), IRQ vector 0x40200a80; SJF/HRRN return there, SRTF returns first to B 0x40201300, then from B SVC to original A PC. All seven SVC ESRs 0x56000001, vector 0x40200a00. Initial and subsequent epoch A at 0x4020124c; C at 0x40201328.",
+    "timer_origin": "PASS via executed guest checks on GICC_IAR INTID 30 and CNTP_CTL bits 5; guest disables timer and writes EOIR. QEMU -d int shows IRQ class and exception ELR/vector/return, does not log PPI or MMIO values.",
+    "markers": "PASS boot/ready from kernel main; FIRST and A RETAINED/RESUMED from task assembly calling task_marker with ID, SP and phase; IRQ READY from release_interrupt after scheduler selection; PASS in final HRRN SVC handler after no ready job remains.",
+    "context": "PASS by guest assertions plus traced PCs. Per-policy/task 16KiB stack, SP=top-16, saved frame below it, X19 and stack word = 0xb190+slot (SJF A/B slots 2/1; SRTF A/B 5/4; HRRN A/B/C 8/7/6). IRQ checks SPSR EL1h/IRQ unmasked, X14=1, X20 nonzero, V31 both lanes and TPIDR_EL1 equal witness, stores X20 to second stack word. Task verifies unsigned progress delta 0 or 1, nonzero stored count, X19, both lanes and TPIDR after return. Exact add-site implies one increment. Trace does not independently dump registers, stack words or progress values.",
+    "policy_clock": "PASS model inputs SJF A/B complete 5/7, SRTF B/A 3/7, release B at 1 (A remaining 4). HRRN A/B at 0, C release at 10 (overrun A floored to 1), completions 10/15/16. B ratio 3 vs C ratio 1 follows model; no timestamp or ratio sampled from hardware.",
+    "oracle": "PASS rustc +1.95.0 --edition 2024 --test tools/scheduling_tests.rs, single-threaded tests.exe, 39 passed total including 6 batch tests. Independent tick calendar: 3 policies x 10 ordered release pairs x 27 estimate triples x 6 ID permutations x 2 actual patterns = 9720 schedules. Stable incumbent ties, waiting order, runnable underestimate, early completion, per-job remaining each tick. Separate tests: charging without decide, invalid IDs, zero estimate, duplicate waiting/running, nonrunner completion, regressing complete/release/decide leave clock, budget, runner, FIFO intact; ID reuse, zero capacity, max tick, one-unit HRRN full-width ratio difference.",
+    "negative_replays": "PASS host-only direct public observe on three mutated exact UART streams with live-process stand-in; each rejected."
+  },
+  "limitations": [
+    "Single emulated CPU and guest boot. Logical service timestamps are injected. No physical board, wall-clock WCET, or product approval."
+  ],
+  "failures": []
+}
