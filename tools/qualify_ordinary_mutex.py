@@ -19,6 +19,58 @@ def require(condition, message):
         raise ValueError(message)
 
 
+def check_miss_state(rows, ceiling, irq, chunks):
+    # stop(16) prints from inside the first IRQ, before returning to HIGH or MEDIUM.
+    k = rows["K"][0]
+    require(rows["HIGH"][0] == rows["M"][0] == [0, 0, 0] and not any(k[3:]),
+            "unreleased worker or handoff has a result or marker")
+    prefix = rows["E"][:-1]
+    actions = [(1, 0), (1, 1), (3, 0), (2, 1), (2, 0), (4, 0)] if ceiling else [
+        (1, 0), (2, 0), (4, 0)]
+    require(len(prefix) > ceiling and
+            [(e[2], e[3]) for e in prefix] == actions[:len(prefix)] and
+            all(e[4] == 0 for e in prefix), "unexpected pre-release worker journal")
+    for e in prefix:
+        count, working = {1: (0, 0), 3: (128, 1), 2: (256, 0), 4: (256, 0)}[e[2]]
+        require(e[20:22] == [count, working], "work progress contradicts service entry")
+
+    final_lock = int(ceiling)
+    first_unlock = 3 if ceiling else 1
+    unlocked = len(prefix) > first_unlock
+    yielded = ceiling and len(prefix) > 2
+    work = irq[21]
+    require(0 <= chunks <= 256 and work in (0, 1) and
+            (chunks in (0, 256) or work) and
+            (not ceiling or (chunks >= 128 if yielded else chunks <= 128)) and
+            (not unlocked or (chunks == 256 and not work)), "impossible IRQ work state")
+
+    # Each marker belongs between a return to LOW and the next relevant exception.
+    def marker_between(value, after, before):
+        if value:
+            require(rows["R"][after + 1][2] <= value <= rows["E"][min(before, len(prefix))][0],
+                    "LOW marker outside its execution interval")
+
+    marker_between(k[0], final_lock, final_lock + 1)
+    marker_between(k[1], 2 if yielded else final_lock, first_unlock)
+    require(not (chunks or work) or k[0], "missing LOW post-acquire marker")
+    batch = tuple(rows["B"][0])
+    writes = [(0, 0, 0), (0, 65536, 0), (0, 65536, 557056), (1, 65536, 557056)]
+    require(batch in (writes if chunks == 256 and not work else writes[:1]),
+            "LOW batch contradicts recorded progress")
+    require((not k[1] or batch == writes[-1] and k[0] <= k[1]) and
+            (not unlocked or k[1]), "LOW commit marker contradicts batch or unlock")
+
+    audit = rows["A"][0]
+    if ceiling and unlocked:
+        # The two-field volatile audit may be interrupted before stamp(2).
+        require(audit[0] in (0, 1) and audit[1] in (0, 256), "invalid ceiling audit")
+        marker_between(k[2], first_unlock, first_unlock + 1)
+        require((not k[2] or audit == [1, 256]) and
+                (len(prefix) <= first_unlock + 1 or k[2]), "inconsistent audit marker")
+    else:
+        require(audit == [0, 0] and not k[2], "audit before ceiling unlock")
+
+
 def inspect_uart(raw, ceiling):
     lines = raw.decode("ascii").splitlines()
     require(lines[:3] == ["JNOX M1 BOOT", "JNOX M1 READY", "MUTEX RAW 1"]
@@ -45,6 +97,7 @@ def inspect_uart(raw, ceiling):
     if reason == 16:
         require(not in_window and rows["E"][-1] == irq and irq[20] == chunks,
                 "reason 16 contradicts the IRQ evidence")
+        check_miss_state(rows, ceiling, irq, chunks)
         require(rows["C"] == [[256*k, 2176*k] for k in range(1, chunks+1)],
                 "invalid partial progress")
     else:
