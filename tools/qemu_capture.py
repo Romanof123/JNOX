@@ -35,7 +35,8 @@ def request(stream, command, **arguments):
         return answer["return"]
 
 
-def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, extra=(), *, freeze=False):
+def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, extra=(), *,
+             freeze=False, audit_name="audit.bin", record_halt=False):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.8)
         sock.connect(str(sock_path))
@@ -46,7 +47,7 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, e
             status = request(stream, "query-status")
             cpus = request(stream, "query-cpus-fast")
             (out / "qmp.json").write_text(json.dumps({"status": status, "cpus": cpus}))
-            if not status["running"]:
+            if not status["running"] and not record_halt:
                 raise ValueError("guest stopped before host termination")
             if idle_range is not None or freeze:
                 request(stream, "stop")
@@ -57,7 +58,7 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, e
                 start, length = idle_range
                 if not match or not start <= int(match[1], 16) < start + length:
                     raise ValueError("terminal PC outside fixed_runtime_idle")
-            request(stream, "pmemsave", val=address, size=size, filename=str(out / "audit.bin"))
+            request(stream, "pmemsave", val=address, size=size, filename=str(out / audit_name))
             for name, (base, length) in extra:
                 request(stream, "pmemsave", val=base, size=length, filename=str(out / (name + ".bin")))
             if trace_range is not None:
@@ -66,16 +67,20 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, e
                         filename=str(out / "trace.bin"))
 
 
-def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False, extra_symbols=(), freeze=False):
+def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False,
+         extra_symbols=(), freeze=False, prepared_dir=None, audit_name="audit.bin"):
     out = Path(os.environ[directory_variable]).resolve()
-    out.mkdir(parents=True, exist_ok=False)
+    if prepared_dir is None:
+        out.mkdir(parents=True, exist_ok=False)
+    elif prepared_dir != out:
+        raise ValueError("prepared capture path mismatch")
     args = sys.argv[1:]
     kernel = args[args.index("-kernel") + 1]
     address, size = journal_location(kernel, symbol)
     idle_range = journal_location(kernel, idle_symbol) if idle_symbol else None
     trace_range = journal_location(kernel, trace_symbol, optional=not require_trace) if trace_symbol else None
     extra = [(name, journal_location(kernel, name)) for name in extra_symbols]
-    if extra and idle_range is None:
+    if extra and idle_range is None and not freeze:
         raise ValueError("extra memory snapshots require a stopped idle guest")
     stop_requested = False
 
@@ -114,7 +119,8 @@ def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, req
                     if guest.poll() is not None:
                         raise RuntimeError(f"guest exited early: {guest.returncode}")
                     time.sleep(0.004)
-                snapshot(sock_path, out, address, size, idle_range, trace_range, extra, freeze=freeze)
+                snapshot(sock_path, out, address, size, idle_range, trace_range, extra,
+                         freeze=freeze, audit_name=audit_name, record_halt=prepared_dir is not None)
             finally:
                 if guest.poll() is None:
                     guest.terminate()

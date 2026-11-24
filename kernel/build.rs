@@ -209,6 +209,17 @@ fn main() {
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
+    println!("cargo::rustc-check-cfg=cfg(jnox_sched_app_trace)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_sched_app_trace_mode, values("disabled", "active", "saturate"))"#);
+    if let Some(mode) = selector("JNOX_SCHED_APP_TRACE") {
+        assert!(matches!(mode.as_str(), "disabled" | "active" | "saturate"),
+                "invalid JNOX_SCHED_APP_TRACE");
+        assert!(board == "virt" && legacy_bench == "boot" && profile.as_deref() == Some("multilevel")
+                && app.as_deref() == Some("mlfq-wake"),
+                "JNOX_SCHED_APP_TRACE requires ordinary virt/multilevel/mlfq-wake");
+        println!("cargo::rustc-cfg=jnox_sched_app_trace");
+        println!(r#"cargo::rustc-cfg=jnox_sched_app_trace_mode="{mode}""#);
+    }
     let table_p = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_P").is_some();
     let table_q = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_Q").is_some();
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_partition)");

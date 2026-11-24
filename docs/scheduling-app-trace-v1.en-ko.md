@@ -42,3 +42,21 @@ CPU0 단일 부팅에서 커널만 수면(1), 준비(2), 배정(3), 타이머 �
 헤더는 리틀엔디언 64비트 16워드이며 위 순서대로 크기·용량·상태·주파수·식별자·게시/손실 수를 담는다. k번 레코드는 128+64k 바이트에서 시작한다. 여덟 워드는 게시 순번(k+1), 이벤트, 카운터, 행위자, 대상, 인자 두 개, 예약 0이다. 실행 UUID와 부팅·세션 번호가 일치하고 슬롯·세대가 같은 기록만 연결한다. 깨움 SVC 정지 W, 준비 큐 삽입 직후 Q, 첫 재배정 S, 결과 게시 직후 E로 S−Q와 E−S를 따로 계산한다. 네 태스크 계산값과 원래 23U 한도를 독립 검사한다.
 
 기록 중 일반 IRQ만 차단하고 원래 마스크를 복원한다. 포화 시 복사 전에 출처별 손실을 집계하며 기존 슬롯을 보존한다. 누락 구간 지연은 판정할 수 없다. 비활성·활성·포화·컴파일 제외 조건의 최초 결과와 실패를 보존하고 승인된 정지 VM 관찰자가 원본을 수집한다.
+
+## Implementation capture command / 구현 원본 수집 명령
+
+On Linux with aarch64-linux-gnu-nm available, run one cold guest per fresh directory from the repository root. Export identical board/profile/app and trace settings for build and launch. For each case select disabled, active, saturate or unset JNOX_SCHED_APP_TRACE for OFF. Record the exact build command and tool versions in the build log. Keep both logs and seal the first attempt after the observer returns, including a failing observer result.
+
+```sh
+export JNOX_BOARD=virt JNOX_PROFILE=multilevel JNOX_APP=mlfq-wake
+export JNOX_SCHED_APP_TRACE=active
+out=$(mktemp -d)
+export SCHED_APP_TRACE_CAPTURE_DIR="$out/guest"
+export CARGO_TARGET_DIR="$out/target"
+(cd kernel && set -x && cargo +1.95.0 -V && rustc +1.95.0 -Vv && aarch64-linux-gnu-nm --version && cargo +1.95.0 build --locked --release -j1) >"$out/build.log" 2>&1
+python3 tools/qemu_boot.py --profile "$JNOX_APP" --qemu tools/sched_app_trace_capture.py --kernel "$CARGO_TARGET_DIR/aarch64-unknown-none/release/jnox-kernel" >"$out/boot.log" 2>&1
+python3 tools/sched_app_trace_decode.py seal "$SCHED_APP_TRACE_CAPTURE_DIR" --build-log "$out/build.log" --boot-log "$out/boot.log"
+python3 tools/sched_app_trace_decode.py decode "$SCHED_APP_TRACE_CAPTURE_DIR"
+```
+
+각 모드는 새 디렉터리에 수집하고 실패한 첫 관찰도 원본 로그와 함께 봉인한다.

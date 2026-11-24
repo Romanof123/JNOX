@@ -223,6 +223,8 @@ impl Runtime {
                     CAP, 0, self.policy.priority(0).unwrap_or_else(|| fail()),
                     event.frame.addr(), 0, event.target_before_reset);
                 super::mlfq_wake::terminal();
+                #[cfg(jnox_sched_app_trace)]
+                super::sched_app_trace::freeze();
             }
             #[cfg(jnox_mlq_admission)]
             super::mlq_admission::terminal(self.service);
@@ -238,6 +240,8 @@ impl Runtime {
             grant = grant.min(period - self.total % period);
         }
         self.start = counter();
+        #[cfg(jnox_sched_app_trace)]
+        super::sched_app_trace::dispatch(event.owner, id, self.start);
         #[cfg(jnox_mlq_admission)]
         super::mlq_admission::dispatch(id, self.start, self.service, event.owner, event.kind);
         #[cfg(jnox_mlfq_wake)]
@@ -305,6 +309,8 @@ impl Runtime {
             && self.live[arg as usize]
             && self.policy.wake(arg as usize)
         {
+            #[cfg(jnox_sched_app_trace)]
+            super::sched_app_trace::ready(id, arg as usize, stop);
             result = 1;
         }
         if kind == 3 {
@@ -320,6 +326,10 @@ impl Runtime {
             .close_interval(id, elapsed, matches!(kind, 1 | 2))
         {
             fail()
+        }
+        #[cfg(jnox_sched_app_trace)]
+        if kind == 2 {
+            super::sched_app_trace::block(id, stop);
         }
         #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
         let pre_reset = [
@@ -387,7 +397,14 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     if iar & 1023 != TIMER_IRQ || ctl & 7 != 5 || now < state.due {
         fail()
     }
-    state.finish(frame, 4, now, (ctl << 32) | u64::from(iar))
+    #[cfg(jnox_sched_app_trace)]
+    let interrupted = state.owner.unwrap_or_else(|| fail());
+    #[cfg(jnox_sched_app_trace)]
+    super::sched_app_trace::irq_enter(interrupted, iar & 1023, now);
+    let selected = state.finish(frame, 4, now, (ctl << 32) | u64::from(iar));
+    #[cfg(jnox_sched_app_trace)]
+    super::sched_app_trace::irq_exit(interrupted, iar & 1023, now);
+    selected
 }
 
 #[cfg(jnox_multilevel_trace)]
