@@ -1,6 +1,19 @@
 use std::env;
 
+fn selector(key: &str) -> Option<String> {
+    println!("cargo::rerun-if-env-changed={key}");
+    match env::var(key) {
+        Ok(value) => Some(value),
+        Err(env::VarError::NotPresent) => None,
+        Err(error) => panic!("invalid {key}: {error}"),
+    }
+}
+
 fn main() {
+    let profile = selector("JNOX_PROFILE");
+    let app = selector("JNOX_APP");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_fixed)"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr"))"#);
     println!("cargo::rerun-if-env-changed=JNOX_BOARD");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
@@ -41,6 +54,21 @@ fn main() {
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
+    match profile.as_deref() {
+        Some("fixed") => {
+            assert!(bench == "boot", "JNOX_PROFILE=fixed conflicts with bench features");
+            assert!(board == "virt", "JNOX_PROFILE=fixed requires JNOX_BOARD=virt");
+            match app.as_deref() {
+                Some(name @ ("fixed-fifo" | "fixed-rr")) => {
+                    println!("cargo::rustc-cfg=jnox_fixed");
+                    println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
+                }
+                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo or fixed-rr"),
+            }
+        }
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed"),
+    }
     let script = match board.as_str() {
         "virt" => "link.ld",
         "pi4" => {

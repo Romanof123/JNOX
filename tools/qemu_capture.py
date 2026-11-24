@@ -2,6 +2,7 @@
 """Capture a guest journal, UART, QMP status and exceptions during one Linux QEMU run."""
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import signal
@@ -32,7 +33,7 @@ def request(stream, command, **arguments):
         return answer["return"]
 
 
-def snapshot(sock_path, out, address, size):
+def snapshot(sock_path, out, address, size, idle_range=None):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.8)
         sock.connect(str(sock_path))
@@ -45,14 +46,24 @@ def snapshot(sock_path, out, address, size):
             (out / "qmp.json").write_text(json.dumps({"status": status, "cpus": cpus}))
             if not status["running"]:
                 raise ValueError("guest stopped before host termination")
+            if idle_range is not None:
+                request(stream, "stop")
+                registers = request(stream, "human-monitor-command", **{"command-line": "info registers"})
+                (out / "registers.txt").write_text(registers)
+                match = re.search(r"\bPC=([0-9a-fA-F]+)\b", registers)
+                start, length = idle_range
+                if not match or not start <= int(match[1], 16) < start + length:
+                    raise ValueError("terminal PC outside fixed_runtime_idle")
             request(stream, "pmemsave", val=address, size=size, filename=str(out / "audit.bin"))
 
 
-def main(symbol, directory_variable):
+def main(symbol, directory_variable, idle_symbol=None):
     out = Path(os.environ[directory_variable]).resolve()
     out.mkdir(parents=True, exist_ok=False)
     args = sys.argv[1:]
-    address, size = journal_location(args[args.index("-kernel") + 1], symbol)
+    kernel = args[args.index("-kernel") + 1]
+    address, size = journal_location(kernel, symbol)
+    idle_range = journal_location(kernel, idle_symbol) if idle_symbol else None
     stop_requested = False
 
     def stop(signum, frame):
@@ -86,7 +97,7 @@ def main(symbol, directory_variable):
                     if guest.poll() is not None:
                         raise RuntimeError(f"guest exited early: {guest.returncode}")
                     time.sleep(0.004)
-                snapshot(sock_path, out, address, size)
+                snapshot(sock_path, out, address, size, idle_range)
             finally:
                 if guest.poll() is None:
                     guest.terminate()

@@ -25,7 +25,13 @@ mod priority_resume;
 mod periodic_overrun;
 #[cfg(jnox_bench = "cbs_wake")]
 mod cbs_wake;
-#[cfg(not(any(jnox_bench = "boot", jnox_bench = "power")))]
+#[cfg(jnox_fixed)]
+mod fixed_apps;
+#[cfg(jnox_fixed)]
+mod fixed_policy;
+#[cfg(jnox_fixed)]
+mod fixed_runtime;
+#[cfg(any(jnox_fixed, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -92,6 +98,7 @@ mod proportional_policy;
     jnox_bench = "rr",
     jnox_bench = "periodic",
     jnox_bench = "batch",
+    jnox_fixed,
     jnox_bench = "deadline",
     jnox_bench = "coop",
     jnox_bench = "mutex",
@@ -143,9 +150,13 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
     #[cfg(not(jnox_pi4))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
+    #[cfg(jnox_fixed)]
+    fixed_apps::run();
+    #[cfg(not(jnox_fixed))]
     run_bench()
 }
 
+#[cfg(not(jnox_fixed))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

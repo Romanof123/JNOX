@@ -194,6 +194,8 @@ APERIODIC_TRANSCRIPT = BOOT_TRANSCRIPT + (
 
 
 class DynamicTranscript(Enum):
+    FIXED_FIFO = ("FIXED FIFO", "fixed_runtime_observer")
+    FIXED_RR = ("FIXED RR", "fixed_runtime_observer")
     AMC = ("AMC", "amc_observer")
     VRUNTIME = ("VR", "vruntime_observer")
 
@@ -209,6 +211,8 @@ class DynamicTranscript(Enum):
 
 
 TRANSCRIPTS = {
+    "fixed-fifo": DynamicTranscript.FIXED_FIFO,
+    "fixed-rr": DynamicTranscript.FIXED_RR,
     "priority-resume": BOOT_TRANSCRIPT + b"PRIORITY RESUME BEGIN\nPRIORITY RESUME PASS\n",
     "periodic-overrun": BOOT_TRANSCRIPT + b"OVERRUN RM DONE\nOVERRUN DM DONE\nPERIODIC OVERRUN PASS\n",
     "cbs-wake": BOOT_TRANSCRIPT + b"CBS WAKE TIMER STOP\nCBS WAKE PASS\n",
@@ -334,7 +338,8 @@ def observe_amc(process, serial, timeout, *, allow_crlf=True, quiet_seconds=QUIE
 
 def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
     contract = profile.observer()
-    passed = profile.prefix + b" PASS\n"
+    workload = profile in (DynamicTranscript.FIXED_FIFO, DynamicTranscript.FIXED_RR)
+    passed = profile.prefix + (b" B DONE\n" if workload else b" PASS\n")
     failed = profile.prefix + b" FAIL\n"
     stop_line = b"\n" + profile.prefix + b" STOP\n"
     deadline = time.monotonic() + timeout
@@ -358,8 +363,13 @@ def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet
             # A complete terminal line also exposes extra bytes in the same read.
             # If STOP is followed by another complete line, judge it immediately.
             after_stop = data.partition(stop_line)[2]
+            if workload and b"FAIL" in data:
+                return f"unexpected {profile.label} UART failure", None
             if passed in data or failed in data or b"\n" in after_stop:
-                if not data.endswith(b"\n" + passed) or not contract.validate(data):
+                if not data.endswith(b"\n" + passed):
+                    return f"unexpected {profile.label} UART transcript", None
+                valid = contract.validate(data, profile.prefix) if workload else contract.validate(data)
+                if not valid:
                     return f"unexpected {profile.label} UART transcript", None
                 accepted = raw
                 quiet_until = now + quiet_seconds
