@@ -24,7 +24,7 @@ global_asm!(".set JNOX_STAMP_X9,1",include_str!("context.S"),
 
 const RING: [u64; 8] = [2, 5, 1, 6, 3, 7, 4, 8];
 const JOBS: usize = 6;
-const SLOTS: usize = 6;
+const SLOTS: usize = 7;
 const CAP: usize = 64;
 const EMPTY: usize = usize::MAX;
 static mut STACKS: [Stack; JOBS] = [const { Stack([0; STACK_BYTES]) }; JOBS];
@@ -99,11 +99,14 @@ extern "C" fn ordinary_amc_worker(id: usize, generation: usize) -> ! {
 #[unsafe(no_mangle)]
 #[inline(never)]
 extern "C" fn ordinary_amc_finite_worker(id: usize, generation: usize) -> ! {
+    let stagger = id == 3 && generation == 0;
     let slot = SLOT.load(Acquire);
-    check(slot == 5 && id == 0 && generation == 2, 21);
+    check((stagger && slot == 3) || (slot == 5 && id == 0 && generation == 2), 21);
     let mut sum = 0u64;
-    for index in 0..RING.len() {
-        sum += unsafe { ptr::read_volatile(RING.as_ptr().add((generation + index) & 7)) };
+    for index in 0..if stagger { 16 } else { 8 } {
+        let slot = if stagger && index >= 8 { 6 } else { slot };
+        while SLOT.load(Acquire) != slot { core::hint::spin_loop(); }
+        sum += unsafe { ptr::read_volatile(RING.as_ptr().add((id + generation + index) & 7)) };
         let mask: u64;
         unsafe {
             asm!("mrs {},daif","msr daifset,#2",out(reg)mask,options(nostack,preserves_flags))
@@ -115,7 +118,7 @@ extern "C" fn ordinary_amc_finite_worker(id: usize, generation: usize) -> ! {
         };
         unsafe {
             let work = (&raw mut WORK).cast::<Work>().add(slot);
-            if index == 0 {
+            if index % 8 == 0 {
                 ptr::write_volatile(&raw mut (*work).first, sample)
             }
             ptr::write_volatile(&raw mut (*work).last, sample);
@@ -141,24 +144,25 @@ extern "C" fn complete(frame: *mut Frame) -> *mut Frame {
     let esr: u64;
     unsafe { asm!("mrs {},esr_el1",out(reg)esr,options(nostack,preserves_flags)) };
     let s = unsafe { (*(&raw mut STATE)).as_mut().unwrap_or_else(|| fail(20)) };
+    let (slot, id, generation, samples) = if s.case == 3 { (6, 3, 0, 16) } else { (5, 0, 2, 8) };
     check(
         esr >> 26 == 0x15
             && esr & 0xffff == 76
             && s.case != 0
-            && s.policy.now() == 5
+            && s.policy.now() == slot
             && s.completed.is_none(),
         22,
     );
     let job = s.instances[s.owner];
     let (lo, hi) = bounds(s.owner);
     check(
-        job.id == 0
-            && job.generation == 2
+        job.id == id
+            && job.generation == generation
             && frame.addr() % 16 == 0
             && (lo..=hi - size_of::<Frame>()).contains(&frame.addr()),
         23,
     );
-    let sample = unsafe { ptr::read_volatile(&raw const WORK[5].last) };
+    let sample = unsafe { ptr::read_volatile(&raw const WORK[slot as usize].last) };
     let (_, top) = idle_bounds();
     let target = (top - size_of::<Frame>()) as *mut Frame;
     let idle_pc = ordinary_amc_completed_idle as *const () as usize as u64;
@@ -171,9 +175,9 @@ extern "C" fn complete(frame: *mut Frame) -> *mut Frame {
     record(
         b"COMPLETE",
         &[
-            5,
-            0,
-            2,
+            slot,
+            id as u64,
+            generation as u64,
             sample.n,
             sample.sum,
             sample.tick,
@@ -187,10 +191,10 @@ extern "C" fn complete(frame: *mut Frame) -> *mut Frame {
         ],
     );
     check(
-        sample.n == 8
-            && sample.sum == 36
+        sample.n == samples
+            && sample.sum == samples / 8 * 36
             && sample.tick <= fr.reserved
-            && fr.reserved < s.boundary(6),
+            && fr.reserved < s.boundary(slot + 1),
         24,
     );
     s.completed = Some(sample);
@@ -279,6 +283,14 @@ const SPEC: [TaskSpec; 4] = [
         relative_deadline: 5,
     },
 ];
+fn case_specs(case: u64) -> [TaskSpec; 4] {
+    let mut specs = SPEC;
+    if case == 3 {
+        specs[0].relative_deadline = 4;
+        specs[3].budget = ExecutionBudget::High { lo: 1, hi: 2 };
+    }
+    specs
+}
 fn dump_rows() {
     unsafe {
         for i in 0..COUNT {
@@ -326,7 +338,7 @@ impl Bench {
         self.next_gen[id] += 1;
         let (lo, hi) = bounds(i);
         let f = (hi - size_of::<Frame>()) as *mut Frame;
-        let entry = if self.case != 0 && id == 0 && g == 2 {
+        let entry = if (self.case != 0 && id == 0 && g == 2) || (self.case == 3 && id == 3) {
             ordinary_amc_finite_worker
         } else {
             ordinary_amc_worker
@@ -353,7 +365,7 @@ impl Bench {
                 id as u64,
                 g as u64,
                 demand,
-                t + SPEC[id].relative_deadline,
+                t + case_specs(self.case)[id].relative_deadline,
                 lo as u64,
                 hi as u64,
                 entry,
@@ -362,7 +374,35 @@ impl Bench {
     }
     fn dispatch(&mut self) -> *mut Frame {
         let t = self.policy.now();
-        if t == 1 {
+        if self.case == 3 {
+            match t {
+                1 => {
+                    check(self.policy.start_slot() == Some(Dispatch::Idle), 26);
+                    let (_, top) = idle_bounds();
+                    let frame = (top - size_of::<Frame>()) as *mut Frame;
+                    let pc = ordinary_amc_completed_idle as *const () as usize as u64;
+                    let compare = self.boundary(2);
+                    let readback: u64;
+                    unsafe {
+                        frame.write_bytes(0, 1);
+                        (*frame).elr = pc;
+                        (*frame).spsr = 0x345;
+                        asm!("msr cntp_cval_el0,{}", "msr cntp_ctl_el0,{}", "isb",
+                             "mrs {},cntp_cval_el0", in(reg)compare, in(reg)1u64, out(reg)readback);
+                    }
+                    let stamp = tick();
+                    record(b"IDLE", &[t, stamp, compare, readback, frame.addr() as u64, pc, top as u64]);
+                    check(stamp < compare && compare == readback, 27);
+                    self.owner = EMPTY;
+                    SLOT.store(EMPTY, Release);
+                    return frame;
+                }
+                2 => self.release(0, 2),
+                3 => self.release(3, 2),
+                4 => self.release(1, 2),
+                _ => {}
+            }
+        } else if t == 1 {
             let demand = match self.case {
                 0 => [1, 1, 0, 0],
                 1 => [2, 3, 2, 1],
@@ -374,11 +414,11 @@ impl Bench {
                 }
             }
         }
-        if t == 2 && self.case != 0 {
+        if (t == 2 && matches!(self.case, 1 | 2)) || (t == 5 && self.case == 3) {
             let rem = [0, 1, 2, 3].map(|id| self.policy.remaining(id).unwrap_or(0));
             record(b"CARRY", &[t, rem[0], rem[1], rem[2], rem[3]]);
         }
-        if t == 5 && self.case != 0 {
+        if t == 5 && matches!(self.case, 1 | 2) {
             let refused = self.policy.reset(false);
             let enabled = self.policy.reset(true);
             record(b"RESET", &[t, refused.into(), enabled.into()]);
@@ -443,6 +483,17 @@ impl Bench {
     fn retire(&mut self, f: *mut Frame, iar: u32, ctl: u64, compare: u64) -> *mut Frame {
         let t = self.policy.now();
         let i = self.owner;
+        if i == EMPTY {
+            let (lo, hi) = idle_bounds();
+            check(self.case == 3 && t == 1 && f.addr() % 16 == 0
+                && (lo..=hi - size_of::<Frame>()).contains(&f.addr()), 28);
+            let fr = unsafe { &*f };
+            record(b"WAKE", &[t, iar as u64, ctl, compare, fr.reserved, f.addr() as u64, fr.elr,
+                (f.addr() + size_of::<Frame>()) as u64]);
+            check(compare == self.boundary(2) && compare <= fr.reserved && fr.reserved < self.boundary(3)
+                && self.policy.advance_idle(1), 29);
+            return self.dispatch();
+        }
         let j = &mut self.instances[i];
         let (lo, hi) = if self.completed.is_some() {
             idle_bounds()
@@ -472,10 +523,10 @@ impl Bench {
             ],
         );
         let w = unsafe { ptr::read_volatile((&raw const WORK).cast::<Work>().add(t as usize)) };
-        if self.case != 0 && t == 5 {
+        if (matches!(self.case, 1 | 2) && t == 5) || (self.case == 3 && t == 6) {
             record(
                 b"FROZEN",
-                &[5, 0, 2, w.last.n, w.last.sum, w.last.tick, entry],
+                &[t, j.id as u64, j.generation as u64, w.last.n, w.last.sum, w.last.tick, entry],
             );
             check(self.completed == Some(w.last), 25);
         }
@@ -519,7 +570,7 @@ impl Bench {
                 && now < self.boundary(end.end + 1),
             14,
         );
-        if end.end == if self.case == 0 { 3 } else { 6 } {
+        if end.end == match self.case { 0 => 3, 3 => 7, _ => 6 } {
             self.export()
         }
         self.dispatch()
@@ -528,7 +579,7 @@ impl Bench {
         line(
             b"BEGIN",
             &[
-                if self.case == 0 { 1 } else { 2 },
+                match self.case { 0 => 1, 3 => 3, _ => 2 },
                 self.case,
                 self.freq,
                 self.origin,
@@ -561,12 +612,13 @@ pub(super) fn run() -> ! {
         "exact-lo" => 0,
         "exact-hi" => 1,
         "over-hi" => 2,
+        "stagger-idle" => 3,
         _ => fail(16),
     };
     unsafe {
         *(&raw mut STATE) = Some(Bench {
             completed: None,
-            policy: AmcRuntime::new(SPEC).unwrap_or_else(|| fail(17)),
+            policy: AmcRuntime::new(case_specs(case)).unwrap_or_else(|| fail(17)),
             case,
             freq,
             origin: 0,
