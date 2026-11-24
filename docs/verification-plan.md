@@ -108,4 +108,6 @@ CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md)
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
+CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
 CHG-046의 P/Q 비교 타이머 지연은 VER-002/005/023의 별도 계획 사례이다. 실제 비교값 되읽기, IRQ 진입, 예외 복귀, 작업·유휴 관측과 경과 시간 귀속을 보존한다. 작업 자체 마스킹 사례에는 독립 근거가 필요하다. [시간 기준](pol-006-rust-partition-plan.md#가상-타이머-통지-지연-추가-사례)
