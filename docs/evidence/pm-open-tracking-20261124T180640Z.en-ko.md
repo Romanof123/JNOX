@@ -27,3 +27,5 @@ At 2026-11-24 18:06:40 UTC (Nov 25 03:06:40 KST), the public GitHub issues endpo
 Extract the archive and run `python -B tools/open_tracking.py open-items.json` from this source tree. The original response, checker output and PM mapping are included. 원자료, 도구 판정 및 PM 확인 매핑을 첨부한다.
 
 [Original inventory and audit / 원본 목록과 검사 결과](pm-open-tracking-20261124T180640Z.zip) · ZIP SHA-256 `8b5dc5dd5853cfb7d7e2f7375561f10a5b3c34f53c57e8600424cd0186704d55`. Raw JSON SHA-256 `ea6a3b21c561c1f718e6a37d16cc956332266a0a4ee077f3d820b797b3778468`.
+
+[First independent review](scheduling-disposition-first-review.en-ko.md) · [Corrected source and integration verification / 수정본과 통합 검증](scheduling-disposition-corrected-review.en-ko.md).
