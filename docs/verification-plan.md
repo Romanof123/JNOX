@@ -137,3 +137,5 @@ CHG-055 · REQ-002/003/005/023 · [일반 허가 게시 및 독립 명령 시각
 IMP-052 · VER-002/005/023. 실제 저널 4개의 104개 위상 재생 일치. 통합 제어 실행의 운영 적격 0/6. [EVD-052](evidence/evd-052.md)
 
 CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
+
+CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
