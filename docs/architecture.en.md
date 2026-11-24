@@ -53,6 +53,8 @@ The common kernel has a separate port contract. Each port declares its capabilit
 
 ## DES-005 User services and application APIs
 
+The native SDK's planned profile defines its source interfaces, error conventions and target acceptance separately from the Linux executable ABI. [POSIX source profile 0.1](posix-profile.en.md)
+
 The native API centers on synchronous request/reply, bounded queues, notifications, and shared memory. User libraries provide the selected subset of `pthread`, a monotonic clock, and APIs in the `socket` and `poll` families. Networking runs in a user process or the Linux domain. Planned stages add `AF_UNIX`, TCP and UDP over IPv4 and IPv6, multiple clients, nonblocking I/O, and readiness notification. The API matrix identifies features outside the selected POSIX scope. Extended filesystem features, dynamic linking, TLS, and packages will be evaluated for the extended configuration.
 
 Native Rust is the default user application target of the J-NOX SDK. The kernel and user applications link as separate ELF files. The SDK provides versioned target and linker settings, user startup and exit code, `core`, and a safe user API crate. The first static AArch64 profile handles arguments, files and standard I/O without a heap. The syscall wrappers use the versioned J-NOX ABI. Qualify `alloc` with a user allocator and `std` with the OS support required by the standard library in separate tests.
@@ -175,5 +177,17 @@ CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes i
 POL-011 · CHG-052 · IMP-049. Two ordinary Rust entries share the exception-return ABI and the weighted virtual-runtime scheduler. See the [approved workload plan](ordinary-vruntime-plan.md) and [build, capture and replay instructions](ordinary-weighted.md). VER-002/005/023 · [EVD-049](evidence/evd-049.en.md).
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage.  [Capture format and build](ordinary-partition-capture.en.md)
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. All four delayed virtual timer notifications exceeded the original 1 ms envelope at injection and recovered to the specified window. No unrelated edge exceeded the limit. Live worker masking remains unverified. [EVD-044 · delayed notice](evidence/evd-044-notice.en.md) [EVD-044 v2](evidence/evd-044-v2.en.md)
+
+POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
+
+CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
+CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
+
+[DES-004 kernel architecture selection](../arch/README.md)
 
 IMP-053 · VER-002/005/023. One of eight normal v2 boots completed, both refusals succeeded, and none of eight matched v1 normal boots completed. Only saturated CBS with tracing reached the horizon. No wake case delivered B service (0/4). No v2 late fixture ran. The full profile remains unqualified. [EVD-053](evidence/evd-053.en.md)

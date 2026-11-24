@@ -21,10 +21,19 @@ const CAPACITY: usize = 1024;
 pub(super) const CONTROL_US: u64 = 250;
 pub(super) const SENDER_US: u64 = 750;
 
-global_asm!(".set JNOX_CONTROL, 1", include_str!("context.S"), frame_size=const size_of::<Frame>(),
+global_asm!(".set JNOX_CONTROL, 1", ".if {markers}", ".set JNOX_CONTROL_MARKERS, 1", ".endif", ".if {phase}", ".set JNOX_PERMIT, 1", ".endif",
+    include_str!("context.S"), phase=const cfg!(jnox_permit_phase) as usize, markers=const cfg!(jnox_control_markers) as usize, frame_size=const size_of::<Frame>(),
     elr=const offset_of!(Frame, elr), fpcr=const offset_of!(Frame, fpcr),
     tpidr_el1=const offset_of!(Frame, tpidr_el1), tpidr_el0=const offset_of!(Frame,tpidr_el0),
     simd=const offset_of!(Frame,simd), irq=sym irq, svc=sym svc, fail=sym fail);
+
+#[cfg(jnox_control_markers)]
+#[path = "control_markers.rs"]
+pub(super) mod markers;
+#[cfg(not(jnox_control_markers))]
+use self::locked as control_locked;
+#[cfg(jnox_control_markers)]
+use self::markers::control_locked;
 
 static mut STACKS: [Stack; 3] = [const { Stack([0; STACK_BYTES]) }; 3];
 static mut STATE: Option<Runtime> = None;
@@ -41,6 +50,10 @@ pub(super) fn now() -> u64 {
 pub(super) fn log(event: u64, stamp: u64, a: u64, b: u64) {
     // All event producers hold the single CPU IRQ mask.
     unsafe {
+        #[cfg(jnox_permit_off)]
+        if USED >= CAPACITY - 6 {
+            app::coverage_stop(3);
+        }
         if USED == CAPACITY {
             fail()
         }
@@ -58,6 +71,12 @@ pub(super) fn locked<R>(f: impl FnOnce() -> R) -> R {
     let begin = now();
     let r = f();
     let end = now();
+    #[cfg(jnox_permit_phase)]
+    if let Some(s) = unsafe { (*(&raw const STATE)).as_ref() }
+        && s.current < IDLE
+    {
+        log(94, begin, end, s.current as u64);
+    }
     unsafe {
         LONGEST_MASKED = LONGEST_MASKED.max((end - begin, begin, end));
     }
@@ -90,8 +109,19 @@ fn number(mut n: u64) {
     uart_write(&buf[pos..]);
 }
 
+#[cfg(jnox_permit_off)]
+pub(super) fn containment_detail(why: u64, detected: u64, off: u64, bit: u64) -> ! {
+    for field in [why, detected, off, bit] {
+        number(field);
+        uart_write(b" ")
+    }
+    uart_write(b"\n");
+    dump()
+}
 fn dump() -> ! {
     unsafe { asm!("msr cntp_ctl_el0,xzr", "isb", options(nostack)) };
+    #[cfg(jnox_control_markers)]
+    markers::seal();
     uart_write(b"CONTROL RAW v1\n");
     for i in 0..unsafe { USED } {
         let row = unsafe { (&raw const TRACE).cast::<[u64; 4]>().add(i).read() };
@@ -104,6 +134,10 @@ fn dump() -> ! {
     uart_write(b"CONTROL END\n");
     park()
 }
+
+#[cfg(jnox_permit_phase)]
+#[path = "permit_phase.rs"]
+pub(super) mod permit;
 
 struct Runtime {
     frequency: u64,
@@ -135,7 +169,14 @@ fn arm(target: u64, index: u64) {
 }
 
 fn fresh(id: usize) -> *mut Frame {
+    #[cfg(not(any(jnox_control_descriptor, jnox_control_markers)))]
     let entries: [extern "C" fn() -> !; 3] = [control, sender, idle];
+    // Only the descriptor arm changes the control entry ABI; the CPU enters
+    // through ERET, so this table holds code addresses, never a mismatched call.
+    #[cfg(jnox_control_descriptor)]
+    let entries = [control as *const (), sender as *const (), idle as *const ()];
+    #[cfg(jnox_control_markers)]
+    let entries: [unsafe extern "C" fn() -> !; 3] = [markers::control_marker_entry, sender, idle];
     unsafe {
         let frame = (&raw mut STACKS)
             .cast::<u8>()
@@ -161,6 +202,8 @@ impl Runtime {
         self.fault = true;
         log(15, now(), why, self.next);
         app::inhibit(why);
+        #[cfg(jnox_permit_phase)]
+        permit::timing_stop(why);
     }
     fn release(&mut self, id: usize, at: u64) {
         if self.jobs[id].is_some() {
@@ -175,6 +218,27 @@ impl Runtime {
             ..DispatchJob::fixed_priority(0)
         });
         self.frames[id] = fresh(id);
+        #[cfg(jnox_control_descriptor)]
+        if id == 0 && self.missed.is_none() {
+            // IRQ has advanced next from the release's measured phase index.
+            // The overlap guard above ensures the previous private frame is dead.
+            let second = self.next;
+            let first = second.checked_sub(1).unwrap_or_else(|| fail());
+            if first % 2 != 0 || second > LAST {
+                fail()
+            }
+            let second_target = at.checked_add(self.step).unwrap_or_else(|| fail());
+            // AAPCS64 x0..x4. Initialize once, before making this job runnable.
+            unsafe {
+                (&mut (*self.frames[id]).gpr)[..5].copy_from_slice(&[
+                    first,
+                    at,
+                    second,
+                    second_target,
+                    self.step,
+                ]);
+            }
+        }
         self.service[id] = 0;
         log(4, now(), id as u64, at);
         self.enqueue(id);
@@ -187,6 +251,11 @@ impl Runtime {
         }
     }
     fn select(&mut self, entry: u64, kind: u64) -> *mut Frame {
+        #[cfg(jnox_permit_phase)]
+        if permit::stopped() && (self.missed.is_none() || self.stopping) {
+            log(kind, entry, now(), IDLE as u64);
+            permit::terminal(self);
+        }
         let policy = if cfg!(jnox_control_dm) {
             DispatchPolicy::DeadlineMonotonic
         } else {
@@ -205,11 +274,15 @@ impl Runtime {
         let until = now();
         log(kind, entry, until, id as u64);
         self.slice_start = now();
+        #[cfg(jnox_control_markers)]
+        markers::record(1, self.slice_start, id as u64, unsafe { (*f).elr });
         f
     }
 }
 
 extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
+    #[cfg(jnox_control_markers)]
+    markers::handler(2, frame, entry);
     // Preserve an event across the idle work check -> WFE race. No task
     // other than idle executes WFE while this workload is active.
     unsafe { asm!("sev", options(nostack, preserves_flags)) };
@@ -219,6 +292,15 @@ extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
     #[cfg(jnox_control_cold)]
     if cold::on_irq(frame, entry, handler, iar) {
         return frame;
+    }
+    #[cfg(jnox_permit_phase)]
+    {
+        let (ctl, cval): (u64, u64);
+        unsafe {
+            asm!("mrs {},cntp_ctl_el0","mrs {},cntp_cval_el0",out(reg)ctl,out(reg)cval,options(nostack))
+        };
+        log(87, entry, ctl, iar as u64);
+        log(88, entry, cval, gic_read(GICD + 0x200) as u64);
     }
     if iar & 0x3ff != TIMER_IRQ {
         fail()
@@ -233,6 +315,11 @@ extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
     s.frames[id] = frame;
     if id < IDLE {
         s.enqueue(id)
+    }
+    #[cfg(jnox_permit_phase)]
+    if entry < s.target(s.next) && permit::service_wake(s, entry) {
+        permit::program(s);
+        return s.select(entry, 34);
     }
     let requested = s.next;
     if entry < s.target(requested) {
@@ -274,12 +361,20 @@ extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
         s.timing_fault(2);
     }
     if index < LAST {
-        arm(s.target(s.next), s.next)
+        #[cfg(not(jnox_permit_phase))]
+        arm(s.target(s.next), s.next);
+        #[cfg(jnox_permit_phase)]
+        {
+            permit::service_wake(s, entry);
+            permit::program(s);
+        }
     }
     s.select(entry, 34)
 }
 
 extern "C" fn svc(frame: *mut Frame, entry: u64) -> *mut Frame {
+    #[cfg(jnox_control_markers)]
+    markers::handler(3, frame, entry);
     let esr: u64;
     unsafe { asm!("mrs {},esr_el1",out(reg)esr,options(nostack)) };
     if esr >> 26 != 0x15 {
@@ -297,6 +392,20 @@ extern "C" fn svc(frame: *mut Frame, entry: u64) -> *mut Frame {
         unsafe { (*frame).elr = final_check as *const () as usize as u64 };
         s.frames[0] = frame;
         s.enqueue(0);
+        return s.select(entry, 35);
+    }
+    #[cfg(jnox_permit_phase)]
+    if id == 1 && esr & 0xffff == 3 {
+        // Sleep carries prior CPU slices into the same activation's final debit.
+        s.frames[1] = frame;
+        if s.service[1] == 0
+            || u128::from(s.service[1]) * 1_000_000
+                >= u128::from(SENDER_US) * u128::from(s.frequency)
+        {
+            s.timing_fault(3);
+        } else {
+            permit::sleep(s, entry);
+        }
         return s.select(entry, 35);
     }
     let use_ticks = s.service[id];
@@ -329,22 +438,38 @@ extern "C" fn svc(frame: *mut Frame, entry: u64) -> *mut Frame {
 }
 
 extern "C" fn final_check() -> ! {
-    locked(|| {
+    control_locked(|| {
         let index = state().missed.take().unwrap_or_else(|| fail());
         let (step, target) = (state().step, state().target(index));
         app::check(index, step);
         log(10, now(), index, target);
         state().stopping = true;
     });
+    #[cfg(jnox_control_markers)]
+    markers::record(9, now(), 2, 0);
     unsafe { asm!("svc #2", options(noreturn)) }
 }
 
-extern "C" fn control() -> ! {
+extern "C" fn control(
+    #[cfg(jnox_control_descriptor)] first_index: u64,
+    #[cfg(jnox_control_descriptor)] first_target: u64,
+    #[cfg(jnox_control_descriptor)] second_index: u64,
+    #[cfg(jnox_control_descriptor)] second_target: u64,
+    #[cfg(jnox_control_descriptor)] descriptor_step: u64,
+) -> ! {
+    #[cfg(jnox_control_descriptor)]
+    let phases = [(first_index, first_target), (second_index, second_target)];
     for phase in 0..2 {
-        if locked(|| state().missed.is_some()) {
+        if control_locked(|| state().missed.is_some()) {
             final_check()
         }
-        let (index, target, step) = locked(|| {
+        #[cfg(jnox_control_descriptor)]
+        let (index, target, step) = {
+            let (index, target) = phases[phase];
+            (index, target, descriptor_step)
+        };
+        #[cfg(not(jnox_control_descriptor))]
+        let (index, target, step) = control_locked(|| {
             let s = state();
             let r = s.jobs[0].unwrap().release;
             ((r - s.epoch) / s.step + phase, r + phase * s.step, s.step)
@@ -355,7 +480,7 @@ extern "C" fn control() -> ! {
                 core::hint::spin_loop()
             }
         }
-        locked(|| {
+        control_locked(|| {
             if state().missed.is_some() {
                 final_check()
             }
@@ -367,12 +492,22 @@ extern "C" fn control() -> ! {
             }
         });
         if phase == 0 {
+            #[cfg(not(jnox_control_markers))]
             unsafe { asm!("svc #1", options(nostack)) }
+            #[cfg(jnox_control_markers)]
+            markers::wait_phase(index);
         }
     }
+    #[cfg(jnox_control_markers)]
+    markers::record(9, now(), 2, 0);
     unsafe { asm!("svc #2", options(noreturn)) }
 }
 
+#[cfg(jnox_permit_phase)]
+extern "C" fn sender() -> ! {
+    permit::sender()
+}
+#[cfg(not(jnox_permit_phase))]
 extern "C" fn sender() -> ! {
     if !locked(app::sender_owns) {
         locked(|| log(37, now(), 1, state().next));
@@ -428,6 +563,8 @@ extern "C" fn idle() -> ! {
             if s.stopping {
                 let (duration, start, end) = unsafe { LONGEST_MASKED };
                 log(33, start, end, duration);
+                #[cfg(jnox_permit_phase)]
+                permit::end_witness();
                 log(18, now(), app::read_output() as u64, s.fault as u64);
                 dump()
             }
@@ -438,7 +575,10 @@ extern "C" fn idle() -> ! {
                     if now().saturating_add(s.step / 200) < target {
                         return (false, s.next);
                     }
+                    #[cfg(not(jnox_permit_phase))]
                     app::command(sample_at(target));
+                    #[cfg(jnox_permit_phase)]
+                    permit::supervisor(target, s.step);
                 }
             }
             if cfg!(jnox_control_case = "late") && s.next == 12 {
@@ -468,6 +608,7 @@ pub(super) fn run() -> ! {
     let frequency: u64;
     unsafe { asm!("mrs {},cntfrq_el0",out(reg)frequency,options(nostack)) };
     #[cfg(not(jnox_control_cold))]
+    #[cfg(not(jnox_permit_phase))]
     if frequency == 0 || frequency % 400 != 0 {
         fail()
     }
@@ -479,6 +620,11 @@ pub(super) fn run() -> ! {
     }
     log(32, now(), cfg!(jnox_control_dm) as u64, case_hash);
     app::init();
+    #[cfg(jnox_permit_phase)]
+    if !permit::admit(frequency) {
+        log(18, now(), app::read_output() as u64, 0);
+        dump()
+    }
     #[cfg(jnox_control_cold)]
     cold::initial_off();
     if app::SCRIPTED {

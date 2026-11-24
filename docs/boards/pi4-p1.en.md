@@ -58,3 +58,5 @@ python3 tools/qemu_boot.py --profile pi4 --kernel kernel8.img
 [EVD-011](../evidence/evd-011.en.md)
 
 [Timer preemption profile](pi4-timer.en.md)
+
+[Two-core Pi 4 startup and directed wake plan](pi4-smp.en.md)

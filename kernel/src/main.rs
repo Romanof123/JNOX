@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use core::arch::{asm, global_asm};
+use core::arch::asm;
 use core::panic::PanicInfo;
 use core::ptr;
 
@@ -9,8 +9,10 @@ use core::ptr;
 mod aperiodic;
 #[cfg(jnox_bench = "amc")]
 mod amc;
-#[cfg(jnox_bench = "amc")]
+#[cfg(any(jnox_rust_amc, jnox_bench = "amc"))]
 mod amc_policy;
+#[cfg(jnox_rust_amc)]
+mod ordinary_amc;
 #[cfg(any(jnox_ap, jnox_bench = "rr", jnox_bench = "aperiodic"))]
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
@@ -45,7 +47,7 @@ mod control_app;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_ordinary_reservation, jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_ordinary_reservation, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -67,7 +69,7 @@ mod deadline_policy;
     jnox_bench = "periodic_overrun"
 ))]
 mod dispatch_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
+#[cfg(any(jnox_pi4_migration, jnox_rust_amc, jnox_ordinary_mutex, jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
 #[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"), allow(dead_code))]
 mod domain_policy;
 #[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
@@ -83,8 +85,8 @@ mod extension_policy;
 #[cfg(any(jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
 #[cfg_attr(any(jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
-#[cfg(any(jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
-#[cfg_attr(any(jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
+#[cfg(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
+#[cfg_attr(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
 mod feedback_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "power", jnox_bench = "extension"))]
 #[cfg_attr(any(jnox_bench = "power", jnox_bench = "extension"), allow(dead_code))]
@@ -99,8 +101,12 @@ mod group_runtime;
 mod group_apps;
 #[cfg(jnox_bench = "mutex")]
 mod mutex;
-#[cfg(jnox_bench = "mutex")]
+#[cfg(any(jnox_ordinary_mutex, jnox_bench = "mutex"))]
 mod mutex_policy;
+#[cfg(jnox_ordinary_mutex)]
+mod ordinary_mutex;
+#[cfg(jnox_ordinary_mutex)]
+mod ordinary_mutex_manifest;
 #[cfg(jnox_bench = "multilevel")]
 mod multilevel;
 #[cfg(any(jnox_multilevel, jnox_bench = "multilevel"))]
@@ -110,6 +116,7 @@ mod multilevel_service;
 #[cfg(jnox_multilevel)]
 mod multilevel_apps;
 #[cfg(jnox_bench = "partition")]
+#[cfg_attr(jnox_ordinary_partition, path = "ordinary_partition.rs")]
 mod partition;
 #[cfg(jnox_bench = "periodic")]
 mod periodic;
@@ -119,8 +126,10 @@ mod power;
 mod power_policy;
 #[cfg(jnox_bench = "proportional")]
 mod proportional;
-#[cfg(jnox_bench = "proportional")]
+#[cfg(any(jnox_ordinary_prop, jnox_bench = "proportional"))]
 mod proportional_policy;
+#[cfg(jnox_ordinary_prop)]
+mod ordinary_proportional;
 #[cfg(any(
     jnox_bench = "scheduler",
     jnox_bench = "rr",
@@ -133,6 +142,7 @@ mod proportional_policy;
     jnox_ordinary_deadline,
     jnox_bench = "deadline",
     jnox_bench = "coop",
+    jnox_ordinary_mutex,
     jnox_bench = "mutex",
     jnox_bench = "multilevel",
     jnox_bench = "priority_resume",
@@ -155,7 +165,7 @@ mod service_policy;
 mod smp;
 #[cfg(any(jnox_bench = "smp", jnox_bench = "power"))]
 mod smp_boot;
-#[cfg(jnox_bench = "smp")]
+#[cfg(any(jnox_pi4_migration, jnox_bench = "smp"))]
 mod smp_policy;
 #[cfg(any(jnox_ordinary_reservation, jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "cbs_wake", jnox_bench = "partition"))]
 mod temporal_policy;
@@ -166,18 +176,22 @@ mod weighted;
 #[cfg(any(jnox_weighted, jnox_bench = "vruntime"))]
 mod vruntime_policy;
 
+#[cfg(jnox_pi4_smp)]
+mod pi4_smp_bsp;
+#[cfg(all(jnox_pi4_smp, not(jnox_pi4_migration)))]
+mod pi4_smp_workload;
+#[cfg(jnox_pi4_migration)]
+mod pi4_migration;
+#[cfg(jnox_pi4_migration)]
+mod pi4_migration_tasks;
+#[cfg(jnox_pi4_migration)]
+mod pi4_migration_log;
+
 static mut BSS_PROBE: u64 = 0;
 
-// SAFETY: The ELF loader enters _start with the platform state described in
-// start.S. The assembly establishes the Rust ABI before calling kernel_main.
-global_asm!(
-    include_str!("start.S"),
-    cold = const cfg!(jnox_control_cold) as usize,
-    pi4 = const cfg!(jnox_pi4) as usize,
-    pi4_scheduler = const cfg!(all(jnox_pi4, any(jnox_bench = "scheduler", jnox_fixed))) as usize,
-    bss_probe = sym BSS_PROBE,
-    rust_entry = sym kernel_main,
-);
+#[cfg(target_arch = "aarch64")]
+#[path = "../../arch/aarch64/mod.rs"]
+mod arch;
 
 extern "C" fn kernel_main() -> ! {
     // SAFETY: The boot CPU has finished clearing this aligned static in RAM.
@@ -191,6 +205,8 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
     #[cfg(not(jnox_pi4))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
+    #[cfg(jnox_pi4_smp)]
+    pi4_smp_bsp::primary();
     #[cfg(jnox_fixed)]
     fixed_apps::run();
     #[cfg(jnox_batch)]
@@ -201,6 +217,12 @@ extern "C" fn kernel_main() -> ! {
     ordinary_server::run();
     #[cfg(jnox_ordinary_deadline)]
     ordinary_deadline::run();
+    #[cfg(jnox_ordinary_prop)]
+    ordinary_proportional::run();
+    #[cfg(jnox_ordinary_mutex)]
+    ordinary_mutex::run();
+    #[cfg(jnox_rust_amc)]
+    ordinary_amc::run();
     #[cfg(jnox_weighted)]
     weighted::run();
     #[cfg(jnox_groups)]
@@ -209,11 +231,11 @@ extern "C" fn kernel_main() -> ! {
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_ordinary_reservation, jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+    #[cfg(not(any(jnox_ordinary_reservation, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_ordinary_reservation, jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+#[cfg(not(any(jnox_ordinary_reservation, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

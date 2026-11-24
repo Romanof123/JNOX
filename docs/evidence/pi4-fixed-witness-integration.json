@@ -1,0 +1,192 @@
+{
+  "tested_commit": "aa691462c52bcad40a2b17077bd48e9ddfb9bd09",
+  "tested_tree": "6464b3bd13760f13b6d172ab32f6847a33765a6e",
+  "ordinary_comparison": "fb7d9429e00a3a41797dac7ac85f5e5a68602915",
+  "producer_comparison": "c388505e576f3019966ae2c74215767097c6fc18",
+  "archive": "pi4-fixed-witness-integration.zip",
+  "archive_sha256": "2fbb927adc507106ecd71b1e6c7505200b0bd9f0c220e26ac89af11358f554db",
+  "archive_bytes": 2161158,
+  "indexed_paths": 480,
+  "unique_objects": 312,
+  "first_boots": {
+    "fifo-normal": {
+      "profile": "pi4-fixed-fifo",
+      "image_id": null,
+      "elf_sha256": "765096aa5487424f9bb4fdebb6bc6f06acae6479b40f4bdb031b3fdcbb2e77e8",
+      "image_sha256": "28024395205b3c8a96d52323e937a3e46c9f03aab96fab81bf21e4b9af7d3118",
+      "text_sha256": "143a506f416f3b5f9620e4a2d945819aab69827f9684f91474263375bf9bedcc",
+      "loads": [
+        [
+          1,
+          5,
+          65536,
+          524288,
+          524288,
+          15024,
+          15024,
+          65536,
+          "9a8274f36c6f83565666e59b29c436f4f2423be5e698c918b7703e6e3c5137b9"
+        ],
+        [
+          1,
+          6,
+          81920,
+          540672,
+          540672,
+          288,
+          98672,
+          65536,
+          "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+        ]
+      ],
+      "core0_irq": 2,
+      "core0_svc": 7,
+      "other_cpu_exceptions": 0,
+      "selected_el1_erets": 10,
+      "final_lf_seconds": 0.6658029700000156,
+      "quiet_seconds": 1.0111960599999748,
+      "uart_sha256": "27b7fd073a1169532eedc29242273597da093866d031ac4c4d00fdc6c008f15f",
+      "exceptions_sha256": "840fd17e3bb8e6f092241962e73ab19c72e15af93dd0271ffe9cdd3d8521d542",
+      "capture_index": "integrated/fifo-normal/first/verified.json"
+    },
+    "rr-normal": {
+      "profile": "pi4-fixed-rr",
+      "image_id": null,
+      "elf_sha256": "5dfc082b90238b2391b873901ac864b96b08f900d713bb748023ad7f86b29bc8",
+      "image_sha256": "69db6275a2f6b2dbab0893e92495ce4d6bd3a7480027b1b16ddd5acf9c64beee",
+      "text_sha256": "6a89bfbe0e24e3c12136d332770c843fe290a5be1ff2ac6769aef333ee8b3b4e",
+      "loads": [
+        [
+          1,
+          5,
+          65536,
+          524288,
+          524288,
+          14832,
+          14832,
+          65536,
+          "3eac10c2029f15d9059b42e4768bdd8d55d9abb8a27944f38a36429b0d9e829c"
+        ],
+        [
+          1,
+          6,
+          81920,
+          540672,
+          540672,
+          288,
+          98672,
+          65536,
+          "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+        ]
+      ],
+      "core0_irq": 3,
+      "core0_svc": 3,
+      "other_cpu_exceptions": 0,
+      "selected_el1_erets": 7,
+      "final_lf_seconds": 0.5996272190000127,
+      "quiet_seconds": 1.0099764120000145,
+      "uart_sha256": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+      "exceptions_sha256": "d49284001fb074f17fba33ac88b7eb0b6c239c1924849a101a56a00f061fe013",
+      "capture_index": "integrated/rr-normal/first/verified.json"
+    },
+    "fifo-eng": {
+      "profile": "pi4-fixed-fifo-witness",
+      "image_id": 63001,
+      "elf_sha256": "3121024d278cfe84d0e32ffed6a8172f5dfd5aeef8c6431cfc246c1a2b3be87a",
+      "image_sha256": "a1c84352e8e022fa969375097bc6fbc8e64ceda8ca2f2ad75bb901e8979fa91e",
+      "text_sha256": "1daf7e30cee6016a6520209cdbf27db9d1936551c1450250683c780dcbb54cdc",
+      "loads": [
+        [
+          1,
+          5,
+          65536,
+          524288,
+          524288,
+          19080,
+          19080,
+          65536,
+          "dea8a0c74cba8a29a1aa7a25a1e054fae6ba479c0b13e7c00f5f4075704b4081"
+        ],
+        [
+          1,
+          6,
+          86016,
+          544768,
+          544768,
+          288,
+          118240,
+          65536,
+          "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+        ]
+      ],
+      "core0_irq": 2,
+      "core0_svc": 7,
+      "other_cpu_exceptions": 0,
+      "selected_el1_erets": 10,
+      "final_lf_seconds": 0.6156024310000134,
+      "quiet_seconds": 1.0099053639999624,
+      "uart_sha256": "166fb38555ff4750ee0cc4c0bd2b01738afe390fb3d9cc653958f5c48bd498c2",
+      "exceptions_sha256": "d0242f540d743d330c772aa425cd6fba1bacd0c51d0ebaf547a4393aba8df65b",
+      "capture_index": "integrated/fifo-eng/first/verified.json"
+    },
+    "rr-eng": {
+      "profile": "pi4-fixed-rr-witness",
+      "image_id": 63002,
+      "elf_sha256": "86cdfe549a6c15e823a71f53a25966d0e4139ec72d8dca415635f912f5052ce7",
+      "image_sha256": "f7cbb3dda3a279cfda0e4f3f6fc7b3f19620152909f69323527db75e922b4a36",
+      "text_sha256": "a969d4b455e1f3855fa6340a8c88843238c42811c6db1756ed5de1dd9ad41a60",
+      "loads": [
+        [
+          1,
+          5,
+          65536,
+          524288,
+          524288,
+          18933,
+          18933,
+          65536,
+          "3f17b7bd373b75536373d69622c19c648d36b03a5e2ca96892ff99a698da40e7"
+        ],
+        [
+          1,
+          6,
+          86016,
+          544768,
+          544768,
+          288,
+          118240,
+          65536,
+          "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+        ]
+      ],
+      "core0_irq": 3,
+      "core0_svc": 3,
+      "other_cpu_exceptions": 0,
+      "selected_el1_erets": 7,
+      "final_lf_seconds": 0.5614658200000235,
+      "quiet_seconds": 1.0099098669999762,
+      "uart_sha256": "2354712bcc0734a4a7065a1e28e432d6535dd1cc21b3cbb0b4cc7d895a863aa2",
+      "exceptions_sha256": "ebb42a57a5c24e0628b6c1b36a84ab1169afe32de46414c09ddc1358c8c19d1f",
+      "capture_index": "integrated/rr-eng/first/verified.json"
+    }
+  },
+  "archived_engineering_decoder_exit": {
+    "fifo": 0,
+    "rr": 0
+  },
+  "fresh_engineering_decoder_exit": {
+    "fifo": 0,
+    "rr": 2
+  },
+  "ordinary_changed_raw_offsets": {
+    "fifo": [
+      "0x3800",
+      "0x3818"
+    ],
+    "rr": [
+      "0x3740",
+      "0x3758"
+    ]
+  },
+  "archive_notes": "index.json binds every published path to a verified object. Path-normalized records additionally identify the immutable original by SHA-256. Complete UART, exception/TB traces, firmware packages and ELF bytes are included. The local original capture directories are integrated/<arm>/first and the native user-owned ext4 capture mirror. Build targets and tool binaries are not distributed; compiler and QEMU identities are in provenance/REPORT.md."
+}

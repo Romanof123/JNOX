@@ -1,9 +1,20 @@
 """Check linked task work and ordering constraints independently of scheduler internals."""
 
+if __package__:
+    from .pi4_transcript import Matcher
+else:
+    from pi4_transcript import Matcher
+
 MAX_BYTES = 512
 
 
 def validate(data, prefix, board=b"M1"):
+    if board == b"PI4":
+        name = {b"FIXED FIFO": "pi4-fixed-fifo", b"FIXED RR": "pi4-fixed-rr"}.get(prefix)
+        if name is None:
+            return False
+        matcher = Matcher(name)
+        return matcher.feed(data) and matcher.variant is not None
     lines = data.split(b"\n")
     if lines[:2] != [b"JNOX " + board + b" BOOT", b"JNOX " + board + b" READY"] or lines[-1:] != [b""]:
         return False

@@ -19,7 +19,7 @@ The verification team reviews the acceptance criteria against the product plan a
 | `VER-011` | `REQ-011`, `REQ-021` | Check permissions, queues, handles, and quotas for each domain. Under invalid requests and overload, confirm that safety queues, memory use, and processing time stay within their reserved limits. Inspect the Linux ABI process launch manifest. Exhaust its CPU, memory and file descriptor limits separately and record each enforcement outcome and preservation of safety-task reservations. |
 | `VER-012` | `REQ-012` | Check upstream and downstream requirement links in both directions and look for orphan nodes. For each changed requirement or assumption, review the impact analysis and the tests that were rerun. |
 | `VER-013` | `REQ-013` | Review the actual assumptions of use, single-fault and dependent-failure analyses, physical hardware results, tool confidence, coverage, residual risks, configuration hashes, and independent review records. |
-| `VER-014` | `REQ-014` | Verify normal operation and error behavior for the approved API list. Measure whether safe operation and the ability to interpret evidence are preserved when logging saturates. |
+| `VER-014` | `REQ-014` | Verify normal operation and error behavior for the approved API list. Measure whether safe operation and the ability to interpret evidence are preserved when logging saturates. Record each target-side function and option verdict against the [POSIX 0.1 matrix](posix-profile.en.md). |
 | `VER-015` | `REQ-015` | Check requests, IRQs, and error handling for a native Rust driver such as a virtual UART driver. On a supported physical device, verify DMA buffer reclamation and access blocking, restart after termination, and the independent operation of other services. |
 | `VER-016` | `REQ-016` | An independent reviewer compares the build configuration, dependencies, and final link to confirm that the kernel build excludes `std`. Check the inventory and invariants of `unsafe` code, compiler target, host, options and library scope, build reproducibility, and conditions that trigger a change review. |
 | `VER-017` | `REQ-017` | Conduct a vulnerability-response exercise from intake through impact assessment, response, and notification. Review the security patch's safety impact analysis, reverification status, SBOMs before and after the patch, signatures and provenance, and approved rollback or recovery material. |
@@ -125,5 +125,35 @@ Single-core virtual evidence for VER-002/005/023. [EVD-048](evidence/evd-048.en.
 Finite weighted service and wakeup observations for VER-002/005/023. [EVD-049](evidence/evd-049.en.md)
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. All four delayed virtual timer notifications exceeded the original 1 ms envelope at injection and recovered to the specified window. No unrelated edge exceeded the limit. Live worker masking remains unverified. [EVD-044 · delayed notice](evidence/evd-044-notice.en.md) [EVD-044 v2](evidence/evd-044-v2.en.md)
+
+POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
+
+VER-002/005/023 · Twenty-two of 24 boots inhibited. Two descriptor DM boots accepted seven permits each and stayed OFF. Healthy sequences: 0/24. [EVD-051](evidence/evd-051.en.md)
+
+CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
+IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journals. None of six integrated control boots qualified operationally. [EVD-052](evidence/evd-052.en.md)
+
+CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
+IMP-054 · VER-002/003/005. Operational qualification was 0/20. Four deterministic OFF runs accepted 28 permits and remained OFF. [EVD-054](evidence/evd-054.en.md)
+
+CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
+
+IMP-055 · VER-002/005/023. Three first boots replayed both seeds and C’s stride join. Two diagnostic cases remain unexecuted. [EVD-055](evidence/evd-055.en.md)
+
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
+
+CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
+
+CHG-067 · [Ordinary Rust mutex workload and batch ownership criteria](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
+
+CHG-061 · [OFF-only comparison collector and synthetic controls](permit-observer-cost-plan.md) · VER-002/003/005/023
+
+[CHG-069 · 16 OFF-only launches and eight paired comparisons](evidence/permit-observer-cost-v3.en.md)
+
+IMP-056 / VER-002/005/008/023. Two cold boots each recorded two CPU0→CPU1 SGIs, receiver completion, and return to interrupted pinned background work. [EVD-056](evidence/evd-056.en.md)
 
 IMP-053 · VER-002/005/023. One of eight normal v2 boots completed, both refusals succeeded, and none of eight matched v1 normal boots completed. Only saturated CBS with tracing reached the horizon. No wake case delivered B service (0/4). No v2 late fixture ran. The full profile remains unqualified. [EVD-053](evidence/evd-053.en.md)

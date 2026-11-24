@@ -45,6 +45,8 @@ pub(super) struct Event {
     pub argument: u64,
     pub result: u64,
     pub pre_ctl: u64,
+    #[cfg(jnox_pi4_witness)]
+    pub pre_cval: u64,
 }
 
 fn frame_words(frame: *mut Frame) -> [u64; 3] {
@@ -67,6 +69,8 @@ pub(super) fn publish(event: Event, state: &Runtime, next: *mut Frame, due: Opti
         if count >= LIMIT as u64 {
             let dropped = ptr::read_volatile(&raw const (*trace).overflow);
             ptr::write_volatile(&raw mut (*trace).overflow, dropped.saturating_add(1));
+            #[cfg(jnox_pi4_witness)]
+            witness::invalidate();
             return;
         }
         let [ifp, ipc, isp] = frame_words(event.incoming);
@@ -102,5 +106,16 @@ pub(super) fn publish(event: Event, state: &Runtime, next: *mut Frame, due: Opti
         ptr::write_volatile(&raw mut (*trace).rows[count as usize], row);
         asm!("dmb sy", options(nostack, preserves_flags));
         ptr::write_volatile(&raw mut (*trace).count, count + 1);
+        #[cfg(jnox_pi4_witness)]
+        witness::selected(count as usize, event.pre_cval);
     }
+}
+
+#[cfg(jnox_pi4_witness)]
+pub(super) fn status() -> (u64,u64) {
+    unsafe { (fixed_runtime_trace.count, fixed_runtime_trace.overflow) }
+}
+#[cfg(jnox_pi4_witness)]
+pub(super) fn row(i:usize) -> [u64;19] {
+    unsafe { fixed_runtime_trace.rows[i] }
 }

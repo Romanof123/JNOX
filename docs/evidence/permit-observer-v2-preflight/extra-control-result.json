@@ -1,0 +1,9 @@
+{
+  "expected": "reject extra content",
+  "actual": "accepted",
+  "published": [
+    "extra-unmanifested",
+    "raw",
+    "retained-manifest.json"
+  ]
+}

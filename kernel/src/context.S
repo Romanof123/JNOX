@@ -127,7 +127,19 @@ sched_vectors:
     b sched_start_frame
 .endm
 
+.macro partition_stamp address
+    stp x0, x1, [sp, #-16]!
+    isb
+    mrs x0, cntpct_el0
+    adrp x1, \address
+    str x0, [x1, :lo12:\address]
+    ldp x0, x1, [sp], #16
+.endm
+
 .Lirq:
+    .ifdef JNOX_ORDINARY_PARTITION
+    partition_stamp ordinary_entry_stamp
+    .endif
     handle {irq}
 .Lsync:
     handle {svc}
@@ -138,6 +150,33 @@ sched_start_frame:
     // The Rust callback has returned: its temporary borrows and stack
     // frame are gone. Change SP under the hardware exception masks.
     mov sp, x0
+    .ifdef JNOX_MUTEX_STAGES
+    // Only the designated return of the separate characterization image.
+    adrp x9, jnox_mutex_anchor
+    add x9, x9, :lo12:jnox_mutex_anchor
+    ldr x10, [x9]
+    cmp x10, #3
+    b.ne .Lmutex_entry_done
+    ldr x10, [x9, #144]
+    tbnz x10, #6, .Lmutex_entry_done
+    mov x11, sp
+    ldr x12, [x9, #24]
+    cmp x11, x12
+    b.ne .Lunexpected
+    isb
+    mrs x11, cntpct_el0
+    str x11, [x9, #128]
+    orr x10, x10, #64
+    str x10, [x9, #144]
+.Lmutex_entry_done:
+    .endif
+    .ifdef JNOX_CONTROL_MARKERS
+    isb
+    mrs x10, cntpct_el0
+    adrp x9, control_restore_samples
+    add x9, x9, :lo12:control_restore_samples
+    str x10, [x9]
+    .endif
     ldp x9, x10, [sp, #{elr}]
     msr elr_el1, x9
     msr spsr_el1, x10
@@ -181,9 +220,50 @@ sched_start_frame:
     adrp x10, weighted_restore_counter
     str x9, [x10, :lo12:weighted_restore_counter]
     .endif
+    .ifdef JNOX_CONTROL_MARKERS
+    adrp x9, control_restore_samples
+    add x9, x9, :lo12:control_restore_samples
+    mrs x10, elr_el1
+    str x10, [x9, #16]
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, #8]
+    .endif
+    .ifdef JNOX_PERMIT
+    adrp x9, jnox_permit_returns
+    add x9, x9, :lo12:jnox_permit_returns
+    ldr x10, [x9]
+    cmp x10, #128
+    b.hs .Lunexpected
+    add x11, x10, #1
+    str x11, [x9], #8
+    mov x11, #24
+    madd x9, x10, x11, x9
+    mov x10, sp
+    mrs x11, elr_el1
+    stp x10, x11, [x9]
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, #16]
+    .endif
+    .ifdef JNOX_PI4_MIG
+    mrs x9, mpidr_el1
+    and x9, x9, #1
+    adrp x10, pi4_migration_return_ticks
+    add x10, x10, :lo12:pi4_migration_return_ticks
+    isb
+    mrs x11, cntpct_el0
+    str x11, [x10, x9, lsl #3]
+    .endif
     integer_pairs ldp
     ldr x30, [sp, #240]
     add sp, sp, #{frame_size}
     clrex
+    .ifdef JNOX_ORDINARY_PARTITION
+    partition_stamp ordinary_return_stamp
+    .endif
+    .ifdef JNOX_MUTEX_RETURN
+    mutex_final_return
+    .endif
     eret
 .size sched_start_frame, . - sched_start_frame

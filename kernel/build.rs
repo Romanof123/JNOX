@@ -10,6 +10,7 @@ fn selector(key: &str) -> Option<String> {
 }
 
 fn main() {
+    validate_architecture();
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
     println!("cargo::rustc-check-cfg=cfg(jnox_batch_trace)");
@@ -37,11 +38,48 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_case, values("handoff-healthy", "handoff-loss", "healthy", "loss", "late", "demand", "worst", "tie", "early-command", "expired-command", "no-command", "missing-permit", "invalid", "silence", "saturation", "recovery", "old-generation"))"#);
     let scenario = selector("JNOX_CONTROL_CASE");
     println!("cargo::rustc-check-cfg=cfg(jnox_control_cold)");
-    if let Some(mode) = selector("JNOX_CONTROL_COLD") {
+    let cold = selector("JNOX_CONTROL_COLD");
+    if let Some(mode) = cold.as_deref() {
         assert!(mode == "diagnostic" && profile.as_deref() == Some("periodic")
             && scenario.as_deref() == Some("healthy"),
             "JNOX_CONTROL_COLD requires diagnostic, periodic and explicit healthy");
         println!("cargo::rustc-cfg=jnox_control_cold");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_control_descriptor)");
+    let descriptor = selector("JNOX_CONTROL_DESCRIPTOR");
+    let markers = selector("JNOX_CONTROL_MARKERS");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_phase)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_anchor)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_off)");
+    let permit_arm=selector("JNOX_PERMIT_PHASE");
+    if let Some(mode)=selector("JNOX_PERMIT_PHASE_MODE") {
+        assert!(mode=="characterize-off" && permit_arm.is_some(),"JNOX_PERMIT_PHASE_MODE requires characterize-off and an A1/A2 arm");
+        println!("cargo::rustc-cfg=jnox_permit_off");
+    }
+    if let Some(arm)=permit_arm {
+        assert!(descriptor.as_deref()==Some("1") && matches!(arm.as_str(),"nominal"|"anchor"),
+            "JNOX_PERMIT_PHASE requires nominal or anchor and JNOX_CONTROL_DESCRIPTOR=1");
+        println!("cargo::rustc-cfg=jnox_permit_phase");
+        if arm=="anchor" {println!("cargo::rustc-cfg=jnox_permit_anchor")}
+    }
+    if let Some(value) = descriptor.as_deref() {
+        assert!(value == "1" && profile.as_deref() == Some("periodic")
+            && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
+            && scenario.as_deref() == Some("healthy"),
+            "JNOX_CONTROL_DESCRIPTOR=1 requires ordinary periodic healthy RM or DM");
+        assert!(cold.is_none() && markers.is_none(),
+            "control descriptor, cold and marker comparison arms must be built separately");
+        println!("cargo::rustc-cfg=jnox_control_descriptor");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_control_markers)");
+    if let Some(value) = markers.as_deref() {
+        assert!(descriptor.is_none() && cold.is_none(),
+            "control marker, descriptor and cold comparison arms must be built separately");
+        assert!(value == "1" && profile.as_deref() == Some("periodic")
+            && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
+            && scenario.as_deref() == Some("healthy"),
+            "JNOX_CONTROL_MARKERS=1 requires ordinary healthy periodic control-rm or control-dm");
+        println!("cargo::rustc-cfg=jnox_control_markers");
     }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
@@ -60,7 +98,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
     // variables for enabled features and rebuilds the script for a new set.
-    let bench = [
+    let legacy_bench = [
         ("COOP", "coop"),
         ("BATCH", "batch"),
         ("DEADLINE", "deadline"),
@@ -92,14 +130,74 @@ fn main() {
     println!(
         r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "proportional", "vruntime", "eevdf", "eevdf_wake", "eevdf_dynamic", "hierarchy", "power", "extension", "aperiodic", "deadline", "batch", "coop", "priority_resume", "periodic_overrun", "cbs_wake"))"#
     );
-    println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     let board = match env::var("JNOX_BOARD") {
         Ok(board) => board,
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
+    let table_p = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_P").is_some();
+    let table_q = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_Q").is_some();
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_partition)");
+    // Ordinary table selectors take effect only when no legacy bench owns the vectors.
+    let bench = if legacy_bench == "boot" && (table_p || table_q) {
+        assert!(table_p != table_q, "select exactly one ordinary partition table");
+        assert!(board == "virt" && profile.is_none() && app.is_none(),
+            "ordinary partition requires virt with JNOX_PROFILE and JNOX_APP unset");
+        println!("cargo::rustc-cfg=jnox_ordinary_partition");
+        "partition"
+    } else {
+        legacy_bench
+    };
+    // The winning backend owns its selector validation. A shadowed partition
+    // feature cannot select diagnostic code or reject a higher-ranked bench.
+    if bench == "partition" && env::var_os("CARGO_FEATURE_PARTITION_LEGACY_DIAG").is_some() {
+        let allowed = ["CARGO_FEATURE_PARTITION_BENCH", "CARGO_FEATURE_PARTITION_LEGACY_DIAG",
+                       "CARGO_FEATURE_PARTITION_LEGACY_DIAG_NEGATIVE"];
+        assert!(board == "virt" && profile.is_none() && app.is_none()
+            && env::vars_os().filter_map(|(key, _)| key.into_string().ok())
+                .filter(|key| key.starts_with("CARGO_FEATURE_")).all(|key| allowed.contains(&key.as_str())),
+            "legacy partition diagnostic requires standalone virt assembly partition fixture");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice_long)");
+    if let Some(mode) = selector("JNOX_PARTITION_NOTICE") {
+        assert!(legacy_bench == "boot" && bench == "partition" && table_p != table_q,
+            "JNOX_PARTITION_NOTICE requires an effective ordinary partition P or Q on virt");
+        assert!(matches!(mode.as_str(), "short" | "long"),
+            "JNOX_PARTITION_NOTICE must be short or long");
+        println!("cargo::rustc-cfg=jnox_partition_notice");
+        if mode == "long" {
+            println!("cargo::rustc-cfg=jnox_partition_notice_long");
+        }
+    }
+    println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_pi4_witness)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_rr_handoff)");
+    let handoff = selector("JNOX_RR_HANDOFF");
+    let witness = selector("JNOX_PI4_WITNESS");
+    let image_id = selector("JNOX_PI4_WITNESS_ID");
+    if let Some(value) = handoff {
+        assert!(value == "1" && witness.as_deref() == Some("1") && app.as_deref() == Some("fixed-rr")
+            && env::var("TARGET").as_deref() == Ok("aarch64-unknown-none")
+            && selector("JNOX_ARCH").as_deref().unwrap_or("aarch64") == "aarch64",
+            "JNOX_RR_HANDOFF=1 requires the AArch64 Pi 4 fixed RR witness");
+        println!("cargo::rustc-cfg=jnox_rr_handoff");
+    }
+    if let Some(mode) = witness {
+        assert!(mode == "1" && board == "pi4" && bench == "boot"
+            && profile.as_deref() == Some("fixed") && trace.is_none()
+            && matches!(app.as_deref(), Some("fixed-fifo" | "fixed-rr"))
+            && env::vars_os().all(|(k,_)| !k.to_string_lossy().starts_with("CARGO_FEATURE_")),
+            "JNOX_PI4_WITNESS=1 requires pi4 fixed FIFO/RR without features, cost or trace");
+        let id = image_id.as_deref().and_then(|s| s.parse::<u64>().ok()).filter(|&v| v != 0)
+            .expect("provide a nonzero decimal JNOX_PI4_WITNESS_ID for the capture manifest");
+        println!("cargo::rustc-env=PI4_WITNESS_ID={id}");
+        println!("cargo::rustc-cfg=jnox_pi4_witness");
+    } else {
+        assert!(image_id.is_none(), "JNOX_PI4_WITNESS_ID requires JNOX_PI4_WITNESS=1");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_cost)");
     if let Some(value) = selector("JNOX_FIXED_COST") {
         assert!(value == "1" && board == "virt" && profile.as_deref() == Some("fixed")
@@ -139,7 +237,70 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_reservation)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_policy, values("aligned", "cbs"))"#);
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_case, values("wake", "saturated", "refused", "late"))"#);
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
+    println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_anchor)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_return)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_stages)");
+    if let Some(anchor) = selector("JNOX_MUTEX_ANCHOR") {
+        assert!(profile.as_deref() == Some("mutex") && board == "virt" && bench == "boot"
+            && matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling"))
+            && trace.is_none() && scenario.is_none(),
+            "JNOX_MUTEX_ANCHOR requires the ordinary virt mutex PI or ceiling app");
+        match anchor.as_str() {
+            "rust-prepared" => {},
+            "rust-stages" => println!("cargo::rustc-cfg=jnox_mutex_stages"),
+            "selected-return" => println!("cargo::rustc-cfg=jnox_mutex_return"),
+            _ => panic!("JNOX_MUTEX_ANCHOR requires rust-prepared, rust-stages or selected-return"),
+        }
+        println!("cargo::rustc-cfg=jnox_mutex_anchor");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_rust_amc)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_pi4_migration)");
     match profile.as_deref() {
+        Some("amc") => {
+            let name = app.as_deref().unwrap_or("");
+            assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none()
+                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_"))
+                && matches!(name, "exact-lo" | "exact-hi" | "over-hi"),
+                "ordinary AMC requires virt, exact-lo/exact-hi/over-hi and no benchmark features");
+            println!("cargo::rustc-cfg=jnox_rust_amc");
+            println!("cargo::rustc-env=JNOX_AMC_APP={name}");
+        }
+        Some("smp") => {
+            let selected = app.as_deref().unwrap_or("");
+            assert!(board == "pi4" && matches!(selected, "directed-wake" | "migration-global" | "migration-partitioned" | "migration-clustered")
+                && bench == "boot" && trace.is_none() && scenario.is_none()
+                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                "directed-wake requires Pi 4, smp profile and no other benchmark or runtime selector");
+            println!("cargo::rustc-cfg=jnox_pi4_smp");
+            if selected != "directed-wake" {
+                println!("cargo::rustc-cfg=jnox_pi4_migration");
+                println!("cargo::rustc-env=JNOX_MIGRATION_APP={selected}");
+            }
+        }
+        Some("mutex") => {
+            assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),
+                "ordinary mutex requires virt, no benchmark, trace or control case");
+            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling")),
+                "ordinary mutex requires ordinary-pi or ordinary-ceiling");
+            println!("cargo::rustc-cfg=jnox_ordinary_mutex");
+            if app.as_deref() == Some("ordinary-ceiling") {
+                println!("cargo::rustc-cfg=jnox_mutex_ceiling");
+            }
+        }
+        Some("proportional") => {
+            assert!(scenario.is_none(), "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional");
+            assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");
+            let case = app.as_deref().unwrap_or("");
+            assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"),
+                    "ordinary proportional requires an explicit lottery, stride or diagnostic app");
+            println!("cargo::rustc-cfg=jnox_ordinary_prop");
+            println!("cargo::rustc-cfg=jnox_prop_case=\"{case}\"");
+        }
         Some("reservation") => {
             assert!(board == "virt" && bench == "boot", "reservation requires virt without benchmark features");
             let (policy, case) = app.as_deref().and_then(|name| name.split_once('-'))
@@ -246,7 +407,8 @@ fn main() {
                 env::vars_os()
                     .filter_map(|(key, _)| key.into_string().ok())
                     .filter(|key| key.starts_with("CARGO_FEATURE_"))
-                    .all(|key| key == "CARGO_FEATURE_SCHED_BENCH"),
+                    .all(|key| matches!(key.as_str(), "CARGO_FEATURE_SCHED_BENCH"
+                        | "CARGO_FEATURE_ORDINARY_PARTITION_P" | "CARGO_FEATURE_ORDINARY_PARTITION_Q")),
                 "JNOX_BOARD=pi4 supports serial boot, sched-bench, or uninstrumented fixed FIFO/RR"
             );
             println!("cargo::rustc-cfg=jnox_pi4");
@@ -259,4 +421,16 @@ fn main() {
         "cargo::rustc-link-arg=-T{}/{script}",
         env!("CARGO_MANIFEST_DIR")
     );
+}
+
+fn validate_architecture() {
+    const TARGET: &str = include_str!("../arch/aarch64/target");
+    if let Some(arch) = selector("JNOX_ARCH") {
+        assert!(arch == "aarch64", "unsupported JNOX_ARCH {arch:?}; expected aarch64");
+    }
+    // Cargo always supplies TARGET. Standalone selector checks can omit it.
+    if let Some(target) = selector("TARGET") {
+        let expected = TARGET.trim_end();
+        assert!(target == expected, "aarch64 requires TARGET={expected}, got {target:?}");
+    }
 }

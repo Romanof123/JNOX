@@ -53,6 +53,8 @@ Linux는 호환 드라이버가 설치된 독립 실행 영역으로 구동한�
 
 ## DES-005 사용자 서비스와 앱 API
 
+네이티브 SDK 프로파일은 소스 인터페이스, 오류 규칙과 타깃 인수 조건을 Linux 실행 파일 ABI와 구분해 정의한다. [POSIX 소스 프로파일 0.1](posix-profile.md)
+
 네이티브 API의 중심은 동기 요청·응답, 제한 큐, 알림과 공유 메모리다. 사용자 라이브러리가 `pthread`의 선정 범위, 단조 시계, `socket`·`poll` 계열 API를 제공한다. 네트워크 서비스는 사용자 프로세스나 Linux 도메인에 둔다. `AF_UNIX`, IPv4/IPv6의 TCP·UDP, 다중 클라이언트, 논블로킹 I/O와 준비 통지를 단계별로 제공한다. 선택한 POSIX 범위 밖은 API 매트릭스에 표시한다. 파일시스템 확장, 동적 링크, TLS와 패키지는 확장 구성에서 필요성을 검토한다.
 
 네이티브 Rust는 J-NOX SDK의 기본 사용자 앱 타깃이다. 커널과 사용자 앱은 별도 ELF로 링크한다. SDK는 버전이 명시된 타깃·링커 설정, 사용자 시작·종료 코드, `core`와 안전한 사용자 API 크레이트를 제공한다. 첫 AArch64 정적 프로파일은 힙 없이 인수·파일·표준 입출력을 처리한다. 시스템 호출 래퍼는 버전이 명시된 J-NOX ABI를 사용한다. `alloc`은 사용자 할당기, `std`는 표준 라이브러리의 OS 지원을 갖춘 뒤 별도 시험한다.
@@ -175,5 +177,17 @@ CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 �
 POL-011 · CHG-052 · IMP-049. 두 일반 Rust 진입점이 예외 복귀 ABI와 가중 가상시간 스케줄러를 공유한다. [승인된 작업 계획](ordinary-vruntime-plan.md)과 [빌드·캡처·재생 방법](ordinary-weighted.md)을 참조한다. VER-002/005/023 · [EVD-049](evidence/evd-049.md).
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+CHG-046 / IMP-044는 DES-003/012에 따라 virt 단일 CPU에서 일반 Rust A/B 작업과 전용 유휴 스택을 구현한다. POL-006과 REQ-002/005/023은 부분 구현 상태이며  [기록 형식 및 빌드](ordinary-partition-capture.md)
+
+POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에서 1 ms를 충족했다. v1은 P 9/10, Q 11/12 경계가 초과했고 Q가 준비된 B 구간을 건너뛰었다. 가상 타이머 통지를 지연한 네 콜드 실행은 주입 경계에서 원래 1 ms 기준에 실패하고 지정된 창으로 복구했다. 그 밖의 지연 초과는 없었다. 실제 작업 마스킹은 미검증이다. [EVD-044 · 통지 지연](evidence/evd-044-notice.md) [EVD-044 v2](evidence/evd-044-v2.md)
+
+POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 번의 콜드 부팅에서 IRQ 6회 후 PASS에 도달했다. 의도적 음성 대조군은 첫 A 마커에서 조건 99, 실제값 0, 기대값 1을 기록했다. 기존 PART FAIL의 원인은 미확정이다. [EVD-047](evidence/evd-047.md)
+
+CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
+
+CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
+
+[DES-004 커널 아키텍처 선택](../arch/README.ko.md)
 
 IMP-053 · VER-002/005/023. v2는 정상 1/8, 거절 2/2, 비교 v1 정상 0/8이었다. CBS 포화 추적 1회만 완료했고 W 네 건 모두 B 실행권이 없었다. v2 지연 실행과 제품 적격 판정은 없다. [EVD-053](evidence/evd-053.md)

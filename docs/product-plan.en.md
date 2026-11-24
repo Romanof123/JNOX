@@ -12,6 +12,8 @@ The product scope includes time sharing, deadline-driven scheduling, cyclic tabl
 
 Allocate product capabilities by profile and track each acceptance criterion alongside its current evidence. The catalog records the platform baseline and additional proposals awaiting an adoption decision. [Platform capability baseline](platform-capabilities.en.md)
 
+CHG-077 assigns the next service decisions to the product owner, systems, functional safety and verification teams. The headless AArch64 reference anchors the clock and file-service plans. A product can add windowing once the underlying services are available. [Platform checklist](platform-checklist.en.md) · [Product decisions](https://github.com/Romanof123/JNOX/issues/162)
+
 Safety tasks will be able to select a safety IPC channel for control data received from another task or through a Linux gateway. The first use case is a virtual output permit. When the last accepted permit expires, the receiver inhibits the output independently. [Safety IPC requirement](requirements.en.md)
 
 In `ADR-001`, the functional safety team fixed the criteria for disabling a virtual output when a permit signal is lost on the first software bench. These criteria are design inputs for the first control task and its tests. For a product application, the functional safety and systems teams will derive the safe state and time limits from operating conditions and hazard analysis. [First bench decision](safety-parameters.en.md)

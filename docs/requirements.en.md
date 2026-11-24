@@ -19,7 +19,7 @@ Each row is a candidate requirement awaiting approval. Safety analysis or board 
 | `REQ-011` Least privilege and resource limits | `OBJ-002`, `THR-001`, `THR-003` | Declare permissions and resource limits for every service, device, socket, and script. Invalid requests and overload must preserve access controls and leave the safety domain's resources available. | `DES-001`, `DES-002`, `DES-005`, `DES-007`, `DES-011` · `VER-011` |
 | `REQ-012` Development and verification traceability | `OBJ-007` | For every requirement that applies to a release candidate, link its source, design, implementation, tests, evidence, and approval status. Evidence affected by a change can support acceptance of the new baseline once the reverification results or the rationale for reusing that evidence have been approved. | `DES-008` · `VER-012` |
 | `REQ-013` Safety configuration suitability | `OBJ-001`, `OBJ-007`, `HAZ-004` | Make the safety manual, assumptions of use, exact hardware, compiler, boot, code and configuration versions, independent verification results, and residual risks available for review. | `DES-006`, `DES-008` · `VER-013` |
-| `REQ-014` Development and observability APIs | `OBJ-006`, `OBJ-004` | Define the versions, errors, and supported configurations for the selected POSIX APIs and native IPC. Provide bounded diagnostic logging and platform timing instrumentation. Measure their overhead. | `DES-005`, `DES-006` · `VER-014` |
+| `REQ-014` Development and observability APIs | `OBJ-006`, `OBJ-004` | Define the versions, errors, and supported configurations for the selected POSIX APIs and native IPC. Provide bounded diagnostic logging and platform timing instrumentation. Measure their overhead. [Planned POSIX source profile 0.1](posix-profile.en.md) | `DES-005`, `DES-006` · `VER-014` |
 | `REQ-015` Native Rust drivers | `OBJ-008`, `HAZ-002`, `THR-001` | An unprivileged Rust service must use the SDK to handle requests and replies, device register access, IRQs, and authorized DMA buffers. Reject unauthorized mappings and requests that predate a restart. Other services must continue to operate. | `DES-009` · `VER-015` |
 | `REQ-016` Rust implementation and toolchain confidence | `OBJ-008`, `OBJ-001`, `THR-002` | Implement the kernel core in `no_std` Rust. Review the locations and preconditions of `unsafe` code, the scope of the libraries, compiler and linker, the pinned versions, and evidence of reproducible builds. | `DES-001`, `DES-008`, `DES-009` · `VER-016` |
 | `REQ-017` Security response and maintenance | `OBJ-002`, `THR-002`, `THR-003` | The security lead must define vulnerability intake, impact assessment, response prioritization, and notification criteria. The release team must verify the SBOM, provenance, and signatures and trace the safety changes and reverification associated with each patch. | `DES-007`, `DES-008` · `VER-017` |
@@ -38,3 +38,11 @@ The footprint targets in `REQ-009` exclude boot firmware, user services, and the
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
+CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
+
+CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)

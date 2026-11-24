@@ -1,0 +1,155 @@
+{
+  "source": "35af0afa6f59153a906a592315722cea3f4df641",
+  "evidence": "EVD-047",
+  "change": "CHG-050",
+  "implementation": "IMP-047",
+  "archive": "evd-047-raw.zip",
+  "archive_sha256": "c370fbd0874a6a7681b122df20ad197c8374e8d45cc4635f6a6a6894a3d38869",
+  "members": {
+    "112-partition-bench/disassembly": "ab9b400588a724a7c0f7e607f95d8d01674711e71fb9bca3a9f775ed6c1e42b6",
+    "112-partition-bench/exceptions.log": "af0e7523768fb79fabd96f4b89d94bfe9a7556cbc42adc92e5245e51ceec5c81",
+    "112-partition-bench/execution.json": "d3eea2cd11059336c64a63de83ce51034bfd6322c8e2311b26fd122e9fb512d0",
+    "112-partition-bench/kernel.elf": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+    "112-partition-bench/stderr": "f1577032d37de9f4b3e193d62b7054d22615339889570598797d1c0a1706c629",
+    "112-partition-bench/stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "112-partition-bench/uart": "fa82c4929a2f7d22b3136f33865d2b259dd70b3d216102ae8190155b42b190fd",
+    "112-partition-legacy-diag-negative/disassembly": "d030b1dd96310a49cca972b4380acf72d12f3cdc4025c46f06ceeecd76c7ea24",
+    "112-partition-legacy-diag-negative/exceptions.log": "027df079a40ec37fa02f9fb4e0e352d77c899995a05ceea3578c6ba7712d1ab2",
+    "112-partition-legacy-diag-negative/execution.json": "519c718e2114833654a416700630ddc27137915a2758c0bfe1f50b1cf6fc3f09",
+    "112-partition-legacy-diag-negative/kernel.elf": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+    "112-partition-legacy-diag-negative/stderr": "f1577032d37de9f4b3e193d62b7054d22615339889570598797d1c0a1706c629",
+    "112-partition-legacy-diag-negative/stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "112-partition-legacy-diag-negative/uart": "512f9166cd8b041ad51f4a025aafce44b87cf441e4fd7a294c0e34933296b168",
+    "112-partition-legacy-diag/disassembly": "fe579650b818ba51380726dc174595f47da9d24bbf82ccb4f6fe3b5c205d0e56",
+    "112-partition-legacy-diag/exceptions.log": "5760505d1e667b4da650ad4f1c30210720518bc25095bfc127de5af68ffd5c24",
+    "112-partition-legacy-diag/execution.json": "7e063f92e9c406805607fd6af1c203eaf47dde99a87829372a19ed5b45b2a8e7",
+    "112-partition-legacy-diag/kernel.elf": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+    "112-partition-legacy-diag/stderr": "f1577032d37de9f4b3e193d62b7054d22615339889570598797d1c0a1706c629",
+    "112-partition-legacy-diag/stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "112-partition-legacy-diag/uart": "fa82c4929a2f7d22b3136f33865d2b259dd70b3d216102ae8190155b42b190fd",
+    "build-112.json": "ab48c6c6d2d4148d9659382f00efece498ad9f30a70663ad4fec59065fe22964",
+    "capture.py": "7d617a5209d23ad0878399c49d2ccb583aebb2c563f57ac868bf84a006a83025",
+    "finish.py": "34b6173e0e73f136d3075f9b7d9cbde3446be95800144007274a41796e711df8",
+    "manifest.sha256": "8e3ac74dd37a44cc290b493a96e1354d4a66d28ee9b0e691ce2e1542d29ffcb8",
+    "original-summary.json": "06438ddff14b0e62f14bf05af26d6615c244214c4037afee58633e88b5002da5",
+    "prior-failure/disassembly": "c58611a24e6d21a7a73a8f7f8d83b5453087e149c28b38843d1eb06dbbcc6fa9",
+    "prior-failure/exceptions.log": "dec3500d89d67ea29d73de0562769b900d427bb81f9fa17881462311977f3f74",
+    "prior-failure/execution.json": "2d3e34e17c1afa0039d5e2b6eb767fed4b3df7401c27fbffbb604880a475ecce",
+    "prior-failure/stderr": "84ec66011b95c4129d20982b882799390b956391739d2242b50b4d6613a54ed2",
+    "prior-failure/stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "prior-failure/uart": "f054c07451010252cc8b80ec91606c88752fb85cfa25f4bdb010f9dc31d743fb",
+    "selector-integration-builds/summary.json": "9f4c21a82705f86aee7a97e443840a549867f401ad40d56d13410461570fc1a8",
+    "summary.json": "414d11717f7d6d95fb0f1f66e16f522ec3aeed5e8288a0ce47528a077cf432d6"
+  },
+  "observations": {
+    "partition-bench": {
+      "uart": [
+        "JNOX M1 BOOT",
+        "JNOX M1 READY",
+        "PART A FIRST",
+        "PART IDLE FIRST",
+        "PART B READY",
+        "PART A RESUMED",
+        "PART B FIRST",
+        "PART IDLE RESUMED",
+        "PART STOP",
+        "PART PASS"
+      ],
+      "elf_matches_preselector": true,
+      "elf_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+      "text_sha256": "f139ccdd1fae85c30f4295a026a6ff06a2c0d223ebe0a59ec999de465da24de9",
+      "original_legacy_text_sha256": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+      "original_legacy_text_identical": false,
+      "diag_stop_symbol": false,
+      "irq_count": 6,
+      "return_count": 6,
+      "irq_vector": "0x40200a80",
+      "ppi_identity": "PPI 30 checked by runtime guard 28 on all six IRQs; QEMU trace records IRQ exception class and vector only.",
+      "first_failure": null,
+      "stable_after_terminal": true
+    },
+    "partition-legacy-diag": {
+      "uart": [
+        "JNOX M1 BOOT",
+        "JNOX M1 READY",
+        "PART A FIRST",
+        "PART IDLE FIRST",
+        "PART B READY",
+        "PART A RESUMED",
+        "PART B FIRST",
+        "PART IDLE RESUMED",
+        "PART STOP",
+        "PART PASS"
+      ],
+      "elf_matches_preselector": true,
+      "elf_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+      "text_sha256": "25f177052a7159acbd03de309cc48d05f27f266daf814ad700b416f703c97562",
+      "original_legacy_text_sha256": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+      "original_legacy_text_identical": false,
+      "diag_stop_symbol": true,
+      "irq_count": 6,
+      "return_count": 6,
+      "irq_vector": "0x40200a80",
+      "ppi_identity": "PPI 30 checked by runtime guard 28 on all six IRQs; QEMU trace records IRQ exception class and vector only.",
+      "first_failure": null,
+      "stable_after_terminal": true
+    },
+    "partition-legacy-diag-negative": {
+      "uart": [
+        "JNOX M1 BOOT",
+        "JNOX M1 READY",
+        "PART DIAG1 0000000000000063 0000000000000000 0000000000000001 ffffffffffffffff 0000000000000000 0000000000000000 0000000000000002 00000000005ff684 0000000000000000",
+        "PART FAIL"
+      ],
+      "elf_matches_preselector": true,
+      "elf_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+      "text_sha256": "cd0d8d06a0624adcf59549291e27edd75b3cf90a92f26e3d629013b861cf875e",
+      "original_legacy_text_sha256": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+      "original_legacy_text_identical": false,
+      "diag_stop_symbol": true,
+      "irq_count": 0,
+      "return_count": 1,
+      "irq_vector": "0x40200a80",
+      "ppi_identity": "Negative terminates at first worker marker before IRQ.",
+      "first_failure": [
+        99,
+        0,
+        1,
+        18446744073709551615,
+        0,
+        0,
+        2,
+        6289028,
+        0
+      ],
+      "stable_after_terminal": true
+    }
+  },
+  "selectors": {
+    "all": {
+      "actual": 0,
+      "expected": 0,
+      "accepted_as_designed": true
+    },
+    "invalid-pair": {
+      "actual": 101,
+      "expected": 101,
+      "accepted_as_designed": true
+    },
+    "partition-shadows-pair": {
+      "actual": 0,
+      "expected": 0,
+      "accepted_as_designed": true
+    },
+    "coop-shadows-pair": {
+      "actual": 0,
+      "expected": 0,
+      "accepted_as_designed": true
+    },
+    "coop-shadows-diag": {
+      "actual": 0,
+      "expected": 0,
+      "accepted_as_designed": true
+    }
+  }
+}
