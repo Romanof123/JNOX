@@ -1,0 +1,494 @@
+{
+  "evidence_id": "EVD-051",
+  "study": "Release build and trace comparison",
+  "source": "caaaa3c3cf8bb22d9f592ffed9758492e6ff7aef",
+  "previous_descriptor": "fe8821bf0e144c6bbef5b4408b28e27ab03e9488",
+  "marker_evidence": "bf07551c2cf999372e7437315f0358f2145031ee",
+  "command_sha256": "9f84ae1e7726c92ab43c7299f9bfadcf107b226208becc36a9fee9b059b9e3d4",
+  "summary_sha256": "03dae5656d38572500ab1fb5585d218ea6efcc015f550bcb597c53ef5040ee4a",
+  "results": {
+    "images": 11,
+    "expected_rejections": 2,
+    "all_expected": true,
+    "comparisons": 16,
+    "all_elf_load_text_match": true,
+    "index_sha": "dea13ff7d7c8a72fb036f646ade41504f55a73b94a95be52adf0a33911b4736b",
+    "new_guest_launches": 0
+  },
+  "cases": {
+    "descriptor-rm-baseline": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-rm"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "9f066821294dd753d84ff0b5a2133ed5a376823db6e41f2f090e7a92c6cf6d3f",
+      "references": [
+        {
+          "reference": "control53-integrated-gate/descriptor-rm-baseline/kernel.elf",
+          "whole_elf_sha256": "770910577922079b10139b060ea3e3b81905df33cdfd636deed77d94fc46c8b5",
+          "text_sha256": "f4d9476228e5e3555fe62e5079b91d5ca35e3e23bfc8f968546d366c98a11c10",
+          "pt_load_sha256": [
+            "c0c92909950edd31e288a08ca9b95dafbf9c6333ae7bd3092d540f5de7c422d6",
+            "5db954d15778e32cc8793fc99a160898f925963b371e50064cce6b90566d3e59"
+          ]
+        }
+      ],
+      "elf_sha256": "770910577922079b10139b060ea3e3b81905df33cdfd636deed77d94fc46c8b5"
+    },
+    "descriptor-rm-descriptor": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-rm",
+        "JNOX_CONTROL_DESCRIPTOR": "1"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "013045443411a3a505826d10a6cc75c3d0dfd73ac6241175d6da51779eed4d7c",
+      "references": [
+        {
+          "reference": "control53-integrated-gate/descriptor-rm-descriptor/kernel.elf",
+          "whole_elf_sha256": "b4ba0f92148d071c36b89aef368c7c59ccc92bd952467337ad0c6414e30df537",
+          "text_sha256": "045cc9f6d888aba001cc92e2ba406963a7023b9d16896b9c7159bcab33b4cec0",
+          "pt_load_sha256": [
+            "2efc4c45cb5beff11b022bf7752328cb5f4593414afa25ed69642e044f152805",
+            "5db954d15778e32cc8793fc99a160898f925963b371e50064cce6b90566d3e59"
+          ]
+        }
+      ],
+      "elf_sha256": "b4ba0f92148d071c36b89aef368c7c59ccc92bd952467337ad0c6414e30df537"
+    },
+    "descriptor-rm-cold": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-rm",
+        "JNOX_CONTROL_COLD": "diagnostic"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "c22f53a29e532c92026e7d933c6079d5634642a3ab315c1d6c352dbbe4170000",
+      "references": [
+        {
+          "reference": "control53-integrated-gate/descriptor-rm-cold/kernel.elf",
+          "whole_elf_sha256": "3a70050193d3738a22745422ae01dd28e8e1101c477f0412152572159ae9cbb6",
+          "text_sha256": "8ed464d6149509dd41aaa31de0b975292594f3b3d52a8edf6772f3913b7e53d8",
+          "pt_load_sha256": [
+            "019aa95ecdd4cf80cc41e570e9c860dbaae48bcc185ff1f0943649a328563ff4",
+            "1870eb0d6638d106700b363b2906dd4b77995154639578b2691c7731191b3735"
+          ]
+        }
+      ],
+      "elf_sha256": "3a70050193d3738a22745422ae01dd28e8e1101c477f0412152572159ae9cbb6"
+    },
+    "descriptor-rm-cold+descriptor": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-rm",
+        "JNOX_CONTROL_DESCRIPTOR": "1",
+        "JNOX_CONTROL_COLD": "diagnostic"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "control descriptor, cold and marker comparison arms must be built separately",
+      "exit": 101,
+      "log_sha256": "23f28ff4a166a698fe59a245a46b08c8da4a063d70724c64ca77b4d14a434eea",
+      "references": []
+    },
+    "descriptor-rm-descriptor+marker": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-rm",
+        "JNOX_CONTROL_MARKERS": "1",
+        "JNOX_CONTROL_DESCRIPTOR": "1"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "control descriptor, cold and marker comparison arms must be built separately",
+      "exit": 101,
+      "log_sha256": "f08ae0efbfefaab0eb2b67b4c1c385453e59f005abb6198506b22d58867e1578",
+      "references": []
+    },
+    "descriptor-dm-baseline": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-dm"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "24996f7bd6d8bcf3cd4849b49e7981fae70548256728c6451250a940fcfde97e",
+      "references": [
+        {
+          "reference": "control53-integrated-gate/descriptor-dm-baseline/kernel.elf",
+          "whole_elf_sha256": "c62f7329f06fbea48c8b3e7959954bbc33ecc99818cf5896f43a138eea66c173",
+          "text_sha256": "d1a68135d841d1b5722972ab23a4bc51befc8dc6d7168ef4210857b1dbe70ec2",
+          "pt_load_sha256": [
+            "78f94590cf7f02ab5d9dd570834086195cbdb9fbe5d0c593ee0eca1649d7db83",
+            "5db954d15778e32cc8793fc99a160898f925963b371e50064cce6b90566d3e59"
+          ]
+        }
+      ],
+      "elf_sha256": "c62f7329f06fbea48c8b3e7959954bbc33ecc99818cf5896f43a138eea66c173"
+    },
+    "descriptor-dm-descriptor": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-dm",
+        "JNOX_CONTROL_DESCRIPTOR": "1"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "8dbd0157e92979c0053abcde010aaa75bee30618d6a77dcc064f8c8a90e37f72",
+      "references": [
+        {
+          "reference": "control53-integrated-gate/descriptor-dm-descriptor/kernel.elf",
+          "whole_elf_sha256": "6b6e93fec3a3472c3836dc18bf49c1372d57581896353ba35bcbdbce7dacca6b",
+          "text_sha256": "05965b2befe103511a139f58252503f81409a8a3fe1a5d7b176cbb3c96203db9",
+          "pt_load_sha256": [
+            "7df48c31a081cd7df3a352c956dda439533b87447ccffb33f3773d1e410e77b2",
+            "5db954d15778e32cc8793fc99a160898f925963b371e50064cce6b90566d3e59"
+          ]
+        }
+      ],
+      "elf_sha256": "6b6e93fec3a3472c3836dc18bf49c1372d57581896353ba35bcbdbce7dacca6b"
+    },
+    "descriptor-dm-cold": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PROFILE": "periodic",
+        "JNOX_CONTROL_CASE": "healthy",
+        "JNOX_APP": "control-dm",
+        "JNOX_CONTROL_COLD": "diagnostic"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "-vv"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "a2b9be95d9502b8928f26a00ea857393178fb5394077bcef536f8978c210e3ef",
+      "references": [
+        {
+          "reference": "control53-integrated-gate/descriptor-dm-cold/kernel.elf",
+          "whole_elf_sha256": "bd64284914663ed341ac234d14bfc77d1b985029e7d5ba0bdc9a6943e97750c2",
+          "text_sha256": "9c950d568d8a778d5a840252ec4e2f04c1daaaaba710010f25f234b3fea1a923",
+          "pt_load_sha256": [
+            "1815a5cd1f1da715357e1d6a544cb41a5fb594f75448d556517ec45908254ce5",
+            "1870eb0d6638d106700b363b2906dd4b77995154639578b2691c7731191b3735"
+          ]
+        }
+      ],
+      "elf_sha256": "bd64284914663ed341ac234d14bfc77d1b985029e7d5ba0bdc9a6943e97750c2"
+    },
+    "ordinary-partition-p-short": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PARTITION_NOTICE": "short"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "-j1",
+        "--features",
+        "ordinary-partition-p"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "d3ec14c45c66c1e3fee50b61b998925e63388ecdf83f5db5575d354d51eb4fc6",
+      "references": [
+        {
+          "reference": "partition-notice-release-builds/ordinary-partition-p-short/kernel.elf",
+          "whole_elf_sha256": "e6d7420b43d78f49366bcd3aa2d3dd536fb9b4abe09b53f54cc67d7556a81dc5",
+          "text_sha256": "c6223e21e826e3413c70c818862bff59e3031d5554d495935b8d331f60a82cf8",
+          "pt_load_sha256": [
+            "634471682ee89578e531601014e922fd3b620640ad340b9401b254f484843d3c",
+            "51a31576c170e6bc964487a3b7242ba375145343bff95a4459652a7ef00702e7"
+          ]
+        },
+        {
+          "reference": "partition-final-builds/127/ordinary-partition-p-short/kernel.elf",
+          "whole_elf_sha256": "e6d7420b43d78f49366bcd3aa2d3dd536fb9b4abe09b53f54cc67d7556a81dc5",
+          "text_sha256": "c6223e21e826e3413c70c818862bff59e3031d5554d495935b8d331f60a82cf8",
+          "pt_load_sha256": [
+            "634471682ee89578e531601014e922fd3b620640ad340b9401b254f484843d3c",
+            "51a31576c170e6bc964487a3b7242ba375145343bff95a4459652a7ef00702e7"
+          ]
+        }
+      ],
+      "elf_sha256": "e6d7420b43d78f49366bcd3aa2d3dd536fb9b4abe09b53f54cc67d7556a81dc5"
+    },
+    "ordinary-partition-q-long": {
+      "selectors": {
+        "JNOX_BOARD": "virt",
+        "JNOX_PARTITION_NOTICE": "long"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "-j1",
+        "--features",
+        "ordinary-partition-q"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "6a5360b7b69048df5c5a4cf406dcd72e7916db606b2180f7c95e40221f11ef52",
+      "references": [
+        {
+          "reference": "partition-notice-release-builds/ordinary-partition-q-long/kernel.elf",
+          "whole_elf_sha256": "2af61771f2900b40ed349907f22ee477836089f33c17f9d26037485ab819a140",
+          "text_sha256": "889b340d0da7d550525135c97f1b2081edcc16a414a94887042c406a76d3d9f6",
+          "pt_load_sha256": [
+            "dbaddf474e16282ceaf792db69a0d2262e9f0bc280e74ccc3d5d3a3a3d06ecb8",
+            "51a31576c170e6bc964487a3b7242ba375145343bff95a4459652a7ef00702e7"
+          ]
+        },
+        {
+          "reference": "partition-final-builds/127/ordinary-partition-q-long/kernel.elf",
+          "whole_elf_sha256": "2af61771f2900b40ed349907f22ee477836089f33c17f9d26037485ab819a140",
+          "text_sha256": "889b340d0da7d550525135c97f1b2081edcc16a414a94887042c406a76d3d9f6",
+          "pt_load_sha256": [
+            "dbaddf474e16282ceaf792db69a0d2262e9f0bc280e74ccc3d5d3a3a3d06ecb8",
+            "51a31576c170e6bc964487a3b7242ba375145343bff95a4459652a7ef00702e7"
+          ]
+        }
+      ],
+      "elf_sha256": "2af61771f2900b40ed349907f22ee477836089f33c17f9d26037485ab819a140"
+    },
+    "partition-bench": {
+      "selectors": {
+        "JNOX_BOARD": "virt"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "-j1",
+        "--features",
+        "partition-bench"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "f67c6c11612912ecf37e96af66d01ccd543d854c76ce72ee901b6d43c901aab4",
+      "references": [
+        {
+          "reference": "partition-notice-release-builds/partition-bench/kernel.elf",
+          "whole_elf_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+          "text_sha256": "f139ccdd1fae85c30f4295a026a6ff06a2c0d223ebe0a59ec999de465da24de9",
+          "pt_load_sha256": [
+            "299fa02d93cd40a7904f6d5bc61673523d0d3b5d61bcc11d12554367a9c97648",
+            "17ba5ab1dcc738df74a9989b1807c2bd78f11e42e6e3c3563aa3e2fe1ae5dbb2"
+          ]
+        },
+        {
+          "reference": "partition-final-builds/112/partition-bench/kernel.elf",
+          "whole_elf_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+          "text_sha256": "f139ccdd1fae85c30f4295a026a6ff06a2c0d223ebe0a59ec999de465da24de9",
+          "pt_load_sha256": [
+            "299fa02d93cd40a7904f6d5bc61673523d0d3b5d61bcc11d12554367a9c97648",
+            "17ba5ab1dcc738df74a9989b1807c2bd78f11e42e6e3c3563aa3e2fe1ae5dbb2"
+          ]
+        }
+      ],
+      "elf_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948"
+    },
+    "partition-legacy-diag": {
+      "selectors": {
+        "JNOX_BOARD": "virt"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "-j1",
+        "--features",
+        "partition-legacy-diag"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "44aed5a587a6b7e74a34f5de5f2df8df51ba54e8457f250ff3c344345060cb0c",
+      "references": [
+        {
+          "reference": "partition-notice-release-builds/partition-legacy-diag/kernel.elf",
+          "whole_elf_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+          "text_sha256": "25f177052a7159acbd03de309cc48d05f27f266daf814ad700b416f703c97562",
+          "pt_load_sha256": [
+            "e762217c92d8f7d026545c9b7c97e28851e03af51571c555f58f6a7c68fa078c",
+            "35d5209983d61bbb971b5c38b6fbd8189fae0ccc9f4cd09b1511d5c33b5ec864"
+          ]
+        },
+        {
+          "reference": "partition-final-builds/112/partition-legacy-diag/kernel.elf",
+          "whole_elf_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+          "text_sha256": "25f177052a7159acbd03de309cc48d05f27f266daf814ad700b416f703c97562",
+          "pt_load_sha256": [
+            "e762217c92d8f7d026545c9b7c97e28851e03af51571c555f58f6a7c68fa078c",
+            "35d5209983d61bbb971b5c38b6fbd8189fae0ccc9f4cd09b1511d5c33b5ec864"
+          ]
+        }
+      ],
+      "elf_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0"
+    },
+    "partition-legacy-diag-negative": {
+      "selectors": {
+        "JNOX_BOARD": "virt"
+      },
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--locked",
+        "--release",
+        "-j1",
+        "--features",
+        "partition-legacy-diag-negative"
+      ],
+      "expected": "build",
+      "exit": 0,
+      "log_sha256": "6afbf707b6fd568caebb1dd1277bfcd760e07bdcfaec84326a5a6cdba4644dbf",
+      "references": [
+        {
+          "reference": "partition-notice-release-builds/partition-legacy-diag-negative/kernel.elf",
+          "whole_elf_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+          "text_sha256": "cd0d8d06a0624adcf59549291e27edd75b3cf90a92f26e3d629013b861cf875e",
+          "pt_load_sha256": [
+            "21a3ac0207a3b44c59a253a2072dff5600e6bd38ceb3c6867bee570f78fec432",
+            "35d5209983d61bbb971b5c38b6fbd8189fae0ccc9f4cd09b1511d5c33b5ec864"
+          ]
+        },
+        {
+          "reference": "partition-final-builds/112/partition-legacy-diag-negative/kernel.elf",
+          "whole_elf_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+          "text_sha256": "cd0d8d06a0624adcf59549291e27edd75b3cf90a92f26e3d629013b861cf875e",
+          "pt_load_sha256": [
+            "21a3ac0207a3b44c59a253a2072dff5600e6bd38ceb3c6867bee570f78fec432",
+            "35d5209983d61bbb971b5c38b6fbd8189fae0ccc9f4cd09b1511d5c33b5ec864"
+          ]
+        }
+      ],
+      "elf_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9"
+    }
+  },
+  "audits": {
+    "descriptor-release-pinned": {
+      "commit": "caaaa3c3cf8bb22d9f592ffed9758492e6ff7aef",
+      "exit": 0,
+      "policies": 18,
+      "findings": [],
+      "audit_sha": "a906da86d274a0e1aafe50eb52197fd7538a0838ef59c1ef5f25868e4ec79c57"
+    },
+    "marker-evidence-pinned": {
+      "commit": "bf07551c2cf999372e7437315f0358f2145031ee",
+      "exit": 0,
+      "policies": 18,
+      "findings": [],
+      "audit_sha": "54d455ba7e05cd8d078bd5734356c8151e60d34814a59227f9f3a633ff121176"
+    }
+  },
+  "historical_hold": {
+    "findings": [
+      "dangling implementation for POL-004: IMP-052"
+    ],
+    "exit": 1,
+    "sha256": "38e356920b2f619814516e15f2c9c123a871f65e44f7c336abdf67bcedec97d4",
+    "head": "ab14de00b4e1b61d0e20eb37ef8eafc8d504d306"
+  },
+  "original_healthy_sequences": [
+    0,
+    24
+  ],
+  "archive": {
+    "file": "evd-051-release.zip",
+    "bytes": 191220,
+    "sha256": "4021b798bfb2e591462ad73b909a562dfa3c4bb97a48bcf77bb555cb1ac021c5",
+    "entries": 34,
+    "offline": "Verify the ZIP SHA-256, extract it into a fresh directory and run sha256sum -c FILES.sha256. Compare each kernel.elf digest against its case and reference digests here. builds.json contains both segment layouts, individual PT_LOAD digests and both text digests for every comparison. The original command records and logs preserve historical host paths."
+  }
+}

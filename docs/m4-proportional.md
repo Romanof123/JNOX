@@ -27,3 +27,5 @@ PROPORTIONAL_CAPTURE_DIR="$capture" python3 tools/qemu_boot.py --profile proport
 ```
 
 trace.bin은 리틀엔디언 u64 다섯 개(소스 줄, epoch, 슬롯, 실측, 기준)이다. 줄이 0이면 확정된 실패 기록이 없다. 첫 epoch 전에는 두 좌표 모두 u64::MAX이다. 래퍼는 QEMU 기동 전에 SIGTERM 처리기를 설치하고 UART를 실시간 전달한다. UART 거부 시에도 종료 처리 중 QMP 덤프를 실행한다. launch.json의 심볼 proportional_failure와 크기 40을 확인하고 exit.json, uart.bin, audit.bin을 독립 대조한다. 배열은 순서상 최초 불일치 원소 쌍을 기록한다. 각 ELF와 대응 소스 트리를 함께 보존한다. 과거 ELF SHA-256은 3e771ec6fb331510ffe5f719c3e1eb4840a0c7105af8fd4ce49bed89f132a070이다.
+
+CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)

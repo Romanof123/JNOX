@@ -27,3 +27,5 @@ PROPORTIONAL_CAPTURE_DIR="$capture" python3 tools/qemu_boot.py --profile proport
 ```
 
 Read trace.bin as five little-endian u64 words: source line, epoch, slot, actual, expected. A zero line means no committed failure. Before the first epoch, both coordinates are u64::MAX. The wrapper installs its SIGTERM handler before launching QEMU and forwards UART live. A transcript rejection initiates the same QMP dump as a successful observation. Require launch.json to name proportional_failure at size 40 and verify exit.json, uart.bin and audit.bin independently. Array failures record the first differing pair in iteration order. Preserve the exact source tree and ELF alongside each capture. The historical ELF SHA-256 was 3e771ec6fb331510ffe5f719c3e1eb4840a0c7105af8fd4ce49bed89f132a070.
+
+CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)

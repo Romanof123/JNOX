@@ -15,6 +15,11 @@ import tempfile
 import time
 
 
+if __package__:
+    from .pi4_transcript import Matcher as PiMatcher, PROFILES as PI_PROFILES
+else:
+    from pi4_transcript import Matcher as PiMatcher, PROFILES as PI_PROFILES
+
 PI4_BOOT_TRANSCRIPT = b"JNOX PI4 BOOT\nJNOX PI4 READY\n"
 BOOT_TRANSCRIPT = b"JNOX M1 BOOT\nJNOX M1 READY\n"
 SCHEDULER_LINES = (
@@ -272,7 +277,7 @@ TRANSCRIPTS = {
     "pi4": PI4_BOOT_TRANSCRIPT,
     "pi4-fixed-fifo": DynamicTranscript.PI4_FIXED_FIFO,
     "pi4-fixed-rr": DynamicTranscript.PI4_FIXED_RR,
-    "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
+    "pi4-scheduler": PI_PROFILES["pi4-scheduler"]["scheduler"],
     "eevdf-dynamic": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF DYNAMIC STOP\nEEVDF DYNAMIC PASS\n",
     "eevdf-wake": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF WAKE STOP\nEEVDF WAKE PASS\n",
     "eevdf": BOOT_TRANSCRIPT + (
@@ -344,7 +349,41 @@ def read_uart(serial, expected):
     return serial.read(len(expected) + expected.count(b"\n") + 1)
 
 
+def observe_pi(process, serial, timeout, profile, *, allow_crlf, quiet_seconds):
+    options = PI_PROFILES[profile].values()
+    limit = max(len(raw) + (raw.count(b"\n") if allow_crlf else 0) for raw in options)
+    deadline = time.monotonic() + timeout
+    accepted = None
+    quiet_until = None
+    while True:
+        if process.poll() is not None:
+            return f"QEMU exited before host stop (status {process.returncode})", None
+        serial.seek(0)
+        raw = serial.read(limit + 1)
+        now = time.monotonic()
+        if accepted is not None:
+            if raw != accepted:
+                return "unexpected Pi UART bytes during quiet window", None
+            if now >= quiet_until:
+                return None, accepted
+        else:
+            data = raw.replace(b"\r\n", b"\n") if allow_crlf else raw
+            partial_cr = allow_crlf and data.endswith(b"\r")
+            matcher = PiMatcher(profile)
+            if not matcher.feed(data[:-1] + b"\n" if partial_cr else data):
+                return "unexpected Pi UART bytes or marker order", None
+            if matcher.variant and not partial_cr and now <= deadline:
+                accepted = raw
+                quiet_until = now + quiet_seconds
+            elif now >= deadline:
+                return f"UART deadline exceeded ({timeout:g}s)", None
+        time.sleep(max(0, min(0.01, (quiet_until if accepted is not None else deadline) - now)))
+
+
 def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+    if expected == TRANSCRIPTS["pi4-scheduler"]:
+        return observe_pi(process, serial, timeout, "pi4-scheduler", allow_crlf=allow_crlf,
+                          quiet_seconds=quiet_seconds)[0]
     profile = dynamic_profile(expected)
     if profile is not None:
         problem, _ = observe_dynamic(process, serial, timeout, profile, allow_crlf=allow_crlf,
@@ -379,6 +418,9 @@ def observe_amc(process, serial, timeout, *, allow_crlf=True, quiet_seconds=QUIE
 
 
 def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+    if profile in (DynamicTranscript.PI4_FIXED_FIFO, DynamicTranscript.PI4_FIXED_RR):
+        name = "pi4-fixed-fifo" if profile == DynamicTranscript.PI4_FIXED_FIFO else "pi4-fixed-rr"
+        return observe_pi(process, serial, timeout, name, allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
     contract = profile.observer()
     workload = profile.module == "fixed_runtime_observer"
     passed = profile.prefix + (b" B DONE\n" if workload else b" PASS\n")
