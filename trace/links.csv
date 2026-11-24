@@ -1080,3 +1080,6 @@ VER-023,has-partial-evidence,EVD-053
 CHG-056,affects,REQ-002
 CHG-056,affects,REQ-005
 CHG-056,affects,REQ-023
+CHG-059,affects,REQ-002
+CHG-059,affects,REQ-005
+CHG-059,affects,REQ-023

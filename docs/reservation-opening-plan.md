@@ -50,3 +50,5 @@ Raw row 24 timestamp is sampled after admission, with fields (first runtime coun
 24행은 수용 뒤 표본이며 필드는 최초 런타임 표본·E·0·0이다. 22행은 준비 완료 표본이며 필드는 준비 시작·E·남은 틱·0이다. 마스킹 시작과 함수 복귀는 이 구간 밖이다. 23행은 실제 원장 커밋 직후 표본이며 필드는 실제 IRQ 진입·커밋 직전·E·새 세대이다. 기존 작업·상태, 컷오프와 복귀 표본도 유지한다. 최초 표본부터 실제 작업 표식까지의 전체 경과와 유휴·커널 이동 비용을 함께 기록한다. 후보의 실행 결과와 WCET 검증은 미결이다.
 
 [EVD-053 v2](evidence/evd-053-v2.en.md) · [한국어](evidence/evd-053-v2.md)
+
+CHG-059 · [Compact first-boundary handoff / 첫 경계 인계 비용 축소](reservation-compact-handoff-plan.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
