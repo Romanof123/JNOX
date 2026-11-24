@@ -1,0 +1,594 @@
+{
+  "source": "0a8e8a6019bc96e42656b8af4545792b99c01e06",
+  "comparisons": {
+    "eevdf": {
+      "current": "c92baedec08118aba0ac1907b3eb4b8a4154016727a390f5740f9d51851537d3",
+      "reference": "f3ab453fcbd2b95defbd4ab86d5953a2b4dda04aabe35a405cfba51e9aa9c4bd",
+      "whole": false,
+      "entry": "0x40200000",
+      "entry_equal": true,
+      "loads": true,
+      "headers": true,
+      "exec_equal": true,
+      "symbols_match": false,
+      "selected_symbols": [
+        [
+          "_ZN11jnox_kernel11fair_policy10pick_eevdfE",
+          1075843752,
+          316
+        ],
+        [
+          "_ZN11jnox_kernel12eevdf_policy14Eevdf$LT$_$GT$12stop_elapsedE",
+          1075848104,
+          264
+        ],
+        [
+          "_ZN11jnox_kernel12eevdf_policy14Eevdf$LT$_$GT$3newE",
+          1075848368,
+          172
+        ],
+        [
+          "_ZN11jnox_kernel12eevdf_policy14Eevdf$LT$_$GT$4wakeE",
+          1075848540,
+          332
+        ],
+        [
+          "_ZN11jnox_kernel12eevdf_policy14Eevdf$LT$_$GT$5sleepE",
+          1075848872,
+          112
+        ],
+        [
+          "_ZN11jnox_kernel12eevdf_policy14Eevdf$LT$_$GT$8dispatchE",
+          1075848984,
+          488
+        ],
+        [
+          "_ZN11jnox_kernel12eevdf_policy14Eevdf$LT$_$GT$9configureE",
+          1075849472,
+          384
+        ],
+        [
+          "_ZN11jnox_kernel12eevdf_policy4Task7requestE",
+          1075849856,
+          48
+        ],
+        [
+          "_ZN11jnox_kernel15eevdf_app_tasks5batchE",
+          1075844632,
+          148
+        ],
+        [
+          "_ZN11jnox_kernel15eevdf_app_tasks9TELEMETRYE",
+          1075855872,
+          128
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app11vector_failE",
+          1075844780,
+          12
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app3irqE",
+          1075844792,
+          108
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app3runE",
+          1075844900,
+          336
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app3svcE",
+          1075845236,
+          124
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app4failE",
+          1075845360,
+          104
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app5DRAINE.0",
+          1075859928,
+          1
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app6ACTIVEE",
+          1075859456,
+          456
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime3newE",
+          1075845464,
+          312
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime5block28_$u7b$$u7b$closure$u7d$$u7d$E",
+          1075845776,
+          12
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime5close28_$u7b$$u7b$closure$u7d$$u7d$E",
+          1075847028,
+          12
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime5closeE",
+          1075845788,
+          1240
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime8dispatch28_$u7b$$u7b$closure$u7d$$u7d$E",
+          1075847632,
+          12
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime8dispatch28_$u7b$$u7b$closure$u7d$$u7d$E",
+          1075847644,
+          12
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime8dispatchE",
+          1075847040,
+          592
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7Runtime8next_dueE",
+          1075847656,
+          76
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7requireE",
+          1075847732,
+          20
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app7runtimeE",
+          1075847752,
+          32
+        ],
+        [
+          "_ZN11jnox_kernel9eevdf_app9LAST_WAKEE.0",
+          1075859936,
+          8
+        ],
+        [
+          "__native_rw_start",
+          1075859456,
+          0
+        ],
+        [
+          "__stack_top",
+          1076060816,
+          0
+        ],
+        [
+          "eevdf_app_finish",
+          1075847808,
+          12
+        ],
+        [
+          "eevdf_app_wait",
+          1075847820,
+          16
+        ],
+        [
+          "jnox_eevdf_app_journal",
+          1075859944,
+          135328
+        ],
+        [
+          "jnox_eevdf_app_stacks",
+          1075995280,
+          49152
+        ],
+        [
+          "sched_vectors",
+          1075841024,
+          2048
+        ]
+      ],
+      "changes": [],
+      "changed_count": 0
+    },
+    "native-user": {
+      "current": "f80ce35a07cb8a3275313ce74d114dbb782d19eed4624aa0b115134e0d88b195",
+      "reference": "f80ce35a07cb8a3275313ce74d114dbb782d19eed4624aa0b115134e0d88b195",
+      "whole": true,
+      "entry": "0x400000",
+      "entry_equal": true,
+      "loads": true,
+      "headers": true,
+      "exec_equal": true,
+      "symbols_match": true,
+      "selected_symbols": [],
+      "changes": [],
+      "changed_count": 0
+    },
+    "native-kernel": {
+      "current": "d53457f71b6af0cd4b165e18215fc0ff4412c39bc02e6438ca77471a5a4475bc",
+      "reference": "ee48323195b4bce120e7e0e0d614094c8927d72463b640a7feba3e95e3fce165",
+      "whole": false,
+      "entry": "0x40200000",
+      "entry_equal": true,
+      "loads": true,
+      "headers": true,
+      "exec_equal": true,
+      "symbols_match": true,
+      "selected_symbols": [
+        [
+          "_ZN11jnox_kernel10native_el03runE",
+          1075845908,
+          1652
+        ],
+        [
+          "_ZN11jnox_kernel10native_el04failE",
+          1075847560,
+          128
+        ],
+        [
+          "_ZN11jnox_kernel10native_el07decimalE",
+          1075847688,
+          208
+        ],
+        [
+          "_ZN11jnox_kernel10native_elf4planE",
+          1075839112,
+          1648
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu10user_rangeE",
+          1075840904,
+          276
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu3GICE",
+          1075871744,
+          4096
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu3LOWE",
+          1075875840,
+          4096
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu4HIGHE",
+          1075879936,
+          4096
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu4ROOTE",
+          1075884032,
+          4096
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu4UARTE",
+          1075888128,
+          4096
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu5IMAGEE",
+          1075892224,
+          8192
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu5STACKE",
+          1075900416,
+          4096
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu6KERNELE",
+          1075904512,
+          32768
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu7installE",
+          1075841180,
+          1196
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu9IMAGE_RAME",
+          1075937280,
+          4194304
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu9INSTALLEDE.0",
+          1080131584,
+          1
+        ],
+        [
+          "_ZN11jnox_kernel14native_el0_mmu9STACK_RAME",
+          1080135680,
+          65536
+        ],
+        [
+          "__native_rw_start",
+          1075871744,
+          0
+        ],
+        [
+          "__stack_top",
+          1080218768,
+          0
+        ],
+        [
+          "jnox_native_el0_image",
+          1075853864,
+          13720
+        ],
+        [
+          "jnox_native_el0_journal",
+          1080201224,
+          1152
+        ],
+        [
+          "native_el0_enter",
+          1075845120,
+          364
+        ],
+        [
+          "native_el0_sync",
+          1075847896,
+          616
+        ],
+        [
+          "native_el0_unexpected",
+          1075848512,
+          12
+        ],
+        [
+          "native_el0_vectors",
+          1075843072,
+          2048
+        ]
+      ],
+      "changes": [],
+      "changed_count": 0
+    }
+  },
+  "eevdf_replay": {
+    "rows": 84,
+    "latencies": [
+      {
+        "due": 5085958,
+        "wake": 5097663,
+        "first": 5721542,
+        "due_to_first": 635584,
+        "wake_to_first": 623879
+      },
+      {
+        "due": 10085958,
+        "wake": 10091531,
+        "first": 10093654,
+        "due_to_first": 7696,
+        "wake_to_first": 2123
+      },
+      {
+        "due": 15085958,
+        "wake": 15092802,
+        "first": 15185577,
+        "due_to_first": 99619,
+        "wake_to_first": 92775
+      },
+      {
+        "due": 20085958,
+        "wake": 20092755,
+        "first": 20828767,
+        "due_to_first": 742809,
+        "wake_to_first": 736012
+      },
+      {
+        "due": 25085958,
+        "wake": 25091220,
+        "first": 25859267,
+        "due_to_first": 773309,
+        "wake_to_first": 768047
+      },
+      {
+        "due": 30085958,
+        "wake": 30097054,
+        "first": 30872163,
+        "due_to_first": 786205,
+        "wake_to_first": 775109
+      },
+      {
+        "due": 35085958,
+        "wake": 35093038,
+        "first": 35890927,
+        "due_to_first": 804969,
+        "wake_to_first": 797889
+      },
+      {
+        "due": 40085958,
+        "wake": 40091106,
+        "first": 40903010,
+        "due_to_first": 817052,
+        "wake_to_first": 811904
+      }
+    ],
+    "windows": [
+      {
+        "actual": [
+          13136732,
+          6758293,
+          31072
+        ],
+        "target": [
+          "39481681/3",
+          "39481681/6",
+          "370513/2"
+        ],
+        "start": 85958,
+        "stop": 20085958,
+        "delivered": 19926097,
+        "errors": [
+          "-71485/3",
+          "1068077/6",
+          "-308369/2"
+        ]
+      },
+      {
+        "actual": [
+          12971497,
+          6953137,
+          15164
+        ],
+        "target": [
+          "74063065/6",
+          "86776675/12",
+          "1458257/4"
+        ],
+        "start": 5085958,
+        "stop": 25085958,
+        "delivered": 19939798,
+        "errors": [
+          "3765917/6",
+          "-3339031/12",
+          "-1397601/4"
+        ]
+      },
+      {
+        "actual": [
+          11800572,
+          8133370,
+          10077
+        ],
+        "target": [
+          "69256981/6",
+          "24120046/3",
+          "722347/2"
+        ],
+        "start": 10085958,
+        "stop": 30085958,
+        "delivered": 19944019,
+        "errors": [
+          "1546451/6",
+          "280064/3",
+          "-702193/2"
+        ]
+      },
+      {
+        "actual": [
+          11163942,
+          8761689,
+          9712
+        ],
+        "target": [
+          "159448057/15",
+          "131854682/15",
+          "2575802/5"
+        ],
+        "start": 15085958,
+        "stop": 35085958,
+        "delivered": 19935343,
+        "errors": [
+          "8011073/15",
+          "-429347/15",
+          "-2527242/5"
+        ]
+      },
+      {
+        "actual": [
+          10425236,
+          9505566,
+          9695
+        ],
+        "target": [
+          "292119929/30",
+          "143278817/15",
+          "6512449/10"
+        ],
+        "start": 20085958,
+        "stop": 40085958,
+        "delivered": 19940497,
+        "errors": [
+          "20637151/30",
+          "-695327/15",
+          "-6415499/10"
+        ]
+      }
+    ],
+    "due_to_first": {
+      "p50": 742809,
+      "p95": 817052,
+      "max": 817052
+    },
+    "wake_to_first": {
+      "p50": 736012,
+      "p95": 811904,
+      "max": 811904
+    },
+    "session_sha256": "68cca2efd813872eb02c6868fccbbe4e4e2ae2c22f76a602e4413c755bf0cf16"
+  },
+  "native_replay": {
+    "original_rc": 1,
+    "corrected_rc": 0,
+    "corrected_decoder": "a7451e3fb256ed94b7937ba68361caeb6961e476",
+    "result": {
+      "entry": 4194304,
+      "initial_sp": 16846768,
+      "ttbr0": 1075884032,
+      "sctlr": 12912697,
+      "vector": 1075844096,
+      "elrs": [
+        4194504,
+        4194336
+      ],
+      "final_symbols": {
+        "products": [
+          16,
+          13
+        ],
+        "bias": [
+          8
+        ],
+        "__jnox_errno_location.initial_thread_errno": [
+          38
+        ],
+        "weights": [
+          2,
+          1
+        ]
+      },
+      "exit_status": 37,
+      "stdout_bytes": 0,
+      "write_result": -38,
+      "page_descriptors": {
+        "0x400000": "0x200000402187c3",
+        "0x401000": "0x600000402197c3",
+        "0x402000": "0x6000004021a743",
+        "0x1001000": "0x60000040619743",
+        "0x1002000": "0x6000004061a743",
+        "0x1003000": "0x6000004061b743",
+        "0x1004000": "0x6000004061c743",
+        "0x1005000": "0x6000004061d743",
+        "0x1006000": "0x6000004061e743",
+        "0x1007000": "0x6000004061f743",
+        "0x1008000": "0x60000040620743",
+        "0x1009000": "0x60000040621743",
+        "0x100a000": "0x60000040622743",
+        "0x100b000": "0x60000040623743",
+        "0x100c000": "0x60000040624743",
+        "0x100d000": "0x60000040625743",
+        "0x100e000": "0x60000040626743",
+        "0x100f000": "0x60000040627743",
+        "0x1010000": "0x60000040628743",
+        "0x1000000": null,
+        "0x1011000": null,
+        "0x40200000": "0x40000040200783",
+        "0x40208000": "0x60000040208703",
+        "0x40201000": "0x40000040201783",
+        "0x8000000": "0x60000008000607",
+        "0x8010000": "0x60000008010607",
+        "0x9000000": "0x60000009000607"
+      },
+      "source_revision": "59b006f5c57d607c49bc8331f8446828474e5d33",
+      "user_sha256": "f80ce35a07cb8a3275313ce74d114dbb782d19eed4624aa0b115134e0d88b195",
+      "kernel_sha256": "ee48323195b4bce120e7e0e0d614094c8927d72463b640a7feba3e95e3fce165",
+      "probe_sha256": "6dc19dd08544ce01f8c7e17c33e0e22867755380daf0b1287433eb55fd96812c",
+      "session_sha256": "849a6877ffbf20a8ff96939603b2e0fca59d00432496a49cbbb2f0fc940f1976",
+      "scope": "one native startup, unsupported write and process exit on single-vCPU virt"
+    }
+  },
+  "new_boots": 0
+}

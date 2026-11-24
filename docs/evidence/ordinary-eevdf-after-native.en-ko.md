@@ -1,0 +1,7 @@
+# EEVDF and native startup integration / EEVDF와 네이티브 시작 통합
+
+At `0a8e8a6019bc96e42656b8af4545792b99c01e06`, the ordinary telemetry image matched the measured 0145c234 image in entry, every load header and byte, and stack ranges. The new zero-sized linker symbol __native_rw_start identifies the existing RW address 0x40205000. No load byte changed. The candidate decoder replayed the original 84-row journal, eight wakes and five service windows. At 62.5 MHz, due-to-first p50/p95/max were 742809/817052/817052 ticks and wake-to-first were 736012/811904/811904.
+
+The #175 comparison rebuilt the SDK probe and kernel on Linux Rust 1.95.0, clang/lld 14, using the original absolute source and package paths. The entire user ELF matched 59b006f and occurred exactly once in the rebuilt kernel. Entry, executable bytes, all load headers/payloads and selected native/stack/restore symbols matched the original kernel. The full kernel ELF differed. The original strict host decoder rejected the boot banners (RC1). The corrected a7451e3 decoder accepted the same first session, including EL0 exit 37 and unsupported write. New boots: zero.
+
+통합 소스의 EEVDF 텔레메트리는 기준 진입점·적재 헤더와 바이트·스택 범위가 일치했다. 기존 84행, 깨우기 8회 및 서비스 구간 5개를 재생했다. 네이티브 사용자 ELF 전체와 커널에 내장된 복사본도 일치했다. 커널은 전체 ELF 해시가 달랐으나 적재 메모리와 선택한 심볼 범위는 같았다. 최초 재생기의 배너 거부(코드 1)와 수정 재생기의 동일 세션 통과를 보존했다. 추가 부팅은 0회였다. [Image and replay receipt / 이미지 및 재생 기록](ordinary-eevdf-after-native.json)

@@ -169,6 +169,31 @@ impl<const N: usize> Eevdf<N> {
         self.running
     }
 
+    /// Charge a measured interval in full even if IRQ delivery crossed a
+    /// request boundary. Only the current owner accrues the overshoot. Check
+    /// the final deadline before changing state, independent of renewal count.
+    #[cfg(any(jnox_eevdf_app, test))]
+    pub(crate) fn stop_elapsed(&mut self, id: usize, elapsed: u64) -> bool {
+        if self.running != Some(id) || elapsed == 0 {
+            return false;
+        }
+        let task = self.tasks[id];
+        if elapsed <= u64::from(task.slice - task.used) {
+            return self.stop(id, elapsed as u32);
+        }
+        let service = u128::from(task.used) + u128::from(elapsed);
+        let slice = u128::from(task.slice);
+        let partial = service % slice;
+        let start = u128::from(task.start) + service - partial;
+        if start + slice > u128::from(MAX_NUMERATOR) {
+            return false;
+        }
+        self.tasks[id].start = start as u64;
+        self.tasks[id].used = partial as u32;
+        self.running = None;
+        true
+    }
+
     /// Close the current interval once, charging its actual service. A fully
     /// served request renews at its old deadline with the configured slice.
     /// Excess service and a renewal beyond the horizon leave the interval open.
@@ -198,6 +223,31 @@ impl<const N: usize> Eevdf<N> {
 #[cfg(test)]
 mod tests {
     use super::{Eevdf, MAX_NUMERATOR};
+
+    #[test]
+    fn elapsed_service_preserves_the_owner_across_late_renewals() {
+        let mut policy = Eevdf::new([2], [5]).unwrap();
+        assert!(policy.wake(0));
+        assert_eq!(policy.dispatch(), Some(0));
+        assert!(policy.stop_elapsed(0, 2));
+        assert_eq!(policy.dispatch(), Some(0));
+        let before = policy.snapshot(0);
+        assert!(!policy.stop(0, 15));
+        assert!(!policy.stop_elapsed(1, 15));
+        assert!(!policy.stop_elapsed(0, 0));
+        assert!(!policy.stop_elapsed(0, u64::MAX));
+        assert_eq!(policy.snapshot(0), before);
+        assert!(policy.stop_elapsed(0, 15));
+        assert_eq!(policy.snapshot(0), Some((17, 20, 2)));
+        assert_eq!(policy.remaining(0), Some(3));
+        assert!(!policy.stop_elapsed(0, 3));
+        assert!(policy.sleep(0));
+        assert_eq!(policy.dispatch(), None);
+        assert!(policy.wake(0));
+        assert_eq!(policy.dispatch(), Some(0));
+        assert!(policy.stop_elapsed(0, 3));
+        assert_eq!(policy.snapshot(0), Some((20, 25, 2)));
+    }
 
     #[test]
     fn an_unrepresentable_renewal_reweight_or_wake_is_atomic() {
