@@ -434,3 +434,9 @@ POL-004,partially-implemented-by,IMP-009
 IMP-009,partially-verified-by,VER-002
 IMP-009,partially-verified-by,VER-005
 IMP-009,partially-verified-by,VER-023
+IMP-009,tested-in,EVD-009
+POL-004,has-switch-evidence,EVD-009
+VER-002,has-partial-evidence,EVD-009
+VER-005,has-partial-evidence,EVD-009
+VER-023,has-partial-evidence,EVD-009
+CAP-001,has-partial-evidence,EVD-009

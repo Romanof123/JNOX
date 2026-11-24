@@ -51,3 +51,5 @@ PREEMPT PASS
 ```
 
 Require the exact lines above (LF or CRLF), 0.1 seconds of silence and successful host stop. After recording the verdict, map all 18 IRQs and 14 SVC #1 exceptions from the same guest to its retained ELF. Check both tick-1 interrupted PCs and exception returns, private worker stacks, register and progress checks, live ranking, completion order and the terminal timer stop. Feed host-only negative controls to the observer with a missing continuation, reversed DM order or trailing bytes. Each must fail. Acceptance covers these functional traces in QEMU. Board latency and general schedulability require separate evidence.
+
+[EVD-009](evidence/evd-009.en.md)

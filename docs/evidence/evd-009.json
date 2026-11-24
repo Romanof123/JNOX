@@ -1,0 +1,213 @@
+{
+  "evidence": "EVD-009",
+  "verdict": "PASS",
+  "commit": "80579f671988b31826a0f6e8079837f5fdd86bcb",
+  "tree": "61f4330c5b4799d80d1ccabd7387f2ed448152de",
+  "clean_detached_source": true,
+  "guest_runs": 1,
+  "first_black_box": "PASS. First guest. Exact public transcript, 178 LF bytes. Runner exit 0, quiet window and successful host stop. Recorded before source or trace inspection.",
+  "runner_exit": 0,
+  "runner_stdout": "Run 1/1  ELF SHA-256 = 5fc265add493c213e8f8e00078bfc797471fb820c551e97176efd2fae9047251\n  argv = [\"/tmp/tmp.lHXQUErX5q/qemu-int\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/tmp/tmp.lHXQUErX5q/kernel.elf\"]\n  QEMU PID = 523\n  UART (178 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nRM 0 A\\nRM 0 B\\nRM 2 A\\nRM 3 B\\nRM 4 A\\nDM 0 B\\nDM 0 A\\nDM 2 A\\nDM 3 B\\nDM 4 A\\nRM A START\\nRM A CONTINUE\\nRM B RUN\\nDM A START\\nDM B RUN\\nDM A CONTINUE\\nPREEMPT PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 523 (/bin/bash)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 2 A\nRM 3 B\nRM 4 A\nDM 0 B\nDM 0 A\nDM 2 A\nDM 3 B\nDM 4 A\nRM A START\nRM A CONTINUE\nRM B RUN\nDM A START\nDM B RUN\nDM A CONTINUE\nPREEMPT PASS\n",
+  "uart_bytes": 178,
+  "artifacts": {
+    "raw/disassembly.txt": "d0585e0c3fc81c6490b3281d2584c0f2cfd2515a0862e009f5b57f7aed8e8f61",
+    "raw/initial-verdict.txt": "0ad6fe54287d01f0c1826813724c451e2291a1a55913513686fb4723b44da7b5",
+    "raw/int.log": "194c354f7708e5c9ccfccab07e7a037439784d500b7cc8b7f61dcd9b3dd00ca0",
+    "raw/kernel.elf": "5fc265add493c213e8f8e00078bfc797471fb820c551e97176efd2fae9047251",
+    "raw/qemu-int": "2deafb8229865eeb6eb075afb9ebafa8f76a845f6018cd1c64fdc0a57d932204",
+    "raw/revision": "953fe0179b2d8ea01d7c23ce528225c039560efc633593a57572f34bf8703b81",
+    "raw/runner.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "raw/runner.log": "259eba3c942886a8fa055f57a7e855da3a60389aa57100e8f81dbee467a03cfd",
+    "raw/uart.bin": "b7e05c8f064e42e5b40b461c92e3a07b432a8beb8f605e4dc0854ffcbcb736d1"
+  },
+  "irq_count": 18,
+  "svc_1_count": 14,
+  "exceptions": [
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201268"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x40201278",
+      "eret": "0x4020127c"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x4020128c",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201268"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x40201278",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x4020127c"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x4020128c",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201268"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x40201278",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x4020127c"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x4020128c",
+      "eret": "0x40201268"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x40201278",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201268"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x40201278",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x4020127c"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x4020128c",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201268"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x40201278",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201290"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x402012b0",
+      "eret": "0x402012b0"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x402012e4",
+      "eret": "0x4020127c"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x4020128c",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": "0x40201290"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x402012b0",
+      "eret": "0x4020127c"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x4020128c",
+      "eret": "0x402012b0"
+    },
+    {
+      "exception": "SVC",
+      "elr": "0x402012e4",
+      "eret": "0x40201260"
+    },
+    {
+      "exception": "IRQ",
+      "elr": "0x40201260",
+      "eret": null
+    }
+  ],
+  "pc_map": {
+    "0x40201260": "controller increment",
+    "0x40201264": "controller back edge",
+    "0x40201268": "baseline A entry",
+    "0x40201278": "baseline A SVC return address",
+    "0x4020127c": "B entry",
+    "0x4020128c": "B SVC return address",
+    "0x40201290": "non-yielding A entry",
+    "0x402012b0": "A work ADD x20,x20,#1",
+    "0x402012e4": "running A SVC return address"
+  },
+  "findings": [
+    "IRQ14 interrupted ADD at 0x402012b0 and returned directly there. A then completed through SVC before B. IRQ17 interrupted the same ADD and returned to B entry. B SVC returned to the exact interrupted A PC; A then completed. Each epoch enters running A once.",
+    "The monitor enqueues saved A before releasing B at tick 1. Both have priority zero. Shared pop_ready ranks live job descriptors by period 2 vs 3 (RM) or relative deadline 2 vs 1 (DM). ELF dispatch scans candidates at 0x40201b28 onward, and validates and consumes the saved frame at 0x40201c20 onward; fresh A initialization at tick zero only.",
+    "Separate 16 KiB A/B/controller stacks start at 0x402040e0. Markers validate current stack top. A IRQ checks frame position below 16-byte local storage, x19=0xa19, stack sentinel and zero flag, valid SPSR, x20>0. IRQ sets flag and predicts x20+1 at captured ADD. Assembly validates restored sentinel, and continuation compares x20 to prediction. SVC checks worker frame position. Actual numeric x20 not exposed by -d int.",
+    "Worker calls trigger benchmark driver marker text. Driver validates id, epoch, tick, completion order, deadline, frame consumption and progress. UART alone does not independently identify scheduler choices. ELF exception-return targets and SVC boundaries corroborate both orders.",
+    "IRQ entry checks physical timer status and GIC interrupt ID, disables/masks timer and acknowledges GIC. IRQ18 checks empty jobs, consumed saved frame and 14 completions; emits terminal text and parks at 0x40201830 without rearm or eret. No events follow during quiet window."
+  ],
+  "host_only_negative_controls": {
+    "missing continuation": "unexpected UART bytes or marker order",
+    "reversed DM order": "unexpected UART bytes or marker order",
+    "trailing byte": "unexpected UART bytes or marker order"
+  },
+  "limitations": "One single-core Cortex-A72 QEMU TCG functional run. QEMU exception trace has PC and syndrome rather than register dumps; stack and live progress values are checked by the guest. No target hardware, latency bound or general schedulability measurements.",
+  "preflight": "WSL git metadata lookup failed before any guest launch; revision taken from Windows git. No additional guest launched."
+}
