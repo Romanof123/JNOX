@@ -24,3 +24,4 @@ In fixed RM then DM order also run candidate A1 nominal then A2 anchor (i) defau
 
 추가 12회는 RM 이후 DM, 각 정책에서 기본 운영 거부→기본 OFF→기존 icount OFF, 각 항목에서 A1 다음 A2 순서다. 운영 진입 전 누락 마스크 4095, 실제 OFF 정지·완주와 독립 출력 관측을 확인한다. 연결된 코드에서 위상별 판정 마스킹 한 번, 누락 시 DAIF 복원 후 SVC, 판정 이후 누락의 기존 재진입을 확인한다. 저장 상태로 진입 전·판정 후 누락을 별도 검증하고 실제 부팅 관측과 구별한다. 기존 healthy·cold·marker 이미지의 적재 데이터를 대조하고 달라진 구성은 첫 부팅 대조도 수행한다. 실제 비용 상한이 공급되기 전 A1/A2 운영 수용은 계속 거부한다. 제품 판정에는 실물·제품별 근거가 필요하다.
 
+[Original comparison and raw controls / 최초 비교와 원자료](evidence/periodic-single-decision-first.en-ko.md). Eight A0 positions did not qualify. Four A1/A2 operational entries refused before a worker ran. The directed missed-phase controls observed restoration before SVC. 실제 기본 정상 동작 판정과 종료 경로의 복원 관찰을 구분한다.
