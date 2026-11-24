@@ -45,7 +45,7 @@ mod control_app;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -80,8 +80,8 @@ mod event_loop;
 mod extension;
 #[cfg(jnox_bench = "extension")]
 mod extension_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
-#[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
+#[cfg(any(jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
+#[cfg_attr(any(jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
 #[cfg(any(jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
@@ -157,7 +157,9 @@ mod smp_policy;
 mod temporal_policy;
 #[cfg(jnox_bench = "vruntime")]
 mod vruntime;
-#[cfg(jnox_bench = "vruntime")]
+#[cfg(jnox_weighted)]
+mod weighted;
+#[cfg(any(jnox_weighted, jnox_bench = "vruntime"))]
 mod vruntime_policy;
 
 static mut BSS_PROBE: u64 = 0;
@@ -193,17 +195,19 @@ extern "C" fn kernel_main() -> ! {
     ordinary_server::run();
     #[cfg(jnox_ordinary_deadline)]
     ordinary_deadline::run();
+    #[cfg(jnox_weighted)]
+    weighted::run();
     #[cfg(jnox_groups)]
     group_apps::run();
     #[cfg(jnox_multilevel)]
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+    #[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+#[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

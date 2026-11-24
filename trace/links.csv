@@ -1046,3 +1046,17 @@ IMP-048,partially-verified-by,VER-005
 VER-005,has-partial-evidence,EVD-048
 IMP-048,partially-verified-by,VER-023
 VER-023,has-partial-evidence,EVD-048
+REQ-002,partially-implemented-by,IMP-049
+REQ-005,partially-implemented-by,IMP-049
+REQ-023,partially-implemented-by,IMP-049
+POL-011,partially-implemented-by,IMP-049
+DES-003,implemented-by,IMP-049
+DES-012,implemented-by,IMP-049
+IMP-049,tested-in,EVD-049
+POL-011,has-switch-evidence,EVD-049
+IMP-049,partially-verified-by,VER-002
+VER-002,has-partial-evidence,EVD-049
+IMP-049,partially-verified-by,VER-005
+VER-005,has-partial-evidence,EVD-049
+IMP-049,partially-verified-by,VER-023
+VER-023,has-partial-evidence,EVD-049

@@ -120,6 +120,13 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_deadline_trace");
     }
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun"))"#);
+    println!("cargo::rustc-check-cfg=cfg(jnox_weighted)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_weighted_wake)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_weighted_trace)");
+    if let Some(value) = selector("JNOX_WEIGHTED_TRACE") {
+        assert!(value == "1" && profile.as_deref() == Some("weighted"));
+        println!("cargo::rustc-cfg=jnox_weighted_trace");
+    }
     match profile.as_deref() {
         Some("aperiodic") => {
             assert!(board == "virt" && bench == "boot", "ordinary aperiodic requires virt without benchmarks");
@@ -136,6 +143,14 @@ fn main() {
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
                 _ => panic!("deadline requires an ordinary EDF/LLF application"),
+            }
+        }
+        Some("weighted") => {
+            assert!(board == "virt" && bench == "boot" && scenario.is_none());
+            assert!(matches!(app.as_deref(), Some("weighted-share" | "weighted-wake")));
+            println!("cargo::rustc-cfg=jnox_weighted");
+            if app.as_deref() == Some("weighted-wake") {
+                println!("cargo::rustc-cfg=jnox_weighted_wake");
             }
         }
         Some("groups") => {
@@ -197,8 +212,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel, periodic, aperiodic or deadline"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel, periodic, aperiodic or deadline"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, multilevel, periodic, aperiodic or deadline"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, multilevel, periodic, aperiodic or deadline"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",

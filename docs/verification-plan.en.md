@@ -121,3 +121,5 @@ POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitratio
 CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes initialized. After the input repair all 96 startup checks passed. Operational qualification was 0/128 in the repaired series. [EVD-050](evidence/evd-050.en.md)
 
 Single-core virtual evidence for VER-002/005/023. [EVD-048](evidence/evd-048.en.md)
+
+Finite weighted service and wakeup observations for VER-002/005/023. [EVD-049](evidence/evd-049.en.md)

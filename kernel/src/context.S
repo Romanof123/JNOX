@@ -174,6 +174,13 @@ sched_start_frame:
     mrs x10, cntpct_el0
     str x10, [x9, :lo12:deadline_restore_count]
     .endif
+    .ifdef JNOX_WEIGHTED_TRACE
+    // Sample after SIMD and system restore, before restoring scratch GPRs.
+    isb
+    mrs x9, cntpct_el0
+    adrp x10, weighted_restore_counter
+    str x9, [x10, :lo12:weighted_restore_counter]
+    .endif
     integer_pairs ldp
     ldr x30, [sp, #240]
     add sp, sp, #{frame_size}
