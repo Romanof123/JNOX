@@ -408,3 +408,10 @@ POL-004,partially-implemented-by,IMP-007
 IMP-007,partially-verified-by,VER-023
 IMP-007,partially-verified-by,VER-002
 IMP-007,partially-verified-by,VER-005
+CHG-010,affects,REQ-002
+CHG-010,affects,REQ-023
+DES-003,implemented-by,IMP-008
+DES-012,implemented-by,IMP-008
+POL-004,partially-implemented-by,IMP-008
+IMP-008,partially-verified-by,VER-002
+IMP-008,partially-verified-by,VER-023
