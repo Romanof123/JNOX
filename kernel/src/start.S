@@ -3,6 +3,10 @@
 .global _start
 .type _start, %function
 _start:
+    .if {cold}
+    isb
+    mrs x17, cntpct_el0
+    .endif
     // The boot CPU owns the stack, BSS and UART. Both paths require an
     // identity-addressed firmware/loader handoff with MMU and D-cache off.
     msr daifset, #0xf
@@ -67,6 +71,10 @@ _start:
     str xzr, [x0], #8
     b .Lclear
 .Lenter:
+    .if {cold}
+    ldr x0, =jnox_cold_b
+    str x17, [x0]
+    .endif
     // Stack grows down from a 16-byte-aligned top. Rust never returns.
     b {rust_entry}
 .Lpark:

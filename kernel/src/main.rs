@@ -11,7 +11,7 @@ mod aperiodic;
 mod amc;
 #[cfg(jnox_bench = "amc")]
 mod amc_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "aperiodic"))]
+#[cfg(any(jnox_ap, jnox_bench = "rr", jnox_bench = "aperiodic"))]
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
 mod batch;
@@ -45,13 +45,17 @@ mod control_app;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_control, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
 #[cfg(jnox_bench = "deadline")]
 mod deadline;
-#[cfg(jnox_bench = "deadline")]
+#[cfg(jnox_ordinary_deadline)]
+mod ordinary_deadline;
+#[cfg(jnox_ordinary_deadline)]
+mod deadline_jobs;
+#[cfg(any(jnox_ordinary_deadline, jnox_bench = "deadline"))]
 mod deadline_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
@@ -126,6 +130,7 @@ mod proportional_policy;
     jnox_batch,
     jnox_fixed,
     jnox_multilevel,
+    jnox_ordinary_deadline,
     jnox_bench = "deadline",
     jnox_bench = "coop",
     jnox_bench = "mutex",
@@ -134,8 +139,10 @@ mod proportional_policy;
     jnox_bench = "periodic_overrun"
 ))]
 mod ready_queue;
-#[cfg(jnox_bench = "aperiodic")]
+#[cfg(any(jnox_ap, jnox_bench = "aperiodic"))]
 mod request_server;
+#[cfg(jnox_ap)]
+mod ordinary_server;
 #[cfg(any(jnox_bench = "scheduler", jnox_bench = "rr"))]
 mod sched;
 #[cfg(jnox_bench = "rr")]
@@ -161,6 +168,7 @@ static mut BSS_PROBE: u64 = 0;
 // start.S. The assembly establishes the Rust ABI before calling kernel_main.
 global_asm!(
     include_str!("start.S"),
+    cold = const cfg!(jnox_control_cold) as usize,
     pi4 = const cfg!(jnox_pi4) as usize,
     pi4_scheduler = const cfg!(all(jnox_pi4, any(jnox_bench = "scheduler", jnox_fixed))) as usize,
     bss_probe = sym BSS_PROBE,
@@ -183,6 +191,10 @@ extern "C" fn kernel_main() -> ! {
     fixed_apps::run();
     #[cfg(jnox_batch)]
     batch_app::run();
+    #[cfg(jnox_ap)]
+    ordinary_server::run();
+    #[cfg(jnox_ordinary_deadline)]
+    ordinary_deadline::run();
     #[cfg(jnox_weighted)]
     weighted::run();
     #[cfg(jnox_groups)]
@@ -191,11 +203,11 @@ extern "C" fn kernel_main() -> ! {
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_control, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+    #[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_control, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+#[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

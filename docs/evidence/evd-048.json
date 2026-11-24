@@ -1,0 +1,487 @@
+{
+  "evidence_id": "EVD-048",
+  "implementation": "IMP-048",
+  "change": "CHG-051",
+  "source": "148107417f0e953490a3c7ea181555d42e8862e0",
+  "tree": "df1e441c9b25b84e0319a6892f26728e49d04458",
+  "index_sha256": "34488e66ab51e6ae4d860163943cd41cb51abd43b88a85968e28b844f50c82cc",
+  "manifest_sha256": "14e83fac93f5a856b5cfd3049fbcbda518816afc99c303e79d16cb9a892e6ed4",
+  "report_sha256": "618e45512c21784597805ea609acc558e348a1326e27a56bf4723c2f9b5e6323",
+  "independent_tools_sha256": {
+    "collect.py": "449f703feef017c79655ed6fbeb28a79033708330728cd48d9a7dd2f6770feb5",
+    "verify.py": "d5fcde95c5104ea291967301f098752578f361c0fcf9182e1a142531432ea339",
+    "cross.py": "b40326a43e9b625540534481481b67850f2218a408eaba11b7a3130e1becbdeb",
+    "controls.rs": "c95ec6c5cc89bd275f85f28a8c745de04cbd4c5828279a62b3f510ba386530b5"
+  },
+  "images_sha256": {
+    "ordinary-edf": "900ae2b7696ba4490654d1f9bf31f3292a32a52ad1e86c672ecae7b876d9bb35",
+    "ordinary-edf-trace": "c1751f2f507386216faad6cac0820dab8cbdcff7800f8c8425652b897bee5865",
+    "ordinary-llf": "7cd4165fbde2b744fd7f52c0c70b33856337c32050811c4b6ebfb89c56a18bae",
+    "ordinary-llf-trace": "56ae4da65a1bd090bec4aa6b926514cb25a4f32b6440aba8cf22ce4811a99a16",
+    "ordinary-llf-overload": "baaf6b857e3ca1cd4f2d9ccd3fa7f41f5c2772b2d87942463e12cba43664cc69",
+    "ordinary-llf-overload-trace": "f1388a0889b257fd841edd21c7c173dd1b2ceb94345980b7dd5fa490f607497c",
+    "ordinary-edf-overrun": "1c0161eeecfe2654913495dbd2355b9409e8b248cbea6ce61df1cbe14584cf77",
+    "ordinary-edf-overrun-trace": "1acb8c5bc1d1dfa605bbb73b095bc3746e447e9059a55c2c47da4c25704ae5e9"
+  },
+  "independent_results": [
+    {
+      "case": "ordinary-edf",
+      "rows": 6,
+      "hz": 62500000,
+      "S": 6290365,
+      "Q": 6250000,
+      "release": {
+        "0": 6316129,
+        "1": 6316129,
+        "2": 12552808
+      },
+      "completion": {
+        "2": 13822041,
+        "0": 17290046,
+        "1": 23547071
+      },
+      "deadline": {
+        "0": 56290365,
+        "1": 81290365,
+        "2": 31290365
+      },
+      "switch": [
+        [
+          1,
+          12552808,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 25764,
+      "save_range": [
+        95,
+        2193
+      ],
+      "gap_range": [
+        1903,
+        31250
+      ],
+      "service": [
+        9666637,
+        6253038,
+        1261609
+      ],
+      "progress": [
+        916865,
+        590679,
+        118454
+      ],
+      "exhaustion_subsequent_service": {},
+      "terminal_pc": "0x402022e0"
+    },
+    {
+      "case": "ordinary-edf-overrun",
+      "rows": 8,
+      "hz": 62500000,
+      "S": 6275264,
+      "Q": 6250000,
+      "release": {
+        "0": 6298200,
+        "1": 6298200,
+        "2": 12539633
+      },
+      "completion": {
+        "2": 13804096,
+        "0": 29458615,
+        "1": 35714514
+      },
+      "deadline": {
+        "0": 56275264,
+        "1": 81275264,
+        "2": 31275264
+      },
+      "switch": [
+        [
+          1,
+          12539633,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 22936,
+      "save_range": [
+        79,
+        1813
+      ],
+      "gap_range": [
+        1152,
+        30645
+      ],
+      "service": [
+        21852197,
+        6252901,
+        1258775
+      ],
+      "progress": [
+        2092106,
+        575036,
+        122697
+      ],
+      "exhaustion_subsequent_service": {
+        "0": 10662338
+      },
+      "terminal_pc": "0x402022e0"
+    },
+    {
+      "case": "ordinary-edf-overrun-trace",
+      "rows": 8,
+      "hz": 62500000,
+      "S": 6275355,
+      "Q": 6250000,
+      "release": {
+        "0": 6298113,
+        "1": 6298113,
+        "2": 12538588
+      },
+      "completion": {
+        "2": 13808718,
+        "0": 29456161,
+        "1": 35711931
+      },
+      "deadline": {
+        "0": 56275355,
+        "1": 81275355,
+        "2": 31275355
+      },
+      "switch": [
+        [
+          1,
+          12538588,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 22758,
+      "save_range": [
+        63,
+        1853
+      ],
+      "gap_range": [
+        1169,
+        28451
+      ],
+      "service": [
+        21842734,
+        6252646,
+        1264215
+      ],
+      "progress": [
+        2135673,
+        613591,
+        100452
+      ],
+      "exhaustion_subsequent_service": {
+        "0": 10663684
+      },
+      "terminal_pc": "0x402022e4"
+    },
+    {
+      "case": "ordinary-edf-trace",
+      "rows": 6,
+      "hz": 62500000,
+      "S": 6278211,
+      "Q": 6250000,
+      "release": {
+        "0": 6300821,
+        "1": 6300821,
+        "2": 12541805
+      },
+      "completion": {
+        "2": 13807524,
+        "0": 17273546,
+        "1": 23529624
+      },
+      "deadline": {
+        "0": 56278211,
+        "1": 81278211,
+        "2": 31278211
+      },
+      "switch": [
+        [
+          1,
+          12541805,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 22610,
+      "save_range": [
+        61,
+        1915
+      ],
+      "gap_range": [
+        1225,
+        30766
+      ],
+      "service": [
+        9668542,
+        6253177,
+        1260012
+      ],
+      "progress": [
+        908887,
+        598057,
+        117847
+      ],
+      "exhaustion_subsequent_service": {},
+      "terminal_pc": "0x402022e4"
+    },
+    {
+      "case": "ordinary-llf",
+      "rows": 11,
+      "hz": 62500000,
+      "S": 6282359,
+      "Q": 6250000,
+      "release": {
+        "0": 6305090,
+        "1": 6305090
+      },
+      "completion": {
+        "0": 45371675,
+        "1": 59461757
+      },
+      "deadline": {
+        "0": 56282359,
+        "1": 68782359
+      },
+      "switch": [
+        [
+          6,
+          43794918,
+          1,
+          0
+        ]
+      ],
+      "dwell": [],
+      "late_max": 22731,
+      "save_range": [
+        89,
+        1625
+      ],
+      "gap_range": [
+        2075,
+        24666
+      ],
+      "service": [
+        1574632,
+        51522784,
+        0
+      ],
+      "progress": [
+        144668,
+        4710685,
+        0
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3156143
+      },
+      "terminal_pc": "0x40202228"
+    },
+    {
+      "case": "ordinary-llf-overload",
+      "rows": 12,
+      "hz": 62500000,
+      "S": 6281051,
+      "Q": 6250000,
+      "release": {
+        "0": 6318281,
+        "1": 6318281,
+        "2": 50044675
+      },
+      "completion": {
+        "0": 45370880,
+        "2": 51612854,
+        "1": 59476860
+      },
+      "deadline": {
+        "0": 56281051,
+        "1": 68781051,
+        "2": 56281051
+      },
+      "switch": [
+        [
+          6,
+          43795889,
+          1,
+          0
+        ],
+        [
+          7,
+          50044675,
+          1,
+          2
+        ]
+      ],
+      "dwell": [
+        6248786
+      ],
+      "late_max": 37230,
+      "save_range": [
+        60,
+        2139
+      ],
+      "gap_range": [
+        1010,
+        30285
+      ],
+      "service": [
+        1572707,
+        49959400,
+        1566332
+      ],
+      "progress": [
+        154512,
+        4849120,
+        151536
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3178525
+      },
+      "terminal_pc": "0x40202228"
+    },
+    {
+      "case": "ordinary-llf-overload-trace",
+      "rows": 12,
+      "hz": 62500000,
+      "S": 6278965,
+      "Q": 6250000,
+      "release": {
+        "0": 6302339,
+        "1": 6302339,
+        "2": 50041614
+      },
+      "completion": {
+        "0": 45369975,
+        "2": 51609333,
+        "1": 59463074
+      },
+      "deadline": {
+        "0": 56278965,
+        "1": 68778965,
+        "2": 56278965
+      },
+      "switch": [
+        [
+          6,
+          43794321,
+          1,
+          0
+        ],
+        [
+          7,
+          50041614,
+          1,
+          2
+        ]
+      ],
+      "dwell": [
+        6247293
+      ],
+      "late_max": 23374,
+      "save_range": [
+        53,
+        1992
+      ],
+      "gap_range": [
+        914,
+        32112
+      ],
+      "service": [
+        1573470,
+        49955693,
+        1566010
+      ],
+      "progress": [
+        152823,
+        4865807,
+        153277
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3167230
+      },
+      "terminal_pc": "0x4020222c"
+    },
+    {
+      "case": "ordinary-llf-trace",
+      "rows": 11,
+      "hz": 62500000,
+      "S": 6282174,
+      "Q": 6250000,
+      "release": {
+        "0": 6303907,
+        "1": 6303907
+      },
+      "completion": {
+        "0": 45370632,
+        "1": 59457691
+      },
+      "deadline": {
+        "0": 56282174,
+        "1": 68782174
+      },
+      "switch": [
+        [
+          6,
+          43794176,
+          1,
+          0
+        ]
+      ],
+      "dwell": [],
+      "late_max": 21733,
+      "save_range": [
+        64,
+        1565
+      ],
+      "gap_range": [
+        1877,
+        25107
+      ],
+      "service": [
+        1574411,
+        51522523,
+        0
+      ],
+      "progress": [
+        149559,
+        4762660,
+        0
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3156340
+      },
+      "terminal_pc": "0x4020222c"
+    }
+  ],
+  "archive": {
+    "format": "xz-compressed tar in ordered base64 chunks",
+    "sha256": "7f9b3df998a73af6e6c8720a11c311ba14596eccaf17a99b640e7974ba599b02",
+    "parts": [
+      "evd-048-raw-01.json",
+      "evd-048-raw-02.json"
+    ],
+    "files": 99,
+    "restore_python_from_repository_root": [
+      "from pathlib import Path",
+      "import json, base64, hashlib, tarfile, io",
+      "d=Path('docs/evidence'); j=json.loads((d/'evd-048.json').read_bytes()); a=j['archive']",
+      "b=b''.join(base64.b64decode(json.loads((d/p).read_bytes())['base64']) for p in a['parts'])",
+      "assert hashlib.sha256(b).hexdigest()==a['sha256']",
+      "with tarfile.open(fileobj=io.BytesIO(b),mode='r:xz') as t: t.extractall('edf48-restored',filter='data')",
+      "p=Path('edf48-restored'); m=(p/'MANIFEST.sha256').read_bytes(); assert hashlib.sha256(m).hexdigest()==j['manifest_sha256']",
+      "for line in m.decode().splitlines():",
+      "    h,n=line.split('  ./',1); assert hashlib.sha256((p/n).read_bytes()).hexdigest()==h"
+    ],
+    "offline_replay": "In a disposable restored copy run python -B verify.py and python -B cross.py. For controls.rs place the frozen checkout at ../edf48-src and use rustc +1.95.0 --edition 2024 --cfg jnox_ordinary_deadline -Awarnings controls.rs, then execute controls. Offline replay uses stored symbols and disassembly."
+  }
+}

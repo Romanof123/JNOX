@@ -1,0 +1,340 @@
+{
+  "experiment": "Observer storage crossover, #118 / #109",
+  "evidence_id": "EVD-050",
+  "relationship": "separate 32-boot experiment",
+  "manifest_sha256": "7b02456ad5e4fcf82ff7fdff43254078e2533099de026867bf4b777ec6e56e14",
+  "guest_clock_hz": 62500000,
+  "qemu": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+  "image_provenance": {
+    "RM": {
+      "path": "/tmp/jnox-storage-crossover-118-fresh/RM.elf",
+      "sha": "1417423e7117f903fe45a697a6f2d6b98fab3c01e7a0d6fa6124ce5e94b79e45",
+      "index": "ec9051f6e7d100609e45c40b320db0655e3882bb9cab30ffc3be13019b91b43f",
+      "source": "e0f0ce623aa170a8daff600515b0c76e0b20405f"
+    },
+    "PS": {
+      "path": "/tmp/jnox-storage-crossover-118-fresh/PS.elf",
+      "sha": "ee8d6f39fcb899fa21fef8f31b8b321795640f71101d82ce7893d28c9fbc870b",
+      "index": "5d1363c7c2962f9adbeebb93ffed1bf23cd33ba1a4d9aff8d352c2fd6c6a332a",
+      "source": "86457068e7ba019d3deabb80f63f47d50436c4a6"
+    }
+  },
+  "runs": [
+    {
+      "block": 1,
+      "stratum": "PS",
+      "cell": "A",
+      "terminal": true,
+      "healthy": true,
+      "irq0_ticks": 17074,
+      "first_pass": true
+    },
+    {
+      "block": 1,
+      "stratum": "PS",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 128156,
+      "first_pass": false
+    },
+    {
+      "block": 1,
+      "stratum": "PS",
+      "cell": "C",
+      "terminal": false,
+      "healthy": false,
+      "irq0_ticks": 19692,
+      "first_pass": true
+    },
+    {
+      "block": 1,
+      "stratum": "PS",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 146371,
+      "first_pass": false
+    },
+    {
+      "block": 1,
+      "stratum": "RM",
+      "cell": "A",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 13787,
+      "first_pass": true
+    },
+    {
+      "block": 1,
+      "stratum": "RM",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 147872,
+      "first_pass": false
+    },
+    {
+      "block": 1,
+      "stratum": "RM",
+      "cell": "C",
+      "terminal": false,
+      "healthy": false,
+      "irq0_ticks": 13340,
+      "first_pass": true
+    },
+    {
+      "block": 1,
+      "stratum": "RM",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 136711,
+      "first_pass": false
+    },
+    {
+      "block": 2,
+      "stratum": "PS",
+      "cell": "A",
+      "terminal": true,
+      "healthy": true,
+      "irq0_ticks": 19510,
+      "first_pass": true
+    },
+    {
+      "block": 2,
+      "stratum": "PS",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 125659,
+      "first_pass": false
+    },
+    {
+      "block": 2,
+      "stratum": "PS",
+      "cell": "C",
+      "terminal": false,
+      "healthy": false,
+      "irq0_ticks": 18207,
+      "first_pass": true
+    },
+    {
+      "block": 2,
+      "stratum": "PS",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 140714,
+      "first_pass": false
+    },
+    {
+      "block": 2,
+      "stratum": "RM",
+      "cell": "A",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 10074,
+      "first_pass": true
+    },
+    {
+      "block": 2,
+      "stratum": "RM",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 129076,
+      "first_pass": false
+    },
+    {
+      "block": 2,
+      "stratum": "RM",
+      "cell": "C",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 13157,
+      "first_pass": true
+    },
+    {
+      "block": 2,
+      "stratum": "RM",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 115821,
+      "first_pass": false
+    },
+    {
+      "block": 3,
+      "stratum": "PS",
+      "cell": "A",
+      "terminal": true,
+      "healthy": true,
+      "irq0_ticks": 23649,
+      "first_pass": true
+    },
+    {
+      "block": 3,
+      "stratum": "PS",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 143309,
+      "first_pass": false
+    },
+    {
+      "block": 3,
+      "stratum": "PS",
+      "cell": "C",
+      "terminal": false,
+      "healthy": false,
+      "irq0_ticks": 16829,
+      "first_pass": true
+    },
+    {
+      "block": 3,
+      "stratum": "PS",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 134298,
+      "first_pass": false
+    },
+    {
+      "block": 3,
+      "stratum": "RM",
+      "cell": "A",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 12550,
+      "first_pass": true
+    },
+    {
+      "block": 3,
+      "stratum": "RM",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 114130,
+      "first_pass": false
+    },
+    {
+      "block": 3,
+      "stratum": "RM",
+      "cell": "C",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 11747,
+      "first_pass": true
+    },
+    {
+      "block": 3,
+      "stratum": "RM",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 115317,
+      "first_pass": false
+    },
+    {
+      "block": 4,
+      "stratum": "PS",
+      "cell": "A",
+      "terminal": true,
+      "healthy": true,
+      "irq0_ticks": 16517,
+      "first_pass": true
+    },
+    {
+      "block": 4,
+      "stratum": "PS",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 140316,
+      "first_pass": false
+    },
+    {
+      "block": 4,
+      "stratum": "PS",
+      "cell": "C",
+      "terminal": false,
+      "healthy": false,
+      "irq0_ticks": 15080,
+      "first_pass": true
+    },
+    {
+      "block": 4,
+      "stratum": "PS",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 136119,
+      "first_pass": false
+    },
+    {
+      "block": 4,
+      "stratum": "RM",
+      "cell": "A",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 9924,
+      "first_pass": true
+    },
+    {
+      "block": 4,
+      "stratum": "RM",
+      "cell": "B",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 113216,
+      "first_pass": false
+    },
+    {
+      "block": 4,
+      "stratum": "RM",
+      "cell": "C",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 9637,
+      "first_pass": true
+    },
+    {
+      "block": 4,
+      "stratum": "RM",
+      "cell": "D",
+      "terminal": true,
+      "healthy": false,
+      "irq0_ticks": 105572,
+      "first_pass": false
+    }
+  ],
+  "archive": {
+    "encoding": "base64 chunks of one gzip-compressed POSIX tar",
+    "sha256": "11640986f02010821e771266731a43cbbe3a773377327fcb1a0f4b1138b75552",
+    "files": 206,
+    "parts": [
+      "evd-050-storage-raw-01.json",
+      "evd-050-storage-raw-02.json",
+      "evd-050-storage-raw-03.json",
+      "evd-050-storage-raw-04.json",
+      "evd-050-storage-raw-05.json"
+    ],
+    "restore_python": [
+      "from pathlib import Path",
+      "import json, hashlib, base64",
+      "d=Path('docs/evidence')",
+      "j=json.loads((d/'evd-050-storage.json').read_bytes())",
+      "a=j['archive']; data=b''.join(base64.b64decode(json.loads((d/f).read_bytes())['base64']) for f in a['parts'])",
+      "assert hashlib.sha256(data).hexdigest()==a['sha256']",
+      "Path('storage-evidence.tar.gz').write_bytes(data)"
+    ],
+    "restore_shell": [
+      "mkdir storage-restored",
+      "tar -xzf storage-evidence.tar.gz -C storage-restored",
+      "cd storage-restored/storage-crossover-fresh",
+      "sha256sum -c SHA256SUMS"
+    ]
+  },
+  "experiment_plan": "https://github.com/Romanof123/JNOX/blob/79ec3edc390bf40eca65935ec0baa2b2ed5467e1/docs/control-cold-plan.md"
+}
