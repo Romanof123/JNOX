@@ -209,6 +209,9 @@ class DynamicTranscript(Enum):
 
 
 TRANSCRIPTS = {
+    "priority-resume": BOOT_TRANSCRIPT + b"PRIORITY RESUME BEGIN\nPRIORITY RESUME PASS\n",
+    "periodic-overrun": BOOT_TRANSCRIPT + b"OVERRUN RM DONE\nOVERRUN DM DONE\nPERIODIC OVERRUN PASS\n",
+    "cbs-wake": BOOT_TRANSCRIPT + b"CBS WAKE TIMER STOP\nCBS WAKE PASS\n",
     "amc": None,  # Counter values vary per boot. Freeze the validated UART before quiet.
     "vruntime": DynamicTranscript.VRUNTIME,
     "proportional": BOOT_TRANSCRIPT + (

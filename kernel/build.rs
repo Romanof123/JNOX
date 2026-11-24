@@ -24,13 +24,16 @@ fn main() {
         ("CBS", "cbs"),
         ("PERIODIC", "periodic"),
         ("RR", "rr"),
+        ("PRIORITY_RESUME", "priority_resume"),
+        ("PERIODIC_OVERRUN", "periodic_overrun"),
+        ("CBS_WAKE", "cbs_wake"),
         ("SCHED", "scheduler"),
     ]
     .iter()
     .find(|(feature, _)| env::var_os(format!("CARGO_FEATURE_{feature}_BENCH")).is_some())
     .map_or("boot", |(_, profile)| *profile);
     println!(
-        r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "proportional", "vruntime", "eevdf", "hierarchy", "power", "extension", "aperiodic", "deadline", "batch", "coop"))"#
+        r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "proportional", "vruntime", "eevdf", "hierarchy", "power", "extension", "aperiodic", "deadline", "batch", "coop", "priority_resume", "periodic_overrun", "cbs_wake"))"#
     );
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     let board = match env::var("JNOX_BOARD") {

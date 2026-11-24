@@ -19,6 +19,12 @@ mod batch;
 mod batch_policy;
 #[cfg(jnox_bench = "cbs")]
 mod cbs;
+#[cfg(jnox_bench = "priority_resume")]
+mod priority_resume;
+#[cfg(jnox_bench = "periodic_overrun")]
+mod periodic_overrun;
+#[cfg(jnox_bench = "cbs_wake")]
+mod cbs_wake;
 #[cfg(not(any(jnox_bench = "boot", jnox_bench = "power")))]
 mod context;
 #[cfg(jnox_bench = "coop")]
@@ -31,7 +37,8 @@ mod deadline_policy;
     jnox_bench = "scheduler",
     jnox_bench = "rr",
     jnox_bench = "periodic",
-    jnox_bench = "batch"
+    jnox_bench = "batch",
+    jnox_bench = "periodic_overrun"
 ))]
 mod dispatch_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
@@ -88,7 +95,9 @@ mod proportional_policy;
     jnox_bench = "deadline",
     jnox_bench = "coop",
     jnox_bench = "mutex",
-    jnox_bench = "multilevel"
+    jnox_bench = "multilevel",
+    jnox_bench = "priority_resume",
+    jnox_bench = "periodic_overrun"
 ))]
 mod ready_queue;
 #[cfg(jnox_bench = "aperiodic")]
@@ -103,7 +112,7 @@ mod smp;
 mod smp_boot;
 #[cfg(jnox_bench = "smp")]
 mod smp_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "partition"))]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "cbs_wake", jnox_bench = "partition"))]
 mod temporal_policy;
 #[cfg(jnox_bench = "vruntime")]
 mod vruntime;
@@ -138,6 +147,12 @@ extern "C" fn kernel_main() -> ! {
 }
 
 fn run_bench() -> ! {
+    #[cfg(jnox_bench = "priority_resume")]
+    priority_resume::run();
+    #[cfg(jnox_bench = "periodic_overrun")]
+    periodic_overrun::run();
+    #[cfg(jnox_bench = "cbs_wake")]
+    cbs_wake::run();
     #[cfg(jnox_bench = "proportional")]
     proportional::run();
     #[cfg(jnox_bench = "vruntime")]
