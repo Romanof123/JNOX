@@ -10,7 +10,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scheduling_evidence import POLICIES, audit, main, release_rows
+from scheduling_evidence import POLICIES, audit, main, release_citation_links
 
 
 RELEASE_HEADER = ("| Policy | Subcases and existing records | Remaining execution or approval |\n"
@@ -133,7 +133,20 @@ class SchedulingEvidenceTests(unittest.TestCase):
             text = (row + fence + "md\n" + RELEASE_HEADER + row + fence + "\n\n"
                     + "| Policy | Examples | Remaining work |\n|---|---|---|\n" + row
                     + "\n" + korean + row + "\nSome additional prose.\n" + row)
-            self.assertEqual(list(release_rows(text)), [("POL-015", "[EVD-058](record.md)")])
+            self.assertEqual(list(release_citation_links(text)), [("POL-015", "EVD-058")])
+
+    def test_release_matrix_counts_only_links_with_plain_evidence_labels(self):
+        korean = "| 정책 | 하위 사례와 기존 근거 | 남은 실행 또는 승인 |\n|---|---|---|\n"
+        cells = (r"LO \| HI [EVD-058](inline.md) [EVD-057][mutex] "
+                 r"![EVD-051](image.png) \[EVD-052](escaped.md) EVD-053 "
+                 r"<!-- [EVD-054](hidden.md) --> [EVD-055][undefined] "
+                 + chr(96) + "[EVD-056](code.md)" + chr(96))
+        for header in (RELEASE_HEADER, korean):
+            with self.subTest(header=header):
+                text = header + "| POL-015 | " + cells + " | [EVD-090](approval.md) |\n"
+                text += "\n[mutex]: ../evidence/mutex.md\n"
+                self.assertEqual(list(release_citation_links(text)),
+                                 [("POL-015", "EVD-058"), ("POL-015", "EVD-057")])
 
     def test_unrelated_verification_evidence_cannot_complete_path(self):
         self.rows.remove(("VER-023", "has-partial-evidence", "EVD-004"))

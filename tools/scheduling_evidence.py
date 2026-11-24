@@ -14,9 +14,22 @@ import argparse
 import csv
 import json
 import re
+import sys
 from collections import defaultdict
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
+
+
+# Load the original pure-Python wheels without installation or network access.
+_VENDOR = Path(__file__).resolve().parent / "vendor" / "scheduling_markdown"
+_WHEELS = [str(_VENDOR / name) for name in (
+    "markdown_it_py-3.0.0-py3-none-any.whl", "mdurl-0.1.2-py3-none-any.whl")]
+sys.path[:0] = _WHEELS
+try:
+    from markdown_it import MarkdownIt
+    from markdown_it.tree import SyntaxTreeNode
+finally:
+    del sys.path[:len(_WHEELS)]
 
 
 POLICIES = tuple("POL-%03d" % i for i in range(1, 19))
@@ -113,38 +126,25 @@ RELEASE_HEADERS = {
 }
 
 
-def release_rows(text):
-    """Yield rows from the declared release table outside Markdown fences."""
-    header = active = False
-    fence = ""
-    for line in text.splitlines():
-        if fence:
-            if re.fullmatch(r" {0,3}" + fence[0] + "{%d,}" % len(fence) + r"[ \t]*", line):
-                fence = ""
+def release_citation_links(text):
+    """Read actual Markdown links in the declared top-level release table."""
+    parser = MarkdownIt("commonmark").enable("table")
+    for table in SyntaxTreeNode(parser.parse(text)).children:
+        if table.type != "table" or len(table.children) != 2:
+            continue  # A header without a body has no policy rows.
+        head, body = table.children
+        headers = tuple(cell[0].content for cell in head[0].children)
+        if headers not in RELEASE_HEADERS:
             continue
-        opening = re.match(r"^ {0,3}(\x60{3,}|~{3,})", line)
-        if opening:
-            fence = opening[1]
-            header = active = False
-            continue
-        # A backslash escapes the following character, including a pipe or
-        # another backslash. Consume each pair before recognizing separators.
-        row = line.lstrip(" ")
-        if len(line) - len(row) > 3 or not row.startswith("|"):
-            header = active = False
-            continue
-        cells = [match[1].strip() for match in re.finditer(r"\|((?:\\.|[^\\|]|\\$)*)", row)]
-        if cells and not cells[-1] and row.rstrip().endswith("|"):
-            cells.pop()
-        if header:
-            active = len(cells) == 3 and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
-            header = False
-        elif active and len(cells) == 3:
-            if cells[0] in POLICIES:
-                yield cells[0], cells[1]
-        else:
-            header = tuple(cells) in RELEASE_HEADERS
-            active = False
+        for row in body.children:
+            policy = row[0][0].content
+            if policy not in POLICIES:
+                continue
+            for node in row[1].walk():
+                if node.type == "link" and len(node.children) == 1:
+                    label = node[0]
+                    if label.type == "text" and re.fullmatch(r"EVD-[0-9]{3}", label.content):
+                        yield policy, label.content
 
 
 def catalogs(root, findings):
@@ -170,8 +170,8 @@ def catalogs(root, findings):
     release_citations = defaultdict(set)
     for suffix in (".md", ".en.md"):
         matrix = root / "docs" / ("scheduling-release-cases" + suffix)
-        for policy, recorded in release_rows(matrix.read_text(encoding="utf-8-sig")):
-            release_citations[policy].update(EVD_LINK.findall(recorded))
+        for policy, evd in release_citation_links(matrix.read_text(encoding="utf-8-sig")):
+            release_citations[policy].add(evd)
     return definitions, cited, release_citations
 
 
