@@ -45,37 +45,40 @@ fn state_index(cursor: *const Progress) -> u64 {
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn pi4_migration_m() -> ! {
     let mut state = Progress { index: 0, sum: 0 };
+    let mut checkpoints = runtime::Checkpoints::default();
     while state.index < END {
-        let before = runtime::generation();
+        let before = runtime::generation(M);
         let limit = state.index + STRIDE;
         pi4_migration_input_loop(&mut state, limit);
-        runtime::checkpoint(before, M, state.index, state.sum, (&raw const state).addr());
+        runtime::checkpoint(&mut checkpoints, before, M, state.index, state.sum, (&raw const state).addr());
     }
-    runtime::finish(M, state.sum)
+    runtime::finish(M, state.sum, checkpoints)
 }
 
-fn pinned(task: usize, previous: u64, end: u64) -> u64 {
+fn pinned(task: usize, previous: u64, end: u64) -> (u64, runtime::Checkpoints) {
+    let mut checkpoints = runtime::Checkpoints::default();
     let mut state = Progress { index: previous, sum: 0 };
     while state.index < end {
-        let before = runtime::generation();
+        let before = runtime::generation(task);
         let limit = state.index + STRIDE;
         while state.index < limit {
             state.index += 1;
             state.sum += hint::black_box(state.index);
         }
-        runtime::checkpoint(before, task, state.index, state.sum, (&raw const state).addr());
+        runtime::checkpoint(&mut checkpoints, before, task, state.index, state.sum, (&raw const state).addr());
     }
-    state.sum
+    (state.sum, checkpoints)
 }
 
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn pi4_migration_p0() -> ! {
-    runtime::finish(P0, pinned(P0, 0, 32))
+    let (sum, checkpoints) = pinned(P0, 0, 32);
+    runtime::finish(P0, sum, checkpoints)
 }
 
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn pi4_migration_p1_open() -> ! {
-    let sum = pinned(P1, 0, 16);
+    let (sum, checkpoints) = pinned(P1, 0, 16);
     // Use the same four-local-seconds bound as the directed-wake bootstrap.
     // Only the opening peer waits; M never polls for an interrupt or peer.
     let hz = bsp::frequency();
@@ -87,10 +90,11 @@ pub(crate) extern "C" fn pi4_migration_p1_open() -> ! {
         }
         hint::spin_loop();
     }
-    runtime::finish(P1, sum)
+    runtime::finish(P1, sum, checkpoints)
 }
 
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn pi4_migration_p1() -> ! {
-    runtime::finish(P1, pinned(P1, 16, 32))
+    let (sum, checkpoints) = pinned(P1, 16, 32);
+    runtime::finish(P1, sum, checkpoints)
 }

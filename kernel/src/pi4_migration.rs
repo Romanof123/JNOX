@@ -66,8 +66,7 @@ static INITIAL: AtomicBool = AtomicBool::new(false);
 static DONE: [AtomicBool; 2] = [const { AtomicBool::new(false) }; 2];
 static LIVE: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
 static MILESTONE: AtomicBool = AtomicBool::new(false);
-static LAST: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
-static SEEN: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
+static TASK_LEASE: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
 static mut STACKS: [Stack; 7] = [const { Stack([0; STACK_BYTES]) }; 7];
 #[unsafe(no_mangle)]
 static mut smp_handler_tops: [usize; 2] = [0; 2];
@@ -106,6 +105,7 @@ struct State {
     frame: [usize; 3],
     epoch: u64,
     done: u8,
+    summaries: u8,
 }
 struct Shared(UnsafeCell<Option<State>>);
 unsafe impl Sync for Shared {}
@@ -153,6 +153,7 @@ impl State {
         let f = self.frame[id] as *mut Frame;
         frame_check(id, f);
         let frame = unsafe { &*f };
+        TASK_LEASE[id].store(l.sequence, Release);
         LIVE[c].store(l.sequence, Release);
         log::event(
             c,
@@ -231,34 +232,52 @@ impl State {
         }
     }
 }
-pub(crate) fn generation() -> u64 {
-    LIVE[cpu()].load(Acquire)
+pub(crate) fn generation(task: usize) -> u64 {
+    TASK_LEASE[task].load(Acquire)
 }
 pub(crate) fn first_milestone() -> bool {
     MILESTONE.load(Acquire)
 }
-pub(crate) fn checkpoint(before: u64, task: usize, index: u64, sum: u64, local: usize) {
-    let c = cpu();
-    let after = LIVE[c].load(Acquire);
+// Dispatch restores one exclusively claimed frame. Only that running task
+// holds this stack reference; handlers and the peer never receive it. The
+// summary crosses SVC as scalar registers, and retirement precedes reuse.
+#[derive(Default)]
+pub(crate) struct Checkpoints {
+    last_lease: u64,
+    rows_on_lease: u64,
+    count: u64,
+    digest: u64,
+    last_index: u64,
+}
+
+pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, task: usize,
+                         index: u64, sum: u64, local: usize) {
     if task == 0 && sum != index * (index + 1) / 2 {
         abort(12)
     }
-    let count = if LAST[task].swap(after, Relaxed) != after {
-        SEEN[task].store(1, Relaxed);
-        1
-    } else {
-        SEEN[task].fetch_add(1, Relaxed) + 1
-    };
-    if task != 0 || count <= 2 || index == 65536 || before != after {
-        let pc: u64;
-        unsafe { asm!("adr {},.",out(reg)pc,options(nomem,nostack,preserves_flags)) }
-        let stack = sp();
-        // A migration may interrupt observation itself. Re-read CPU/lease
-        // before choosing the local writer; ambiguous rows carry both values.
+    retained.count += 1;
+    retained.digest = (retained.digest.rotate_left(7) ^ index).wrapping_add(sum);
+    retained.last_index = index;
+    let after = generation(task);
+    if task != 0 || retained.last_lease != after || retained.rows_on_lease < 2
+        || index == 65536 || before != after
+    {
+        // Bind the sparse row and its CPU-local journal slot to the same lease.
         let daif: u64;
         unsafe { asm!("mrs {},daif","msr daifset,#2",out(reg)daif,options(nostack)) };
         let actual = cpu();
         let final_lease = LIVE[actual].load(Acquire);
+        if final_lease == 0 || final_lease != generation(task) {
+            abort(12)
+        }
+        if retained.last_lease != final_lease {
+            retained.last_lease = final_lease;
+            retained.rows_on_lease = 0;
+        }
+        retained.rows_on_lease += 1;
+        let pc: u64;
+        unsafe { asm!("adr {},.",out(reg)pc,options(nomem,nostack,preserves_flags)) }
+        let stack = sp();
         log::event(
             actual,
             5,
@@ -279,8 +298,9 @@ pub(crate) fn checkpoint(before: u64, task: usize, index: u64, sum: u64, local: 
         MILESTONE.store(true, Release)
     }
 }
-pub(crate) fn finish(task: usize, value: u64) -> ! {
-    unsafe { asm!("svc #1",in("x0")task,in("x1")value,options(noreturn)) }
+pub(crate) fn finish(task: usize, value: u64, retained: Checkpoints) -> ! {
+    unsafe { asm!("svc #1",in("x0")task,in("x1")value,in("x2")retained.count,
+                  in("x3")retained.digest,in("x4")retained.last_index,options(noreturn)) }
 }
 
 fn idle_frame(c: usize, epoch: u64) -> *mut Frame {
@@ -329,7 +349,7 @@ extern "C" fn idle() -> ! {
                 }
             }
             let totals = transaction(|s| {
-                if s.done != 7 || s.running.iter().any(Option::is_some) {
+                if s.done != 7 || s.summaries != 15 || s.running.iter().any(Option::is_some) {
                     abort(27)
                 }
                 [0, 1, 2].map(|id| s.policy.charged(id).unwrap_or(0))
@@ -380,6 +400,7 @@ pub(super) fn start(c: usize) -> ! {
             ],
             epoch: 0,
             done: 0,
+            summaries: 0,
         };
         if !s.policy.release(5) {
             abort(17)
@@ -481,6 +502,19 @@ pub(super) fn svc(c: usize, f: *mut Frame, imm: u16) -> *mut Frame {
         if imm != 1 || fr.gpr[0] != role as u64 || fr.gpr[1] != expected {
             abort(26)
         }
+        let (count, last_index, bit) = match (s.epoch, role) {
+            (1, 0) => (4096, 65536, 1),
+            (1, 1) => (2, 32, 2),
+            (0, 2) => (1, 16, 4),
+            (1, 2) => (1, 32, 8),
+            _ => abort(26),
+        };
+        if fr.gpr[2] != count || fr.gpr[4] != last_index || s.summaries & bit != 0 {
+            abort(26)
+        }
+        s.summaries |= bit;
+        log::event(c, 13, [role as u64, s.epoch, l.sequence, fr.gpr[2],
+                           fr.gpr[3], fr.gpr[4], fr.gpr[1], 0]);
         log::event(
             c,
             9,

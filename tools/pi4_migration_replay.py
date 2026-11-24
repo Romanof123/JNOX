@@ -120,10 +120,11 @@ def observed_threads(folder, identities):
     return history,mapping
 
 
-def journal(raw, case):
+def journal(raw, case, wire=1):
     lines=[line.split() for line in raw.splitlines() if line.startswith(b"MG ")]
-    if not lines or lines[0][:3] != [b"MG",b"1",b"BEGIN"]:
+    if not lines or len(lines[0]) < 3 or lines[0][2] != b"BEGIN":
         raise Unobserved("no sealed migration journal")
+    need(lines[0][:3] == [b"MG",str(wire).encode(),b"BEGIN"],"frozen wire version mismatch")
     need(numbers(lines[0][3:],2)==(case,3),"case or online mask mismatch")
     sections={}; freq={};pos=1
     for cpu in range(2):
@@ -134,14 +135,27 @@ def journal(raw, case):
         for seq in range(n):
             need(pos<len(lines) and lines[pos][:2]==[b"MG",b"ROW"],"missing journal row")
             owner,order,kind,*v=numbers(lines[pos][2:],11);pos+=1
-            need((owner,order)==(cpu,seq) and 1<=kind<=12,"CPU/sequence/event kind")
+            need((owner,order)==(cpu,seq) and 1<=kind<=(13 if wire==2 else 12),"CPU/sequence/event kind")
             sections[cpu].append((kind,tuple(v)))
     need(pos+1==len(lines) and lines[pos][:2]==[b"MG",b"END"],"missing footer or extra records")
     end=numbers(lines[pos][2:],5)
     need(end[0]==1 and end[1]==sum(map(len,sections.values())),"guest failure or count mismatch")
     return sections,freq,end[2:]
 
-def score(sections, freq, totals, case, bodies):
+def checkpoint_summary(task, epoch):
+    start, stop = {(0,1):(0,65536), (1,1):(0,32), (2,0):(0,16), (2,1):(16,32)}[task,epoch]
+    count = digest_value = partial_sum = 0
+    mask = (1 << 64) - 1
+    for index in range(start + 1, stop + 1):
+        partial_sum += index
+        if index % 16 == 0:
+            rotated = ((digest_value << 7) | (digest_value >> 57)) & mask
+            digest_value = ((rotated ^ index) + partial_sum) & mask
+            count += 1
+    return count, digest_value, stop, partial_sum
+
+
+def score(sections, freq, totals, case, bodies, wire=1):
     rows=[(cpu,seq,kind,data) for cpu in range(2)
           for seq,(kind,data) in enumerate(sections[cpu])]
     def events(kind):
@@ -247,7 +261,8 @@ def score(sections, freq, totals, case, bodies):
              "missing full-IAR EOI")
     src=only([d for c,_,d in irqs if c==0],"missing source IRQ")
     need(src[1]==0,"source IRQ did not interrupt M")
-    if len(bodies)!=1 or not bodies[0][0]<=src[3]<bodies[0][1]:
+    in_loop = len(bodies)==1 and bodies[0][0]<=src[3]<bodies[0][1]
+    if wire==1 and not in_loop:
         raise Unobserved("interrupted PC outside an unambiguous linked Rust arithmetic loop")
     dest=0 if case else 1
     m_leases=sorted(l for l,x in claimed.items() if x[1]==0)
@@ -256,7 +271,7 @@ def score(sections, freq, totals, case, bodies):
     second=claimed[m_leases[1]]
     need(second[2:]==(src[2],src[3],src[5],src[4]),"portable frame, ELR, SP or X21 changed")
     source_x21=src[5]
-    need(inside(0,source_x21),"saved x21 outside M's stack")
+    need(not in_loop or inside(0,source_x21),"saved x21 outside M's stack")
     checkpoints=defaultdict(list);ambiguous=[]
     for c,n,d in events(5):
         task,before,after,index,value,local,pc,sp=d
@@ -268,15 +283,16 @@ def score(sections, freq, totals, case, bodies):
         need(value==expected and after in claimed and claimed[after][1]==task,
              "arithmetic or closing checkpoint lease")
         if before!=after:
-            need(before in claimed and claimed[before][1]==task,"unknown opening checkpoint lease")
+            need(before in claimed and claimed[before][1]==task and before<after,"unknown opening checkpoint lease")
             ambiguous.append([c,n,task,before,after,index])
         need(dispatches[after][0]==c and dispatches[after][1]<n<retired[after][1],
              "checkpoint outside local lease")
         checkpoints[after].append((index,local,before==after))
+    addresses = {local for l in m_leases for _,local,_ in checkpoints[l]}
+    need(len(addresses)==1 and (not in_loop or addresses=={source_x21}), "M local state identity")
     for l in m_leases:
         points=checkpoints[l]
-        need(points and all(a[0]<b[0] for a,b in zip(points,points[1:]))
-             and all(x[1]==source_x21 for x in points),"M checkpoint progression/cookie")
+        need(points and all(a[0]<b[0] for a,b in zip(points,points[1:])), "M checkpoint progression/cookie")
     need(checkpoints[m_leases[0]][-1][0]<checkpoints[m_leases[1]][0][0]
          and checkpoints[m_leases[1]][-1][0]==65536,"resumed M progress/final")
     need(any(point[2] for point in checkpoints[m_leases[1]]),"no unambiguous resumed checkpoint")
@@ -285,6 +301,19 @@ def score(sections, freq, totals, case, bodies):
     for c,n,(task,value,l,ep,*_) in events(9):
         need(l in retired and retired[l][0]==c and retired[l][2]==task
              and dispatches[l][1]<n<retired[l][1],"finish lacks owned lease")
+    summaries = {}
+    if wire == 2:
+        for c,n,d in events(13):
+            task,ep,lease,count,h,index,value,reserved = d
+            key = task,ep
+            need(key in ((0,1),(1,1),(2,0),(2,1)) and key not in summaries,
+                 "unknown or duplicate activation summary")
+            need(reserved == 0 and (count,h,index,value) == checkpoint_summary(task,ep),
+                 "arithmetic checkpoint count/digest/final value mismatch")
+            need(n+1<len(sections[c]) and sections[c][n+1]==(9,(task,value,lease,ep,0,0,0,0))
+                 and claimed.get(lease,())[:2]==(ep,task), "summary not bound to actual finish")
+            summaries[key] = dict(task=task,epoch=ep,lease=lease,count=count,digest=h,index=index,value=value)
+        need(len(summaries)==4, "incomplete activation summaries")
     for task,points in [(1,[16,32]),(2,[16,32])]:
         observed=[i for l in sorted(checkpoints) if claimed[l][1]==task for i,_,_ in checkpoints[l]]
         need(observed==points,"missing pinned peer checkpoint")
@@ -297,7 +326,10 @@ def score(sections, freq, totals, case, bodies):
     return dict(regime=CASES[case],lease_intervals=local_intervals,frequency=freq,
                 local_ticks={str(c):[account[c,t] for t in range(3)] for c in range(2)},
                 cross_core_latency="unobserved",ambiguous_checkpoints=ambiguous,
-                checkpoint_coverage="sparse retained rows; intermediate checkpoints not independently replayed",
+                checkpoint_coverage=("ordered summary of all checkpoints; sparse lease rows" if wire==2
+                                     else "sparse retained rows; intermediate checkpoints not independently replayed"),
+                activation_summaries=list(summaries.values()), qualifying_inner_pc=in_loop,
+                loop_ranges=bodies, saved_x21=source_x21,
                 migration_pc=src[3],destination_cpu=dest,expected_external=external)
 
 def replay(root, ordinal, trusted):
@@ -332,10 +364,14 @@ def replay(root, ordinal, trusted):
     uart=bounded(folder/"uart.bin",8*1024*1024)
     fatal=[line.decode("ascii","replace") for line in uart.splitlines() if b"FAIL" in line]
     if b"PI4 MIG UNOBSERVED M FINISHED BEFORE IRQ" in uart:
+        need(fatal==["PI4 MIG FAIL 000000000000001d"] and b"MG END " not in uart,
+             "early-finish marker inconsistent with terminal evidence")
         raise Unobserved("M finished before migration IRQ")
     need(not fatal,"guest failure: "+" | ".join(fatal))
     case=CASES.index(frozen["case"])
-    sections,hz,totals=journal(uart,case)
+    wire=frozen.get("wire_version",1)
+    need(type(wire) is int and wire in (1,2), "unsupported frozen wire version")
+    sections,hz,totals=journal(uart,case,wire)
     bodies,entries=layout(elf,image,dis)
     for cpu in (0,1):
         for kind,d in sections[cpu]:
@@ -353,7 +389,7 @@ def replay(root, ordinal, trusted):
                 off=d[6]-0x80000
                 need(0<=off<=len(image)-4 and int.from_bytes(image[off:off+4],"little")&0xffffffe0==0x10000000,
                      "task evidence PC does not identify the linked ADR-self probe")
-    result=score(sections,hz,totals,case,bodies)
+    result=score(sections,hz,totals,case,bodies,wire)
     if sess["platform"]=="physical":
         need(sess["card_readback"]==frozen["card_readback"] and sess["cycle_witness"].strip(),
              "physical witness/readback association")
@@ -369,7 +405,9 @@ def replay(root, ordinal, trusted):
     need(all(external[c]==result["expected_external"][c] for c in (0,1)),
          "per-CPU external exception/ERET stream differs from guest PCs")
     result.update(position=ordinal,session_sha256=trusted,raw_observer_mapping=mapping,
-                  observation="matched finite model position; two first positions required per case")
+                  observation=("matched finite model position; two first positions required per case"
+                               if result["qualifying_inner_pc"] else
+                               "actual continuation matched; qualifying inner-loop interruption unobserved"))
     return result
 
 
@@ -388,7 +426,7 @@ def main():
         print(json.dumps(dict(outcome="invalid or incomplete evidence",reason=str(exc))))
         return 1
     print(json.dumps(result,indent=2))
-    return int(result["observation"]=="unobserved independent instruction history")
+    return int(not result["qualifying_inner_pc"] or result["observation"]=="unobserved independent instruction history")
 
 
 if __name__=="__main__":

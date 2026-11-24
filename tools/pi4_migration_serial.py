@@ -45,7 +45,7 @@ def main():
         readback=card(args.mounted_boot,args.elf)
         for name,src in zip(FILES,(args.elf,args.mounted_boot/"kernel8.img",args.disassembly)):
             shutil.copyfile(src,root/name)
-        save(root/"freeze.json",dict(platform="physical",case=args.case,source=args.source,positions=[1,2],
+        save(root/"freeze.json",dict(wire_version=2, platform="physical",case=args.case,source=args.source,positions=[1,2],
              board=args.board,card=args.card,eeprom=args.eeprom,card_readback=readback,
              hashes={name:sha(root/name) for name in FILES}))
         print(sha(root/"freeze.json"))

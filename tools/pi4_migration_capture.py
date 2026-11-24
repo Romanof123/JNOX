@@ -44,7 +44,7 @@ def freeze(args):
     for name, src in zip(FILES, (args.elf, args.raw, args.disassembly)):
         shutil.copyfile(src, root / name)
     qemu = args.qemu.resolve(strict=True)
-    record = dict(schema=1, platform="raspi4b-tcg", case=args.case, source=args.source,
+    record = dict(schema=1, wire_version=2, platform="raspi4b-tcg", case=args.case, source=args.source,
                   qemu=str(qemu), qemu_sha256=sha(qemu), flags=FLAGS,
                   hashes={name: sha(root / name) for name in FILES},
                   ceiling_ns=30_000_000_000, quiet_ns=1_000_000_000, positions=[1, 2])
