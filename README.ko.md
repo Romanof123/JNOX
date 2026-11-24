@@ -6,6 +6,8 @@ J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Ru
 
 J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 서비스 격리, 네이티브 Rust 드라이버, Linux 드라이버를 위한 별도 호환 영역을 설계 목표로 삼습니다.
 
+AArch64 QEMU `virt`에서 네이티브 v1 SDK로 빌드한 정적 C 실행 파일 하나가 사용자 모드(EL0)에 진입해 37을 계산하고 종료값 37을 전달했습니다. 표준 출력 쓰기 시스템 호출은 `-ENOSYS`를 반환했고 출력은 0바이트였습니다. [네이티브 C 시작·종료 검증](docs/native-el0-startup.md)
+
 AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO와 라운드로빈으로 실행할 수 있습니다. 두 정책 모두 Raspberry Pi 4 모델에서도 부팅했습니다. 스케줄링 출시 표에는 시험한 구성별 근거와 남은 작업이 연결되어 있습니다. [Rust 작업 실행](docs/fixed-runtime.md) · [Pi 4 모델 검증](docs/evidence/evd-031.md) · [스케줄링 출시 표](docs/scheduling-release-cases.md)
 
 단일 코어 QEMU `virt` 모델에서는 마감이 가장 이른 작업을 선택하는 EDF, 일정 주기로 남은 여유 시간이 가장 짧은 작업을 선택하는 LLF, 가중치로 CPU 시간을 배분하는 가상 실행시간 스케줄러도 실행할 수 있습니다. EDF·LLF 시험은 선점된 Rust 작업이 저장된 명령 위치로 복귀하는지 확인합니다. 가중치 시험은 두 작업의 CPU 점유율과 잠든 동료를 깨운 뒤 실제로 실행되기까지 걸린 시간을 측정합니다. [EDF·LLF 실행](docs/ordinary-deadline-plan.md) · [가중치 작업 실행](docs/ordinary-weighted.md)
