@@ -3,7 +3,7 @@ import argparse
 import sys
 import unittest
 
-from ordinary_partition_account import reconstruct
+from ordinary_partition_account import Identity, exception_events, reconstruct
 
 # Enumerate complete nominal slots independently of the production dispatcher.
 P = [(0, 2, 0, 0), (2, 3, 1, 2), (3, 4, 2, 2)]
@@ -29,6 +29,13 @@ def synthetic(table, case):
     previous = 3
     saved = {}
     work = [0,0,0]
+    steps = (17,31,1)
+    values = list(steps)
+    def advance(task, iterations):
+        for _ in range(iterations):
+            high, low = divmod(values[task] * 128, 2**64)
+            values[task] = (low + high + steps[task]) % 2**64
+        work[task] += iterations
     ends = [0x14000,0x18000,0x1c000]
     while True:
         start, end, owner, chosen = slots[idx]
@@ -37,17 +44,17 @@ def synthetic(table, case):
         offset = (1250 if case == "long" else 21) if end == close and case != "healthy" else 0
         row("TIMER", n=n,d=target,p=live+1,c=target+offset,after=live+2)
         out_pc, out_sp, out_hash = saved.get(previous,(0,0,0))
-        pc, sp, fingerprint = saved.get(chosen, (0x4000+chosen*256, ends[chosen], 0))
+        pc, sp, fingerprint = saved.get(chosen, (0x4000+chosen*256, ends[chosen], 0x345 << 23))
         row("EDGE",n=n,due=due,entry=entry,live=live,ret=live+3,next=target,owner=owner,chosen=chosen,
             **{"from":previous},last=entry-1 if n else 0,out_count=work[previous] if n else 0,
             out_pc=out_pc,out_sp=out_sp,out_hash=out_hash,in_pc=pc,in_sp=sp,in_hash=fingerprint)
-        work[chosen] += 1
-        row("OBS",n=n,x=live+4,task=chosen,sp=ends[chosen]-16,count=work[chosen],value=17+chosen)
+        advance(chosen, 1)
+        row("OBS",n=n,x=live+4,task=chosen,sp=ends[chosen]-16,count=work[chosen],value=values[chosen])
         previous = chosen
         due = target
         entry = target + offset + 1
         saved[chosen] = 0x4010+chosen*256, ends[chosen]-16, work[chosen]
-        work[chosen] += 10
+        advance(chosen, 10)
         n += 1
         if start == 3*period:
             out_pc, out_sp, out_hash = saved[chosen]
@@ -86,8 +93,34 @@ class Controls(unittest.TestCase):
             if offset == 20:
                 self.assertTrue(reconstruct(rows,"P","healthy","synthetic")["timing_envelope_met"])
             else:
-                with self.assertRaises(ValueError):
-                    reconstruct(rows,"P","healthy","synthetic")
+                self.assertFalse(reconstruct(rows,"P","healthy","synthetic")["timing_envelope_met"])
+
+    def test_release_is_not_service(self):
+        for table, release, first_slot in (("P",3,6),("Q",1,4)):
+            result = reconstruct(synthetic(table,"healthy"),table,"healthy","synthetic")
+            self.assertEqual(result["b_release_nominal"], 100000 + release*1000)
+            self.assertEqual(result["b_first_selection"], 100000 + first_slot*1000 + 2)
+            self.assertEqual(result["b_first_worker_observation"], result["b_first_selection"] + 4)
+            self.assertFalse(result["independent_return_trace_checked"])
+            self.assertIsNone(result["elf_sha256"])
+
+    def test_guest_requires_external_evidence(self):
+        with self.assertRaises(ValueError):
+            reconstruct(synthetic("Q","healthy"),"Q","healthy","guest")
+
+    def test_guest_rejects_missing_independent_returns(self):
+        layout = Identity(tuple((0x4000+i*256,128) for i in range(3)),0x10000,"fixture")
+        with self.assertRaisesRegex(ValueError,"independent IRQ/return sequence"):
+            reconstruct(synthetic("P","healthy"),"P","healthy","guest",layout,[])
+        with self.assertRaisesRegex(ValueError,"truncated IRQ"):
+            exception_events(["Taking exception 5 [IRQ]"])
+
+    def test_missing_accumulator(self):
+        rows = synthetic("P","healthy")
+        index = next(i for i,x in enumerate(rows) if x.startswith("OP OBS "))
+        rows[index] = rows[index].split(" value=")[0]
+        with self.assertRaises((KeyError,ValueError)):
+            reconstruct(rows,"P","healthy","synthetic")
 
     def test_false_resume(self):
         rows = synthetic("Q","healthy")
@@ -99,6 +132,7 @@ class Controls(unittest.TestCase):
 
     def test_contradictions(self):
         for tag, field, value in [("TIMER","c",0),("EDGE","chosen",1),("OBS","sp",0),
+                                  ("EDGE","in_pc",0x4004),("OBS","value",0),("OBS","count",2**63),
                                   ("EDGE","due",45),("BOUND","skipped",1),("OBS","x",0)]:
             rows = synthetic("P","healthy")
             i = next(i for i,row in enumerate(rows) if row.startswith("OP "+tag+" "))

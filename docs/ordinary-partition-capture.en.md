@@ -35,8 +35,8 @@ The host reconstruction reports disjoint intervals split at each nominal boundar
 
 ```sh
 # From repository root, after collecting a fresh healthy guest UART:
-python tools/ordinary_partition_account.py capture-ordinary-p/uart --table P --case healthy --origin guest > guest-P.json
-python tools/ordinary_partition_account.py capture-ordinary-q/uart --table Q --case healthy --origin guest > guest-Q.json
+python tools/ordinary_partition_account.py capture-ordinary-p/uart --table P --case healthy --origin guest --elf capture-ordinary-p/kernel.elf --elf-sha256 "$(cut -d' ' -f1 capture-ordinary-p/sha256)" --exceptions capture-ordinary-p/exceptions.log > guest-P.json
+python tools/ordinary_partition_account.py capture-ordinary-q/uart --table Q --case healthy --origin guest --elf capture-ordinary-q/kernel.elf --elf-sha256 "$(cut -d' ' -f1 capture-ordinary-q/sha256)" --exceptions capture-ordinary-q/exceptions.log > guest-Q.json
 # Offline synthetic controls, with no guest:
 for table in P Q; do
   for mode in healthy near long; do
@@ -46,5 +46,11 @@ for table in P Q; do
 done
 python tools/test_ordinary_partition_account.py
 ```
+
+For guest inputs, supply the original ELF, its expected SHA-256 from the independent boot record, and the raw QEMU exception log. The tool requires llvm-nm or aarch64-linux-gnu-nm. It checks initial PC and SP against the ELF, interrupted PCs against each worker’s symbol extent, private stack ranges, and ordered exception returns and IRQ ELRs. Unknown symbol layouts and missing evidence yield no verdict. Each observed accumulator is independently recomputed from its worker seed using the measured iteration count, with a cumulative limit of 64 million iterations. Synthetic traces use a fixed fictitious symbol map and carry no ELF or exception verification.
+
+The three B fields use raw counter ticks. b_release_nominal is the eligibility boundary. b_first_selection is the dispatcher observation that actually selects B. b_first_worker_observation is the subsequent observation made by B itself. Completed healthy traces retain over-limit edges and skipped slots in JSON and return status 2 on timing failure. Status 1 indicates an invalid or incomplete input. These offline checks preserve the first P and Q measurements and do not improve latency.
+
+Independent QA of this revised host checker is pending.
 
 POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)

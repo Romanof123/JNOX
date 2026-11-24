@@ -37,8 +37,8 @@ IMP-044는 복귀 세대마다 TIMER 한 줄을 기록한다. 정상 게스트�
 
 ```sh
 # From repository root, after collecting a fresh healthy guest UART:
-python tools/ordinary_partition_account.py capture-ordinary-p/uart --table P --case healthy --origin guest > guest-P.json
-python tools/ordinary_partition_account.py capture-ordinary-q/uart --table Q --case healthy --origin guest > guest-Q.json
+python tools/ordinary_partition_account.py capture-ordinary-p/uart --table P --case healthy --origin guest --elf capture-ordinary-p/kernel.elf --elf-sha256 "$(cut -d' ' -f1 capture-ordinary-p/sha256)" --exceptions capture-ordinary-p/exceptions.log > guest-P.json
+python tools/ordinary_partition_account.py capture-ordinary-q/uart --table Q --case healthy --origin guest --elf capture-ordinary-q/kernel.elf --elf-sha256 "$(cut -d' ' -f1 capture-ordinary-q/sha256)" --exceptions capture-ordinary-q/exceptions.log > guest-Q.json
 # Offline synthetic controls, with no guest:
 for table in P Q; do
   for mode in healthy near long; do
@@ -48,5 +48,11 @@ for table in P Q; do
 done
 python tools/test_ordinary_partition_account.py
 ```
+
+게스트 입력에는 원본 ELF, 독립 부팅 기록의 SHA-256 및 QEMU 예외 로그가 필요하다. llvm-nm 또는 aarch64-linux-gnu-nm로 ELF를 읽고 최초 PC·SP, 중단 PC의 작업 심볼 범위, 전용 스택, 순서대로 기록된 예외 복귀와 IRQ ELR을 대조한다. 심볼 형식을 알 수 없거나 증거가 누락되면 판정할 수 없다. 누산기는 작업별 초기값부터 관측된 반복 횟수까지 독립적으로 재계산하며 전체 상한은 6,400만 회다. 합성 입력은 고정된 가상 심볼 배치를 사용하며 ELF·예외 로그 검증 대상에서 제외한다.
+
+b_release_nominal은 B가 준비되는 명목 시점, b_first_selection은 B를 실제 선택한 디스패처 표본, b_first_worker_observation은 그 뒤 B가 직접 남긴 최초 표본이다. 모두 원시 카운터 틱 단위다. 정상 게스트의 완전한 기록이 지연 기준을 위반하면 JSON에 초과 경계와 누락 슬롯을 남기고 상태 2로 종료한다. 상태 1은 손상·미완료 입력이다. 이 변경은 최초 P/Q 관측을 보존하며 실제 지연을 개선하지 않는다.
+
+수정된 호스트 판정기의 독립 검증은 아직 진행되지 않았다.
 
 POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)
