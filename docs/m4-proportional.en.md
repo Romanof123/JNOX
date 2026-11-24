@@ -16,7 +16,7 @@ The ELF symbol proportional_witness is 10,432 bytes. Its header has five little-
 
 ## First-failure observation (#79)
 
-CHG-037 / IMP-035, POL-010, planned EVD-035. The historical UART ended in PROPORTIONAL FAIL after READY. Four IRQs interrupted B,A,B,A at 0x4020127c, 0x40201260, 0x4020127c, 0x40201260, all inside their ELF work loops. Three handlers returned. Epoch 0 slot 3 is the last interrupted grant. The missing timer, register and predicate data leave the cause unresolved.
+CHG-037 / IMP-035, POL-010, [EVD-035](evidence/evd-035.en.md). The historical UART ended in PROPORTIONAL FAIL after READY. Four IRQs interrupted B,A,B,A at 0x4020127c, 0x40201260, 0x4020127c, 0x40201260, all inside their ELF work loops. Three handlers returned. Epoch 0 slot 3 is the last interrupted grant. The missing timer, register and predicate data leave the cause unresolved.
 
 With proportional-diagnostic enabled, preserve the first failing source line, zero-based epoch and slot, actual and expected operands before emitting FAIL. A source line refers to proportional.rs from the captured ELF revision. For comparisons read the relation at that line. A boolean or missing policy result uses 0/1. Use the existing symbol-based QMP observer to export the independent failure record on successful and rejected runs. With proportional-fixture-miss explicitly enabled, extend only the first lottery timer grant to two ticks and retain the normal one-tick acceptance criterion. Verify the raw UART fails, QMP exports a committed first record for epoch 0 slot 0 and the measured witness row matches it. A natural earlier failure must remain observable. Archive ordinary and diagnostic results independently.
 

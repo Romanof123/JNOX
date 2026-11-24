@@ -810,4 +810,9 @@ POL-010,partially-implemented-by,IMP-035
 IMP-035,partially-verified-by,VER-002
 IMP-035,partially-verified-by,VER-005
 IMP-035,partially-verified-by,VER-023
-IMP-035,planned-evidence,EVD-035
+IMP-035,tested-in,EVD-035
+POL-010,has-switch-evidence,EVD-035
+VER-002,has-partial-evidence,EVD-035
+VER-005,has-partial-evidence,EVD-035
+VER-023,has-partial-evidence,EVD-035
+CAP-001,has-partial-evidence,EVD-035

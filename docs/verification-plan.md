@@ -79,4 +79,4 @@ CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 �
 
 [EVD-032](evidence/evd-032.md)
 
-CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 예정 증거 EVD-035를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)
+CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd-035.md)를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)

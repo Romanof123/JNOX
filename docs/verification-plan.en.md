@@ -79,4 +79,4 @@ CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry 
 
 [EVD-032](evidence/evd-032.en.md)
 
-CHG-037 / IMP-035 links POL-010 to planned EVD-035 under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
+CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
