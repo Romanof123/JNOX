@@ -62,6 +62,21 @@ impl<const N: usize> BatchScheduler<N> {
     /// Enqueue without choosing a successor, so simultaneous releases can be
     /// considered together in their arrival order.
     pub(crate) fn release(&mut self, now: u64, id: usize, estimate: u64) -> Result<(), BatchError> {
+        self.release_due(now, now, id, estimate)
+    }
+
+    /// Charge the incumbent through actual service time, but age waiting work
+    /// from its declared release, including time the timer IRQ was masked.
+    pub(crate) fn release_due(
+        &mut self,
+        now: u64,
+        due: u64,
+        id: usize,
+        estimate: u64,
+    ) -> Result<(), BatchError> {
+        if due > now {
+            return Err(BatchError::TimeRegression);
+        }
         let slot = self.jobs.get(id).ok_or(BatchError::InvalidId)?;
         if estimate == 0 {
             return Err(BatchError::ZeroEstimate);
@@ -73,7 +88,7 @@ impl<const N: usize> BatchScheduler<N> {
         // A vacant job ID always has room in the N-entry queue.
         assert!(self.ready.push_back(id));
         self.jobs[id] = Some(DispatchJob {
-            release: now,
+            release: due,
             service: estimate,
             remaining: estimate,
             ..DispatchJob::fixed_priority(0)

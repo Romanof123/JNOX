@@ -13,6 +13,9 @@ ee_\name:
     adrp x25, {observation}
     add x25, x25, :lo12:{observation}
     add x25, x25, x21, lsl #3
+    .if {dynamic}
+    mov x26, #0
+    .endif
     mov x20, #1
     msr daifclr, #2
 .global ee_\name\()_work
@@ -20,6 +23,31 @@ ee_\name\()_work:
     add x20, x20, #1
     ldar x9, [x24]
     cbz x9, ee_\name\()_work
+    .if {dynamic}
+    .ifc \name,c
+    add x26, x26, #1
+    mov x0, #0
+    mov x1, #2
+    mov x2, #3
+    cmp x26, #5
+    b.eq ee_c_config_svc
+    mov x1, #0
+    cmp x26, #9
+    b.eq ee_c_config_svc
+    mov x1, #3
+    cmp x26, #13
+    b.eq ee_c_config_svc
+    mov x2, #0
+    cmp x26, #17
+    b.ne ee_c_svc
+.global ee_c_config_svc
+ee_c_config_svc:
+    svc #2
+.global ee_c_config_return
+ee_c_config_return:
+    b ee_c_svc
+    .endif
+    .endif
 .global ee_\name\()_svc
 ee_\name\()_svc:
     svc #1
