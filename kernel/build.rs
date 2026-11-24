@@ -10,6 +10,7 @@ fn selector(key: &str) -> Option<String> {
 }
 
 fn main() {
+    validate_architecture();
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
     println!("cargo::rustc-check-cfg=cfg(jnox_batch_trace)");
@@ -201,6 +202,7 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
+    println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_anchor)");
@@ -220,6 +222,13 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_mutex_anchor");
     }
     match profile.as_deref() {
+        Some("smp") => {
+            assert!(board == "pi4" && app.as_deref() == Some("directed-wake")
+                && bench == "boot" && trace.is_none() && scenario.is_none()
+                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                "directed-wake requires Pi 4, smp profile and no other benchmark or runtime selector");
+            println!("cargo::rustc-cfg=jnox_pi4_smp");
+        }
         Some("mutex") => {
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),
                 "ordinary mutex requires virt, no benchmark, trace or control case");
@@ -349,4 +358,16 @@ fn main() {
         "cargo::rustc-link-arg=-T{}/{script}",
         env!("CARGO_MANIFEST_DIR")
     );
+}
+
+fn validate_architecture() {
+    const TARGET: &str = include_str!("../arch/aarch64/target");
+    if let Some(arch) = selector("JNOX_ARCH") {
+        assert!(arch == "aarch64", "unsupported JNOX_ARCH {arch:?}; expected aarch64");
+    }
+    // Cargo always supplies TARGET. Standalone selector checks can omit it.
+    if let Some(target) = selector("TARGET") {
+        let expected = TARGET.trim_end();
+        assert!(target == expected, "aarch64 requires TARGET={expected}, got {target:?}");
+    }
 }

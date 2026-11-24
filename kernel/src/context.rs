@@ -51,6 +51,7 @@ pub(super) fn gic_write(address: usize, value: u32) {
     unsafe { ptr::write_volatile(address as *mut u32, value) }
 }
 
+#[cfg(not(jnox_pi4_smp))]
 pub(super) fn init_timer_irq() {
     // SAFETY: Boot masked exceptions. VBAR is 2-KiB aligned. Disable CNTP until the bench arms it.
     unsafe {
@@ -76,7 +77,7 @@ fn configure_timer_ppi() {
     gic_write(GICC, 1);
 }
 
-#[cfg(jnox_pi4)]
+#[cfg(all(jnox_pi4, not(jnox_pi4_smp)))]
 fn configure_timer_ppi() {
     #[cfg(jnox_fixed)]
     use super::fixed_runtime::fail;
