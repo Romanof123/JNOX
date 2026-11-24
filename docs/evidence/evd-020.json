@@ -1,0 +1,190 @@
+{
+  "revision": "155b5754e286ec42d851cdbee396d3b265b1ff23",
+  "tree": "bd23e85d97c8549e60e1c4f846251bf9c1a3a616",
+  "elf_sha256": "15dc09d66472973fa87b90de13e498c540514a1ffecbe5287d17d52734a853a9",
+  "first_result": "PASS",
+  "exit_code": 0,
+  "observer": "Run 1/1  ELF SHA-256 = 15dc09d66472973fa87b90de13e498c540514a1ffecbe5287d17d52734a853a9\n  argv = [\"/tmp/amc-first-44z9hu99\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/extended-5051/target-amc/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 480\n  UART (1147 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nAMC BEGIN\\nAMC CLOCK freq=62500000 origin=70305 quantum=3125000\\nAMC SLOT t=0 id=0 mode=0 used=1 left=0 deadline=3 cval=3195305 irq=3354355 elr=1075843704 sp=1075872960 progress=171730524 value=36\\nAMC SLOT t=1 id=1 mode=0 used=1 left=3 deadline=5 cval=6320305 irq=6447422 elr=1075843916 sp=1075905728 progress=34370367 value=0\\nAMC SLOT t=2 id=1 mode=1 used=2 left=2 deadline=5 cval=9445305 irq=9602740 elr=1075843916 sp=1075905728 progress=114333212 value=0\\nAMC SLOT t=3 id=1 mode=1 used=3 left=1 deadline=5 cval=12570305 irq=12717475 elr=1075843916 sp=1075905728 progress=214209749 value=0\\nAMC SLOT t=4 id=3 mode=1 used=1 left=0 deadline=6 cval=15695305 irq=15827255 elr=1075843808 sp=1075938496 progress=151495191 value=528\\nAMC SLOT t=5 id=0 mode=0 used=1 left=0 deadline=8 cval=18820305 irq=18945460 elr=1075843860 sp=1075954880 progress=140111760 value=136\\nAMC SWITCH t=2 carry=2,3,2,1 drop=5 irq=6447422 commit=6458942 work=6493064 latency=172759\\nAMC GUARD new_lo=0 early_reset=0 fourth=0 fault=1\\nAMC DEADLINE id=3 end=5 due=6 irq=15827255 limit=18820305 value=528\\nAMC RESET unapproved=0 approved=1\\nAMC STOP\\nAMC PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 472 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nAMC BEGIN\nAMC CLOCK freq=62500000 origin=70305 quantum=3125000\nAMC SLOT t=0 id=0 mode=0 used=1 left=0 deadline=3 cval=3195305 irq=3354355 elr=1075843704 sp=1075872960 progress=171730524 value=36\nAMC SLOT t=1 id=1 mode=0 used=1 left=3 deadline=5 cval=6320305 irq=6447422 elr=1075843916 sp=1075905728 progress=34370367 value=0\nAMC SLOT t=2 id=1 mode=1 used=2 left=2 deadline=5 cval=9445305 irq=9602740 elr=1075843916 sp=1075905728 progress=114333212 value=0\nAMC SLOT t=3 id=1 mode=1 used=3 left=1 deadline=5 cval=12570305 irq=12717475 elr=1075843916 sp=1075905728 progress=214209749 value=0\nAMC SLOT t=4 id=3 mode=1 used=1 left=0 deadline=6 cval=15695305 irq=15827255 elr=1075843808 sp=1075938496 progress=151495191 value=528\nAMC SLOT t=5 id=0 mode=0 used=1 left=0 deadline=8 cval=18820305 irq=18945460 elr=1075843860 sp=1075954880 progress=140111760 value=136\nAMC SWITCH t=2 carry=2,3,2,1 drop=5 irq=6447422 commit=6458942 work=6493064 latency=172759\nAMC GUARD new_lo=0 early_reset=0 fourth=0 fault=1\nAMC DEADLINE id=3 end=5 due=6 irq=15827255 limit=18820305 value=528\nAMC RESET unapproved=0 approved=1\nAMC STOP\nAMC PASS\n",
+  "trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201278\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020131c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x4020134c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020134c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x4020134c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020134c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x4020134c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012b4\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012e0\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012e8\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201314\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\n",
+  "slots": [
+    {
+      "t": 0,
+      "id": 0,
+      "mode": 0,
+      "used": 1,
+      "left": 0,
+      "deadline": 3,
+      "cval": 3195305,
+      "irq": 3354355,
+      "elr": 1075843704,
+      "sp": 1075872960,
+      "progress": 171730524,
+      "value": 36,
+      "elf_loop": [
+        1075843704,
+        1075843712
+      ],
+      "trace_elr": 1075843704,
+      "trace_eret": 1075843660,
+      "private_stack": [
+        1075856592,
+        1075872976
+      ]
+    },
+    {
+      "t": 1,
+      "id": 1,
+      "mode": 0,
+      "used": 1,
+      "left": 3,
+      "deadline": 5,
+      "cval": 6320305,
+      "irq": 6447422,
+      "elr": 1075843916,
+      "sp": 1075905728,
+      "progress": 34370367,
+      "value": 0,
+      "elf_loop": [
+        1075843916,
+        1075843952
+      ],
+      "trace_elr": 1075843916,
+      "trace_eret": 1075843868,
+      "private_stack": [
+        1075889360,
+        1075905744
+      ]
+    },
+    {
+      "t": 2,
+      "id": 1,
+      "mode": 1,
+      "used": 2,
+      "left": 2,
+      "deadline": 5,
+      "cval": 9445305,
+      "irq": 9602740,
+      "elr": 1075843916,
+      "sp": 1075905728,
+      "progress": 114333212,
+      "value": 0,
+      "elf_loop": [
+        1075843916,
+        1075843952
+      ],
+      "trace_elr": 1075843916,
+      "trace_eret": 1075843916,
+      "private_stack": [
+        1075889360,
+        1075905744
+      ]
+    },
+    {
+      "t": 3,
+      "id": 1,
+      "mode": 1,
+      "used": 3,
+      "left": 1,
+      "deadline": 5,
+      "cval": 12570305,
+      "irq": 12717475,
+      "elr": 1075843916,
+      "sp": 1075905728,
+      "progress": 214209749,
+      "value": 0,
+      "elf_loop": [
+        1075843916,
+        1075843952
+      ],
+      "trace_elr": 1075843916,
+      "trace_eret": 1075843916,
+      "private_stack": [
+        1075889360,
+        1075905744
+      ]
+    },
+    {
+      "t": 4,
+      "id": 3,
+      "mode": 1,
+      "used": 1,
+      "left": 0,
+      "deadline": 6,
+      "cval": 15695305,
+      "irq": 15827255,
+      "elr": 1075843808,
+      "sp": 1075938496,
+      "progress": 151495191,
+      "value": 528,
+      "elf_loop": [
+        1075843808,
+        1075843816
+      ],
+      "trace_elr": 1075843808,
+      "trace_eret": 1075843764,
+      "private_stack": [
+        1075922128,
+        1075938512
+      ]
+    },
+    {
+      "t": 5,
+      "id": 0,
+      "mode": 0,
+      "used": 1,
+      "left": 0,
+      "deadline": 8,
+      "cval": 18820305,
+      "irq": 18945460,
+      "elr": 1075843860,
+      "sp": 1075954880,
+      "progress": 140111760,
+      "value": 136,
+      "elf_loop": [
+        1075843860,
+        1075843868
+      ],
+      "trace_elr": 1075843860,
+      "trace_eret": 1075843816,
+      "private_stack": [
+        1075938512,
+        1075954896
+      ]
+    }
+  ],
+  "transition": {
+    "frequency": 62500000,
+    "quantum": 3125000,
+    "trigger": 6320305,
+    "detect": 6447422,
+    "commit": 6458942,
+    "first_resumed_work": 6493064,
+    "next_compare": 9445305,
+    "trigger_to_work_ticks": 172759,
+    "trigger_to_work_ms": 2.764144
+  },
+  "survivor": {
+    "complete_tick": 5,
+    "due_tick": 6,
+    "completion_irq": 15827255,
+    "due": 18820305,
+    "margin_ticks": 2993050
+  },
+  "carry_in": [
+    2,
+    3,
+    2,
+    1
+  ],
+  "occupied": 4,
+  "dropped_ids": [
+    0,
+    2
+  ],
+  "budget_fault": "Fourth grant denied with one unit left after three grants. Surviving job next.",
+  "restart": "New LO and early reset rejected. At quiescence unapproved reset rejected, approved reset accepted, fresh LO executed on distinct stack.",
+  "external": "QEMU exception trace independently establishes six IRQ ELRs and six ERET destinations in frozen ELF. HI ERETs after first and second preemptions match interrupted PCs.",
+  "guest_reported": "Host cross-checked UART stack pointers against ELF stack allocation, HI progress increases, slot results and virtual timing. Guest alone checks stack witness, SIMD, TPIDR and exact saved register restoration. Carry, mode, guards and clock samples originate in guest.",
+  "bounds": "One cold boot of finite single-CPU virtual six-slot fixture. No product worst-case, hardware timing or fault-response qualification."
+}

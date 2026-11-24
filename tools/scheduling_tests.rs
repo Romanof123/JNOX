@@ -10,6 +10,14 @@ mod smp_tests;
 mod mutex_policy;
 #[path = "mutex_tests.rs"]
 mod mutex_tests;
+#[path = "../kernel/src/amc_policy.rs"]
+mod amc_policy;
+#[path = "amc_tests.rs"]
+mod amc_tests;
+#[path = "../kernel/src/multilevel_policy.rs"]
+mod multilevel_policy;
+#[path = "multilevel_oracle.rs"]
+mod multilevel_oracle;
 
 // Import each backend and register its guest check as a separate host test.
 macro_rules! policy_tests {

@@ -7,6 +7,10 @@ use core::ptr;
 
 #[cfg(jnox_bench = "aperiodic")]
 mod aperiodic;
+#[cfg(jnox_bench = "amc")]
+mod amc;
+#[cfg(jnox_bench = "amc")]
+mod amc_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "aperiodic"))]
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
@@ -30,14 +34,15 @@ mod deadline_policy;
     jnox_bench = "batch"
 ))]
 mod dispatch_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex"))]
-#[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex"), allow(dead_code))]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
+#[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"), allow(dead_code))]
 mod domain_policy;
 #[cfg(jnox_bench = "coop")]
 mod event_loop;
 #[cfg(jnox_bench = "rr")]
 mod fair_policy;
-#[cfg(jnox_bench = "rr")]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "multilevel"))]
+#[cfg_attr(jnox_bench = "multilevel", allow(dead_code))]
 mod feedback_policy;
 #[cfg(jnox_bench = "rr")]
 mod group_policy;
@@ -45,6 +50,10 @@ mod group_policy;
 mod mutex;
 #[cfg(jnox_bench = "mutex")]
 mod mutex_policy;
+#[cfg(jnox_bench = "multilevel")]
+mod multilevel;
+#[cfg(jnox_bench = "multilevel")]
+mod multilevel_policy;
 #[cfg(jnox_bench = "partition")]
 mod partition;
 #[cfg(jnox_bench = "periodic")]
@@ -56,7 +65,8 @@ mod periodic;
     jnox_bench = "batch",
     jnox_bench = "deadline",
     jnox_bench = "coop",
-    jnox_bench = "mutex"
+    jnox_bench = "mutex",
+    jnox_bench = "multilevel"
 ))]
 mod ready_queue;
 #[cfg(jnox_bench = "aperiodic")]
@@ -102,6 +112,10 @@ extern "C" fn kernel_main() -> ! {
 }
 
 fn run_bench() -> ! {
+    #[cfg(jnox_bench = "amc")]
+    amc::run();
+    #[cfg(jnox_bench = "multilevel")]
+    multilevel::run();
     #[cfg(jnox_bench = "mutex")]
     mutex::run();
     #[cfg(jnox_bench = "smp")]

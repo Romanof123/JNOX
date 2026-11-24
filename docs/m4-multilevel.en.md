@@ -1,0 +1,15 @@
+# Strict multilevel queues and cumulative feedback
+
+[한국어](m4-multilevel.md) · [Change #50](https://github.com/Romanof123/JNOX/issues/50)
+
+CHG-021 · POL-009 · REQ-002/005/023 → DES-003/012 → IMP-019 → VER-002/005/023. The bench uses one Cortex-A72 virtual CPU with GICv2 and the EL1 physical timer. Retain the source and ELF hashes, UART, IRQ/SVC trace and per-dispatch journal from the same boot.
+
+* **Strict classes.** Keep lower-class job 0 ready while A and B of the higher class alternate across four actual expiry IRQs. Check ready order and restored PC at every decision. After the high jobs block, the low job must run. The strict fixed-class configuration makes no minimum-service allocation for a lower class while a higher class remains ready.
+* **Feedback.** Three levels admit 3, 4 and 6 service units. Start a yielding worker, an interactive peer and a CPU-bound peer. Measure two early yields that each consume a whole service unit. The worker retains its remaining allotment across both yields. Consuming the third unit demotes it behind an older eligible peer. At the periodic boost at 12 cumulative units, check the level change, preserved ready order and next actual dispatch. Track readiness and ownership across sleep and wake.
+* **Accounting.** Record the grant, counter interval, charged units, level and remaining allotment across each stop. Fractional intervals and handler time require an explicit convention. Observe the private frames on timer and voluntary dispatch paths. Check the independently computed sequence, including invalid transitions and repeated stops on the host.
+
+The experimental configuration measures discrete service and event order. Physical bounds, product workload and timing approval remain open.
+
+Build in kernel with `cargo build --release --locked --features multilevel-bench -j1`. From the root run `python3 tools/qemu_boot.py --profile multilevel --kernel kernel/target/aarch64-unknown-none/release/jnox-kernel`. For the first launch set MULTILEVEL_CAPTURE_DIR to a new directory and use an executable Linux wrapper calling python3 -B tools/multilevel_capture.py with the original arguments. After the two boot lines expect MLQ STRICT FOUR, MLFQ YIELDS DEMOTED, MLFQ BOOST ORDER and MULTILEVEL PASS. Inspect the 1,376-byte multilevel_witness symbol. Its two u64 words are row count and counter units per tick. Seven MLQ and ten MLFQ rows follow. Each 80-byte row contains seven u64 values (outgoing PC, frame, selected PC, dispatch time, stop time, timer deadline, work counter) followed by 24 bytes (epoch, op, caller, selected, grant, charge, service, boost, awake mask, PPI, three ranks and three allotments before boost, three ranks and three allotments after boost, two pad bytes). Operations are 1 yield, 2 block and 3 physical IRQ. Task IDs and phase expectations above determine legal outcomes. Compare IRQ 30 and return PCs with ELF loop symbols. The tick is the counter frequency divided by 25. Whole residency intervals from dispatch to exception are charged up to the granted units.
+
+[EVD-019](evidence/evd-019.en.md)
