@@ -7,7 +7,6 @@ CHG-029 / IMP-027 / 예정 EVD-027 · POL-002 · #63, 상위 #21 · REQ-002/005/
 퀀텀은 물리 카운터 단위 floor(CNTFRQ/10)이다. 프레임 복원 전 마지막 카운터 표본부터 다음 예외 콜백의 첫 표본까지 벡터 비용을 포함해 부과하고 스케줄러 결정 시간은 제외한다. 도착 때마다 실측 서비스를 빼며 HIGH 실행 중 A의 잔여량을 보존하고 재개 때 그 값으로 타이머를 설정한다. 만료 IRQ의 허용 지연은 1/8 퀀텀 이하다. 두 FIFO 회차에서 HIGH 도착 지연 설정은 동일하다. 진행량, 스택 표식, 레지스터 및 저장·선택된 ELR을 기록한다. 독립 첫 부팅에서 대기열·서비스·예외 복귀를 재구성하고 기존 FIFO/RR 프로필을 재실행한다. 실보드 시간 및 제품 승인은 #21에서 추적한다.
 
 ```sh
-chmod +x tools/priority_resume_capture.py
 PRIORITY_RESUME_CAPTURE_DIR="$capture_dir" python3 tools/qemu_boot.py --profile priority-resume --qemu ./tools/priority_resume_capture.py --kernel "$kernel_elf"
 ```
 
@@ -44,3 +43,5 @@ ELF 심볼 `priority_resume_witness`에서 부호 없는 리틀엔디언 64비�
 2. 회차 내 연속 배정에서 작업 ID와 next_begin, next_due, next_budget이 다음 행의 begin, due, budget_before로 이어지는지 확인한다. 헤더 퀀텀과 두 번의 1/4 퀀텀 도착 기한을 확인한다. end > begin이어야 하며 IRQ는 [due, due + floor(퀀텀/8)] 안에 도착해야 한다. RR에서 max(0, budget_before − (end − begin))을 별도로 계산한다. HIGH 종료 시까지 A의 잔여량을 유지하고, A 재개 시 next_due − next_begin이 그 잔여량과 같으며 만료 시 0에 도달하는지 확인한다. 만료 뒤 다음 배정에서 새 퀀텀과 비교한다.
 3. IRQ/SVC 행을 CPU0 예외 트레이스 순서와 맞춘다. IRQ 저장 ELR은 A 작업 루프의 세 명령 중 하나다. SVC는 ELF에서 명령과 즉시값을 확인하고 저장 ELR을 해당 명령 주소 + 4와 비교한다. 실제 예외 복귀 PC를 return_pc와 비교한다. 최초 시작은 초기화된 진입 프레임을 사용한다. to=NONE인 마지막 종료는 해당 회차로 복귀하지 않는다. 회차 전환 시 직전 종료 SVC의 실제 ERET 목적지는 다음 회차 시작 행에 기록된다. 최종 종료 SVC에서는 CPU가 대기한다.
 4. A가 유지된 행에서 저장·선택 프레임 주소와 PC가 같은지 비교한다. 전환 시 양보 직후를 포함해 중단 작업의 프레임 주소와 저장 PC를 이후 선택 행과 짝짓는다. ELF 프레임 크기와 스택 범위로 작업별 스택을 대조한다. 작업별 X20 관측값을 비교해 진행량이 양수인지 확인하고 B/HIGH 종료값 4097을 검사한다. 기존 FIFO와 RR의 회귀 결과도 별도로 남긴다.
+
+실행기는 로컬 Python 수집 스크립트를 현재 Python 인터프리터로 실행한다. Windows 줄바꿈으로 체크아웃한 경우에도 같은 명령을 사용한다.

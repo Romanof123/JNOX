@@ -13,10 +13,11 @@ REQ-002/005/023 → DES-003/012 → IMP-029 → VER-002/005/023. Record first co
 Build the cbs-wake-bench feature. From the repository root in a POSIX shell run the following with a fresh output path and the retained ELF.
 
 ```sh
-chmod +x tools/cbs_wake_capture.py
 CBS_WAKE_CAPTURE_DIR="$capture" python3 tools/qemu_boot.py --profile cbs-wake --timeout 15 --qemu ./tools/cbs_wake_capture.py --kernel "$elf"
 ```
 
 The guest appends CBS WAKE TIMER STOP and CBS WAKE PASS to the standard boot and ready lines. Read cbs_wake_witness as 34 rows of 24 little-endian u64s. Columns 0–1 give the tick and release bitmask. Columns 2–5 hold A(q,d), B(q,d) immediately after releases. Column 6 gives the granted ID (A=0, B=1, idle=2). Columns 7–10 hold the same allocations after charging. Columns 11–15 give epoch, quantum, compare, dispatched PC and frame address. Columns 16–19 give IRQ counter, interrupted ID, PC and x20. Columns 20–22 give the SVC counter, return PC and x20, or zero. Column 23 holds the IRQ frame address. The first entry frame is 16 bytes above subsequent saved frames on the same task stack. A positive residual budget at equality must survive wake unchanged. Account for lazy replenishment when reading unselected servers.
 
 The instrumented launcher allows 15 seconds of host wall time for startup, capture and UART. Inside the guest the physical timer schedules 34 consecutive 50 ms slots. Every observed IRQ must still arrive within its existing one-slot bound and every journal row and both terminal markers are required. The first 5-second observation ended after 25 complete rows. It is retained as a partial run. The host allowance changes no guest deadline.
+
+The launcher runs a local Python capture script with its current Python interpreter, including when the checkout uses Windows line endings.
