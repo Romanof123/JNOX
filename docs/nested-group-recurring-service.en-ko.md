@@ -23,3 +23,5 @@ Freeze four independent first cold boots in order: original ordinary plain, recu
 [Independent first runs, signed ledger and originals / 최초 실행과 독립 검증 기록](evidence/recurring-hierarchical-first.en-ko.md).
 
 [Combined telemetry and groups integration / 배치 및 그룹 통합 실행](evidence/cross-profile-integration.en-ko.md).
+
+2026-11-25 · Retrospective trace / 사후 추적 · [#212](https://github.com/Romanof123/JNOX/issues/212) · [#215](https://github.com/Romanof123/JNOX/pull/215) · [EVD-092 (EN)](evidence/evd-092.en.md) · [EVD-092 (한국어)](evidence/evd-092.md) · [#239](finite-scheduling-index.en-ko.md)
