@@ -1,0 +1,118 @@
+{
+  "revision": "a547ff1d0d2785d1c527b0952e64a21b71cdeebb",
+  "tree": "faed098845d1aea27f0107acd122c34fa2849f86",
+  "elf_sha256": "9648484575946b0ca70750444740df41b287a6e4519eb66e02507f24c9c5c0a0",
+  "first_verdict": "PASS before source, disassembly and exception inspection",
+  "guest_runs": 1,
+  "runner_exit": 0,
+  "runner_log": "Run 1/1  ELF SHA-256 = 9648484575946b0ca70750444740df41b287a6e4519eb66e02507f24c9c5c0a0\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/periodic-preempt-ed62fa1f47/part-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 480\n  UART (135 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPART A FIRST\\nPART IDLE FIRST\\nPART B READY\\nPART A RESUMED\\nPART B FIRST\\nPART IDLE RESUMED\\nPART STOP\\nPART PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 479 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "argv": [
+    "/usr/bin/qemu-system-aarch64",
+    "-machine",
+    "virt,gic-version=2",
+    "-cpu",
+    "cortex-a72",
+    "-smp",
+    "1",
+    "-accel",
+    "tcg",
+    "-m",
+    "128M",
+    "-nodefaults",
+    "-display",
+    "none",
+    "-monitor",
+    "none",
+    "-chardev",
+    "stdio,id=partuart,logfile=/mnt/d/codex/.jnox-work/periodic-preempt-ed62fa1f47/part-raw/uart.raw",
+    "-serial",
+    "chardev:partuart",
+    "-kernel",
+    "/mnt/d/codex/.jnox-work/periodic-preempt-ed62fa1f47/part-target/aarch64-unknown-none/release/jnox-kernel",
+    "-d",
+    "int",
+    "-D",
+    "/mnt/d/codex/.jnox-work/periodic-preempt-ed62fa1f47/part-raw/irq.log"
+  ],
+  "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPART A FIRST\nPART IDLE FIRST\nPART B READY\nPART A RESUMED\nPART B FIRST\nPART IDLE RESUMED\nPART STOP\nPART PASS\n",
+  "trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201278\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201354\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201380\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201380\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201380\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201278\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012c8\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012d0\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012fc\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201380\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402013d0\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\n",
+  "versions": {
+    "qemu": "6.2.0 Debian 1:6.2+dfsg-2ubuntu6.31",
+    "observer_python": "3.10.12",
+    "host_rustc": "1.95.0 (59807616e 2026-04-14)",
+    "objdump": "GNU objdump (GNU Binutils for Ubuntu) 2.38"
+  },
+  "sha256": {
+    "disasm.txt": "902aa9b1cbb71a95d681fe339fc08eece73a33f4d5bf1ab4a2c0d4cdd5e4cfd0",
+    "exit.txt": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+    "host.log": "71060aa44b3725cd7d9219cf5b7f02d46bdc88cd6ada1a39725b130fc5173cc5",
+    "irq.log": "af0e7523768fb79fabd96f4b89d94bfe9a7556cbc42adc92e5245e51ceec5c81",
+    "launch.json": "311ea18542a4a60256ac47ed065aeef449ef8f4309ff6c62383dc24667e4097d",
+    "runner.log": "6c1552a08e6f57b48a03b3af992c03f36689048c9a9e44c22030f48133e4718a",
+    "uart.raw": "fa82c4929a2f7d22b3136f33865d2b259dd70b3d216102ae8190155b42b190fd"
+  },
+  "observed": "135 UART bytes, quiet-window success, initial ERET to 4020124c, six EL1 IRQs to 40200a80, five IRQ returns. QEMU supplied ELR/ERET PCs; logical ticks and readiness are source/ELF-derived.",
+  "irq_columns": [
+    "logical_tick",
+    "ELR_hex",
+    "interrupted_symbol_role",
+    "ERET_hex",
+    "dispatch_interpretation"
+  ],
+  "irqs": [
+    [
+      2,
+      "40201278",
+      "A first loop",
+      "40201354",
+      "idle entry; B blocked"
+    ],
+    [
+      3,
+      "40201380",
+      "idle first loop",
+      "40201380",
+      "same idle PC; B newly ready"
+    ],
+    [
+      4,
+      "40201380",
+      "idle first loop",
+      "40201278",
+      "A saved PC; frame restart"
+    ],
+    [
+      6,
+      "402012c8",
+      "A resumed loop",
+      "402012d0",
+      "B entry"
+    ],
+    [
+      7,
+      "402012fc",
+      "B first loop",
+      "40201380",
+      "idle saved PC"
+    ],
+    [
+      8,
+      "402013d0",
+      "idle resumed loop",
+      null,
+      "terminal IRQ; no exception return"
+    ]
+  ],
+  "timing": "A occupies frame offsets 0-1, B owns 2, idle owns 3. B initially blocked, becomes ready at tick 3 inside handler. A always ready. Deadlines = boot CNTPCT epoch + tick*(CNTFRQ/20 integer division). Handler checks counter within [deadline, next tick). Dispatch 40201c20 writes CNTP_CVAL then enables timer. No independent wall-clock measurements.",
+  "context": "Handler checks frame and SP bounds, task PC interval, EL1h IRQ-unmasked state, x19/TPIDR_EL1/stack cookie 0xa19,0xb19,0xc19, x20 tagged and increasing. Assembly resume checks private stack, x19, TPIDR and x20 delta 0 or 1 before marker. A and idle exact saved PCs reappear. Registers and stack contents inferred from successful linked guards, not directly sampled.",
+  "shutdown": "Handler checks PPI 30 and timer status 5, writes CNTP_CTL=2 at 40201798, barriers and EOIs IAR. Last handler validates six IRQs, five task markers, all saved frames and progress, emits STOP/PASS and parks. No seventh IRQ seen before observer terminated QEMU.",
+  "host_tests": "\nrunning 30 tests\ntest aperiodic_policy::tests::full_replenishment_queue_delays_credit_and_preserves_budget ... ok\ntest aperiodic_policy::tests::identical_releases_distinguish_the_three_servers ... ok\ntest aperiodic_policy::tests::invalid_parameters_and_overflows_preserve_state ... ok\ntest aperiodic_policy::tests::periodic_servers_handle_preemption_drain_and_boundary ... ok\ntest cyclic_window_end_at_clock_limit ... ok\ntest fair_policy::tests::weighted_service_and_eligible_deadlines ... ok\ntest guest_checks::aperiodic_policy ... ok\ntest guest_checks::dispatch_policy ... ok\ntest guest_checks::domain_policy ... ok\ntest guest_checks::fair_policy ... ok\ntest guest_checks::feedback_policy ... ok\ntest guest_checks::group_policy ... ok\ntest guest_checks::service_policy ... ok\ntest guest_checks::temporal_policy ... ok\ntest hrrn_distinguishes_adjacent_ratios_at_the_clock_limit ... ok\ntest ready_queue::tests::preempted_task_precedes_peers_and_higher_priorities_still_win ... ok\ntest ready_queue::tests::rejected_insertions_preserve_contents_and_order ... ok\ntest ready_queue::tests::yield_moves_to_tail_even_when_ids_arrive_in_reverse_order ... ok\ntest service_policy::tests::aligned_budget_throttles_and_replenishes ... ok\ntest saturated_hard_server_runs_only_its_quota_each_period ... ok\ntest temporal_policy::tests::cyclic_frame_boundaries_and_configuration ... ok\ntest service_policy::tests::stride_shares_service_and_accounts_for_wakeups ... ok\ntest temporal_policy::tests::hard_cbs_activation_and_throttling ... ok\ntest temporal_policy::tests::hard_cbs_admission_boundaries ... ok\ntest temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok\ntest cbs_admission_and_service_match_demand_over_common_frame ... ok\ntest temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok\ntest weighted_and_eligible_deadline_selection_in_twelfths ... ok\ntest cyclic_decisions_match_expanded_slots ... ok\ntest dispatch_matches_stable_sort_for_all_ordered_triples ... ok\n\ntest result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s\n\n",
+  "host_controls": {
+    "reordered": "unexpected UART bytes or marker order",
+    "trailing": "unexpected UART bytes or marker order",
+    "truncated": "UART deadline exceeded (0.15s)",
+    "crlf": null
+  },
+  "host_coverage": "729 three-window tables (three owners including idle, durations 1..3), four readiness masks, three frames; overflow/configuration negatives. Observer controls replayed in memory, no second guest.",
+  "scope": "Single-core Cortex-A72 QEMU TCG workload. No board timing, isolation, or arbitrary guest-table proof."
+}

@@ -38,3 +38,5 @@ PART PASS
 ```sh
 (cd kernel && cargo build --release --locked --features partition-bench -j1)
 ```
+
+[EVD-010](evidence/evd-010.md)

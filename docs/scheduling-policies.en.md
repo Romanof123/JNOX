@@ -17,6 +17,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Verified context switches | IMP-007, POL-004 periodic RM and DM | Two six-tick epochs released the same jobs. At simultaneous release RM ran the shorter-period task first, DM the shorter-relative-deadline task. [EVD-007](evidence/evd-007.en.md) |
 | Verified host analysis | IMP-008, POL-004 response-time bounds | Calculate conditional response bounds for a supplied constrained-deadline workload under fixed priorities, with bounded jitter, blocking, dispatch and IRQ demand. [EVD-008](evidence/evd-008.en.md) · [Run the analysis](fp-response.en.md) |
 | Verified running-job preemption | IMP-009, POL-004 | A timer interrupted A. RM immediately returned to A. DM returned to the same A instruction after B completed. [EVD-009](evidence/evd-009.en.md) |
+| Verified static time partitions | IMP-010, POL-006 | Reclaimed the CPU at window boundaries with blocked-owner and explicit idle windows. [EVD-010](evidence/evd-010.en.md) |
 | Verified selection and accounting | `IMP-004`, bounded primitives from POL-001 through POL-018 | Controlled ready sets, clocks, charges, draws, CPU masks and operating-point models passed in one guest. Each result covers its stated decision or state transition. [EVD-004](evidence/evd-004.en.md) |
 | Integrated profile release | Each enabled variant | Run actual blocking, wakeup, expiry, switch and exit paths that apply to that profile. Record target traces. Physical timing, analysis and product safety review have their own milestones. |
 

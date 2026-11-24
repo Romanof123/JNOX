@@ -38,3 +38,5 @@ REQ-023/002/005 → DES-012/003 → IMP-010 → VER-023/002/005. Host tests comp
 ```sh
 (cd kernel && cargo build --release --locked --features partition-bench -j1)
 ```
+
+[EVD-010](evidence/evd-010.en.md)
