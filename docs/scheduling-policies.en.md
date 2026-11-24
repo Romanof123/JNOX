@@ -17,7 +17,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Verified context switches | IMP-007, POL-004 periodic RM and DM | Two six-tick epochs released the same jobs. At simultaneous release RM ran the shorter-period task first, DM the shorter-relative-deadline task. [EVD-007](evidence/evd-007.en.md) |
 | Verified host analysis | IMP-008, POL-004 response-time bounds | Calculate conditional response bounds for a supplied constrained-deadline workload under fixed priorities, with bounded jitter, blocking, dispatch and IRQ demand. [EVD-008](evidence/evd-008.en.md) · [Run the analysis](fp-response.en.md) |
 | Verified running-job preemption | IMP-009, POL-004 | A timer interrupted A. RM immediately returned to A. DM returned to the same A instruction after B completed. [EVD-009](evidence/evd-009.en.md) |
-| Verified static time partitions | IMP-010, POL-006 | Reclaimed the CPU at window boundaries with blocked-owner and explicit idle windows. [EVD-010](evidence/evd-010.en.md) |
+| Verified static time partitions | IMP-010, POL-006 | Reclaimed the CPU at window boundaries with blocked-owner and explicit idle windows. [EVD-010](evidence/evd-010.en.md) / [EVD-044](evidence/evd-044.en.md) |
 | Verified cooperative dispatch | IMP-012, POL-001 | A retained its CPU until voluntary yield after B became ready. A handler-enqueued event ran after the older queued event. [EVD-012](evidence/evd-012.en.md) |
 | Linked cooperative events | IMP-036, POL-001 | Two ordinary images exercised full/invalid refusals, FIFO append, measured handler time and owner reactions. [EVD-036](evidence/evd-036.en.md) |
 | Verified burst scheduling | IMP-013, POL-003 | Compared SJF retention with SRTF preemption and restoration. HRRN selected an older waiting job ahead of a shorter newcomer. [EVD-013](evidence/evd-013.en.md) |
@@ -120,3 +120,5 @@ POL-004 / IMP-042. v3 remains partial. Both deterministic exact boundaries quali
 POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)
 
 POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)

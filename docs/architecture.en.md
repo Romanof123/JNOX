@@ -175,3 +175,7 @@ CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes i
 POL-011 · CHG-052 · IMP-049. Two ordinary Rust entries share the exception-return ABI and the weighted virtual-runtime scheduler. See the [approved workload plan](ordinary-vruntime-plan.md) and [build, capture and replay instructions](ordinary-weighted.md). VER-002/005/023 · [EVD-049](evidence/evd-049.en.md).
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage.  [Capture format and build](ordinary-partition-capture.en.md)
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)

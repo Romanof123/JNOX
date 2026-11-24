@@ -127,7 +127,19 @@ sched_vectors:
     b sched_start_frame
 .endm
 
+.macro partition_stamp address
+    stp x0, x1, [sp, #-16]!
+    isb
+    mrs x0, cntpct_el0
+    adrp x1, \address
+    str x0, [x1, :lo12:\address]
+    ldp x0, x1, [sp], #16
+.endm
+
 .Lirq:
+    .ifdef JNOX_ORDINARY_PARTITION
+    partition_stamp ordinary_entry_stamp
+    .endif
     handle {irq}
 .Lsync:
     handle {svc}
@@ -185,5 +197,8 @@ sched_start_frame:
     ldr x30, [sp, #240]
     add sp, sp, #{frame_size}
     clrex
+    .ifdef JNOX_ORDINARY_PARTITION
+    partition_stamp ordinary_return_stamp
+    .endif
     eret
 .size sched_start_frame, . - sched_start_frame

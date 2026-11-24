@@ -125,3 +125,5 @@ Single-core virtual evidence for VER-002/005/023. [EVD-048](evidence/evd-048.en.
 Finite weighted service and wakeup observations for VER-002/005/023. [EVD-049](evidence/evd-049.en.md)
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
