@@ -1,0 +1,406 @@
+{
+  "case": "EVD-004 independent verification of IMP-004 / CHG-005 / VER-023",
+  "scope": "One AArch64 EL1 single-core QEMU guest. Fixed-priority dispatch with timer-driven equal-priority rotation. Separate deterministic pre-dispatch checks on supplied inputs.",
+  "verdict": "PASS for this RR guest, its deterministic policy markers and the host transcript controls. See exit-status limitation.",
+  "independence": "First black-box verdict was saved and communicated before inspecting implementation, linked instructions, symbols, or the exception trace. Coordinator supplied one ELF. No verifier build or guest rerun.",
+  "source_commit": "c0ca5ac1df1e612a0887bdb1451c9d783172ee99",
+  "source_tree": "bfef1528314e2be8f2558a7aff2be935a351a0c3",
+  "source_checkout": "clean, detached",
+  "elf": {
+    "bytes": 131328,
+    "sha256": "fbb525900a604c0a4179edcc71af16b37ff2476f3adfcdc5378f1a26d6e668a7"
+  },
+  "tools": {
+    "QEMU": "6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+    "observer_interpreter": "Python 3.10.12",
+    "linked_instruction_decoder": "aarch64-linux-gnu-objdump / nm (GNU Binutils 2.38)",
+    "guest_host": "WSL2 Ubuntu, Linux 6.18.58.1-microsoft-standard-WSL2 x86_64",
+    "launches": 1,
+    "observer_tempdir": "Default Linux /tmp, TMPDIR/TMP/TEMP unset. Minimal exec wrapper adds -d int -D <irq.log> and passes through every runner argument."
+  },
+  "invocation": {
+    "runner": [
+      "python3",
+      "tools/qemu_boot.py",
+      "--profile",
+      "rr",
+      "--qemu",
+      "<qemu-int>",
+      "--kernel",
+      "<ELF>"
+    ],
+    "runner_qemu_argv": [
+      "<qemu-int>",
+      "-machine",
+      "virt,gic-version=2",
+      "-cpu",
+      "cortex-a72",
+      "-smp",
+      "1",
+      "-accel",
+      "tcg",
+      "-m",
+      "128M",
+      "-nodefaults",
+      "-display",
+      "none",
+      "-monitor",
+      "none",
+      "-serial",
+      "stdio",
+      "-kernel",
+      "<ELF>"
+    ],
+    "qemu_wrapper": "exec qemu-system-aarch64 -d int -D <irq.log> \"$@\"",
+    "defaults": {
+      "runs": 1,
+      "deadline_seconds": 5,
+      "quiet_seconds": 0.1
+    },
+    "portable_paths": "Angle brackets identify the supplied artifacts. Absolute host paths omitted."
+  },
+  "black_box": {
+    "recorded_utc": "2026-11-24T03:08:05.326626+00:00",
+    "first_verdict": "PASS (public observer and exact UART)",
+    "before_review": true,
+    "runs": 1,
+    "uart_bytes": 171,
+    "uart_sha256": "b22dc4d6d954e714420918973bad2b260751d24c169e98147dc5fb9ec959959f",
+    "runner_reported": "PASS: 1 cold boot(s)",
+    "stop": "host stopped QEMU after quiet window",
+    "outer_shell_exit": 1,
+    "raw_exit_artifact": "0a",
+    "limitation": "The WSL launcher shell lost the return-code variable during quoting and issued an invalid exit after the observer printed its PASS. Runner numeric exit was not retained. No additional guest was run.",
+    "runner_exit_measured": null,
+    "runner_exit_inferred_from_code": 0,
+    "exit_inference": "Final PASS: 1 cold boot(s) is printed on the return-0 path of qemu_boot.py. Numeric wait status of Python was not retained. Outer shell failed after tee completed.",
+    "qemu_pid": 500,
+    "qemu_stderr": "qemu-system-aarch64: terminating on signal 15 from pid 498 (python3)\n",
+    "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR A RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+    "raw_qemu_exception_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x40204a4c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40204abc\n...to EL1 PC 0x40204280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40204b4c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40204bb4\n...to EL1 PC 0x40204280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40204c68\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40204ccc\n...to EL1 PC 0x40204280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40204bb4\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40204bb4\n...to EL1 PC 0x40204280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40204ccc\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40204d6c\n...to EL1 PC 0x40204200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40204bb4\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40204c64\n...to EL1 PC 0x40204200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40204abc\n",
+    "irq_log_sha256": "94213f247204fdf2b58989f0c049475eb88f2f3132867bc4f390e2b7848b8bb5",
+    "initial_eret": "0x40204a4c"
+  },
+  "transitions": [
+    {
+      "event": "release both peers",
+      "exception": "IRQ",
+      "interrupted": "LOW",
+      "elr": "0x40204abc",
+      "esr": "0x0/0x0",
+      "vector": "0x40204280",
+      "eret": "0x40204b4c",
+      "selected": "A",
+      "eret_kind": "first entry"
+    },
+    {
+      "event": "quantum 1",
+      "exception": "IRQ",
+      "interrupted": "A",
+      "elr": "0x40204bb4",
+      "esr": "0x0/0x0",
+      "vector": "0x40204280",
+      "eret": "0x40204c68",
+      "selected": "B",
+      "eret_kind": "first entry"
+    },
+    {
+      "event": "quantum 2",
+      "exception": "IRQ",
+      "interrupted": "B",
+      "elr": "0x40204ccc",
+      "esr": "0x0/0x0",
+      "vector": "0x40204280",
+      "eret": "0x40204bb4",
+      "selected": "A",
+      "eret_kind": "saved work PC"
+    },
+    {
+      "event": "quantum 3",
+      "exception": "IRQ",
+      "interrupted": "A",
+      "elr": "0x40204bb4",
+      "esr": "0x0/0x0",
+      "vector": "0x40204280",
+      "eret": "0x40204ccc",
+      "selected": "B",
+      "eret_kind": "saved work PC"
+    },
+    {
+      "event": "finish B",
+      "exception": "SVC",
+      "interrupted": "B",
+      "elr": "0x40204d6c",
+      "esr": "0x15/0x56000001",
+      "vector": "0x40204200",
+      "eret": "0x40204bb4",
+      "selected": "A",
+      "eret_kind": "saved work PC",
+      "svc_site": "0x40204d68",
+      "immediate": 1
+    },
+    {
+      "event": "finish A",
+      "exception": "SVC",
+      "interrupted": "A",
+      "elr": "0x40204c64",
+      "esr": "0x15/0x56000001",
+      "vector": "0x40204200",
+      "eret": "0x40204abc",
+      "selected": "LOW",
+      "eret_kind": "saved work PC",
+      "svc_site": "0x40204c60",
+      "immediate": 1
+    }
+  ],
+  "linked_review": {
+    "addresses": "Reviewed constants, demanded states and checks below come from the linked image and source. The int trace independently reports exception class, vector, ELR and ERET PC. It does not stream general registers, MMIO reads, or stack bytes.",
+    "stacks": {
+      "A": {
+        "base": "0x4020b070",
+        "top_exclusive": "0x4020f070",
+        "bytes": 16384,
+        "expected_interrupted_sp": "0x4020f060",
+        "expected_saved_frame_base": "0x4020ed20",
+        "work_pc_range_half_open": [
+          "0x40204bb4",
+          "0x40204bc8"
+        ],
+        "entry_pc": "0x40204b4c"
+      },
+      "B": {
+        "base": "0x4020f080",
+        "top_exclusive": "0x40213080",
+        "bytes": 16384,
+        "expected_interrupted_sp": "0x40213070",
+        "expected_saved_frame_base": "0x40212d30",
+        "work_pc_range_half_open": [
+          "0x40204ccc",
+          "0x40204ce0"
+        ],
+        "entry_pc": "0x40204c68"
+      },
+      "LOW": {
+        "base": "0x40213090",
+        "top_exclusive": "0x40217090",
+        "bytes": 16384,
+        "expected_interrupted_sp": "0x40217080",
+        "expected_saved_frame_base": "0x40216d40",
+        "work_pc_range_half_open": [
+          "0x40204abc",
+          "0x40204acc"
+        ],
+        "entry_pc": "0x40204a4c"
+      }
+    },
+    "frame": "832 bytes (0x340). Vector slots 0x40204280 and 0x40204200 branch to 0x40204804 and 0x402048c8. Both save x0..30, q0..31, ELR_EL1/SPSR_EL1, FPCR/FPSR, TPIDR_EL1, SP_EL0, TPIDR_EL0 and TPIDRRO_EL0. Their callbacks return a frame pointer in x0. At 0x4020498c restoration sets sp=x0 and restores the same offsets; CLREX then ERET at 0x40204a48.",
+    "priority": "LOW id=0 priority=1; A id=2 and B id=1 both priority=2. At first IRQ LOW moves to front, A then B wake. Peer expiry requires equal priority, peer Ready and LOW Ready. Running peer is enqueued at tail, strict fixed-priority preference retains first on ties. Linked comparisons 0x402053f0..0x40205418, rotation publish and dispatch 0x40205504..0x40205570.",
+    "timer": "LOW programs CNTP_TVAL_EL0 at 0x40204aa0, enables control and unmasks IRQ. Peer dispatch at 0x4020585c..0x402058b4 arms only for non-LOW and rotation count 0..2: CNTFRQ_EL0/100 -> CNTP_TVAL_EL0, control=3 (enabled/masked). Peer work enables existing timer with control=1 at 0x40204ba4 / 0x40204cbc after the first increment and witnesses. IRQ reads GICC_IAR (0x0801000c) and CNTP_CTL at 0x402052fc..0x40205314; it requires ID 30 and low bits 5 (enabled, unmasked, expired). At 0x40205328..0x40205338 it disables CNTP, executes barriers, writes the full IAR token to GICC_EOIR (0x08010010). The third rotation lifts count to 3 and dispatch skips rearming. Exactly four IRQ entries in trace.",
+    "work": "LOW region has ADD/CBZ/LDAR/CBZ; A and B have ADD/CBZ/LDAR/CMP/B.LO. All four IRQ ELRs are in the relevant work region. A/B X9 contains the peer witness in the high half and a nonzero work count in the low half. X19, TPIDR_EL1, both halves of V31 and the stack witness must match 0xa19 / 0xb19. At expiry X14=1, X11=(2,3,3) by turn; the kernel snapshots X9 into the second stack word. On resume each peer checks X9 delta 0..1 before continuing. LOW checks NZCV Z/C, X15=0x15a5, X19=0x19b6, V31 bytes 0x55, TPIDR_EL1, FPCR=1<<22, FPSR=1<<27 and stack state after peers overwrite register witnesses.",
+    "finish": "SVC sites on this ELF: B 0x40204d68 and A 0x40204c60, both instruction 0xd4000021. No yield SVC in either peer. Each gives ESR EC 0x15, immediate 1. Handler 0x4020516c..0x40205218 checks per-peer finish PC, rotations=3, marks Finished before dispatch without requeue. B completion selects A, A completion selects LOW and requires both peers Finished before setting HIGH_DONE. LOW resumed PC equals the initial LOW IRQ ELR."
+  },
+  "policy_evidence": {
+    "observation": "One POLICY RANK PASS and one POLICY SERVICE PASS before SCHED LOW RUN. Kernel_main disassembly gates the markers on eight per-module return values. No per-vector numerical results are printed. The following are representative inputs and asserted outputs from the exact linked-source revision. Full case lists are the bench_checks functions and their callees.",
+    "linked_calls": [
+      {
+        "call_pc": "0x402025fc",
+        "entry_pc": "0x40207160",
+        "source": "kernel/src/dispatch_policy.rs",
+        "sha256": "52d1ad21d552cd71810cac51fd7bbe04c8d2ee229946dede4beb740684c23704",
+        "representative_inputs_and_expected": "At tick 100, FCFS/fixed priority/SJF/SRTF/HRRN/RM/DM/EDF/LLF select IDs 0..8 respectively from nine jobs with each expected winner enqueued last. Equal snapshots enqueued 1,0 select ID 1. Includes HRRN prior service and wide deadline cases."
+      },
+      {
+        "call_pc": "0x40202638",
+        "entry_pc": "0x402028ac",
+        "source": "kernel/src/service_policy.rs",
+        "sha256": "326fd41c6cbd9cca27f0bfa77fff6522cb85b421aacbef55edcc2cf2b613e239",
+        "representative_inputs_and_expected": "Periodic reservation starts at 100 with budget 3 per 10. At 100 request 2 grants 2; at 102 request 8 grants 1; at 103 request 8 grants 0; at 110 request 1 grants 1. Stride weights 5,7,16 produce 50,70,160 grants in 280 equal quanta."
+      },
+      {
+        "call_pc": "0x40202640",
+        "entry_pc": "0x40200188",
+        "source": "kernel/src/temporal_policy.rs",
+        "sha256": "230cf84117a93dcf9dc1a2b0312e732406aaf6749d04073aa05a030b2e981f03",
+        "representative_inputs_and_expected": "An eight-tick table with slots (0,2),(1,3),(idle,1),(0,2) repeats over 24 ticks. Constrained hard CBS with budgets/periods (2,8),(1,4), releases of 4 at t=0 and 2 at t=1, selects 0,1,0,idle,idle,1,idle,idle,0,0. Includes wake density test and missed deadline."
+      },
+      {
+        "call_pc": "0x40202648",
+        "entry_pc": "0x40207c08",
+        "source": "kernel/src/fair_policy.rs",
+        "sha256": "5bc0496a33843c541f5e41044beec0e9a17878b99ab02950530eac7d3e5e444f",
+        "representative_inputs_and_expected": "Weights 1,3 produce service 10,30 in 40 modeled ticks. For (weight,whole,fraction numerator,slice,served) [(1,1,0,1,0),(2,0,0,16,0),(4,0,0,12,2)], weighted selection and EEVDF at V=3/7 choose ID 1, EEVDF at V=1/2 chooses ID 2."
+      },
+      {
+        "call_pc": "0x40202650",
+        "entry_pc": "0x40204d70",
+        "source": "kernel/src/feedback_policy.rs",
+        "sha256": "f48f407f2baa669782908f9d777acc41c59e583300cf53034fc1cbd981dc3867",
+        "representative_inputs_and_expected": "Three allotments 3,5,8, initial priority 2. Charges 1 and 2 demote to 1, charging 5 demotes to 0, boost restores 2. Lottery tickets [2,0,1,3] with supplied draws 0..6 select [0,0,2,3,3,3,none]."
+      },
+      {
+        "call_pc": "0x40202658",
+        "entry_pc": "0x40205960",
+        "source": "kernel/src/aperiodic_policy.rs",
+        "sha256": "99c7222beed62248950a6fb875cbec41346983dee8580812380c7535a82bbc23",
+        "representative_inputs_and_expected": "Start 17, budget 2 per 4, work arrivals [0,1,0,3,1,0,0,1,0,0]. Service by polling, deferrable, sporadic respectively: 0000110011, 0101110011, 0101010101. In a two-entry sporadic queue with budget 3 per 5, charging ticks 0,2,3 leaves credits (5,1),(8,2)."
+      },
+      {
+        "call_pc": "0x40202660",
+        "entry_pc": "0x402030c4",
+        "source": "kernel/src/domain_policy.rs",
+        "sha256": "001f1a78dc4fb30c53f8b412cfc38f6ab00ea5b7761a4ed56530bf7aa780283b",
+        "representative_inputs_and_expected": "Modeled affinities [7,3,1,1], ranked [0,1,2,3], CPU mask 7: task IDs on CPUs 0..2 = [2,1,0]. Mask 5 gives [1,idle,0]. Lock ceilings and donations give effective priorities [9,9,9,7], then [7,7,9,7] after donor removal. With LO(3), HI(2,5), HI(1,4), HI job 1 crosses to HI mode on its third granted tick and drops LO service until authorized quiescent reset."
+      },
+      {
+        "call_pc": "0x40202668",
+        "entry_pc": "0x4020120c",
+        "source": "kernel/src/group_policy.rs",
+        "sha256": "c1a473510463e3b44fcde915ec91651d72a3324b58725a95c9f608b5e353ee69",
+        "representative_inputs_and_expected": "Group budgets [3,4], aligned frame 8 at t=10, children [(1,4),(0,2),(0,3)]: all ready, first grants (group,child,ticks) (0,1,2),(0,2,1),(1,0,4). Energy work 9 at t=5 on CPUs mask 6 chooses (CPU 2,OPP 1) at deadline 10 and (CPU 1,OPP 3) at deadline 9. Gate accepts (task 3,generation 8,CPU 2,ticks 2), rejects stale/invalid proposals and selects fallback (2,7,1,1)."
+      }
+    ]
+  },
+  "host_only_controls": {
+    "method": "Public candidate observe() with io.BytesIO supplied UART, .25s deadline, unmodified .1s quiet window, poll stub returning None until the indicated exit poll (then status 0). Null verdict means acceptance. FIFO input comes from EVD-003 black_box.uart_ascii with its recorded SHA-256. No guest launched for controls.",
+    "cases": [
+      {
+        "case": "exact rr",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR A RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+        "sha256": "b22dc4d6d954e714420918973bad2b260751d24c169e98147dc5fb9ec959959f",
+        "exit_on_poll": null,
+        "expected": null,
+        "observed": null
+      },
+      {
+        "case": "crlf rr",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\r\nJNOX M1 READY\r\nPOLICY RANK PASS\r\nPOLICY SERVICE PASS\r\nSCHED LOW RUN\r\nSCHED TIMER IRQ\r\nRR A FIRST\r\nRR B FIRST\r\nRR A RESUMED\r\nRR B RESUMED\r\nSCHED LOW RESUMED\r\nSCHED PASS\r\n",
+        "sha256": "7eaba04d406957e7333cbbd17cb1cc355532d490a0ff08b1299156a1667dca42",
+        "exit_on_poll": null,
+        "expected": null,
+        "observed": null
+      },
+      {
+        "case": "first entries exchanged",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR B FIRST\nRR A FIRST\nRR A RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+        "sha256": "b86213da4090aad405e9d7699876bb762b253cf4fd1936af4136e351ade273c7",
+        "exit_on_poll": null,
+        "expected": "unexpected UART bytes or marker order",
+        "observed": "unexpected UART bytes or marker order"
+      },
+      {
+        "case": "missing A resume",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+        "sha256": "2a264540d469e6e816219a6e3061945830a1990be41ffe4c3d175050d39399ec",
+        "exit_on_poll": null,
+        "expected": "unexpected UART bytes or marker order",
+        "observed": "unexpected UART bytes or marker order"
+      },
+      {
+        "case": "repeat B resume",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR A RESUMED\nRR B RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+        "sha256": "3a210721fdf1808f7521d4930743cfb86c87ebecc17851ff2e0af2f5e5ee47f1",
+        "exit_on_poll": null,
+        "expected": "unexpected UART bytes or marker order",
+        "observed": "unexpected UART bytes or marker order"
+      },
+      {
+        "case": "extra byte",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR A RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n!",
+        "sha256": "d0ca22c210dddb2a071f142f1566c539eee51d9b91ed4adf66af8f0057cafe54",
+        "exit_on_poll": null,
+        "expected": "unexpected UART bytes or marker order",
+        "observed": "unexpected UART bytes or marker order"
+      },
+      {
+        "case": "missing terminating LF",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR A RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS",
+        "sha256": "3acf88ea0326f013be37ddce7485f32e2f4dd9db05aa83bc7b7f67be1226d5d9",
+        "exit_on_poll": null,
+        "expected": "UART deadline exceeded (0.25s)",
+        "observed": "UART deadline exceeded (0.25s)"
+      },
+      {
+        "case": "quiet-window process exit",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR A RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+        "sha256": "b22dc4d6d954e714420918973bad2b260751d24c169e98147dc5fb9ec959959f",
+        "exit_on_poll": 2,
+        "expected": "QEMU exited before host stop (status 0)",
+        "observed": "QEMU exited before host stop (status 0)"
+      },
+      {
+        "case": "recorded EVD-003 FIFO rejected as RR",
+        "profile": "rr",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+        "sha256": "6496878a8c65386195376bcd6dd39c49dad3beed782d5d15fc97c2b629f2b140",
+        "exit_on_poll": null,
+        "expected": "unexpected UART bytes or marker order",
+        "observed": "unexpected UART bytes or marker order"
+      },
+      {
+        "case": "recorded EVD-003 FIFO positive",
+        "profile": "fifo",
+        "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+        "sha256": "6496878a8c65386195376bcd6dd39c49dad3beed782d5d15fc97c2b629f2b140",
+        "exit_on_poll": null,
+        "expected": null,
+        "observed": null
+      }
+    ]
+  },
+  "raw_artifact_digests": {
+    "runner.log": {
+      "bytes": 795,
+      "sha256": "e13f00b0b4dcfa1c670caf0bf0554cfad29683f599b449d4f9de1c1b59cd4f79"
+    },
+    "runner.exit": {
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "qemu.stderr": {
+      "bytes": 69,
+      "sha256": "a97d4e29492a0c1b646c7d61ed4f4e97567e675b9fbe39d47874413cf1a064dd"
+    },
+    "uart.bin": {
+      "bytes": 171,
+      "sha256": "b22dc4d6d954e714420918973bad2b260751d24c169e98147dc5fb9ec959959f"
+    },
+    "irq.log": {
+      "bytes": 1201,
+      "sha256": "94213f247204fdf2b58989f0c049475eb88f2f3132867bc4f390e2b7848b8bb5"
+    },
+    "first-verdict.json": {
+      "bytes": 641,
+      "sha256": "959a0430151accb3f69c8fc30e8e89de1c4a5e8ed331ca8286b19ffcdcb803bb"
+    },
+    "qemu-int": {
+      "bytes": 117,
+      "sha256": "bee16016986236f88968de258be85307d5aec2485803b43c149778b6a31a2ec1"
+    },
+    "disassembly.txt": {
+      "bytes": 516643,
+      "sha256": "c525f617ae66b0df68fc705736ab656f8cdc652f0f65a054dab50033bdcc62ad"
+    },
+    "symbols.txt": {
+      "bytes": 9648,
+      "sha256": "0a17ba3ae9ea817d78c8608b1809ac508e2a1521b50876c418b876e8822657de"
+    },
+    "vector.txt": {
+      "bytes": 5707,
+      "sha256": "accecfcae004bc90886437b72acb524692ba7b25b6c2b55f2377d180011e6c8e"
+    }
+  },
+  "reproduce": "See docs/m1-rr.en.md at source_commit. Use the supplied ELF and runner options. Decode UART from the full printed bytes literal with ast.literal_eval and check raw length; obtain exception trace via wrapper. Use nm -n -S -C and objdump -d -C plus objdump -D --section=.text for the vector marked as an object.",
+  "limitations": [
+    "Launcher bookkeeping lost the numeric runner exit. Direct black-box evidence is the complete printed PASS, UART, host-stop diagnostic and QEMU trace.",
+    "Separate live workloads are required for policies beyond the tested fixed-priority RR configuration, including live SMP dispatch/migration, blocking/mutex integration, admission and enforcement.",
+    "No board, physical time or latency measurement, response-time bound, isolation guarantee, or safety qualification."
+  ]
+}

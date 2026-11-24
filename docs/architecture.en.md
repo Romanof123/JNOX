@@ -95,4 +95,8 @@ The Linux ABI contract defines initial stack alignment, `argc`, `argv`, `envp`, 
 
 The minimum safety configuration can omit the Linux user-space ABI service. Direct execution uses a non-safety user domain with CPU time, memory, and file descriptor limits. In `VER-021`, run the same hashed executable with the same arguments and input on reference Linux and J-NOX and compare output and exit status. A separate deployment can explicitly select a Linux guest with a matching ISA, kernel, user space, and any required interpreter and libraries. That guest receives its own resource budget. Run the direct-execution test with the guest disabled.
 
+## DES-012 Scheduling policy layers
+
+The kernel owns the ready queue and execution contexts. Selectors order eligible tasks. Budget, weighted-service and time-partition modules compute which task or group may run and for how long. The timer, preemption points, context restoration and protection boundaries have separate integration and acceptance steps. The minimum boot image and extended policy bench use different build profiles. [Policy scope and conditions](scheduling-policies.en.md) · [Round-robin execution test](m1-rr.en.md)
+
 [Requirements](requirements.en.md) · [Verification plan](verification-plan.en.md) · [Development lifecycle](lifecycle.en.md)

@@ -1,0 +1,29 @@
+running 26 tests
+test aperiodic_policy::tests::full_replenishment_queue_delays_credit_and_preserves_budget ... ok
+test aperiodic_policy::tests::identical_releases_distinguish_the_three_servers ... ok
+test aperiodic_policy::tests::invalid_parameters_and_overflows_preserve_state ... ok
+test aperiodic_policy::tests::periodic_servers_handle_preemption_drain_and_boundary ... ok
+test dispatch_matches_stable_sort_for_all_ordered_triples ... ok
+test fair_policy::tests::weighted_service_and_eligible_deadlines ... ok
+test guest_checks::aperiodic_policy ... ok
+test guest_checks::dispatch_policy ... ok
+test guest_checks::domain_policy ... ok
+test guest_checks::fair_policy ... ok
+test guest_checks::feedback_policy ... ok
+test guest_checks::group_policy ... ok
+test guest_checks::service_policy ... ok
+test guest_checks::temporal_policy ... ok
+test hrrn_distinguishes_adjacent_ratios_at_the_clock_limit ... ok
+test ready_queue::tests::preempted_task_precedes_peers_and_higher_priorities_still_win ... ok
+test ready_queue::tests::rejected_insertions_preserve_contents_and_order ... ok
+test ready_queue::tests::yield_moves_to_tail_even_when_ids_arrive_in_reverse_order ... ok
+test saturated_hard_server_runs_only_its_quota_each_period ... ok
+test service_policy::tests::aligned_budget_throttles_and_replenishes ... ok
+test service_policy::tests::stride_shares_service_and_accounts_for_wakeups ... ok
+test temporal_policy::tests::cyclic_frame_boundaries_and_configuration ... ok
+test temporal_policy::tests::hard_cbs_activation_and_throttling ... ok
+test temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok
+test temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok
+test weighted_and_eligible_deadline_selection_in_twelfths ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
