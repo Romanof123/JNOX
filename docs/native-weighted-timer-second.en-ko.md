@@ -34,3 +34,4 @@ native_weighted_replay.py LOCAL/instrumented/session CAPTURE_PRINTED_SHA256
 ```
 
 A verified ZIP establishes retention only. A nonzero capture or replay, absent raw member, missing expected observer material or incomplete instrumented trace remains unqualified even when the archive verifies. / ZIP 무결성 확인은 자료 보존 판정이다. 캡처·재생 실패, 필수 원시 파일·계측 기록 누락 또는 불완전한 계측 추적은 보존 성공과 별도로 미충족이다.
+[Second cohort verdict and raw evidence / 2차 코호트 판정 및 원본](evidence/native-weighted-timer-second.en-ko.md) · #184 · #186 · #190.
