@@ -1,0 +1,732 @@
+{
+  "169-original": {
+    "eevdf-bench": {
+      "candidate": {
+        "elf": "cca5b4f3ac119f8aeaf3e57a15b5ea919d8467f52149cd62cabd9657b7f1d749",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            18745,
+            18745,
+            5,
+            65536,
+            "7888e0c1fdb602df4ebf84dbdb17d23d30a4f1b824b2b8a458891e0facf092af"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            752,
+            70352,
+            6,
+            65536,
+            "e918e73550d21bd4e2acf1bf749fc1421f079370957b5601f6bf715955a60020"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            17164,
+            "98c30125b6af3e6435a653349a38716d8e38f3a5c6596708097df286edbbd7cd"
+          ],
+          ".rodata": [
+            1075856144,
+            1577,
+            "9c125bdce42021e5d1628c51608b7602d3b2e14fcecfe002f9f3b77ccd237934"
+          ],
+          ".data": [
+            1075859456,
+            752,
+            "e918e73550d21bd4e2acf1bf749fc1421f079370957b5601f6bf715955a60020"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "9e663bf2a9abb111294411724e919a5781b46dd27b09ea5c236fc53bfeaac9db",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            18745,
+            18745,
+            5,
+            65536,
+            "7888e0c1fdb602df4ebf84dbdb17d23d30a4f1b824b2b8a458891e0facf092af"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            752,
+            70352,
+            6,
+            65536,
+            "e918e73550d21bd4e2acf1bf749fc1421f079370957b5601f6bf715955a60020"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            17164,
+            "98c30125b6af3e6435a653349a38716d8e38f3a5c6596708097df286edbbd7cd"
+          ],
+          ".rodata": [
+            1075856144,
+            1577,
+            "9c125bdce42021e5d1628c51608b7602d3b2e14fcecfe002f9f3b77ccd237934"
+          ],
+          ".data": [
+            1075859456,
+            752,
+            "e918e73550d21bd4e2acf1bf749fc1421f079370957b5601f6bf715955a60020"
+          ]
+        }
+      },
+      "elf_equal": false,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    },
+    "eevdf-dynamic-bench": {
+      "candidate": {
+        "elf": "8c1a3ea95b3dd6c9c85737d8fbc3e23521f0667513bf526b0d78221e160080de",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            18185,
+            18185,
+            5,
+            65536,
+            "4d404e0090f4e59f99a84e63ea7638d399b5a86e272dba8161eb391c65f1133a"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            2480,
+            151120,
+            6,
+            65536,
+            "f57afec0713809cbc0f220fd0710a7b1f3b03d02119ce9db9f2d653b1dc7904a"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            17168,
+            "b541e8361140c1d63fba7cecffbcaf1712c3641286f24b134c7c56585c0777e8"
+          ],
+          ".rodata": [
+            1075856144,
+            1017,
+            "8ce46c71e5158557ee536d7101b997073d1e5627b93eca57a1ce9b751d6a4fa4"
+          ],
+          ".data": [
+            1075859456,
+            2480,
+            "f57afec0713809cbc0f220fd0710a7b1f3b03d02119ce9db9f2d653b1dc7904a"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "c727e0219adc859d4310cc3d39d0f6691b0e0d1d6b229236fafd284f58af067d",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            18185,
+            18185,
+            5,
+            65536,
+            "4d404e0090f4e59f99a84e63ea7638d399b5a86e272dba8161eb391c65f1133a"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            2480,
+            151120,
+            6,
+            65536,
+            "f57afec0713809cbc0f220fd0710a7b1f3b03d02119ce9db9f2d653b1dc7904a"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            17168,
+            "b541e8361140c1d63fba7cecffbcaf1712c3641286f24b134c7c56585c0777e8"
+          ],
+          ".rodata": [
+            1075856144,
+            1017,
+            "8ce46c71e5158557ee536d7101b997073d1e5627b93eca57a1ce9b751d6a4fa4"
+          ],
+          ".data": [
+            1075859456,
+            2480,
+            "f57afec0713809cbc0f220fd0710a7b1f3b03d02119ce9db9f2d653b1dc7904a"
+          ]
+        }
+      },
+      "elf_equal": false,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    },
+    "eevdf-wake-bench": {
+      "candidate": {
+        "elf": "6d059bbaa05a9080f73b739f82d9fbffb601832cbab28a33b4f94fe294370831",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            16889,
+            16889,
+            5,
+            65536,
+            "b2ce5b2b15cffef6123a5b291ec10695404c1c8e2ed1201a69d8bdb2869dcec8"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            2096,
+            109232,
+            6,
+            65536,
+            "ea1e222273be1d03f598ac0f507c82a3ca5b3b4e1dbfb423dbc900ba4254ad9a"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            15928,
+            "53b6f968b61562c8cc9698798867c2f0b9ce13d867f87736fa35e873d8e8bbc7"
+          ],
+          ".rodata": [
+            1075854904,
+            961,
+            "0ca0697d8f55b2ceab3336590923852a3c3e2cc5c2a3134ce2ba5a7e4b00c30a"
+          ],
+          ".data": [
+            1075859456,
+            2096,
+            "ea1e222273be1d03f598ac0f507c82a3ca5b3b4e1dbfb423dbc900ba4254ad9a"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "90d6e87697893e1e1d2568228afcbb9789ce549ce2c20b5a05f9d338c3f18f54",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            16889,
+            16889,
+            5,
+            65536,
+            "b2ce5b2b15cffef6123a5b291ec10695404c1c8e2ed1201a69d8bdb2869dcec8"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            2096,
+            109232,
+            6,
+            65536,
+            "ea1e222273be1d03f598ac0f507c82a3ca5b3b4e1dbfb423dbc900ba4254ad9a"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            15928,
+            "53b6f968b61562c8cc9698798867c2f0b9ce13d867f87736fa35e873d8e8bbc7"
+          ],
+          ".rodata": [
+            1075854904,
+            961,
+            "0ca0697d8f55b2ceab3336590923852a3c3e2cc5c2a3134ce2ba5a7e4b00c30a"
+          ],
+          ".data": [
+            1075859456,
+            2096,
+            "ea1e222273be1d03f598ac0f507c82a3ca5b3b4e1dbfb423dbc900ba4254ad9a"
+          ]
+        }
+      },
+      "elf_equal": false,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    },
+    "telemetry": {
+      "candidate": {
+        "elf": "f3ab453fcbd2b95defbd4ab86d5953a2b4dda04aabe35a405cfba51e9aa9c4bd",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            17602,
+            17602,
+            5,
+            65536,
+            "afae37c9625bdbd6056b50b62d2757b29e474d0c6fafbfcd7470950f08a89b22"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            456,
+            201360,
+            6,
+            65536,
+            "64fd7d0c314a338e5e568d9a6c4d5189452b8cf93d9c9f7c179c993bda7ae589"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            16576,
+            "b735629e60b03128d222255c7ea11a90efd2088279d61a55b55244a7a1a70ff1"
+          ],
+          ".rodata": [
+            1075855552,
+            1026,
+            "21bf025c82a396f779215f2cbd29a60ed7278eb492789e8ffa7123a4099aa7cd"
+          ],
+          ".data": [
+            1075859456,
+            456,
+            "64fd7d0c314a338e5e568d9a6c4d5189452b8cf93d9c9f7c179c993bda7ae589"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "3cc3623049e26e63f256f3c1b9c1a29ed74966fa3f89a66910d5dff9335919e9",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            17602,
+            17602,
+            5,
+            65536,
+            "afae37c9625bdbd6056b50b62d2757b29e474d0c6fafbfcd7470950f08a89b22"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            456,
+            201360,
+            6,
+            65536,
+            "64fd7d0c314a338e5e568d9a6c4d5189452b8cf93d9c9f7c179c993bda7ae589"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            16576,
+            "b735629e60b03128d222255c7ea11a90efd2088279d61a55b55244a7a1a70ff1"
+          ],
+          ".rodata": [
+            1075855552,
+            1026,
+            "21bf025c82a396f779215f2cbd29a60ed7278eb492789e8ffa7123a4099aa7cd"
+          ],
+          ".data": [
+            1075859456,
+            456,
+            "64fd7d0c314a338e5e568d9a6c4d5189452b8cf93d9c9f7c179c993bda7ae589"
+          ]
+        }
+      },
+      "elf_equal": false,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    }
+  },
+  "main": {
+    "amc": {
+      "candidate": {
+        "elf": "9b7d34bdd8bb11d9117132eee5390d4f8403425551108f7a35acdc24eb5b3e01",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            15152,
+            15152,
+            5,
+            65536,
+            "dae6d3aad655ac1f306e704e4ccb239b609ce9e4711844be720bea9fdc66ecfa"
+          ],
+          [
+            81920,
+            1075855360,
+            1075855360,
+            9112,
+            140512,
+            6,
+            65536,
+            "e4170185de9b45de4204c89cefe9473f4938aa57aa50d125b7927e5e22dc4c66"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            14040,
+            "09966d6f00ef997f56c05f45e94d023487678c3e65c9b0a084fc8daa00b283cb"
+          ],
+          ".rodata": [
+            1075853016,
+            1112,
+            "891cbf9ced9a439eda551aebbdfb319f6854936f78334fc4f6b6eb71850c18ad"
+          ],
+          ".data": [
+            1075855360,
+            9112,
+            "e4170185de9b45de4204c89cefe9473f4938aa57aa50d125b7927e5e22dc4c66"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "56739c3f10d89a14ef74492d50c27e1b64d4b1f1689db32eb3b1db49e2230412",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            15152,
+            15152,
+            5,
+            65536,
+            "dae6d3aad655ac1f306e704e4ccb239b609ce9e4711844be720bea9fdc66ecfa"
+          ],
+          [
+            81920,
+            1075855360,
+            1075855360,
+            9112,
+            140512,
+            6,
+            65536,
+            "e4170185de9b45de4204c89cefe9473f4938aa57aa50d125b7927e5e22dc4c66"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            14040,
+            "09966d6f00ef997f56c05f45e94d023487678c3e65c9b0a084fc8daa00b283cb"
+          ],
+          ".rodata": [
+            1075853016,
+            1112,
+            "891cbf9ced9a439eda551aebbdfb319f6854936f78334fc4f6b6eb71850c18ad"
+          ],
+          ".data": [
+            1075855360,
+            9112,
+            "e4170185de9b45de4204c89cefe9473f4938aa57aa50d125b7927e5e22dc4c66"
+          ]
+        }
+      },
+      "elf_equal": false,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    },
+    "default": {
+      "candidate": {
+        "elf": "58baed44a4ecaf4dfed0d9fdedbea48f09f1855d092bcf1a5765aa870f91e616",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            275,
+            275,
+            5,
+            65536,
+            "e4cf03f8b33cfd95e0f1ab36618eed96608893bfbbd4ceecb312be014a6adf40"
+          ],
+          [
+            65816,
+            1075839256,
+            1075839256,
+            0,
+            16392,
+            6,
+            65536,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            248,
+            "bd1c536baa0cb6db2ddc6a1dabe29e91e8e42ee299faf3521eb740d7a8bc03ce"
+          ],
+          ".rodata": [
+            1075839224,
+            27,
+            "22f36ed899cea02a76f3ea09369fdf343008d82276c48cf60d1acdf1a66e976a"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "58baed44a4ecaf4dfed0d9fdedbea48f09f1855d092bcf1a5765aa870f91e616",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            275,
+            275,
+            5,
+            65536,
+            "e4cf03f8b33cfd95e0f1ab36618eed96608893bfbbd4ceecb312be014a6adf40"
+          ],
+          [
+            65816,
+            1075839256,
+            1075839256,
+            0,
+            16392,
+            6,
+            65536,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            248,
+            "bd1c536baa0cb6db2ddc6a1dabe29e91e8e42ee299faf3521eb740d7a8bc03ce"
+          ],
+          ".rodata": [
+            1075839224,
+            27,
+            "22f36ed899cea02a76f3ea09369fdf343008d82276c48cf60d1acdf1a66e976a"
+          ]
+        }
+      },
+      "elf_equal": true,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    },
+    "fixed-rr": {
+      "candidate": {
+        "elf": "0fd8f158698381161bedc3b05812e55459e48349f4ccb4f554e470eb71749a66",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            14728,
+            14728,
+            5,
+            65536,
+            "ddf3f576535294c62cfa15e218f8de0a288a70b0f800c5d3468a8d6a0d3ea329"
+          ],
+          [
+            81920,
+            1075855360,
+            1075855360,
+            288,
+            98672,
+            6,
+            65536,
+            "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            13368,
+            "90d26259af3bc89a1a21a035f31c7cdf9dcf1988a9d60515de45bbe153ad52dd"
+          ],
+          ".rodata": [
+            1075852344,
+            1360,
+            "1d095b3ad8c40ba9e0cd5f6cf38f2992488e960776fee9fde26357b226a14f61"
+          ],
+          ".data": [
+            1075855360,
+            288,
+            "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "22f463a7ffb7605992a7cad1fad06c31fc0acc2e6043f18d5f5fd6004244699a",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            14728,
+            14728,
+            5,
+            65536,
+            "ddf3f576535294c62cfa15e218f8de0a288a70b0f800c5d3468a8d6a0d3ea329"
+          ],
+          [
+            81920,
+            1075855360,
+            1075855360,
+            288,
+            98672,
+            6,
+            65536,
+            "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            13368,
+            "90d26259af3bc89a1a21a035f31c7cdf9dcf1988a9d60515de45bbe153ad52dd"
+          ],
+          ".rodata": [
+            1075852344,
+            1360,
+            "1d095b3ad8c40ba9e0cd5f6cf38f2992488e960776fee9fde26357b226a14f61"
+          ],
+          ".data": [
+            1075855360,
+            288,
+            "01f4882dabd0db1403da1e66ddd83f07261ae557567a24c02da6c03bdd51f003"
+          ]
+        }
+      },
+      "elf_equal": false,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    },
+    "mutex": {
+      "candidate": {
+        "elf": "6e80fe6ba3b6b89fa36293e23ac29f8953c7be1ed1277fd63208a037d9823196",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            17336,
+            17336,
+            5,
+            65536,
+            "cd63065f193188c25d742d51da12f9f5b043adeef02ed86b1e6b2f213e4d9552"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            352,
+            94832,
+            6,
+            65536,
+            "0cf09575f0fa7681af8b29ae2596c5500c42c17fe4cbc5ef5cc0b680058e9f29"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            16044,
+            "1955c3c932d521c1611203ba57b1c08162881dee84f146af6f84fc4227fea0d4"
+          ],
+          ".rodata": [
+            1075855024,
+            1288,
+            "a25e6286128893aed93790d333ed115fe9e1274da27526e7c190a596e7a69fae"
+          ],
+          ".data": [
+            1075859456,
+            352,
+            "0cf09575f0fa7681af8b29ae2596c5500c42c17fe4cbc5ef5cc0b680058e9f29"
+          ]
+        }
+      },
+      "reference": {
+        "elf": "7dd3a1f1b820d6450712fe3bd0068b22282fe550940c395db8ba0b176530fb5f",
+        "entry": 1075838976,
+        "loads": [
+          [
+            65536,
+            1075838976,
+            1075838976,
+            17336,
+            17336,
+            5,
+            65536,
+            "cd63065f193188c25d742d51da12f9f5b043adeef02ed86b1e6b2f213e4d9552"
+          ],
+          [
+            86016,
+            1075859456,
+            1075859456,
+            352,
+            94832,
+            6,
+            65536,
+            "0cf09575f0fa7681af8b29ae2596c5500c42c17fe4cbc5ef5cc0b680058e9f29"
+          ]
+        ],
+        "sections": {
+          ".text": [
+            1075838976,
+            16044,
+            "1955c3c932d521c1611203ba57b1c08162881dee84f146af6f84fc4227fea0d4"
+          ],
+          ".rodata": [
+            1075855024,
+            1288,
+            "a25e6286128893aed93790d333ed115fe9e1274da27526e7c190a596e7a69fae"
+          ],
+          ".data": [
+            1075859456,
+            352,
+            "0cf09575f0fa7681af8b29ae2596c5500c42c17fe4cbc5ef5cc0b680058e9f29"
+          ]
+        }
+      },
+      "elf_equal": false,
+      "entry_equal": true,
+      "loads_equal": true,
+      "text_equal": true
+    }
+  }
+}

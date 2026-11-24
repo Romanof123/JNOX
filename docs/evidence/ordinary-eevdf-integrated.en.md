@@ -1,0 +1,5 @@
+# Integrated EEVDF image and original first capture
+
+At 0145c2342833fefd6d7cffea24b1785c6ba664f2 the telemetry entry, all PT_LOAD headers and bytes match e203caa997eea8a561c89e59fb41994b64547214. The full ELF hashes differ. The integrated decoder replayed the immutable original session (68cca2efd813872eb02c6868fccbbe4e4e2ae2c22f76a602e4413c755bf0cf16), returning 0: 84 rows, eight wakes and five passing service windows. This was archive replay and zero new guests launched. All three historical EEVDF benchmark selectors also retained their entries and load images relative to e203caa. Against main 12a98a9178903798b6b90cced17bd785d219eedc, default virt matched as a whole ELF. Fixed RR, AMC exact-lo and mutex ordinary-pi matched entry and PT_LOAD with different whole-file hashes. All comparison builds used native Linux Rust 1.95.0, locked release, one job. Board timing and sustained admission remain open.
+
+[JSON](ordinary-eevdf-integrated.json) · [ZIP](ordinary-eevdf-integrated.zip) · [First capture](ordinary-eevdf-first.en.md)
