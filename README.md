@@ -1,28 +1,28 @@
 # J-NOX
 
-한국어 · [English](README.en.md)
+English · [한국어](README.ko.md)
 
-**Just-enough Nucleus, Open eXtensions.** 기능안전을 목표로 하는 경량 실시간 마이크로커널과, 서비스·드라이버를 독립 실행 영역에서 확장하는 운영체제 프로젝트.
+**Just-enough Nucleus, Open eXtensions.** J-NOX is a lightweight, real-time microkernel OS designed for functional safety. Services and drivers run in independent execution domains.
 
-첫 기준선은 **기획 초안 0.1**이다. 자동차 적용에서 ISO 26262 ASIL D 안전 목표를 지원할 수 있는 구성과 ISO/SAE 21434에 따른 사이버보안 개발을 목표로 한다. 첫 적용 시스템, 보드, 안전 상태 및 정량 시간 한계는 확정 전이며, 제품 적합성 평가와 인증은 아직 계획 단계다.
+**Planning draft 0.1** is the first baseline. For automotive applications, the project aims to define a configuration that can support ISO 26262 ASIL D safety goals and to develop cybersecurity in accordance with ISO/SAE 21434. The first target system, board, safe state and quantitative timing limits are still open. Product conformity assessment and certification are at the planning stage.
 
-| 시작 문서 | 다루는 내용 |
+| Document | What it covers |
 | --- | --- |
-| [제품 기획](docs/product-plan.md) | 제품 목표, 지원 플랫폼, 범위, 단계별 산출물 |
-| [플랫폼 기능 기준선](docs/platform-capabilities.md) | 기본 기능, 선택 서비스, 추가 기능 제안과 기능별 합격 조건 |
-| [안전·보안 개념](docs/safety-security-concept.md) | 위험·위협 후보, 가정, 안전 경계와 초기 분석 계획 |
-| [기능안전팀의 첫 벤치 결정](docs/safety-parameters.md) | 가상 출력의 안전 상태와 시간 예산, 제품 값 확정에 필요한 근거 |
-| [시스템 요구사항](docs/requirements.md) | 추적 ID가 붙은 요구사항과 합격 기준 |
-| [시스템 아키텍처](docs/architecture.md) | 커널, Linux 드라이버 도메인, 스케줄링, 포팅, 서비스 설계 |
-| [M1 Rust 커널 첫 부팅](docs/m1-boot.md) | AArch64 QEMU에서 부팅할 최소 커널의 범위와 UART 합격 조건 |
-| [Pi 4 실보드 준비](docs/boards/pi4-p1.md) | SD 부팅 파일, 직렬 연결, 에뮬레이터와 실보드의 개별 인수 기준 |
-| [M1 타이머 선점](docs/m1-scheduler.md) | 한 번의 부팅에서 타이머 인터럽트, 높은 우선순위 스레드 실행, 중단된 스레드 복귀를 확인하는 기준 |
-| [M1 동일 우선순위 FIFO](docs/m1-fifo.md) | 같은 우선순위 스레드의 준비 순서, CPU 양보와 복귀를 확인하는 기준 |
-| [Rust 작업 테이블로 커널 실행](docs/fixed-runtime.md) | AArch64 고정 우선순위 커널을 빌드하고 앱 작업 테이블을 선택해 FIFO·라운드로빈 실행 |
-| [스케줄링 정책과 라운드로빈](docs/scheduling-policies.md) | 고전·현대 정책의 선택·예산·격리 조건과 정책별 실행 검증 |
-| [IPC 프로파일](docs/ipc-mechanisms.md) | 스케줄링 승인 후 개발할 IPC 10개 계열의 자원 한도와 인수 시험 |
-| [검증 계획](docs/verification-plan.md) | 시험 방법, 합격 판정, 실기기 검증, 증거 형식 |
-| [개발 수명주기와 변경관리](docs/lifecycle.md) | 기획에서 구현·검증까지의 문서 연결, 변경 시 재설계 및 재승인 절차 |
-| [추적 링크](trace/links.csv) | 문서 간 관계를 자동 검사할 수 있는 데이터 |
+| [Product plan](docs/product-plan.en.md) | Product objectives, target platforms, scope and milestone deliverables |
+| [Platform capability baseline](docs/platform-capabilities.en.md) | Core and optional profiles, proposed additions and acceptance criteria |
+| [Safety and cybersecurity concept](docs/safety-security-concept.en.md) | Candidate hazards and threats, assumptions, safety boundaries and initial analysis plan |
+| [First bench decision by the functional safety team](docs/safety-parameters.en.md) | Safe state and timing budget for a virtual output, and the evidence needed to set product values |
+| [System requirements](docs/requirements.en.md) | Requirements, trace IDs and acceptance criteria |
+| [System architecture](docs/architecture.en.md) | Kernel, Linux driver domain, scheduling, ports and user services |
+| [First boot of the M1 Rust kernel](docs/m1-boot.en.md) | Scope and UART acceptance criteria for the minimal AArch64 QEMU kernel |
+| [Pi 4 physical bench](docs/boards/pi4-p1.en.md) | SD boot files, serial wiring and independent model and hardware acceptance |
+| [M1 timer preemption](docs/m1-scheduler.en.md) | Criteria for observing the timer interrupt, higher-priority dispatch and interrupted thread resumption in one boot |
+| [M1 equal-priority FIFO](docs/m1-fifo.en.md) | Acceptance criteria for ready order, voluntary yield and resumption of equal-priority threads |
+| [Run linked Rust tasks](docs/fixed-runtime.en.md) | Build the AArch64 fixed-priority runtime, select an application table and boot it with FIFO or round robin |
+| [Scheduling policies and round robin](docs/scheduling-policies.en.md) | Selection, budget and isolation contracts, with execution evidence by policy |
+| [IPC profiles](docs/ipc-mechanisms.en.md) | Ten IPC families, their resource limits and acceptance cases after scheduling qualification |
+| [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
+| [Development lifecycle and change control](docs/lifecycle.en.md) | Traceability from planning through implementation and verification, including redesign and reapproval after a change |
+| [Trace links](trace/links.csv) | Machine-readable relationships shared by both language editions |
 
-작업 양식은 [변경 요청](.github/ISSUE_TEMPLATE/change-request.md), [PR 인계](.github/pull_request_template.md), [검증 증거](docs/templates/verification-evidence.md)에서 확인할 수 있습니다.
+Project templates cover [change requests](.github/ISSUE_TEMPLATE/change-request.md), [pull request handoffs](.github/pull_request_template.md), and [verification evidence](docs/templates/verification-evidence.en.md).
