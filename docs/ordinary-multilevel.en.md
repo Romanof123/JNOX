@@ -23,3 +23,30 @@ python3 tools/ordinary_multilevel_replay.py "$app" "$out/capture/audit.bin"
 ```
 
 The diagnostic has 256 rows. Each contains the original incoming frame (all 104 words), selected frame address and PC, ESR or PPI/control, raw start/deadline/stop, service totals and post-boundary ranks and balances. The queue immediately before selection packs task IDs plus one into nibbles, oldest first. Capture retains the interrupt stream, UART and terminal idle PC. Linked workloads use one percent of CNTFRQ as their unit, with MLQ quantum 1, MLFQ allotments 4/6/8 and boost period 16. IRQ observation and SVC delivery can cross the programmed deadline. Excess counts carry through lower feedback levels and repeated bottom-level quanta in bounded work. If several boost epochs pass, one reset occurs before the next dispatch. Kernel selection, trace copying and idle contribute no owner counts.
+
+## IMP-046 boundary workloads
+
+Select one row per fresh QEMU virt boot. For all four use `JNOX_BOARD=virt JNOX_PROFILE=multilevel`. The plain selector leaves `JNOX_MULTILEVEL_TRACE` unset. The diagnostic selector adds `JNOX_MULTILEVEL_TRACE=1`.
+
+| Plain JNOX_APP | Diagnostic JNOX_APP | Workload |
+| --- | --- | --- |
+| mlq-blocked | mlq-blocked | Two equal-class entries call block; STALL |
+| mlq-exited | mlq-exited | Two equal-class entries return; DONE |
+| mlq-saturated | mlq-saturated | High peers share an absolute end at initial start + 24U; low works for U |
+| mlfq-delayed | mlfq-delayed | Three CPU workers share initial start + 96U; first comparator uses start + 3P + P/4 |
+
+Use the build commands above with each selector. For *both* variants run the capture wrapper command above using a separate new capture directory and the corresponding ELF. The default UART deadline is five host-monotonic seconds and all four profiles require one further second of quiet. The plain capture writes the eight-byte post-disable CNTP_CTL_EL0 readback to audit.bin. Diagnostic capture writes that readback separately to multilevel_terminal_ctl.bin and dumps the complete journal to audit.bin. Both retain the QEMU exception trace and terminal PC.
+
+The EVD-040 journal prefix is byte-compatible. Each new diagnostic app appends 256 rows of 11 little-endian u64 words after the entire original 256-row array. Index both arrays with the same decision number.
+
+| Word | Observation |
+| --- | --- |
+| 0–2 | Queue before boost, outgoing rank and balance after full charge and before reset. Zero on initial row |
+| 3 | Cumulative calls that executed the policy reset |
+| 4–5 | Live and asleep slot bitmaps (bit i for slot i, unused slots asleep) |
+| 6–7 | Outgoing comparator and control read back immediately after arming. Zero on initial row |
+| 8 | Control read back after terminal disable, otherwise UINT64_MAX |
+| 9 | Absolute workload end in counter units, zero in terminal-state workloads |
+| 10 | Total owner service before outgoing charge |
+
+The independent observer must compare actual comparator and timing against the nominal deadline in the prefix, including the first ordinary timer after the deliberate delay. Preserve each first capture and verify the finite saturation window, per-owner charges, intermediate balances, queue order and later epoch crossing against the [frozen plan](multilevel-limits-plan.md). Historical replay for the original two selectors uses their original layout.
