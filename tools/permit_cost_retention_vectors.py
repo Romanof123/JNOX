@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from permit_observer_cost import check
-from permit_cost_retention import publish, request_stop, termination_output
+from permit_cost_retention import publish, request_stop, termination_output, verify
 
 
 class TerminalControls(unittest.TestCase):
@@ -76,6 +76,47 @@ class RetentionControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 check(p, "0"*64)
 
+    def test_extra_entries_at_each_stage(self):
+        for phase in ("source", "copy", "final"):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                src, dst = base/"src", base/"final"
+                src.mkdir()
+                (src/"uart").write_bytes(b"actual")
+                from shutil import copyfile
+                rename = os.rename
+
+                def copy(a, b):
+                    copyfile(a, b)
+                    if phase == "copy":
+                        (Path(b).parent/"unexpected").mkdir()
+
+                def promote(a, b):
+                    rename(a, b)
+                    if phase == "final":
+                        (Path(b)/"unexpected").write_bytes(b"retain")
+
+                if phase == "source":
+                    (src/"unexpected").write_bytes(b"retain")
+                with patch("permit_cost_retention.shutil.copyfile", side_effect=copy), patch(
+                        "permit_cost_retention.os.rename", side_effect=promote), self.assertRaises(ValueError):
+                    publish(src, dst, ["uart"], ["uart"])
+                self.assertEqual(dst.exists(), phase == "final")
+                self.assertEqual(len(list(base.rglob("unexpected"))), 1)
+
+    def test_receipt_must_cover_every_expected_byte_and_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dst = Path(tmp)/"src", Path(tmp)/"copy"
+            src.mkdir()
+            (src/"uart").write_bytes(b"actual")
+            saved = publish(src, dst, ["uart"], ["uart"])
+            (dst/"retained-manifest.json").write_text("{}")
+            with self.assertRaises(ValueError):
+                verify(src, dst, ["uart"], saved)
+            (dst/"uart").unlink()
+            with self.assertRaises(ValueError):
+                verify(src, dst, ["uart"], saved)
+
     def test_partial_and_failed_copy(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); src=root/"src"; src.mkdir()
@@ -85,7 +126,7 @@ class RetentionControls(unittest.TestCase):
                 publish(src,root/"missing",["uart"],["uart","stderr"])
             with patch("permit_cost_retention.shutil.copyfile",side_effect=lambda a,b: Path(b).write_bytes(b"bad")):
                 with self.assertRaises(ValueError):
-                    publish(src,root/"corrupt",["uart"],["uart"])
+                    publish(src,root/"corrupt",["uart","stderr"],["uart"])
             self.assertFalse((root/"corrupt").exists())
             result=publish(src,root/"preserved",["uart","stderr"],["uart","stderr"])
             self.assertEqual(result["uart"]["bytes"],11)

@@ -11,7 +11,7 @@ import subprocess
 import sys
 import time
 
-from permit_cost_retention import fingerprint, publish, request_stop, sync_dir, termination_output
+from permit_cost_retention import exact_files, fingerprint, publish, request_stop, sync_dir, termination_output, verify
 from permit_cost_guard import ContainmentError, DEVICE, FORMATS, Guard, Lines, REDUCED
 
 QEMU = "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
@@ -104,7 +104,7 @@ def freeze(args):
         argv = [str(q), *OPTIONS, "-serial", "file:" + str(folder / "uart"), "-d", flags,
                 "-D", str(folder / "mechanism"), "-kernel", str(root / "images" / key)]
         positions.append(dict(name=name, key=key, arm=arm, pair=pair, argv=argv))
-    save(root / "freeze.json", dict(cohort_version=2, replica=str(replica), positions=positions, qemu=QEMU, catalog=CATALOG, events=names,
+    save(root / "freeze.json", dict(cohort_version=3, replica=str(replica), positions=positions, qemu=QEMU, catalog=CATALOG, events=names,
          device=DEVICE, images=IMAGES, filesystem=filesystem, affinity=sorted(os.sched_getaffinity(0)),
          timeout_s=10, bytes_per_stream=LIMIT, uname=list(os.uname()), scripts=script_hashes()))
     inputs = ["freeze.json","trace-events-all"] + ["images/" + k for k in IMAGES]
@@ -232,8 +232,8 @@ def run_one(root, pos, interrupted):
                 proc.kill()
                 proc.wait()
         result.update(stop_ns=time.monotonic_ns(), host_status=proc.returncode if proc else None,
-                      consumed=offsets, files={p.name:dict(bytes=p.stat().st_size, sha256=digest(p))
-                                              for p in folder.iterdir() if p.is_file()})
+                      consumed=offsets, files={name: fingerprint(folder/name) for name in STREAMS
+                                              if (folder/name).is_file() and not (folder/name).is_symlink()})
         save(folder/"result.json", result)
     return result
 
@@ -264,13 +264,11 @@ def collect(args):
         raise ValueError("monitor code or host CPU affinity changed")
     check(root/"trace-events-all", CATALOG)
     replica = Path(data["replica"])
-    if data.get("cohort_version") != 2 or replica.stat().st_dev == root.stat().st_dev:
+    if data.get("cohort_version") != 3 or replica.stat().st_dev == root.stat().st_dev:
         raise ValueError("wrong cohort version or replica mount")
     frozen = replica/"frozen-inputs"
     inputs = ["freeze.json","trace-events-all"] + ["images/" + k for k in IMAGES]
-    copied = json.loads((frozen/"retained-manifest.json").read_bytes())
-    if set(copied) != set(inputs) or any(fingerprint(frozen/n) != copied[n] or fingerprint(root/n) != copied[n] for n in inputs):
-        raise ValueError("frozen inputs no longer recoverable")
+    verify(root, frozen, inputs, exact_files(root, inputs))
     expected = cohort()
     if [(p["name"],p["key"],p["arm"],p["pair"]) for p in data["positions"]] != expected:
         raise ValueError("unexpected cohort")
@@ -278,6 +276,8 @@ def collect(args):
     for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
         signal.signal(sig, lambda num, frame: interrupted.append(num))
     (root/"started").touch(exist_ok=False)
+    close = root/"cohort-close"
+    close.mkdir()
     results = []
     receipts = []
     for p in data["positions"]:
@@ -295,26 +295,30 @@ def collect(args):
             raise ValueError("insufficient reserved position headroom")
         r = run_one(root,p,interrupted)
         results.append(r)
-        names = [path.name for path in folder.iterdir() if path.is_file()]
+        names = [*r["files"], "result.json"]
+        required = [*STREAMS, "result.json"] if r["disposition"] == "observed-off-only" else ["result.json"]
         receipt = dict(position=p["name"], local=str(folder), replica=str(replica/p["name"]),
                        present=names, missing=[n for n in STREAMS if n not in names],
                        transfer_start_ns=time.monotonic_ns(), replica_verified=False)
         try:
-            receipt["files"] = publish(folder, replica/p["name"], names, ["result.json"])
+            expected_files = exact_files(folder, names)
+            if any(expected_files[n] != record for n, record in r["files"].items()):
+                raise ValueError("post-stop stream identity changed")
+            receipt["files"] = publish(folder, replica/p["name"], names, required, expected_files)
             receipt["replica_verified"] = True
         except (OSError, ValueError) as err:
             receipt["retention_error"] = str(err)
         receipt["transfer_end_ns"] = time.monotonic_ns()
         receipts.append(receipt)
-        save(root/(p["name"] + "-retention.json"), receipt)
-        fingerprint(root/(p["name"] + "-retention.json"))
-        sync_dir(root)
+        save(close/(p["name"] + "-retention.json"), receipt)
+        fingerprint(close/(p["name"] + "-retention.json"))
+        sync_dir(close)
         if not receipt["replica_verified"] or r["disposition"] != "observed-off-only":
             break
-    save(root/"cohort.json", dict(version=2, intended=16, observed=results, recoverability=receipts,
+    save(close/"cohort.json", dict(version=3, intended=16, observed=results, recoverability=receipts,
          pairs=paired_deltas(data["positions"], results), unlaunched=[p["name"] for p in data["positions"][len(results):]], operational_credit=False))
     final = ["cohort.json"] + [r["position"]+"-retention.json" for r in receipts]
-    publish(root, replica/"cohort-close", final, final)
+    publish(close, replica/"cohort-close", final, final)
     return 0 if all(r["replica_verified"] for r in receipts) and len(results)==16 and all(r["disposition"]=="observed-off-only" for r in results) else 1
 
 

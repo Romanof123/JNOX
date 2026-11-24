@@ -60,33 +60,71 @@ def fingerprint(path):
         return {"bytes": f.tell(), "sha256": h.hexdigest()}
 
 
-def manifest(source, names):
-    return {name: fingerprint(source / name) for name in sorted(names)}
+RECEIPT = "retained-manifest.json"
 
 
-def publish(source, destination, names, required):
-    """Never overwrite a destination or promote a partial copy."""
-    if destination.exists() or not set(required).issubset(names):
+def exact_files(root, names):
+    """The caller supplies the intended paths. A directory scan can only disprove them."""
+    paths = set(names)
+    directories = set()
+    for name in names:
+        path = Path(name)
+        if (not name or path == Path(".") or path.is_absolute() or ".." in path.parts
+                or path.as_posix() != name or chr(92) in name or ":" in name):
+            raise ValueError("invalid artifact name: " + repr(name))
+        directories.update(parent.as_posix() for parent in path.parents if parent != Path("."))
+    if len(paths) != len(names) or paths & directories or root.is_symlink() or not root.is_dir():
+        raise ValueError("invalid bundle root or path collision")
+    seen = set()
+    def visit(folder):
+        for item in folder.iterdir():
+            name = item.relative_to(root).as_posix()
+            if item.is_symlink():
+                raise ValueError("unexpected symlink: " + name)
+            if item.is_dir() and name in directories:
+                visit(item)
+            elif item.is_file() and name in paths:
+                seen.add(name)
+            else:
+                raise ValueError("unexpected entry or type: " + name)
+    visit(root)
+    if seen != paths:
+        raise ValueError("missing artifacts: " + repr(sorted(paths - seen)))
+    return {name: fingerprint(root / name) for name in sorted(paths)}
+
+
+def verify(source, replica, names, snapshot):
+    if RECEIPT in names or set(snapshot) != set(names):
+        raise ValueError("invalid expected manifest keys")
+    original = exact_files(source, names)
+    files = exact_files(replica, [*names, RECEIPT])
+    del files[RECEIPT]
+    expected = (json.dumps(snapshot, sort_keys=True, indent=2) + chr(10)).encode("utf-8")
+    if original != snapshot or files != snapshot or (replica / RECEIPT).read_bytes() != expected:
+        raise ValueError("published manifest, source or replica mismatch")
+
+
+def publish(source, destination, names, required, expected=None):
+    """Keep a rejected staging or final directory in place for diagnosis."""
+    if os.path.lexists(destination) or RECEIPT in names or not set(required).issubset(names):
         raise ValueError("duplicate destination or missing required artifact")
-    snapshot = manifest(source, names)
-    sync_dir(source)
-    temporary = Path(tempfile.mkdtemp(prefix=".partial-", dir=destination.parent))
+    snapshot = exact_files(source, names)
+    if expected is not None and snapshot != expected:
+        raise ValueError("source differs from the capture record")
+    for folder, _, _ in os.walk(source, topdown=False):
+        sync_dir(Path(folder))
+    temporary = Path(tempfile.mkdtemp(prefix="." + destination.name + "-partial-", dir=destination.parent))
     for name in snapshot:
-        rel = Path(name)
-        if rel.is_absolute() or ".." in rel.parts:
-            raise ValueError("invalid manifest path")
-        target = temporary / rel
+        target = temporary / name
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source / rel, target)
-    if manifest(temporary, names) != snapshot or manifest(source, names) != snapshot:
-        raise ValueError("source or copy differs from frozen manifest")
-    receipt = temporary / "retained-manifest.json"
-    receipt.write_text(json.dumps(snapshot, sort_keys=True, indent=2)+"\n", encoding="utf-8")
-    fingerprint(receipt)
+        shutil.copyfile(source / name, target)
+    exact_files(temporary, names)
+    with (temporary / RECEIPT).open("x", encoding="utf-8", newline=chr(10)) as receipt:
+        receipt.write(json.dumps(snapshot, sort_keys=True, indent=2) + chr(10))
+    verify(source, temporary, names, snapshot)
     for folder, _, _ in os.walk(temporary, topdown=False):
         sync_dir(Path(folder))
     os.rename(temporary, destination)
     sync_dir(destination.parent)
-    if json.loads((destination / receipt.name).read_bytes()) != manifest(destination, names):
-        raise ValueError("published manifest mismatch")
+    verify(source, destination, names, snapshot)
     return snapshot
