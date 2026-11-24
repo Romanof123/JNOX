@@ -48,3 +48,36 @@ REQ의 둘째 칸에 적은 출처 및 넷째 칸의 설계·검증 배정은 �
 선언 중복이나 한영 선언·배정 차이, 명시한 배정 누락, 출처·설계·계획 중
 하나라도 없는 요구사항은 실패로 처리한다. 번역의 의미 일치는 사람이
 판단한다. 최초 결과를 보존하여 #6에서 독립 판정한다.
+
+## Correction scope after the first independent result (#194, #195)
+
+For every CSV edge between REQ and OBJ, HAZ, THR, ASM, DES or VER, check the
+direction and relationship specified above, even when all required allocations
+already exist. Report an invalid edge with its original triple, CSV location and
+expected triple. A REQ-to-REQ edge also fails because the covered relation
+table defines no such allocation. Check the entire file even for a filtered
+query. Apply this relation check only to those class pairs. OBJ-to-HAZ/THR/ASM,
+CHG-to-REQ and VER-to-EVD retain their own relation semantics. Existing CSV
+syntax, duplicate and covered-endpoint checks still apply globally.
+
+Preserve the first independent result and the first CHG-075 affects rows for
+REQ-002/005/008/023. Remove only their four repeated rows. Acceptance requires
+an otherwise complete graph with an extra reversed or wrongly typed edge to
+fail, and legitimate relations outside these class pairs to retain their prior
+output. Historical evidence remains available under #195.
+
+## 최초 독립 결과에 따른 수정 범위 (#194, #195)
+
+REQ와 OBJ, HAZ, THR, ASM, DES, VER 사이의 모든 CSV 간선은 필요한 배정이
+이미 있어도 위 표기의 방향과 관계를 따라야 한다. 위반 시 원래 세 값,
+CSV 위치, 기대한 세 값을 출력한다. REQ끼리의 간선에는 정의된 배정이
+없으므로 오류다. ID로 조회해도 전체 파일에 적용한다. 이 관계 검사는
+열거한 클래스 쌍에만 적용한다. OBJ에서 HAZ/THR/ASM으로, CHG에서 REQ로,
+VER에서 EVD로 향하는 간선은 각자의 관계 의미를 유지한다. CSV 형식,
+중복 및 대상 클래스의 선언 여부는 기존대로 전체 파일에서 검사한다.
+
+최초 독립 판정과 CHG-075가 REQ-002/005/008/023에 영향을 준다는 첫 네
+행을 보존하고 이후 반복된 네 행만 제거한다. 이미 필요한 연결을 모두 갖춘
+그래프에 방향이나 관계가 틀린 간선을 추가하면 실패해야 한다. 위 클래스
+쌍 밖의 유효한 간선에 대해서는 기존 출력을 유지한다. 최초 증거는 #195에
+보존한다.
