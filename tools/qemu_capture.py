@@ -63,14 +63,14 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None):
                         filename=str(out / "trace.bin"))
 
 
-def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None):
+def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False):
     out = Path(os.environ[directory_variable]).resolve()
     out.mkdir(parents=True, exist_ok=False)
     args = sys.argv[1:]
     kernel = args[args.index("-kernel") + 1]
     address, size = journal_location(kernel, symbol)
     idle_range = journal_location(kernel, idle_symbol) if idle_symbol else None
-    trace_range = journal_location(kernel, trace_symbol, optional=True) if trace_symbol else None
+    trace_range = journal_location(kernel, trace_symbol, optional=not require_trace) if trace_symbol else None
     stop_requested = False
 
     def stop(signum, frame):

@@ -26,6 +26,7 @@ mod periodic_overrun;
 #[cfg(jnox_bench = "cbs_wake")]
 mod cbs_wake;
 #[cfg(jnox_fixed)]
+#[cfg_attr(any(jnox_app = "fixed-ties", jnox_app = "fixed-late"), path = "fixed_edge_apps.rs")]
 mod fixed_apps;
 #[cfg(jnox_fixed)]
 mod fixed_policy;

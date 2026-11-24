@@ -23,7 +23,7 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_fixed_trace");
     }
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_fixed)"#);
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed", "fixed-ties", "fixed-late"))"#);
     println!("cargo::rerun-if-env-changed=JNOX_BOARD");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
@@ -75,11 +75,11 @@ fn main() {
                 assert!(trace.is_none(), "Pi 4 fixed runtime requires JNOX_FIXED_TRACE unset");
             }
             match app.as_deref() {
-                Some(name @ ("fixed-fifo" | "fixed-rr" | "fixed-empty" | "fixed-delayed")) => {
+                Some(name @ ("fixed-fifo" | "fixed-rr" | "fixed-empty" | "fixed-delayed" | "fixed-ties" | "fixed-late")) => {
                     println!("cargo::rustc-cfg=jnox_fixed");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
-                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, or fixed-delayed"),
+                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, fixed-delayed, fixed-ties, or fixed-late"),
             }
         }
         Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed"),

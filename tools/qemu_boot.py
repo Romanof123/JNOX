@@ -213,9 +213,16 @@ class DynamicTranscript(Enum):
         return import_module(self.module)
 
 
+def fixed_edge_transcript(prefix):
+    markers = (b"START", b"A START", b"B RUN", b"C RUN", b"A RESUME", b"A DONE")
+    return BOOT_TRANSCRIPT + b"".join(prefix + b" " + marker + b"\n" for marker in markers)
+
+
 TRANSCRIPTS = {
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
     "fixed-delayed": BOOT_TRANSCRIPT + b"FIXED DELAYED START\nFIXED DELAYED TASK\n",
+    "fixed-ties": fixed_edge_transcript(b"FIXED TIES"),
+    "fixed-late": fixed_edge_transcript(b"FIXED LATE"),
     "fixed-fifo": DynamicTranscript.FIXED_FIFO,
     "fixed-rr": DynamicTranscript.FIXED_RR,
     "priority-resume": BOOT_TRANSCRIPT + b"PRIORITY RESUME BEGIN\nPRIORITY RESUME PASS\n",

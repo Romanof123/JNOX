@@ -7,7 +7,7 @@
 | 정책 | 하위 사례와 기존 근거 | 남은 실행 또는 승인 |
 |---|---|---|
 | POL-001 | 높은 ID의 선착순, 타이머 도착, 양보·차단·깨움·종료, 처리기 내부 등록 순서, 깊이 2와 초과 거부. [EVD-004](evidence/evd-004.md) · [EVD-012](evidence/evd-012.md) | 응용 처리기 소요 시간과 최대 큐 점유를 측정하고 시간 한계를 승인한다. |
-| POL-002 | HIGH 즉시·지연 실행, 동순위 도착·양보·종료, 상위 선점, RR 잔여량 만료, Rust 작업 및 Pi 모델. [EVD-002](evidence/evd-002.md) · [EVD-003](evidence/evd-003.md) · [EVD-004](evidence/evd-004.md) · [EVD-014](evidence/evd-014.md) · [EVD-027](evidence/evd-027.md) · [EVD-030](evidence/evd-030.md) | 동시·지연 사건은 #72, Pi 런타임은 #71, 실보드는 #34에서 추적한다. |
+| POL-002 | HIGH 즉시·지연 실행, 동순위 도착·양보·종료, 상위 선점, RR 잔여량 만료, Rust 작업 및 Pi 모델. [EVD-002](evidence/evd-002.md) · [EVD-003](evidence/evd-003.md) · [EVD-004](evidence/evd-004.md) · [EVD-014](evidence/evd-014.md) · [EVD-027](evidence/evd-027.md) · [EVD-030](evidence/evd-030.md) QEMU Pi 4 모델에서는 FIFO·RR 작업의 선점과 RR 동순위 교대를 확인했다(#71). QEMU virt에서는 RR 만료와 깨움이 겹친 경우 및 IRQ 마스킹으로 깨움이 지연된 경우를 확인했다(#72). [EVD-031](evidence/evd-031.md) · [EVD-032](evidence/evd-032.md) | 실보드 검증과 승인은 #34에서 계속 추적한다. |
 | POL-003 | SJF/SRTF의 4 대 2, HRRN의 10 대기한 5와 새 1, 과소 추정 작업. 순위 대조는 동점과 무효 추정을 다룬다. [EVD-004](evidence/evd-004.md) · [EVD-013](evidence/evd-013.md) | M4 제출 인터페이스에서 동점 처리와 잘못된 추정 거부를 관찰한다. |
 | POL-004 | 동시·후속 주기 릴리스, 실행 중 선점, 중첩·기한 위반. EVD-008은 지터·차단·IRQ·디스패치가 있는 조건부 호스트 상한 계산. [EVD-004](evidence/evd-004.md) · [EVD-007](evidence/evd-007.md) · [EVD-008](evidence/evd-008.md) · [EVD-009](evidence/evd-009.md) · [EVD-028](evidence/evd-028.md) | (10,9)/(12,4) 입력의 순위 근거와 실제 적용 작업 실행을 구분하고, 승인 대상 작업과 측정 비용으로 분석한다. |
 | POL-005 | (8,1)/(10,8) 최초 선택, 이른 기한 도착, 표본 시점 교차·동점·음의 여유, PC 복귀. [EVD-004](evidence/evd-004.md) · [EVD-005](evidence/evd-005.md) · [EVD-015](evidence/evd-015.md) | 승인 작업과 간섭 조건에 재평가 간격 및 전환 빈도 상한을 적용한다. |
