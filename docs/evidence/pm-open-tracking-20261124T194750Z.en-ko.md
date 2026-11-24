@@ -10,7 +10,7 @@ At 2026-11-25 04:47:50 KST (19:47:50 UTC on November 24), PM collected the open 
 | Scheduling and IPC / 출시 | [#21](https://github.com/Romanof123/JNOX/issues/21) 0/18 scheduling families at product release; [#24](https://github.com/Romanof123/JNOX/issues/24) 0/10 IPC family release boxes. IPC bilingual planning is recorded. |
 | Product inputs / 제품 입력 | [#1](https://github.com/Romanof123/JNOX/issues/1) item and workload, [#10](https://github.com/Romanof123/JNOX/issues/10) safe state, FTTI and safety authority, [#34](https://github.com/Romanof123/JNOX/issues/34) physical board and calibrated measurements. |
 | Functional safety decisions / 기능안전 | [#79](https://github.com/Romanof123/JNOX/issues/79) and [#110](https://github.com/Romanof123/JNOX/issues/110) original failures confirmed; historical predicates and risk dispositions remain open. |
-| Held engineering cases / 보류 사례 | [#236](https://github.com/Romanof123/JNOX/pull/236) new chain 2/2, combined legacy controls 2/4; [#238](https://github.com/Romanof123/JNOX/pull/238) retained ordinary 7/20 exceeded 1 ms. Zero new hardware measurements. |
+| Held engineering cases / 보류 사례 | [#236](https://github.com/Romanof123/JNOX/pull/236) new chain 2/2, combined legacy controls 2/4; [#238](https://github.com/Romanof123/JNOX/pull/238) retained ordinary B exceeded 1 ms in one window of each of 7/20 launches (7/230 windows). Diagnostic D separately missed 7/230 windows. All four variants together missed 25/920 windows. [Original measurements / 원본](https://github.com/Romanof123/JNOX/blob/1ee5db1038f93eb0d630ccf4a6738460e8ab5cb4/docs/evidence/native-partition-retained-stable-first.en-ko.md). Zero new hardware measurements. |
 
 ## Open pull requests / 열린 PR
 
