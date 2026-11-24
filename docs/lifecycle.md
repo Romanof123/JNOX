@@ -91,3 +91,4 @@ python tools/open_tracking.py open-pages.json
 [05:32 KST open-work and document audit / 주 이슈·담당·문서 전수 점검](evidence/pm-tracking-20261124T203216Z.en-ko.md).
 
 [Historical PR and issue cross-index through #265 / #265까지 과거 PR·이슈 교차 색인](evidence/historical-pr-index-265.en-ko.md).
+[#274까지의 이슈·PR 색인](evidence/historical-pr-index-274.en-ko.md)에서 요구사항 또는 이슈를 시작으로 최초 실패, 설계 수정, 독립 재검증과 출시 판단까지 따라갈 수 있다. 수집 시점에 열린 항목별 다음 담당 팀과 각 PR의 주 이슈도 함께 확인할 수 있다.
