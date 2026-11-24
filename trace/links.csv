@@ -868,3 +868,8 @@ CHG-044,affects,REQ-002
 CHG-044,affects,REQ-003
 CHG-044,affects,REQ-005
 CHG-044,affects,REQ-023
+CHG-045,affects,REQ-002
+CHG-045,affects,REQ-003
+CHG-045,affects,REQ-005
+CHG-045,affects,REQ-023
+POL-004,partially-implemented-by,IMP-043

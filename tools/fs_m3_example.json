@@ -1,0 +1,9 @@
+{
+  "a": {"service": 100, "dispatch": 10, "jitter": 40, "blocking": 10},
+  "b": {"service": 200, "dispatch": 10, "jitter": 40, "blocking": 10},
+  "sender": {"service": 300, "dispatch": 10, "jitter": 40, "blocking": 0},
+  "timer": {"period": 2500, "cost": 20, "finish": 40},
+  "other_irqs": [],
+  "irq_entry_lateness": 20,
+  "uncertainty": 5
+}
