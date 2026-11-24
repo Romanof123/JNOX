@@ -2,6 +2,8 @@
 
 English · [한국어](ordinary-batch.md)
 
+Set `JNOX_BATCH_WORKLOAD=telemetry` to run the bounded in-memory summarize, threshold and validation jobs on these same policies. See the [telemetry admission profile and capture criteria](batch-telemetry-profile.en-ko.md).
+
 The single-core AArch64 virt profile accepts trusted Rust functions through `submit(work, argument, estimate, delay)`. Every task receives its own generation handle. Returning from the function completes the job. Explicit completion succeeds only for the running generation. Four live jobs share four 16 KiB task stacks. A fifth stack belongs to idle. Estimates range from 1 through 4,294,967,295 architectural counter ticks. A delayed submission reserves its slot immediately. Accepted work runs once.
 
 | Submission decision | Observable result |

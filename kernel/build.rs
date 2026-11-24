@@ -63,6 +63,12 @@ fn main() {
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
     configure_ap_admission(profile.as_deref());
+    println!("cargo::rustc-check-cfg=cfg(jnox_batch_telemetry)");
+    if let Some(workload) = selector("JNOX_BATCH_WORKLOAD") {
+        assert!(workload == "telemetry" && profile.as_deref() == Some("batch"),
+                "JNOX_BATCH_WORKLOAD=telemetry requires the batch profile");
+        println!("cargo::rustc-cfg=jnox_batch_telemetry");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_batch_trace)");
     if let Some(value) = selector("JNOX_BATCH_TRACE") {
         assert!(value == "1" && profile.as_deref() == Some("batch"), "JNOX_BATCH_TRACE=1 requires batch profile");
