@@ -74,12 +74,27 @@ def body_prose(body):
         yield "".join(visible)
 
 
+PROSE_LINK = re.compile(
+    r"(?<!\S)(?P<raw>[('\"‘“]*https?://\S+)"
+    r"|(?P<image>!?)\[[^\[\]\n]*\]\((?P<dest>[^()\s]+)\)", re.I)
+
+
+def link_destination(match):
+    if match["raw"]:
+        candidate = match["raw"].lstrip("('\"‘“").rstrip(").,;:!?\"'’”")
+    elif match["image"]:
+        return " "
+    else:
+        candidate = match["dest"]
+    return " " + candidate + " " if URL.fullmatch(candidate) else " "
+
+
 def references(body):
     """Extract supported prose references, retaining the target type of URLs."""
     lines = []
     for line in body_prose(body):
-        line = re.sub(r"(!?)\[([^\[\]\n]*)\]\(([^()\s]+)\)", lambda m:
-                      " " + m[3] + " " if not m[1] and URL.fullmatch(m[3]) else " ", line)
+        # Consume raw URLs atomically, including IPv6 brackets and URI fragments.
+        line = PROSE_LINK.sub(link_destination, line)
         line = re.sub(r"<(https?://[^<>\s]+)>", lambda m:
                       " " + m[1] + " " if URL.fullmatch(m[1]) else " ", line, flags=re.I)
         # Skip unresolved bracket syntax, HTML, and malformed code spans.

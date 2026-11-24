@@ -79,6 +79,14 @@ class TrackingTests(unittest.TestCase):
         self.assertEqual(references(body), {(193, None), (7, None), (6, None),
                          (8, None), (47, None), (4, "pull"), (9, "issues")})
 
+    def test_raw_ipv6_urls_do_not_hide_or_supply_neighbors(self):
+        foreign = "https://[2001:db8::1]/guide(a)#6"
+        self.assertEqual(references(foreign), set())
+        self.assertEqual(references(foreign + " #6"), {(6, None)})
+        self.assertEqual(references("#7 (" + foreign + "), #8"), {(7, None), (8, None)})
+        self.assertEqual(references(foreign + " [plan](https://github.com/Romanof123/JNOX/issues/9)"),
+                         {(9, "issues")})
+
     def test_invalid_team_assignments(self):
         for roles in ((), ("team:fiction",), ("team:pm", "team:systems")):
             self.assertTrue(audit([item(1, None, roles=roles)])[1])
