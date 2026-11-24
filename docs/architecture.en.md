@@ -165,3 +165,5 @@ CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust ta
 CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage.  [Capture format and build](ordinary-partition-capture.en.md)
 
 POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)
+
+POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)

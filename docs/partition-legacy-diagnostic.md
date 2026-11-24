@@ -2,9 +2,9 @@
 
 ## Scope and acceptance / 범위와 수용 기준
 
-CHG-050, intended IMP-047, planned EVD-047, [issue #110](https://github.com/Romanof123/JNOX/issues/110). Diagnostic design baseline a57a0cb; stacked source base 4d1eab9 ([#104](https://github.com/Romanof123/JNOX/pull/104)). Systems requires preservation of the ordinary legacy fixture's scheduling table, owner selection, IRQ handling, restore witnesses, counter reads and UART protocol. Verification requires a separately selectable simulator image to capture the first failed predicate, observed and expected operands, outgoing owner, active window and programmed target when known. Functional-safety scope is diagnostic observability. No guard may be bypassed, and a diagnostic result cannot establish why the earlier uninstrumented run emitted PART FAIL. Independent replay and evidence are pending.
+CHG-050, IMP-047, EVD-047, [issue #110](https://github.com/Romanof123/JNOX/issues/110). Diagnostic design baseline a57a0cb; stacked source base 4d1eab9 ([#104](https://github.com/Romanof123/JNOX/pull/104)). Systems requires preservation of the ordinary legacy fixture's scheduling table, owner selection, IRQ handling, restore witnesses, counter reads and UART protocol. Verification requires a separately selectable simulator image to capture the first failed predicate, observed and expected operands, outgoing owner, active window and programmed target when known. Functional-safety scope is diagnostic observability. No guard may be bypassed, and a diagnostic result cannot establish why the earlier uninstrumented run emitted PART FAIL. Three independent captures are archived in [EVD-047](evidence/evd-047.en.md).
 
-시스템 측 기준은 기존 실행의 시간표, 소유자 선택, IRQ 처리, 복귀 검증, 카운터 읽기와 UART 형식을 유지하는 것이다. 검증 측 기준은 별도 진단 이미지가 첫 실패 조건, 실제값과 기대값, 현재 작업, 활성 창 및 마지막으로 설정한 타이머 목표를 기록하는 것이다. 기능안전 범위는 실패 관측에 한정한다. 진단 실행은 기존 실패 기록의 원인을 소급 확정할 수 없다. 독립 재실행과 EVD-047은 미완료다.
+시스템 측 기준은 기존 실행의 시간표, 소유자 선택, IRQ 처리, 복귀 검증, 카운터 읽기와 UART 형식을 유지하는 것이다. 검증 측 기준은 별도 진단 이미지가 첫 실패 조건, 실제값과 기대값, 현재 작업, 활성 창 및 마지막으로 설정한 타이머 목표를 기록하는 것이다. 기능안전 범위는 실패 관측에 한정한다. 진단 실행은 기존 실패 기록의 원인을 소급 확정할 수 없다. 독립 실행 세 건은 [EVD-047](evidence/evd-047.md)에 보존했다.
 
 ## Selection / 선택
 

@@ -107,3 +107,5 @@ CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
 POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)
+
+POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)

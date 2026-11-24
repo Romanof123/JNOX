@@ -107,3 +107,5 @@ CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md)
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
 POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)
+
+POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 번의 콜드 부팅에서 IRQ 6회 후 PASS에 도달했다. 의도적 음성 대조군은 첫 A 마커에서 조건 99, 실제값 0, 기대값 1을 기록했다. 기존 PART FAIL의 원인은 미확정이다. [EVD-047](evidence/evd-047.md)
