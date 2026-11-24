@@ -27,6 +27,8 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Mutex contention and priority restoration | IMP-018, POL-014 | Four contexts exercised direct handoff, transitive donation, withdrawal on a real timer IRQ and nested immediate ceilings. [EVD-018](evidence/evd-018.en.md) |
 | Multilevel ready queues | IMP-019, POL-009 | Four saturated high-class slots and cumulative feedback demotion, boost and next return were independently traced. [EVD-019](evidence/evd-019.en.md) |
 | Mixed-criticality budget enforcement | IMP-020, POL-015 | Real IRQs enforced mode change and a HI budget ceiling in a six-slot workload with four occupied slots at carry-in. [EVD-020](evidence/evd-020.en.md) |
+| Ticket lottery and measured stride | IMP-021, POL-010 | Two seeds, late admission, unequal service and a deliberately late IRQ were checked against all 81 grants. [EVD-021](evidence/evd-021.en.md) |
+| Weighted virtual runtime | IMP-022, POL-011 | All 21 dispatches and their service charges matched a separate counter-based replay through sleep and wake. [EVD-022](evidence/evd-022.en.md) |
 | Verified selection and accounting | `IMP-004`, bounded primitives from POL-001 through POL-018 | Controlled ready sets, clocks, charges, draws, CPU masks and operating-point models passed in one guest. Each result covers its stated decision or state transition. [EVD-004](evidence/evd-004.en.md) |
 | Integrated profile release | Each enabled variant | Run actual blocking, wakeup, expiry, switch and exit paths that apply to that profile. Record target traces. Physical timing, analysis and product safety review have their own milestones. |
 

@@ -1,0 +1,343 @@
+{
+  "verdict": "PASS",
+  "first_verdict": "harness PASS before source review",
+  "harness_exit": 0,
+  "outer_shell_exit": 2,
+  "outer_shell_note": "CR on final exit after recording harness exit",
+  "commit": "4f5116df842f796356578634a2602f37dfde5fab",
+  "elf_sha256": "d4dea231a8572c2dc732bccc422201a20383d1c5d14a2baff7cf21f201104203",
+  "harness_output": "Run 1/1  ELF SHA-256 = d4dea231a8572c2dc732bccc422201a20383d1c5d14a2baff7cf21f201104203\n  argv = [\"/tmp/vr-first.wi1obuI1\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/weighted-integration/target-vruntime/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 481\n  UART (3890 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nVR BEGIN\\nVR CLOCK freq=62500000 quantum=1250000\\nVR SLOT t=0 id=0 ready=3 start=101388 cval=1351388 irq=1522799 charge=1421411 a2=2842822 b2=0 floor2=0 elr=1075843684 sp=1075878144 progress=39816737\\nVR SLOT t=1 id=1 ready=3 start=1560098 cval=2810098 irq=2972700 charge=1412602 a2=2842822 b2=1412602 floor2=1412602 elr=1075843716 sp=1075894528 progress=39888550\\nVR SLOT t=2 id=1 ready=3 start=2981981 cval=4231981 irq=4468954 charge=1486973 a2=2842822 b2=2899575 floor2=2842822 elr=1075843716 sp=1075894528 progress=97568728\\nVR SLOT t=3 id=0 ready=3 start=4470270 cval=5720270 irq=5912893 charge=1442623 a2=5728068 b2=2899575 floor2=2899575 elr=1075843684 sp=1075878144 progress=74868137\\nVR SLOT t=4 id=1 ready=3 start=5914641 cval=7164641 irq=7304087 charge=1389446 a2=5728068 b2=4289021 floor2=4289021 elr=1075843716 sp=1075894528 progress=153056346\\nVR SLOT t=5 id=1 ready=3 start=7305278 cval=8555278 irq=8714034 charge=1408756 a2=5728068 b2=5697777 floor2=5697777 elr=1075843716 sp=1075894528 progress=224972511\\nVR SLOT t=6 id=1 ready=3 start=8714983 cval=9964983 irq=10125122 charge=1410139 a2=5728068 b2=7107916 floor2=5728068 elr=1075843716 sp=1075894528 progress=283539347\\nVR SLOT t=7 id=0 ready=3 start=10127346 cval=11377346 irq=11524641 charge=1397295 a2=8522658 b2=7107916 floor2=7107916 elr=1075843684 sp=1075878144 progress=118735036\\nVR SLOT t=8 id=1 ready=3 start=11525883 cval=12775883 irq=12967490 charge=1441607 a2=8522658 b2=8549523 floor2=8522658 elr=1075843716 sp=1075894528 progress=349282757\\nVR SLOT t=9 id=0 ready=3 start=12970713 cval=14220713 irq=14364891 charge=1394178 a2=11311014 b2=8549523 floor2=8549523 elr=1075843684 sp=1075878144 progress=162971310\\nVR SLOT t=10 id=1 ready=3 start=14365760 cval=15615760 irq=15751790 charge=1386030 a2=11311014 b2=9935553 floor2=9935553 elr=1075843716 sp=1075894528 progress=403288462\\nVR SLOT t=11 id=1 ready=3 start=15754732 cval=17004732 irq=17153846 charge=1399114 a2=11311014 b2=11334667 floor2=11311014 elr=1075843716 sp=1075894528 progress=448294840\\nVR SLOT t=12 id=0 ready=1 start=17171088 cval=18421088 irq=18548147 charge=1377059 a2=14065132 b2=11334667 floor2=14065132 elr=1075843684 sp=1075878144 progress=226077816\\nVR SLOT t=13 id=0 ready=1 start=18549450 cval=19799450 irq=19940517 charge=1391067 a2=16847266 b2=11334667 floor2=16847266 elr=1075843684 sp=1075878144 progress=294991310\\nVR SLOT t=14 id=0 ready=1 start=19941795 cval=21191795 irq=21317184 charge=1375389 a2=19598044 b2=11334667 floor2=19598044 elr=1075843684 sp=1075878144 progress=357897755\\nVR SLOT t=15 id=0 ready=3 start=21334038 cval=22584038 irq=22696475 charge=1362437 a2=22322918 b2=19598044 floor2=19598044 elr=1075843684 sp=1075878144 progress=429314346\\nVR SLOT t=16 id=1 ready=3 start=22697086 cval=23947086 irq=24077641 charge=1380555 a2=22322918 b2=20978599 floor2=20978599 elr=1075843716 sp=1075894528 progress=517174779\\nVR SLOT t=17 id=1 ready=3 start=24079952 cval=25329952 irq=25451492 charge=1371540 a2=22322918 b2=22350139 floor2=22322918 elr=1075843716 sp=1075894528 progress=591659239\\nVR SLOT t=18 id=0 ready=3 start=25452249 cval=26702249 irq=26840000 charge=1387751 a2=25098420 b2=22350139 floor2=22350139 elr=1075843684 sp=1075878144 progress=482182396\\nVR SLOT t=19 id=1 ready=3 start=26840885 cval=28090885 irq=28226554 charge=1385669 a2=25098420 b2=23735808 floor2=23735808 elr=1075843716 sp=1075894528 progress=650786580\\nVR SLOT t=20 id=1 ready=3 start=28227559 cval=29477559 irq=29606546 charge=1378987 a2=25098420 b2=25114795 floor2=25098420 elr=1075843716 sp=1075894528 progress=703011835\\nVR SHARE slots=12 a=5655507 b=11334667 error=23653 tolerance=5000000\\nVR SLEEP t=12 id=1 before2=11334667 floor2=11311014\\nVR WAKE t=15 id=1 before2=11334667 floor2=19598044 after2=19598044 lag_before=8263377 lag_after=0\\nVR END slots=21 a=12549210 b=16851418 floor2=25098420 lag_b=-16375\\nVR STOP\\nVR PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 473 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nVR BEGIN\nVR CLOCK freq=62500000 quantum=1250000\nVR SLOT t=0 id=0 ready=3 start=101388 cval=1351388 irq=1522799 charge=1421411 a2=2842822 b2=0 floor2=0 elr=1075843684 sp=1075878144 progress=39816737\nVR SLOT t=1 id=1 ready=3 start=1560098 cval=2810098 irq=2972700 charge=1412602 a2=2842822 b2=1412602 floor2=1412602 elr=1075843716 sp=1075894528 progress=39888550\nVR SLOT t=2 id=1 ready=3 start=2981981 cval=4231981 irq=4468954 charge=1486973 a2=2842822 b2=2899575 floor2=2842822 elr=1075843716 sp=1075894528 progress=97568728\nVR SLOT t=3 id=0 ready=3 start=4470270 cval=5720270 irq=5912893 charge=1442623 a2=5728068 b2=2899575 floor2=2899575 elr=1075843684 sp=1075878144 progress=74868137\nVR SLOT t=4 id=1 ready=3 start=5914641 cval=7164641 irq=7304087 charge=1389446 a2=5728068 b2=4289021 floor2=4289021 elr=1075843716 sp=1075894528 progress=153056346\nVR SLOT t=5 id=1 ready=3 start=7305278 cval=8555278 irq=8714034 charge=1408756 a2=5728068 b2=5697777 floor2=5697777 elr=1075843716 sp=1075894528 progress=224972511\nVR SLOT t=6 id=1 ready=3 start=8714983 cval=9964983 irq=10125122 charge=1410139 a2=5728068 b2=7107916 floor2=5728068 elr=1075843716 sp=1075894528 progress=283539347\nVR SLOT t=7 id=0 ready=3 start=10127346 cval=11377346 irq=11524641 charge=1397295 a2=8522658 b2=7107916 floor2=7107916 elr=1075843684 sp=1075878144 progress=118735036\nVR SLOT t=8 id=1 ready=3 start=11525883 cval=12775883 irq=12967490 charge=1441607 a2=8522658 b2=8549523 floor2=8522658 elr=1075843716 sp=1075894528 progress=349282757\nVR SLOT t=9 id=0 ready=3 start=12970713 cval=14220713 irq=14364891 charge=1394178 a2=11311014 b2=8549523 floor2=8549523 elr=1075843684 sp=1075878144 progress=162971310\nVR SLOT t=10 id=1 ready=3 start=14365760 cval=15615760 irq=15751790 charge=1386030 a2=11311014 b2=9935553 floor2=9935553 elr=1075843716 sp=1075894528 progress=403288462\nVR SLOT t=11 id=1 ready=3 start=15754732 cval=17004732 irq=17153846 charge=1399114 a2=11311014 b2=11334667 floor2=11311014 elr=1075843716 sp=1075894528 progress=448294840\nVR SLOT t=12 id=0 ready=1 start=17171088 cval=18421088 irq=18548147 charge=1377059 a2=14065132 b2=11334667 floor2=14065132 elr=1075843684 sp=1075878144 progress=226077816\nVR SLOT t=13 id=0 ready=1 start=18549450 cval=19799450 irq=19940517 charge=1391067 a2=16847266 b2=11334667 floor2=16847266 elr=1075843684 sp=1075878144 progress=294991310\nVR SLOT t=14 id=0 ready=1 start=19941795 cval=21191795 irq=21317184 charge=1375389 a2=19598044 b2=11334667 floor2=19598044 elr=1075843684 sp=1075878144 progress=357897755\nVR SLOT t=15 id=0 ready=3 start=21334038 cval=22584038 irq=22696475 charge=1362437 a2=22322918 b2=19598044 floor2=19598044 elr=1075843684 sp=1075878144 progress=429314346\nVR SLOT t=16 id=1 ready=3 start=22697086 cval=23947086 irq=24077641 charge=1380555 a2=22322918 b2=20978599 floor2=20978599 elr=1075843716 sp=1075894528 progress=517174779\nVR SLOT t=17 id=1 ready=3 start=24079952 cval=25329952 irq=25451492 charge=1371540 a2=22322918 b2=22350139 floor2=22322918 elr=1075843716 sp=1075894528 progress=591659239\nVR SLOT t=18 id=0 ready=3 start=25452249 cval=26702249 irq=26840000 charge=1387751 a2=25098420 b2=22350139 floor2=22350139 elr=1075843684 sp=1075878144 progress=482182396\nVR SLOT t=19 id=1 ready=3 start=26840885 cval=28090885 irq=28226554 charge=1385669 a2=25098420 b2=23735808 floor2=23735808 elr=1075843716 sp=1075894528 progress=650786580\nVR SLOT t=20 id=1 ready=3 start=28227559 cval=29477559 irq=29606546 charge=1378987 a2=25098420 b2=25114795 floor2=25098420 elr=1075843716 sp=1075894528 progress=703011835\nVR SHARE slots=12 a=5655507 b=11334667 error=23653 tolerance=5000000\nVR SLEEP t=12 id=1 before2=11334667 floor2=11311014\nVR WAKE t=15 id=1 before2=11334667 floor2=19598044 after2=19598044 lag_before=8263377 lag_after=0\nVR END slots=21 a=12549210 b=16851418 floor2=25098420 lag_b=-16375\nVR STOP\nVR PASS\n",
+  "trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020126c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201264\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201264\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201284\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201284\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\n",
+  "independent_replay": [
+    {
+      "slot": 0,
+      "owner": "A",
+      "ret": "0x4020124c",
+      "irq_elr": "0x40201264",
+      "service": 1421411,
+      "runtimes_half": [
+        2842822,
+        0
+      ],
+      "floor_half": 0,
+      "late": 171411,
+      "progress": 39816737
+    },
+    {
+      "slot": 1,
+      "owner": "B",
+      "ret": "0x4020126c",
+      "irq_elr": "0x40201284",
+      "service": 1412602,
+      "runtimes_half": [
+        2842822,
+        1412602
+      ],
+      "floor_half": 1412602,
+      "late": 162602,
+      "progress": 39888550
+    },
+    {
+      "slot": 2,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1486973,
+      "runtimes_half": [
+        2842822,
+        2899575
+      ],
+      "floor_half": 2842822,
+      "late": 236973,
+      "progress": 97568728
+    },
+    {
+      "slot": 3,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1442623,
+      "runtimes_half": [
+        5728068,
+        2899575
+      ],
+      "floor_half": 2899575,
+      "late": 192623,
+      "progress": 74868137
+    },
+    {
+      "slot": 4,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1389446,
+      "runtimes_half": [
+        5728068,
+        4289021
+      ],
+      "floor_half": 4289021,
+      "late": 139446,
+      "progress": 153056346
+    },
+    {
+      "slot": 5,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1408756,
+      "runtimes_half": [
+        5728068,
+        5697777
+      ],
+      "floor_half": 5697777,
+      "late": 158756,
+      "progress": 224972511
+    },
+    {
+      "slot": 6,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1410139,
+      "runtimes_half": [
+        5728068,
+        7107916
+      ],
+      "floor_half": 5728068,
+      "late": 160139,
+      "progress": 283539347
+    },
+    {
+      "slot": 7,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1397295,
+      "runtimes_half": [
+        8522658,
+        7107916
+      ],
+      "floor_half": 7107916,
+      "late": 147295,
+      "progress": 118735036
+    },
+    {
+      "slot": 8,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1441607,
+      "runtimes_half": [
+        8522658,
+        8549523
+      ],
+      "floor_half": 8522658,
+      "late": 191607,
+      "progress": 349282757
+    },
+    {
+      "slot": 9,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1394178,
+      "runtimes_half": [
+        11311014,
+        8549523
+      ],
+      "floor_half": 8549523,
+      "late": 144178,
+      "progress": 162971310
+    },
+    {
+      "slot": 10,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1386030,
+      "runtimes_half": [
+        11311014,
+        9935553
+      ],
+      "floor_half": 9935553,
+      "late": 136030,
+      "progress": 403288462
+    },
+    {
+      "slot": 11,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1399114,
+      "runtimes_half": [
+        11311014,
+        11334667
+      ],
+      "floor_half": 11311014,
+      "late": 149114,
+      "progress": 448294840
+    },
+    {
+      "slot": 12,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1377059,
+      "runtimes_half": [
+        14065132,
+        11334667
+      ],
+      "floor_half": 14065132,
+      "late": 127059,
+      "progress": 226077816
+    },
+    {
+      "slot": 13,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1391067,
+      "runtimes_half": [
+        16847266,
+        11334667
+      ],
+      "floor_half": 16847266,
+      "late": 141067,
+      "progress": 294991310
+    },
+    {
+      "slot": 14,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1375389,
+      "runtimes_half": [
+        19598044,
+        11334667
+      ],
+      "floor_half": 19598044,
+      "late": 125389,
+      "progress": 357897755
+    },
+    {
+      "slot": 15,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1362437,
+      "runtimes_half": [
+        22322918,
+        19598044
+      ],
+      "floor_half": 19598044,
+      "late": 112437,
+      "progress": 429314346
+    },
+    {
+      "slot": 16,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1380555,
+      "runtimes_half": [
+        22322918,
+        20978599
+      ],
+      "floor_half": 20978599,
+      "late": 130555,
+      "progress": 517174779
+    },
+    {
+      "slot": 17,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1371540,
+      "runtimes_half": [
+        22322918,
+        22350139
+      ],
+      "floor_half": 22322918,
+      "late": 121540,
+      "progress": 591659239
+    },
+    {
+      "slot": 18,
+      "owner": "A",
+      "ret": "0x40201264",
+      "irq_elr": "0x40201264",
+      "service": 1387751,
+      "runtimes_half": [
+        25098420,
+        22350139
+      ],
+      "floor_half": 22350139,
+      "late": 137751,
+      "progress": 482182396
+    },
+    {
+      "slot": 19,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1385669,
+      "runtimes_half": [
+        25098420,
+        23735808
+      ],
+      "floor_half": 23735808,
+      "late": 135669,
+      "progress": 650786580
+    },
+    {
+      "slot": 20,
+      "owner": "B",
+      "ret": "0x40201284",
+      "irq_elr": "0x40201284",
+      "service": 1378987,
+      "runtimes_half": [
+        25098420,
+        25114795
+      ],
+      "floor_half": 25098420,
+      "late": 128987,
+      "progress": 703011835
+    }
+  ],
+  "first12_service": [
+    5655507,
+    11334667
+  ],
+  "error": 23653,
+  "tolerance": 5000000,
+  "sleep_slots": [
+    12,
+    13,
+    14
+  ],
+  "wake": {
+    "old_half": 11334667,
+    "floor_half": 19598044,
+    "after_half": 19598044,
+    "lag_before_physical": 8263377,
+    "lag_after_physical": 0
+  },
+  "final_service": [
+    12549210,
+    16851418
+  ],
+  "end_lag_physical": -16375,
+  "recovery": "ABBABB",
+  "stack_ranges": [
+    [
+      "0x40205910",
+      "0x40209910"
+    ],
+    [
+      "0x40209910",
+      "0x4020d910"
+    ]
+  ],
+  "scope": "QEMU trace independently witnesses 21 EL1 IRQs and 21 ERETs including initial dispatch and 20 handler returns. Last IRQ stays in terminal handler until host stop. ELF maps loop PCs, stack allocation and instructions. SP, progress, GIC acknowledgement and timer timestamps are guest observations; arithmetic and attribution replayed externally. Single Cortex-A72 TCG boot, no physical timing guarantee."
+}
