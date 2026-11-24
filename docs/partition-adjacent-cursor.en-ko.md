@@ -11,3 +11,5 @@ P/Q와 기본 클록/icount3 각 조합은 최초 콜드 부팅 5쌍으로 고�
 Host positive controls must distinguish adjacent wrap, blocked owner, explicit idle and discontinuity recovery against arbitrary-time decisions. Include exact MAX boundary, overflow and subsequent recovery. For each old/new plain linked P/Q kernel, disassemble dispatch and any reached helpers, identify PCs/branches for ordinary versus drain, and trace equality through wrap/nonwrap to selection. Identify baseline phase reduction and slot comparisons, and new indexed loads and checked end. Confirm the adjacent trace bypasses phase reduction (including reciprocal multiplication) and table search; identify the mismatch branch that still reaches them. Retain annotated disassembly with ELF hash; symbol counts or grep alone cannot establish path behavior.
 
 호스트 양성 대조로 순환 경계·차단 소유자·유휴·불연속 복구·MAX 및 오버플로 후 복구를 임의 시각 결정과 비교한다. 이전·신규 일반 P/Q 링크 ELF 해시와 주석 붙인 역어셈블리를 보존한다. 디스패치 및 호출 함수에서 분기 주소를 따라 일반·종료, 경계 일치·불일치, 순환·비순환을 추적한다. 연속 경로가 나눗셈·역수 곱셈 및 슬롯 검색을 우회하고 불일치 경로가 위상을 복구하는지 확인한다.
+
+[First forty paired captures and linked-code analysis](evidence/native-cyclic-adjacent-cursor-first.en-ko.md).
