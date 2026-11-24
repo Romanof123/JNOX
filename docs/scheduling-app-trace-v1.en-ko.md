@@ -60,3 +60,14 @@ python3 tools/sched_app_trace_decode.py decode "$SCHED_APP_TRACE_CAPTURE_DIR"
 ```
 
 각 모드는 새 디렉터리에 수집하고 실패한 첫 관찰도 원본 로그와 함께 봉인한다.
+
+
+## Prospective halted-extraction correction (#272) / 정지 상태 수집 수정 계획
+
+Source 33d8fbfedededb5147d5de93bef044822810c846 passed the public boot observer and seal for reported positions, then failed public decode because the trace wrapper requested halt evidence but the QMP snapshot path never recorded the post-stop reply. Preserve each original directory, manifest and first verdict. Register dumps and successful RAM saves cannot supply that missing observation.
+
+For a new trace-wrapper acquisition, persist the pre-stop query-status reply and CPU query separately as they arrive in qmp.json. Require a running VM and exactly CPU0. After QMP stop succeeds, issue a second query-status on that connection. Write the returned status object verbatim in meaning to halted.json before reading registers or RAM. Require running=false and status=paused. Preserve the stage and any QMP error or ambiguous reply on failure. Only a newly observed paused result authorizes extraction in this path. Keep the existing contract for other capture clients.
+
+On the frozen correction, a mocked QMP peer must exercise the real trace wrapper handoff and snapshot protocol, verify command order and both files, and assert zero reads of registers or RAM after invalid running/paused transitions or a failed post-stop query. Exercise an existing client without the new handoff. Independent acquisition must repeat OFF, disabled, active and saturate with both full-frame settings in eight separate fresh directories, retaining first failures and original admission bounds. Check raw pre/post replies, dump order, seal and decode, independent chronology/loss, terminal state and build/boot provenance. Archive any new mismatch under its observed source and run UUID.
+
+원본 33d8fbf에서 공개 부팅 관찰과 봉인은 성공했으나, 정지 후 QMP 응답 누락으로 보고된 최초 복호화가 거부됐다. 원본 파일·봉인·판정은 보존한다. 새 수집에서는 정지 전 상태와 CPU 응답을 받는 순서대로 저장하고 실행 중인 단일 CPU0를 확인한다. stop 성공 뒤 같은 연결에서 query-status를 다시 요청해 실제 응답을 halted.json에 기록한 다음 running=false 및 status=paused를 확인해야 레지스터와 메모리를 읽을 수 있다. 오류 단계와 응답도 보존한다. 모의 QMP는 실제 래퍼 경로의 순서·파일·실패 시 읽기 차단과 기존 클라이언트 호환성을 검사한다. 독립 팀은 고정된 수정 소스에서 두 프레임 설정과 네 모드를 새 실행 UUID로 각각 수집하고 최초 실패까지 보관한다.
