@@ -18,6 +18,13 @@ _start:
     // state is preserved. Select AArch64 EL1, stage 2 off, FP accessible.
     mov x0, #(1 << 31)
     msr hcr_el2, x0
+    .if {pi4_scheduler}
+    // EL1PCTEN and EL1PCEN allow the NS EL1 physical counter and timer.
+    // A direct EL1 loader must grant this access itself before entry.
+    mrs x0, cnthctl_el2
+    orr x0, x0, #3
+    msr cnthctl_el2, x0
+    .endif
     mov x0, #0x33ff
     msr cptr_el2, x0
     // Cortex-A72 SCTLR_EL1 RES1 bits, little-endian, MMU/caches off.

@@ -60,6 +60,7 @@ static mut BSS_PROBE: u64 = 0;
 global_asm!(
     include_str!("start.S"),
     pi4 = const cfg!(jnox_pi4) as usize,
+    pi4_scheduler = const cfg!(all(jnox_pi4, jnox_bench = "scheduler")) as usize,
     bss_probe = sym BSS_PROBE,
     rust_entry = sym kernel_main,
 );

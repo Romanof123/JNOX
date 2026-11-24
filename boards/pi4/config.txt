@@ -3,6 +3,8 @@ arm_64bit=1
 kernel=kernel8.img
 kernel_address=0x80000
 arm_peri_high=0
+# Use BCM2711 GIC routing and the standard GIC-aware Arm stub (Pi 4 firmware default).
+enable_gic=1
 enable_uart=1
 dtoverlay=disable-bt
 init_uart_clock=48000000
