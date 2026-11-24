@@ -343,3 +343,12 @@ POL-015,has-partial-policy-evidence,EVD-004
 POL-016,has-partial-policy-evidence,EVD-004
 POL-017,has-partial-policy-evidence,EVD-004
 POL-018,has-partial-policy-evidence,EVD-004
+CHG-006,affects,REQ-023
+CHG-006,affects,REQ-002
+CHG-006,affects,REQ-005
+DES-012,implemented-by,IMP-005
+DES-003,implemented-by,IMP-005
+POL-005,partially-implemented-by,IMP-005
+IMP-005,partially-verified-by,VER-023
+IMP-005,partially-verified-by,VER-002
+IMP-005,partially-verified-by,VER-005
