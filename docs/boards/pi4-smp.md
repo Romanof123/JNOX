@@ -22,3 +22,5 @@ EVD-011 실행 파일 해시, 4코어·2 GiB raspi4b TCG와 -kernel kernel8.img�
 로컬 보드 소스 SHA-256(raspi.c / boot.c / bcm2838.c 순서): 35eb8dea9fdd5fa36d9e75c4a13f3a47906939d5759ed448dc1c09a2a03af6bc / 3ee33e386c78e816410d7f897d616a1f2c44203e7a609671184a95153412311f / a81db2b2fda5403e7a71daeb4760c3f2f003237cfadba3540d5e7ad375c58299. 캡처 때 실제 실행 파일 해시를 따로 기록한다.
 
 첫 두 차례 콜드 부팅과 CPU별 예외·복귀 기록은 [독립 모델 검증 결과](../evidence/pi4-smp-first.md)에 있다.
+
+[Pi 4 경합 중 Rust 작업 이동](pi4-smp-migration.md)

@@ -22,3 +22,5 @@ Physical Pi 4 Model B 1 GB uses the pinned firmware, low peripherals and default
 Local board-source SHA-256, in raspi.c / boot.c / bcm2838.c order: 35eb8dea9fdd5fa36d9e75c4a13f3a47906939d5759ed448dc1c09a2a03af6bc / 3ee33e386c78e816410d7f897d616a1f2c44203e7a609671184a95153412311f / a81db2b2fda5403e7a71daeb4760c3f2f003237cfadba3540d5e7ad375c58299. Record the actual binary digest independently at capture.
 
 The first two cold model boots and their CPU-tagged records are available in the [independent model evidence](../evidence/pi4-smp-first.en.md).
+
+[Pi 4 contested Rust worker migration](pi4-smp-migration.en.md)
