@@ -17,3 +17,4 @@ Before launching either position, use the wrapper's actual Linux Python and its 
 ```bash
 PYTHONPATH=/home/ywcho/jnox-169-first-e203caa/deps /usr/bin/python3 tools/native_weighted_timer_pair.py /path/to/183/first/share-default /mnt/d/<fresh-third-directory> --scratch /tmp
 ```
+[Independent two-position receipt and durable archives / 두 위치 독립 판정 및 영구 원본](evidence/native-weighted-timer-third.en-ko.md).
