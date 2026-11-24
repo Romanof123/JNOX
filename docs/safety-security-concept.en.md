@@ -40,3 +40,15 @@ The safety case covers kernel code that affects safety requirements, the selecte
 Security operations include vulnerability intake and impact assessment, review of the safety impact of security patches, the SBOM and evidence for signed releases, audit logs, and incident response. Boot verification failure and loss of power during an update are joint safety and security verification scenarios.
 
 [Product plan](product-plan.en.md) · [Derived requirements](requirements.en.md) · [Verification plan](verification-plan.en.md)
+
+## Evaluating a functional-safety OS (informative)
+
+Start with the item hazard analysis and risk assessment (HARA). Which hazard can the OS influence, what safe state must the item reach, and how much time is available? For each candidate, match the exact release, BSP, toolchain and enabled services to the safety manual, assumptions of use and release evidence.
+
+**RT-Thread.** The community kernel is one candidate. For a commercial safety edition, request the certificate and report for the proposed configuration. The vendor links a separate RT-Thread Safety AUTO certificate and describes AUTOSAR Classic Platform service protection, timing monitoring and memory protection for its vehicle-control offering. A historical SGS-TÜV Saar certificate dated 21 February 2022 covers RT-Thread Smart for Safety v1.0 as a component of safety-related software up to ASIL D. Confirm current validity and configuration coverage with the supplier. [Vendor automotive product page](https://www.rt-thread.com/col26/list.html) · [Certificate reproduced on slide 24](https://www.esbf.org/wp-content/uploads/2024/08/202408_XPX.pdf#page=24)
+
+**J-NOX.** ADR-001 makes the bench acceptance criterion inspectable. Permits arrive every 10 ms and expire at age 20 ms. From loss, detection has a 25 ms budget. Output inhibition has a further 5 ms, with 30 ms overall. The product’s physical fault-tolerant time interval (FTTI) must be derived from its hazard and checked through the actuator. Current J-NOX runtime observations cover QEMU only. Product safety approval remains open. [ADR-001 bench parameters](safety-parameters.en.md)
+
+For a Linux domain sharing the target, examine who can consume CPU time, access MMIO, initiate DMA, route IRQs or reset the safety domain. Check that stale or repeated IPC permits cannot renew permission. Verify that the output is inhibited by its deadline when fresh permits stop. Trace any failed bound or isolation assumption upstream to the hazard, requirement and design decision, then repeat the affected verification on the selected release and board.
+
+For an automotive release decision, the RT-Thread safety editions provide published product-level certification evidence. The proposed J-NOX safety profile still needs a frozen hardware configuration, an approved safety manual and independent evidence for the complete fault-to-physical-output path.
