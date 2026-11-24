@@ -12,7 +12,7 @@ CHG-011 extends POL-004. IMP-009 defines the contract for EVD-009.
 
 ## Independent observation
 
-Build with periodic-preempt-bench, which enables periodic-bench. CBS takes precedence when enabled. From the repository root in WSL Bash, retain the revision, ELF and first black-box verdict, including failure, before inspecting implementation or trace. The observer starts one fresh single-core Cortex-A72 guest by default.
+Build with periodic-preempt-bench, which enables periodic-bench. The [scheduling catalog](scheduling-policies.en.md) gives the selection order for combined features. From the repository root in WSL Bash, retain the revision, ELF and first black-box verdict, including failure, before inspecting implementation or trace. The observer starts one fresh single-core Cortex-A72 guest by default.
 
 ```sh
 set -e -o pipefail
