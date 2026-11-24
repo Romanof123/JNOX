@@ -161,3 +161,5 @@ CHG-043 / IMP-041 instruments the single-core POL-002 runtime on virt. Boot owns
 POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
 
 [Host segmented admission method](fs-m3-admission.md) · CHG-045 / IMP-043, POL-004 #94. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
+
+CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
