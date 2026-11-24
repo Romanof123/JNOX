@@ -4,7 +4,7 @@
 
 CHG-046은 REQ-002/005/023에 영향을 준다. IMP-044는 DES-003/012에 따른 해당 요구사항 및 POL-006의 부분 구현이다.  아래 명령을 kernel 디렉터리에서 table=p와 table=q로 각각 실행한다. 각 콜드 부팅의 ELF, 해시, 리비전, 역어셈블리, UART, 예외 로그를 별도 보존한다. 기존 partition-bench 기능은 기존 어셈블리 시험을 실행한다.
 
-virt에서 JNOX_PROFILE와 JNOX_APP를 설정하지 않고 P/Q 하나만 선택한다. 다른 벤치 기능이나 보드와의 조합은 거부한다. 고정된 Rust 툴체인, QEMU, LLVM 도구가 설치된 POSIX 셸을 사용한다. STOP 줄이 완성된 후 QEMU를 종료한다. 시간 초과 또는 끊긴 출력은 미완료로 기록한다.
+virt에서 JNOX_PROFILE와 JNOX_APP를 설정하지 않으면 기본 빌드는 부팅 이미지를 만든다. `ordinary-partition-p` 또는 `ordinary-partition-q` 단독 선택은 해당 표를 실행한다. 기존 벤치 없이 두 표를 함께 선택하면 모호하므로 거부한다. 일반 파티션 표에는 virt가 필요하다. 기존 벤치 기능과 조합하면 기존 우선순위가 진입점을 결정한다. `partition-bench,ordinary-partition-q`는 어셈블리 시험, `cbs-bench,ordinary-partition-p`는 CBS, `--all-features`는 `coop-bench`와 동일한 협력형 진입점을 선택한다. 기존 보드·프로필 제약은 계속 적용된다. 저장소 루트에서 `python tools/test_partition_selectors.py`로 이 선택 규칙을 검사한다. 고정된 Rust 툴체인, QEMU, LLVM 도구가 설치된 POSIX 셸을 사용한다. STOP 줄이 완성된 후 QEMU를 종료한다. 시간 초과 또는 끊긴 출력은 미완료로 기록한다.
 
 ```sh
 table=p # repeat with q

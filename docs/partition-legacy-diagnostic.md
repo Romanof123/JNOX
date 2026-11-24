@@ -10,6 +10,10 @@ CHG-050, intended IMP-047, planned EVD-047, [issue #110](https://github.com/Roma
 
 From kernel/, select exactly one Cargo feature on QEMU virt. Leave JNOX_PROFILE, JNOX_APP and unrelated feature selectors unset. Use separate output directories and retain ELF hash, compiler, QEMU argv/version, raw UART and first boot for each. The normal image still emits PART FAIL on a failed predicate. Diagnostic success retains the legacy PASS markers.
 
+The existing backend order selects the benchmark first. When cooperative or another higher-ranked backend wins, its normal UART protocol applies and the partition diagnostic is inactive. With the partition backend selected, the standalone diagnostic and negative feature sets below retain their configuration checks. The ordinary P/Q backend selectors have their own validation.
+
+기존 우선순위로 실행 백엔드를 먼저 선택한다. 협력형 등 우선순위가 높은 백엔드가 선택되면 파티션 진단은 비활성이고 선택된 백엔드의 기존 UART 형식이 적용된다. 파티션 백엔드가 선택된 경우에는 독립 진단과 음성 대조군에 대한 구성 검사가 유지된다.
+
 | Image / 이미지 | Build command / 빌드 명령 |
 |---|---|
 | Normal assembly fixture / 기존 실행 | cargo build --locked --release --features partition-bench |

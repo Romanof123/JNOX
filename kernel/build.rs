@@ -48,7 +48,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
     // variables for enabled features and rebuilds the script for a new set.
-    let bench = [
+    let legacy_bench = [
         ("COOP", "coop"),
         ("BATCH", "batch"),
         ("DEADLINE", "deadline"),
@@ -80,30 +80,35 @@ fn main() {
     println!(
         r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "proportional", "vruntime", "eevdf", "eevdf_wake", "eevdf_dynamic", "hierarchy", "power", "extension", "aperiodic", "deadline", "batch", "coop", "priority_resume", "periodic_overrun", "cbs_wake"))"#
     );
-    println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     let board = match env::var("JNOX_BOARD") {
         Ok(board) => board,
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
-    if env::var_os("CARGO_FEATURE_PARTITION_LEGACY_DIAG").is_some() {
+    let table_p = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_P").is_some();
+    let table_q = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_Q").is_some();
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_partition)");
+    // Ordinary table selectors take effect only when no legacy bench owns the vectors.
+    let bench = if legacy_bench == "boot" && (table_p || table_q) {
+        assert!(table_p != table_q, "select exactly one ordinary partition table");
+        assert!(board == "virt" && profile.is_none() && app.is_none(),
+            "ordinary partition requires virt with JNOX_PROFILE and JNOX_APP unset");
+        println!("cargo::rustc-cfg=jnox_ordinary_partition");
+        "partition"
+    } else {
+        legacy_bench
+    };
+    // The winning backend owns its selector validation. A shadowed partition
+    // feature cannot select diagnostic code or reject a higher-ranked bench.
+    if bench == "partition" && env::var_os("CARGO_FEATURE_PARTITION_LEGACY_DIAG").is_some() {
         let allowed = ["CARGO_FEATURE_PARTITION_BENCH", "CARGO_FEATURE_PARTITION_LEGACY_DIAG",
                        "CARGO_FEATURE_PARTITION_LEGACY_DIAG_NEGATIVE"];
-        assert!(board == "virt" && bench == "partition" && profile.is_none() && app.is_none()
+        assert!(board == "virt" && profile.is_none() && app.is_none()
             && env::vars_os().filter_map(|(key, _)| key.into_string().ok())
                 .filter(|key| key.starts_with("CARGO_FEATURE_")).all(|key| allowed.contains(&key.as_str())),
             "legacy partition diagnostic requires standalone virt assembly partition fixture");
     }
-    let table_p = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_P").is_some();
-    let table_q = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_Q").is_some();
-    if table_p || table_q {
-        let allowed = ["CARGO_FEATURE_PARTITION_BENCH", "CARGO_FEATURE_ORDINARY_PARTITION_P",
-                       "CARGO_FEATURE_ORDINARY_PARTITION_Q"];
-        assert!(table_p != table_q && board == "virt" && profile.is_none() && app.is_none()
-            && env::vars_os().filter_map(|(k, _)| k.into_string().ok())
-                .filter(|k| k.starts_with("CARGO_FEATURE_")).all(|k| allowed.contains(&k.as_str())),
-            "ordinary partition requires virt, exactly one P/Q table, no other bench, profile or app");
-    }
+    println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_cost)");
@@ -172,7 +177,8 @@ fn main() {
                 env::vars_os()
                     .filter_map(|(key, _)| key.into_string().ok())
                     .filter(|key| key.starts_with("CARGO_FEATURE_"))
-                    .all(|key| key == "CARGO_FEATURE_SCHED_BENCH"),
+                    .all(|key| matches!(key.as_str(), "CARGO_FEATURE_SCHED_BENCH"
+                        | "CARGO_FEATURE_ORDINARY_PARTITION_P" | "CARGO_FEATURE_ORDINARY_PARTITION_Q")),
                 "JNOX_BOARD=pi4 supports serial boot, sched-bench, or uninstrumented fixed FIFO/RR"
             );
             println!("cargo::rustc-cfg=jnox_pi4");
