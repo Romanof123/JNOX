@@ -64,3 +64,5 @@ QEMU uses virt,gic-version=2, Cortex-A72, -smp 1, TCG, 128M, -nodefaults, no dis
 [Original first assessment / 최초 판정](evidence/strict-class-first-service-first.en-ko.md) · [Corrected witness and real timer result / 수정 후 최초 관측](evidence/strict-class-first-service-corrected.en-ko.md).
 
 [EVD-099 English](evidence/evd-099.en.md) · [한국어](evidence/evd-099.md).
+
+[Independent combined verification and raw captures / 독립 결합 검증 및 원본](evidence/strict-class-owner-window-combined.en-ko.md).
