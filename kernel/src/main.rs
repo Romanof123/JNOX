@@ -117,7 +117,10 @@ mod group_apps;
 mod mutex;
 #[cfg(any(jnox_ordinary_mutex, jnox_bench = "mutex"))]
 mod mutex_policy;
-#[cfg(jnox_ordinary_mutex)]
+#[cfg(jnox_mutex_chain)]
+#[path = "ordinary_mutex_chain.rs"]
+mod ordinary_mutex;
+#[cfg(all(jnox_ordinary_mutex, not(jnox_mutex_chain)))]
 mod ordinary_mutex;
 #[cfg(jnox_ordinary_mutex)]
 mod ordinary_mutex_manifest;

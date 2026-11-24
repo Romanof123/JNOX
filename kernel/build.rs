@@ -304,6 +304,7 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_chain)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_anchor)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_return)");
@@ -383,8 +384,9 @@ fn main() {
         Some("mutex") => {
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),
                 "ordinary mutex requires virt, no benchmark, trace or control case");
-            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling")),
-                "ordinary mutex requires ordinary-pi or ordinary-ceiling");
+            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling" | "ordinary-chain")),
+                "invalid ordinary mutex application");
+            if app.as_deref() == Some("ordinary-chain") { println!("cargo::rustc-cfg=jnox_mutex_chain"); }
             println!("cargo::rustc-cfg=jnox_ordinary_mutex");
             if app.as_deref() == Some("ordinary-ceiling") {
                 println!("cargo::rustc-cfg=jnox_mutex_ceiling");
