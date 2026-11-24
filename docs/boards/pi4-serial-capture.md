@@ -21,3 +21,5 @@ python3 tools/pi4_serial_capture.py --port /dev/ttyUSB0 --boot-dir /mnt/pi-boot 
 python3 tools/pi4_serial_capture.py --replay first.bin second.bin --boot-dir pi4-scheduler-boot --elf kernel/target/aarch64-unknown-none/release/jnox-kernel --board-revision replay --eeprom replay --output pi4-replay-01
 python3 -m unittest discover -s tools -p "test_pi4_serial_capture.py"
 ```
+
+호스트 시험 9개가 통과했다. EVD-014 보관 패키지를 쓴 파일 재생에서 두 바이트열과 서로 다른 실행 ID를 확인했다. 추가 바이트와 기존 출력 폴더도 검출했다. 실보드의 전원 재인가와 보드 식별은 독립 입회가 필요하다. [호스트 검증 기록](../evidence/scheduling-tools-host-review.json)

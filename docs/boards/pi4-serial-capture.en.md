@@ -21,3 +21,5 @@ Replay uses two regular files and labels both results `file_replay`. Its timing 
 python3 tools/pi4_serial_capture.py --replay first.bin second.bin --boot-dir pi4-scheduler-boot --elf kernel/target/aarch64-unknown-none/release/jnox-kernel --board-revision replay --eeprom replay --output pi4-replay-01
 python3 -m unittest discover -s tools -p "test_pi4_serial_capture.py"
 ```
+
+Nine host tests passed. A file replay using the archived EVD-014 package preserved both byte streams and their independent run IDs. An additional byte and an existing output directory were detected. A physical power cycle and board identity still require independent witnessing. [Host-only review](../evidence/scheduling-tools-host-review.json)
