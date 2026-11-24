@@ -13,3 +13,17 @@ The final control runs one more CPU-bound task with a two-tick grant. Keep its I
 The ELF symbol proportional_witness is 10,432 bytes. Its header has five little-endian u64s (row count, two tick lengths, both seeds) then six u32 passes before and after late admission. Each of 81 128-byte rows begins with fourteen u64s: outgoing ELR, frame, grant start, stop, timer compare, progress, normalization, three passes at selection, three passes after retirement and observed whole ticks. Sixteen bytes follow: epoch, slot, owner, ready mask, interrupt ID, draw, ticket total, interval start, exclusive end, applied flag and six reserved bytes. Value 255 denotes an inapplicable draw or a non-IRQ stop. A completed charge has applied=1. Check all IRQ/SVC entries and saved-frame returns against the frozen ELF. Physical latency, interference and product guarantees remain open.
 
 [EVD-021](evidence/evd-021.en.md)
+
+## First-failure observation (#79)
+
+CHG-037 / IMP-035, POL-010, planned EVD-035. The historical UART ended in PROPORTIONAL FAIL after READY. Four IRQs interrupted B,A,B,A at 0x4020127c, 0x40201260, 0x4020127c, 0x40201260, all inside their ELF work loops. Three handlers returned. Epoch 0 slot 3 is the last interrupted grant. The missing timer, register and predicate data leave the cause unresolved.
+
+With proportional-diagnostic enabled, preserve the first failing source line, zero-based epoch and slot, actual and expected operands before emitting FAIL. A source line refers to proportional.rs from the captured ELF revision. For comparisons read the relation at that line. A boolean or missing policy result uses 0/1. Use the existing symbol-based QMP observer to export the independent failure record on successful and rejected runs. With proportional-fixture-miss explicitly enabled, extend only the first lottery timer grant to two ticks and retain the normal one-tick acceptance criterion. Verify the raw UART fails, QMP exports a committed first record for epoch 0 slot 0 and the measured witness row matches it. A natural earlier failure must remain observable. Archive ordinary and diagnostic results independently.
+
+For Linux collection, build the selected feature in kernel/ and use a fresh directory per invocation:
+
+```sh
+PROPORTIONAL_CAPTURE_DIR="$capture" python3 tools/qemu_boot.py --profile proportional --runs 1 --kernel "$elf" --qemu tools/proportional_capture.py
+```
+
+Read trace.bin as five little-endian u64 words: source line, epoch, slot, actual, expected. A zero line means no committed failure. Before the first epoch, both coordinates are u64::MAX. The wrapper installs its SIGTERM handler before launching QEMU and forwards UART live. A transcript rejection initiates the same QMP dump as a successful observation. Require launch.json to name proportional_failure at size 40 and verify exit.json, uart.bin and audit.bin independently. Array failures record the first differing pair in iteration order. Preserve the exact source tree and ELF alongside each capture. The historical ELF SHA-256 was 3e771ec6fb331510ffe5f719c3e1eb4840a0c7105af8fd4ce49bed89f132a070.

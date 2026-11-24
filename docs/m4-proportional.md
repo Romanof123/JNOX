@@ -13,3 +13,17 @@ kernel에서 `cargo build --release --locked --features proportional-bench -j1`�
 ELF 심볼 proportional_witness의 크기는 10,432바이트다. 앞의 리틀엔디언 u64 다섯 개는 행 수·두 틱 길이·두 시드이고 다음 u32 여섯 개는 합류 전후 패스다. 81개의 128바이트 행마다 u64 열네 개(ELR·문맥 주소·시작·정지·타이머 만기·진행량·정규화·선택 시 패스 셋·반환 후 패스 셋·관측한 정수 틱)가 있고, 다음 16바이트는 사례·슬롯·소유자·준비 마스크·인터럽트 ID·추첨값·티켓 합·구간 시작·배타적 끝·계상 적용 여부·예약 여섯 바이트다. 값 255는 해당 추첨값이나 IRQ가 없음을 뜻한다. 계상을 완료한 행은 적용값이 1이어야 한다. 모든 IRQ·SVC 및 복귀 주소를 동결 ELF에 대조한다. 실물 지연·간섭 및 제품 보장은 별도 추적한다.
 
 [EVD-021](evidence/evd-021.md)
+
+## 최초 실패 관측 (#79)
+
+CHG-037 / IMP-035, POL-010, 예정 EVD-035. 과거 UART는 READY 뒤 PROPORTIONAL FAIL로 끝났다. ELF 작업 루프 안에서 B,A,B,A 순으로 IRQ가 네 번 발생했다(0x4020127c, 0x40201260, 0x4020127c, 0x40201260). 세 번 복귀했다. 마지막 중단은 epoch 0의 슬롯 3이다. 당시 타이머 값, 레지스터와 판정식 기록이 없어 정확한 원인은 미해결이다.
+
+proportional-diagnostic 설정에서 FAIL 출력 전에 최초 실패의 소스 줄, 0부터 시작하는 epoch와 슬롯, 실측 및 기준 피연산자를 보존한다. 줄 번호와 비교 연산은 해당 ELF 리비전의 proportional.rs를 따른다. 불리언 또는 정책 결과 누락은 0/1로 표시한다. 기존 심볼 기반 QMP 관측기로 통과 및 거부된 실행 모두에서 독립 실패 레코드를 덤프한다. proportional-fixture-miss를 명시하면 첫 추첨 타이머만 두 틱으로 늘리고 정상 합격 기준 한 틱을 유지한다. UART 거부, epoch 0 슬롯 0의 최초 기록 및 실측 행 일치를 확인한다. 더 이른 자연 실패는 그대로 관측한다. 일반 실행과 계측 실행의 증거를 따로 보관한다.
+
+리눅스에서는 kernel/에서 선택한 기능을 빌드하고 매 실행마다 새 수집 디렉터리를 지정한다.
+
+```sh
+PROPORTIONAL_CAPTURE_DIR="$capture" python3 tools/qemu_boot.py --profile proportional --runs 1 --kernel "$elf" --qemu tools/proportional_capture.py
+```
+
+trace.bin은 리틀엔디언 u64 다섯 개(소스 줄, epoch, 슬롯, 실측, 기준)이다. 줄이 0이면 확정된 실패 기록이 없다. 첫 epoch 전에는 두 좌표 모두 u64::MAX이다. 래퍼는 QEMU 기동 전에 SIGTERM 처리기를 설치하고 UART를 실시간 전달한다. UART 거부 시에도 종료 처리 중 QMP 덤프를 실행한다. launch.json의 심볼 proportional_failure와 크기 40을 확인하고 exit.json, uart.bin, audit.bin을 독립 대조한다. 배열은 순서상 최초 불일치 원소 쌍을 기록한다. 각 ELF와 대응 소스 트리를 함께 보존한다. 과거 ELF SHA-256은 3e771ec6fb331510ffe5f719c3e1eb4840a0c7105af8fd4ce49bed89f132a070이다.
