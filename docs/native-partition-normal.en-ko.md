@@ -32,3 +32,5 @@ The #178 source provides the two-process launch, vector and timer primitives. It
 3. 명목 소유자, 준비 마스크, 실제 TTBR0, PC, SP, TLS와 각 IRQ의 CVAL/CTL/IAR를 보존한다. 작업별 완료 횟수 n과 체크섬 증가량 3(A), 5(B), 종료값 41/42를 대조한다. 각 준비된 작업 창에서 실제 진척을 확인한다. 유휴 문맥은 복귀 시각만 기록한다. 경계에서 완료 중이던 부분 갱신은 최종 결과의 일관성으로 확인한다.
 4. 명목 경계 d, 직전 IRQ 진입 i(최초에는 E), 복귀 직전 표본 r, 해당 문맥이 직접 읽은 카운터 x, 닫는 IRQ 진입 j에서 d ≤ i ≤ r ≤ x < j 및 x−d ≤ F/1000을 확인한다. 경계를 넘은 선행 소유자의 시간, 커널 처리, 복귀 전후 관측 구간을 중복 없이 계산한다. 예외 진입 직후의 표본에 포함된 진입 오차를 명시한다. QEMU 예외 로그와 실제 PC 및 복귀 순서를 독립 대조한다.
 5. 각 표의 최초 콜드 부팅 원본을 기본 시계와 icount3에서 순차 보관한다. RAM, ELF, 설정, UART, 예외 로그를 보존하고 두 기존 weighted 선택자도 회귀 확인한다. #178의 가중 스케줄링 결과, 기존 EL1 결과, 실보드 승인과 제품 기능안전 평가는 각각 별도 증거를 요구한다.
+
+[Original P/Q and compatibility outcomes / P·Q 및 호환 최초 결과](evidence/native-partition-ordinary-first.en-ko.md).
