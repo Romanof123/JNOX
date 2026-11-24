@@ -1,0 +1,123 @@
+{
+  "evidence_id": "EVD-053",
+  "version": 2,
+  "change": "CHG-056",
+  "implementation": "IMP-053",
+  "source": "51567ba55644cad48d15331523574b4e940095fc",
+  "reviewer_manifest_sha256": "5397c5a9a72ba373d3ab6f3318ea546023fc425ad69fa4c86e47ef3298b42d2a",
+  "report_sha256": "bcd1814359b38a7fa580af5bd2c763ec33b4c26bb57527949f220b59eed77951",
+  "frozen_comparison": {
+    "order": [
+      [
+        "v1",
+        "aligned-wake/plain"
+      ],
+      [
+        "v2",
+        "aligned-wake/plain"
+      ],
+      [
+        "v2",
+        "cbs-wake/trace"
+      ],
+      [
+        "v1",
+        "cbs-wake/trace"
+      ],
+      [
+        "v1",
+        "aligned-saturated/trace"
+      ],
+      [
+        "v2",
+        "aligned-saturated/trace"
+      ],
+      [
+        "v2",
+        "cbs-saturated/plain"
+      ],
+      [
+        "v1",
+        "cbs-saturated/plain"
+      ],
+      [
+        "v1",
+        "aligned-wake/trace"
+      ],
+      [
+        "v2",
+        "aligned-wake/trace"
+      ],
+      [
+        "v2",
+        "cbs-wake/plain"
+      ],
+      [
+        "v1",
+        "cbs-wake/plain"
+      ],
+      [
+        "v1",
+        "aligned-saturated/plain"
+      ],
+      [
+        "v2",
+        "aligned-saturated/plain"
+      ],
+      [
+        "v2",
+        "cbs-saturated/trace"
+      ],
+      [
+        "v1",
+        "cbs-saturated/trace"
+      ],
+      [
+        "v1",
+        "aligned-refused/plain"
+      ],
+      [
+        "v2",
+        "aligned-refused/plain"
+      ],
+      [
+        "v2",
+        "cbs-refused/plain"
+      ],
+      [
+        "v1",
+        "cbs-refused/plain"
+      ]
+    ],
+    "pins": [
+      "22de1966a3def8bb661187786b70349150ad6a6980dc73b73a3eac684910d2d6",
+      "6754c0724de40a88351f30ef94962127322084055276ed33716fbfc0db45590f"
+    ],
+    "timeout": 15,
+    "clock": "default",
+    "late": "excluded, separate rollout"
+  },
+  "candidate_ordinary_completed": 1,
+  "candidate_ordinary_attempted": 8,
+  "wake_neighbor_service": [
+    0,
+    4
+  ],
+  "candidate_refusals_met": [
+    2,
+    2
+  ],
+  "matched_v1_ordinary_completed": [
+    0,
+    8
+  ],
+  "late_v2_attempts": 0,
+  "archive": {
+    "file": "evd-053-v2-captures.zip",
+    "bytes": 399813,
+    "sha256": "be2ffafd4ed2abbd02a27190bb377a5b7b5a3e6ad21eb46f10215265f1e73ce4",
+    "entries": 118,
+    "restore": "Check the ZIP digest, extract to a fresh directory, and run sha256sum -c FILES.sha256 from its root. Check the original per-capture manifest in reservation53-v2-fresh using sha256sum -c manifest.sha256.",
+    "offline_replay": "In a disposable extracted copy on Linux, with Python 3 and aarch64-linux-gnu-nm, change to reservation53-v2-fresh and run python3 make_report.py. The raw original 12 v1 reservation and four legacy records remain in the EVD-053 v1 ZIP."
+  }
+}

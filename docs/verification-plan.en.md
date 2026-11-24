@@ -126,4 +126,4 @@ Finite weighted service and wakeup observations for VER-002/005/023. [EVD-049](e
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
 
-IMP-053 · VER-002/005/023. All eight normal boots stopped on slot-zero timing during A’s first grant. Both refusals behaved as expected. Both late controls recorded progress past nominal end, but an earlier opening fault prevented qualification of the prescribed late branch. Four legacy CBS regressions are separate. Neighbor service isolation remains unverified. [EVD-053](evidence/evd-053.en.md)
+IMP-053 · VER-002/005/023. One of eight normal v2 boots completed, both refusals succeeded, and none of eight matched v1 normal boots completed. Only saturated CBS with tracing reached the horizon. No wake case delivered B service (0/4). No v2 late fixture ran. The full profile remains unqualified. [EVD-053](evidence/evd-053.en.md)
