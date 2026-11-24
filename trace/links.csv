@@ -161,3 +161,6 @@ REQ-002,partially-implemented-by,IMP-002
 REQ-005,partially-implemented-by,IMP-002
 IMP-002,partially-verified-by,VER-002
 IMP-002,partially-verified-by,VER-005
+IMP-002,tested-in,EVD-002
+VER-002,has-partial-evidence,EVD-002
+VER-005,has-partial-evidence,EVD-002

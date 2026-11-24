@@ -1,0 +1,213 @@
+{
+  "case": "EVD-002",
+  "scope": "CHG-002 / IMP-002 / M1 single-core fixed-priority preemption; partial VER-002 and VER-005",
+  "date": "2026-11-24",
+  "source_commit": "d9a1ac81b9bd871c504b823b983b1ff31109862a",
+  "source_tree": "ebc056a94e0991a55ac6ff6c593dde675fc9f8fd",
+  "elf_sha256": "4d542ef3f7f8eaeb606707714bbb8af6abe9847a01b7421ad874ec62998e7d48",
+  "verdict": "PASS for this bench",
+  "tools": {
+    "emulator_host": "Ubuntu 22.04.3 LTS / WSL2 6.18.58.1-microsoft-standard-WSL2",
+    "qemu": "6.2.0, Debian 1:6.2+dfsg-2ubuntu6.31",
+    "python": "3.10.12",
+    "aarch64_gnu_binutils": "2.38",
+    "elf_comment": "rustc 1.95.0 (59807616e 2026-04-14); LLD 22.1.2 (1cb4e3833c1919c2e6fb579a23ac0e2b22587b7e)"
+  },
+  "reproduce": {
+    "build_as_supplied_by_pm": "cd kernel && cargo build --release --locked --features sched-bench -j 1",
+    "guest_cwd": "checkout root; set ELF to the absolute path of the verified executable and WORK to the directory containing the wrapper",
+    "guest_command": "python3 tools/qemu_boot.py --profile scheduler --runs 1 --kernel \"$ELF\" --qemu \"$WORK/qemu-trace.sh\"",
+    "executable_wrapper_sh": "#!/bin/sh\nset -eu\nverifier_dir=$(dirname \"$0\")\nexec /usr/bin/qemu-system-aarch64 -d int -D \"$verifier_dir/exception-trace.log\" \"$@\"\n",
+    "qemu_argv": [
+      "qemu-system-aarch64",
+      "-d",
+      "int",
+      "-D",
+      "$WORK/exception-trace.log",
+      "-machine",
+      "virt,gic-version=2",
+      "-cpu",
+      "cortex-a72",
+      "-smp",
+      "1",
+      "-accel",
+      "tcg",
+      "-m",
+      "128M",
+      "-nodefaults",
+      "-display",
+      "none",
+      "-monitor",
+      "none",
+      "-serial",
+      "stdio",
+      "-kernel",
+      "$ELF"
+    ],
+    "static_commands": [
+      "aarch64-linux-gnu-nm -nS -C \"$ELF\"",
+      "aarch64-linux-gnu-objdump -d -C \"$ELF\"",
+      "aarch64-linux-gnu-objdump -D -j .text --start-address=0x40200a00 --stop-address=0x4020118c \"$ELF\"",
+      "aarch64-linux-gnu-objdump -s -j .data \"$ELF\"",
+      "aarch64-linux-gnu-readelf -p .comment \"$ELF\""
+    ],
+    "host_only_replay": "Import tools/qemu_boot.py from the candidate. For each input below call observe(process, io.BytesIO(sample), 0.25, SCHEDULER_TRANSCRIPT or BOOT_TRANSCRIPT). Both process.poll() and process.returncode return the test's poll value. Use the raw UART fields identified in each input."
+  },
+  "black_box": {
+    "verdict_before_kernel_source_or_disassembly_review": "PASS",
+    "guest_launches": 1,
+    "public_runner_exit": 0,
+    "qemu_pid": 522,
+    "uart_deadline_seconds": 5,
+    "quiet_seconds": 0.1,
+    "stop_reason": "Host SIGTERM after the complete transcript and quiet window; public runner rechecked captured UART after stop.",
+    "uart_bytes": 101,
+    "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nSCHED HIGH RUN\nSCHED LOW RESUMED\nSCHED PASS\n",
+    "qemu_stderr": "qemu-system-aarch64: terminating on signal 15 from pid 519 (python3)\n",
+    "raw_qemu_int_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012bc\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020134c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012bc\n",
+    "trace_sha256": "e21022390e5b0bcabd1bad9ad861af2d11cc4365c2bca7620159b81139dca10b",
+    "uart_sha256": "e011aa222990ab7912b36096152cb6b5e9dd036f0e45d99e2adbd167cd048159"
+  },
+  "decoded_transitions": [
+    {
+      "event": "First ERET",
+      "pc": "0x4020124c",
+      "elf_symbol": "sched_low_entry"
+    },
+    {
+      "event": "EL1h IRQ",
+      "elr": "0x402012bc",
+      "elf_instruction": "sched_work_begin: add x9, x9, #1",
+      "vector": "0x40200a80",
+      "work_range_half_open": [
+        "0x402012bc",
+        "0x402012cc"
+      ],
+      "work": "ADD; CBZ on already-armed flag; LDAR completion flag; CBZ back. The unmasked path has no yield or call."
+    },
+    {
+      "event": "IRQ ERET",
+      "pc": "0x4020134c",
+      "elf_symbol": "sched_high_entry"
+    },
+    {
+      "event": "HIGH SVC #1",
+      "instruction_pc": "0x40201380",
+      "elr": "0x40201384",
+      "elf_symbol_at_elr": "sched_high_return",
+      "esr": "0x56000001",
+      "vector": "0x40200a00"
+    },
+    {
+      "event": "SVC ERET",
+      "pc": "0x402012bc",
+      "same_as_irq_elr": true
+    }
+  ],
+  "linked_image_witnesses": {
+    "basis": "Decoded PCs come from QEMU. Stack, timer, priority and register values below are inferred from fail-guarded instructions in the hashed ELF and the successful UART path.",
+    "timer": "0x40201688..0x402016a0 checks GICC_IAR INTID = 30 and CNTP_CTL bits [2:0] = 5; 0x40201710..0x40201720 disables CNTP, issues barriers, writes the original IAR token to GICC_EOIR. IRQ acceptance also checks saved ELR, SPSR for unmasked EL1h, nonzero X9 work count and HIGH_DONE = 0.",
+    "fixed_priority": "Initial .data at 0x40202018..19 and 0x40202028..29 contains (priority 1, Ready 1) LOW and (priority 2, Blocked 0) HIGH. 0x40201760..0x40201770 records LOW frame, makes both Ready and invokes dispatch. Dispatch filters state == 1 and compares both actual priorities (CMP 0x40201944, CSELs). IRQ handler checks current HIGH and LOW Ready before emitting its marker.",
+    "high_finish": "HIGH checks live entry SP and scheduler state before its UART bytes. SVC handler checks the syndrome, exact HIGH frame address and saved return label; at 0x40201524..0x40201550 HIGH becomes Finished, dispatch selects LOW, HIGH_DONE = 1 is release-stored.",
+    "stacks": {
+      "size_each_bytes": 16384,
+      "high_half_open": [
+        "0x40202030",
+        "0x40206030"
+      ],
+      "low_half_open": [
+        "0x40206040",
+        "0x4020a040"
+      ],
+      "frame_size_bytes": 832,
+      "high_entry_sp": "0x40206030",
+      "high_svc_sp_before_vector": "0x40206020",
+      "high_svc_saved_frame": "0x40205ce0",
+      "low_entry_sp": "0x4020a040",
+      "low_work_and_resume_sp": "0x4020a030",
+      "low_irq_saved_frame": "0x40209cf0"
+    },
+    "restore": "Vector subtracts 0x340 and saves X0-X30, Q0-Q31, ELR/SPSR, FPCR/FPSR, TPIDR_EL1, SP_EL0, TPIDR_EL0 and TPIDRRO_EL0. Saved frame pointer represents SP_EL1. Common return at 0x4020118c installs the selected frame as SP, restores the same register slots, adds 0x340, CLREX, ERET at 0x40201248.",
+    "live_values": "HIGH clears X9, X12, X15, X19, V31, FPCR/FPSR, TPIDR_EL1 and NZCV before SVC. After the traced ERET, LOW exits with its acquired completion flag then checks Z=C=1, X15=0x15a5, X19=0x19b6, matching stack words, TPIDR_EL1=0x19b6, both V31 halves filled with 0x55, FPCR=0x400000 and FPSR=0x08000000. The final callback checks the original work SP, HIGH_DONE=1, current LOW and HIGH Finished. A mismatch branches to failure before the last two UART lines."
+  },
+  "host_only_controls": [
+    {
+      "input": "EVD-001 independent_cold_boots[0].serial_hex",
+      "profile": "scheduler",
+      "input_size": 27,
+      "poll": null,
+      "outcome": "rejected",
+      "diagnostic": "UART deadline exceeded (0.25s)"
+    },
+    {
+      "input": "Remove the single SCHED LOW RESUMED line, retain SCHED PASS",
+      "profile": "scheduler",
+      "input_size": 83,
+      "poll": null,
+      "outcome": "rejected",
+      "diagnostic": "unexpected UART bytes or marker order"
+    },
+    {
+      "input": "Append 0xff after SCHED PASS LF",
+      "profile": "scheduler",
+      "input_size": 102,
+      "poll": null,
+      "outcome": "rejected",
+      "diagnostic": "unexpected UART bytes or marker order"
+    },
+    {
+      "input": "Duplicate SCHED HIGH RUN",
+      "profile": "scheduler",
+      "input_size": 116,
+      "poll": null,
+      "outcome": "rejected",
+      "diagnostic": "unexpected UART bytes or marker order"
+    },
+    {
+      "input": "Remove final LF",
+      "profile": "scheduler",
+      "input_size": 100,
+      "poll": null,
+      "outcome": "rejected",
+      "diagnostic": "UART deadline exceeded (0.25s)"
+    },
+    {
+      "input": "Swap SCHED TIMER IRQ and SCHED HIGH RUN",
+      "profile": "scheduler",
+      "input_size": 101,
+      "poll": null,
+      "outcome": "rejected",
+      "diagnostic": "unexpected UART bytes or marker order"
+    },
+    {
+      "input": "Already exited with complete bytes",
+      "profile": "scheduler",
+      "input_size": 101,
+      "poll": 0,
+      "outcome": "rejected",
+      "diagnostic": "QEMU exited before host stop (status 0)"
+    },
+    {
+      "input": "EVD-001 independent_cold_boots[0].serial_hex",
+      "profile": "boot",
+      "input_size": 27,
+      "poll": null,
+      "outcome": "accepted",
+      "diagnostic": null
+    },
+    {
+      "input": "One scheduler guest capture",
+      "profile": "scheduler",
+      "input_size": 101,
+      "poll": null,
+      "outcome": "accepted",
+      "diagnostic": null
+    }
+  ],
+  "limitations": [
+    "One cold boot, CPU and preemption pair. The 5 second timeout and 0.1 second quiet window are host observation settings.",
+    "Exception tracing records PCs and exception class, without independent GPR, SP, MMIO or task-table snapshots. Guarded value checks exercise selected witnesses; other saved registers received static inspection.",
+    "Boot-profile acceptance here replays EVD-001 bytes. The verifier launched no default-build guest and performed no rebuild.",
+    "Equal-priority FIFO, general lifecycle, SMP, time budgets, IRQ latency, worst-case timing, physical boards and product certification remain outside this case."
+  ]
+}
