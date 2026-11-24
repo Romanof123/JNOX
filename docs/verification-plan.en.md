@@ -52,3 +52,5 @@ Each verification result records its `EVD` ID, baseline, `VER` and `REQ` IDs, wh
 The two-CPU QEMU configuration exercises fixed homes, global migration and singleton cluster enforcement. [Two-CPU scheduling](m3-smp.en.md)
 
 The mutex configuration checks effective priority on real block, timer timeout and ownership handoff. [Mutex release cases](m1-mutex.en.md)
+
+[Multilevel queues](m4-multilevel.en.md) · [Mixed-criticality budgets](m3-mixed-criticality.en.md)

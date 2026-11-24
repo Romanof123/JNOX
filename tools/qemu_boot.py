@@ -190,6 +190,10 @@ APERIODIC_TRANSCRIPT = BOOT_TRANSCRIPT + (
     b"APER PASS\n"
 )
 TRANSCRIPTS = {
+    "amc": None,  # Counter values vary per boot. Freeze the validated UART before quiet.
+    "multilevel": BOOT_TRANSCRIPT + (
+        b"MLQ STRICT FOUR\nMLFQ YIELDS DEMOTED\nMLFQ BOOST ORDER\nMULTILEVEL PASS\n"
+    ),
     "mutex": BOOT_TRANSCRIPT + (
         b"MUTEX PI TRANSFER\nMUTEX CHAIN TIMEOUT\n"
         b"MUTEX CEILING NESTED\nMUTEX PASS\n"
@@ -233,13 +237,26 @@ def kernel_sha256(path, *, raw=False):
     return digest.hexdigest()
 
 
+def amc_contract():
+    if __package__:
+        from . import amc_observer
+    else:
+        import amc_observer
+    return amc_observer
+
+
 def read_uart(serial, expected):
     # All lines may use CRLF. One extra byte exposes any trailing output.
     serial.seek(0)
+    if expected is None:
+        return serial.read(amc_contract().MAX_BYTES + 1)
     return serial.read(len(expected) + expected.count(b"\n") + 1)
 
 
 def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+    if expected is None:
+        problem, _ = observe_amc(process, serial, timeout, allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
+        return problem
     deadline = time.monotonic() + timeout
     quiet_until = None
     while True:
@@ -260,6 +277,38 @@ def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=Tr
                 quiet_until = now + quiet_seconds
         elif now >= quiet_until:
             return None
+        time.sleep(min(0.01, (quiet_until or deadline) - now))
+
+
+def observe_amc(process, serial, timeout, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+    contract = amc_contract()
+    deadline = time.monotonic() + timeout
+    quiet_until = None
+    accepted = None
+    while True:
+        if process.poll() is not None:
+            return f"QEMU exited before host stop (status {process.returncode})", None
+        raw = read_uart(serial, None)
+        now = time.monotonic()
+        if len(raw) > contract.MAX_BYTES:
+            return "AMC UART exceeds byte limit", None
+        if accepted is not None:
+            if raw != accepted:
+                return "unexpected AMC UART bytes during quiet window", None
+            if now >= quiet_until:
+                return None, accepted
+        else:
+            data = raw.replace(b"\r\n", b"\n") if allow_crlf else raw
+            # A complete terminal line also exposes extra bytes in the same read.
+            # If STOP is followed by another complete line, judge it immediately.
+            after_stop = data.partition(b"\nAMC STOP\n")[2]
+            if b"AMC PASS\n" in data or b"AMC FAIL\n" in data or b"\n" in after_stop:
+                if not data.endswith(b"\nAMC PASS\n") or not contract.validate(data):
+                    return "unexpected AMC UART transcript", None
+                accepted = raw
+                quiet_until = now + quiet_seconds
+            if now >= deadline:
+                return f"UART deadline exceeded ({timeout:g}s)", None
         time.sleep(min(0.01, (quiet_until or deadline) - now))
 
 
@@ -292,8 +341,12 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
             try:
                 print(f"  QEMU PID = {process.pid}", flush=True)
                 with uart_path.open("rb") as serial:
-                    problem = observe(process, serial, timeout, expected,
-                                      allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
+                    if expected is None:
+                        problem, accepted = observe_amc(process, serial, timeout,
+                                                        allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
+                    else:
+                        problem = observe(process, serial, timeout, expected,
+                                          allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
             finally:
                 shutdown_problem = stop(process)
         with uart_path.open("rb") as serial:
@@ -307,6 +360,10 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
         print(f"  QEMU stderr = {stderr!r}{stderr_suffix}", flush=True)
         if problem or shutdown_problem:
             raise ValueError(problem or shutdown_problem)
+        if expected is None:
+            if uart != accepted:
+                raise ValueError("unexpected AMC UART bytes during shutdown")
+            return
         if allow_crlf:
             uart = uart.replace(b"\r\n", b"\n")
         if uart != expected:
