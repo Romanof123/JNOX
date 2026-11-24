@@ -79,4 +79,4 @@ CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry 
 
 [EVD-032](evidence/evd-032.en.md)
 
-[Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / EVD-036 (planned).
+[Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).

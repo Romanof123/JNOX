@@ -79,4 +79,4 @@ CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 �
 
 [EVD-032](evidence/evd-032.md)
 
-[#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / EVD-036 (planned).
+[#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).
