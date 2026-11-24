@@ -1,0 +1,166 @@
+{
+  "candidate": "56d6e0b7cb7183fdc1b9b06275050ce64254e6f6",
+  "frozen_parent": "7549e57614221f4e6f71db32b0b369ef390e97f7",
+  "engineering_verdict": "FAIL",
+  "input_hashes": {
+    "share-default": {
+      "kernel_sha256": "38b50b9d28226bb05b75e398e5d59c4b41d67eccd1a8b7a3f6713b7a3be7ac27",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    },
+    "share-icount3": {
+      "kernel_sha256": "38b50b9d28226bb05b75e398e5d59c4b41d67eccd1a8b7a3f6713b7a3be7ac27",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    },
+    "wake-default": {
+      "kernel_sha256": "1c9c01593f78404dddb8b68c6a0b9a6670d94b30da4d99a4f6213da741ad974b",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    },
+    "wake-icount3": {
+      "kernel_sha256": "1c9c01593f78404dddb8b68c6a0b9a6670d94b30da4d99a4f6213da741ad974b",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    }
+  },
+  "first_cases": [
+    {
+      "case": "share-default",
+      "guest": "FAIL",
+      "capture": "FAIL",
+      "session_sha256": "d5a955bbf5123edde35c0a1eac7b55f111b3675d3c9453664088890a48f5463c",
+      "first_ram": true,
+      "guest_failure_code": 11,
+      "external_eret_count": 1,
+      "external_irq_count": 1,
+      "external_svc_count": 0,
+      "interrupted_A_pc": "0x40056c",
+      "checked_A_chunks": 10142,
+      "share_closures_committed": 0,
+      "qualifying_share_prefixes": 0,
+      "qualifying_wake_cycles": 0,
+      "D_I_W_R_S_intervals": null,
+      "SDK_exits_observed": 0
+    },
+    {
+      "case": "share-icount3",
+      "guest": "FAIL",
+      "capture": "[Errno 61] No data available",
+      "session_sha256": "7bb1b45d474aaacf1f71423ab8c4f2c9ed0d6ab4ecbb34293425df8a54a2c8ec",
+      "first_ram": false,
+      "guest_failure_code": null,
+      "external_eret_count": 1,
+      "external_irq_count": 1,
+      "external_svc_count": 0,
+      "interrupted_A_pc": "0x40056c",
+      "checked_A_chunks": null,
+      "share_closures_committed": null,
+      "qualifying_share_prefixes": 0,
+      "qualifying_wake_cycles": 0,
+      "D_I_W_R_S_intervals": null,
+      "SDK_exits_observed": 0
+    },
+    {
+      "case": "wake-default",
+      "guest": "FAIL",
+      "capture": "FAIL",
+      "session_sha256": "4b8c27ae75b5343b5fe752c05615e0863fe8c4940580226c3a4642032d9218cd",
+      "first_ram": true,
+      "guest_failure_code": 11,
+      "external_eret_count": 1,
+      "external_irq_count": 1,
+      "external_svc_count": 0,
+      "interrupted_A_pc": "0x40056c",
+      "checked_A_chunks": 13184,
+      "share_closures_committed": 0,
+      "qualifying_share_prefixes": 0,
+      "qualifying_wake_cycles": 0,
+      "D_I_W_R_S_intervals": null,
+      "SDK_exits_observed": 0
+    },
+    {
+      "case": "wake-icount3",
+      "guest": "FAIL",
+      "capture": "FAIL",
+      "session_sha256": "f5b60e226ee0b5e3f6de4c899361acbefcbe9c1a2ef5281b2de123f8c432ad9f",
+      "first_ram": true,
+      "guest_failure_code": 11,
+      "external_eret_count": 1,
+      "external_irq_count": 1,
+      "external_svc_count": 0,
+      "interrupted_A_pc": "0x400590",
+      "checked_A_chunks": 482,
+      "share_closures_committed": 0,
+      "qualifying_share_prefixes": 0,
+      "qualifying_wake_cycles": 0,
+      "D_I_W_R_S_intervals": null,
+      "SDK_exits_observed": 0
+    }
+  ],
+  "supplemental_diagnostic": {
+    "case": "separate same-image share icount3 run",
+    "IAR": 1023,
+    "CNTP_CTL": 5,
+    "entry_tick": 841080,
+    "compare_tick": 841078,
+    "pre_eret": 216078,
+    "first_guard_failed": "IAR INTID 1023, required 30"
+  },
+  "controls": [
+    {
+      "case": "startup-probe",
+      "parent_kernel": "d53457f71b6af0cd4b165e18215fc0ff4412c39bc02e6438ca77471a5a4475bc",
+      "candidate_kernel": null,
+      "parent": "EXIT 37; replay passed",
+      "candidate": "kernel compile failed; guest not launched",
+      "candidate_user_sha256": "ccf12f0ce4ef7cec47cf6e69945e066c2fdcd63ecf3881d686f7f31ccc8d55b6"
+    },
+    {
+      "case": "weighted-share",
+      "parent_kernel": "058f074185c03608d8ca179f13ffded032eae7f4919cb00b8d0c1edd5fb2a5de",
+      "candidate_kernel": "bc5578f1ae4c1b3159ffb01fc94a3616c5d6f4866b875271fd62ce6293afe858",
+      "load_headers_and_data_equal": true,
+      "uart_equal": true,
+      "external_exceptions_equal": true,
+      "observed": "WEIGHTED TERMINAL",
+      "replayed": true
+    },
+    {
+      "case": "weighted-share-trace",
+      "parent_kernel": "bea07ea3ca6f2ca0fba7714baca93f42ae614ae72896ddfaead695626c29d407",
+      "candidate_kernel": "485d646f81d107197fd60e25ff1b89ef4fe09e6dce6f42b3842081b53f62ac32",
+      "load_headers_and_data_equal": true,
+      "uart_equal": true,
+      "external_exceptions_equal": true,
+      "observed": "WEIGHTED TERMINAL",
+      "replayed": true
+    },
+    {
+      "case": "weighted-wake",
+      "parent_kernel": "607c5bc1ab4c9dea0a93dabed727dd651423692ea8dff7e1f64db99f2ff9210a",
+      "candidate_kernel": "18c3b0ce6fb8a49b23d2c97b53461aecf475f498aa5685fedb031bdfdc8188cf",
+      "load_headers_and_data_equal": true,
+      "uart_equal": true,
+      "external_exceptions_equal": true,
+      "observed": "WEIGHTED TERMINAL",
+      "replayed": true
+    },
+    {
+      "case": "weighted-wake-trace",
+      "parent_kernel": "684863acd41d1f1eb515dde146a6afd912e19b6beed0be22de9d2227d28c83e7",
+      "candidate_kernel": "3d1004a340609c8febb3b7af7ba7b4aa65424a7fdb86a51f2cae1d18a339edce",
+      "load_headers_and_data_equal": true,
+      "uart_equal": true,
+      "external_exceptions_equal": true,
+      "observed": "WEIGHTED TERMINAL",
+      "replayed": true
+    },
+    {
+      "case": "vruntime-bench",
+      "parent_kernel": "46319a18bd964173892376685e12e64d1c6cf5a73222e9dce377fa4deef0cf3b",
+      "candidate_kernel": "ab7cc82b704d45d7c007b44b5287410657669d2539c3ecdc6abbdf1d7e70ead7",
+      "load_headers_and_data_equal": true,
+      "uart_equal": true,
+      "external_exceptions_equal": true,
+      "observed": "VR PASS",
+      "replayed": false
+    }
+  ]
+}
