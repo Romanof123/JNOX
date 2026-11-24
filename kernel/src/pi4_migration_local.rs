@@ -16,12 +16,12 @@ local_words!(PI4_MIG_CPU0, PI4_MIG_CPU1, PI4_MIG_TLS_M, PI4_MIG_TLS_P0,
              PI4_MIG_TLS_P1_OPEN, PI4_MIG_TLS_P1_REPLACEMENT);
 
 #[cfg(feature = "pi4-stream-v1")]
-const IMAGE_ID: &str = concat!("MG3|", env!("JNOX_MIGRATION_APP"), "|sample-crc32-v1");
+const IMAGE_ID: &str = concat!("MG4|", env!("JNOX_MIGRATION_APP"), "|sample-crc32-v1");
 #[cfg(not(feature = "pi4-stream-v1"))]
-const IMAGE_ID: &str = concat!("MG3|", env!("JNOX_MIGRATION_APP"), "|sum-65536");
+const IMAGE_ID: &str = concat!("MG4|", env!("JNOX_MIGRATION_APP"), "|sum-65536");
 
 #[unsafe(no_mangle)]
-static pi4_mg3_identity: [u8; IMAGE_ID.len()] = {
+static pi4_mg4_identity: [u8; IMAGE_ID.len()] = {
     let mut id = [0; IMAGE_ID.len()];
     let mut i = 0;
     while i < id.len() {
@@ -75,7 +75,7 @@ pub(super) fn activation_pair(a: usize) -> (u64, u64) {
 }
 
 pub(super) fn initialize_tls() {
-    unsafe { core::ptr::read_volatile(pi4_mg3_identity.as_ptr()); }
+    unsafe { core::ptr::read_volatile(pi4_mg4_identity.as_ptr()); }
     for a in 0..4 {
         activation(a).0.0.store(0, Relaxed);
     }

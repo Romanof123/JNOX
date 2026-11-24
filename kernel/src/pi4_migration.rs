@@ -1,6 +1,7 @@
 //! One-lock, two-CPU ordinary migration case. All scheduler mutations run on
 //! masked boot/dispatcher stacks. A worker never holds the scheduler lock.
 use crate::{
+    pi4_handoff::{Handoff, Origin, Receive}, pi4_handoff_log as evidence,
     context::{Frame, STACK_BYTES, Stack, sched_start_frame},
     pi4_migration_local as local_state, pi4_migration_log as log, pi4_migration_tasks as jobs, pi4_smp_bsp as bsp,
     smp_policy::{Disposition, Lease, Ownership},
@@ -124,7 +125,8 @@ fn fresh(role: usize, entry: extern "C" fn() -> !, tls: (u64, u64)) -> usize {
 struct State {
     policy: Ownership<3>,
     running: [Option<Lease>; 2],
-    frame: [usize; 3],
+    handoff: Handoff,
+    retired_opening: Option<Lease>,
     epoch: u64,
     done: u8,
     summaries: u8,
@@ -145,10 +147,24 @@ fn transaction<T>(f: impl FnOnce(&mut State) -> T) -> T {
     result
 }
 impl State {
+    fn frame(&self, id: usize) -> *mut Frame {
+        let pointer = self.handoff.frames[id].unwrap_or_else(|| abort(32)).pointer as *mut Frame;
+        frame_check(id, pointer);
+        pointer
+    }
+    fn checked_receive(&self, c: usize, role: usize, f: *mut Frame, iar: u32) -> Receive {
+        trap(self, c, role, f, iar as u64);
+        Receive { iar, cpu: c, peer_target: bsp::target(1 - c), epoch: self.epoch,
+                  claim: self.running[c], live: local_state::local_lease(c).1.load(Acquire),
+                  trap_valid: true }
+    }
     fn claim(&mut self, c: usize, id: u8) {
         let l = self.policy.claim(c as u8, id).unwrap_or_else(|| abort(4));
-        let f = self.frame[id as usize] as *mut Frame;
-        frame_check(id as usize, f);
+        self.record_claim(c, l);
+    }
+    fn record_claim(&mut self, c: usize, l: Lease) {
+        let id = l.task;
+        let f = self.frame(id as usize);
         self.running[c] = Some(l);
         let frame = unsafe { &*f };
         log::event(
@@ -172,8 +188,7 @@ impl State {
             abort(6)
         }
         let id = l.task as usize;
-        let f = self.frame[id] as *mut Frame;
-        frame_check(id, f);
+        let f = self.frame(id);
         let frame = unsafe { &*f };
         TASK_LEASE[id].store(l.sequence, Release);
         local_state::local_lease(c).1.store(l.sequence, Release);
@@ -193,9 +208,10 @@ impl State {
         );
         f
     }
-    fn retire(&mut self, c: usize, id: usize, stop: u64, ready: bool) {
-        let l = self.running[c].take().unwrap_or_else(|| abort(7));
-        if l.task as usize != id || local_state::local_lease(c).1.swap(0, Acquire) != l.sequence {
+    fn prepare_retire(&self, policy: &mut Ownership<3>, c: usize, id: usize, stop: u64, ready: bool) -> (Lease, u64, u64) {
+        let l = self.running[c].unwrap_or_else(|| abort(7));
+        if l.task as usize != id || l.cpu as usize != c || l.sequence == 0
+            || local_state::local_lease(c).1.load(Acquire) != l.sequence {
             abort(8)
         }
         let start = unsafe {
@@ -205,7 +221,7 @@ impl State {
             .checked_sub(start)
             .filter(|n| *n != 0 && start != 0)
             .unwrap_or_else(|| abort(9));
-        if !self.policy.retire(
+        if !policy.retire(
             l,
             span,
             if ready {
@@ -216,6 +232,16 @@ impl State {
         ) {
             abort(10)
         }
+        (l, start, span)
+    }
+    fn record_retire(&mut self, c: usize, stop: u64, ready: bool, retirement: (Lease, u64, u64)) {
+        let (l, start, span) = retirement;
+        let id = l.task;
+        self.running[c] = None;
+        if self.epoch == 0 && c == 1 && l.task == 2 {
+            self.retired_opening = Some(l);
+        }
+        local_state::local_lease(c).1.store(0, Release);
         log::event(
             c,
             3,
@@ -233,6 +259,14 @@ impl State {
     }
     fn place(&mut self, ready: u32, ranked: &[u8]) {
         let p = self.policy.plan(3, ranked).unwrap_or_else(|| abort(11));
+        self.record_plan(ready, p);
+        for (c, id) in p[..2].iter().enumerate() {
+            if let Some(id) = id {
+                self.claim(c, *id)
+            }
+        }
+    }
+    fn record_plan(&self, ready: u32, p: [Option<u8>; 8]) {
         log::event(
             cpu(),
             6,
@@ -247,11 +281,6 @@ impl State {
                 2,
             ],
         );
-        for (c, id) in p[..2].iter().enumerate() {
-            if let Some(id) = id {
-                self.claim(c, *id)
-            }
-        }
     }
 }
 pub(crate) fn generation(activation: Activation) -> u64 {
@@ -426,15 +455,20 @@ pub(super) fn start(c: usize) -> ! {
         let mut s = State {
             policy: Ownership::new(masks()).unwrap_or_else(|| abort(16)),
             running: [None; 2],
-            frame: [
-                Activation::M.fresh(),
-                Activation::P0.fresh(),
-                Activation::P1Open.fresh(),
-            ],
+            handoff: Handoff::new(),
+            retired_opening: None,
             epoch: 0,
             done: 0,
             summaries: 0,
         };
+        for activation in [Activation::M, Activation::P0, Activation::P1Open] {
+            let id = activation.role();
+            let pointer = bounds(id).1 - size_of::<Frame>();
+            frame_check(id, pointer as *mut Frame);
+            let install = s.handoff.install(id as u8, pointer, Origin::Fresh).unwrap_or_else(|| abort(32));
+            activation.fresh();
+            evidence::installed(id as u8, install);
+        }
         if !s.policy.release(5) {
             abort(17)
         }
@@ -516,24 +550,57 @@ fn trap(s: &State, c: usize, role: usize, f: *mut Frame, kind: u64) {
 pub(super) fn irq(c: usize, f: *mut Frame, iar: u32) -> *mut Frame {
     transaction(|s| {
         if c == 1 {
-            trap(s, c, IDLE, f, iar as u64);
+            let rx = s.checked_receive(c, IDLE, f, iar);
             if s.epoch != 1 || local_state::local_lease(c).1.load(Acquire) != 0 {
                 abort(21)
             }
+            let claim = rx.claim.unwrap_or_else(|| abort(21));
+            if claim.task as usize >= s.handoff.frames.len() { abort(21) }
+            s.frame(claim.task as usize);
+            s.handoff.consume_reverse(rx, case() == 0).unwrap_or_else(|| abort(33));
+            evidence::reverse(c, s.handoff.reverse);
             return s.dispatch(c);
         }
-        trap(s, c, 0, f, iar as u64);
-        if s.epoch != 0 || s.running[1].is_some() || !first_milestone() {
-            abort(22)
-        }
-        s.retire(c, 0, unsafe { (*f).reserved }, true);
-        s.frame[0] = f.addr();
+        let rx = s.checked_receive(c, 0, f, iar);
+        let mut consumed = s.handoff;
+        consumed.consume_opening(rx, s.retired_opening, s.running[1], first_milestone())
+            .unwrap_or_else(|| abort(22));
+
+        // Prove the entire replacement and its two grants on private copies.
+        let mut staged = consumed;
+        let saved = staged.install(0, f.addr(), Origin::IrqSaved).unwrap_or_else(|| abort(32));
+        let replacement = bounds(2).1 - size_of::<Frame>();
+        frame_check(2, replacement as *mut Frame);
+        let fresh = staged.install(2, replacement, Origin::Fresh).unwrap_or_else(|| abort(32));
+        let mut policy = s.policy.clone();
+        let stop = unsafe { (*f).reserved };
+        let retirement = s.prepare_retire(&mut policy, c, 0, stop, true);
+        if !policy.release(6) { abort(23) }
+        let plan = policy.plan(3, &[1, 0, 2]).unwrap_or_else(|| abort(11));
+        let claims = [0usize, 1].map(|cpu| {
+            let task = plan[cpu].unwrap_or_else(|| abort(4));
+            let frame = staged.frames[task as usize].unwrap_or_else(|| abort(32));
+            frame_check(task as usize, frame.pointer as *mut Frame);
+            policy.claim(cpu as u8, task).unwrap_or_else(|| abort(4))
+        });
+        staged.publish_reverse(1, claims[1], case() == 0).unwrap_or_else(|| abort(33));
+
+        s.handoff = consumed;
+        evidence::opening(c, consumed.opening);
+        s.policy = policy;
+        s.record_retire(c, stop, true, retirement);
+        s.handoff.frames[0] = Some(saved);
+        evidence::installed(0, saved);
         s.epoch = 1;
-        s.frame[2] = Activation::P1.fresh();
-        if !s.policy.release(6) {
-            abort(23)
+        Activation::P1.fresh();
+        s.handoff.frames[2] = Some(fresh);
+        evidence::installed(2, fresh);
+        s.record_plan(7, plan);
+        for (cpu, lease) in claims.into_iter().enumerate() {
+            s.record_claim(cpu, lease);
         }
-        s.place(7, &[1, 0, 2]);
+        s.handoff.reverse = staged.reverse;
+        evidence::reverse(c, staged.reverse);
         let v = bsp::signal(1);
         log::event(c, 7, [1, v as u64, s.epoch, 0, 0, 0, 0, 0]);
         s.dispatch(c)
@@ -572,6 +639,16 @@ pub(super) fn svc(c: usize, f: *mut Frame, imm: u16) -> *mut Frame {
         if fr.gpr[2] != count || fr.gpr[4] != last_index || s.summaries & bit != 0 {
             abort(26)
         }
+        let mut policy = s.policy.clone();
+        let retirement = s.prepare_retire(&mut policy, c, role, fr.reserved, false);
+        let mut staged = s.handoff;
+        if s.epoch == 0 {
+            let target = s.running[0].unwrap_or_else(|| abort(33));
+            if s.retired_opening.is_some() || target.task != 0 || generation(Activation::M) != target.sequence {
+                abort(33)
+            }
+            staged.publish_opening(s.epoch, retirement.0, target).unwrap_or_else(|| abort(33));
+        }
         s.summaries |= bit;
         log::event(c, 13, [role as u64, s.epoch, l.sequence, fr.gpr[2],
                            fr.gpr[3], fr.gpr[4], fr.gpr[1], 0]);
@@ -580,8 +657,11 @@ pub(super) fn svc(c: usize, f: *mut Frame, imm: u16) -> *mut Frame {
             9,
             [role as u64, expected, l.sequence, s.epoch, 0, 0, 0, 0],
         );
-        s.retire(c, role, fr.reserved, false);
+        s.policy = policy;
+        s.record_retire(c, fr.reserved, false, retirement);
         if s.epoch == 0 {
+            s.handoff.opening = staged.opening;
+            evidence::opening(c, staged.opening);
             let value = bsp::signal(0);
             log::event(c, 7, [0, value as u64, 0, 0, 0, 0, 0, 0]);
             return idle_frame(c, s.epoch);

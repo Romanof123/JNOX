@@ -23,6 +23,7 @@ enum State {
     Running(Lease),
 }
 
+#[cfg_attr(jnox_pi4_migration, derive(Clone))]
 pub(crate) struct Ownership<const N: usize> {
     affinity: AffinityDomain<N>,
     state: [State; N],

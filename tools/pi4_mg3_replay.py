@@ -31,7 +31,7 @@ def prefixes(task, epoch, stream):
     return result
 
 
-def witnesses(sections, symbols, case, stream):
+def witnesses(sections, symbols, case, stream, handoff=False):
     saved, live = {}, {}
     expected_cpu = {(0, 0): 0, (0, 2): 1, (1, 1): 0,
                     (1, 0): 0 if case else 1, (1, 2): 1}
@@ -63,7 +63,7 @@ def witnesses(sections, symbols, case, stream):
                 need((d[6] != 65535) == interrupted, "trap cause differs from activation")
                 expected = (task, token, lease, d[2], ptr, token, base, lease)
                 need(rows[seq+1:seq+2] == [(14, expected)], "missing or incorrect saved-state witness")
-                follow = [3] if interrupted else [13, 9, 3]
+                follow = ([17, 3] if handoff else [3]) if interrupted else [13, 9, 3]
                 need([k for k, _ in rows[seq+2:seq+2+len(follow)]] == follow,
                      "saved-state trap/summary/retirement chronology")
                 need(lease not in saved, "duplicate saved witness")

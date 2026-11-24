@@ -7,6 +7,7 @@ const MAX_CPUS: usize = u8::BITS as usize;
 /// An immutable allowed-CPU mask per task ID. A singleton fixes a permanent
 /// home, a cluster mask permits migration inside the cluster, and a global
 /// mask permits all configured CPUs. Offline CPUs can remain configured.
+#[cfg_attr(jnox_pi4_migration, derive(Clone))]
 pub(crate) struct AffinityDomain<const N: usize> {
     allowed: [u8; N],
 }
