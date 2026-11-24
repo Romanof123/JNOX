@@ -50,3 +50,5 @@ The first mode-input procedure failed in all 96 diagnostic cold runs. [EVD-050 v
 All 128 v1 captures belong to the original sentinel-source cohort. The fw_cfg source frozen at b9db104 requires a separate cold series. Its effectiveness is unverified. [EVD-050 index](evidence/evd-050.en.md)
 
 v1 기록 128건은 모두 원래 sentinel 소스 집단에 속한다. b9db104의 fw_cfg 입력 변경 효과는 검증되지 않았으며 별도 콜드 실행으로 평가한다. [EVD-050 색인](evidence/evd-050.md)
+
+[Observer storage crossover, 32 boots](evidence/evd-050-storage.en.md) · [관측 파일 저장 경로 교차 실험, 32회](evidence/evd-050-storage.md)

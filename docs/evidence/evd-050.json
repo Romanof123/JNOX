@@ -14,5 +14,14 @@
       "reviewer_manifest_sha256": "15945aa4cb22eb22e845afa08d75eb013b7b53ab46a503ac108e0f545c67a423"
     }
   ],
-  "related": "EVD-042"
+  "related": "EVD-042",
+  "related_experiments": [
+    {
+      "record": "evd-050-storage.json",
+      "english": "evd-050-storage.en.md",
+      "korean": "evd-050-storage.md",
+      "cold_boots": 32,
+      "manifest_sha256": "7b02456ad5e4fcf82ff7fdff43254078e2533099de026867bf4b777ec6e56e14"
+    }
+  ]
 }
