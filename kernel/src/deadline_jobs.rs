@@ -125,6 +125,23 @@ pub fn absolute(origin: u64, q: u64, k: u64) -> Result<u64, Refusal> {
         .ok_or(Refusal::Overflow)
 }
 
+/// Maximum exception entries (and hence returning owner changes) in every
+/// integer-counter window of this width, assuming one grid IRQ in its own
+/// cell and at most one asynchronous completion per admitted one-shot job.
+pub fn owner_window_bound(
+    q: u64,
+    cells: u64,
+    width: u64,
+    completions: u64,
+) -> Result<u64, Refusal> {
+    let domain = q.checked_mul(cells).ok_or(Refusal::Overflow)?;
+    if width == 0 || width > domain {
+        return Err(Refusal::Grid);
+    }
+    let touched = (width - 1).div_ceil(q).checked_add(1).ok_or(Refusal::Overflow)?;
+    touched.min(cells).checked_add(completions).ok_or(Refusal::Overflow)
+}
+
 pub fn admit(policy: DeadlinePolicy, jobs: &[Job], hz: u64, origin: u64) -> Result<(), Refusal> {
     admit_with_supply(policy, jobs, hz, origin, 0)
 }
