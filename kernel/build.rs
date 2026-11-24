@@ -222,7 +222,15 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_mutex_anchor");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_rust_amc)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_eevdf_app)");
     match profile.as_deref() {
+        Some("eevdf") => {
+            assert!(board == "virt" && bench == "boot" && app.as_deref() == Some("telemetry")
+                && trace.is_none() && scenario.is_none()
+                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                "ordinary EEVDF requires virt, telemetry and no benchmark features");
+            println!("cargo::rustc-cfg=jnox_eevdf_app");
+        }
         Some("amc") => {
             let name = app.as_deref().unwrap_or("");
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none()
@@ -342,8 +350,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, multilevel, periodic, aperiodic or deadline"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, multilevel, periodic, aperiodic or deadline"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic or deadline"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic or deadline"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",
