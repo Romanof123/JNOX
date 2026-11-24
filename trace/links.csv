@@ -1195,6 +1195,17 @@ CHG-075,affects,REQ-002
 CHG-075,affects,REQ-005
 CHG-075,affects,REQ-008
 CHG-075,affects,REQ-023
+CHG-077,affects,REQ-002
+CHG-077,affects,REQ-008
+CHG-077,affects,REQ-009
+CHG-077,affects,REQ-010
+CHG-077,affects,REQ-011
+CHG-077,affects,REQ-014
+CHG-077,affects,REQ-018
+CHG-077,affects,REQ-020
+CHG-077,affects,REQ-021
+CHG-077,affects,REQ-022
+CHG-077,affects,REQ-024
 CHG-076,affects,REQ-002
 CHG-076,affects,REQ-005
 CHG-076,affects,REQ-023
