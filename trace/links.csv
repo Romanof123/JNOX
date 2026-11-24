@@ -1031,6 +1031,10 @@ DES-003,implemented-by,IMP-050
 IMP-050,partially-verified-by,VER-002
 IMP-050,tested-in,EVD-050
 VER-002,has-partial-evidence,EVD-050
+CHG-053,affects,REQ-002
+CHG-053,affects,REQ-003
+CHG-053,affects,REQ-005
+CHG-053,affects,REQ-023
 DES-003,implemented-by,IMP-048
 DES-012,implemented-by,IMP-048
 POL-005,partially-implemented-by,IMP-048
