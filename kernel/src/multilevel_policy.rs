@@ -142,7 +142,7 @@ impl<const N: usize> Multilevel<N> {
         true
     }
 
-    #[cfg(jnox_multilevel_trace)]
+    #[cfg(any(jnox_multilevel_trace, jnox_mlfq_wake))]
     pub(crate) fn queued(&self) -> &[usize] { self.ready.entries() }
 
     #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
