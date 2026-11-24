@@ -54,6 +54,7 @@ static mut LOG: [[u64; 7]; LIMIT] = [[0; 7]; LIMIT];
 static mut USED: usize = 0;
 static SLOT: AtomicU64 = AtomicU64::new(u64::MAX);
 static YIELD_AT: AtomicU64 = AtomicU64::new(u64::MAX);
+static DELAY_RELEASE_AT: AtomicU64 = AtomicU64::new(u64::MAX);
 static mut FIRST_FAILURE: [u64; 5] = [0; 5];
 
 fn counter() -> u64 {
@@ -143,6 +144,11 @@ struct Local {
 static PTR: [AtomicPtr<Local>; 3] = [const { AtomicPtr::new(ptr::null_mut()) }; 3];
 #[inline(always)]
 fn work<const ID: usize>() -> ! {
+    let mut deferring_irq = DELAY && ID == 0;
+    if deferring_irq {
+        // The first grant keeps its programmed compare while A finishes its work.
+        unsafe { asm!("msr daifset,#2", "isb", options(nostack, preserves_flags)) };
+    }
     let local = Local {
         cells: core::array::from_fn(|_| {
             [
@@ -163,8 +169,13 @@ fn work<const ID: usize>() -> ! {
         bank ^= 1;
         local.cells[bank][0].store(count, Relaxed);
         local.cells[bank][1].store(x, Relaxed);
-        local.cells[bank][2].store(counter(), Relaxed);
+        let stamp = counter();
+        local.cells[bank][2].store(stamp, Relaxed);
         local.active.store(bank, Release);
+        if deferring_irq && stamp >= DELAY_RELEASE_AT.load(Acquire) {
+            deferring_irq = false;
+            unsafe { asm!("msr daifclr,#2", "isb", options(nostack, preserves_flags)) };
+        }
         if ID == 0 && STRIDE && !DELAY && counter() >= YIELD_AT.load(Acquire) {
             unsafe { asm!("svc #1", options(nostack)) }
         }
@@ -349,6 +360,14 @@ impl Run {
             row(6, [n, id as u64, a, b, c, 0]);
         }
         self.arm(if STRIDE || (MISS && n == 0) { 2 } else { 1 });
+        if DELAY {
+            DELAY_RELEASE_AT.store(
+                self.target
+                    .checked_add(self.tick)
+                    .unwrap_or_else(|| invalid()),
+                Release,
+            );
+        }
         YIELD_AT.store(self.start + self.tick, Release);
         self.take(id)
     }
