@@ -1,0 +1,176 @@
+{
+  "guest_source": "59b006f5c57d607c49bc8331f8446828474e5d33",
+  "guest_tree": "f5be80d8ddf21d8feca0f6ae417e00c0e61404f6",
+  "replay_source": "a7451e3fb256ed94b7937ba68361caeb6961e476",
+  "cold_guest_count": 1,
+  "original_replay": {
+    "rc": 1,
+    "reason": "INVALID terminal markers and application stdout"
+  },
+  "fixed_replay": {
+    "rc": 0,
+    "same_session": true,
+    "uart_positive": 1,
+    "uart_negative": 10
+  },
+  "measurements": {
+    "entry": 4194304,
+    "initial_sp": 16846768,
+    "ttbr0": 1075884032,
+    "sctlr": 12912697,
+    "vector": 1075844096,
+    "elrs": [
+      4194504,
+      4194336
+    ],
+    "final_symbols": {
+      "products": [
+        16,
+        13
+      ],
+      "bias": [
+        8
+      ],
+      "__jnox_errno_location.initial_thread_errno": [
+        38
+      ],
+      "weights": [
+        2,
+        1
+      ]
+    },
+    "exit_status": 37,
+    "stdout_bytes": 0,
+    "write_result": -38,
+    "page_descriptors": {
+      "0x400000": "0x200000402187c3",
+      "0x401000": "0x600000402197c3",
+      "0x402000": "0x6000004021a743",
+      "0x1001000": "0x60000040619743",
+      "0x1002000": "0x6000004061a743",
+      "0x1003000": "0x6000004061b743",
+      "0x1004000": "0x6000004061c743",
+      "0x1005000": "0x6000004061d743",
+      "0x1006000": "0x6000004061e743",
+      "0x1007000": "0x6000004061f743",
+      "0x1008000": "0x60000040620743",
+      "0x1009000": "0x60000040621743",
+      "0x100a000": "0x60000040622743",
+      "0x100b000": "0x60000040623743",
+      "0x100c000": "0x60000040624743",
+      "0x100d000": "0x60000040625743",
+      "0x100e000": "0x60000040626743",
+      "0x100f000": "0x60000040627743",
+      "0x1010000": "0x60000040628743",
+      "0x1000000": null,
+      "0x1011000": null,
+      "0x40200000": "0x40000040200783",
+      "0x40208000": "0x60000040208703",
+      "0x40201000": "0x40000040201783",
+      "0x8000000": "0x60000008000607",
+      "0x8010000": "0x60000008010607",
+      "0x9000000": "0x60000009000607"
+    },
+    "source_revision": "59b006f5c57d607c49bc8331f8446828474e5d33",
+    "user_sha256": "f80ce35a07cb8a3275313ce74d114dbb782d19eed4624aa0b115134e0d88b195",
+    "kernel_sha256": "ee48323195b4bce120e7e0e0d614094c8927d72463b640a7feba3e95e3fce165",
+    "probe_sha256": "6dc19dd08544ce01f8c7e17c33e0e22867755380daf0b1287433eb55fd96812c",
+    "session_sha256": "849a6877ffbf20a8ff96939603b2e0fca59d00432496a49cbbb2f0fc940f1976",
+    "scope": "one native startup, unsupported write and process exit on single-vCPU virt"
+  },
+  "independent": {
+    "argc": 3,
+    "sp": "0x1010fb0",
+    "argv": [
+      "/bin/native_startup_probe",
+      "8",
+      "13"
+    ],
+    "argv_ptrs": [
+      "0x1010fe0",
+      "0x1010ffa",
+      "0x1010ffc"
+    ],
+    "header": [
+      1,
+      3,
+      0,
+      13720,
+      4194304,
+      16846768,
+      16781312,
+      16846848,
+      2,
+      37,
+      1,
+      0,
+      4,
+      12912697,
+      1075884032,
+      3
+    ],
+    "write": [
+      0,
+      1024,
+      4,
+      1442859521,
+      1610613696,
+      4194504,
+      16846736,
+      4,
+      1,
+      4198432,
+      3,
+      18446744073709551578,
+      1,
+      1075843072,
+      1075884032,
+      0
+    ],
+    "exit": [
+      1,
+      1024,
+      4,
+      1442859521,
+      1610613696,
+      4194336,
+      16846768,
+      1,
+      37,
+      4198432,
+      3,
+      0,
+      2,
+      1075843072,
+      1075884032,
+      0
+    ],
+    "write_bytes": [
+      51,
+      55,
+      10
+    ],
+    "guards": [
+      "0x1000000",
+      "0x1011000"
+    ],
+    "original_replay_rc": 1,
+    "reason": "Original validator omitted existing JNOX M1 BOOT and JNOX M1 READY privileged banners"
+  },
+  "capture_hashes": {
+    "exceptions.log": "d743f39bd6f4ca9e76017916c04a7685a099cf20646264258ac089688f57cc0e",
+    "kernel.elf": "ee48323195b4bce120e7e0e0d614094c8927d72463b640a7feba3e95e3fce165",
+    "launch.json": "8c800985bcbbca35599197f40b03ea660400d150ae40d0c2df220bd7e7fc28b6",
+    "probe.c": "6dc19dd08544ce01f8c7e17c33e0e22867755380daf0b1287433eb55fd96812c",
+    "ram.bin": "5533f6d8868c22b463fa50ab2577d428eea8d2fbc3514b52803cdd7f927f467f",
+    "stderr": "323d92a748c3dd314e53a7228d71a45661c5f188a5fcc1c52096b99bbaadbe44",
+    "uart.bin": "1cb252cefd842bc09d18aaa8b5cab26e9ba04b7dcf9d4ebb66e66ee8e0a831f2",
+    "user.elf": "f80ce35a07cb8a3275313ce74d114dbb782d19eed4624aa0b115134e0d88b195"
+  },
+  "public_provenance": "All session artifacts are original unmodified bytes, including nonpersonal temporary launch paths. Lossless ZIP compression only.",
+  "archive": {
+    "file": "native-el0-startup-first.zip",
+    "bytes": 48400,
+    "sha256": "2ebf91eb006a0b2a94fc1228b5d6412483bdf27b1493c60830a81a459af59cbb"
+  }
+}

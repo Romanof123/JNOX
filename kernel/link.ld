@@ -16,7 +16,7 @@ SECTIONS {
         *(.text .text.*)
     } >ram :code
     .rodata : { *(.rodata .rodata.*) } >ram :code
-    .data : ALIGN(4096) { *(.data .data.*) } >ram :writable
+    .data : ALIGN(4096) { __native_rw_start = .; *(.data .data.*) } >ram :writable
     .bss (NOLOAD) : ALIGN(8) {
         __bss_start = .;
         *(.bss .bss.* COMMON)
