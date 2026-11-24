@@ -173,8 +173,17 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_witness)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_rr_handoff)");
+    let handoff = selector("JNOX_RR_HANDOFF");
     let witness = selector("JNOX_PI4_WITNESS");
     let image_id = selector("JNOX_PI4_WITNESS_ID");
+    if let Some(value) = handoff {
+        assert!(value == "1" && witness.as_deref() == Some("1") && app.as_deref() == Some("fixed-rr")
+            && env::var("TARGET").as_deref() == Ok("aarch64-unknown-none")
+            && selector("JNOX_ARCH").as_deref().unwrap_or("aarch64") == "aarch64",
+            "JNOX_RR_HANDOFF=1 requires the AArch64 Pi 4 fixed RR witness");
+        println!("cargo::rustc-cfg=jnox_rr_handoff");
+    }
     if let Some(mode) = witness {
         assert!(mode == "1" && board == "pi4" && bench == "boot"
             && profile.as_deref() == Some("fixed") && trace.is_none()

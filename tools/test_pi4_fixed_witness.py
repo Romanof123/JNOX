@@ -3,7 +3,7 @@ import argparse
 import hashlib
 from pathlib import Path
 
-from pi4_fixed_witness import decode,evidence,fold,ranges,score,symbol_map
+from pi4_fixed_witness import HANDOFF, PROFILES, decode,evidence,fold,ranges,score,symbol_map
 
 
 def controls(uart,elf,profile,image_id):
@@ -71,16 +71,33 @@ def controls(uart,elf,profile,image_id):
         partial = inspect(missing)
         assert not partial["higher_priority_preempt_resume"] and not partial["complete"]
 
+    if profile == HANDOFF:
+        # Re-seal malformed rows so each reaches semantic validation.
+        cells = [r for k,r in original if k == 5]
+        reject(lambda:inspect(original[:-2]+[(5,cells[0])]+original[-2:]))
+        reject(lambda:inspect(mutated(5,0,1)))
+        reject(lambda:inspect(mutated(5,1,3)))
+        for index,cell in enumerate(cells):
+            if cell[1] != 1:
+                continue
+            for field,value in ((2,cell[3]+1),(6,0),(8,0),(9,0),(11,1-index)):
+                forged = [(k,r.copy()) for k,r in original]
+                row = [r for k,r in forged if k == 5][index]
+                row[field] = value
+                reject(lambda:inspect(forged))
+        if all(r[1] for r in cells):
+            reject(lambda:inspect(mutated(5,7,cells[1][7]^1)))
+
     blob=serialize(original)
     reject(lambda:decode(blob[:-1]))
-    reject(lambda:decode(blob.replace(b"PW 0 1 ",b"PW 0 2 ",1)))
+    reject(lambda:decode(blob.replace(b"PW 0 ",b"PW 9 ",1)))
 
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("uart",type=Path)
     parser.add_argument("elf",type=Path)
-    parser.add_argument("profile",choices=("pi4-fixed-fifo-witness","pi4-fixed-rr-witness"))
+    parser.add_argument("profile",choices=PROFILES)
     parser.add_argument("image_id",type=int)
     args=parser.parse_args()
     controls(args.uart,args.elf,args.profile,args.image_id)

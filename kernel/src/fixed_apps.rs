@@ -57,7 +57,15 @@ fn work_until(worker: usize, ready: &AtomicU64) {
         if generation != observed && rt::witness::probe(generation,worker,1,n) {
             observed = generation;
         }
-        if ready.load(Ordering::Acquire) != 0 {
+        #[cfg(jnox_rr_handoff)]
+        let value = if worker == 1 {
+            rt::witness::handoff::consume(ready)
+        } else {
+            ready.load(Ordering::Acquire)
+        };
+        #[cfg(not(jnox_rr_handoff))]
+        let value = ready.load(Ordering::Acquire);
+        if value != 0 {
             return;
         }
     }
@@ -130,6 +138,9 @@ mod selected {
         work_until(0, &fixed_app_observations.progress[1]);
         let peer = fixed_app_observations.progress[1].load(Ordering::Acquire);
         uart_write(b"FIXED RR A DONE\n");
+        #[cfg(jnox_rr_handoff)]
+        rt::witness::handoff::publish(&fixed_app_observations.b_at_a_done, peer);
+        #[cfg(not(jnox_rr_handoff))]
         fixed_app_observations.b_at_a_done.store(peer, Ordering::Release);
     }
 

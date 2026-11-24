@@ -153,7 +153,7 @@ pub(super) extern "C" fn pi4_witness_terminal() -> ! {
     out.row(
         0,
         &[
-            1,
+            if cfg!(jnox_rr_handoff) { 2 } else { 1 },
             id,
             unsafe { BOOT },
             u64::from(cfg!(jnox_app = "fixed-rr")),
@@ -198,6 +198,8 @@ pub(super) extern "C" fn pi4_witness_terminal() -> ! {
             }
         }
     }
+    #[cfg(jnox_rr_handoff)]
+    handoff::export(&mut out);
     out.row(
         4,
         &[
@@ -213,3 +215,71 @@ pub(super) extern "C" fn pi4_witness_terminal() -> ! {
     crate::park()
 }
 pub(super) use pi4_witness_terminal as terminal;
+
+// A single writer owns each role. Publication is last, after the generation
+// recheck. An IRQ after validation cannot change this immutable sample.
+#[cfg(jnox_rr_handoff)]
+pub(crate) mod handoff {
+    use super::*;
+    static STATE: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
+    static mut DATA: [[u64; 10]; 2] = [[0; 10]; 2];
+
+    #[inline(always)]
+    fn ticks() -> u64 {
+        let t;
+        unsafe { asm!("isb", "mrs {},cntpct_el0", "isb", out(reg)t, options(nostack,preserves_flags)) };
+        t
+    }
+
+    #[inline(always)]
+    fn finish(role: usize, begin: u64, lo: u64, mailbox: &AtomicU64, value: u64, pc: u64, sp: u64) {
+        let cpu = affinity();
+        let hi = ticks();
+        let end = generation();
+        if STATE[role].load(Relaxed) != 0 {
+            STATE[role].store(3, Release);
+            return;
+        }
+        unsafe { DATA[role] = [begin,end,lo,hi,mailbox.as_ptr() as u64,value,pc,sp,cpu,role as u64] };
+        STATE[role].store(if begin != 0 && begin == end { 1 } else { 2 }, Release);
+    }
+
+    #[inline(never)]
+    #[unsafe(no_mangle)]
+    pub(crate) fn pi4_rr_publish(mailbox: &AtomicU64, value: u64) {
+        let begin = generation();
+        let lo = ticks();
+        let (pc, sp): (u64, u64);
+        unsafe { asm!("adr {pc},2f","mov {sp},sp","2:","stlr {v},[{m}]",
+            pc=out(reg)pc,sp=out(reg)sp,v=in(reg)value,m=in(reg)mailbox.as_ptr(),
+            options(nostack,preserves_flags)) };
+        finish(0,begin,lo,mailbox,value,pc,sp);
+    }
+
+    #[inline(never)]
+    #[unsafe(no_mangle)]
+    pub(crate) fn pi4_rr_consume(mailbox: &AtomicU64) -> u64 {
+        let begin = generation();
+        let lo = ticks();
+        let (value, pc, sp): (u64, u64, u64);
+        unsafe { asm!("adr {pc},2f","mov {sp},sp","2:","ldar {v},[{m}]",
+            pc=out(reg)pc,sp=out(reg)sp,v=out(reg)value,m=in(reg)mailbox.as_ptr(),
+            options(nostack,preserves_flags)) };
+        if value != 0 { finish(1,begin,lo,mailbox,value,pc,sp); }
+        value
+    }
+
+    pub(crate) use pi4_rr_consume as consume;
+    pub(crate) use pi4_rr_publish as publish;
+
+    pub(super) fn export(out: &mut Export) {
+        for (role, state) in STATE.iter().enumerate() {
+            let status = state.load(Acquire);
+            let mut fields = [0; 12];
+            fields[0] = role as u64;
+            fields[1] = status;
+            fields[2..].copy_from_slice(&unsafe { DATA[role] });
+            out.row(5, &fields);
+        }
+    }
+}

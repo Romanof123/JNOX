@@ -9,7 +9,9 @@ import shutil
 import subprocess
 
 MASK = (1 << 64)-1
-WIDTH = {0:13, 1:5, 2:25, 3:8, 4:6}
+WIDTH = {0:13, 1:5, 2:25, 3:8, 4:6, 5:12}
+HANDOFF = "pi4-fixed-rr-handoff"
+PROFILES = ("pi4-fixed-fifo-witness", "pi4-fixed-rr-witness", HANDOFF)
 
 
 def check(ok, why):
@@ -51,7 +53,7 @@ def decode(data):
 def evidence(rows, profile, image_id, executable, symbols):
     header=rows[0][1]
     version,tag,boot,rr,core,el,freq,cap,scap,frame_size,n,lost,worker_lost=header
-    check((version,tag,rr,el,cap,scap)==(1,image_id,int(profile=="pi4-fixed-rr-witness"),1,64,128)
+    check((version,tag,rr,el,cap,scap)==(2 if profile==HANDOFF else 1,image_id,int("rr-" in profile),1,64,128)
           and freq>0 and frame_size>0 and 1<=n<=cap and lost==worker_lost==0,"invalid header or capture loss")
     check(core & 0xff00ffffff == 0, "unexpected MPIDR affinity")
     slots={}
@@ -70,7 +72,12 @@ def evidence(rows, profile, image_id, executable, symbols):
     saved={}
     samples={}
     terminal=rows[-1][1]
-    for kind,r in rows[5:-1]:
+    body = rows[5:-1]
+    if profile == HANDOFF:
+        check(len(body) >= 2 and [tag for tag,_ in body[-2:]] == [5,5], "missing handoff cells")
+        cells = [r for _,r in body[-2:]]
+        body = body[:-2]
+    for kind,r in body:
         if kind==2:
             gen,reason,source,t,owner,chosen,fp,ipc,isp,nfp,npc,nsp,arg,res,armed,due,ctl,cval,pre,service,old_cval,cpu,pa,pb,pub=r
             check(gen==len(events)+1 and chosen in slots and cpu==core and t<=pub and code(npc),
@@ -147,7 +154,7 @@ def evidence(rows, profile, image_id, executable, symbols):
     if rotations:
         # Observe both workers on a later generation following actual execution.
         rotated=all(len({seq for (seq,k),s in samples.items() if k==1 and s[2]==r})>=2 for r in (0,1))
-    return dict(profile=profile,image_id=image_id,session_counter=boot,frequency=freq,
+    result = dict(profile=profile,image_id=image_id,session_counter=boot,frequency=freq,
                 dispatches=n,worker_samples=len(samples),higher_priority_preempt_resume=witnessed,
                 peer_timer_rotation=rotated,complete=witnessed and (not rr or rotated),
                 preemptions=preemptions,rotations=rotations,
@@ -156,6 +163,54 @@ def evidence(rows, profile, image_id, executable, symbols):
                     select_to_sample_ticks=s[6]-events[seq-1][24],
                     observed_stack_bytes=slots[events[seq-1][5]][1]-s[5]) for (seq,k),s in samples.items()],
                 external_instruction_history_checked=False)
+
+    if profile == HANDOFF:
+        details = handoff_evidence(cells, slots, events, samples, symbols, core, preemptions)
+        result.update(structural_valid=True, legacy_loop_complete=result["complete"],
+                      peer_dispatch_work=[dict(generation=e[0], reason=e[1], incoming=role(e[5]),
+                                               arithmetic_observed=(e[0],1) in samples)
+                                          for e in events if role(e[5]) in (0,1)], **details)
+        result["complete"] = witnessed and details["rr_data_handoff"]
+    return result
+
+
+def handoff_evidence(cells, slots, events, samples, symbols, core, preemptions):
+    mailbox, size = symbols["fixed_app_observations"]
+    check(size == 64, "unexpected observation layout")
+    for owner, row in enumerate(cells):
+        op,status,begin,end,lo,hi,address,value,pc,sp,cpu,role = row
+        check(op == owner and status in (0,1,2), "duplicate or invalid owner cell")
+        if status == 0:
+            check(not any(row[2:]), "partial empty cell")
+            continue
+        check(role == owner and cpu == core and value > 0 and address == mailbox+56,
+              "wrong handoff role, CPU, payload or mailbox")
+        check(1 <= begin <= end < len(events) and (status == 1) == (begin == end),
+              "invalid handoff generation status")
+        first, last = events[begin-1], events[end-1]
+        low, high, selected = slots[first[5]]
+        check(selected == slots[last[5]][2] == owner and low < sp <= high and sp % 16 == 0,
+              "handoff outside owner stack or dispatch")
+        check(first[24] <= lo <= hi <= events[end][3], "handoff outside observed interval")
+        check(pc in symbols["operation_pcs"][owner], "handoff PC differs from linked atomic operation")
+    a,b = cells
+    if a[1] and b[1]:
+        check(a[7] == b[7] and a[4] <= b[5], "conflicting mailbox values or chronology")
+    observed = False
+    if a[1] == b[1] == 1:
+        check(a[3] < b[2] and a[5] <= b[4], "overlapping attributed handoff")
+        returned = events[a[2]-1]
+        for e in events[:a[2]-1]:
+            g = e[0]
+            work = samples.get((g,1))
+            if (e[1] == 1 and (e[4],e[5]) == (0,2) and work
+                    and returned[1] == 1 and (returned[4],returned[5]) == (2,0)
+                    and any(p["continued"] and p["resume_generation"] < g for p in preemptions)):
+                check(work[7] <= a[7], "handoff payload precedes B work")
+                observed = True
+    return dict(rr_data_handoff=observed, handoff_cells=cells,
+                handoff_status=["absent" if r[1]==0 else "ambiguous" if r[1]==2
+                                else "attributed" for r in cells])
 
 
 def ranges(elf):
@@ -187,6 +242,26 @@ def symbol_map(path,profile):
                                     "fixed_runtime_idle","fixed_runtime_enter")}
     roles=("worker_a","worker_b","alarm") if "rr-" in profile else ("producer","sleeper","alarm")
     out["entries"]=[sym("fixed_apps::selected::"+role)[0] for role in roles]+[out["fixed_runtime_idle"][0]]
+    if profile == HANDOFF:
+        out["fixed_app_observations"] = sym("fixed_app_observations")
+        elf = path.read_bytes()
+        pos = struct.unpack_from("<Q",elf,32)[0]
+        stride,count = struct.unpack_from("<HH",elf,54)
+        out["operation_pcs"] = []
+        for name,opcode in (("pi4_rr_publish",0xc89ffc00),("pi4_rr_consume",0xc8dffc00)):
+            start,length = sym(name)
+            sites = set()
+            for i in range(count):
+                typ,flags,off,va,_,filesz,_,_ = struct.unpack_from("<IIQQQQQQ",elf,pos+i*stride)
+                if typ==1 and flags&1 and va<=start and start+length<=va+filesz:
+                    for pc in range(start+8,start+length,4):
+                        adr,sp,word = struct.unpack_from("<III",elf,off+pc-va-8)
+                        # The producer captures this PC with ADR +8 and MOV Xd,SP.
+                        if (adr & 0xffffffe0 == 0x10000040 and sp & 0xffffffe0 == 0x910003e0
+                                and word & 0xfffffc00 == opcode):
+                            sites.add(pc)
+            check(len(sites) == 1, "ambiguous or missing linked atomic operation in "+name)
+            out["operation_pcs"].append(sites)
     return out
 
 
@@ -202,7 +277,7 @@ def score(data, profile, image_id, elf_path):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("uart",type=Path)
-    p.add_argument("--profile",required=True,choices=("pi4-fixed-fifo-witness","pi4-fixed-rr-witness"))
+    p.add_argument("--profile",required=True,choices=PROFILES)
     p.add_argument("--manifest",type=Path,required=True)
     p.add_argument("--elf",type=Path,required=True)
     p.add_argument("--image",type=Path,required=True)

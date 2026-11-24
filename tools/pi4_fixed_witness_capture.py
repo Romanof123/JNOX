@@ -54,7 +54,7 @@ def observe(folder, read, *, now=time.monotonic_ns, sleep=time.sleep):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", choices=("pi4-fixed-fifo-witness","pi4-fixed-rr-witness"), required=True)
+    parser.add_argument("--profile", choices=("pi4-fixed-fifo-witness","pi4-fixed-rr-witness","pi4-fixed-rr-handoff"), required=True)
     parser.add_argument("--image-id", type=int, help="engineering package ID embedded at build")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--port", help="operator-declared physical serial adapter")
