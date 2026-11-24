@@ -1,0 +1,364 @@
+{
+  "source": "420eaaa2f7d85507b716cfb862fb2c7c137dfabf",
+  "tree": "e5d0f700a558807e52347bb49f4fd2d5dbeba107",
+  "archive": {
+    "file": "ordinary-amc-finite-first.zip",
+    "bytes": 167726,
+    "sha256": "8d68bcadf220890dda4df132bea6c0fbd50915589059530daeeeec64c9200d25",
+    "members": 46,
+    "redacted_members": [
+      "exact-hi.map",
+      "exact-lo.map",
+      "over-hi.map"
+    ]
+  },
+  "first_pass_count": 3,
+  "first_case_count": 3,
+  "first_order": [
+    "exact-lo",
+    "exact-hi",
+    "over-hi"
+  ],
+  "cases": {
+    "exact-lo": {
+      "owners": [
+        0,
+        1,
+        0
+      ],
+      "frequency": 62500000,
+      "epoch": 90807,
+      "quantum": 3125000,
+      "generation_products": [
+        {
+          "task": 0,
+          "generation": 0,
+          "samples": 524789,
+          "checksum": 2361545,
+          "last_tick": 3225922,
+          "grants": 1
+        },
+        {
+          "task": 0,
+          "generation": 1,
+          "samples": 458092,
+          "checksum": 2061411,
+          "last_tick": 9474514,
+          "grants": 1
+        },
+        {
+          "task": 1,
+          "generation": 0,
+          "samples": 479688,
+          "checksum": 2158596,
+          "last_tick": 6349432,
+          "grants": 1
+        }
+      ],
+      "completions": {
+        "0/0": {
+          "completion_or_last_work": 3225922,
+          "retirement_sample": 3263995,
+          "deadline_tick": 9465807
+        },
+        "1/0": {
+          "completion_or_last_work": 6349432,
+          "retirement_sample": 6351615,
+          "deadline_tick": 15715807
+        },
+        "0/1": {
+          "completion_or_last_work": 9474514,
+          "retirement_sample": 9477138,
+          "deadline_tick": 12590807
+        }
+      },
+      "switch": null,
+      "elf_sha256": "47c7904d861d2b2cfdec19774e50e5cb73eded605f099f7fd4b700544c878337",
+      "session_sha256": "e6a9ed97efadea8c0c812e789645894aa9fb3cb5be10b7191405f458b2f69c81",
+      "wire_version": 1,
+      "finite_completion": null,
+      "independent": "original continuous exact-LO passed"
+    },
+    "exact-hi": {
+      "owners": [
+        0,
+        1,
+        1,
+        1,
+        3,
+        0
+      ],
+      "frequency": 62500000,
+      "epoch": 89829,
+      "quantum": 3125000,
+      "generation_products": [
+        {
+          "task": 0,
+          "generation": 0,
+          "samples": 378861,
+          "checksum": 1704869,
+          "last_tick": 3228826,
+          "grants": 1
+        },
+        {
+          "task": 0,
+          "generation": 1,
+          "samples": 0,
+          "checksum": 0,
+          "last_tick": 0,
+          "grants": 0
+        },
+        {
+          "task": 1,
+          "generation": 0,
+          "samples": 1705681,
+          "checksum": 7675565,
+          "last_tick": 12598223,
+          "grants": 3
+        },
+        {
+          "task": 2,
+          "generation": 0,
+          "samples": 0,
+          "checksum": 0,
+          "last_tick": 0,
+          "grants": 0
+        },
+        {
+          "task": 3,
+          "generation": 0,
+          "samples": 628497,
+          "checksum": 2828238,
+          "last_tick": 15725915,
+          "grants": 1
+        },
+        {
+          "task": 0,
+          "generation": 2,
+          "samples": 8,
+          "checksum": 36,
+          "last_tick": 15745243,
+          "grants": 1
+        }
+      ],
+      "completions": {
+        "0/0": {
+          "completion_or_last_work": 3228826,
+          "retirement_sample": 3267766,
+          "deadline_tick": 9464829
+        },
+        "1/0": {
+          "completion_or_last_work": 12598223,
+          "retirement_sample": 12600410,
+          "deadline_tick": 15714829
+        },
+        "3/0": {
+          "completion_or_last_work": 15725915,
+          "retirement_sample": 15729987,
+          "deadline_tick": 18839829
+        },
+        "0/2": {
+          "completion_or_last_work": 15745243,
+          "retirement_sample": 18859992,
+          "deadline_tick": 25089829
+        }
+      },
+      "switch": {
+        "boundary": 6339829,
+        "irq": 6348866,
+        "mode_commit": 6359232,
+        "task_sample": 6364076,
+        "ticks": 24247,
+        "seconds": "24247/62500000"
+      },
+      "elf_sha256": "e4a4b9d3ab897f9e77e9b69fb65a5bf360e0fdd61d50a22ffdb2935b7468130d",
+      "session_sha256": "1b614595b0337ea0e8a0bcdfed32839a8f11d598d91bfb857a7880f638af588b",
+      "wire_version": 2,
+      "finite_completion": {
+        "wire_version": 2,
+        "task": 0,
+        "generation": 2,
+        "expected_ring": [
+          1,
+          6,
+          3,
+          7,
+          4,
+          8,
+          2,
+          5
+        ],
+        "samples": 8,
+        "checksum": 36,
+        "task_tick": 15745243,
+        "svc_entry_tick": 15755050,
+        "svc_elr": 1075848136,
+        "idle_entry": 1075847924,
+        "closing_irq_tick": 18853170,
+        "frozen_tick": 15745243,
+        "coverage": "first/last task publications, completion SVC, idle return, closing reread and retirement; individual intermediate reads are not exported"
+      },
+      "independent": {
+        "task": 15745243,
+        "svc": 15755050,
+        "b6": 18839829,
+        "irq": 18853170,
+        "retirement": 18859992,
+        "transition_ticks": 24247,
+        "controls": {
+          "svc-at-b6": "late or unbound finite completion SVC",
+          "changed-frozen-sum": "finite completion/frozen evidence mismatch",
+          "wrong-idle-return": "linked exception/ERET history mismatch",
+          "duplicate-svc": "linked exception/ERET history mismatch"
+        }
+      }
+    },
+    "over-hi": {
+      "owners": [
+        0,
+        1,
+        1,
+        1,
+        3,
+        0
+      ],
+      "frequency": 62500000,
+      "epoch": 48714,
+      "quantum": 3125000,
+      "generation_products": [
+        {
+          "task": 0,
+          "generation": 0,
+          "samples": 676810,
+          "checksum": 3045643,
+          "last_tick": 3182963,
+          "grants": 1
+        },
+        {
+          "task": 0,
+          "generation": 1,
+          "samples": 0,
+          "checksum": 0,
+          "last_tick": 0,
+          "grants": 0
+        },
+        {
+          "task": 1,
+          "generation": 0,
+          "samples": 1724933,
+          "checksum": 7762198,
+          "last_tick": 12557722,
+          "grants": 3
+        },
+        {
+          "task": 2,
+          "generation": 0,
+          "samples": 0,
+          "checksum": 0,
+          "last_tick": 0,
+          "grants": 0
+        },
+        {
+          "task": 3,
+          "generation": 0,
+          "samples": 602535,
+          "checksum": 2711411,
+          "last_tick": 15683743,
+          "grants": 1
+        },
+        {
+          "task": 0,
+          "generation": 2,
+          "samples": 8,
+          "checksum": 36,
+          "last_tick": 15697704,
+          "grants": 1
+        }
+      ],
+      "completions": {
+        "0/0": {
+          "completion_or_last_work": 3182963,
+          "retirement_sample": 3218674,
+          "deadline_tick": 9423714
+        },
+        "1/0": {
+          "completion_or_last_work": 12557722,
+          "retirement_sample": 12560716,
+          "deadline_tick": 15673714
+        },
+        "3/0": {
+          "completion_or_last_work": 15683743,
+          "retirement_sample": 15686257,
+          "deadline_tick": 18798714
+        },
+        "0/2": {
+          "completion_or_last_work": 15697704,
+          "retirement_sample": 18815210,
+          "deadline_tick": 25048714
+        }
+      },
+      "switch": {
+        "boundary": 6298714,
+        "irq": 6309786,
+        "mode_commit": 6323582,
+        "task_sample": 6330437,
+        "ticks": 31723,
+        "seconds": "31723/62500000"
+      },
+      "elf_sha256": "b1cf9ac0565e56896f541aa01a9f597f6101c3c7ac7d16f56b26e7c15960a878",
+      "session_sha256": "24c7d9aeeb5eaf10d5a49077c8d5f70a51023630cc12b6f9460b3df9aa2d4d86",
+      "wire_version": 2,
+      "finite_completion": {
+        "wire_version": 2,
+        "task": 0,
+        "generation": 2,
+        "expected_ring": [
+          1,
+          6,
+          3,
+          7,
+          4,
+          8,
+          2,
+          5
+        ],
+        "samples": 8,
+        "checksum": 36,
+        "task_tick": 15697704,
+        "svc_entry_tick": 15705381,
+        "svc_elr": 1075848136,
+        "idle_entry": 1075847924,
+        "closing_irq_tick": 18809130,
+        "frozen_tick": 15697704,
+        "coverage": "first/last task publications, completion SVC, idle return, closing reread and retirement; individual intermediate reads are not exported"
+      },
+      "independent": {
+        "task": 15697704,
+        "svc": 15705381,
+        "b6": 18798714,
+        "irq": 18809130,
+        "retirement": 18815210,
+        "transition_ticks": 31723,
+        "controls": {
+          "svc-at-b6": "late or unbound finite completion SVC",
+          "changed-frozen-sum": "finite completion/frozen evidence mismatch",
+          "wrong-idle-return": "linked exception/ERET history mismatch",
+          "duplicate-svc": "linked exception/ERET history mismatch"
+        }
+      }
+    }
+  },
+  "original_continuous": {
+    "source": "c4a63bebc3b773550c630522ba3f62cd9be1a526",
+    "archive": "ordinary-amc-first.zip",
+    "sha256": "8d458fd07a041d998b70eb279e7d1c37de0453753ae95afca45357d4290ca72b",
+    "first_pass_count": 1,
+    "first_case_count": 3,
+    "late_ticks": {
+      "exact-hi": 10507,
+      "over-hi": 9225
+    },
+    "original_and_revised_decoder_agree": true
+  },
+  "scope": "Single-core AArch64 QEMU 6.2 virt, Cortex-A72 TCG, GICv2/CNTP, 128 MiB, 62.5 MHz. Windows MSVC Rust 1.95.0 locked release, clean separate one-job builds, WSL Ubuntu 22.04 ext4. One cold start per case. The trace records first/last publications, not all intermediate reads. No product WCET, board or interference evidence."
+}

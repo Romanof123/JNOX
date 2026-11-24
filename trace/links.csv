@@ -1222,6 +1222,17 @@ IMP-057,partially-verified-by,VER-023
 VER-002,has-partial-evidence,EVD-057
 VER-005,has-partial-evidence,EVD-057
 VER-023,has-partial-evidence,EVD-057
+CHG-078,affects,REQ-005
+CHG-078,affects,REQ-006
+CHG-078,affects,REQ-014
+CHG-078,affects,REQ-020
+CHG-078,affects,REQ-021
+CHG-078,affects,REQ-022
+CHG-078,affects,REQ-024
+POL-015,has-partial-policy-evidence,EVD-058
+VER-002,has-partial-evidence,EVD-058
+VER-005,has-partial-evidence,EVD-058
+VER-023,has-partial-evidence,EVD-058
 CHG-068,affects,REQ-002
 CHG-068,affects,REQ-005
 CHG-068,affects,REQ-008

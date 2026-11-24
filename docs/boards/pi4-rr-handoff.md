@@ -21,3 +21,5 @@ AArch64 대상 `aarch64-unknown-none`에서 `JNOX_BOARD=pi4 JNOX_PROFILE=fixed J
 헤더 버전 2는 태그 0–4를 유지한다. 태그 4 직전 A, B 순서의 `PW 5` 두 행을 푸터에 포함한다. 각 행의 부호 없는 십진수 12개는 연산(0 release, 1 acquire), 상태(0 없음, 1 귀속, 2 구간 중 선점, 3 중복), 시작·종료 디스패치 세대, 시작·종료 카운터 틱, 메일함 주소, 전달값, STLR/LDAR의 PC, 작업 SP, MPIDR, 소유 역할이다. 상태 0의 데이터 열 10개는 모두 0이다. 주소와 PC는 패키지 ELF와 대조한다. 버전 1 프로파일은 기존 판정을 유지한다.
 
 재생 명령은 `python tools/pi4_fixed_witness.py uart.bin --profile pi4-fixed-rr-handoff --manifest manifest.json --elf kernel.elf --image kernel8.img`이며 수집 도구도 같은 프로파일을 받는다. 디코더 종료값 0은 HIGH 이후 재개와 실제 데이터 전달 관찰, 2는 관찰 부족 또는 귀속 불확실, 1은 잘못된 근거다. JSON은 A/B 각 디스패치의 산술 진행 관찰, 기존 루프 판정, 두 연산 셀을 구분한다. 공학 이미지와 일반 기준의 최초 콜드 부팅 각 2회, 독립 ERET/IRQ/SVC 순서, 원자 명령과 계측 영향, 기존 v1 기록 재생은 검증 대기 중이다. CHG-073은 생산자와 디코더를 통해 REQ-002/005/008/016/023에 연결된다. [생산자](../../kernel/src/pi4_witness.rs) · [디코더](../../tools/pi4_fixed_witness.py)
+
+[#159/#157 통합 적재 이미지 비교 및 보관 UART 재검증](../evidence/pi4-rr-handoff-combined.md)

@@ -1,0 +1,73 @@
+{
+  "source": "4a3eccd83b49a7b74d25f9e409c8c1dbe09781f2",
+  "archive": "evd-055-diagnostics.zip",
+  "archive_sha256": "ff8a3ba1c86c92cf3b815cf8a1158a3498ee2e22b5a42fec3b2d0cc5f73018c4",
+  "positions": {
+    "lottery-miss": {
+      "footer": [
+        427,
+        3,
+        0,
+        2,
+        1
+      ],
+      "grants": [
+        0,
+        1,
+        0
+      ],
+      "service": [
+        0,
+        2,
+        0
+      ],
+      "sample": [
+        0,
+        1,
+        7,
+        721262,
+        1971262,
+        1978007,
+        2,
+        6745,
+        5347472
+      ],
+      "uart_sha256": "f7342ea5d6c0e0f5dec854ecf2d3f7372737591859dbb7c2086ad00f730104b7",
+      "elf_sha256": "422eb1d83897a4da1e92e290e9497de0e29bd6eb900954bbe6ecd0fbb387fef3",
+      "exceptions_sha256": "9ac762e277d5e675b8a3dbbcdd2961623c686fa65ad6db8baec15b133dd6e782"
+    },
+    "stride-delay": {
+      "footer": [
+        425,
+        4,
+        0,
+        0,
+        1
+      ],
+      "grants": [
+        1,
+        0,
+        0
+      ],
+      "service": [
+        2,
+        0,
+        0
+      ],
+      "sample": [
+        0,
+        0,
+        1,
+        2580553,
+        7580553,
+        7591590,
+        2,
+        11037,
+        24611280
+      ],
+      "uart_sha256": "461a20655c518bad4a28cc2876451e80e24cb0917a0995a5677e5f22c71b18eb",
+      "elf_sha256": "8a811cac9e8533e894fcec36a63ca52b92e271d6e81c02998fae7cfee379490a",
+      "exceptions_sha256": "d8b4c3c420469a8a3ee99164bc3b54b3c13648fe0b487e5cf0fee5a3d212d24c"
+    }
+  }
+}
