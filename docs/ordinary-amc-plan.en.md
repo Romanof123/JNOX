@@ -27,3 +27,11 @@ For each row preserve the first independent cold-boot verdict, manifest, ELF and
 Trace `REQ-002/005/023 → DES-003/012 → VER-002/005/023`. Product maximum carry-in, transition and response-time bounds under board interference, the system fault response and M5 assessment require the actual product workload and board. [Release matrix](scheduling-release-cases.en.md) · [Verification plan](verification-plan.en.md)
 
 [Independent AMC first boots](evidence/ordinary-amc-first.en.md)
+
+## Fresh LO completion after reset · revision 2
+
+[#165 first cohort](https://github.com/Romanof123/JNOX/pull/165) retains the original continuous-worker verdicts. Exact-HI and over-HI recorded generation (0,2)'s last updates at 18808034 and 18810504 ticks respectively, beyond their own boundary 6. Each met its HI and survivor deadlines. Keep those first failures and their raw UART, ELF and exception traces under the original decoder.
+
+For these two cases only, release (0,2) at b5 with a finite reference input of eight readings from ring offset 2: 1,6,3,7,4,8,2,5. Its only valid result is count 8 and sum 36. Publish it once from the worker after the eighth addition, then issue a dedicated completion SVC. Record the final task sample and a conservative post-publication upper timestamp at SVC, both strictly before the original b6. Refuse a duplicate completion. The handler returns to a private idle frame with IRQ enabled. The original absolute compare, policy owner and one modeled service charge remain live until the real closing IRQ; record completion, idle IRQ and policy retirement separately. No further worker grant, checksum update or return to that frame is permitted.
+
+Use an identifiable v2 transition transcript. Bind the worker SVC instruction and saved return PC/SP to the exact ELF; independently join SVC, ERET to idle, the closing idle IRQ and its compare/IAR. Re-read the immutable count/sum/task tick at the real IRQ, require identical values and retain the actual IRQ/retirement times even when late. Missing corroboration is unobserved; a post-b6 result fails. Preserve the original exact-LO case and archived v1 decoder behavior. Freeze one first cold launch per case and record all outcomes. Eight readings define a simulation input; no product timing allocation follows.
