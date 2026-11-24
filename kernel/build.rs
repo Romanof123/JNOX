@@ -12,6 +12,10 @@ fn selector(key: &str) -> Option<String> {
 fn main() {
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_control)"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_dm)"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_case, values("healthy", "loss", "late", "demand", "worst", "tie", "early-command", "expired-command", "no-command", "missing-permit", "invalid", "silence", "saturation", "recovery", "old-generation"))"#);
+    let scenario = selector("JNOX_CONTROL_CASE");
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
     if let Some(value) = trace.as_deref() {
@@ -86,7 +90,19 @@ fn main() {
                 _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, fixed-delayed, fixed-ties, fixed-late, coop-events, or coop-single"),
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed"),
+        Some("periodic") => {
+            assert!(board == "virt" && bench == "boot" && trace.is_none());
+            assert!(matches!(app.as_deref(), Some("control-rm" | "control-dm")));
+            let case = scenario.as_deref().unwrap_or("loss");
+            assert!(matches!(case, "healthy" | "loss" | "late" | "demand" | "worst" | "tie" | "early-command" | "expired-command" | "no-command" | "missing-permit" | "invalid" | "silence" | "saturation" | "recovery" | "old-generation"));
+            println!("cargo::rustc-env=JNOX_BUILT_CONTROL_CASE={case}");
+            println!("cargo::rustc-cfg=jnox_control");
+            println!("cargo::rustc-cfg=jnox_control_case=\"{case}\"");
+            if app.as_deref() == Some("control-dm") {
+                println!("cargo::rustc-cfg=jnox_control_dm");
+            }
+        }
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed or periodic"),
         None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed"),
     }
     let script = match board.as_str() {

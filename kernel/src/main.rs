@@ -31,11 +31,15 @@ mod cbs_wake;
 mod fixed_apps;
 #[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single"))]
 mod coop_service;
+#[cfg(jnox_control)]
+mod control_runtime;
+#[cfg(jnox_control)]
+mod control_app;
 #[cfg(jnox_fixed)]
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_fixed, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_control, jnox_fixed, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -46,6 +50,7 @@ mod deadline_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
     jnox_bench = "rr",
+    jnox_control,
     jnox_bench = "periodic",
     jnox_bench = "batch",
     jnox_bench = "periodic_overrun"
@@ -100,6 +105,7 @@ mod proportional_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
     jnox_bench = "rr",
+    jnox_control,
     jnox_bench = "periodic",
     jnox_bench = "batch",
     jnox_fixed,
@@ -156,7 +162,9 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(jnox_fixed)]
     fixed_apps::run();
-    #[cfg(not(jnox_fixed))]
+    #[cfg(jnox_control)]
+    control_runtime::run();
+    #[cfg(not(any(jnox_fixed, jnox_control)))]
     run_bench()
 }
 

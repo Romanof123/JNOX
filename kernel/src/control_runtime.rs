@@ -1,0 +1,456 @@
+use core::arch::{asm, global_asm};
+use core::mem::{offset_of, size_of};
+use core::ptr;
+
+use super::{
+    context::*,
+    control_app as app,
+    dispatch_policy::{DispatchJob, DispatchPolicy},
+    park,
+    ready_queue::ReadyQueue,
+    uart_write,
+};
+
+const IDLE: usize = 2;
+const LAST: u64 = 25; // 0..=25: thirteen complete jobs, horizon phase 24
+const CAPACITY: usize = 1024;
+pub(super) const CONTROL_US: u64 = 250;
+pub(super) const SENDER_US: u64 = 750;
+
+global_asm!(".set JNOX_CONTROL, 1", include_str!("context.S"), frame_size=const size_of::<Frame>(),
+    elr=const offset_of!(Frame, elr), fpcr=const offset_of!(Frame, fpcr),
+    tpidr_el1=const offset_of!(Frame, tpidr_el1), tpidr_el0=const offset_of!(Frame,tpidr_el0),
+    simd=const offset_of!(Frame,simd), irq=sym irq, svc=sym svc, fail=sym fail);
+
+static mut STACKS: [Stack; 3] = [const { Stack([0; STACK_BYTES]) }; 3];
+static mut STATE: Option<Runtime> = None;
+static mut TRACE: [[u64; 4]; CAPACITY] = [[0; 4]; CAPACITY];
+static mut USED: usize = 0;
+static mut LONGEST_MASKED: (u64, u64, u64) = (0, 0, 0);
+
+pub(super) fn now() -> u64 {
+    let n;
+    unsafe { asm!("isb","mrs {},cntpct_el0",out(reg)n,options(nostack,preserves_flags)) };
+    n
+}
+
+pub(super) fn log(event: u64, stamp: u64, a: u64, b: u64) {
+    // All event producers hold the single CPU IRQ mask.
+    unsafe {
+        if USED == CAPACITY {
+            fail()
+        }
+        (&raw mut TRACE)
+            .cast::<[u64; 4]>()
+            .add(USED)
+            .write([event, stamp, a, b]);
+        USED += 1;
+    }
+}
+
+pub(super) fn locked<R>(f: impl FnOnce() -> R) -> R {
+    let prior: u64;
+    unsafe { asm!("mrs {},daif","msr daifset,#2",out(reg)prior,options(nostack)) };
+    let begin = now();
+    let r = f();
+    let end = now();
+    unsafe {
+        LONGEST_MASKED = LONGEST_MASKED.max((end - begin, begin, end));
+    }
+    unsafe { asm!("msr daif,{}",in(reg)prior,options(nostack)) };
+    r
+}
+
+pub(super) fn spacing_failure() {
+    state().timing_fault(8)
+}
+
+fn fail() -> ! {
+    unsafe { asm!("msr daifset,#2", options(nostack)) };
+    app::write_output(false);
+    uart_write(b"CONTROL INVALID\n");
+    park()
+}
+
+fn number(mut n: u64) {
+    let mut buf = [b'0'; 20];
+    let mut pos = buf.len();
+    loop {
+        pos -= 1;
+        buf[pos] = b'0' + (n % 10) as u8;
+        n /= 10;
+        if n == 0 {
+            break;
+        }
+    }
+    uart_write(&buf[pos..]);
+}
+
+fn dump() -> ! {
+    unsafe { asm!("msr cntp_ctl_el0,xzr", "isb", options(nostack)) };
+    uart_write(b"CONTROL RAW v1\n");
+    for i in 0..unsafe { USED } {
+        let row = unsafe { (&raw const TRACE).cast::<[u64; 4]>().add(i).read() };
+        for value in row {
+            number(value);
+            uart_write(b" ");
+        }
+        uart_write(b"\n");
+    }
+    uart_write(b"CONTROL END\n");
+    park()
+}
+
+struct Runtime {
+    frequency: u64,
+    epoch: u64,
+    step: u64,
+    next: u64,
+    current: usize,
+    jobs: [Option<DispatchJob>; 2],
+    frames: [*mut Frame; 3],
+    queue: ReadyQueue<2>,
+    waiting: bool,
+    slice_start: u64,
+    service: [u64; 2],
+    fault: bool,
+    stopping: bool,
+    missed: Option<u64>,
+}
+
+fn state() -> &'static mut Runtime {
+    // Access only within IRQ-masked sections; no reference survives a switch.
+    unsafe { (*(&raw mut STATE)).as_mut().unwrap_or_else(|| fail()) }
+}
+
+fn arm(target: u64, index: u64) {
+    unsafe {
+        asm!("msr cntp_cval_el0,{}","msr cntp_ctl_el0,{}","isb",in(reg)target,in(reg)1u64,options(nostack))
+    };
+    log(2, now(), index, target);
+}
+
+fn fresh(id: usize) -> *mut Frame {
+    let entries: [extern "C" fn() -> !; 3] = [control, sender, idle];
+    unsafe {
+        let frame = (&raw mut STACKS)
+            .cast::<u8>()
+            .add((id + 1) * STACK_BYTES - size_of::<Frame>())
+            .cast::<Frame>();
+        frame.write_bytes(0, 1);
+        (*frame).elr = entries[id] as usize as u64;
+        (*frame).spsr = 0x345; // EL1h, IRQ enabled
+        frame
+    }
+}
+
+impl Runtime {
+    fn target(&self, index: u64) -> u64 {
+        self.epoch + index * self.step
+    }
+    fn enqueue(&mut self, id: usize) {
+        if !self.queue.push_back(id) {
+            fail()
+        }
+    }
+    fn timing_fault(&mut self, why: u64) {
+        self.fault = true;
+        log(15, now(), why, self.next);
+        app::inhibit(why);
+    }
+    fn release(&mut self, id: usize, at: u64) {
+        if self.jobs[id].is_some() {
+            self.timing_fault(4);
+            return;
+        }
+        let period = self.step * (if id == 0 { 2 } else { 4 });
+        self.jobs[id] = Some(DispatchJob {
+            release: at,
+            period,
+            relative_deadline: period,
+            ..DispatchJob::fixed_priority(0)
+        });
+        self.frames[id] = fresh(id);
+        self.service[id] = 0;
+        log(4, now(), id as u64, at);
+        self.enqueue(id);
+    }
+    fn account(&mut self, entry: u64) {
+        if self.current < IDLE {
+            let delta = entry - self.slice_start;
+            self.service[self.current] += delta;
+            log(6, entry, self.current as u64, delta);
+        }
+    }
+    fn select(&mut self, entry: u64, kind: u64) -> *mut Frame {
+        let policy = if cfg!(jnox_control_dm) {
+            DispatchPolicy::DeadlineMonotonic
+        } else {
+            DispatchPolicy::RateMonotonic
+        };
+        let jobs = &self.jobs;
+        let id = policy
+            .pop_ready(&mut self.queue, now(), |id| jobs[id])
+            .unwrap_or(IDLE);
+        self.current = id;
+        let f = core::mem::replace(&mut self.frames[id], ptr::null_mut());
+        if f.is_null() {
+            fail()
+        }
+        log(5, now(), id as u64, self.next);
+        let until = now();
+        log(kind, entry, until, id as u64);
+        self.slice_start = now();
+        f
+    }
+}
+
+extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
+    let iar = gic_read(GICC + 0x0c);
+    if iar & 0x3ff != TIMER_IRQ {
+        fail()
+    }
+    unsafe { asm!("msr cntp_ctl_el0,xzr", "isb", options(nostack)) };
+    gic_write(GICC + 0x10, iar);
+    let s = state();
+    s.account(entry);
+    let id = s.current;
+    s.frames[id] = frame;
+    if id < IDLE {
+        s.enqueue(id)
+    }
+    let requested = s.next;
+    if entry < s.target(requested) {
+        fail()
+    }
+    let index = (entry - s.epoch) / s.step;
+    let at = s.target(index);
+    log(3, entry, requested, index);
+    if index != requested || entry - s.target(requested) > s.step / 5 {
+        s.timing_fault(1)
+    }
+    s.next = index + 1;
+    if index != requested {
+        // Fail this run and perform one evaluation on the control stack against
+        // the actual time. Do not release a burst of historical jobs.
+        s.missed = Some(index);
+        if s.jobs[0].is_none() {
+            s.release(0, at)
+        } else if s.waiting {
+            s.waiting = false;
+            s.enqueue(0)
+        }
+        return s.select(entry, 34);
+    }
+    if index > LAST {
+        s.timing_fault(5);
+        s.stopping = true
+    }
+    if index % 2 == 0 {
+        s.release(0, at);
+        if index % 4 == 0 {
+            s.release(1, at)
+        }
+    } else if s.waiting {
+        s.waiting = false;
+        s.enqueue(0);
+        log(7, now(), 0, at);
+    } else {
+        s.timing_fault(2);
+    }
+    if index < LAST {
+        arm(s.target(s.next), s.next)
+    }
+    s.select(entry, 34)
+}
+
+extern "C" fn svc(frame: *mut Frame, entry: u64) -> *mut Frame {
+    let esr: u64;
+    unsafe { asm!("mrs {},esr_el1",out(reg)esr,options(nostack)) };
+    if esr >> 26 != 0x15 {
+        fail()
+    }
+    let s = state();
+    let id = s.current;
+    if id >= IDLE {
+        fail()
+    }
+    s.account(entry);
+    if id == 0 && s.missed.is_some() && !s.stopping {
+        // The late IRQ arrived after the most recent safety evaluation. Re-enter
+        // the worker on its current stack at a dedicated non-returning function.
+        unsafe { (*frame).elr = final_check as *const () as usize as u64 };
+        s.frames[0] = frame;
+        s.enqueue(0);
+        return s.select(entry, 35);
+    }
+    let use_ticks = s.service[id];
+    log(8, entry, id as u64, use_ticks);
+    let budget = if id == 0 { CONTROL_US } else { SENDER_US };
+    if use_ticks == 0
+        || u128::from(use_ticks) * 1_000_000 > u128::from(budget) * u128::from(s.frequency)
+    {
+        s.timing_fault(3)
+    }
+    s.service[id] = 0;
+    match esr & 0xffff {
+        1 if id == 0 => {
+            s.frames[0] = frame;
+            s.waiting = true;
+        }
+        2 => {
+            let job = s.jobs[id].take().unwrap_or_else(|| fail());
+            log(9, entry, id as u64, job.release);
+            if entry - job.release > job.relative_deadline {
+                s.timing_fault(6)
+            }
+            if id == 0 && s.next > LAST {
+                s.stopping = true
+            }
+        }
+        _ => fail(),
+    }
+    s.select(entry, 35)
+}
+
+extern "C" fn final_check() -> ! {
+    locked(|| {
+        let index = state().missed.take().unwrap_or_else(|| fail());
+        let (step, target) = (state().step, state().target(index));
+        app::check(index, step);
+        log(10, now(), index, target);
+        state().stopping = true;
+    });
+    unsafe { asm!("svc #2", options(noreturn)) }
+}
+
+extern "C" fn control() -> ! {
+    for phase in 0..2 {
+        if locked(|| state().missed.is_some()) {
+            final_check()
+        }
+        let (index, target, step) = locked(|| {
+            let s = state();
+            let r = s.jobs[0].unwrap().release;
+            ((r - s.epoch) / s.step + phase, r + phase * s.step, s.step)
+        });
+        if cfg!(jnox_control_case = "demand") && index >= 12 {
+            let start = now();
+            while now() - start < step / 8 {
+                core::hint::spin_loop()
+            }
+        }
+        locked(|| {
+            if state().missed.is_some() {
+                final_check()
+            }
+            app::check(index, step);
+            let finish = now();
+            log(10, finish, index, target);
+            if finish < target || finish - target > step * 2 / 5 {
+                state().timing_fault(7)
+            }
+        });
+        if phase == 0 {
+            unsafe { asm!("svc #1", options(nostack)) }
+        }
+    }
+    unsafe { asm!("svc #2", options(noreturn)) }
+}
+
+extern "C" fn sender() -> ! {
+    let (index, target, step) = locked(|| {
+        let s = state();
+        let r = s.jobs[1].unwrap().release;
+        ((r - s.epoch) / s.step, r + s.step / 5, s.step)
+    });
+    // The worker may be late. Sample the hardware on the actual issue path.
+    while now().saturating_add(step / 200) < target {
+        core::hint::spin_loop()
+    }
+    locked(|| {
+        let issued = sample_at(target);
+        app::send(index, step, issued);
+    });
+    unsafe { asm!("svc #2", options(noreturn)) }
+}
+
+pub(super) fn sample_at(target: u64) -> u64 {
+    let sampled: u64;
+    unsafe {
+        asm!("2:","isb","mrs {sampled},cntpct_el0","cmp {sampled},{target}","b.lo 2b",
+        sampled=out(reg)sampled,target=in(reg)target,options(nostack))
+    };
+    sampled
+}
+
+extern "C" fn idle() -> ! {
+    loop {
+        locked(|| {
+            app::observe();
+            let s = state();
+            if s.stopping {
+                let (duration, start, end) = unsafe { LONGEST_MASKED };
+                log(33, start, end, duration);
+                log(18, now(), app::read_output() as u64, s.fault as u64);
+                dump()
+            }
+            if let Some(target) = app::command_target(s.step) {
+                if s.next == 7 {
+                    if now().saturating_add(s.step / 200) < target {
+                        return;
+                    }
+                    app::command(sample_at(target));
+                }
+            }
+            if cfg!(jnox_control_case = "late") && s.next == 12 {
+                while now() < s.target(12) + s.step / 4 {
+                    core::hint::spin_loop()
+                }
+            }
+            // Poll with IRQs unmasked between bounded critical sections.
+        });
+    }
+}
+
+pub(super) fn run() -> ! {
+    init_timer_irq();
+    let frequency: u64;
+    unsafe { asm!("mrs {},cntfrq_el0",out(reg)frequency,options(nostack)) };
+    if frequency == 0 || frequency % 400 != 0 {
+        fail()
+    }
+    let mut case_hash = 0u64;
+    for byte in env!("JNOX_BUILT_CONTROL_CASE").bytes() {
+        case_hash = case_hash.wrapping_mul(31).wrapping_add(byte as u64)
+    }
+    log(32, now(), cfg!(jnox_control_dm) as u64, case_hash);
+    app::init();
+    if app::SCRIPTED {
+        app::script(frequency);
+        dump()
+    }
+    let step = frequency / 400;
+    let epoch = now() + step;
+    unsafe {
+        STATE = Some(Runtime {
+            frequency,
+            epoch,
+            step,
+            next: 0,
+            current: IDLE,
+            jobs: [None; 2],
+            frames: [ptr::null_mut(); 3],
+            queue: ReadyQueue::new(),
+            waiting: false,
+            slice_start: 0,
+            service: [0; 2],
+            fault: false,
+            stopping: false,
+            missed: None,
+        })
+    };
+    log(1, epoch, frequency, LAST);
+    arm(epoch, 0);
+    unsafe { sched_start_frame(fresh(IDLE)) }
+}
