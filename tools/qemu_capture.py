@@ -2,6 +2,7 @@
 """Capture a guest journal, UART, QMP status and exceptions during one Linux QEMU run."""
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import signal
@@ -12,12 +13,14 @@ import tempfile
 import time
 
 
-def journal_location(kernel, symbol):
+def journal_location(kernel, symbol, *, optional=False):
     table = subprocess.check_output(["aarch64-linux-gnu-nm", "-S", kernel], text=True)
     for line in table.splitlines():
         fields = line.split()
         if len(fields) == 4 and fields[3] == symbol:
             return int(fields[0], 16), int(fields[1], 16)
+    if optional:
+        return None
     raise ValueError(f"missing journal symbol {symbol}")
 
 
@@ -32,7 +35,7 @@ def request(stream, command, **arguments):
         return answer["return"]
 
 
-def snapshot(sock_path, out, address, size):
+def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.8)
         sock.connect(str(sock_path))
@@ -45,14 +48,29 @@ def snapshot(sock_path, out, address, size):
             (out / "qmp.json").write_text(json.dumps({"status": status, "cpus": cpus}))
             if not status["running"]:
                 raise ValueError("guest stopped before host termination")
+            if idle_range is not None:
+                request(stream, "stop")
+                registers = request(stream, "human-monitor-command", **{"command-line": "info registers"})
+                (out / "registers.txt").write_text(registers)
+                match = re.search(r"\bPC=([0-9a-fA-F]+)\b", registers)
+                start, length = idle_range
+                if not match or not start <= int(match[1], 16) < start + length:
+                    raise ValueError("terminal PC outside fixed_runtime_idle")
             request(stream, "pmemsave", val=address, size=size, filename=str(out / "audit.bin"))
+            if trace_range is not None:
+                trace_address, trace_size = trace_range
+                request(stream, "pmemsave", val=trace_address, size=trace_size,
+                        filename=str(out / "trace.bin"))
 
 
-def main(symbol, directory_variable):
+def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None):
     out = Path(os.environ[directory_variable]).resolve()
     out.mkdir(parents=True, exist_ok=False)
     args = sys.argv[1:]
-    address, size = journal_location(args[args.index("-kernel") + 1], symbol)
+    kernel = args[args.index("-kernel") + 1]
+    address, size = journal_location(kernel, symbol)
+    idle_range = journal_location(kernel, idle_symbol) if idle_symbol else None
+    trace_range = journal_location(kernel, trace_symbol, optional=True) if trace_symbol else None
     stop_requested = False
 
     def stop(signum, frame):
@@ -66,8 +84,10 @@ def main(symbol, directory_variable):
                    "-qmp", f"unix:{sock_path},server=on,wait=off",
                    "-d", "int", "-D", str(out / "int.trace"), *args]
         with subprocess.Popen(command, stdout=subprocess.PIPE) as guest:
-            (out / "launch.json").write_text(json.dumps({"argv": command, "pid": guest.pid,
-                "audit_address": address, "audit_size": size}))
+            launch = {"argv": command, "pid": guest.pid, "audit_address": address, "audit_size": size}
+            if trace_range is not None:
+                launch.update(trace_symbol=trace_symbol, trace_address=trace_range[0], trace_size=trace_range[1])
+            (out / "launch.json").write_text(json.dumps(launch))
             # Drain the guest UART concurrently so the normal observer still
             # sees the live byte stream. Retain all bytes, including late ones.
             import threading
@@ -86,7 +106,7 @@ def main(symbol, directory_variable):
                     if guest.poll() is not None:
                         raise RuntimeError(f"guest exited early: {guest.returncode}")
                     time.sleep(0.004)
-                snapshot(sock_path, out, address, size)
+                snapshot(sock_path, out, address, size, idle_range, trace_range)
             finally:
                 if guest.poll() is None:
                     guest.terminate()

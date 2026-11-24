@@ -1,5 +1,9 @@
 //! Native tests for the policy sources used by the kernel.
 
+#[path = "../kernel/src/fixed_policy.rs"]
+mod fixed_policy;
+#[path = "fixed_runtime_tests.rs"]
+mod fixed_runtime_tests;
 #[path = "../kernel/src/ready_queue.rs"]
 mod ready_queue;
 #[path = "../kernel/src/smp_policy.rs"]

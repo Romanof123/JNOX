@@ -1,0 +1,423 @@
+{
+  "source": "653691e27523d54dcca0263719a3438b7f2ccea4",
+  "checks": [
+    {
+      "name": "host-build",
+      "argv": [
+        "rustc",
+        "+1.95.0",
+        "--edition=2024",
+        "--test",
+        "tools/scheduling_tests.rs",
+        "-o",
+        "D:\\codex\\.jnox-work\\runtime-profile\\gates2\\host.exe"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "host-rust",
+      "argv": [
+        "D:\\codex\\.jnox-work\\runtime-profile\\gates2\\host.exe",
+        "--test-threads=1"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "\nrunning 126 tests\ntest amc_tests::denied_service_cannot_trigger_a_high_mode_transition ... ok\ntest amc_tests::exact_lo_completion_keeps_lower_criticality_jobs_and_deadline_is_inclusive ... ok\ntest amc_tests::full_task_mask_and_partial_high_carry_in_survive_the_transition ... ok\ntest amc_tests::invalid_release_config_and_repeated_dispatch_have_no_effect ... ok\ntest amc_tests::maximum_live_carry_in_discards_every_low_job_and_retains_high_service ... ok\ntest aperiodic_policy::tests::full_replenishment_queue_delays_credit_and_preserves_budget ... ok\ntest aperiodic_policy::tests::identical_releases_distinguish_the_three_servers ... ok\ntest aperiodic_policy::tests::invalid_parameters_and_overflows_preserve_state ... ok\ntest aperiodic_policy::tests::periodic_servers_handle_preemption_drain_and_boundary ... ok\ntest batch_tests::all_small_arrivals_estimates_and_id_orders_match_a_tick_calendar ... ok\ntest batch_tests::clock_sized_charge_preserves_one_tick_until_explicit_completion ... ok\ntest batch_tests::empty_capacity_remains_idle_through_clock_limit ... ok\ntest batch_tests::failed_operations_preserve_clock_budgets_runner_and_fifo_order ... ok\ntest batch_tests::hrrn_resolves_a_unit_difference_between_full_width_products ... ok\ntest batch_tests::release_and_completion_charge_elapsed_time_without_dispatch ... ok\ntest cbs_admission_and_service_match_demand_over_common_frame ... ok\ntest cooperative_events_can_repeat_and_enqueue_multiple_successors ... ok\ntest cooperative_turns_preserve_fifo_across_wraparound ... ok\ntest cyclic_decisions_match_expanded_slots ... ok\ntest cyclic_window_end_at_clock_limit ... ok\ntest deadline_tests::a_switch_consumes_the_boundary_and_skipped_boundaries_are_not_replayed ... ok\ntest deadline_tests::epoch_near_clock_limit_keeps_only_representable_boundaries ... ok\ntest deadline_tests::laxity_retains_full_signed_range_for_waiting_jobs ... ok\ntest deadline_tests::llf_retains_the_incumbent_at_equal_slack_then_reverses ... ok\ntest deadline_tests::one_consideration_per_boundary_including_retention_and_idle_dispatch ... ok\ntest deadline_tests::ordered_arrivals_on_small_tick_calendars ... ok\ntest deadline_tests::preempted_runner_resumes_ahead_of_an_equal_waiter ... ok\ntest deadline_tests::rejected_calls_preserve_time_service_queue_and_boundary ... ok\ntest deadline_tests::zero_capacity_and_zero_quantum ... ok\ntest dispatch_matches_stable_sort_for_all_ordered_triples ... ok\ntest eevdf_policy::tests::an_unrepresentable_renewal_reweight_or_wake_is_atomic ... ok\ntest eevdf_tests::an_idle_gap_preserves_the_last_clock_and_a_partial_sleeping_request ... ok\ntest eevdf_tests::invalid_transitions_preserve_request_anchor_and_charge_once ... ok\ntest eevdf_tests::twelve_live_grants_match_rational_eligibility_service_and_response ... ok\ntest extension_tests::a_cycle_runs_at_most_the_supplied_fuel_and_the_final_step_can_still_submit ... ok\ntest extension_tests::conditional_extension_consumes_only_visited_operations_and_gate_checks_all_fields ... ok\ntest extension_tests::independent_reservation_blocks_crossing_grants_and_never_lends_an_empty_slot ... ok\ntest extension_tests::malformed_or_absent_code_returns_without_executing_any_instruction ... ok\ntest extension_tests::nine_timer_boundaries_preserve_each_reserved_slot_through_distinct_failure_modes ... ok\ntest extension_tests::rejects_invalid_domains_and_bounds_arithmetic_near_the_u64_horizon ... ok\ntest extension_tests::watchdog_expires_on_the_sampled_deadline_and_only_forward_progress_rearms_it ... ok\ntest fair_policy::tests::weighted_service_and_eligible_deadlines ... ok\ntest fixed_runtime_tests::empty_invalid_and_counter_horizon ... ok\ntest fixed_runtime_tests::fifo_preemption_preserves_turn_and_svc_owns_original_frame ... ok\ntest fixed_runtime_tests::idle_and_overdue_wakes_use_deadline_then_slot ... ok\ntest fixed_runtime_tests::relative_intervals_fit_the_signed_compare_distance ... ok\ntest fixed_runtime_tests::residual_rr_survives_preemption_then_rotates_once_on_late_irq ... ok\ntest fixed_runtime_tests::uncontested_service_exhausts_slice_and_due_peers_precede_rotation ... ok\ntest guest_checks::aperiodic_policy ... ok\ntest guest_checks::dispatch_policy ... ok\ntest guest_checks::domain_policy ... ok\ntest guest_checks::fair_policy ... ok\ntest guest_checks::feedback_policy ... ok\ntest guest_checks::group_policy ... ok\ntest guest_checks::service_policy ... ok\ntest guest_checks::temporal_policy ... ok\ntest hierarchy_oracle::exhaustive_pairs_of_ready_sets_and_requests_update_only_the_awarded_path ... ok\ntest hierarchy_oracle::guest_workload_consumes_exactly_one_tick_at_each_ancestor_for_two_windows ... ok\ntest hierarchy_oracle::skipped_windows_and_unrepresentable_interval_end_never_create_extra_ticks ... ok\ntest hierarchy_oracle::unit_chunks_and_one_contiguous_grant_agree_when_the_same_owner_remains_ready ... ok\ntest hierarchy_tests::denial_is_transactional_and_time_never_wraps ... ok\ntest hierarchy_tests::invalid_budgets_and_relationships_are_rejected ... ok\ntest hierarchy_tests::priority_is_lexicographic_and_caps_are_shared ... ok\ntest hrrn_distinguishes_adjacent_ratios_at_the_clock_limit ... ok\ntest multilevel_oracle::feedback_matches_all_five_stop_sequences_and_irregular_boost_epochs ... ok\ntest multilevel_oracle::strict_class_matches_all_arrival_orders_and_low_class_placements ... ok\ntest multilevel_policy::tests::feedback_carries_yields_and_sleep_and_preserves_order_on_boost ... ok\ntest multilevel_policy::tests::invalid_or_repeated_stop_leaves_the_open_interval_unchanged ... ok\ntest multilevel_policy::tests::saturated_high_class_rotates_in_arrival_order_and_excludes_low ... ok\ntest mutex_tests::a_waiter_that_rises_to_a_tie_keeps_its_earlier_arrival ... ok\ntest mutex_tests::configuration_and_id_checks_cover_the_full_user_mask ... ok\ntest mutex_tests::cycles_are_rejected_before_any_priority_or_wait_state_changes ... ok\ntest mutex_tests::nested_ceilings_depth_lifo_and_access_control_restore_each_prior_boost ... ok\ntest mutex_tests::timeout_and_rejoin_puts_an_equal_waiter_at_the_back ... ok\ntest mutex_tests::transfer_uses_current_effective_priority_and_original_arrival_among_ties ... ok\ntest mutex_tests::transitive_priorities_match_reachable_donors_across_mixed_protocol_chains ... ok\ntest power_oracle::arithmetic_horizon_and_protected_margin_use_full_width_values ... ok\ntest power_oracle::duplicate_keys_invalidate_the_whole_model_before_cpu_filtering ... ok\ntest power_oracle::empty_inputs_unusable_capacity_and_late_eligible_routes_have_distinct_outcomes ... ok\ntest power_oracle::energy_comparison_preserves_upper_product_bits ... ok\ntest power_oracle::equal_energy_is_ordered_by_cpu_then_opp_even_with_a_cheaper_fallback ... ok\ntest power_oracle::highest_mask_bit_is_usable_and_core_indices_outside_it_are_ineligible ... ok\ntest power_oracle::small_placements_match_work_lane_and_tick_enumeration ... ok\ntest power_tests::same_workload_across_catalogue_and_constraints ... ok\ntest power_tests::trusted_fallback_obeys_constraints_and_overflow_bounds ... ok\ntest proportional_tests::configuration_and_mask_bounds_include_the_last_bit ... ok\ntest proportional_tests::every_active_ticket_interval_and_its_endpoints ... ok\ntest proportional_tests::forced_rejection_and_replay_use_the_released_draw_path ... ok\ntest proportional_tests::lottery_finite_seed_windows_use_predeclared_integer_tolerances ... ok\ntest proportional_tests::stride_debt_survives_short_sleep_large_charges_and_idle ... ok\ntest proportional_tests::stride_delivers_weighted_service_with_unequal_dispatch_durations ... ok\ntest proportional_tests::stride_late_join_uses_the_active_floor_and_normalization_preserves_order ... ok\ntest ready_queue::tests::preempted_task_precedes_peers_and_higher_priorities_still_win ... ok\ntest ready_queue::tests::rejected_insertions_preserve_contents_and_order ... ok\ntest ready_queue::tests::yield_moves_to_tail_even_when_ids_arrive_in_reverse_order ... ok\ntest request_server_tests::capacity_validation_and_clock_overflows_leave_the_previous_state_available ... ok\ntest request_server_tests::foreign_receipts_and_receipts_from_before_restart_cannot_complete_matching_ids ... ok\ntest request_server_tests::full_sporadic_queue_keeps_the_oldest_credit_at_its_original_due_tick ... ok\ntest request_server_tests::queue_and_aggregate_work_limits_are_atomic_even_with_an_outstanding_receipt ... ok\ntest request_server_tests::small_arrival_and_cpu_availability_masks_match_individual_credits ... ok\ntest request_server_tests::submitting_during_a_grant_preserves_identity_and_service_order ... ok\ntest request_server_tests::ten_interval_fifo_service_and_conservative_credit_merging ... ok\ntest saturated_hard_server_runs_only_its_quota_each_period ... ok\ntest service_policy::tests::aligned_budget_throttles_and_replenishes ... ok\ntest service_policy::tests::stride_shares_service_and_accounts_for_wakeups ... ok\ntest smp_tests::charge_overflow_preserves_both_owner_and_balance ... ok\ntest smp_tests::clustered_singletons_leave_the_flexible_task_on_another_cpu ... ok\ntest smp_tests::construction_checks_every_mask_and_task_limit ... ok\ntest smp_tests::highest_task_and_cpu_bits_support_a_full_lease_cycle ... ok\ntest smp_tests::invalid_rank_and_claim_inputs_preserve_ready_tasks ... ok\ntest smp_tests::migrating_task_has_one_owner_and_rejects_stale_leases ... ok\ntest smp_tests::release_validates_the_entire_selection_before_mutating ... ok\ntest smp_tests::two_cpu_plans_match_exhaustive_ranked_subset_oracle ... ok\ntest temporal_policy::tests::cyclic_frame_boundaries_and_configuration ... ok\ntest temporal_policy::tests::hard_cbs_activation_and_throttling ... ok\ntest temporal_policy::tests::hard_cbs_admission_boundaries ... ok\ntest temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok\ntest temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok\ntest vruntime_tests::compare_each_dispatch_charge_floor_and_wake_against_two_weight_integer_oracle ... ok\ntest vruntime_tests::equal_timestamps_choose_lowest_id_and_each_lease_can_charge_only_once ... ok\ntest vruntime_tests::overflowing_wake_and_virtual_charge_leave_states_available_for_a_valid_retry ... ok\ntest vruntime_tests::physical_service_overflow_preserves_fraction_and_unretired_owner ... ok\ntest vruntime_tests::validates_task_count_weights_and_readiness_transitions ... ok\ntest vruntime_tests::wake_rounds_to_own_grid_and_preserves_ahead_service_when_the_floor_is_unchanged ... ok\ntest weighted_and_eligible_deadline_selection_in_twelfths ... ok\ntest zero_capacity_returns_owned_event ... ok\n\ntest result: ok. 126 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s\n\n",
+      "stderr": ""
+    },
+    {
+      "name": "host-python",
+      "argv": [
+        "C:\\Users\\jonki\\anaconda3\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "test_*.py"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "",
+      "stderr": "................................\n----------------------------------------------------------------------\nRan 32 tests in 0.628s\n\nOK\n"
+    },
+    {
+      "name": "no-app",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {
+        "JNOX_PROFILE": "fixed"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-122dacedd9f97c27\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n  cargo::rustc-check-cfg=cfg(jnox_fixed)\n  cargo::rustc-check-cfg=cfg(jnox_app, values(\"fixed-fifo\", \"fixed-rr\", \"fixed-empty\", \"fixed-delayed\"))\n  cargo::rerun-if-env-changed=JNOX_BOARD\n  cargo::rustc-check-cfg=cfg(jnox_pi4)\n  cargo::rustc-check-cfg=cfg(jnox_bench, values(\"boot\", \"scheduler\", \"rr\", \"periodic\", \"cbs\", \"partition\", \"smp\", \"mutex\", \"multilevel\", \"amc\", \"proportional\", \"vruntime\", \"eevdf\", \"hierarchy\", \"power\", \"extension\", \"aperiodic\", \"deadline\", \"batch\", \"coop\", \"priority_resume\", \"periodic_overrun\", \"cbs_wake\"))\n  cargo::rustc-cfg=jnox_bench=\"boot\"\n\n  --- stderr\n\n  thread 'main' (2232) panicked at build.rs:76:22:\n  JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, or fixed-delayed\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "unknown-app",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {
+        "JNOX_PROFILE": "fixed",
+        "JNOX_APP": "other"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-122dacedd9f97c27\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n  cargo::rustc-check-cfg=cfg(jnox_fixed)\n  cargo::rustc-check-cfg=cfg(jnox_app, values(\"fixed-fifo\", \"fixed-rr\", \"fixed-empty\", \"fixed-delayed\"))\n  cargo::rerun-if-env-changed=JNOX_BOARD\n  cargo::rustc-check-cfg=cfg(jnox_pi4)\n  cargo::rustc-check-cfg=cfg(jnox_bench, values(\"boot\", \"scheduler\", \"rr\", \"periodic\", \"cbs\", \"partition\", \"smp\", \"mutex\", \"multilevel\", \"amc\", \"proportional\", \"vruntime\", \"eevdf\", \"hierarchy\", \"power\", \"extension\", \"aperiodic\", \"deadline\", \"batch\", \"coop\", \"priority_resume\", \"periodic_overrun\", \"cbs_wake\"))\n  cargo::rustc-cfg=jnox_bench=\"boot\"\n\n  --- stderr\n\n  thread 'main' (30136) panicked at build.rs:76:22:\n  JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, or fixed-delayed\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "unknown-profile",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {
+        "JNOX_PROFILE": "other"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-122dacedd9f97c27\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n  cargo::rustc-check-cfg=cfg(jnox_fixed)\n  cargo::rustc-check-cfg=cfg(jnox_app, values(\"fixed-fifo\", \"fixed-rr\", \"fixed-empty\", \"fixed-delayed\"))\n  cargo::rerun-if-env-changed=JNOX_BOARD\n  cargo::rustc-check-cfg=cfg(jnox_pi4)\n  cargo::rustc-check-cfg=cfg(jnox_bench, values(\"boot\", \"scheduler\", \"rr\", \"periodic\", \"cbs\", \"partition\", \"smp\", \"mutex\", \"multilevel\", \"amc\", \"proportional\", \"vruntime\", \"eevdf\", \"hierarchy\", \"power\", \"extension\", \"aperiodic\", \"deadline\", \"batch\", \"coop\", \"priority_resume\", \"periodic_overrun\", \"cbs_wake\"))\n  cargo::rustc-cfg=jnox_bench=\"boot\"\n\n  --- stderr\n\n  thread 'main' (23340) panicked at build.rs:79:24:\n  unknown JNOX_PROFILE \"other\"; expected fixed\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "orphan-app",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {
+        "JNOX_APP": "fixed-fifo"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-122dacedd9f97c27\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n  cargo::rustc-check-cfg=cfg(jnox_fixed)\n  cargo::rustc-check-cfg=cfg(jnox_app, values(\"fixed-fifo\", \"fixed-rr\", \"fixed-empty\", \"fixed-delayed\"))\n  cargo::rerun-if-env-changed=JNOX_BOARD\n  cargo::rustc-check-cfg=cfg(jnox_pi4)\n  cargo::rustc-check-cfg=cfg(jnox_bench, values(\"boot\", \"scheduler\", \"rr\", \"periodic\", \"cbs\", \"partition\", \"smp\", \"mutex\", \"multilevel\", \"amc\", \"proportional\", \"vruntime\", \"eevdf\", \"hierarchy\", \"power\", \"extension\", \"aperiodic\", \"deadline\", \"batch\", \"coop\", \"priority_resume\", \"periodic_overrun\", \"cbs_wake\"))\n  cargo::rustc-cfg=jnox_bench=\"boot\"\n\n  --- stderr\n\n  thread 'main' (17892) panicked at build.rs:80:17:\n  JNOX_APP requires JNOX_PROFILE=fixed\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "conflicting-feature",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "cbs-bench"
+      ],
+      "environment": {
+        "JNOX_PROFILE": "fixed",
+        "JNOX_APP": "fixed-rr"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-7eb3d5508f74088a\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n  cargo::rustc-check-cfg=cfg(jnox_fixed)\n  cargo::rustc-check-cfg=cfg(jnox_app, values(\"fixed-fifo\", \"fixed-rr\", \"fixed-empty\", \"fixed-delayed\"))\n  cargo::rerun-if-env-changed=JNOX_BOARD\n  cargo::rustc-check-cfg=cfg(jnox_pi4)\n  cargo::rustc-check-cfg=cfg(jnox_bench, values(\"boot\", \"scheduler\", \"rr\", \"periodic\", \"cbs\", \"partition\", \"smp\", \"mutex\", \"multilevel\", \"amc\", \"proportional\", \"vruntime\", \"eevdf\", \"hierarchy\", \"power\", \"extension\", \"aperiodic\", \"deadline\", \"batch\", \"coop\", \"priority_resume\", \"periodic_overrun\", \"cbs_wake\"))\n  cargo::rustc-cfg=jnox_bench=\"cbs\"\n\n  --- stderr\n\n  thread 'main' (10580) panicked at build.rs:69:13:\n  JNOX_PROFILE=fixed conflicts with bench features\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "unsupported-board",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {
+        "JNOX_BOARD": "pi4",
+        "JNOX_PROFILE": "fixed",
+        "JNOX_APP": "fixed-fifo"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-122dacedd9f97c27\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n  cargo::rustc-check-cfg=cfg(jnox_fixed)\n  cargo::rustc-check-cfg=cfg(jnox_app, values(\"fixed-fifo\", \"fixed-rr\", \"fixed-empty\", \"fixed-delayed\"))\n  cargo::rerun-if-env-changed=JNOX_BOARD\n  cargo::rustc-check-cfg=cfg(jnox_pi4)\n  cargo::rustc-check-cfg=cfg(jnox_bench, values(\"boot\", \"scheduler\", \"rr\", \"periodic\", \"cbs\", \"partition\", \"smp\", \"mutex\", \"multilevel\", \"amc\", \"proportional\", \"vruntime\", \"eevdf\", \"hierarchy\", \"power\", \"extension\", \"aperiodic\", \"deadline\", \"batch\", \"coop\", \"priority_resume\", \"periodic_overrun\", \"cbs_wake\"))\n  cargo::rustc-cfg=jnox_bench=\"boot\"\n\n  --- stderr\n\n  thread 'main' (17524) panicked at build.rs:70:13:\n  JNOX_PROFILE=fixed requires JNOX_BOARD=virt\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "orphan-trace",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {
+        "JNOX_FIXED_TRACE": "1"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-122dacedd9f97c27\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n\n  --- stderr\n\n  thread 'main' (15896) panicked at build.rs:19:9:\n  JNOX_FIXED_TRACE requires JNOX_PROFILE=fixed\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "bad-trace",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {
+        "JNOX_FIXED_TRACE": "2",
+        "JNOX_PROFILE": "fixed",
+        "JNOX_APP": "fixed-rr"
+      },
+      "exit": 101,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nerror: failed to run custom build command for `jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)`\n\nCaused by:\n  process didn't exit successfully: `D:\\codex\\.jnox-work\\runtime-profile\\gates2-target\\release\\build\\jnox-kernel-122dacedd9f97c27\\build-script-build` (exit code: 101)\n  --- stdout\n  cargo::rerun-if-env-changed=JNOX_PROFILE\n  cargo::rerun-if-env-changed=JNOX_APP\n  cargo::rerun-if-env-changed=JNOX_FIXED_TRACE\n  cargo::rustc-check-cfg=cfg(jnox_fixed_trace)\n\n  --- stderr\n\n  thread 'main' (24028) panicked at build.rs:18:9:\n  JNOX_FIXED_TRACE must be unset or 1\n  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "name": "build-boot",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\n    Finished `release` profile [optimized] target(s) in 0.26s\n"
+    },
+    {
+      "name": "guest-boot",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/runtime-profile/src2/tools/qemu_boot.py",
+        "--profile",
+        "boot",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 476\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 416 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": "",
+      "sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861"
+    },
+    {
+      "name": "build-coop",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--all-features"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nwarning: methods `push_front` and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.17s\n"
+    },
+    {
+      "name": "guest-coop",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/runtime-profile/src2/tools/qemu_boot.py",
+        "--profile",
+        "coop",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = a237b289d558b225f093324aaa9e27c7fb1162a2809580f4dee972cd97776108\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 482\n  UART (163 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCOOP A FIRST\\nCOOP IRQ B READY\\nCOOP A RETAINED\\nCOOP B FIRST\\nCOOP A RESUMED\\nCOOP B WOKEN\\nCOOP B RESUMED\\nEVENT 1\\nEVENT 2\\nEVENT 3\\nCOOP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 481 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": "",
+      "sha256": "a237b289d558b225f093324aaa9e27c7fb1162a2809580f4dee972cd97776108"
+    },
+    {
+      "name": "build-rr",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "rr-bench"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nwarning: methods `now`, `remaining_quota`, `unreserved_work`, and `pending_replenishments` are never used\n  --> src\\aperiodic_policy.rs:80:19\n   |\n51 | impl<const R: usize> AperiodicServer<R> {\n   | --------------------------------------- methods in this implementation\n...\n80 |     pub(crate) fn now(&self) -> u64 {\n   |                   ^^^\n...\n84 |     pub(crate) fn remaining_quota(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n88 |     pub(crate) fn unreserved_work(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n94 |     pub(crate) fn pending_replenishments(&self) -> &[Replenishment] {\n   |                   ^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: method `parts` is never used\n  --> src\\fair_policy.rs:26:19\n   |\n17 | impl VirtualTime {\n   | ---------------- method in this implementation\n...\n26 |     pub(crate) fn parts(self) -> (u64, u64, u64) {\n   |                   ^^^^^\n\nwarning: struct `WindowDecision` is never constructed\n  --> src\\temporal_policy.rs:13:19\n   |\n13 | pub(crate) struct WindowDecision {\n   |                   ^^^^^^^^^^^^^^\n\nwarning: method `decision` is never used\n  --> src\\temporal_policy.rs:63:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- method in this implementation\n...\n63 |     pub(crate) fn decision(\n   |                   ^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 2.63s\n"
+    },
+    {
+      "name": "guest-rr",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/runtime-profile/src2/tools/qemu_boot.py",
+        "--profile",
+        "rr",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 2c49536ffa3f365dadaf328322e110b0b118963471e251269c3d18c80be0a332\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 507\n  UART (171 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPOLICY RANK PASS\\nPOLICY SERVICE PASS\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nRR A FIRST\\nRR B FIRST\\nRR A RESUMED\\nRR B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 505 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": "",
+      "sha256": "2c49536ffa3f365dadaf328322e110b0b118963471e251269c3d18c80be0a332"
+    },
+    {
+      "name": "build-priority-resume",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "priority-resume-bench"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nwarning: method `pop_preferred` is never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- method in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.09s\n"
+    },
+    {
+      "name": "guest-priority-resume",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/runtime-profile/src2/tools/qemu_boot.py",
+        "--profile",
+        "priority-resume",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = b1d003f72b8aa7b06461313fa6577411bed287e2d8c4ec866d7146b3aae0c337\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 518\n  UART (70 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPRIORITY RESUME BEGIN\\nPRIORITY RESUME PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 517 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": "",
+      "sha256": "b1d003f72b8aa7b06461313fa6577411bed287e2d8c4ec866d7146b3aae0c337"
+    },
+    {
+      "name": "build-cbs-wake",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "cbs-wake-bench"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\runtime-profile\\src2\\kernel)\nwarning: struct `Window` is never constructed\n --> src\\temporal_policy.rs:7:8\n  |\n7 | struct Window {\n  |        ^^^^^^\n  |\n  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: struct `WindowDecision` is never constructed\n  --> src\\temporal_policy.rs:13:19\n   |\n13 | pub(crate) struct WindowDecision {\n   |                   ^^^^^^^^^^^^^^\n\nwarning: struct `CyclicExecutive` is never constructed\n  --> src\\temporal_policy.rs:20:19\n   |\n20 | pub(crate) struct CyclicExecutive<const N: usize> {\n   |                   ^^^^^^^^^^^^^^^\n\nwarning: associated items `new`, `dispatch`, `decision`, and `window_at` are never used\n  --> src\\temporal_policy.rs:28:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- associated items in this implementation\n...\n28 |     pub(crate) fn new(\n   |                   ^^^\n...\n56 |     pub(crate) fn dispatch(&self, tick: u64, ready: impl FnOnce(usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^\n...\n63 |     pub(crate) fn decision(\n   |                   ^^^^^^^^\n...\n77 |     fn window_at(&self, tick: u64) -> Option<(&Window, u64)> {\n   |        ^^^^^^^^^\n\nwarning: function `cyclic_checks` is never used\n   --> src\\temporal_policy.rs:239:4\n    |\n239 | fn cyclic_checks() -> bool {\n    |    ^^^^^^^^^^^^^\n\nwarning: function `tick_trace` is never used\n   --> src\\temporal_policy.rs:266:4\n    |\n266 | fn tick_trace<const N: usize>(policy: &mut HardCbs<N>, expected: &[Option<usize>]) -> bool {\n    |    ^^^^^^^^^^\n\nwarning: function `cbs_wake_checks` is never used\n   --> src\\temporal_policy.rs:270:4\n    |\n270 | fn cbs_wake_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^\n\nwarning: function `cbs_dispatch_checks` is never used\n   --> src\\temporal_policy.rs:314:4\n    |\n314 | fn cbs_dispatch_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_error_checks` is never used\n   --> src\\temporal_policy.rs:340:4\n    |\n340 | fn cbs_error_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_admission_checks` is never used\n   --> src\\temporal_policy.rs:374:4\n    |\n374 | fn cbs_admission_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `bench_checks` is never used\n   --> src\\temporal_policy.rs:389:15\n    |\n389 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 11 warnings\n    Finished `release` profile [optimized] target(s) in 1.07s\n"
+    },
+    {
+      "name": "guest-cbs-wake",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/runtime-profile/src2/tools/qemu_boot.py",
+        "--profile",
+        "cbs-wake",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel",
+        "--timeout",
+        "15"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = dfbb1d9e04c7219bc1c47fd96af0f2465e1d924a5c64f5b03ac45757d4731706\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/runtime-profile/gates2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 531\n  UART (61 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCBS WAKE TIMER STOP\\nCBS WAKE PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 529 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": "",
+      "sha256": "dfbb1d9e04c7219bc1c47fd96af0f2465e1d924a5c64f5b03ac45757d4731706"
+    },
+    {
+      "name": "static-config-footprint",
+      "argv": [
+        "C:\\Users\\jonki\\anaconda3\\python.exe",
+        "-B",
+        "tools/scheduling_footprint.py",
+        "--baseline",
+        "D:\\codex\\.jnox-work\\runtime-profile\\gates2\\boot.elf",
+        "--feature",
+        "ordinary-fixed-fifo=D:\\codex\\.jnox-work\\runtime-profile\\v2-ordinary-fixed-fifo\\aarch64-unknown-none\\release\\jnox-kernel",
+        "--feature",
+        "ordinary-fixed-rr=D:\\codex\\.jnox-work\\runtime-profile\\v2-ordinary-fixed-rr\\aarch64-unknown-none\\release\\jnox-kernel",
+        "--feature",
+        "ordinary-fixed-empty=D:\\codex\\.jnox-work\\runtime-profile\\v2-ordinary-fixed-empty\\aarch64-unknown-none\\release\\jnox-kernel",
+        "--feature",
+        "ordinary-fixed-delayed=D:\\codex\\.jnox-work\\runtime-profile\\v2-ordinary-fixed-delayed\\aarch64-unknown-none\\release\\jnox-kernel",
+        "--feature",
+        "trace-fixed-fifo=D:\\codex\\.jnox-work\\runtime-profile\\v2-trace-fixed-fifo\\aarch64-unknown-none\\release\\jnox-kernel",
+        "--feature",
+        "trace-fixed-rr=D:\\codex\\.jnox-work\\runtime-profile\\v2-trace-fixed-rr\\aarch64-unknown-none\\release\\jnox-kernel",
+        "--feature",
+        "trace-fixed-empty=D:\\codex\\.jnox-work\\runtime-profile\\v2-trace-fixed-empty\\aarch64-unknown-none\\release\\jnox-kernel",
+        "--feature",
+        "trace-fixed-delayed=D:\\codex\\.jnox-work\\runtime-profile\\v2-trace-fixed-delayed\\aarch64-unknown-none\\release\\jnox-kernel"
+      ],
+      "environment": {},
+      "exit": 0,
+      "stdout": "{\n  \"baseline\": {\n    \"bytes\": {\n      \"alloc\": 16667,\n      \"bss\": 8,\n      \"file\": 67200,\n      \"linked_stack\": 16384,\n      \"load_backed\": 275,\n      \"load_file\": 275,\n      \"load_memory\": 16667,\n      \"padding\": 0,\n      \"zero_fill\": 16392\n    },\n    \"machine\": \"aarch64\",\n    \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\gates2\\\\boot.elf\",\n    \"sha256\": \"60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\"\n  },\n  \"features\": {\n    \"ordinary-fixed-delayed\": {\n      \"bytes\": {\n        \"alloc\": 112712,\n        \"bss\": 81992,\n        \"file\": 93520,\n        \"linked_stack\": 16384,\n        \"load_backed\": 14336,\n        \"load_file\": 14336,\n        \"load_memory\": 112720,\n        \"padding\": 8,\n        \"zero_fill\": 98384\n      },\n      \"delta_bytes\": {\n        \"alloc\": 96045,\n        \"bss\": 81984,\n        \"file\": 26320,\n        \"linked_stack\": 0,\n        \"load_backed\": 14061,\n        \"load_file\": 14061,\n        \"load_memory\": 96053,\n        \"padding\": 8,\n        \"zero_fill\": 81992\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-ordinary-fixed-delayed\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"7d73d648d4789754a70b3c66fdf7fabe1739da983890254a6735fa6d7f9e1060\"\n    },\n    \"ordinary-fixed-empty\": {\n      \"bytes\": {\n        \"alloc\": 112580,\n        \"bss\": 81992,\n        \"file\": 93360,\n        \"linked_stack\": 16384,\n        \"load_backed\": 14208,\n        \"load_file\": 14208,\n        \"load_memory\": 112592,\n        \"padding\": 12,\n        \"zero_fill\": 98384\n      },\n      \"delta_bytes\": {\n        \"alloc\": 95913,\n        \"bss\": 81984,\n        \"file\": 26160,\n        \"linked_stack\": 0,\n        \"load_backed\": 13933,\n        \"load_file\": 13933,\n        \"load_memory\": 95925,\n        \"padding\": 12,\n        \"zero_fill\": 81992\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-ordinary-fixed-empty\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"9494e78de85dfd77079466d1dda675708d9991ec3a1918a47ab96cf970e53376\"\n    },\n    \"ordinary-fixed-fifo\": {\n      \"bytes\": {\n        \"alloc\": 113600,\n        \"bss\": 81992,\n        \"file\": 94192,\n        \"linked_stack\": 16384,\n        \"load_backed\": 15224,\n        \"load_file\": 15224,\n        \"load_memory\": 113608,\n        \"padding\": 8,\n        \"zero_fill\": 98384\n      },\n      \"delta_bytes\": {\n        \"alloc\": 96933,\n        \"bss\": 81984,\n        \"file\": 26992,\n        \"linked_stack\": 0,\n        \"load_backed\": 14949,\n        \"load_file\": 14949,\n        \"load_memory\": 96941,\n        \"padding\": 8,\n        \"zero_fill\": 81992\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-ordinary-fixed-fifo\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"a54fc072bcbacbc41c63977a871c9c272ab2ac5f2a40c1cd7678ad53a468be04\"\n    },\n    \"ordinary-fixed-rr\": {\n      \"bytes\": {\n        \"alloc\": 113392,\n        \"bss\": 81992,\n        \"file\": 94048,\n        \"linked_stack\": 16384,\n        \"load_backed\": 15016,\n        \"load_file\": 15016,\n        \"load_memory\": 113400,\n        \"padding\": 8,\n        \"zero_fill\": 98384\n      },\n      \"delta_bytes\": {\n        \"alloc\": 96725,\n        \"bss\": 81984,\n        \"file\": 26848,\n        \"linked_stack\": 0,\n        \"load_backed\": 14741,\n        \"load_file\": 14741,\n        \"load_memory\": 96733,\n        \"padding\": 8,\n        \"zero_fill\": 81992\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-ordinary-fixed-rr\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"e4f8c08f3c32f9a2a69bfe9b9a7d57b33a547d9559ce9d0a12eef7853647eb29\"\n    },\n    \"trace-fixed-delayed\": {\n      \"bytes\": {\n        \"alloc\": 123264,\n        \"bss\": 91752,\n        \"file\": 93816,\n        \"linked_stack\": 16384,\n        \"load_backed\": 15128,\n        \"load_file\": 15128,\n        \"load_memory\": 123272,\n        \"padding\": 8,\n        \"zero_fill\": 108144\n      },\n      \"delta_bytes\": {\n        \"alloc\": 106597,\n        \"bss\": 91744,\n        \"file\": 26616,\n        \"linked_stack\": 0,\n        \"load_backed\": 14853,\n        \"load_file\": 14853,\n        \"load_memory\": 106605,\n        \"padding\": 8,\n        \"zero_fill\": 91752\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-trace-fixed-delayed\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"85cc61d6ffd88ad86ca39e33c9e1f49509c10754f79128880ce35b785b66dde0\"\n    },\n    \"trace-fixed-empty\": {\n      \"bytes\": {\n        \"alloc\": 123136,\n        \"bss\": 91752,\n        \"file\": 93680,\n        \"linked_stack\": 16384,\n        \"load_backed\": 15000,\n        \"load_file\": 15000,\n        \"load_memory\": 123144,\n        \"padding\": 8,\n        \"zero_fill\": 108144\n      },\n      \"delta_bytes\": {\n        \"alloc\": 106469,\n        \"bss\": 91744,\n        \"file\": 26480,\n        \"linked_stack\": 0,\n        \"load_backed\": 14725,\n        \"load_file\": 14725,\n        \"load_memory\": 106477,\n        \"padding\": 8,\n        \"zero_fill\": 91752\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-trace-fixed-empty\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"0e0fe8ee5d88092c7b7030c86de668b4e3fab80e25bf7bff454fc53649dfad8d\"\n    },\n    \"trace-fixed-fifo\": {\n      \"bytes\": {\n        \"alloc\": 124152,\n        \"bss\": 91752,\n        \"file\": 94504,\n        \"linked_stack\": 16384,\n        \"load_backed\": 16016,\n        \"load_file\": 16016,\n        \"load_memory\": 124160,\n        \"padding\": 8,\n        \"zero_fill\": 108144\n      },\n      \"delta_bytes\": {\n        \"alloc\": 107485,\n        \"bss\": 91744,\n        \"file\": 27304,\n        \"linked_stack\": 0,\n        \"load_backed\": 15741,\n        \"load_file\": 15741,\n        \"load_memory\": 107493,\n        \"padding\": 8,\n        \"zero_fill\": 91752\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-trace-fixed-fifo\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"82f822f7edde25012b5ee7d9d717c24e3fb96be7f245967e624209196e00f731\"\n    },\n    \"trace-fixed-rr\": {\n      \"bytes\": {\n        \"alloc\": 123944,\n        \"bss\": 91752,\n        \"file\": 94368,\n        \"linked_stack\": 16384,\n        \"load_backed\": 15808,\n        \"load_file\": 15808,\n        \"load_memory\": 123952,\n        \"padding\": 8,\n        \"zero_fill\": 108144\n      },\n      \"delta_bytes\": {\n        \"alloc\": 107277,\n        \"bss\": 91744,\n        \"file\": 27168,\n        \"linked_stack\": 0,\n        \"load_backed\": 15533,\n        \"load_file\": 15533,\n        \"load_memory\": 107285,\n        \"padding\": 8,\n        \"zero_fill\": 91752\n      },\n      \"machine\": \"aarch64\",\n      \"path\": \"D:\\\\codex\\\\.jnox-work\\\\runtime-profile\\\\v2-trace-fixed-rr\\\\aarch64-unknown-none\\\\release\\\\jnox-kernel\",\n      \"sha256\": \"7604ada53ec25bd5b08f85527fcf5bcb2386b37fc9be1a44dcd1f4da2cec04b5\"\n    }\n  },\n  \"schema_version\": 1\n}\n",
+      "stderr": ""
+    }
+  ]
+}

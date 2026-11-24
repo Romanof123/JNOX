@@ -1,0 +1,327 @@
+{
+  "commit": "653691e27523d54dcca0263719a3438b7f2ccea4",
+  "independent_verifier": {
+    "candidate": "653691e27523d54dcca0263719a3438b7f2ccea4",
+    "boots_per_selector": 1,
+    "runs": {
+      "fifo": {
+        "verdict": "PASS for ordinary behavioral witnesses",
+        "sha256": "a54fc072bcbacbc41c63977a871c9c272ab2ac5f2a40c1cd7678ad53a468be04",
+        "raw": "v2-ordinary-fixed-fifo-raw",
+        "observations": [
+          1075872016,
+          1075888400,
+          1075904800,
+          46203936,
+          0,
+          46203935,
+          0,
+          0
+        ],
+        "slot_ids_for_recorded_sp": [
+          0,
+          1,
+          2
+        ],
+        "entry_priority_initial_delay": [
+          [
+            1075844192,
+            1,
+            0
+          ],
+          [
+            1075843876,
+            1,
+            0
+          ],
+          [
+            1075843752,
+            3,
+            6250000
+          ]
+        ],
+        "mode": "FIFO",
+        "exception_paths": [
+          [
+            "boot>A",
+            "0x4020124c"
+          ],
+          [
+            "A yield>B",
+            "0x4020124c"
+          ],
+          [
+            "B sleep(0)>A",
+            "0x402014b4"
+          ],
+          [
+            "A IRQ>HIGH",
+            "0x4020124c"
+          ],
+          [
+            "HIGH normal exit>A interrupted PC",
+            "0x4020127c"
+          ],
+          [
+            "A normal exit>B zero sleep continuation",
+            "0x40201378"
+          ],
+          [
+            "B sleep(25000000)>idle",
+            "0x40201258"
+          ],
+          [
+            "idle IRQ>B positive sleep continuation",
+            "0x402013bc"
+          ],
+          [
+            "B sleep(UINT64_MAX) denied>B same continuation",
+            "0x402013c8"
+          ],
+          [
+            "B explicit exit>idle",
+            "0x4020125c"
+          ]
+        ],
+        "raw_exception_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000000\n...with ELR 0x402014b4\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201378\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402014b4\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x4020127c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201254\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201254\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201378\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x402013bc\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201258\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x4020125c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402013bc\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x402013c8\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402013c8\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020143c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020125c\n",
+        "final_pc": "0x4020125c",
+        "final_sp": "0x40218120",
+        "uart": "JNOX M1 BOOT\nJNOX M1 READY\nFIXED FIFO START\nFIXED FIFO A START\nFIXED FIFO B YIELD\nFIXED FIFO A RESUME\nFIXED FIFO HIGH\nFIXED FIFO A DONE\nFIXED FIFO B SLEEP\nFIXED FIFO B DONE\n",
+        "trace_symbol": false,
+        "trace_bin": false,
+        "elf_file_bytes": 94192,
+        "text_data_bss_bytes": [
+          14936,
+          288,
+          98376
+        ],
+        "stack_base": "0x40204120",
+        "stack_bytes_each": 16384,
+        "application_stack_slots": 4,
+        "idle_stack_slots": 1,
+        "runtime_state_bytes": 288
+      },
+      "rr": {
+        "verdict": "PASS for ordinary behavioral witnesses",
+        "sha256": "e4f8c08f3c32f9a2a69bfe9b9a7d57b33a547d9559ce9d0a12eef7853647eb29",
+        "raw": "v2-ordinary-fixed-rr-raw",
+        "observations": [
+          1075872000,
+          1075904784,
+          1075888416,
+          98011677,
+          102281780,
+          48511010,
+          98011676,
+          102281779
+        ],
+        "slot_ids_for_recorded_sp": [
+          0,
+          2,
+          1
+        ],
+        "entry_priority_initial_delay": [
+          [
+            1075843924,
+            2,
+            0
+          ],
+          [
+            1075843752,
+            5,
+            6250000
+          ],
+          [
+            1075844104,
+            2,
+            0
+          ]
+        ],
+        "mode": "RR quantum 12500000",
+        "exception_paths": [
+          [
+            "boot>A",
+            "0x4020124c"
+          ],
+          [
+            "A IRQ>HIGH",
+            "0x4020124c"
+          ],
+          [
+            "HIGH normal exit>A",
+            "0x4020127c"
+          ],
+          [
+            "A IRQ>B",
+            "0x4020124c"
+          ],
+          [
+            "B IRQ>A",
+            "0x4020127c"
+          ],
+          [
+            "A normal exit>B",
+            "0x4020127c"
+          ],
+          [
+            "B normal exit>idle",
+            "0x40201258"
+          ]
+        ],
+        "raw_exception_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x4020127c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201254\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020127c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020127c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201254\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201254\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201258\n",
+        "final_pc": "0x4020125c",
+        "final_sp": "0x40218120",
+        "uart": "JNOX M1 BOOT\nJNOX M1 READY\nFIXED RR START\nFIXED RR A START\nFIXED RR HIGH\nFIXED RR B START\nFIXED RR A DONE\nFIXED RR B DONE\n",
+        "trace_symbol": false,
+        "trace_bin": false,
+        "elf_file_bytes": 94048,
+        "text_data_bss_bytes": [
+          14728,
+          288,
+          98376
+        ],
+        "stack_base": "0x40204120",
+        "stack_bytes_each": 16384,
+        "application_stack_slots": 4,
+        "idle_stack_slots": 1,
+        "runtime_state_bytes": 288
+      },
+      "empty": {
+        "verdict": "PASS for ordinary behavioral witnesses",
+        "sha256": "9494e78de85dfd77079466d1dda675708d9991ec3a1918a47ab96cf970e53376",
+        "raw": "v2-ordinary-fixed-empty-raw",
+        "observations": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "slot_ids_for_recorded_sp": [],
+        "entry_priority_initial_delay": [],
+        "mode": "FIFO",
+        "exception_paths": [
+          [
+            "boot>idle",
+            "0x40201258"
+          ]
+        ],
+        "raw_exception_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x40201258\n",
+        "final_pc": "0x4020125c",
+        "final_sp": "0x40218120",
+        "uart": "JNOX M1 BOOT\nJNOX M1 READY\nFIXED EMPTY START\n",
+        "trace_symbol": false,
+        "trace_bin": false,
+        "elf_file_bytes": 93360,
+        "text_data_bss_bytes": [
+          13916,
+          288,
+          98376
+        ],
+        "stack_base": "0x40204120",
+        "stack_bytes_each": 16384,
+        "application_stack_slots": 4,
+        "idle_stack_slots": 1,
+        "runtime_state_bytes": 288
+      },
+      "delayed": {
+        "verdict": "PASS for ordinary behavioral witnesses",
+        "sha256": "7d73d648d4789754a70b3c66fdf7fabe1739da983890254a6735fa6d7f9e1060",
+        "raw": "v2-ordinary-fixed-delayed-raw",
+        "observations": [
+          1075872016,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "slot_ids_for_recorded_sp": [
+          0
+        ],
+        "entry_priority_initial_delay": [
+          [
+            1075843732,
+            1,
+            6250000
+          ]
+        ],
+        "mode": "FIFO",
+        "exception_paths": [
+          [
+            "boot>idle",
+            "0x40201258"
+          ],
+          [
+            "idle IRQ>slot0",
+            "0x4020124c"
+          ],
+          [
+            "slot0 explicit exit>idle",
+            "0x4020125c"
+          ]
+        ],
+        "raw_exception_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x40201258\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x4020125c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x402012b8\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020125c\n",
+        "final_pc": "0x4020125c",
+        "final_sp": "0x40218120",
+        "uart": "JNOX M1 BOOT\nJNOX M1 READY\nFIXED DELAYED START\nFIXED DELAYED TASK\n",
+        "trace_symbol": false,
+        "trace_bin": false,
+        "elf_file_bytes": 93520,
+        "text_data_bss_bytes": [
+          14048,
+          288,
+          98376
+        ],
+        "stack_base": "0x40204120",
+        "stack_bytes_each": 16384,
+        "application_stack_slots": 4,
+        "idle_stack_slots": 1,
+        "runtime_state_bytes": 288
+      }
+    },
+    "scope": "One ordinary QEMU cold boot per selector. Shared work_until and entry trampoline PCs require audit words, table, UART and exception order for owner attribution. Ordinary captures do not sample every saved SP, timer control, frequency, exact residuals or compare deadlines. Final idle is a bounded quiet observation."
+  },
+  "sha256": {
+    "fifo/audit.bin": "d856f256f9413e0f7ac4d01b7f3b66c9a4e9d5e6717faeb7e5adb757de0482a9",
+    "fifo/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+    "fifo/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+    "fifo/launch.json": "a14f5e416a51f87b7579ffae92e57b67d80624dc1e2a78645605ea680c785960",
+    "fifo/qmp.json": "d2120011ee3a2ccf6b1bfdf133e3eb106902642ba2b35c3ba5270ac5a818a144",
+    "fifo/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+    "fifo/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+    "rr/audit.bin": "9bd5f924cc9555f808a7a4cb75b956e5b9b78d2474117dc9067e0988d35b6fda",
+    "rr/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+    "rr/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+    "rr/launch.json": "337e870890cf0eaa97326d5ea1b89be184d036b95a1722b389afd583414ca572",
+    "rr/qmp.json": "bc2aaa9b4839d07bfdba292d83209649309e4f915813ae4e15605ba6fcd9384c",
+    "rr/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+    "rr/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+    "empty/audit.bin": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+    "empty/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+    "empty/int.trace": "8577b3f7b141ef1257b46e5b2155297c1ec18f818b734c3cf098b18c36f944ba",
+    "empty/launch.json": "ea8996271980909f6dd21b6830b04544d1a935bc2240ff91c216f8893998bd8b",
+    "empty/qmp.json": "a3f87635241d60d2636cdc610a4cb1ca3b6d15b8007524037125f2520be69b3a",
+    "empty/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+    "empty/uart.bin": "792444d7da627515aa0320bbd532cee22d48a1fb7b728f7e32146aa181050f6f",
+    "delayed/audit.bin": "286cd8b278683a9da8ea9aa0f862a1c11a27e2cec8743df1c7b94007dff42cc6",
+    "delayed/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+    "delayed/int.trace": "d4e93dc148c0ae910f12b01bd6c420bcdb10845144b3416ddf5dc24873abcc48",
+    "delayed/launch.json": "4ebd64555032ea8fef52d13e37c43bf6193f4111946693bdc8ac5956b914b752",
+    "delayed/qmp.json": "9ba6ba8b7ad4c099b5766e698e85c73a919d7d131dc6e609560d35194de8c4b1",
+    "delayed/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+    "delayed/uart.bin": "93bee2bb2e48b2c48e080800a1979a3977abc46f664be2aac21b6e1df9175b19"
+  },
+  "source_report_sha256": "e5861b6ed9d2ec46b3dc3f7e241a9dd4e2da356216cc11e6387aa4d0ef170118",
+  "archive": {
+    "encoding": "ZIP DEFLATE, base64",
+    "contents": "Original independent report and per-selector byte-exact capture files",
+    "sha256": "07861d88921c902ae67202d170785057f262110b4ebed53cbea9d94543969d9b",
+    "base64": "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"
+  }
+}
