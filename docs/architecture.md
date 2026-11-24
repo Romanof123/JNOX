@@ -159,3 +159,5 @@ CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md)
 CHG-043 / IMP-041은 virt 단일 코어 POL-002 런타임에 계측을 추가한다. 부팅 코드가 프레임 구성 전에 스택을 채운다. CPU0는 IRQ를 마스킹한 상태에서 고정 길이 기록을 쓰며 호스트는 게스트 정지 후 읽는다. [측정 구간](fixed-cost.md)
 
 POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [EVD-041](evidence/evd-041.md)
+
+CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)

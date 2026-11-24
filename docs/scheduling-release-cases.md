@@ -46,3 +46,5 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 [POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.
 
 [FIFO·RR 측정 및 판정 기준](fixed-cost.md) · [EVD-041 비용·스택 관측](evidence/evd-041.md)
+
+CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)

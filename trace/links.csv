@@ -954,3 +954,6 @@ VER-009,has-partial-evidence,EVD-041
 VER-023,has-partial-evidence,EVD-041
 POL-002,has-switch-evidence,EVD-041
 CAP-001,has-partial-evidence,EVD-041
+CHG-046,affects,REQ-002
+CHG-046,affects,REQ-005
+CHG-046,affects,REQ-023

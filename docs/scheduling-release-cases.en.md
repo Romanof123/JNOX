@@ -46,3 +46,5 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 [POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. Implementation and independent evidence are pending.
 
 [FIFO/RR measurement and acceptance criteria](fixed-cost.en.md) · [EVD-041 observed costs and stacks](evidence/evd-041.en.md)
+
+CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)

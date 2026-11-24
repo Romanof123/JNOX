@@ -103,3 +103,5 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel.en.md) · [EVD-040](evidence/evd-040.en.md)
 
 [EVD-041](evidence/evd-041.en.md) records measurements for the FIFO/RR parts of VER-002/005/009/023. Compare linked footprints and repeated observed handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)
+
+CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)

@@ -159,3 +159,5 @@ CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel
 CHG-043 / IMP-041 instruments the single-core POL-002 runtime on virt. Boot owns the stack paint before frame construction. CPU0 writes the bounded event journal with IRQs masked, and the host reads it after the guest stops. [Measurement boundaries](fixed-cost.en.md)
 
 POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
+
+CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)

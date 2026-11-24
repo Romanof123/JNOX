@@ -40,3 +40,5 @@ REQ-023/002/005 → DES-012/003 → IMP-010 → VER-023/002/005. Host tests comp
 ```
 
 [EVD-010](evidence/evd-010.en.md)
+
+CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
