@@ -147,3 +147,5 @@ IMP-055 · VER-002/005/023. Three first boots replayed both seeds and C’s stri
 CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
 
 CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
+
+CHG-067 · [Ordinary Rust mutex workload and batch ownership criteria](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
