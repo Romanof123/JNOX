@@ -1,0 +1,29 @@
+# Default-clock lease overrun investigation v1 / 기본 클록 실행 구간 초과 조사 v1
+
+Decision on receipt 95493792c85547c5c2e515faa352471f9169737a. The failed intervals include programmed-compare to vector-sample delay under two runnable sets. The available evidence cannot assign that delay to one execution layer. / 서로 다른 실행 가능 집합에서 비교값 이후 지연을 관측했다. 원자료만으로 지연을 한 계층에 귀속할 수 없다.
+
+| Original position / 원래 위치 | Owner and peer / 실행 및 상대 상태 | R / C / I (guest ticks) | I−C / excess over H / preceding gap | EL0 return PC → IRQ ELR |
+|---|---|---|---|---|
+| #183 share/default 7 | A, B runnable | 5358313 / 5983313 / 6166114 | 182801 / 26551 / 2608 | 40056c → 40056c |
+| #183 share/default 10 | B, A runnable | 7656006 / 8281006 / 8438812 | 157806 / 1556 / 2090 | 40056c → 40056c |
+| Integrated wake/default 14 | A, B blocked in sleep 2 | 5296560 / 5921560 / 6187106 | 265546 / 109296 / 487 | 40056c → 400594 |
+
+All three were full quantum compares (C=R+625000 at 62.5 MHz, H=781250). Share closure 7 also missed its positive prefix bound. In wake, B blocked at 4035726, with deadline 6533063. B's charge stayed at 26247 through lease 14; A's private work advanced. Lease 15 shortened its compare to that deadline, with I=6536550, W=6536949, R(B)=7169101 and S(B)=7172926. All three wake rounds passed. The failed lease therefore predates wake acceptance and resumption. Recorded session members for independent lookup are replay/share-default.json and first/share-default/exceptions.log in the [#183 archive](evidence/native-weighted-irq-second.zip), and wake-default.zip → replay.stdout and raw/exceptions.log in the [merged receipt](evidence/native-weighted-integration-first.en-ko.md).
+
+세 번 모두 완전한 퀀텀이었다. 앞선 디스패치 공백은 기준 이내였다. 통합 14번은 A가 단독으로 실행되는 동안 발생했다. 다음 15번에서야 B의 두 번째 절대 기한에 맞춰 비교값을 줄였고 B는 정상 복귀했다. B의 차단 기간 서비스는 증가하지 않았다.
+
+## Interrupt eligibility and observability / 인터럽트 허용 구간과 관측 한계
+
+The linked restore path restores SPSR_EL1, samples R under EL1 masking, writes CVAL, enables the timer with CTL=1, executes ISB, restores final registers and executes ERET. Returned EL0 SPSR low bits 0x340 give I=0; handler PSTATE 0x3c5 belongs to EL1 after exception entry. The external trace records that return followed directly by a lower-EL IRQ for each row, with no intervening SVC. The C loop is unprivileged. The vector saves scratch registers and samples I after ISB. The handler reads full IAR 30 and timer state (enabled, unmasked, pending: CTL=5), then disables the timer. Thus no intervening guest EL1 critical section appears during the recorded EL0 loop. R precedes ERET and I follows architectural entry; neither instruction boundary has its own timestamp. Endpoint control values cannot date actual expiry, line assertion, or QEMU's opportunity to run the vCPU. Equal PCs on share are consistent with a loop. [Vector source](../kernel/src/native_vruntime_vectors.S) · [Saved-frame guard and timer handling](../kernel/src/native_vruntime.rs)
+
+복원 루틴은 EL1에서 IRQ가 마스크된 채 R을 읽고 타이머를 켠 뒤 ERET한다. EL0 복귀 프레임의 I 비트는 0이다. 세 행 모두 외부 기록상 EL0 복귀 다음 예외가 IRQ이며 중간 SVC가 없다. 벡터의 타임스탬프는 예외 진입 직후의 표본이다. ERET 직전·벡터 표본 직전의 시간, QEMU 타이머 만료 처리 및 호스트 비실행 시간을 기존 기록으로 분해할 수 없다.
+
+## One next action / 다음 한 가지 조치
+
+**Qualify a host-only scheduling trace fixture before authorizing any additional guest.** On the available Ubuntu WSL host (6.18.58.1-microsoft-standard-WSL2), the normal capture account is uid 1000, CapEff=0, perf_event_paranoid=2. Reads of trace_clock and sched_switch/id returned permission denied; perf was absent from PATH. Readable /proc/self/schedstat supplies cumulative counters. The [third observer cohort](evidence/native-weighted-timer-third.en-ko.md) recorded QEMU wall-clock events and aggregate schedstat on passing share leases. Neither failing session has that timeline. No event-level scheduler observer is qualified here.
+
+On a tracing-authorized host, first use a disposable two-thread host fixture with voluntary block/wake and runnable contention. Require per-TID sched_switch and sched_wakeup, migration and loss counters across the eligible CPUs, and same-clock timestamped markers in tracefs on a verified cross-CPU monotonic clock. Qualify identification of the blocked interval and runnable queue delay separately and retain the raw trace, clock identity and measured endpoint uncertainty. Record whether the environment observes the WSL VM's own descheduling. If inaccessible, leave that layer unknown. If those prerequisites fail, stop at the fixture. No privilege change or guest launch is part of this design.
+
+Only after fixture success, a separately frozen, default-off observer could mark QEMU timer/PPI/CPU-line/IAR activity in the same validated clock domain with producer TIDs, and join to the vCPU identified by QMP. Require unique CVAL/IRQ/lease association, complete switch coverage for vCPU and timer-producing threads, marker overhead bounds, and compare intervals wholly inside the measured host windows. A runnable vCPU switched out across line assertion until near IAR supports a host contribution; uninterrupted running across a delayed PPI-to-IAR window directs investigation toward emulated delivery/acceptance. A delayed CVAL-to-PPI window may include timer thread scheduling and cannot identify callback entry. Missing events, no overrun, or uncertainty spanning the effect leave attribution open. Use the unchanged release path and original caps, preserve plain and diagnostic verdicts and immutable first raw separately. A new observation applies only to its own episode.
+
+현 환경에서 일반 계정은 스케줄 전환 추적과 클록 설정을 읽을 수 없다. 다음 조치는 추적 권한을 갖춘 환경에서 게스트 없이 두 스레드의 자발적 대기와 실행 대기열 지연을 같은 단조 시계로 구분하는 검체 검증이다. CPU 이동·누락·기록 비용·클록 오차까지 확인한 뒤에만 선택적 관측을 검토한다. 이후 실제 초과가 관측되면 같은 시계의 QEMU 이벤트와 vCPU·타이머 스레드 전환을 대응시킨다. WSL 가상머신 자체가 호스트 CPU를 받지 못한 시간은 별도 관측이 필요하다. 기존 결과와 시간 상한은 보존하며 무변경 재시도로 최악시간을 판정할 수 없다.
