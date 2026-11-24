@@ -82,3 +82,4 @@ python tools/open_tracking.py open-pages.json
 #193에서는 공백으로 나눈 일반 본문 토큰에서 바깥 문장부호를 걷어 낸 뒤 전체를 판정한다. 다른 저장소 또는 지원하지 않는 URI의 괄호·쿼리·프래그먼트·퍼센트 인코딩에 포함된 번호는 제외한다. 독립적인 참조는 공백 뒤에 적는다. 정식 URL을 가리키는 단순 마크다운 링크와 꺾쇠 URL 자동 링크는 계속 지원한다.
 
 독립된 HTTP(S) URL은 마크다운 대괄호를 해석하기 전에 하나의 토큰으로 처리한다. IPv6 주소의 대괄호는 URL에 속하며 같은 줄에 공백으로 분리한 본문 참조는 검사할 수 있다. 한 토큰 안에 URL과 마크다운이 모호하게 섞이면 PM이 확인한다.
+[최초 판정](evidence/open-tracking-first.en-ko.md) · [2차](evidence/open-tracking-second.en-ko.md) · [3차](evidence/open-tracking-third.en-ko.md) · [4차](evidence/open-tracking-fourth.en-ko.md) · [수정본 및 실제 목록](evidence/open-tracking-fifth.en-ko.md) · [입력 23건을 사전 고정한 독립 판정](evidence/open-tracking-blind.en-ko.md). 자동 대조 후 PM이 실제 주관 이슈를 확인한다.

@@ -23,3 +23,5 @@ Separate main-only check at 19015ff40af521aa209a4ef616cefa5b4d8b02f0: exit 0, 24
 Reproduce with Python and requests, a checkout at the candidate SHA, and replay.py PATH_TO_CHECKOUT from an extracted copy. Source archives are tracked at that SHA in docs/evidence. The captured live inventory is retained for offline replay via python -B tools/open_tracking.py PATH_TO_INVENTORY. Re-running the collector records current public state. 격리한 후보 체크아웃을 replay.py에 전달하면 재실행할 수 있습니다. 공개 목록은 시점에 따라 달라집니다.
 
 [Live and archived inventories, oracle and collected output / 실제·과거 목록 및 재생](open-tracking-fifth.zip) · SHA-256 579b42a306fba52ac93a7c55a01e361048d7ea35b7866e8f7b3bd5104f4fa14b.
+
+PM scope clarification / PM 권한 범위. The PM confirms the primary tracking issue and accepts the tooling integration. The Functional Safety Team issues its product safety recommendation, the designated item authority approves product scope and values, and the Release Team verifies digests and signs the approved package. PM은 추적 도구의 통합과 주관 이슈를 확인한다. 제품 안전 추천·아이템 승인·패키지 서명은 [수명주기 역할](../lifecycle.md)에 따른다.
