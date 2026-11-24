@@ -98,7 +98,11 @@ sched_vectors:
     mrs x9, fpcr
     mrs x10, fpsr
     stp x9, x10, [sp, #{fpcr}]
+    .ifdef JNOX_PI4_MIG
+    mov x9, xzr
+    .else
     mrs x9, tpidr_el1
+    .endif
     mrs x10, sp_el0
     stp x9, x10, [sp, #{tpidr_el1}]
     mrs x9, tpidr_el0
@@ -184,7 +188,9 @@ sched_start_frame:
     msr fpcr, x9
     msr fpsr, x10
     ldp x9, x10, [sp, #{tpidr_el1}]
+    .ifndef JNOX_PI4_MIG
     msr tpidr_el1, x9
+    .endif
     msr sp_el0, x10
     ldp x9, x10, [sp, #{tpidr_el0}]
     msr tpidr_el0, x9
