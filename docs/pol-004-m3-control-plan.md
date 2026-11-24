@@ -2,7 +2,7 @@
 
 [English plan](#english) · [English decision](#decision-en) · [한국어 계획](#korean) · [한국어 결정](#decision-ko)
 
-CHG-044 · [#94](https://github.com/Romanof123/JNOX/issues/94) · intended IMP-042 · planned EVD-042. Virtual bench design approved. Implementation and evidence pending. 가상 벤치 설계 승인. 구현과 독립 검증은 미완료.
+CHG-044 · [#94](https://github.com/Romanof123/JNOX/issues/94) · IMP-042 · virtual bench design approved. First runtime verdict PARTIAL. [EVD-042 v1](evidence/evd-042-v1.en.md) · 가상 벤치 설계 승인. 최초 런타임 판정은 부분 통과. [EVD-042 v1 한국어](evidence/evd-042-v1.md)
 
 <a id="english"></a>
 
@@ -59,3 +59,7 @@ QEMU 벤치에서 주기와 마감이 각각 5 ms인 단일 제어 작업에 실
 The host analysis and CLI passed independent replay. Runtime and budget provenance require separate evidence. [EVD-043](evidence/evd-043.en.md)
 
 호스트 분석 및 CLI는 독립 재현을 통과했다. 런타임과 예산 상한 근거는 별도 검증 대상이다. [EVD-043](evidence/evd-043.md)
+
+In v3, 14/23 primary cases qualified on the first attempt and 15/23 including one cold retry after a host read error. The deterministic worst-phase and same-tick cases qualified. All eight default-clock ordinary cases remained unqualified. The ten diagnostics were scored separately. [EVD-042 v3](evidence/evd-042-v3.en.md) · [#109](control-cold-plan.md)
+
+v3 주 시험은 첫 시도에서 23건 중 14건이 적격이었고 호스트 읽기 오류 후 콜드 재시도 1회를 포함하면 15건이었다. 결정론적 최악 위상과 동일 틱 사례는 적격이었고 기본 클록 일반 사례 8건은 모두 부적격이었다. 진단 10건은 별도 판정했다. [EVD-042 v3](evidence/evd-042-v3.md) · [#109](control-cold-plan.md)

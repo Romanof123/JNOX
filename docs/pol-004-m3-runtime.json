@@ -1,0 +1,19 @@
+{
+  "base": "33bb739dfc34c3afcf29799ba72d84bf52bcdab6",
+  "scope": "IMP-042 virtual workload source candidate",
+  "admission": "refused: unresolved execution and interference bounds",
+  "board": "virt,gic-version=2", "cpu": "cortex-a72", "smp": 1, "memory_mib": 128,
+  "policies": ["control-rm", "control-dm"],
+  "clock": "CNTPCT_EL0, CNTFRQ_EL0; frequency must be divisible by 400",
+  "ordinary_clock_args": [],
+  "deterministic_extra_args": ["-icount", "shift=0,align=off,sleep=off"],
+  "control": {"period_us":5000,"deadline_us":5000,"phase_us":[0,2500],"activation_monitor_us":[250,250],"wcet_us":null,"release_jitter_bound_us":null},
+  "sender": {"period_us":10000,"deadline_us":10000,"issue_target_offset_us":500,"activation_monitor_us":750,"wcet_us":null,"release_jitter_bound_us":null},
+  "handoff_variants": {"cases":["handoff-healthy","handoff-loss"],"generation":1,"injector_sequences":[1,2],"first_ordinary_sequence":3,"command_offset_from_first_issue_us":15000,"qualifying_issue_and_receipt_tick":"equal programmed target"},
+  "priority": "shortest period or relative deadline; FIFO equal ranks",
+  "timer": {"programmed_spacing_us":2500,"target_to_irq_limit_us":500,"irq_min_observed_separation_bound_us":null,"irq_and_dispatch_cost_bound_us":null,"other_enabled_workload_interrupts":[]},
+  "masking_bound_us":null,"observer_cost_bound_us":null,"phase_completion_envelope_us":1000,
+  "horizon_phase":24,"last_required_phase":25,"capacity_records":1024,
+  "overload":"latch output inhibition; missing/ambiguous evidence disqualifies a passing run",
+  "provenance":"All numeric CPU service thresholds are assigned overload-monitor inputs. Validated virtual WCET, jitter, blocking and interference bounds remain unknown."
+}

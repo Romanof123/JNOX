@@ -1,0 +1,1076 @@
+{
+ "version": 1,
+ "verdict": "PARTIAL",
+ "source": "d17ce2d36c7c9bc4db40dc60fccec4f0ebfc8d29",
+ "build_index": {
+  "source": "d17ce2d36c7c9bc4db40dc60fccec4f0ebfc8d29",
+  "tree": "4cbd25776f3aa7cbd9b21af4a47f36c5613a6291",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+  "cwd": "D:\\codex\\.jnox-work\\next-fixed\\control-qualified-src\\kernel",
+  "command": [
+   "cargo",
+   "+1.95.0",
+   "build",
+   "--release",
+   "--locked",
+   "-j1"
+  ],
+  "target": "aarch64-unknown-none",
+  "images": {
+   "rm-healthy": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-healthy/build.log",
+    "log_sha256": "a88dd2f50dc1f7f91663fd2a6e9fc2397ccdfdf96dbbf407657ce2f627c5822a",
+    "path": "rm-healthy/kernel.elf",
+    "sha256": "3e4b5b1809fc0568ec5eac96fe819b9704966d441c8b02d6230d5590c337c0d6",
+    "size": 97104
+   },
+   "rm-loss": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-loss/build.log",
+    "log_sha256": "6c19e6b831808039d49d1d2880f90c26e06725ec3a8a69e8ccdef63bb7c6a1a9",
+    "path": "rm-loss/kernel.elf",
+    "sha256": "6316bf0e811247fe2c699eb473ae84af2ba0c15e5bc151edfda96cf6f0557eef",
+    "size": 97104
+   },
+   "rm-handoff-healthy": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "handoff-healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "handoff-healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-handoff-healthy/build.log",
+    "log_sha256": "6c19e6b831808039d49d1d2880f90c26e06725ec3a8a69e8ccdef63bb7c6a1a9",
+    "path": "rm-handoff-healthy/kernel.elf",
+    "sha256": "51818e12c45b240d416d30642eac3f3c01dabfe9006a701c44241c8a90d92125",
+    "size": 96000
+   },
+   "rm-handoff-loss": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "handoff-loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "handoff-loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-handoff-loss/build.log",
+    "log_sha256": "b46079a5877db5b5df7f0586276227f75e1c9fbc2cdd31571dba05fe2009f2a8",
+    "path": "rm-handoff-loss/kernel.elf",
+    "sha256": "29ea6091104a8f270e9b4cc56038d3b4bda901396348c939dad17877d2faac5b",
+    "size": 96000
+   },
+   "rm-late": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "late",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "late",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-late/build.log",
+    "log_sha256": "6c19e6b831808039d49d1d2880f90c26e06725ec3a8a69e8ccdef63bb7c6a1a9",
+    "path": "rm-late/kernel.elf",
+    "sha256": "ed104402308f7b6c338f51428a33d3793e853d132b4f27ecdd2e6c00e4970224",
+    "size": 97104
+   },
+   "rm-demand": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "demand",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "demand",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-demand/build.log",
+    "log_sha256": "fc9f91bd8e033ff771d91972c958167f83aadc6df161c24aa1090edd525f2545",
+    "path": "rm-demand/kernel.elf",
+    "sha256": "6dbc8cb1ad341247c27877c212e281d45b781adf77dd60c1b08cfb1affb0cd60",
+    "size": 97104
+   },
+   "dm-healthy": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-healthy/build.log",
+    "log_sha256": "b46079a5877db5b5df7f0586276227f75e1c9fbc2cdd31571dba05fe2009f2a8",
+    "path": "dm-healthy/kernel.elf",
+    "sha256": "a9954feb24bef0c0d167452a29c1ba794d58f50a47bb07548e8446cb5a649b3c",
+    "size": 97104
+   },
+   "dm-loss": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-loss/build.log",
+    "log_sha256": "86d21a5be05f3a87d387c377de8aa48a92e6a6e102f49879aac6b01ff309a83a",
+    "path": "dm-loss/kernel.elf",
+    "sha256": "41c6cc76734fd17a59d1011215a1860462cfc04a234abcb5f0235d9cb9aa6c9f",
+    "size": 97104
+   },
+   "dm-handoff-healthy": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "handoff-healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "handoff-healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-handoff-healthy/build.log",
+    "log_sha256": "544a4db55ebdafa0af93e154fd767f9d5b85b9ccaf5799f4e31059d9473a9f9d",
+    "path": "dm-handoff-healthy/kernel.elf",
+    "sha256": "956bf22cc9f4da8a0989e4af26c9d2e1e0d46defe3c60c4e02121c38fb88a7c8",
+    "size": 96000
+   },
+   "dm-handoff-loss": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "handoff-loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "handoff-loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-handoff-loss/build.log",
+    "log_sha256": "544a4db55ebdafa0af93e154fd767f9d5b85b9ccaf5799f4e31059d9473a9f9d",
+    "path": "dm-handoff-loss/kernel.elf",
+    "sha256": "9375db0caf95edeaaff32f38e9987f739894761308daab95e57e3f3682174169",
+    "size": 96000
+   },
+   "dm-late": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "late",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "late",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-late/build.log",
+    "log_sha256": "544a4db55ebdafa0af93e154fd767f9d5b85b9ccaf5799f4e31059d9473a9f9d",
+    "path": "dm-late/kernel.elf",
+    "sha256": "1cecc3470a100c80901837c1db97f170dfe46a5cce9041b86699432296daf5a3",
+    "size": 97104
+   },
+   "dm-demand": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "demand",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "demand",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-demand/build.log",
+    "log_sha256": "86d21a5be05f3a87d387c377de8aa48a92e6a6e102f49879aac6b01ff309a83a",
+    "path": "dm-demand/kernel.elf",
+    "sha256": "45dc3a5a181118e02a946b704d741eb473fc7bf0d4f85b4ef4a0d34d7f5e276f",
+    "size": 97104
+   },
+   "rm-worst": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "worst",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "worst",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-worst/build.log",
+    "log_sha256": "930ed5ea7a4b7897aa6adebd3bec96923f1bce474dc8cfb21b7af90e42e5c294",
+    "path": "rm-worst/kernel.elf",
+    "sha256": "ae02f5a80ced7d56dd49b2ab93bf3857947867c9054a15960eb57f7bbae6972b",
+    "size": 95904
+   },
+   "rm-tie": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "tie",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "tie",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-tie/build.log",
+    "log_sha256": "930ed5ea7a4b7897aa6adebd3bec96923f1bce474dc8cfb21b7af90e42e5c294",
+    "path": "rm-tie/kernel.elf",
+    "sha256": "e8d40e2fe887e8897271411372a588421ebf841333703b48aed8f4fb400e3b95",
+    "size": 95904
+   },
+   "rm-early-command": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "early-command",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "early-command",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-early-command/build.log",
+    "log_sha256": "544a4db55ebdafa0af93e154fd767f9d5b85b9ccaf5799f4e31059d9473a9f9d",
+    "path": "rm-early-command/kernel.elf",
+    "sha256": "3d20e60ebe3887d67382e5312e0db83b4601c4814f8a155ed406683610498841",
+    "size": 96016
+   },
+   "rm-expired-command": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "expired-command",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "expired-command",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-expired-command/build.log",
+    "log_sha256": "d850da61dad03c16465f4b64b0f415207bb93b3f8dcbf87546e2e7e97405459c",
+    "path": "rm-expired-command/kernel.elf",
+    "sha256": "1e496174bf0df8a86f090d61efff0f6253dd04484b2ce8c6d4655449cd86094d",
+    "size": 96016
+   },
+   "rm-no-command": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "no-command",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "no-command",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-no-command/build.log",
+    "log_sha256": "86d21a5be05f3a87d387c377de8aa48a92e6a6e102f49879aac6b01ff309a83a",
+    "path": "rm-no-command/kernel.elf",
+    "sha256": "f6049173a2df29af2c45f4406df1f36110780496a0cb05445836a575e389f010",
+    "size": 95904
+   },
+   "rm-missing-permit": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "missing-permit",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "missing-permit",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-missing-permit/build.log",
+    "log_sha256": "d850da61dad03c16465f4b64b0f415207bb93b3f8dcbf87546e2e7e97405459c",
+    "path": "rm-missing-permit/kernel.elf",
+    "sha256": "452b7c8aac3b17f5da0868a300f8ac195aa86bedc469bb841be11726953f2e4c",
+    "size": 96016
+   },
+   "rm-invalid": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "invalid",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "invalid",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-invalid/build.log",
+    "log_sha256": "86d21a5be05f3a87d387c377de8aa48a92e6a6e102f49879aac6b01ff309a83a",
+    "path": "rm-invalid/kernel.elf",
+    "sha256": "22fa00366b365c905799346e4f81c36b745e3bd50941662b400941a863267169",
+    "size": 96152
+   },
+   "rm-silence": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "silence",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "silence",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-silence/build.log",
+    "log_sha256": "544a4db55ebdafa0af93e154fd767f9d5b85b9ccaf5799f4e31059d9473a9f9d",
+    "path": "rm-silence/kernel.elf",
+    "sha256": "d46421a0b1cf19a8c10adbe794331ac5515bed4abd1177af1a753319e7a12e55",
+    "size": 95904
+   },
+   "rm-saturation": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "saturation",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "saturation",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-saturation/build.log",
+    "log_sha256": "d850da61dad03c16465f4b64b0f415207bb93b3f8dcbf87546e2e7e97405459c",
+    "path": "rm-saturation/kernel.elf",
+    "sha256": "093d6efbea5a53c8e7d41b471e67c62d6f3cbd7b90496d6a04978897a2dc5e05",
+    "size": 96040
+   },
+   "rm-recovery": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "recovery",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "recovery",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-recovery/build.log",
+    "log_sha256": "930ed5ea7a4b7897aa6adebd3bec96923f1bce474dc8cfb21b7af90e42e5c294",
+    "path": "rm-recovery/kernel.elf",
+    "sha256": "e8df8357a9a45873fa8c987d539f3fe0265a28d96c1c9e75040919ee667b4edf",
+    "size": 96016
+   },
+   "rm-old-generation": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "old-generation",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "old-generation",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-old-generation/build.log",
+    "log_sha256": "d850da61dad03c16465f4b64b0f415207bb93b3f8dcbf87546e2e7e97405459c",
+    "path": "rm-old-generation/kernel.elf",
+    "sha256": "7432e4714a1059863eea37d08bcc1598d8719f7e9b86336762cf17a20b0156a3",
+    "size": 96016
+   }
+  }
+ },
+ "reviewer_manifest_sha256": "f2b3b666fb4d5d876b605307d56dd0a59ba02d690f7ec1190ba58f21cd04f8b4",
+ "report": "23 serial cold launches of the prebuilt ELF matrix d17ce2d36c7c9bc4db40dc60fccec4f0ebfc8d29; all reached CONTROL END. Source clean at post-run HEAD. QEMU 6.2.0, single Cortex-A72, virt GICv2/TCG/128 MiB. Each case has argv, UART, stderr, exception trace. The first run rm-healthy failed initial IRQ lateness, raw SHA256 a43d63628e3f1b1d855ab9676c0dabafbc6712f3cf144e67236c94d2bc7b843f. All eight default-clock cases fail-inhibited before enabling. Neither negative demand nor late isolates the intended cause because both already showed the startup failure. The first RM loss skipped slot zero entirely. Code remains unmodified; do not treat these host-clock observations as intrinsic impossibility or admission.\n\nBoth policies with exact deterministic injector enable/handoff separately achieved measured healthy and loss behavior. First issue 190079, second 815079, command 1127579, enabled readback 1252634, transfer generation 1 sequence 3 at 1252637. Device readback is an in-guest volatile PL061 register read with ordered trace, not an external electrical observation. Observer measured falling transition at 3440132. limits.txt gives bracketing and exact threshold self-tests. No general analytical or hardware timing bound established. Exception traces show exception transfers; no continuous PRIMASK/DAIF measurement inferred.\n\nTwo deterministic RM script exact-boundary cases remain unqualified. Worst completed at 2658830 instead of 2658828, next gap 312503 instead of 312500. Tie issue followed expiry decision by six ticks. Inspect actual transaction and completion placement before requalification. The other nine scripts reproduced their state transitions; semantic reject/saturation checks are bounded stimulus, not a real transport. See summary.json, check.py and checker.txt. No default-clock handoff run was commissioned in this first matrix.\n",
+ "per_image": {
+  "rm-healthy": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": 272892,
+   "fault_codes": [
+    1,
+    1,
+    2,
+    1,
+    4,
+    1,
+    2,
+    1,
+    4,
+    4,
+    7,
+    3,
+    1,
+    3,
+    6,
+    3,
+    6
+   ],
+   "uart_sha256": "a43d63628e3f1b1d855ab9676c0dabafbc6712f3cf144e67236c94d2bc7b843f",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "rm-loss": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": null,
+   "fault_codes": [
+    1,
+    3
+   ],
+   "uart_sha256": "84740095ca910496026cfe9554bfc3567a8e6db37d3ec8a6c8b53276e8b05b96",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "rm-handoff-healthy": {
+   "terminal": [
+    1,
+    0
+   ],
+   "device_edges": [
+    1
+   ],
+   "max_check_gap_ticks": 156305,
+   "fault_codes": [],
+   "uart_sha256": "46131d20a458b4c216d3c122dcfc6607af37b6ede97d6ffafb503590902fa6d1",
+   "max_response_ticks_0": 156288,
+   "max_response_ticks_1": 31262,
+   "result": "observed handoff timing and functional checks passed"
+  },
+  "rm-handoff-loss": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 156305,
+   "fault_codes": [],
+   "uart_sha256": "91fa25e3c0e81d08b45f0dc40d1a64994f7aff899f495cd8a8d3c6fd1801d3d9",
+   "max_response_ticks_0": 156288,
+   "max_response_ticks_1": 31264,
+   "observed_interval_ticks": [
+    1375019,
+    24,
+    1375043
+   ],
+   "result": "observed handoff timing and functional checks passed"
+  },
+  "rm-late": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": 279520,
+   "fault_codes": [
+    1,
+    1,
+    2,
+    7,
+    3,
+    1,
+    3,
+    6,
+    3,
+    6
+   ],
+   "uart_sha256": "56c2410e2f7507b030dc1087cbe79da4f0815012298cf2c433142e1e749892ba",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "rm-demand": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": 273561,
+   "fault_codes": [
+    1,
+    1,
+    2,
+    7,
+    3,
+    1,
+    3,
+    6,
+    3,
+    6
+   ],
+   "uart_sha256": "7c2652ed9c1b4e7532318e2142fd392c03a3e14d3e876f8180bdce79ac5308e4",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "dm-healthy": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": 272313,
+   "fault_codes": [
+    1,
+    1,
+    2,
+    7,
+    3,
+    1,
+    3,
+    6,
+    3,
+    6
+   ],
+   "uart_sha256": "3e4351e6198d6f8a6f3b506331da19e120fcd20d1ea8dae1595535f0cf6ac812",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "dm-loss": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": 298537,
+   "fault_codes": [
+    1,
+    1,
+    2,
+    1,
+    4,
+    7,
+    3,
+    1,
+    3,
+    6,
+    3,
+    6
+   ],
+   "uart_sha256": "73316dfbc553512858f03e270f61be83d4078533758f901fe03e03944fce1dc7",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "dm-handoff-healthy": {
+   "terminal": [
+    1,
+    0
+   ],
+   "device_edges": [
+    1
+   ],
+   "max_check_gap_ticks": 156305,
+   "fault_codes": [],
+   "uart_sha256": "63dad477dfcba0b742a9203ab044a9d7708e1566168a1b16a0c8ba495c1c41ec",
+   "max_response_ticks_0": 156287,
+   "max_response_ticks_1": 31261,
+   "result": "observed handoff timing and functional checks passed"
+  },
+  "dm-handoff-loss": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 156305,
+   "fault_codes": [],
+   "uart_sha256": "0052fde20b4265907afe677a9c5b30095e7a275ac53c54f4a7b343f824b03d70",
+   "max_response_ticks_0": 156287,
+   "max_response_ticks_1": 31264,
+   "observed_interval_ticks": [
+    1375019,
+    24,
+    1375043
+   ],
+   "result": "observed handoff timing and functional checks passed"
+  },
+  "dm-late": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": 278762,
+   "fault_codes": [
+    1,
+    1,
+    2,
+    7,
+    3,
+    1,
+    3,
+    6,
+    3,
+    6
+   ],
+   "uart_sha256": "ff549eb95dc5eb1e595f43cbdecec3dd31ad8893ca8bbfede5c433e0f3d5a1e7",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "dm-demand": {
+   "terminal": [
+    0,
+    1
+   ],
+   "device_edges": [],
+   "max_check_gap_ticks": 294183,
+   "fault_codes": [
+    1,
+    1,
+    2,
+    1,
+    4,
+    7,
+    3,
+    1,
+    3,
+    6,
+    3,
+    6
+   ],
+   "uart_sha256": "32cfd7ae6991497eefe63dbde26b437a2488e9675d8035d0f993dc7d97d95c23",
+   "result": "fail-inhibited before enable; ordinary functional case unqualified"
+  },
+  "rm-worst": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 312508,
+   "fault_codes": [],
+   "uart_sha256": "2f6c2b7d0e712b322e40a29d66b832bf02e3e07dd590ca0dfdeaeea73629602d",
+   "required_completion": 2658828,
+   "actual_completion": 2658830,
+   "actual_gap": 312503,
+   "result": "exact boundary unqualified"
+  },
+  "rm-tie": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 312506,
+   "fault_codes": [],
+   "uart_sha256": "198470566b13d3a6112cbba0092cec7869097a2b05fface0bad8dc2aaa3e670d",
+   "expiry": 2658829,
+   "arrival_issue": 2658835,
+   "check_decision": 2658829,
+   "result": "exact boundary unqualified"
+  },
+  "rm-early-command": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 937499,
+   "fault_codes": [],
+   "uart_sha256": "5563454b9a2879a59e6360b6c0be899156a6f52da21aaaf45430d343c7cfebec",
+   "post_generation_issues": [
+    2190089,
+    2815089
+   ],
+   "post_generation_commands": [
+    2502589
+   ],
+   "result": "observed scripted state checks passed"
+  },
+  "rm-expired-command": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 1406260,
+   "fault_codes": [],
+   "uart_sha256": "10da57003420032be6f777423217c1ae84a500d09ee3530cdc98ad95a15a9f41",
+   "post_generation_issues": [
+    2190089,
+    2815089
+   ],
+   "post_generation_commands": [
+    3440089
+   ],
+   "result": "observed scripted state checks passed"
+  },
+  "rm-no-command": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 937499,
+   "fault_codes": [],
+   "uart_sha256": "fccfe1a676216a2fabd0b1dc895b7bb4e6298515fdde4fba90f91b61b10e0daf",
+   "post_generation_issues": [
+    2190089,
+    2815089
+   ],
+   "post_generation_commands": [],
+   "result": "observed scripted state checks passed"
+  },
+  "rm-missing-permit": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 1093759,
+   "fault_codes": [],
+   "uart_sha256": "e46d1c5723d20b7abfaedb26f5683c3903da7d3b0115a1adf064752dc5fa7fdd",
+   "post_generation_issues": [
+    2190089
+   ],
+   "post_generation_commands": [
+    3127589
+   ],
+   "result": "observed scripted state checks passed"
+  },
+  "rm-invalid": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 156253,
+   "fault_codes": [],
+   "uart_sha256": "fd6ed27b1a46a28625b30846a3656b4bdf4b9d819f95826f7efc34df7fddcfc6",
+   "result": "observed scripted state checks passed"
+  },
+  "rm-silence": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 156253,
+   "fault_codes": [],
+   "uart_sha256": "a53331fc09342beff5e9f0be810281396d816577b690f4e92599b9ca94d8a552",
+   "result": "observed scripted state checks passed"
+  },
+  "rm-saturation": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 156253,
+   "fault_codes": [],
+   "uart_sha256": "75f89cd3c1e42fa53dface8738cfd568a52cfb3d62269b5c87bc1167ba92d383",
+   "result": "observed scripted state checks passed"
+  },
+  "rm-recovery": {
+   "terminal": [
+    1,
+    0
+   ],
+   "device_edges": [
+    1,
+    0,
+    1
+   ],
+   "max_check_gap_ticks": 1093761,
+   "fault_codes": [],
+   "uart_sha256": "9f21a35a4169abc905d6b0c0e069f11a9683b6888251cbb417b8d37e38a3c961",
+   "post_generation_issues": [
+    2190089,
+    2815089
+   ],
+   "post_generation_commands": [
+    3127589
+   ],
+   "result": "observed scripted state checks passed"
+  },
+  "rm-old-generation": {
+   "terminal": [
+    0,
+    0
+   ],
+   "device_edges": [
+    1,
+    0
+   ],
+   "max_check_gap_ticks": 1093757,
+   "fault_codes": [],
+   "uart_sha256": "aae4f0364407458038af7e79eb8523ed4b2e10e3d4cd07fda415dc42b6b74581",
+   "post_generation_issues": [
+    2190088,
+    2815088
+   ],
+   "post_generation_commands": [
+    3127588
+   ],
+   "result": "observed scripted state checks passed"
+  }
+ },
+ "archive": {
+  "format": "Ordered base64 byte chunks of deterministic gzip tar",
+  "sha256": "a64993f7cc63b25224fae5682973e9917e7b717d7ecbd720d03dbdb1330c46b1",
+  "parts": [
+   "evd-042-v1-raw-01.json"
+  ],
+  "entry_sha256": {
+   "control-builds/build.py": "25fdee91742674eb6ff58d9689bebfc806c572da88024fb5440d855756c1947c",
+   "control-builds/index.json": "bbb1253904830fd4a110b2c8d78468b7d20aec944e3799c39732b4d5ffe60ec9",
+   "control-builds/index.sha256": "f5b7cacb1e83284b6ff956944a9e6a1cbebcea93b6edf30689d4a06f5dd7c19c",
+   "control-fresh/check.py": "cf51f47fd15567b6560b479f85b716c7948b8effaa2432e283ac68b8ea86fa59",
+   "control-fresh/checker.txt": "b3c8029b6722c731074de2fa228c1ca1cff0c9788b25b06e612061f9d86edf25",
+   "control-fresh/dm-demand/argv.json": "320f93db19a6abbb965e3064f89bc62da98eee7b1b4e7e823569e76dcd12c8b2",
+   "control-fresh/dm-demand/int.log": "db02d3b9731bad11abfe1c6c2d85f058d5d64757be4ff951b32d31e1fc5af5f1",
+   "control-fresh/dm-demand/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/dm-demand/uart.bin": "32cfd7ae6991497eefe63dbde26b437a2488e9675d8035d0f993dc7d97d95c23",
+   "control-fresh/dm-handoff-healthy/argv.json": "177290a6657b8dc45e0c0388129751b35d3f52267c5f23541cbaa8accc4d4818",
+   "control-fresh/dm-handoff-healthy/int.log": "dd686f4fbd8c8f8af0903540194e6969589b50152c611d0f761265f4d59b4885",
+   "control-fresh/dm-handoff-healthy/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/dm-handoff-healthy/uart.bin": "63dad477dfcba0b742a9203ab044a9d7708e1566168a1b16a0c8ba495c1c41ec",
+   "control-fresh/dm-handoff-loss/argv.json": "dea9744906aa10a5ae7ec28e203173861c629fc9fbebad52190292c56c19dafa",
+   "control-fresh/dm-handoff-loss/int.log": "daa1fce079e7aab165bb144ef58031f57a50edd036e94884614874f7b6124243",
+   "control-fresh/dm-handoff-loss/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/dm-handoff-loss/uart.bin": "0052fde20b4265907afe677a9c5b30095e7a275ac53c54f4a7b343f824b03d70",
+   "control-fresh/dm-healthy/argv.json": "e2e28425be5e398eb3ec5d93fad375e4933ccc426b35220a1b53d36a0b3ce53a",
+   "control-fresh/dm-healthy/int.log": "4ed855860335daf4c8b2ff96a47d5d469942f2e187195524d7812073ae68591d",
+   "control-fresh/dm-healthy/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/dm-healthy/uart.bin": "3e4351e6198d6f8a6f3b506331da19e120fcd20d1ea8dae1595535f0cf6ac812",
+   "control-fresh/dm-late/argv.json": "12cd4e987241c5943cfdc188f5a1c2b8769521c79882bba397194b24c2b2313d",
+   "control-fresh/dm-late/int.log": "8d4bd794793cd128e82ab0de93e885113dfd5f17a70b615f6059fb2265d49846",
+   "control-fresh/dm-late/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/dm-late/uart.bin": "ff549eb95dc5eb1e595f43cbdecec3dd31ad8893ca8bbfede5c433e0f3d5a1e7",
+   "control-fresh/dm-loss/argv.json": "334f9f88b9f1ad64af035a447c713916f7d947d1f5b4b4b356fb47a63b109f7c",
+   "control-fresh/dm-loss/int.log": "b1ea3ae3daf358ba49bd978ad3bedd39f965926d3d1b738c0fb1d8493dfef25c",
+   "control-fresh/dm-loss/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/dm-loss/uart.bin": "73316dfbc553512858f03e270f61be83d4078533758f901fe03e03944fce1dc7",
+   "control-fresh/limits.py": "4cd37b9b075b43e6714cdcc08a38d8b9b8ff268302cd2bd071b71ccbe6028b9b",
+   "control-fresh/limits.txt": "11131ec768eeeef0bc824cf329286e7993ce8e3c215d9940b7a561d83dc1b3b9",
+   "control-fresh/report.md": "c31a2e9cc8e6e0b46d48641a86ff2078841ee1e65b39e95652d9f8624c407652",
+   "control-fresh/rm-demand/argv.json": "0aa7ee709a5cccbdc0a92942fb6d834d5ac7b3a7e0d84a5690aa9d83a5bae4d3",
+   "control-fresh/rm-demand/int.log": "013e2466ffbe4e32a17ee2f7dfc9a4dde7bab585fb9136d801efe7fd9293b4f0",
+   "control-fresh/rm-demand/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-demand/uart.bin": "7c2652ed9c1b4e7532318e2142fd392c03a3e14d3e876f8180bdce79ac5308e4",
+   "control-fresh/rm-early-command/argv.json": "11f14eb5fc237d5db323b3bed4284b51a2fff392d31b70cc1200b43378c45197",
+   "control-fresh/rm-early-command/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-early-command/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-early-command/uart.bin": "5563454b9a2879a59e6360b6c0be899156a6f52da21aaaf45430d343c7cfebec",
+   "control-fresh/rm-expired-command/argv.json": "d634a2500ca8f1e8f46121b9eb81da2e0c3484ba8cfc9290519f701ab5322af2",
+   "control-fresh/rm-expired-command/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-expired-command/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-expired-command/uart.bin": "10da57003420032be6f777423217c1ae84a500d09ee3530cdc98ad95a15a9f41",
+   "control-fresh/rm-handoff-healthy/argv.json": "b83fa7f661a9e98316b0f04560c45595baae7d5e4a6fe799c4ff911f84ba863d",
+   "control-fresh/rm-handoff-healthy/int.log": "b0d50bca429d980af7ed47c1931461b19c039758b56196412e8a5291d806c164",
+   "control-fresh/rm-handoff-healthy/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-handoff-healthy/uart.bin": "46131d20a458b4c216d3c122dcfc6607af37b6ede97d6ffafb503590902fa6d1",
+   "control-fresh/rm-handoff-loss/argv.json": "f65b5180d7ea25f865c3022dc5535de653583098967a5cff8587f1920c916c3f",
+   "control-fresh/rm-handoff-loss/int.log": "a1ddefe54dc457cbadec8572c02fbb2ad2b4a622f15d2181dd9f9483afe5f9d9",
+   "control-fresh/rm-handoff-loss/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-handoff-loss/uart.bin": "91fa25e3c0e81d08b45f0dc40d1a64994f7aff899f495cd8a8d3c6fd1801d3d9",
+   "control-fresh/rm-healthy/argv.json": "6464476378e04499a0dae5568f260957f39b680959aa4667a2c2a1f0396ba3cf",
+   "control-fresh/rm-healthy/int.log": "f87418d347a04179f0cad6ff439c8a3ad129d8bc5e4fdc1dd8fc8c8e00fdb47d",
+   "control-fresh/rm-healthy/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-healthy/uart.bin": "a43d63628e3f1b1d855ab9676c0dabafbc6712f3cf144e67236c94d2bc7b843f",
+   "control-fresh/rm-invalid/argv.json": "f02ab3ac73177b1cdfbafbda7d636ffc0f0681651f3b5ac8810f513b3b14e45b",
+   "control-fresh/rm-invalid/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-invalid/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-invalid/uart.bin": "fd6ed27b1a46a28625b30846a3656b4bdf4b9d819f95826f7efc34df7fddcfc6",
+   "control-fresh/rm-late/argv.json": "8fbdb7f3c7809aee3b89ef4c167d5c0bbf7c2d82211c4847d4a4b3a62e303741",
+   "control-fresh/rm-late/int.log": "8ae9fb2fd360c57a99a54db664d5961005e384462598fdf3af9ecb797ad09892",
+   "control-fresh/rm-late/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-late/uart.bin": "56c2410e2f7507b030dc1087cbe79da4f0815012298cf2c433142e1e749892ba",
+   "control-fresh/rm-loss/argv.json": "233378a1624105c3e7d58aba07e66e4f15a6ed4b85e4530b88003189f3074175",
+   "control-fresh/rm-loss/int.log": "8e65f43d9da48c445022b585c77cd5a1b252fcca2a4fb4e7a6722762c77c722c",
+   "control-fresh/rm-loss/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-loss/uart.bin": "84740095ca910496026cfe9554bfc3567a8e6db37d3ec8a6c8b53276e8b05b96",
+   "control-fresh/rm-missing-permit/argv.json": "7e81f2a03b61f10f8599365a4d50a66b8859ce6e2e52717d2d54fa53bf72dcad",
+   "control-fresh/rm-missing-permit/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-missing-permit/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-missing-permit/uart.bin": "e46d1c5723d20b7abfaedb26f5683c3903da7d3b0115a1adf064752dc5fa7fdd",
+   "control-fresh/rm-no-command/argv.json": "0f00e1de2405c4fa3dc00e81ce0fd1d7af4b9e0e78fe08d432733865b90b233b",
+   "control-fresh/rm-no-command/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-no-command/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-no-command/uart.bin": "fccfe1a676216a2fabd0b1dc895b7bb4e6298515fdde4fba90f91b61b10e0daf",
+   "control-fresh/rm-old-generation/argv.json": "1c9bceb35284eabc7d82b6e4b4b779ceb15151847c245e17ffb2b7ae9c09dcdb",
+   "control-fresh/rm-old-generation/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-old-generation/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-old-generation/uart.bin": "aae4f0364407458038af7e79eb8523ed4b2e10e3d4cd07fda415dc42b6b74581",
+   "control-fresh/rm-recovery/argv.json": "3290689865f972a413fc0b8f11f3d00bf065b9f14589cf203314fd372dadbd02",
+   "control-fresh/rm-recovery/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-recovery/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-recovery/uart.bin": "9f21a35a4169abc905d6b0c0e069f11a9683b6888251cbb417b8d37e38a3c961",
+   "control-fresh/rm-saturation/argv.json": "ba9ec6d5779e9e49ae4276721a7ebf439c0eb26431c79a5e58dd0d83edc010f4",
+   "control-fresh/rm-saturation/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-saturation/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-saturation/uart.bin": "75f89cd3c1e42fa53dface8738cfd568a52cfb3d62269b5c87bc1167ba92d383",
+   "control-fresh/rm-silence/argv.json": "dc37c2f9e1a472d070e3431bc991a8a2db9d2d740942e8800cdbd72db8ad6613",
+   "control-fresh/rm-silence/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-silence/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-silence/uart.bin": "a53331fc09342beff5e9f0be810281396d816577b690f4e92599b9ca94d8a552",
+   "control-fresh/rm-tie/argv.json": "e942f65928d60cbc29070852a3ab66a67c74cb67fc49ba9f79ff98ed372642f2",
+   "control-fresh/rm-tie/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-tie/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-tie/uart.bin": "198470566b13d3a6112cbba0092cec7869097a2b05fface0bad8dc2aaa3e670d",
+   "control-fresh/rm-worst/argv.json": "339bea02f6210b221e81ee09bbaaece353c8f0b82e8ef31816bba171d1abef57",
+   "control-fresh/rm-worst/int.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "control-fresh/rm-worst/stderr": "0885d1d7418ea5f779d509dbf62bd1b21ef930ff6795e7ee873763676cc02f72",
+   "control-fresh/rm-worst/uart.bin": "2f6c2b7d0e712b322e40a29d66b832bf02e3e07dd590ca0dfdeaeea73629602d",
+   "control-fresh/run.py": "7900162346685b0e827964d833ba982c71914996374a3e74809ad41b8cd5433b",
+   "control-fresh/SHA256SUMS": "f2b3b666fb4d5d876b605307d56dd0a59ba02d690f7ec1190ba58f21cd04f8b4",
+   "control-fresh/summary.json": "2cadbf2e830ee54e9f34054ea2b851935413d4e74e80e497ab1ccc7de75e5c54",
+   "control-fresh/version.txt": "8ff08b5c9c6a45e338a199846bbce04c4bb630b176c96f545ee51a03130565a3"
+  },
+  "restore_python": "from pathlib import Path\nimport hashlib,base64,json,tarfile,io\na=json.loads(Path('evd-042-v1.json').read_bytes())['archive']; data=[]\nfor name in a['parts']:\n    part=json.loads(Path(name).read_bytes()); b=base64.b64decode(part['data'],validate=True); assert hashlib.sha256(b).hexdigest()==part['sha256']; data.append(b)\nb=b''.join(data); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for name,h in a['entry_sha256'].items():\n        p=Path('v1')/name; assert p.resolve().is_relative_to(Path('v1').resolve()); b=t.extractfile(name).read(); assert hashlib.sha256(b).hexdigest()==h; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b)",
+  "offline_replay": "Run restore_python from the evidence JSON directory with Python 3.9+. Then run python -B v1/control-fresh/check.py and python -B v1/control-fresh/limits.py in a disposable extraction. No emulator or ELF required. Exact guest commands and ELF digests are retained for separate reproduction."
+ }
+}

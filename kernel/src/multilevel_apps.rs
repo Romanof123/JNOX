@@ -81,3 +81,55 @@ pub fn run() -> ! {
         },
     )
 }
+
+#[cfg(jnox_multilevel_limits)]
+fn units(n: u64) -> u64 {
+    unit().checked_mul(n).filter(|&v| v > 0).unwrap_or_else(|| svc::fail())
+}
+
+#[cfg(any(jnox_app = "mlq-blocked", jnox_app = "mlq-exited"))]
+pub fn run() -> ! {
+    fn terminal() {
+        #[cfg(jnox_app = "mlq-blocked")]
+        svc::block();
+    }
+    static TASKS: [Task; 2] = [
+        Task { entry: terminal, class: 1 },
+        Task { entry: terminal, class: 1 },
+    ];
+    #[cfg(jnox_app = "mlq-blocked")]
+    super::uart_write(b"MLQ-BLOCKED START\n");
+    #[cfg(jnox_app = "mlq-exited")]
+    super::uart_write(b"MLQ-EXITED START\n");
+    svc::run(&TASKS, Mode::Strict(units(1)))
+}
+
+#[cfg(any(jnox_app = "mlq-saturated", jnox_app = "mlfq-delayed"))]
+pub(super) static WORK_END: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+
+#[cfg(any(jnox_app = "mlq-saturated", jnox_app = "mlfq-delayed"))]
+fn busy_until_end() {
+    let end = WORK_END.load(core::sync::atomic::Ordering::Relaxed);
+    while svc::counter() < end {
+        core::hint::spin_loop();
+    }
+}
+
+#[cfg(jnox_app = "mlq-saturated")]
+pub fn run() -> ! {
+    fn low() { work(units(1)); }
+    static TASKS: [Task; 3] = [
+        Task { entry: low, class: 0 },
+        Task { entry: busy_until_end, class: 2 },
+        Task { entry: busy_until_end, class: 2 },
+    ];
+    super::uart_write(b"MLQ-SATURATED START\n");
+    svc::run(&TASKS, Mode::Strict(units(1)))
+}
+
+#[cfg(jnox_app = "mlfq-delayed")]
+pub fn run() -> ! {
+    static TASKS: [Task; 3] = [const { Task { entry: busy_until_end, class: 0 } }; 3];
+    super::uart_write(b"MLFQ-DELAYED START\n");
+    svc::run(&TASKS, Mode::Feedback { allotments: [units(4), units(6), units(8)], period: units(16) })
+}

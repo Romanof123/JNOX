@@ -1,0 +1,527 @@
+{
+ "version": 2,
+ "verdict": "PARTIAL",
+ "source": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
+ "primary_cases": 23,
+ "diagnostic_cases": 10,
+ "qualified_complete_primary_cases": 14,
+ "first_incomplete_guest": "booted-primary-rm-handoff-healthy",
+ "english": "evd-042-v2.en.md",
+ "korean": "evd-042-v2.md",
+ "evidence": "evd-042-v2.json",
+ "independent_report_sha256": "cf29a8018c15b4a4ed30de95003ef6128dbea1e58da638acce6c8b7e722d0c7e",
+ "independent_report": "# Independent frozen guest replay\n\nCandidate e0f0ce623aa170a8daff600515b0c76e0b20405f. The supplied build index and all 23 ELF digests matched. QEMU 6.2.0 ran single-core Cortex-A72, TCG, virt GICv2, 128 MiB, with interrupt logging for every run. The virtual counter frequency was 62,500,000 Hz (16 ns per tick). Raw rows and the separate device read brackets are retained for every case. All verdicts concern this virtual bench only.\n\n| Primary case family | Complete runs | Independent outcome |\n|---|---:|---|\n| RM/DM ordinary healthy, loss, late, demand, default clock | 8 | Unqualified before enable. Every run missed the phase-zero IRQ budget and later skipped a phase. |\n| RM/DM owner handoff healthy/loss, icount | 4 | Qualified on complete runs. RM healthy first capture truncated during host read, then qualified in a separately preserved cold run. |\n| RM scripted worst | 1 | Qualified at the exact specified completed-check phase. |\n| RM scripted tie | 1 | Unqualified. Fourth permit ingress completion upper bound is one tick after expiry. |\n| RM scripted early/expired/no command, missing permit, old generation, recovery, invalid, silence, saturation | 9 | Expected starting, inhibited and terminal device readbacks observed. Recovery alone restored enable after closure and latch. |\n\nAll four completed handoff runs show both injector issues and deliveries at ticks 190111 and 815111 and a command at 1127611. The independent device read precedes transfer and ordinary sequence 3. The enabled read bracket for RM loss is 1252671..1252672, then transfer 1252676. Its fourth permit arrives at 2065120, followed three ticks later by gate closure. The loss results under both policies show same-tick closure brackets at 2065123, latch body brackets at 3440142, and first OFF device-read brackets at 3440170. Conservative detection, inhibition and total bounds are 1375019, 28 and 1375047 ticks (22.000304, 0.000448 and 22.000752 ms). The measured device read occurs after latch/output write. It bounds a virtual observation and does not measure the exact physical effect.\n\nWorst-phase script records permit issue, completed delivery and gate closure at 1408830, in that order in the single-owner assembly path. Consecutive phase 6 and 7 checks each have zero-width body brackets at 2658829 and 2971329. The first is one tick below 20 ms and the gap is exactly 312500 ticks. Fault detection, inhibition and total upper intervals are 1562499, 5 and 1562504 ticks. Tie script retains an open gate, starts and completes expiry and samples the fourth issue at 2658830. The ingress store follows the expiry latch in program order, but its measured bracket spans 2658830..2658831. The receiver rejects at 2658837 and the falling read is 2658840. Same-tick ingress and expiry cannot qualify. The actual intra-tick store phase remains unresolved.\n\nAll 8 ordinary default-clock first runs have initial IRQ latency of 111771..123682 ticks versus the allowed 31250. First timing fault is late IRQ, all boot inhibited, none observes an enabling edge. Every run then skips a phase and takes the dedicated final check. These traces cannot establish the intended late/demand injection in isolation or an expiry transition. QEMU/WSL logging to the mounted filesystem and host scheduling were not individually controlled. A root cause below the observed IRQ lateness cannot be inferred.\n\nSeparately labeled diagnostic controls use the same immutable ELFs. The four default-clock handoff diagnostics fail before transfer. Deterministic ordinary healthy passes for both policies. Deterministic late sees exactly one excessive IRQ at phase 12 (RM 39063, DM 39064 ticks), no excess CPU activation, and a timing latch with independently observed 1-to-0 output. Deterministic demand sees 14 excessive activations in each run, peak 19548 ticks against 15625, every IRQ within envelope, and a timing latch with observed 1-to-0 output. These four runs qualify as isolated negative controls under icount, and cannot replace any default-clock primary outcome.\n\nThe CLI throws IndexError for all eight short default-clock ordinary primary traces and four default-clock handoff diagnostic traces, despite complete UART terminal markers. The CLI indexes a dense check array by actual phase ID after a skip. For the four deterministic negative diagnostics, the CLI returns an actual-delivery error because the issued and accepted counts diverge after a timing latch. UART records show all pre-latch issues accepted and subsequent issues rejected by the receiver as designed. Both differences are preserved. The arithmetic CLI self-test independently exercises inclusive 25/5/30 ms and one tick above; see scorer-boundaries.json. Arithmetic tests do not create guest observations.\n\nThe original launcher implicitly enabled a virtual NIC and could not start any guest because efi-virtio.rom was unavailable. Those logs remain in primary-* and diagnostic-*. All substantive runs explicitly disable the unused NIC. booted-primary-rm-handoff-healthy is the first partial boot, interrupted by a host mounted-filesystem read error. It has no terminal marker or execution sidecar. Its exact launch construction is preserved in capture_booted.py. Its start/stop timestamp and exit code were not recorded. The separately named retry captures a complete run. All complete booted cases retain executable hashes, argv, UTC start/stop, terminal observation, QEMU exit, raw UART, interrupt log, stderr and scorer streams. The launcher stops QEMU with SIGTERM only after observing CONTROL END on each completed run. Runs are cold and sequential.\n\nindependent.json contains actual issue, receive, commands, fault, device access brackets, decision start and completion, outer phase returns, job completions, individual IRQ latencies and output hashes. audit.py interprets guest observations independently of the standalone CLI. A qualified phase uses completion at row 21 and keeps the later row 10 outer worker marker separate. This replay supplies neither an analytical bound on worst-case execution nor any physical board or product evidence.\n\n",
+ "build_index": {
+  "source": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
+  "tree": "c85d510b6635394cdd06bb312421b665f1781b06",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+  "cwd": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-src\\kernel",
+  "command": [
+   "cargo",
+   "+1.95.0",
+   "build",
+   "--release",
+   "--locked",
+   "-j1"
+  ],
+  "target": "aarch64-unknown-none",
+  "images": {
+   "rm-healthy": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-healthy/build.log",
+    "log_sha256": "4ab6e1705781cfa5ba842893f14a455a59b393c0f8fb7ec1f517b009f1e0b77c",
+    "path": "rm-healthy/kernel.elf",
+    "sha256": "1417423e7117f903fe45a697a6f2d6b98fab3c01e7a0d6fa6124ce5e94b79e45",
+    "size": 97104
+   },
+   "rm-loss": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-loss/build.log",
+    "log_sha256": "698a961392c3c887f0d3a195daadfcbfdf114b8b3e771e2521fc38f5125d62e9",
+    "path": "rm-loss/kernel.elf",
+    "sha256": "a35860b5ad19cdf4ea47dec4f44f23bf988fb58ef90283bf2e1e905acdeb8760",
+    "size": 97104
+   },
+   "rm-handoff-healthy": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "handoff-healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "handoff-healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-handoff-healthy/build.log",
+    "log_sha256": "8184ebaf53838d07face76df7ddd0b86e7d1c5d0ef7ae762ca2b6928656b747c",
+    "path": "rm-handoff-healthy/kernel.elf",
+    "sha256": "56e16087363b5811800e1554e9a2cd3af192a4f1df378b0fa023415947206add",
+    "size": 97184
+   },
+   "rm-handoff-loss": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "handoff-loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "handoff-loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-handoff-loss/build.log",
+    "log_sha256": "9d6a93c20e6548ee98c3a9faa6ad665292989c7cc48d0c6cccb84882d2c1087f",
+    "path": "rm-handoff-loss/kernel.elf",
+    "sha256": "985da62350a0d58a10ea6d861d5bb62f509fc080a64c9441b0a55294799e1105",
+    "size": 97184
+   },
+   "rm-late": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "late",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "late",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-late/build.log",
+    "log_sha256": "802900da1f9aae13e8a171d203f159e500a73c8da77ce973cf5d2e1271478176",
+    "path": "rm-late/kernel.elf",
+    "sha256": "f6615b02473833304d32ee1066706dd65fac2ec2684fcc7e7ae38551e172efec",
+    "size": 97104
+   },
+   "rm-demand": {
+    "kind": "ordinary",
+    "policy": "rm",
+    "case": "demand",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "demand",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-demand/build.log",
+    "log_sha256": "9d6a93c20e6548ee98c3a9faa6ad665292989c7cc48d0c6cccb84882d2c1087f",
+    "path": "rm-demand/kernel.elf",
+    "sha256": "5f744ec9f888e7bb96230f37451197229a57e9acee221dea10aae26ee60b1864",
+    "size": 97104
+   },
+   "dm-healthy": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-healthy/build.log",
+    "log_sha256": "802900da1f9aae13e8a171d203f159e500a73c8da77ce973cf5d2e1271478176",
+    "path": "dm-healthy/kernel.elf",
+    "sha256": "4332939737baa59156fc1abad9dc95d3470e7c8917876f9646f398cc4ba6ce6b",
+    "size": 97104
+   },
+   "dm-loss": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-loss/build.log",
+    "log_sha256": "802900da1f9aae13e8a171d203f159e500a73c8da77ce973cf5d2e1271478176",
+    "path": "dm-loss/kernel.elf",
+    "sha256": "ddc1f6d44a1b528a8e4066f3c03633040db8e9b7ff39f2c3ab1771f3e02f4b53",
+    "size": 97104
+   },
+   "dm-handoff-healthy": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "handoff-healthy",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "handoff-healthy",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-handoff-healthy/build.log",
+    "log_sha256": "802900da1f9aae13e8a171d203f159e500a73c8da77ce973cf5d2e1271478176",
+    "path": "dm-handoff-healthy/kernel.elf",
+    "sha256": "adb04953089431e12a7ed32223b7767f19f6553839a1940c6f7f76e8539fe19f",
+    "size": 97184
+   },
+   "dm-handoff-loss": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "handoff-loss",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "handoff-loss",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-handoff-loss/build.log",
+    "log_sha256": "8184ebaf53838d07face76df7ddd0b86e7d1c5d0ef7ae762ca2b6928656b747c",
+    "path": "dm-handoff-loss/kernel.elf",
+    "sha256": "32e47f6506c63bba09d7afa5ff70faa344438193aca309ef1e892e9d47b5f6dc",
+    "size": 97184
+   },
+   "dm-late": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "late",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "late",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-late/build.log",
+    "log_sha256": "8184ebaf53838d07face76df7ddd0b86e7d1c5d0ef7ae762ca2b6928656b747c",
+    "path": "dm-late/kernel.elf",
+    "sha256": "80ca29d504c0816071d7c1b29471e02523d0a9afb4c0e5ff78ba36840b0ca840",
+    "size": 97104
+   },
+   "dm-demand": {
+    "kind": "ordinary",
+    "policy": "dm",
+    "case": "demand",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-dm",
+     "JNOX_CONTROL_CASE": "demand",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "dm-demand/build.log",
+    "log_sha256": "6ae45e26bd99f90f5109c5fbef89cb757287c84b1364681ab8ef946205c010b1",
+    "path": "dm-demand/kernel.elf",
+    "sha256": "356f1c2f34afd506e78762f28bba2a892e49f82846760192725e1db372076f61",
+    "size": 97104
+   },
+   "rm-worst": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "worst",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "worst",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-worst/build.log",
+    "log_sha256": "9d6a93c20e6548ee98c3a9faa6ad665292989c7cc48d0c6cccb84882d2c1087f",
+    "path": "rm-worst/kernel.elf",
+    "sha256": "2ee7ed61999f4f5707a96115ccef51af7cde7cf7b1bdf922d552e30fccc4374a",
+    "size": 97064
+   },
+   "rm-tie": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "tie",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "tie",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-tie/build.log",
+    "log_sha256": "698a961392c3c887f0d3a195daadfcbfdf114b8b3e771e2521fc38f5125d62e9",
+    "path": "rm-tie/kernel.elf",
+    "sha256": "c99c99740aabadecbc502aa6ecd268d1a64c91cf131b823e8098d10f5079c8fb",
+    "size": 97136
+   },
+   "rm-early-command": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "early-command",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "early-command",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-early-command/build.log",
+    "log_sha256": "9d6a93c20e6548ee98c3a9faa6ad665292989c7cc48d0c6cccb84882d2c1087f",
+    "path": "rm-early-command/kernel.elf",
+    "sha256": "baef212256c94b87306ff8393cad6e303bff769fc16a7cde1bfadb8e1d37acf9",
+    "size": 96624
+   },
+   "rm-expired-command": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "expired-command",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "expired-command",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-expired-command/build.log",
+    "log_sha256": "698a961392c3c887f0d3a195daadfcbfdf114b8b3e771e2521fc38f5125d62e9",
+    "path": "rm-expired-command/kernel.elf",
+    "sha256": "5f995f569902fbc43c0c3cc39b48a3deb51f80af8c2275ebbc0f90bc08c999ad",
+    "size": 96624
+   },
+   "rm-no-command": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "no-command",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "no-command",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-no-command/build.log",
+    "log_sha256": "8184ebaf53838d07face76df7ddd0b86e7d1c5d0ef7ae762ca2b6928656b747c",
+    "path": "rm-no-command/kernel.elf",
+    "sha256": "198e0b6a9b16c4de375593e5b74b6aca7e74e5c0c7b74e8a3b92d8b7420c1192",
+    "size": 96624
+   },
+   "rm-missing-permit": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "missing-permit",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "missing-permit",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-missing-permit/build.log",
+    "log_sha256": "9d6a93c20e6548ee98c3a9faa6ad665292989c7cc48d0c6cccb84882d2c1087f",
+    "path": "rm-missing-permit/kernel.elf",
+    "sha256": "7415c916491b827632fcbaa8d1955d5a3d8c0a24a864a8f12cee156a9c2e46de",
+    "size": 96624
+   },
+   "rm-invalid": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "invalid",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "invalid",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-invalid/build.log",
+    "log_sha256": "8184ebaf53838d07face76df7ddd0b86e7d1c5d0ef7ae762ca2b6928656b747c",
+    "path": "rm-invalid/kernel.elf",
+    "sha256": "997948ffbc8fc4b8fd65b62df26d483b70a10a908291adfbde587f543fbed029",
+    "size": 96864
+   },
+   "rm-silence": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "silence",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "silence",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-silence/build.log",
+    "log_sha256": "698a961392c3c887f0d3a195daadfcbfdf114b8b3e771e2521fc38f5125d62e9",
+    "path": "rm-silence/kernel.elf",
+    "sha256": "3c8ab8eb02c6153e9ab45de0d4fd4c66ad82a01262abcafcc4aa7dd9bf19763c",
+    "size": 96616
+   },
+   "rm-saturation": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "saturation",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "saturation",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-saturation/build.log",
+    "log_sha256": "2c370e3b02b727254cfccc973cb15555030ce54072ece606de6c4ab9ac12664c",
+    "path": "rm-saturation/kernel.elf",
+    "sha256": "b2122777d9ddb22c784411f56a4ff001e73484905d047375cc78a84a0b1e182e",
+    "size": 96760
+   },
+   "rm-recovery": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "recovery",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "recovery",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-recovery/build.log",
+    "log_sha256": "4942df6552699ebc6e8df15a4f86445ba03a364f6e454703dde6af984cb4c4dd",
+    "path": "rm-recovery/kernel.elf",
+    "sha256": "da477f2232f95d2466057290b3daf4de3001699dae0c3ab1a9f5624f31480e80",
+    "size": 96624
+   },
+   "rm-old-generation": {
+    "kind": "scripted",
+    "policy": "rm",
+    "case": "old-generation",
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "JNOX_PROFILE": "periodic",
+     "JNOX_APP": "control-rm",
+     "JNOX_CONTROL_CASE": "old-generation",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\control-v2-builds"
+    },
+    "exit": 0,
+    "build_log": "rm-old-generation/build.log",
+    "log_sha256": "8184ebaf53838d07face76df7ddd0b86e7d1c5d0ef7ae762ca2b6928656b747c",
+    "path": "rm-old-generation/kernel.elf",
+    "sha256": "75f57cd3e639a41fddae9d6c96b9b688e1024db735980aee85e561ce866e1f2f",
+    "size": 96624
+   }
+  }
+ },
+ "independent_results_sha256": "d73b278ed970e10e7397efdb3eac1cb65db3f973acaea84dff104b896efa5c3e",
+ "archive": {
+  "encoding": "Ordered base64 chunks of gzip tar",
+  "parts": [
+   "evd-042-v2-raw-01.json",
+   "evd-042-v2-raw-02.json"
+  ],
+  "sha256": "2e4cc8680cdc1e56a75b0d394f39042b77248cac0cda9c33b4310bcee64d9fe6",
+  "files": 412,
+  "restore_python": "from pathlib import Path\nimport base64,hashlib,io,tarfile,json\na=json.loads(Path('evd-042-v2.json').read_bytes())['archive']; parts=[]\nfor name in a['parts']:\n    o=json.loads(Path(name).read_bytes()); b=base64.b64decode(o['data'],validate=True); assert hashlib.sha256(b).hexdigest()==o['sha256']; parts.append(b)\nb=b''.join(parts); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for name,digest in json.load(t.extractfile('archive-file-digests.json')).items():\n        p=Path('v2')/name; assert p.resolve().is_relative_to(Path('v2').resolve()); v=t.extractfile(name).read()\n        assert hashlib.sha256(v).hexdigest()==digest; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(v)",
+  "replay": "From the evidence directory run restore_python with Python 3.9+. In a disposable extraction run python -B v2/control-v2-fresh/audit.py to regenerate independent.json from the completed execution records. All logs, truncated attempt, scorer outputs, tool versions and executable/build identities are retained."
+ }
+}
