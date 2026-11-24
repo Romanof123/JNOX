@@ -8,6 +8,8 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture c
 
 On AArch64 QEMU, the kernel runs linked Rust tasks using fixed-priority FIFO or round robin. Both policies also boot on the Raspberry Pi 4 model. The scheduling release matrix links each tested configuration to its evidence and lists the remaining work. [Run linked Rust tasks](docs/fixed-runtime.en.md) · [Pi 4 model results](docs/evidence/evd-031.en.md) · [Scheduling release matrix](docs/scheduling-release-cases.en.md)
 
+On the single-core QEMU `virt` model, linked Rust jobs also run under earliest-deadline-first (EDF), sampled least-laxity-first (LLF) and weighted virtual runtime. The deadline tests follow a preempted worker back to its saved instruction. The weighted tests measure CPU share for two busy workers and how long a sleeping peer takes to run after wakeup. [Run EDF and LLF jobs](docs/ordinary-deadline-plan.md) · [Run weighted workloads](docs/ordinary-weighted.md)
+
 **Planning draft 0.1** established the project baseline. Automotive development targets ISO 26262 ASIL D safety goals for a specified product configuration and cybersecurity engineering in accordance with ISO/SAE 21434. Product selection, physical-board validation, safe-state approval and certification remain open. The virtual bench has its own safety parameters. [Bench safety decision](docs/safety-parameters.en.md)
 
 | Document | What it covers |

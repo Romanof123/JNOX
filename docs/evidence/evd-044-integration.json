@@ -1,0 +1,551 @@
+{
+  "scope": "Serialized integration builds and host controls; the prior independent first cold guest records retain their original scope.",
+  "results": {
+    "source": "52092854cf56f041957d9f16db727a4792d800c6",
+    "index_sha256": "02098447ecf8dc17381c0f91dd7bc1bf3f3b83c613c3ddcb0535a0811e70bb8a",
+    "evidence_count": 46,
+    "policy_count": 18,
+    "findings": [],
+    "tests": [
+      "Ran 9 tests in 0.015s",
+      "",
+      "OK"
+    ],
+    "guest_runs": 0,
+    "matched": [
+      "ordinary-partition-p",
+      "ordinary-partition-q",
+      "partition-bench",
+      "ordinary-edf",
+      "weighted-share",
+      "a-ps"
+    ],
+    "mismatched": [],
+    "new": []
+  },
+  "build_index": {
+    "source": "52092854cf56f041957d9f16db727a4792d800c6",
+    "tree": "d9d7493305cb88b4f2e413e795149b17b5b6d6a9",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+    "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+    "cwd": "D:\\codex\\.jnox-work\\next-fixed\\partition-pinned-current\\kernel",
+    "images": {
+      "ordinary-partition-p": {
+        "environment": {
+          "JNOX_BOARD": "virt",
+          "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104\\target",
+          "CARGO_BUILD_JOBS": "1",
+          "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104"
+        },
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1",
+          "--features",
+          "ordinary-partition-p"
+        ],
+        "exit": 0,
+        "build_log": "ordinary-partition-p/build.log",
+        "log_sha256": "3a07ee0019f2051cc8ac1c7e9c05c8073a70505868c38742714fb33cef3952ac",
+        "path": "ordinary-partition-p/kernel.elf",
+        "size": 98208,
+        "sha256": "8702aeb14671e3865224d6157ecd325cae67ce1b6d4d0bd32d2d8bd14fbbb4eb",
+        "comparison": {
+          "reference": "D:\\codex\\.jnox-work\\next-fixed\\selector-integration-builds\\104\\ordinary-partition-p\\kernel.elf",
+          "segments": [
+            {
+              "old_layout": [
+                1075838976,
+                1075838976,
+                16682,
+                5,
+                65536
+              ],
+              "new_layout": [
+                1075838976,
+                1075838976,
+                16682,
+                5,
+                65536
+              ],
+              "old_size": 16682,
+              "new_size": 16682,
+              "old_sha": "4e2b5b70b6ec7b876c8218bef2312280900dfa0217fe7183886aced27b07b4c7",
+              "new_sha": "4e2b5b70b6ec7b876c8218bef2312280900dfa0217fe7183886aced27b07b4c7",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            },
+            {
+              "old_layout": [
+                1075859456,
+                1075859456,
+                68864,
+                6,
+                65536
+              ],
+              "new_layout": [
+                1075859456,
+                1075859456,
+                68864,
+                6,
+                65536
+              ],
+              "old_size": 3240,
+              "new_size": 3240,
+              "old_sha": "528c7ba4d93dd2ee974d4d7609b3719eb5e50a0bc1b35ad00b0e7053bfcdba91",
+              "new_sha": "528c7ba4d93dd2ee974d4d7609b3719eb5e50a0bc1b35ad00b0e7053bfcdba91",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            }
+          ],
+          "identical": true,
+          "text_identical": true,
+          "old_text_bytes": 15344,
+          "new_text_bytes": 15344,
+          "old_text_sha": "471ca5eec19ab2d3a49ee632237749da55d907efb603010fbebcc8d022101c26",
+          "new_text_sha": "471ca5eec19ab2d3a49ee632237749da55d907efb603010fbebcc8d022101c26"
+        }
+      },
+      "ordinary-partition-q": {
+        "environment": {
+          "JNOX_BOARD": "virt",
+          "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104\\target",
+          "CARGO_BUILD_JOBS": "1",
+          "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104"
+        },
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1",
+          "--features",
+          "ordinary-partition-q"
+        ],
+        "exit": 0,
+        "build_log": "ordinary-partition-q/build.log",
+        "log_sha256": "069c4052ca642020a1e6c65cb1553ca89ce3541310d1384fb7981eebcbb11355",
+        "path": "ordinary-partition-q/kernel.elf",
+        "size": 98208,
+        "sha256": "f74a7f5250c833fd2048e92ddc5271708a8d557a64082eb6d500f40ed93cc264",
+        "comparison": {
+          "reference": "D:\\codex\\.jnox-work\\next-fixed\\selector-integration-builds\\104\\ordinary-partition-q\\kernel.elf",
+          "segments": [
+            {
+              "old_layout": [
+                1075838976,
+                1075838976,
+                16698,
+                5,
+                65536
+              ],
+              "new_layout": [
+                1075838976,
+                1075838976,
+                16698,
+                5,
+                65536
+              ],
+              "old_size": 16698,
+              "new_size": 16698,
+              "old_sha": "bb2cf9b8199fd197b780343ac82b2df20434317bcca1eb010e1af185f8c62ca7",
+              "new_sha": "bb2cf9b8199fd197b780343ac82b2df20434317bcca1eb010e1af185f8c62ca7",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            },
+            {
+              "old_layout": [
+                1075859456,
+                1075859456,
+                68864,
+                6,
+                65536
+              ],
+              "new_layout": [
+                1075859456,
+                1075859456,
+                68864,
+                6,
+                65536
+              ],
+              "old_size": 3240,
+              "new_size": 3240,
+              "old_sha": "528c7ba4d93dd2ee974d4d7609b3719eb5e50a0bc1b35ad00b0e7053bfcdba91",
+              "new_sha": "528c7ba4d93dd2ee974d4d7609b3719eb5e50a0bc1b35ad00b0e7053bfcdba91",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            }
+          ],
+          "identical": true,
+          "text_identical": true,
+          "old_text_bytes": 15356,
+          "new_text_bytes": 15356,
+          "old_text_sha": "766b9e245048189aab3222672d0bb0526160bd5bd181c54b61f1eae8531228f3",
+          "new_text_sha": "766b9e245048189aab3222672d0bb0526160bd5bd181c54b61f1eae8531228f3"
+        }
+      },
+      "partition-bench": {
+        "environment": {
+          "JNOX_BOARD": "virt",
+          "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104\\target",
+          "CARGO_BUILD_JOBS": "1",
+          "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104"
+        },
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1",
+          "--features",
+          "partition-bench"
+        ],
+        "exit": 0,
+        "build_log": "partition-bench/build.log",
+        "log_sha256": "374d63da8c09e3662a10fb28f3023ee7847a4bf5105f80f2b52ee19af154df6f",
+        "path": "partition-bench/kernel.elf",
+        "size": 89856,
+        "sha256": "9a4e32ce9acf1f3f0c8bc9b513f9f5392a2488ad4d0cb135054da2a7751ef978",
+        "comparison": {
+          "reference": "D:\\codex\\.jnox-work\\next-fixed\\selector-integration-builds\\104\\partition-bench\\kernel.elf",
+          "segments": [
+            {
+              "old_layout": [
+                1075838976,
+                1075838976,
+                12705,
+                5,
+                65536
+              ],
+              "new_layout": [
+                1075838976,
+                1075838976,
+                12705,
+                5,
+                65536
+              ],
+              "old_size": 12705,
+              "new_size": 12705,
+              "old_sha": "cfe451670e5f819afe5e0c233189625e62fca8731203a2166f12f95677b2f4e3",
+              "new_sha": "cfe451670e5f819afe5e0c233189625e62fca8731203a2166f12f95677b2f4e3",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            },
+            {
+              "old_layout": [
+                1075855360,
+                1075855360,
+                65760,
+                6,
+                65536
+              ],
+              "new_layout": [
+                1075855360,
+                1075855360,
+                65760,
+                6,
+                65536
+              ],
+              "old_size": 208,
+              "new_size": 208,
+              "old_sha": "17ba5ab1dcc738df74a9989b1807c2bd78f11e42e6e3c3563aa3e2fe1ae5dbb2",
+              "new_sha": "17ba5ab1dcc738df74a9989b1807c2bd78f11e42e6e3c3563aa3e2fe1ae5dbb2",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            }
+          ],
+          "identical": true,
+          "text_identical": true,
+          "old_text_bytes": 12068,
+          "new_text_bytes": 12068,
+          "old_text_sha": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+          "new_text_sha": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15"
+        }
+      },
+      "ordinary-edf": {
+        "environment": {
+          "JNOX_BOARD": "virt",
+          "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104\\target",
+          "CARGO_BUILD_JOBS": "1",
+          "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "JNOX_PROFILE": "deadline",
+          "JNOX_APP": "ordinary-edf"
+        },
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1"
+        ],
+        "exit": 0,
+        "build_log": "ordinary-edf/build.log",
+        "log_sha256": "a977ceaa2a776527b8c3b1314786a50fcf92303267d5f267bbcba22cedee4fe4",
+        "path": "ordinary-edf/kernel.elf",
+        "size": 103040,
+        "sha256": "6f960b1c744c5bfa4598429dbe31e7be2cf0468fe83b6b9941d60f58e8cc7187",
+        "comparison": {
+          "reference": "D:\\codex\\.jnox-work\\next-fixed\\edf48-builds\\ordinary-edf\\kernel.elf",
+          "segments": [
+            {
+              "old_layout": [
+                1075838976,
+                1075838976,
+                20733,
+                5,
+                65536
+              ],
+              "new_layout": [
+                1075838976,
+                1075838976,
+                20733,
+                5,
+                65536
+              ],
+              "old_size": 20733,
+              "new_size": 20733,
+              "old_sha": "a58f8f0f4be733e9a0bd0094172703fe0adff865aaf279aead3e73fda6331b56",
+              "new_sha": "a58f8f0f4be733e9a0bd0094172703fe0adff865aaf279aead3e73fda6331b56",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            },
+            {
+              "old_layout": [
+                1075863552,
+                1075863552,
+                93056,
+                6,
+                65536
+              ],
+              "new_layout": [
+                1075863552,
+                1075863552,
+                93056,
+                6,
+                65536
+              ],
+              "old_size": 320,
+              "new_size": 320,
+              "old_sha": "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2",
+              "new_sha": "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            }
+          ],
+          "identical": true,
+          "text_identical": true,
+          "old_text_bytes": 18356,
+          "new_text_bytes": 18356,
+          "old_text_sha": "6cb37072d769482a260753ed3ae3562f2502a604d1a1e54d23436cd57fed17ef",
+          "new_text_sha": "6cb37072d769482a260753ed3ae3562f2502a604d1a1e54d23436cd57fed17ef"
+        }
+      },
+      "weighted-share": {
+        "environment": {
+          "JNOX_BOARD": "virt",
+          "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104\\target",
+          "CARGO_BUILD_JOBS": "1",
+          "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "JNOX_PROFILE": "weighted",
+          "JNOX_APP": "weighted-share"
+        },
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1"
+        ],
+        "exit": 0,
+        "build_log": "weighted-share/build.log",
+        "log_sha256": "98a32f66869a6d9008defeb346eae2b4ff2531cf06d30eb5de516dd57e0d3593",
+        "path": "weighted-share/kernel.elf",
+        "size": 92720,
+        "sha256": "a2249e8f27f72df5a8a6cb2e1768c760358bbe9cc12fe792f39c9dfdafe5e9b6",
+        "comparison": {
+          "reference": "D:\\codex\\.jnox-work\\next-fixed\\vr49-builds\\weighted-share\\kernel.elf",
+          "segments": [
+            {
+              "old_layout": [
+                1075838976,
+                1075838976,
+                15260,
+                5,
+                65536
+              ],
+              "new_layout": [
+                1075838976,
+                1075838976,
+                15260,
+                5,
+                65536
+              ],
+              "old_size": 15260,
+              "new_size": 15260,
+              "old_sha": "6d5065461efb80e019bf1a7bbec10cc910996cf957768bac7662047fc9ef5e05",
+              "new_sha": "6d5065461efb80e019bf1a7bbec10cc910996cf957768bac7662047fc9ef5e05",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            },
+            {
+              "old_layout": [
+                1075855360,
+                1075855360,
+                66416,
+                6,
+                65536
+              ],
+              "new_layout": [
+                1075855360,
+                1075855360,
+                66416,
+                6,
+                65536
+              ],
+              "old_size": 320,
+              "new_size": 320,
+              "old_sha": "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2",
+              "new_sha": "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            }
+          ],
+          "identical": true,
+          "text_identical": true,
+          "old_text_bytes": 14508,
+          "new_text_bytes": 14508,
+          "old_text_sha": "e0fc647aa700a06694904d6496229d340f700768be91a36e3d1b6ff027fb9a7c",
+          "new_text_sha": "e0fc647aa700a06694904d6496229d340f700768be91a36e3d1b6ff027fb9a7c"
+        }
+      },
+      "a-ps": {
+        "environment": {
+          "JNOX_BOARD": "virt",
+          "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104\\target",
+          "CARGO_BUILD_JOBS": "1",
+          "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-final-builds\\104",
+          "JNOX_PROFILE": "aperiodic",
+          "JNOX_APP": "a-ps"
+        },
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1"
+        ],
+        "exit": 0,
+        "build_log": "a-ps/build.log",
+        "log_sha256": "39dab7c43acf854786ee1b9d22e0736eaea71007cfe5bb1e2ceb2f07d919874d",
+        "path": "a-ps/kernel.elf",
+        "size": 97056,
+        "sha256": "8df919fcb54d70ee498d4fa3fa505fa75725e68b1f63fa4e8cc9e3c9a8a07106",
+        "comparison": {
+          "reference": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\a-ps\\kernel.elf",
+          "segments": [
+            {
+              "old_layout": [
+                1075838976,
+                1075838976,
+                18677,
+                5,
+                65536
+              ],
+              "new_layout": [
+                1075838976,
+                1075838976,
+                18677,
+                5,
+                65536
+              ],
+              "old_size": 18677,
+              "new_size": 18677,
+              "old_sha": "15ed2c3f887eefe11a0c72cd0d3aa51422b82d0838fe9096be7a7ae95ac49de6",
+              "new_sha": "15ed2c3f887eefe11a0c72cd0d3aa51422b82d0838fe9096be7a7ae95ac49de6",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            },
+            {
+              "old_layout": [
+                1075859456,
+                1075859456,
+                164848,
+                6,
+                65536
+              ],
+              "new_layout": [
+                1075859456,
+                1075859456,
+                164848,
+                6,
+                65536
+              ],
+              "old_size": 328,
+              "new_size": 328,
+              "old_sha": "c4788758dd80b18d7d939ddf57d9307342e530e3b8306d15c362df5cffbd44ef",
+              "new_sha": "c4788758dd80b18d7d939ddf57d9307342e530e3b8306d15c362df5cffbd44ef",
+              "different_overlapping_bytes": 0,
+              "differences": []
+            }
+          ],
+          "identical": true,
+          "text_identical": true,
+          "old_text_bytes": 17044,
+          "new_text_bytes": 17044,
+          "old_text_sha": "6c7f12bcbcb77d0c997b895ddfb737f0273868f22a6acb030072d8f0950c58ae",
+          "new_text_sha": "6c7f12bcbcb77d0c997b895ddfb737f0273868f22a6acb030072d8f0950c58ae"
+        }
+      }
+    },
+    "host": [
+      {
+        "name": "test_partition_selectors",
+        "argv": [
+          "C:\\Users\\jonki\\anaconda3\\python.exe",
+          "-B",
+          "tools/test_partition_selectors.py"
+        ],
+        "cwd": "D:\\codex\\.jnox-work\\next-fixed\\partition-pinned-current",
+        "exit": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "test_ordinary_partition_account",
+        "argv": [
+          "C:\\Users\\jonki\\anaconda3\\python.exe",
+          "-B",
+          "tools/test_ordinary_partition_account.py"
+        ],
+        "cwd": "D:\\codex\\.jnox-work\\next-fixed\\partition-pinned-current",
+        "exit": 0,
+        "log_sha256": "e855cb7f9841d8a796442ef5f5669ef6cfbe103e95c0009e2175f2deef9db26e"
+      },
+      {
+        "name": "scheduling_evidence",
+        "argv": [
+          "C:\\Users\\jonki\\anaconda3\\python.exe",
+          "-B",
+          "tools/scheduling_evidence.py"
+        ],
+        "cwd": "D:\\codex\\.jnox-work\\next-fixed\\partition-pinned-current",
+        "exit": 0,
+        "log_sha256": "25a58efb3af022e085c0361411e2b3cc36d4f5d4cda72d5282003b8f4350ce8a"
+      }
+    ],
+    "scope": "Serial builds and host checks. Guest verdicts require an independent capture."
+  }
+}

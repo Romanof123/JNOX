@@ -59,6 +59,8 @@ CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes i
 
 CHG-053 · [Ordinary control service and first dispatch / 일반 제어 서비스와 최초 디스패치](control-service-plan.md)
 
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
 POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
 
 POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
