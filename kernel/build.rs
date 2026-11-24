@@ -314,7 +314,7 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_weighted_trace");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss","lottery-window1","lottery-window2","lottery-window-tight"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
@@ -407,7 +407,7 @@ fn main() {
             assert!(scenario.is_none(), "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional");
             assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");
             let case = app.as_deref().unwrap_or("");
-            assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"),
+            assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"|"lottery-window1"|"lottery-window2"|"lottery-window-tight"),
                     "ordinary proportional requires an explicit lottery, stride or diagnostic app");
             println!("cargo::rustc-cfg=jnox_ordinary_prop");
             println!("cargo::rustc-cfg=jnox_prop_case=\"{case}\"");
