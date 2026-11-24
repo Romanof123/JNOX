@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -234,6 +235,90 @@ def retain(stage, dest, powershell):
     print(f"Verified {receipt['path']}  SHA256 {archive_hash}", flush=True)
 
 
+def dependency_snapshot(inputs):
+    import elftools
+    import native_weighted_capture
+    import native_weighted_replay
+    import native_weighted_timer
+    import native_weighted_trace
+    from elftools.elf.elffile import ELFFile
+    from native_el0_replay import elf_file
+
+    image = (inputs / "user.elf").read_bytes()
+    parsed = elf_file(image)
+    if (
+        not isinstance(parsed, ELFFile)
+        or hashlib.sha256(image).hexdigest() != ASSETS["user.elf"]
+    ):
+        raise ValueError("preflight could not open the pinned user ELF")
+    return dict(
+        python=sys.executable,
+        python_version=sys.version,
+        pythonpath=os.environ.get("PYTHONPATH"),
+        pyelftools=elftools.__version__,
+        package=elftools.__file__,
+        entry=parsed["e_entry"],
+        modules=[
+            m.__file__
+            for m in (
+                native_weighted_capture,
+                native_weighted_replay,
+                native_weighted_timer,
+                native_weighted_trace,
+            )
+        ],
+    )
+
+
+def preflight(dest, stage, inputs, powershell):
+    durable = dest / "preflight"
+    durable.mkdir()
+    # Use exactly the interpreter and inherited module environment used by capture_stage.
+    parent = dependency_snapshot(inputs)
+    write_record(durable / "wrapper-python.json", parent)
+    probe = (
+        "import json,sys; from pathlib import Path; sys.path.insert(0,sys.argv[1]); "
+        "from native_weighted_timer_pair import dependency_snapshot; "
+        "print(json.dumps(dependency_snapshot(Path(sys.argv[2]))))"
+    )
+    code = run_command(
+        durable, "child-python", [sys.executable, "-c", probe, str(TOOLS), str(inputs)]
+    )
+    if (
+        code != 0
+        or json.loads((durable / "child-python.stdout").read_bytes()) != parent
+    ):
+        raise ValueError(
+            "capture/replay interpreter dependencies differ or failed to load"
+        )
+    from native_weighted_timer import EVENTS
+
+    nm = shutil.which("aarch64-linux-gnu-nm")
+    if (
+        not nm
+        or run_command(durable, "nm", [nm, "-nS", str(inputs / "kernel.elf")]) != 0
+    ):
+        raise ValueError("AArch64 symbol reader unavailable")
+    if run_command(durable, "trace-capabilities", [str(QEMU), "-trace", "help"]) != 0:
+        raise ValueError("QEMU trace capability listing unavailable")
+    if not set(EVENTS).issubset(
+        (durable / "trace-capabilities.stdout").read_text().splitlines()
+    ):
+        raise ValueError("required QEMU timer/GIC tracepoints unavailable")
+    fixture = stage / "preflight"
+    fixture.mkdir()
+    data = b"JNOX #190 third cohort preflight\n"
+    (fixture / "fixture.bin").write_bytes(data)
+    # Exercise both independent digest sidecars with fixture data, before any guest exists.
+    digest = hashlib.sha256(data).hexdigest()
+    (fixture / "session.external.sha256").write_text(digest + "\n", encoding="ascii")
+    retain(fixture, durable, powershell)
+    write_record(
+        durable / "complete.json",
+        dict(kind="fixture-only", guest_count=0, fixture_sha256=digest),
+    )
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("inputs", type=Path)
@@ -251,48 +336,66 @@ def main():
         p.error(
             "provide an existing empty independently provisioned Windows D: directory"
         )
-    fs = subprocess.check_output(
-        ["findmnt", "-n", "-o", "FSTYPE", "-T", str(scratch)], text=True
-    ).strip()
-    if fs not in {"ext4", "btrfs", "xfs", "tmpfs"}:
-        p.error("scratch must be on a Linux-local filesystem")
-    powershell = shutil.which("powershell.exe")
-    if (
-        not powershell
-        or sha(QEMU) != PIN
-        or any(sha(inputs / n) != h for n, h in ASSETS.items())
-    ):
-        p.error(
-            "Windows PowerShell, pinned QEMU and exact #183 input assets are required"
-        )
-    # Atomic, persistent first-position reservation also guards concurrent invocations.
-    stage = Path(tempfile.mkdtemp(prefix="jnox-190-", dir=scratch))
     write_record(
         dest / "cohort.json",
         dict(
             ticket=190,
-            preceding=186,
-            stage=str(stage),
-            source=REV,
+            cohort=3,
+            feature_parent="b418cbbf961ebf5ccf13150d80da142bf8dd033d",
+            guest_source=REV,
             positions=["plain", "instrumented"],
             qemu_sha256=PIN,
             inputs=ASSETS,
         ),
     )
-    print("Retaining Linux stage", stage, flush=True)
-    qualified = True
-    for name in ("plain", "instrumented"):
-        local = stage / name
-        place = dest / name
-        place.mkdir()
-        local.mkdir()
-        try:
-            verdict = capture_stage(local, inputs, name == "instrumented")
-        except Exception as exc:
-            verdict = dict(position=name, qualified=False, error=str(exc))
-        write_record(local / "position.json", verdict)
-        retain(local, place, powershell)
-        qualified &= verdict["qualified"]
+    phase = "preflight"
+    try:
+        fs = subprocess.check_output(
+            ["findmnt", "-n", "-o", "FSTYPE", "-T", str(scratch)], text=True
+        ).strip()
+        if fs not in {"ext4", "btrfs", "xfs", "tmpfs"}:
+            raise ValueError("scratch must be on a Linux-local filesystem")
+        powershell = shutil.which("powershell.exe")
+        if (
+            not powershell
+            or sha(QEMU) != PIN
+            or any(sha(inputs / n) != h for n, h in ASSETS.items())
+        ):
+            raise ValueError(
+                "Windows PowerShell, pinned QEMU and exact #183 assets are required"
+            )
+        stage = Path(tempfile.mkdtemp(prefix="jnox-190-third-", dir=scratch))
+        write_record(
+            dest / "stage.json",
+            dict(stage=str(stage), python=sys.executable, powershell=powershell),
+        )
+        print("Retaining Linux stage", stage, flush=True)
+        preflight(dest, stage, inputs, powershell)
+        qualified = True
+        for name in ("plain", "instrumented"):
+            phase = name
+            local = stage / name
+            place = dest / name
+            place.mkdir()
+            local.mkdir()
+            problem = None
+            try:
+                verdict = capture_stage(local, inputs, name == "instrumented")
+            except Exception as exc:
+                problem = str(exc)
+                verdict = dict(position=name, qualified=False, error=problem)
+            write_record(local / "position.json", verdict)
+            retain(local, place, powershell)
+            if problem is not None:
+                raise ValueError(problem)
+            qualified &= verdict["qualified"]
+    except Exception as exc:
+        write_record(
+            dest / "infrastructure-failure.json",
+            dict(phase=phase, error=str(exc), exception=type(exc).__name__),
+        )
+        print(f"Infrastructure failure in {phase}: {exc}", file=sys.stderr)
+        return 2
     return 0 if qualified else 1
 
 
