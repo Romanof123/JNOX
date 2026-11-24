@@ -138,4 +138,8 @@ IMP-052 · VER-002/005/023. 실제 저널 4개의 104개 위상 재생 일치. �
 
 CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
 
+CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
+
 CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 물리 UART 프로파일 계획](boards/pi4-serial-capture.md#chg-062)
+
+CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
