@@ -34,3 +34,7 @@ CHG-071 implements an experimental observation for IMP-053 under the existing RE
 Before launch bind ordinal, selector, site, elf_sha256 and counter_pc (null for B) to the frozen manifest and per-ELF disassembly. Freeze source and tool identities separately. After the first launch add uart_sha256 from immutable capture metadata. Replay each launch with `python tools/reservation_stage.py LAUNCH.json UART ELF`. The reader checks ordinal assignment, digests, executable segment, instruction, row identity, same-boot ordering and legacy compact receipt. It returns the full terminal row and observed intervals. Use the separately pinned independent audit for the complete ledger, exception order, worker and horizon checks. Whole-program disassembly, baseline equivalence and original launch evidence are execution deliverables.
 
 B는 환경 변수를 설정하지 않는다. E/F는 빌드 시 각각 eoi/frames를 선택한다. RAW4 태그 38은 원시 시각, 슬롯 0, 유휴 소유자 2, 위치 번호, 사례 번호, 관측 여부, 실제 카운터 명령 주소를 담는다. 관측 여부가 0이면 시각과 주소도 0이다. 1이면 시각 0도 실측값이다. 실행 전에 순번·사례·위치·ELF 해시·명령 주소를 고정하고 최초 UART의 해시를 기록한다. 위 명령으로 각 부팅의 구간과 실패 피연산자를 복원한다. 원장·예외·실제 작업자·전체 구간은 별도 독립 판독으로 확인한다.
+
+The aligned-wake baseline failed the required load-image identity check. Zero of the twelve planned guests launched. [First reservation stage preflight](evidence/reservation-stage-first.en.md)
+
+정렬 깨움 기준 이미지가 필수 로드 이미지 동일성 검사를 통과하지 못했다. 예정된 게스트 12건 중 실행은 0건이다. [첫 예약 단계 사전 검사](evidence/reservation-stage-first.md)

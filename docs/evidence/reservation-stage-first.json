@@ -1,0 +1,83 @@
+{
+  "change": "CHG-071",
+  "record": "first baseline preflight",
+  "sources": {
+    "parent": "ff9bf821d280fead823b3edddd0a20ff21c9f6f0",
+    "candidate": "2b210259679ae9271852f221ba7ccbeae86c9088"
+  },
+  "planned_guest_positions": 12,
+  "launched": 0,
+  "completed_triplets": 0,
+  "compiled": "Aligned W baseline only, separate candidate and parent",
+  "verdict": "Baseline PT_LOAD identity failed before the cohort.",
+  "elf_sha256": {
+    "parent": "7cfa99d34389ee71a8e55bc65e1e89dfd75f2e4abcdea017ffef51132e89fbb4",
+    "candidate": "f6ae56af318136323ef5d7d8356719bed5d5d34c959533f2b8e3cd2597876a4e"
+  },
+  "text_sha256": "f16343753b5df0ebb34886ced22507a52f9d0c9433865465018f87f41756af5c",
+  "rodata_sha256": {
+    "parent": "e41b15d5367e7e94b3ddcea0dfc074dab261b25e048717f74f5b275f11b53c84",
+    "candidate": "d89373d8fcc37b1cb2220cda738b4f743883ac0a67849049ed7800c91f8c157e"
+  },
+  "changed_source_line_words": [
+    {
+      "address": "0x40205e10",
+      "parent": 146,
+      "candidate": 151
+    },
+    {
+      "address": "0x40205e40",
+      "parent": 741,
+      "candidate": 748
+    },
+    {
+      "address": "0x40205e58",
+      "parent": 599,
+      "candidate": 604
+    },
+    {
+      "address": "0x40205e70",
+      "parent": 855,
+      "candidate": 862
+    },
+    {
+      "address": "0x40205e88",
+      "parent": 909,
+      "candidate": 916
+    },
+    {
+      "address": "0x40205eb8",
+      "parent": 286,
+      "candidate": 291
+    },
+    {
+      "address": "0x40205ed0",
+      "parent": 296,
+      "candidate": 301
+    },
+    {
+      "address": "0x40205ee8",
+      "parent": 238,
+      "candidate": 243
+    },
+    {
+      "address": "0x40205f00",
+      "parent": 259,
+      "candidate": 264
+    },
+    {
+      "address": "0x40205ff8",
+      "parent": 614,
+      "candidate": 619
+    }
+  ],
+  "archive": "reservation-stage-first.zip",
+  "archive_size": 199125,
+  "archive_sha256": "c46348e3fa24f541fa3d231b59852a5a09a77aa005e7f8ea4c020ba956c9af68",
+  "original_manifest_sha256": "43bcc853d5e39b5fa38766c289146a7c32398cd3ca6d3fabfc9ac52d6f27f78b",
+  "excluded": [
+    "candidate.tar",
+    "parent.tar"
+  ],
+  "excluded_provenance": "Git archive source tar identities are preserved in original SHA256SUMS; pinned commits are listed above. Generated build targets omitted."
+}
