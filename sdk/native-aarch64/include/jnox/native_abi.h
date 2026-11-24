@@ -1,0 +1,10 @@
+#ifndef JNOX_NATIVE_ABI_H
+#define JNOX_NATIVE_ABI_H
+#define JNOX_ABI_VERSION 1
+#define JNOX_ABI_SVC 0x4a01
+#define JNOX_CALL_EXIT 1
+#define JNOX_CALL_OPEN 2
+#define JNOX_CALL_READ 3
+#define JNOX_CALL_WRITE 4
+#define JNOX_CALL_CLOSE 5
+#endif

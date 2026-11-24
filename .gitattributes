@@ -9,3 +9,4 @@ tools/capture_partition_notice.sh text eol=lf
 docs/evidence/permit-observer-v2-preflight/** -text
 docs/evidence/permit-observer-cost-v3-integration.json -text whitespace=cr-at-eol
 docs/evidence/ordinary-mutex-anchor-preflight/default-pi.build.txt -text whitespace=cr-at-eol
+sdk/native-aarch64/build.sh text eol=lf
