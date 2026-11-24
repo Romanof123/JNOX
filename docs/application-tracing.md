@@ -59,6 +59,6 @@ Linux 드라이버 도메인 경계에서는 J-NOX 래퍼가 자체 카운터와
 | M3 | 보드·코어별 자원·지연, 이동 보정·카운터 리셋·부분 버퍼·동시 작성/반출·부하 시 격리. QEMU와 실제 보드 증거 구분 |
 | M4 | 버전별 Rust/C SDK·기존 ELF 조합, 서비스 재시작/ID 재사용, 동시 요청·시간초과·취소, 접근 통제·비식별 반출 및 선택 포맷 호환 |
 
-CHG-060은 REQ-014/011/002/009에 연결된다. DES-006과 VER-014/011/002/009가 관측성·접근권한·간섭·풋프린트를 다룬다. 타깃의 실시간 기록과 동결·수집·디코드·독립 판정·보존의 증거 생명주기를 구분한다. 구현 및 증거 ID는 미배정이다. [기능](platform-capabilities.md) · [요구사항](requirements.md) · [아키텍처](architecture.md) · [스케줄링 #21](https://github.com/Romanof123/JNOX/issues/21) · [IPC #24](https://github.com/Romanof123/JNOX/issues/24)
+CHG-060은 REQ-014/011/002/009에 연결된다. DES-006과 VER-014/011/002/009가 관측성·접근권한·간섭·풋프린트를 다룬다. 타깃의 실시간 기록과 동결·수집·디코드·독립 판정·보존의 증거 생명주기를 구분한다. CHG-102 / IMP-102는 단일 CPU 스케줄러 관측과 링크된 응용 작업 한 개의 결과 게시를 다룬다. 나머지 인터페이스는 제안 단계다. [EVD-102](evidence/evd-102.md) [기능](platform-capabilities.md) · [요구사항](requirements.md) · [아키텍처](architecture.md) · [스케줄링 #21](https://github.com/Romanof123/JNOX/issues/21) · [IPC #24](https://github.com/Romanof123/JNOX/issues/24)
 
 CAP-013은 별도 범위의 사용자 프로세스 크래시 덤프도 요구한다. 정확한 빌드에서 허용된 레지스터·스택을 심볼화하고 크기·접근 한도와 다른 프로세스 메모리 배제를 독립 검증한다. 추적 캡처만으로 덤프 기준을 충족하지 않는다.
