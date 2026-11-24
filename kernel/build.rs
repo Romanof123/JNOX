@@ -308,6 +308,12 @@ fn main() {
         assert!(native_image.is_none() && native_hash.is_none(),
             "native ELF packaging variables require JNOX_PROFILE=native");
     }
+    let stream_v1 = env::var_os("CARGO_FEATURE_PI4_STREAM_V1").is_some();
+    if stream_v1 {
+        assert!(profile.as_deref() == Some("smp") && matches!(app.as_deref(),
+                Some("migration-global" | "migration-partitioned" | "migration-clustered")),
+                "pi4-stream-v1 requires a Pi 4 SMP migration application");
+    }
     match profile.as_deref() {
         Some("native") => {
             assert!(board == "virt" && app.as_deref() == Some("startup-probe")
@@ -338,7 +344,8 @@ fn main() {
             let selected = app.as_deref().unwrap_or("");
             assert!(board == "pi4" && matches!(selected, "directed-wake" | "migration-global" | "migration-partitioned" | "migration-clustered")
                 && bench == "boot" && trace.is_none() && scenario.is_none()
-                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                && env::vars_os().all(|(key, _)| !key.to_string_lossy().starts_with("CARGO_FEATURE_")
+                    || key == "CARGO_FEATURE_PI4_STREAM_V1"),
                 "directed-wake requires Pi 4, smp profile and no other benchmark or runtime selector");
             println!("cargo::rustc-cfg=jnox_pi4_smp");
             if selected != "directed-wake" {
