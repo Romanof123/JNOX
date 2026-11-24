@@ -1,0 +1,37 @@
+# Ordinary Rust mixed-criticality workload
+
+[한국어](ordinary-amc-plan.md) · [#21](https://github.com/Romanof123/JNOX/issues/21) · CHG-076 · POL-015 · Design awaiting implementation and independent execution
+
+The assembly workload in #51 already demonstrated IRQ-enforced switching with four occupied task slots, removal of LO jobs and survival of a second HI job. Its one captured transition from the programmed compare to resumed HI work took 172,759 counter ticks (2.764144 ms). This plan exercises ordinary Rust work at the exact LO allowance, exact HI allowance and first denied HI grant. The original assembly fixture and its recorded time remain available as a separate baseline. [#51 contract](m3-mixed-criticality.en.md) · [EVD-020](evidence/evd-020.en.md)
+
+## Workload and budgets
+
+Use one ordinary AArch64 `virt` image configuration per case, one Cortex-A72, GICv2/CNTP, TCG and 128 MiB. Use linked Rust task entries on private EL1 stacks and the existing `AmcRuntime<4>` for release, grant, retirement and reset. The input manifest supplies budgets, priorities, deadlines, releases and demands. The expected owner sequences below are verifier inputs. IRQs retire the running grant and the policy selects the next owner. [AMC policy](../kernel/src/amc_policy.rs)
+
+Keep the #51 task specifications in ID order 0–3. LO tasks 0 and 2 have budget 2, priorities 1 and 2, and relative deadline 3. HI task 1 has LO/HI budgets 1/3, priority 4 and relative deadline 4. HI task 3 has budgets 1/1, priority 3 and relative deadline 5. All durations are modeled service slots. The architectural counter origin is E, the quantum is Q = floor(CNTFRQ/20), and boundary k is E+kQ. Start with a one-slot release of LO 0. At boundary 1 retire it before issuing the row's releases. A zero demand in the table means no release.
+
+| Case | Demands at boundary 1 for IDs 0–3 | Expected service slot owners from slot 0 | Distinguishing result |
+| --- | --- | --- | --- |
+| Exact LO | (1,1,0,0) | 0,1,0 | Job 1 completes on its first grant at boundary 2. Mode stays LO and the pending LO generation runs to completion. |
+| Exact HI | (2,3,2,1) | 0,1,1,1,3,0 | At boundary 2 the remaining demands are (2,2,2,1). Job 1 enters HI on its second grant, completes normally on its third at boundary 4 and meets its absolute deadline 5. |
+| One over HI | (2,4,2,1) | 0,1,1,1,3,0 | At boundary 2 the remaining demands are (2,3,2,1). Job 1 has one unit left after its third grant. At boundary 4 the policy denies a fourth, records exhaustion and retires it without advancing time. Job 3 gets the slot at that same boundary. |
+
+Both transition cases fill all four declared task slots with one generation per ID. The one-over case reaches the largest residual demand in this manifest, eight requested units including the unit that must be denied. On the positive grant crossing the LO allowance at boundary 2, drop LO IDs 0 and 2 (mask 5) before any further service. Deny a new LO release and an approved reset with HI work pending. In both cases job 3 finishes at boundary 5, before its absolute deadline 6. At quiescence reject an unapproved reset, accept an approved reset, release a fresh one-slot LO 0 and observe its result by boundary 6. Discarded generations receive zero further service.
+
+## Useful work and independent verdict
+
+Feed the entries an immutable synthetic telemetry ring `[2,5,1,6,3,7,4,8]`. Each running generation accumulates readings with IRQ enabled and publishes coherent completed-sample counts and sums from its own Rust context. Number generations per task from zero on accepted releases, including later discards. For generation g of task i, start the ring at (i+g) modulo 8 with sum zero. For n samples the expected sum is 36 × floor(n/8) plus the first (n modulo 8) readings from that starting position, using wrapping u64 addition. Record i, g and n. The verifier recomputes sums from the input and observed counts. Check fresh initial state, positive work in each executed slot, strictly increasing committed counts across both HI resumptions, preserved partial state and the final survivor/fresh LO result. A discarded generation must retain its last published count. Grant counts measure modeled CPU allocation. The checksum measures work done by the task.
+
+For each row preserve the first independent cold-boot verdict, manifest, ELF and hash, UART, same-process exception/return trace and the bounded records used to reach the verdict. Reconstruct generations, four-slot occupancy, per-grant charges, modes, discard/fault decisions, absolute compares and actual interrupted PCs/returns against the linked Rust entries and private stacks. For a transition use the same counter for the programmed boundary b₂, IRQ sample i, committed mode c and first task-owned post-return observation x. Require b₂ ≤ i ≤ c ≤ x < b₃, report x−b₂ in raw ticks and time using the observed frequency, and check the actual completion observations before b₅ for a normally completed three-grant HI job and before b₆ for the survivor. A fourth service grant, resumed discarded frame, successor checksum from an old generation, or missed deadline fails its case. Missing or ambiguous evidence preserves an inconclusive verdict.
+
+Trace `REQ-002/005/023 → DES-003/012 → VER-002/005/023`. Product maximum carry-in, transition and response-time bounds under board interference, the system fault response and M5 assessment require the actual product workload and board. [Release matrix](scheduling-release-cases.en.md) · [Verification plan](verification-plan.en.md)
+
+[Independent AMC first boots](evidence/ordinary-amc-first.en.md)
+
+## Fresh LO completion after reset · revision 2
+
+[#165 first cohort](https://github.com/Romanof123/JNOX/pull/165) retains the original continuous-worker verdicts. Exact-HI and over-HI recorded generation (0,2)'s last updates at 18808034 and 18810504 ticks respectively, beyond their own boundary 6. Each met its HI and survivor deadlines. Keep those first failures and their raw UART, ELF and exception traces under the original decoder.
+
+For these two cases only, release (0,2) at b5 with a finite reference input of eight readings from ring offset 2: 1,6,3,7,4,8,2,5. Its only valid result is count 8 and sum 36. Publish it once from the worker after the eighth addition, then issue a dedicated completion SVC. Record the final task sample and a conservative post-publication upper timestamp at SVC, both strictly before the original b6. Refuse a duplicate completion. The handler returns to a private idle frame with IRQ enabled. The original absolute compare, policy owner and one modeled service charge remain live until the real closing IRQ; record completion, idle IRQ and policy retirement separately. No further worker grant, checksum update or return to that frame is permitted.
+
+Use an identifiable v2 transition transcript. Bind the worker SVC instruction and saved return PC/SP to the exact ELF; independently join SVC, ERET to idle, the closing idle IRQ and its compare/IAR. Re-read the immutable count/sum/task tick at the real IRQ, require identical values and retain the actual IRQ/retirement times even when late. Missing corroboration is unobserved; a post-b6 result fails. Preserve the original exact-LO case and archived v1 decoder behavior. Freeze one first cold launch per case and record all outcomes. Eight readings define a simulation input; no product timing allocation follows.

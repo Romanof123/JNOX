@@ -1,0 +1,70 @@
+{
+  "measured_source": "e716871c7c9e25ad1b3fa28dc19f73af2944862c",
+  "source_tree": "fa3461d308e83419958b2c0a0dace843376b73f7",
+  "baseline_source": "d537835a858bb340c3a8d8507fb7bd5ec3ad20c4",
+  "archive": "pi4-smp-first.zip",
+  "archive_sha256": "a70c877b5ec94b7700ad3151fcb867a11530b35ea7d63d68c0aba7e0ecf02ff0",
+  "compiler": "rustc 1.95.0 (59807616e1fa2540724bfbac14d7976d7e4a3860), LLVM 22.1.2",
+  "host": "x86_64-pc-windows-msvc",
+  "cargo": "1.95.0 (f2d3ce0bd 2026-03-21)",
+  "directory": "kernel",
+  "environment": {
+    "JNOX_APP": "directed-wake",
+    "JNOX_BOARD": "pi4",
+    "JNOX_PROFILE": "smp"
+  },
+  "target": "aarch64-unknown-none",
+  "rustflags": [
+    "-C",
+    "target-cpu=cortex-a72"
+  ],
+  "features": [],
+  "build": "cargo +1.95.0 build --release --locked -j1",
+  "convert": "aarch64-linux-gnu-objcopy -O binary <ELF> kernel8.img (GNU Binutils for Ubuntu 2.38)",
+  "image_identity": {
+    "kernel.elf": {
+      "sha256": "17922086bf52386a5868b1c8eaa6efd96b644d527146edff6f51025b955493f6",
+      "bytes": 175016
+    },
+    "kernel8.img": {
+      "sha256": "5c099d0276d3c66b7cd776b50aa0e781b070b99fb7d167de8a03bd577ad0a180",
+      "bytes": 98432
+    }
+  },
+  "baseline_loader": {
+    "firmware_executed": false,
+    "argv": [
+      "qemu-system-aarch64",
+      "-machine",
+      "raspi4b",
+      "-accel",
+      "tcg,thread=multi",
+      "-smp",
+      "4",
+      "-m",
+      "2G",
+      "-display",
+      "none",
+      "-monitor",
+      "none",
+      "-serial",
+      "stdio",
+      "-kernel",
+      "kernel8.img",
+      "-d",
+      "int,tid",
+      "-D",
+      "launch1/observer-%d.log"
+    ],
+    "version": "11.1.3",
+    "sha256": "3ae2c079d4491362fece2abb641f0ff17d88e9008c9fcd13600f249b9bd1c862",
+    "name": "qemu-system-aarch64",
+    "load_address": "0x80000"
+  },
+  "new_boots": 0,
+  "compare": [
+    "Extract kernel.elf, kernel8.img and prefreeze.sha256 from the baseline archive.",
+    "From a clean measured_source checkout build with the recorded selectors, target and command. Compare target/aarch64-unknown-none/release/jnox-kernel against kernel.elf byte for byte.",
+    "Convert the ELF with the recorded objcopy command and compare the raw output against kernel8.img. Verify both sizes and SHA-256 values against image_identity and prefreeze.sha256."
+  ]
+}

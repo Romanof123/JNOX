@@ -1,7 +1,10 @@
 //! Single-core, trusted EL1 fixed-priority task runtime.
-#[cfg(jnox_fixed_trace)]
+#[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
 #[path = "fixed_runtime_trace.rs"]
 mod trace;
+#[cfg(jnox_pi4_witness)]
+#[path = "pi4_witness.rs"]
+pub(crate) mod witness;
 
 #[cfg(jnox_fixed_cost)]
 #[path = "fixed_cost.rs"]
@@ -22,6 +25,7 @@ pub struct Task {
 
 const IDLE: usize = MAX_TASKS;
 #[cfg_attr(jnox_fixed_cost, unsafe(export_name = "fixed_cost_stacks"))]
+#[cfg_attr(jnox_pi4_witness, unsafe(export_name = "pi4_witness_stacks"))]
 static mut STACKS: [Stack; MAX_TASKS + 1] = [const { Stack([0; STACK_BYTES]) }; MAX_TASKS + 1];
 static mut STATE: Option<Runtime> = None;
 
@@ -144,15 +148,17 @@ pub fn run(tasks: &'static [Task], mode: Mode) -> ! {
         );
     }
     frames[IDLE] = initial_frame(IDLE, fixed_runtime_idle as *const () as usize, 0);
-    #[cfg(jnox_fixed_trace)]
+    #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
     trace::init(frequency());
+    #[cfg(jnox_pi4_witness)]
+    witness::init(tasks);
     #[cfg(jnox_fixed_cost)]
     cost::init();
     let now = counter();
     let policy = Fixed::new(&configs[..tasks.len()], mode, now).unwrap_or_else(|| fail());
     let state = unsafe { (&mut *(&raw mut STATE)).insert(Runtime { policy, frames }) };
     let next = state.dispatch(
-        #[cfg(jnox_fixed_trace)]
+        #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
         trace::Event {
             kind: 0,
             source: u64::MAX,
@@ -162,13 +168,15 @@ pub fn run(tasks: &'static [Task], mode: Mode) -> ! {
             argument: 0,
             result: 0,
             pre_ctl: u64::MAX,
+            #[cfg(jnox_pi4_witness)]
+            pre_cval: u64::MAX,
         },
     );
     unsafe { sched_start_frame(next) }
 }
 
 impl Runtime {
-    fn dispatch(&self, #[cfg(jnox_fixed_trace)] event: trace::Event) -> *mut Frame {
+    fn dispatch(&self, #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))] event: trace::Event) -> *mut Frame {
         let deadline = self.policy.deadline().unwrap_or_else(|_| fail());
         if let Some(due) = deadline {
             unsafe {
@@ -179,8 +187,15 @@ impl Runtime {
             disable_timer();
         }
         let next = self.frames[self.policy.current().unwrap_or(IDLE)];
-        #[cfg(jnox_fixed_trace)]
-        trace::publish(event, self, next, deadline);
+        #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
+        {
+            #[cfg(jnox_pi4_witness)]
+            if self.policy.finished() {
+                if self.policy.current().is_some() || deadline.is_some() { fail() }
+                unsafe { (*next).elr = witness::terminal as *const () as usize as u64 };
+            }
+            trace::publish(event, self, next, deadline);
+        }
         next
     }
 
@@ -207,10 +222,14 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     let iar = gic_read(GICC + 0x0c);
     let id = iar & 0x3ff;
     if id >= 1020 {
+        #[cfg(jnox_pi4_witness)]
+        witness::ambiguous();
         return frame;
     }
-    #[cfg(jnox_fixed_trace)]
+    #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
     let pre_ctl = trace::ctl();
+    #[cfg(jnox_pi4_witness)]
+    let pre_cval = witness::compare();
     disable_timer();
     // Complete source deassertion before the combined EOI/deactivation.
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) }
@@ -220,7 +239,7 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     }
     let state = unsafe { state() };
     state.save(frame);
-    #[cfg(jnox_fixed_trace)]
+    #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
     let owner = state.policy.current().unwrap_or(IDLE) as u64;
     let now = counter();
     #[cfg(jnox_fixed_cost)]
@@ -232,16 +251,18 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     #[cfg(jnox_fixed_cost)]
     let event_end = cost::stamp();
     let next = state.dispatch(
-        #[cfg(jnox_fixed_trace)]
+        #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
         trace::Event {
             kind: 1,
-            source: u64::from(id),
+            source: if cfg!(jnox_pi4_witness) { u64::from(iar) } else { u64::from(id) },
             now,
             owner,
             incoming: frame,
             argument: 0,
             result: 0,
             pre_ctl,
+            #[cfg(jnox_pi4_witness)]
+            pre_cval,
         },
     );
     #[cfg(jnox_fixed_cost)]
@@ -259,8 +280,10 @@ extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
     }
     let state = unsafe { state() };
     state.save(frame);
-    #[cfg(jnox_fixed_trace)]
+    #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
     let owner = state.policy.current().unwrap_or(IDLE) as u64;
+    #[cfg(jnox_pi4_witness)]
+    let (pre_ctl, pre_cval) = (trace::ctl(), witness::compare());
     let imm = syndrome & 0xffff;
     let action = match imm {
         0 => Action::Yield,
@@ -268,7 +291,7 @@ extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
         2 => Action::Sleep(unsafe { (*frame).gpr[0] }),
         _ => fail(),
     };
-    #[cfg(jnox_fixed_trace)]
+    #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
     let argument = if imm == 2 {
         unsafe { (*frame).gpr[0] }
     } else {
@@ -284,16 +307,21 @@ extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
         unsafe { (*frame).gpr[0] = u64::from(accepted) }
     }
     let next = state.dispatch(
-        #[cfg(jnox_fixed_trace)]
+        #[cfg(any(jnox_fixed_trace, jnox_pi4_witness))]
         trace::Event {
             kind: 2,
-            source: imm,
+            source: if cfg!(jnox_pi4_witness) { syndrome } else { imm },
             now,
             owner,
             incoming: frame,
             argument,
             result: u64::from(imm == 2 && accepted),
+            #[cfg(not(jnox_pi4_witness))]
             pre_ctl: u64::MAX,
+            #[cfg(jnox_pi4_witness)]
+            pre_ctl,
+            #[cfg(jnox_pi4_witness)]
+            pre_cval,
         },
     );
     #[cfg(jnox_fixed_cost)]
