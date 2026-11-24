@@ -92,3 +92,28 @@ done
 RELEASE의 due는 B의 준비 예정 시점이고, before와 after는 n번째 세대에서 실제로 B를 준비 상태로 변경한 시각의 범위다. 각 IRQ 줄은 타이머를 끄기 전의 승인된 인터럽트, 현재 비교값, 제어 레지스터, 중단된 문맥의 SPSR과 IRQ 진입 시각으로 계산한 슬롯 종료 틱을 담는다. 판정기는 마지막 IRQ까지 EL1 벡터 주소와 복귀 PC를 ELF에 대조한다. 복구 대상 창에 들어간 뒤 A가 직접 기록한 서로 다른 반복 표본 두 개를 요구한다. A의 실행 시간은 마지막 작업 표본까지 원래 경계마다 나눠 귀속하고, 그 뒤 IRQ 진입 표본까지는 전환 불확실 시간으로 집계한다.
 
 결과에는 각 창에서 서비스를 잃은 주체, 잔여 시간에 실제로 복귀한 작업과 관측된 작업 시간, 다음 두 보호 창과 원래 세 프레임 구간이 남는다. P long에서는 차단된 B 창 전체와 뒤이은 명시적 유휴 창 일부의 유휴 서비스를 잃는다. Q long에서는 프레임 경계 전후의 서로 다른 두 B 창에서 준비된 B의 서비스를 잃는다. short에는 완전히 누락된 창이 없다. 지정한 경계에서 기존 시간 상한 위반을 실측하고 정해진 복구를 확인하며 나머지 경계가 모두 상한을 만족해야 사례가 통과한다. 상태 2는 다른 경계의 상한 위반이 있는 복원 결과, 상태 1은 잘못되거나 불완전한 증거를 나타낸다. 기존 정상·합성 입력 형식은 그대로 쓴다. 작업 자체의 실제 IRQ 마스킹 및 물리 플랫폼 적격성은 별도 미결 항목이다. [제어 사례 계획](https://github.com/Romanof123/JNOX/pull/106)
+
+## CHG-058 작업자 IRQ 마스크 캡처
+
+신뢰된 시험 훅이 A의 최초 진입에서 IRQ만 차단하고 Rust 점화식 루프로 돌아간다. P/Q 모두 원래의 절대 비교값을 유지한다. virt에서 일반 P/Q 기능 하나와 `JNOX_PARTITION_WORKER_MASK=short|long`을 지정한다. profile, app, control case, 지연 통지 선택기는 해제한다. 아래 예를 P-short, P-long, Q-short, Q-long마다 별도 Linux 로컬 경로에서 수행한다. Q는 `ordinary-partition-q`를 사용한다. 타임아웃이나 실패도 최초 자료로 보존하며 각 표의 정상 대조군은 작업자 마스크 선택기를 해제한다.
+
+```sh
+# Run from repository root in a native Linux checkout with other JNOX selectors unset.
+table=P
+mode=short
+feature=ordinary-partition-p
+target=/tmp/jnox-worker-mask-P-short
+(cd kernel && JNOX_PARTITION_WORKER_MASK="$mode" CARGO_TARGET_DIR="$target" \
+  cargo build --locked --release --features "$feature")
+elf="$target/aarch64-unknown-none/release/jnox-kernel"
+sha=$(sha256sum "$elf" | cut -d' ' -f1)
+sh tools/capture_partition_notice.sh "$table" "mask-$mode" "$elf" "$sha" /tmp/first-mask-P-short
+```
+
+`MASKBOOT`는 에포크 전에 모드를 출력한다. ELF의 `ordinary_mask_{p,q}_{short,long}` 심볼과 대조한다. TIMER·IRQ·RELEASE·EDGE·OBS·STOP은 기존 세 프레임 형식을 따른다. 추가 행은 마지막 IRQ 이후 출력한다. 0이거나 누락된 관측은 적격 근거가 아니다.
+
+* `MASK`는 원래 경계, 복원 목표, 설정 전후 set0/set1, 해제 전후 clear0/clear1과 저장·설정·복원 DAIF를 담는다. IRQ는 비트 7이며 D/A/F는 보존되어야 한다. 해제 루틴을 IRQ가 중단하면 clear1은 A가 재개된 뒤에야 기록된다. 일치하는 최초 IRQ 진입 시각도 해제 상한으로 사용하고 구간과 불확실성을 보고한다.
+* `MASKWORK`는 d를 넘긴 선행 반복 뒤 A의 연속 두 반복 표본이다. 목표 전 카운터 순서, 동일 세대, 전용 SP, 링크된 ordinary_a 내부 PC, 연속 횟수와 두 누산값을 검증한다. 시드 17에서 7비트 왼쪽 순환 후 17을 더하며 오버플로는 순환한다. 해제 루틴 내부 중단도 포함해 독립 예외 진입·복귀와 맞춘다. 권한 루틴 비용 및 불확실한 전이는 따로 계상한다.
+* `MASKPEND`는 DAIF, 물리 비교값, 타이머 제어, 해당 코어 GICD_ISPENDR0 순서로 읽은 값과 전후 시각이다. I 해제 전 I=1, CVAL=d, 제어 하위 비트 5 및 pending 비트 30을 요구한다. 이후 IRQ 행의 GICC 승인을 확인한다. 원시 표본·읽기 순서·링크 코드·예외 트레이스를 보존하고 모든 프로그래밍 읽기값이 원래 경계와 일치하는지 확인한다.
+
+캡처 도구는 ELF 해시, 모드 및 종료 행을 확인한다. 마스크 모드 종료 상태는 캡처 완료만 나타낸다. 이전 지연 통지 재생기는 비교값 이동을 가정한다. 원래 1 ms 기준, 중단·복귀 컨텍스트, 적격 서비스 손실, 복구와 다음 두 전체 창은 [CHG-058](pol-006-rust-partition-plan.md#chg-058)에 따라 독립 판정한다.

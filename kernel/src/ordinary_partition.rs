@@ -5,6 +5,10 @@ use core::mem::{offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering::SeqCst};
 
+#[cfg(jnox_partition_mask)]
+#[path = "partition_worker_mask.rs"]
+mod worker_mask;
+
 use super::context::*;
 use super::temporal_policy::{CyclicExecutive, WindowDecision};
 use super::{park, uart_write};
@@ -31,7 +35,7 @@ static mut STACKS: [Stack; 3] = [const { Stack([0; STACK_BYTES]) }; 3];
 static mut BENCH: Option<Bench> = None;
 static GENERATION: AtomicUsize = AtomicUsize::new(0);
 static LAST: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
-#[cfg(jnox_partition_notice)]
+#[cfg(any(jnox_partition_notice, jnox_partition_mask))]
 static PRIOR_A_SAMPLE: AtomicU64 = AtomicU64::new(0);
 
 static ITERATIONS: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
@@ -65,7 +69,9 @@ fn worker<const ID: usize, const STEP: u64>() -> ! {
     let mut count = 0u64;
     let mut value = STEP;
     let mut seen = usize::MAX;
-    #[cfg(jnox_partition_notice)]
+    #[cfg(jnox_partition_mask)]
+    let mut probe = if ID == 0 { Some(worker_mask::WorkerProbe::enter()) } else { None };
+    #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
     let mut previous_sample = 0;
     loop {
         value = value.rotate_left(7).wrapping_add(STEP);
@@ -73,7 +79,7 @@ fn worker<const ID: usize, const STEP: u64>() -> ! {
         let generation = GENERATION.load(SeqCst);
         let now = counter();
         LAST[ID].store(now, SeqCst);
-        #[cfg(jnox_partition_notice)]
+        #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
         if ID == 0 {
             // At IRQ entry these two worker samples represent distinct loop
             // iterations even if the IRQ interrupted publication of the pair.
@@ -81,6 +87,10 @@ fn worker<const ID: usize, const STEP: u64>() -> ! {
             previous_sample = now;
         }
         ITERATIONS[ID].store(count, SeqCst);
+        #[cfg(jnox_partition_mask)]
+        if let Some(probe) = &mut probe {
+            probe.observe(now, generation, count, value);
+        }
         if seen != generation && generation == GENERATION.load(SeqCst) {
             let sp: usize;
             unsafe { asm!("mov {}, sp", out(reg) sp, options(nostack, preserves_flags)) };
@@ -130,7 +140,7 @@ impl Table {
 
 #[derive(Clone, Copy, Default)]
 struct Edge {
-    #[cfg(jnox_partition_notice)]
+    #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
     irq: NoticeIrq,
     due: u64,
     entry: u64,
@@ -153,7 +163,7 @@ struct Edge {
     in_hash: u64,
 }
 struct Bench {
-    #[cfg(jnox_partition_notice)]
+    #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
     release: Release,
     table: Table,
     epoch: u64,
@@ -190,9 +200,9 @@ impl Bench {
         loop {
             e.live = counter();
             let tick = (e.live - self.epoch) / self.q;
-            #[cfg(not(jnox_partition_notice))]
+            #[cfg(not(any(jnox_partition_notice, jnox_partition_mask)))]
             let d = self.table.decide(tick);
-            #[cfg(jnox_partition_notice)]
+            #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
             let d = self.table.decide_ready(tick, self.release.ready);
             e.owner = d.owner.unwrap_or(IDLE);
             e.chosen = d.runnable.unwrap_or(IDLE);
@@ -225,7 +235,7 @@ impl Bench {
             }
             // A controlled capture needs one documented write per return. Reject
             // a stale selection even if its extended compare is still in the future.
-            #[cfg(jnox_partition_notice)]
+            #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
             fail()
         }
     }
@@ -251,6 +261,8 @@ fn probe_recovery(table: &Table, frequency: u64) {
 }
 
 pub(super) fn run() -> ! {
+    #[cfg(jnox_partition_mask)]
+    worker_mask::boot();
     #[cfg(jnox_partition_notice)]
     notice_boot();
     init_timer_irq();
@@ -284,7 +296,7 @@ pub(super) fn run() -> ! {
     });
     unsafe {
         BENCH = Some(Bench {
-            #[cfg(jnox_partition_notice)]
+            #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
             release: Release::default(),
             table,
             epoch: 0,
@@ -297,6 +309,8 @@ pub(super) fn run() -> ! {
         });
         let b = (*(&raw mut BENCH)).as_mut().unwrap_or_else(|| fail());
         b.epoch = counter();
+        #[cfg(jnox_partition_mask)]
+        worker_mask::configure(b.epoch, b.q, b.frequency);
         sched_start_frame(b.dispatch(Edge {
             due: b.epoch,
             from: 3,
@@ -311,21 +325,21 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
     if iar & 1023 != TIMER_IRQ {
         fail()
     }
-    #[cfg(jnox_partition_notice)]
+    #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
     let mut notice = NoticeIrq::sample(iar, frame);
     unsafe { asm!("msr cntp_ctl_el0, {}", "isb", "dsb sy", in(reg) 2u64, options(nostack)) };
     gic_write(GICC + 0x10, iar);
     unsafe { asm!("dsb sy", options(nostack)) };
     let b = unsafe { (*(&raw mut BENCH)).as_mut().unwrap_or_else(|| fail()) };
     let from = b.current;
-    #[cfg(jnox_partition_notice)]
+    #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
     b.notice_entry(entry, &mut notice);
     let (out_pc, out_sp, out_hash) = frame_identity(frame, from);
     b.frames[from] = frame;
     let prev = &mut b.edges[b.n - 1];
     prev.ret = unsafe { ptr::read_volatile(&raw const ordinary_return_stamp) };
     let e = Edge {
-        #[cfg(jnox_partition_notice)]
+        #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
         irq: notice,
         due: prev.next,
         entry,
@@ -353,6 +367,8 @@ impl Write for Uart {
 
 fn dump(b: &Bench, terminal: Edge) -> ! {
     let mut u = Uart;
+    #[cfg(jnox_partition_mask)]
+    worker_mask::dump(&mut u);
     let _ = writeln!(
         u,
         "OP HEADER table={} epoch={} freq={} q={} n={}",
@@ -362,7 +378,7 @@ fn dump(b: &Bench, terminal: Edge) -> ! {
         b.q,
         b.n
     );
-    #[cfg(jnox_partition_notice)]
+    #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
     {
         let _ = writeln!(u, "OP RELEASE n={} due={} before={} after={}", b.release.n,
             b.absolute(RELEASE), b.release.before, b.release.after);
@@ -398,7 +414,7 @@ fn dump(b: &Bench, terminal: Edge) -> ! {
                 } // bounded diagnostic on excessive trace loss
             }
         }
-        #[cfg(jnox_partition_notice)]
+        #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
         if n != 0 {
             e.irq.write(&mut u, n);
         }
@@ -440,7 +456,7 @@ fn dump(b: &Bench, terminal: Edge) -> ! {
             o.value.load(SeqCst)
         );
     }
-    #[cfg(jnox_partition_notice)]
+    #[cfg(any(jnox_partition_notice, jnox_partition_mask))]
     terminal.irq.write(&mut u, b.n);
     let _ = writeln!(
         u,
@@ -469,7 +485,7 @@ extern "C" fn notice_boot() {
         if Q_TABLE { 2 } else { 0 });
 }
 
-#[cfg(jnox_partition_notice)]
+#[cfg(any(jnox_partition_notice, jnox_partition_mask))]
 #[derive(Default)]
 struct Release {
     ready: bool,
@@ -478,7 +494,7 @@ struct Release {
     after: u64,
 }
 
-#[cfg(jnox_partition_notice)]
+#[cfg(any(jnox_partition_notice, jnox_partition_mask))]
 #[derive(Clone, Copy, Default)]
 struct NoticeIrq {
     iar: u32,
@@ -489,7 +505,7 @@ struct NoticeIrq {
     prior_a: u64,
 }
 
-#[cfg(jnox_partition_notice)]
+#[cfg(any(jnox_partition_notice, jnox_partition_mask))]
 impl NoticeIrq {
     fn sample(iar: u32, frame: *mut Frame) -> Self {
         let compare: u64;
@@ -508,12 +524,13 @@ impl NoticeIrq {
     }
 }
 
-#[cfg(jnox_partition_notice)]
+#[cfg(any(jnox_partition_notice, jnox_partition_mask))]
 impl Bench {
     fn absolute(&self, tick: u64) -> u64 {
         tick.checked_mul(self.q).and_then(|dt| self.epoch.checked_add(dt)).unwrap_or_else(|| fail())
     }
 
+    #[cfg(jnox_partition_notice)]
     fn compare(&self, tick: u64, nominal: u64) -> u64 {
         let first_close = if Q_TABLE { 4 } else { 2 };
         if !(first_close - 2..first_close).contains(&tick) {

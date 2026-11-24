@@ -90,3 +90,28 @@ The host stops each parked guest after eight seconds and retains UART, QEMU diag
 RELEASE brackets the actual change to B's ready state between before and after at generation n, separately from the scheduled due time. Each IRQ row records the acknowledged interrupt, active compare readback, timer control and interrupted SPSR before the handler disables the timer, and the exclusive end tick computed from IRQ entry. The checker matches EL1 IRQ vector targets and return PCs to the ELF, including the terminal IRQ. It requires two distinct samples made by A after entering the recovery window and splits known outgoing A time through its last sample at every nominal boundary. The remaining interval up to the IRQ entry sample stays in transition uncertainty.
 
 Each result identifies the lost service recipient in each affected window, the actual recovered context and its observed work in the remainder, the next two protected windows, and the original three-frame horizon. P long loses idle service in both the skipped blocked-B slot and the following explicit idle. Q long loses eligible B service on both sides of wrap. The short cases have no skipped slot. A case passes with a measured original timing failure at the injected close, the specified recovery, and all other scored edges within the original bound. Status 2 preserves a reconstructed capture with unrelated timing failures. Status 1 reports invalid or incomplete evidence. The earlier healthy and synthetic inputs keep their existing formats. Separate live worker masking and physical platform qualification remain open. [Controlled-case plan](https://github.com/Romanof123/JNOX/pull/106)
+
+## CHG-058 worker-mask capture
+
+The trusted fixture masks only IRQ on the first entry to A and returns to its Rust recurrence. P and Q keep the original absolute timer compare. The only new selector is `JNOX_PARTITION_WORKER_MASK=short|long`. Select exactly one ordinary P/Q feature on virt, with profile, application, control case and delayed-notice selectors unset. Repeat the example for P-short, P-long, Q-short and Q-long in separate native directories, retaining each first capture even on timeout or failure. Select `ordinary-partition-q` for Q. Capture healthy counterparts with the mask selector unset.
+
+```sh
+# Run from repository root in a native Linux checkout with other JNOX selectors unset.
+table=P
+mode=short
+feature=ordinary-partition-p
+target=/tmp/jnox-worker-mask-P-short
+(cd kernel && JNOX_PARTITION_WORKER_MASK="$mode" CARGO_TARGET_DIR="$target" \
+  cargo build --locked --release --features "$feature")
+elf="$target/aarch64-unknown-none/release/jnox-kernel"
+sha=$(sha256sum "$elf" | cut -d' ' -f1)
+sh tools/capture_partition_notice.sh "$table" "mask-$mode" "$elf" "$sha" /tmp/first-mask-P-short
+```
+
+`MASKBOOT` precedes the epoch and identifies the arm. The linked ELF carries the corresponding `ordinary_mask_{p,q}_{short,long}` symbol. Timer, IRQ, RELEASE, EDGE, OBS and STOP use the existing three-frame schema. Additional rows are buffered until the terminal IRQ. A zero or missing witness supplies no qualification.
+
+* `MASK` gives original due, restoration target, counter brackets set0/set1 and clear0/clear1, and raw saved, masked and restored DAIF. I is bit 7. All enabled witnesses must keep D/A/F unchanged. If the pending IRQ interrupts the clear veneer, clear1 is observed only when A resumes. Use the matched first IRQ entry as an additional upper bound for clearance. Report intervals and their uncertainty.
+* `MASKWORK` contains two consecutive samples in A after an earlier loop observation crossed d. Verify ordered counters before the target, the same dispatch generation, private SP, PCs in linked ordinary_a, consecutive counts and both wrapping accumulator values against A's actual recurrence (seed 17, rotate left 7 then add 17). Match independently observed exception entry and returns, including interruptions in the trusted restoration veneer. Attribute veneer time and uncertain transitions separately.
+* `MASKPEND` brackets DAIF, physical comparator, timer control and the raw banked GICD_ISPENDR0 read in order. Require I=1, CVAL=d, low timer-control bits 5 and pending bit 30 before clearing I. The existing IRQ record is the subsequent actual GICC acknowledgement. Preserve the oldest sample, read order, linked code and trace. Require each original compare readback to equal its nominal boundary.
+
+The capture wrapper checks image digest, selector announcement and terminal record. Its mask-mode exit status records capture completion only. The existing delayed-notice replay assumes a moved compare. Score the original 1 ms limit, actual interrupted/resumed context, eligible service loss, recovery and subsequent two full windows independently under [CHG-058](pol-006-rust-partition-plan.en.md#chg-058).
