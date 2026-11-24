@@ -26,7 +26,7 @@ python tools/scheduling_footprint.py --baseline out/minimal.elf --feature extend
 
 ## CHG-090 · 최소 virt 구성의 엔지니어링 판정
 
-#4와 #21에서 REQ-009의 두 한도를 아래 단일 링크 구성에 적용한다. 두 한도는 경계값을 포함한다. 이 결정은 DES-001 및 DES-004에 대한 VER-009의 정적 판정 부분을 정의하며 독립 산출물 판정은 아직 남아 있다. [REQ-009](requirements.md) · [VER-009](verification-plan.md)
+CHG-090은 아래의 단일 링크 구성에 경계값을 포함하는 두 한도를 정했다(#4, #21). CHG-111(#285)에 따라 두 한도와 비교 절차는 이 기존 참조 벤치마크를 선택해 실행할 때만 적용한다. 제품 프로파일은 DES-001 및 DES-004에 따라 자체 할당량을 검증한다. [REQ-009](requirements.md) · [VER-009](verification-plan.md)
 
 | 구분 | 정확한 구성 |
 |---|---|

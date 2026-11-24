@@ -14,7 +14,7 @@ The verification team reviews the acceptance criteria against the product plan a
 | `VER-006` | `REQ-006` | Exercise AF_UNIX and both TCP and UDP over each of IPv4 and IPv6 concurrently across multiple processes and threads. Check readiness and timeouts in nonblocking I/O, partial reads, I/O during closure, and backpressure and resource release under saturation. |
 | `VER-007` | `REQ-007` | Confirm that identical script inputs produce the same static configuration and that invalid configurations are rejected. Test unbounded execution, allocation limits, and privilege requests in target-side scripts. |
 | `VER-008` | `REQ-008` | For each CPU and BSP, record the scope of support for boot, exceptions, memory protection, timers, SMP, and applicable devices. Track results for QEMU, the physical board, and the safety configuration separately. |
-| `VER-009` | `REQ-009` | Record the link map and boot and memory baselines for a fixed core configuration. On physical hardware, measure boot time, interrupt-to-task latency, context-switch latency, and IPC latency. Record test conditions and the maximum observed values. [CHG-090](scheduling-footprint.en.md) |
+| `VER-009` | `REQ-009` | Check the selected profile’s RAM allocations and any target storage limit. On physical hardware, measure boot time, interrupt-to-task latency, context-switch latency and IPC latency. Record test conditions and maximum observed values. |
 | `VER-010` | `REQ-010` | Check rejection of tampered images, unapproved versions, and images signed with revoked keys. Test power loss at each update step and confirm recovery to an approved image. |
 | `VER-011` | `REQ-011`, `REQ-021` | Check permissions, queues, handles, and quotas for each domain. Under invalid requests and overload, confirm that safety queues, memory use, and processing time stay within their reserved limits. Inspect the Linux ABI process launch manifest. Exhaust its CPU, memory and file descriptor limits separately and record each enforcement outcome and preservation of safety-task reservations. |
 | `VER-012` | `REQ-012` | Check upstream and downstream requirement links in both directions and look for orphan nodes. For each changed requirement or assumption, review the impact analysis and the tests that were rerun. |
@@ -102,7 +102,7 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 
 CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel.en.md) · [EVD-040](evidence/evd-040.en.md)
 
-[EVD-041](evidence/evd-041.en.md) records measurements for the FIFO/RR parts of VER-002/005/009/023. Compare linked footprints and repeated observed handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)
+[EVD-041](evidence/evd-041.en.md) records measurements for the FIFO/RR parts of VER-002/005/009/023. That study compared linked footprints and repeated observations of handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)
 
 [Host segmented admission method](fs-m3-admission.md) · CHG-045 / IMP-043, POL-004 #94. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
 
