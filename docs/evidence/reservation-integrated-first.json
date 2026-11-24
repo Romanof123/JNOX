@@ -1,0 +1,169 @@
+{
+  "source": "68b4b4c88bcb669133528ae7d845ee9468c9efc3",
+  "archive_sha256": "e5a8f718337b63c47523d895c9e19672bffe4a7421401d276fced462f70eb391",
+  "qualified": 2,
+  "positions": [
+    {
+      "ordinal": 1,
+      "app": "aligned-wake",
+      "trace": false,
+      "slot": 34,
+      "owner": 2,
+      "status": 0,
+      "reason": 0,
+      "operands": [
+        0,
+        0
+      ],
+      "flags": 31,
+      "grants": 18,
+      "first": 62342,
+      "violations": [],
+      "hash": "cf5a67a3c1b6244619f3a41e669cbb7e67ab8de6e61026acdc0c9a44406a9344"
+    },
+    {
+      "ordinal": 2,
+      "app": "cbs-wake",
+      "trace": true,
+      "slot": 0,
+      "owner": 0,
+      "status": 2,
+      "reason": 2,
+      "operands": [
+        3226465,
+        3160245
+      ],
+      "flags": 31,
+      "grants": 1,
+      "first": 66220,
+      "violations": [
+        [
+          0,
+          0,
+          "opening"
+        ]
+      ],
+      "hash": "723e37524794d80d948b28b4f9c1e749ac2585a02b203989c8cbec4e1347d1c7"
+    },
+    {
+      "ordinal": 3,
+      "app": "aligned-saturated",
+      "trace": true,
+      "slot": 0,
+      "owner": 2,
+      "status": 2,
+      "reason": 5,
+      "operands": [
+        3253684,
+        3184887
+      ],
+      "flags": 3,
+      "grants": 0,
+      "first": null,
+      "violations": [],
+      "hash": "4e2c7a08b684ca871df59a47ce43314e3949e9ae7da1edb56bdbea4164435cd2"
+    },
+    {
+      "ordinal": 4,
+      "app": "cbs-saturated",
+      "trace": false,
+      "slot": 0,
+      "owner": 0,
+      "status": 2,
+      "reason": 2,
+      "operands": [
+        3217955,
+        3153727
+      ],
+      "flags": 31,
+      "grants": 1,
+      "first": 64228,
+      "violations": [
+        [
+          0,
+          0,
+          "opening"
+        ]
+      ],
+      "hash": "ec9933db400f865c246d00b40d625350759591d5661397551d30d148bb078f68"
+    },
+    {
+      "ordinal": 5,
+      "app": "aligned-wake",
+      "trace": true,
+      "slot": 1,
+      "owner": 1,
+      "status": 2,
+      "reason": 2,
+      "operands": [
+        6348592,
+        6285864
+      ],
+      "flags": 31,
+      "grants": 2,
+      "first": 56282,
+      "violations": [
+        [
+          1,
+          1,
+          "opening"
+        ]
+      ],
+      "hash": "a6f8f625f625ee83fb851d4087a5b3b8fda7ae5e9824654de2edd88197a5d506"
+    },
+    {
+      "ordinal": 6,
+      "app": "cbs-wake",
+      "trace": false,
+      "slot": 0,
+      "owner": 2,
+      "status": 2,
+      "reason": 5,
+      "operands": [
+        3220475,
+        3156905
+      ],
+      "flags": 15,
+      "grants": 0,
+      "first": null,
+      "violations": [],
+      "hash": "003951f242717f6152d25049a87da02880a5a961a503af63c14a17a51d760304"
+    },
+    {
+      "ordinal": 7,
+      "app": "aligned-saturated",
+      "trace": false,
+      "slot": 0,
+      "owner": 2,
+      "status": 2,
+      "reason": 5,
+      "operands": [
+        3231143,
+        3164139
+      ],
+      "flags": 3,
+      "grants": 0,
+      "first": null,
+      "violations": [],
+      "hash": "d44e16dae42cd9ad6ea8e60fff6529d48e230180d2057f945b80b71b8a068f91"
+    },
+    {
+      "ordinal": 8,
+      "app": "cbs-saturated",
+      "trace": true,
+      "slot": 10,
+      "owner": 2,
+      "status": 0,
+      "reason": 0,
+      "operands": [
+        0,
+        0
+      ],
+      "flags": 31,
+      "grants": 8,
+      "first": 60535,
+      "violations": [],
+      "hash": "aaac1e08c3e66f39161dcd2c0a9b8d27b7af881475566dd3b3b1ab3feb21518a"
+    }
+  ]
+}
