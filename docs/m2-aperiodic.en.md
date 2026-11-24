@@ -24,3 +24,5 @@ A separate host model varies arrivals and CPU availability and checks accounting
 [EVD-016](evidence/evd-016.en.md)
 
 CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+POL-007 / IMP-045. Ten first default-clock boots failed before arbitration. Five deterministic schedules and two delayed controls were independently replayed. [EVD-045](evidence/evd-045.en.md)

@@ -109,3 +109,5 @@ CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md)
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
 CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+POL-007 / IMP-045. 최초 기본 클록 부팅 10건은 중재 전에 실패했다. 결정론적 정상 스케줄 5개와 지연 대조군 2개는 독립 재현했다. [EVD-045](evidence/evd-045.md)

@@ -1,0 +1,17 @@
+{
+  "evidence_id": "EVD-045",
+  "policy": "POL-007",
+  "implementation": "IMP-045",
+  "verdict": "PARTIAL: all 10 default-clock guests failed before arbitration",
+  "versions": [
+    {
+      "version": 1,
+      "source": "86457068e7ba019d3deabb80f63f47d50436c4a6",
+      "english": "evd-045-v1.en.md",
+      "korean": "evd-045-v1.md",
+      "evidence": "evd-045-v1.json",
+      "evidence_sha256": "e19ba71ce51ab5c57bf0a08817cc7a66eb6cdac112554764dd99f7607d694ed2",
+      "reviewer_manifest_sha256": "c85166508ad4942eb3a0c350cf65ef8e688de0a94938ebde2af850cb92af2c9a"
+    }
+  ]
+}

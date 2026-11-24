@@ -1,6 +1,6 @@
 # POL-007 ordinary Rust aperiodic servers / 일반 Rust 비주기 서버
 
-[English](#english) · [한국어](#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101) · CHG-047 · intended IMP-045 · planned EVD-045
+[English](#english) · [한국어](#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101) · CHG-047 · IMP-045 · EVD-045
 
 <a id="english"></a>
 
@@ -38,3 +38,5 @@ PS는 정렬 경계에서 할당을 교체하고 빈 폴링 또는 소진된 요
 동일 CNTPCT와 F로 목표·IRQ·실제 제출/승인·디스패치·선점·진행·결과·완료·복귀를 기록한다. ELF 해시별 첫 콜드 부팅 판정, ELR/ERET·스택 범위·동일 틱 순서, 외부 예외 추적과 독립 상태 재현을 보존한다. 캡처 용량을 미리 정하고 관측 종료 후 UART를 출력한다. 한계와 한 틱 초과, 잘못된 소유자·예산·오버플로·누락 사건·서비스 중 실패를 검사한다. 별도 결함 실행에서 경계에 걸쳐 IRQ를 유한 마스킹하고 소유자와 해제 시각을 남긴다. 늦은 IRQ에서는 실제 시각과 누락 슬롯을 기록하고 실제 완료만 정산한 뒤 판정 실패·원장 동결·새 시도 초기화를 수행한다. 밀린 가공 서비스나 보충을 재생하지 않는다. 통째로 잃은 슬롯은 이후 완료로 만회할 수 없다. 지연 주입을 지원하지 않는 이미지에서는 실제 사례를 미완료로 표시하고 판정기 단독 시험을 별도 기록한다.
 
 REQ-002/005/023 → DES-003/012 → VER-002/005/023. 이 가상 주기 경쟁 작업은 M3 폐루프 제어 작업이 아니다. 제품별 수용·WCET, 실보드 CPU·DMA·IRQ 간섭 및 실제 M3 제어 작업 영향은 별도 근거가 필요하다. [출시 기준](scheduling-release-cases.md) · [#21](https://github.com/Romanof123/JNOX/issues/21)
+
+First runtime verdict: PARTIAL. [EVD-045](evidence/evd-045.en.md) · 최초 런타임 판정은 부분 통과다. [한국어](evidence/evd-045.md)

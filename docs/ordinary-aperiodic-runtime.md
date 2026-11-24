@@ -28,3 +28,5 @@ All UART numbers are hexadecimal CNTPCT ticks or unsigned integers. Storage rese
 커널 디렉터리에서 `JNOX_BOARD=virt`, `JNOX_PROFILE=aperiodic`, 위 8개 중 하나의 `JNOX_APP`을 지정하고 Cargo 기능 없이 AArch64 릴리스 ELF를 만든다. 각 ELF를 단일 Cortex-A72 virt/GICv2 TCG, 128 MiB에서 콜드 부팅하여 첫 UART·예외 기록과 ELF 해시를 보관한다. 결함 실행은 `JNOX_APERIODIC_LATE=1`로 선택한다. 서버 첫 단위의 128단계 뒤 IRQ를 마스킹하고 다음 경계로부터 1.5슬롯 후 해제한다. 미완료 단위를 유지한 실패 기록을 저장하고 콜드 리셋으로 재시작한다.
 
 유휴·생산자·서버·주기 작업은 각각 16 KiB 전용 스택을 쓴다. 표의 원시 레코드를 실제 예외 복귀와 대조하고, 제출부터 단위 완료까지의 시간 및 주기 작업의 명목 릴리스 기준 지연을 계산한다. 작업 단위마다 256회 진행 상태와 카운터를 기록한다. 1 ms IRQ, 5 ms 준비, 잔여 45 ms 실행은 수용 한계다. 저장·복원 및 계측 비용을 포함한 독립 시간 상한과 실제 M3 간섭 근거는 별도로 확보해야 한다.
+
+First runtime verdict: PARTIAL. [EVD-045](evidence/evd-045.en.md) · 최초 런타임 판정은 부분 통과다. [한국어](evidence/evd-045.md)

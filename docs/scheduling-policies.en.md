@@ -114,3 +114,5 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
 
 POL-004 / IMP-043. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
+
+POL-007 / IMP-045. Ten first default-clock boots failed before arbitration. Five deterministic schedules and two delayed controls were independently replayed. [EVD-045](evidence/evd-045.en.md)
