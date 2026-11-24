@@ -1233,3 +1233,6 @@ POL-015,has-partial-policy-evidence,EVD-058
 VER-002,has-partial-evidence,EVD-058
 VER-005,has-partial-evidence,EVD-058
 VER-023,has-partial-evidence,EVD-058
+CHG-083,affects,REQ-002
+CHG-083,affects,REQ-005
+CHG-083,affects,REQ-023
