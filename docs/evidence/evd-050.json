@@ -2,7 +2,7 @@
   "evidence_id": "EVD-050",
   "implementation": "IMP-050",
   "change": "CHG-049",
-  "verdict": "Stock healthy 0/32; diagnostic mode initialization 0/96",
+  "verdict": "The repaired input matched all 96 intended diagnostic selectors and all 96 startup checks passed. Operational qualification was 0/128. Two additional invalid or missing-input controls remained OFF.",
   "versions": [
     {
       "version": 1,
@@ -11,7 +11,18 @@
       "korean": "evd-050-v1.md",
       "evidence": "evd-050-v1.json",
       "sha256": "e6bcc536fb9cc69032a45a23abac69d239230a78bfca9de6097d837aae35f3d1",
-      "reviewer_manifest_sha256": "15945aa4cb22eb22e845afa08d75eb013b7b53ab46a503ac108e0f545c67a423"
+      "reviewer_manifest_sha256": "15945aa4cb22eb22e845afa08d75eb013b7b53ab46a503ac108e0f545c67a423",
+      "verdict": "Stock healthy 0/32; diagnostic mode initialization 0/96"
+    },
+    {
+      "version": 2,
+      "source": "b9db1043588fcb78cb44aae00fdd028199754538",
+      "stock_source": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
+      "english": "evd-050-v2.en.md",
+      "korean": "evd-050-v2.md",
+      "evidence": "evd-050-v2.json",
+      "sha256": "11e647654ee4728de41e371f050dcb25f4f937beb53dcf864708fd7dc24eb004",
+      "reviewer_manifest_sha256": "3a4de3a89b8839b30bcadd5047d6990d7af7e2dc5541a55dc21d7627157fc0eb"
     }
   ],
   "related": "EVD-042",

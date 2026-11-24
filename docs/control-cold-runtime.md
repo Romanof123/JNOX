@@ -47,8 +47,8 @@ Bitmap bit 0 denotes pending, bit 1 active. Use rows 51, 52, 55 and 61 for arm/u
 
 The first mode-input procedure failed in all 96 diagnostic cold runs. [EVD-050 v1](evidence/evd-050-v1.en.md) · 첫 모드 입력 절차는 진단 콜드 실행 96회 모두 실패했다. [한국어](evidence/evd-050-v1.md)
 
-All 128 v1 captures belong to the original sentinel-source cohort. The fw_cfg source frozen at b9db104 requires a separate cold series. Its effectiveness is unverified. [EVD-050 index](evidence/evd-050.en.md)
+The repaired input matched all 96 intended diagnostic selectors and all 96 startup checks passed. Operational qualification was 0/128. Two additional invalid or missing-input controls remained OFF. [EVD-050 v2](evidence/evd-050-v2.en.md)
 
-v1 기록 128건은 모두 원래 sentinel 소스 집단에 속한다. b9db104의 fw_cfg 입력 변경 효과는 검증되지 않았으며 별도 콜드 실행으로 평가한다. [EVD-050 색인](evidence/evd-050.md)
+수정한 입력 경로는 예정된 진단 선택자 96개를 모두 읽었고 96회 모두 시작 검사를 통과했다. 운영 기준을 모두 충족한 실행은 0/128이었다. 별도의 잘못된 입력 및 입력 누락 대조군 두 건에서 출력은 OFF였다. [한국어](evidence/evd-050-v2.md)
 
 [Observer storage crossover, 32 boots](evidence/evd-050-storage.en.md) · [관측 파일 저장 경로 교차 실험, 32회](evidence/evd-050-storage.md)
