@@ -981,3 +981,11 @@ CHG-051,affects,REQ-023
 DES-003,implemented-by,IMP-048
 DES-012,implemented-by,IMP-048
 POL-005,partially-implemented-by,IMP-048
+IMP-048,tested-in,EVD-048
+POL-005,has-switch-evidence,EVD-048
+IMP-048,partially-verified-by,VER-002
+VER-002,has-partial-evidence,EVD-048
+IMP-048,partially-verified-by,VER-005
+VER-005,has-partial-evidence,EVD-048
+IMP-048,partially-verified-by,VER-023
+VER-023,has-partial-evidence,EVD-048

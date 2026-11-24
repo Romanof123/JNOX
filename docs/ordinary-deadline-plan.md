@@ -1,6 +1,6 @@
 # POL-005 · Ordinary EDF and sampled LLF virtual jobs / 일반 EDF·표본 LLF 가상 작업
 
-CHG-051 · intended IMP-048 · planned EVD-048 · REQ/VER-002/005/023 · DES-003/012. [#113](https://github.com/Romanof123/JNOX/issues/113) · [EVD-005](evidence/evd-005.en.md) · [EVD-015](evidence/evd-015.en.md) · [#21 release cases](scheduling-release-cases.en.md)
+CHG-051 · IMP-048 · [EVD-048](evidence/evd-048.en.md) · [한국어](evidence/evd-048.md) · REQ/VER-002/005/023 · DES-003/012. [#113](https://github.com/Romanof123/JNOX/issues/113) · [EVD-005](evidence/evd-005.en.md) · [EVD-015](evidence/evd-015.en.md) · [#21 release cases](scheduling-release-cases.en.md)
 
 ## Frozen design
 
