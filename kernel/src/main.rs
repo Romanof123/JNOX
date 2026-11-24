@@ -30,7 +30,8 @@ mod deadline_policy;
     jnox_bench = "batch"
 ))]
 mod dispatch_policy;
-#[cfg(jnox_bench = "rr")]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "smp"))]
+#[cfg_attr(jnox_bench = "smp", allow(dead_code))]
 mod domain_policy;
 #[cfg(jnox_bench = "coop")]
 mod event_loop;
@@ -59,6 +60,12 @@ mod request_server;
 mod sched;
 #[cfg(jnox_bench = "rr")]
 mod service_policy;
+#[cfg(jnox_bench = "smp")]
+mod smp;
+#[cfg(jnox_bench = "smp")]
+mod smp_boot;
+#[cfg(jnox_bench = "smp")]
+mod smp_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "partition"))]
 mod temporal_policy;
 
@@ -75,7 +82,7 @@ global_asm!(
 );
 
 extern "C" fn kernel_main() -> ! {
-    // SAFETY: The sole CPU has finished clearing this aligned static in RAM.
+    // SAFETY: The boot CPU has finished clearing this aligned static in RAM.
     // Taking a raw address creates no reference to the assembly-written word.
     if unsafe { ptr::read_volatile(&raw const BSS_PROBE) } != 0 {
         park();
@@ -90,6 +97,8 @@ extern "C" fn kernel_main() -> ! {
 }
 
 fn run_bench() -> ! {
+    #[cfg(jnox_bench = "smp")]
+    smp_boot::boot();
     #[cfg(jnox_bench = "rr")]
     {
         if !dispatch_policy::bench_checks() {
