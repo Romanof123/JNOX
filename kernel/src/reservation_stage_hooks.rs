@@ -43,7 +43,6 @@ macro_rules! eoi_barrier {
 macro_rules! eoi_barrier {
     ($slot:expr, $kind:expr, $barrier:expr) => {{
         if $slot == 0 && $kind == 0 {
-            $barrier;
             $crate::ordinary_reservations::stage_hooks::stage_probe::sample();
         } else {
             $barrier;
@@ -64,6 +63,13 @@ pub(super) mod stage_probe {
         let tick: u64;
         let pc: u64;
         unsafe {
+            // E owns the sampled path's final EOI completion barrier.
+            #[cfg(jnox_reservation_stage = "eoi")]
+            asm!(
+                "dsb sy", "isb", "2: mrs {tick}, cntpct_el0", "adr {pc}, 2b",
+                tick = out(reg) tick, pc = out(reg) pc, options(nostack, preserves_flags)
+            );
+            #[cfg(jnox_reservation_stage = "frames")]
             asm!(
                 "isb", "2: mrs {tick}, cntpct_el0", "adr {pc}, 2b",
                 tick = out(reg) tick, pc = out(reg) pc, options(nostack, preserves_flags)
