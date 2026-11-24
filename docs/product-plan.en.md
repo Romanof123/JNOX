@@ -8,6 +8,8 @@ The first J-NOX product is an embedded operating system that gives control softw
 
 ## Product objectives
 
+The replacement target is an existing safety application on its specified equipment. Start with an unchanged C telemetry monitor compiled per OS. Track its source and observable behavior from host baseline to an isolated AArch64 process, then qualify the chosen device, control path, recovery and physical safe-state response for the product. [First migration pilot and acceptance stages](telemetry-migration-pilot.en.md)
+
 The product scope includes time sharing, deadline-driven scheduling, cyclic tables, budget reservations, fair service and multicore placement alongside fixed-priority FIFO. Each policy has an applicable profile and release evidence. [Scheduling policies](scheduling-policies.en.md)
 
 Allocate product capabilities by profile and track each acceptance criterion alongside its current evidence. The catalog records the platform baseline and additional proposals awaiting an adoption decision. [Platform capability baseline](platform-capabilities.en.md)
