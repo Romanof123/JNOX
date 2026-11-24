@@ -1,6 +1,6 @@
 import unittest
 
-from open_tracking import audit
+from open_tracking import audit, references
 
 
 def item(n, body, pr=False, roles=("team:pm",)):
@@ -48,6 +48,18 @@ class TrackingTests(unittest.TestCase):
                      "<https://example.com/#4>", "other/repo#4", r"\#4"):
             with self.subTest(body=body):
                 self.assertTrue(audit([item(4, "#1", True), item(1, body)])[1])
+
+    def test_delimiters_shown_in_examples_do_not_hide_next_paragraph(self):
+        for example in ("`<code>`", "`<!--`", "~~~\n<pre>\n~~~",
+                        "  > <code>", "    <!--", "A `sample\n<code>`"):
+            with self.subTest(example=example):
+                self.assertEqual(references(example + "\n\nTracks #6"), {(6, None)})
+
+    def test_real_multiline_html_owns_its_contents(self):
+        for opener, closer in (("<!--", "-->"), ("<code>", "</code>"), ("<PRE>", "</pre>")):
+            body = opener + "\n` #4\n~~~\n  > #5\n" + closer + " Tracks #6"
+            with self.subTest(opener=opener):
+                self.assertEqual(references(body), {(6, None)})
 
     def test_invalid_team_assignments(self):
         for roles in ((), ("team:fiction",), ("team:pm", "team:systems")):

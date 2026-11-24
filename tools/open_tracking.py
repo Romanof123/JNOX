@@ -13,32 +13,72 @@ TOKEN = re.compile(r"https?://[^\s<>\[\]()]+|(?<![^\s(,;])"
                    r"(?:(?P<repo>[\w.-]+/[\w.-]+))?#(?P<num>[1-9][0-9]*)(?![A-Za-z0-9_])", re.I)
 
 
-def references(body):
-    """Extract supported prose references, retaining the target type of URLs."""
-    body = re.sub(r"<!--.*?(?:-->|\Z)|<(code|pre)\b[^>]*>.*?(?:</\1\s*>|\Z)",
-                  " ", body, flags=re.I | re.S)
-    lines = []
-    quoted = False
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+OPEN = re.compile(r"`+|<!--|<(code|pre)(?=[\s>]|$)", re.I)
+HTML_END = {"<!--": re.compile("-->"), "code": re.compile(r"</code\s*>", re.I),
+            "pre": re.compile(r"</pre\s*>", re.I)}
+
+
+def body_prose(body):
+    """Scan in document order. Delimiters inside excluded regions are literal."""
     fence = ""
+    quoted = False
+    ticks = ""
+    html_end = None
     for line in body.splitlines():
         if not line.strip():
             quoted = False
-        if not fence and re.match(r"^\s*>", line):
-            quoted = True
-        if quoted:
-            continue
-        marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
-        if fence:
-            if marker and marker[1].startswith(fence) and not marker[2].strip():
-                fence = ""
-        elif marker:
-            fence = marker[1]
-        elif not line.startswith(("    ", "\t", ">")):
-            lines.append(line)
-    prose = re.sub(r"<!--.*?(?:-->|\Z)", " ", "\n".join(lines), flags=re.S)
-    prose = re.sub(r"(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", " ", prose, flags=re.S)
+            ticks = ""
+        if not html_end:
+            marker = FENCE.match(line)
+            if fence:
+                if marker and marker[1].startswith(fence) and not marker[2].strip():
+                    fence = ""
+                continue
+            if re.match(r"^\s*>", line):
+                quoted = True
+            if quoted or line.startswith(("    ", "\t")):
+                ticks = ""
+                continue
+            if marker:
+                ticks = ""
+                fence = marker[1]
+                continue
+
+        visible = []
+        pos = 0
+        while pos < len(line):
+            if html_end:
+                end = html_end.search(line, pos)
+                if not end:
+                    break
+                html_end = None
+                pos = end.end()
+            elif ticks:
+                end = re.search(r"(?<!`)" + ticks + r"(?!`)", line[pos:])
+                if not end:
+                    break
+                ticks = ""
+                pos += end.end()
+            else:
+                start = OPEN.search(line, pos)
+                if not start:
+                    visible.append(line[pos:])
+                    break
+                visible.append(line[pos:start.start()])
+                visible.append(" ")
+                pos = start.end()
+                if start[0].startswith("`"):
+                    ticks = start[0]
+                else:
+                    html_end = HTML_END[(start[1] or start[0]).lower()]
+        yield "".join(visible)
+
+
+def references(body):
+    """Extract supported prose references, retaining the target type of URLs."""
     lines = []
-    for line in prose.splitlines():
+    for line in body_prose(body):
         line = re.sub(r"(!?)\[([^\[\]\n]*)\]\(([^()\s]+)\)", lambda m:
                       " " + m[3] + " " if not m[1] and URL.fullmatch(m[3]) else " ", line)
         line = re.sub(r"<(https?://[^<>\s]+)>", lambda m:
