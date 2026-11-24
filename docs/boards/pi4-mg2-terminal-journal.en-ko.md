@@ -1,0 +1,11 @@
+# MG2 terminal journal writer reuse / MG2 종료 저널 기록 구간 재사용
+
+The clustered linked SVC calls the journal at 0x80820 (tag 13, terminal summary) and 0x80840 (tag 9, terminal commit) before retire at 0x80858 and signal at 0x808b0. Each call saves DAIF, masks IRQ and reads MPIDR at 0x818ec..0x818f4, then restores DAIF at 0x81a04 on success. See the clustered disassembly in docs/evidence/pi4-mg2-sparse-first.zip. Synchronous exception entry already masks IRQ. No task dispatch or other operation occurs between these two rows. Both carry the same validated CPU and running lease.
+
+Reuse a single local writer for just those adjacent rows. Hold the guard through both release publications and restore DAIF at scope exit. Keep the same per-row ID, sealed-state and capacity checks, atomic word stores, loss accounting, release commit and order, including the one-slot-left and full cases. Retain tag 4 before them, policy retirement and tag 3 after them, and directed SGIR after genuine retirement. Keep other call sites on their single-row path. The first milestone, original inputs and bounded wait are outside the change.
+
+Independent verification should check the rebuilt SVC through the journal call(s) for a single mask/identity/restore sequence and two release publications, and establish each candidate's linked observer addresses. Test capacity for zero, one and two free rows. Retain six predeclared strict first attempts across global, partitioned and clustered placement, two positions per regime, preserving all failures and existing independent qualification criteria. Archived register evidence identifies the opening path; it measures no candidate speedup. Hardware, repeatability, migration and release claims require their own evidence.
+
+클러스터형 링크 결과에서 같은 SVC가 종료 요약(태그 13)과 종료 커밋(태그 9)을 연속으로 기록하는 동안 DAIF 저장·IRQ 마스크·CPU 식별·DAIF 복원을 두 번 실행한다. 이 두 행만 하나의 지역 기록 구간 안에 두고 각 행의 CPU·봉인·용량 검사, 손실 집계, 원자적 데이터 저장, 독립 release 공개 및 순서를 유지한다. 실제 retire와 방향 지정 SGIR 쓰기의 순서, 작업 입력, 제한 대기, 최초 마일스톤은 보존한다.
+
+독립 빌드에서 두 행의 공개와 한 번의 마스크 처리를 확인하고 빈 슬롯이 0·1·2개일 때의 결과를 검사한다. global·partitioned·clustered 배치별 두 자리씩 여섯 최초 시도를 그대로 보존하여 판정한다. 실제 하드웨어, 반복성, 이주 성공 및 릴리스는 별도 증거가 필요하다.
