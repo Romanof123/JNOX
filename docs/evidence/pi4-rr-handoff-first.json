@@ -1,0 +1,80 @@
+{
+  "engineering": [
+    {
+      "label": "E1",
+      "payload": 1820706,
+      "intervals": [
+        649,
+        23211
+      ],
+      "sampled_stack_depths": [
+        0,
+        192
+      ],
+      "handoff": false,
+      "legacy": false
+    },
+    {
+      "label": "E2",
+      "payload": 1871585,
+      "intervals": [
+        642,
+        20488
+      ],
+      "sampled_stack_depths": [
+        0,
+        192
+      ],
+      "handoff": false,
+      "legacy": false
+    }
+  ],
+  "ordinary_raw_matches_integrated": true,
+  "increment_vs_v1": {
+    "text": 452,
+    "rodata": 1,
+    "data": 0,
+    "bss": 176,
+    "stack": 0
+  },
+  "atomic_sites": [
+    "0x82208",
+    "0x82178"
+  ],
+  "controls": "6/6 RC1",
+  "prior_package_error": "Missing boards/pi4/config.txt in local archive before any boot. Pinned boards archived and original staging retained.",
+  "qemu_sha256": "3ae2c079d4491362fece2abb641f0ff17d88e9008c9fcd13600f249b9bd1c862",
+  "source": "702380d7797648cff740cc538bd301c442873e85",
+  "archive": "pi4-rr-handoff-first.zip",
+  "archive_sha256": "8ed35197635306193e9c5f58b79aaf7353070d9d523ad591afe7962cb5e382c0",
+  "archive_bytes": 1570117,
+  "paths": 133,
+  "unique_objects": 76,
+  "positions": [
+    {
+      "position": "O1",
+      "uart_sha256": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+      "stop": "complete-and-quiet",
+      "result": 0
+    },
+    {
+      "position": "E1",
+      "uart_sha256": "2227617e27f6be5b1c3989403aa3d38acc5aba2adc662f8c0d410edd81101b59",
+      "stop": "complete-and-quiet",
+      "result": 2
+    },
+    {
+      "position": "E2",
+      "uart_sha256": "5fc469cd552ad998788e9d91266666f83c625936f941319e9d640226352867b0",
+      "stop": "complete-and-quiet",
+      "result": 2
+    },
+    {
+      "position": "O2",
+      "uart_sha256": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+      "stop": "complete-and-quiet",
+      "result": 0
+    }
+  ],
+  "source_manifest_sha256": "304031d4c81a0a3acbb2fc629c89f9310adf7b7cb84d23bb3ee0217e08798f2c"
+}
