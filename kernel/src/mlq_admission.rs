@@ -22,7 +22,7 @@ const DEADLINE: u64 = if cfg!(jnox_app = "mlq-refuse") {
 // Layout is frozen in docs/mlq-admission-design.md. Atomics allow preemption
 // while worker code publishes its first observation or reduction.
 #[unsafe(no_mangle)]
-static mlq_admission_witness: [AtomicU64; 27] = [const { AtomicU64::new(0) }; 27];
+static mlq_admission_witness: [AtomicU64; 30] = [const { AtomicU64::new(0) }; 30];
 
 fn put(i: usize, v: u64) {
     mlq_admission_witness[i].store(v, SeqCst);
@@ -31,7 +31,8 @@ fn get(i: usize) -> u64 {
     mlq_admission_witness[i].load(SeqCst)
 }
 
-fn violation() -> ! {
+fn violation(stage: u64) -> ! {
+    put(27, stage);
     put(0, 5);
     super::uart_write(b"MLQ VIOLATION\n");
     svc::fail()
@@ -49,8 +50,8 @@ pub fn dispatch(id: usize, start: u64, service: [u64; 4], outgoing: Option<usize
         return;
     }
     for i in 0..TARGET {
-        if service[i] > QUEUE[i].1.unwrap_or_else(|| violation()) {
-            violation();
+        if service[i] > QUEUE[i].1.unwrap_or_else(|| violation(1)) {
+            violation(1);
         }
     }
     if outgoing == Some(2) && kind == 4 {
@@ -58,25 +59,25 @@ pub fn dispatch(id: usize, start: u64, service: [u64; 4], outgoing: Option<usize
     }
     if id == TARGET {
         if outgoing != Some(2) || kind != 4 || get(25) != 1 || get(20) != 0 || get(22) != 7 {
-            violation();
+            violation(2);
         }
         if mlq_admission_witness[23].fetch_add(1, SeqCst) != 0 {
-            violation();
+            violation(3);
         }
         put(7, start);
         for (id, value) in service.into_iter().enumerate() {
             put(9 + id, value);
         }
         if service[TARGET] != 0 {
-            violation();
+            violation(4);
         }
     }
 }
 
 fn observe(first: u64) {
     put(8, first);
-    let delta = |a: u64, b: u64| a.checked_sub(b).unwrap_or_else(|| violation());
-    let sum = |a: u64, b: u64| a.checked_add(b).unwrap_or_else(|| violation());
+    let delta = |a: u64, b: u64| a.checked_sub(b).unwrap_or_else(|| violation(5));
+    let sum = |a: u64, b: u64| a.checked_add(b).unwrap_or_else(|| violation(5));
     let charged = sum(sum(get(9), get(10)), get(11));
     let gaps = delta(delta(get(7), get(6)), charged);
     let excess = get(11).saturating_sub(QUANTUM);
@@ -89,7 +90,7 @@ fn observe(first: u64) {
     put(16, used);
     put(17, elapsed);
     if used > ALLOWANCE || elapsed > DEADLINE || get(23) != 1 {
-        violation();
+        violation(6);
     }
     put(0, 3);
 }
@@ -111,21 +112,20 @@ fn worker<const ID: usize>() {
     }
     mlq_admission_witness[22].fetch_or(1 << ID, SeqCst);
     if ID == 2 {
-        let until = svc::counter()
-            .checked_add(QUANTUM + 1)
-            .unwrap_or_else(|| violation());
         let mut total = 0;
         for blocks in 1..=2_000_000 {
+            let receipt = get(28);
             for &sample in core::hint::black_box(&SAMPLES) {
                 total += u64::from(sample & 1);
             }
-            if svc::counter() >= until {
+            if receipt == PRODUCTS[TARGET] {
+                put(29, blocks);
                 put(24, blocks);
                 put(20, total);
                 return;
             }
         }
-        violation();
+        violation(7);
     }
     let mut result = 0u64;
     for sample in core::hint::black_box(&SAMPLES) {
@@ -138,6 +138,12 @@ fn worker<const ID: usize>() {
         };
     }
     put(18 + ID, result);
+    if ID == TARGET {
+        if result != PRODUCTS[TARGET] {
+            violation(11);
+        }
+        put(28, result);
+    }
 }
 
 static TASKS: [Task; 4] = [
@@ -161,12 +167,15 @@ static TASKS: [Task; 4] = [
 
 pub fn terminal(service: [u64; 4]) {
     for i in 0..TARGET {
-        if service[i] > QUEUE[i].1.unwrap_or_else(|| violation()) {
-            violation();
+        if service[i] > QUEUE[i].1.unwrap_or_else(|| violation(8)) {
+            violation(8);
         }
     }
+    if get(28) != PRODUCTS[TARGET] || get(29) != get(24) {
+        violation(11);
+    }
     if !(1..=2_000_000).contains(&get(24)) || get(26) == 0 || get(20) != PRODUCTS[2] * get(24) {
-        violation();
+        violation(9);
     }
     if get(0) != 3
         || get(22) != 15
@@ -175,7 +184,7 @@ pub fn terminal(service: [u64; 4]) {
             .enumerate()
             .any(|(i, &v)| i != 2 && get(18 + i) != v)
     {
-        violation();
+        violation(10);
     }
     put(0, 4);
     super::uart_write(b"MLQ VERIFIED\n");
