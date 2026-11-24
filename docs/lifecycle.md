@@ -63,3 +63,23 @@ PM은 GitHub `team:*` 라벨로 다음 조치를 맡은 역할을 표시하고 �
 
 * **예약 스케줄링.** 상위 출시 이슈에서 일반 예약 작업과 통합 PR로 이어졌다. 최초 QEMU 실행 8건 중 2건이 관측 종료점에 도달했고 6건은 기존 1 ms 한계에서 정지했다. 보관된 후보 `259aaebb`의 호환성 실행은 네 번째 IRQ 뒤 B 재개 전에 멈췄다. 원래 대조군은 IRQ 다섯 번을 완료했고 별도 깨우기 작업은 기준과 일치했다. 후속 이슈에서 진단·독립 재검증을 배정했다. 공통 실패 표지만으로는 원인을 특정할 수 없다. 일반 작업과 호환성 실행의 분모를 따로 유지한다. [상위 #21](https://github.com/Romanof123/JNOX/issues/21) → [작업 #123](https://github.com/Romanof123/JNOX/issues/123) → [통합 #172](https://github.com/Romanof123/JNOX/pull/172) → [발견 사항 #176](https://github.com/Romanof123/JNOX/issues/176) · [보관 커밋 430df8bf](https://github.com/Romanof123/JNOX/commit/430df8bf)
 * **가중 스케줄링과 IPC.** 이전 가중 태스크 이슈는 해당 범위에서 종결했다. EL0 프로세스 두 개를 쓰는 새 이슈는 실서비스·주소 공간 격리·깨우기 한계의 담당과 기획 PR을 연결한다. 독립 실행 결과는 새 이슈에 귀속한다. IPC 기획은 진행할 수 있으며 IPC 계열 구현은 상위 스케줄링 이슈에 완료 판정과 근거가 연결된 뒤 시작한다. [태스크 #55](https://github.com/Romanof123/JNOX/issues/55) → [네이티브 작업 #177](https://github.com/Romanof123/JNOX/issues/177) → [기획 #178](https://github.com/Romanof123/JNOX/pull/178) · [IPC 선행 조건 #24](https://github.com/Romanof123/JNOX/issues/24)
+
+### 열린 이슈 및 PR 목록 (#6, REQ-012, REQ-013)
+
+PM은 PR을 포함한 열린 이슈 전체를 REST API로 수집한다. GitHub CLI가 설치된 POSIX 셸에서 아래 명령으로 마지막 페이지까지 저장한 뒤 오프라인 검사를 실행한다.
+
+```sh
+gh api --paginate --slurp 'repos/Romanof123/JNOX/issues?state=open&per_page=100&sort=created&direction=asc' > open-pages.json &&
+python tools/open_tracking.py open-pages.json
+```
+
+검사기는 페이지별 배열 또는 단일 REST 목록을 받는다. 각 항목의 현재 담당 팀 라벨을 확인하고 PR과 본문에서 서로 참조하는 열린 이슈를 모두 출력한다. 연결된 이슈가 없는 PR은 실패한다. 본문에는 #번호, 소유자/저장소#번호 또는 github.com의 정식 이슈·PR URL을 쓴다. 코드 예시와 HTML 주석은 인계 근거에서 제외한다. 종료 코드 0은 입력 범위 내 충족, 1은 발견 사항, 2는 잘못된 입력을 뜻한다. 저장소와 접근 권한 및 마지막 페이지까지의 수집 여부는 수집자가 확인한다. 수집 중 목록이 변하면 재수집한다. PM은 주 담당 및 추적 의도를 확인하고 승인 결정을 별도로 기록한다.
+
+#191 수정 범위. 인정할 역할은 pm, systems, functional-safety, development, integration, verification, release이며 모두 `team:` 접두사를 쓴다. 일반 본문의 번호 참조, 해당 저장소의 정식 이슈·PR URL, 꺾쇠 URL 자동 링크 및 정식 URL을 목적지로 쓰는 단순 인라인 링크를 읽는다. 링크 표시 번호가 다르면 목적지를 기준으로 판정한다. 인용 단락, 들여쓰기·울타리 코드 블록, 인라인 코드, HTML 주석, HTML code/pre 요소, 이미지, 참조형 링크 및 지원 범위 밖의 마크업은 근거에서 제외한다. 모호한 서식은 PM이 직접 확인하거나 별도 단락에 평문 참조를 남긴다. 자동 확인 범위는 수집본 안의 상호 언급이며 실제 추적 이슈는 PM이 판단한다.
+
+검사기는 구분자가 등장한 문맥을 먼저 확인한다. 인용문이나 코드 예시에 표시된 HTML 여는 표시는 다음 일반 단락의 참조를 가리지 않는다. 실제 HTML 주석과 code/pre 요소는 여러 줄에 걸칠 수 있다.
+
+#193에서는 공백으로 나눈 일반 본문 토큰에서 바깥 문장부호를 걷어 낸 뒤 전체를 판정한다. 다른 저장소 또는 지원하지 않는 URI의 괄호·쿼리·프래그먼트·퍼센트 인코딩에 포함된 번호는 제외한다. 독립적인 참조는 공백 뒤에 적는다. 정식 URL을 가리키는 단순 마크다운 링크와 꺾쇠 URL 자동 링크는 계속 지원한다.
+
+독립된 HTTP(S) URL은 마크다운 대괄호를 해석하기 전에 하나의 토큰으로 처리한다. IPv6 주소의 대괄호는 URL에 속하며 같은 줄에 공백으로 분리한 본문 참조는 검사할 수 있다. 한 토큰 안에 URL과 마크다운이 모호하게 섞이면 PM이 확인한다.
+[최초 판정](evidence/open-tracking-first.en-ko.md) · [2차](evidence/open-tracking-second.en-ko.md) · [3차](evidence/open-tracking-third.en-ko.md) · [4차](evidence/open-tracking-fourth.en-ko.md) · [수정본 및 실제 목록](evidence/open-tracking-fifth.en-ko.md) · [입력 23건을 사전 고정한 독립 판정](evidence/open-tracking-blind.en-ko.md). 자동 대조 후 PM이 실제 주관 이슈를 확인한다.

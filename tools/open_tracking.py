@@ -1,0 +1,179 @@
+"""Check team labels and reciprocal body references in a saved GitHub REST inventory."""
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+REPO = "romanof123/jnox"
+ROLES = {"team:" + name for name in
+         ("development", "functional-safety", "integration", "pm", "release", "systems", "verification")}
+URL = re.compile(r"https://github\.com/" + REPO + r"/(issues|pull)/([1-9][0-9]*)/?", re.I)
+SHORTHAND = re.compile(r"(?:" + REPO + r")?#([1-9][0-9]*)[가-힣]*", re.I)
+
+
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+OPEN = re.compile(r"`+|<!--|<(code|pre)(?=[\s>]|$)", re.I)
+HTML_END = {"<!--": re.compile("-->"), "code": re.compile(r"</code\s*>", re.I),
+            "pre": re.compile(r"</pre\s*>", re.I)}
+
+
+def body_prose(body):
+    """Scan in document order. Delimiters inside excluded regions are literal."""
+    fence = ""
+    quoted = False
+    ticks = ""
+    html_end = None
+    for line in body.splitlines():
+        if not line.strip():
+            quoted = False
+            ticks = ""
+        if not html_end:
+            marker = FENCE.match(line)
+            if fence:
+                if marker and marker[1].startswith(fence) and not marker[2].strip():
+                    fence = ""
+                continue
+            if re.match(r"^\s*>", line):
+                quoted = True
+            if quoted or line.startswith(("    ", "\t")):
+                ticks = ""
+                continue
+            if marker:
+                ticks = ""
+                fence = marker[1]
+                continue
+
+        visible = []
+        pos = 0
+        while pos < len(line):
+            if html_end:
+                end = html_end.search(line, pos)
+                if not end:
+                    break
+                html_end = None
+                pos = end.end()
+            elif ticks:
+                end = re.search(r"(?<!`)" + ticks + r"(?!`)", line[pos:])
+                if not end:
+                    break
+                ticks = ""
+                pos += end.end()
+            else:
+                start = OPEN.search(line, pos)
+                if not start:
+                    visible.append(line[pos:])
+                    break
+                visible.append(line[pos:start.start()])
+                visible.append(" ")
+                pos = start.end()
+                if start[0].startswith("`"):
+                    ticks = start[0]
+                else:
+                    html_end = HTML_END[(start[1] or start[0]).lower()]
+        yield "".join(visible)
+
+
+PROSE_LINK = re.compile(
+    r"(?<!\S)(?P<raw>[('\"‘“]*https?://\S+)"
+    r"|(?P<image>!?)\[[^\[\]\n]*\]\((?P<dest>[^()\s]+)\)", re.I)
+
+
+def link_destination(match):
+    if match["raw"]:
+        candidate = match["raw"].lstrip("('\"‘“").rstrip(").,;:!?\"'’”")
+    elif match["image"]:
+        return " "
+    else:
+        candidate = match["dest"]
+    return " " + candidate + " " if URL.fullmatch(candidate) else " "
+
+
+def references(body):
+    """Extract supported prose references, retaining the target type of URLs."""
+    lines = []
+    for line in body_prose(body):
+        # Consume raw URLs atomically, including IPv6 brackets and URI fragments.
+        line = PROSE_LINK.sub(link_destination, line)
+        line = re.sub(r"<(https?://[^<>\s]+)>", lambda m:
+                      " " + m[1] + " " if URL.fullmatch(m[1]) else " ", line, flags=re.I)
+        # Skip unresolved bracket syntax, HTML, and malformed code spans.
+        if not any(char in line for char in "[]<>`"):
+            lines.append(line)
+    prose = "\n".join(lines)
+    refs = set()
+    for word in prose.split():
+        token = word.lstrip("('\"‘“").rstrip(").,;:!?\"'’”")
+        url = URL.fullmatch(token)
+        if url:
+            refs.add((int(url[2]), url[1].lower()))
+            continue
+        # Accept compact prose lists only when every part is local shorthand.
+        # A URL or unknown token therefore never exposes an embedded fragment.
+        parts = [SHORTHAND.fullmatch(part) for part in re.split(r"[,;]", token)]
+        if all(parts):
+            refs.update((int(match[1]), None) for match in parts)
+    return refs
+
+
+def audit(data):
+    if not isinstance(data, list):
+        raise ValueError("expected REST list or array of pages")
+    rows = [row for page in data for row in page] if all(isinstance(p, list) for p in data) else data
+    items = {}
+    findings = []
+    reports = []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("expected an issue object")
+        n = row.get("number")
+        if type(n) is not int or n <= 0 or n in items:
+            raise ValueError(f"invalid or duplicate item number {n!r}")
+        kind = "pull" if "pull_request" in row else "issues"
+        if (row.get("state") != "open" or
+                str(row.get("html_url")).lower() != f"https://github.com/{REPO}/{kind}/{n}"):
+            raise ValueError(f"#{n}: expected an open item of the indicated repository and kind")
+        labels = row.get("labels")
+        if not isinstance(labels, list) or not all(
+                isinstance(label, dict) and isinstance(label.get("name"), str) for label in labels):
+            raise ValueError(f"#{n}: invalid labels")
+        teams = [label["name"] for label in labels if label["name"].startswith("team:")]
+        if len(teams) != 1 or teams[0] not in ROLES:
+            findings.append(f"#{n}: expected one recognized team label, found {teams}")
+        if "body" not in row or (row["body"] is not None and not isinstance(row["body"], str)):
+            raise ValueError(f"#{n}: invalid body")
+        items[n] = kind, references(row["body"] or "")
+    for n, (kind, refs) in sorted(items.items()):
+        if kind != "pull":
+            continue
+        matches = []
+        for number, fmt in sorted(refs, key=lambda pair: pair[0]):
+            target, backlinks = items.get(number, (None, set()))
+            if target == "issues" and fmt in (None, target) and (
+                    (n, None) in backlinks or (n, "pull") in backlinks):
+                matches.append(number)
+        linked = ", ".join(f"#{i}" for i in sorted(set(matches)))
+        if linked:
+            reports.append(f"PR #{n}: reciprocal issues {linked}")
+        else:
+            findings.append(f"PR #{n}: no reciprocal open issue in supplied inventory")
+    reports.insert(0, f"Supplied inventory: {len(rows)} items; archive completeness unverified")
+    return reports, findings
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("inventory", type=Path)
+    args = parser.parse_args()
+    try:
+        reports, findings = audit(json.loads(args.inventory.read_text(encoding="utf-8-sig")))
+    except (ValueError, OSError) as exc:
+        print(f"Invalid inventory: {exc}", file=sys.stderr)
+        return 2
+    for line in reports + findings:
+        print(line)
+    return int(bool(findings))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
