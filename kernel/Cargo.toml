@@ -5,6 +5,7 @@ edition = "2024"
 publish = false
 
 [features]
+pi4-stream-v1 = []
 sched-bench = []
 # Cooperative FCFS takes precedence over all other benches.
 coop-bench = ["sched-bench"]

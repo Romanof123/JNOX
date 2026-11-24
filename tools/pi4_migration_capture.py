@@ -24,6 +24,11 @@ FLAGS = ["-machine", "raspi4b", "-accel", "tcg,thread=multi", "-smp", "4",
 FILES = ("kernel.elf", "kernel8.img", "disassembly.txt")
 
 
+BASELINE = "sum-65536"
+STREAM = "sample-crc32-v1"
+STOCK_SHA = "3ae2c079d4491362fece2abb641f0ff17d88e9008c9fcd13600f249b9bd1c862"
+
+
 def sha(path):
     digest = hashlib.sha256()
     with path.open("rb") as src:
@@ -48,6 +53,14 @@ def freeze(args):
                   qemu=str(qemu), qemu_sha256=sha(qemu), flags=FLAGS,
                   hashes={name: sha(root / name) for name in FILES},
                   ceiling_ns=30_000_000_000, quiet_ns=1_000_000_000, positions=[1, 2])
+    if getattr(args, "workload", BASELINE) == STREAM:
+        record["workload"] = STREAM
+        if record["qemu_sha256"] != STOCK_SHA:
+            raise ValueError("sample stream requires the frozen stock QEMU")
+        from pi4_migration_replay import layout
+        bodies, _ = layout(*[(root / name).read_bytes() for name in FILES], STREAM)
+        if len(bodies) != 1:
+            raise ValueError("expected one linked sample byte-processing loop")
     save(root / "freeze.json", record)
     print(sha(root / "freeze.json"))
 
@@ -162,6 +175,7 @@ def main():
     for name in ("directory", "elf", "raw", "disassembly", "qemu"):
         f.add_argument(name, type=Path)
     f.add_argument("--source", required=True)
+    f.add_argument("--workload", choices=(BASELINE, STREAM), default=BASELINE)
     a = sub.add_parser("run")
     a.add_argument("directory", type=Path)
     a.add_argument("digest")

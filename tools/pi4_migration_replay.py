@@ -12,8 +12,10 @@ import json
 from pathlib import Path
 import re
 import sys
+import zlib
+from functools import lru_cache
 
-from pi4_migration_capture import CASES, FILES, FLAGS
+from pi4_migration_capture import BASELINE, CASES, FILES, FLAGS, STOCK_SHA, STREAM
 from pi4_smp_replay import bounded, digest, need, numbers, unique_fields
 
 NA = (1 << 64) - 1
@@ -28,7 +30,7 @@ def read_json(raw):
     return json.loads(raw, object_pairs_hook=unique_fields)
 
 
-def layout(elf, raw, disassembly):
+def layout(elf, raw, disassembly, workload=BASELINE):
     from elftools.elf.elffile import ELFFile
     e = ELFFile(io.BytesIO(elf))
     need(e.little_endian and e.elfclass == 64 and e["e_machine"] == "EM_AARCH64"
@@ -46,7 +48,8 @@ def layout(elf, raw, disassembly):
             image.extend(s.data())
     need(raw and raw == image, "raw image differs from ELF")
     table = e.get_section_by_name(".symtab")
-    name = "pi4_migration_input_loop"
+    stream = workload == STREAM
+    name = "pi4_stream_crc32_loop_v1" if stream else "pi4_migration_input_loop"
     hits = table.get_symbol_by_name(name) if table else None
     need(hits and len(hits) == 1, "missing or ambiguous loop symbol")
     start, size = hits[0]["st_value"], hits[0]["st_size"]
@@ -69,10 +72,13 @@ def layout(elf, raw, disassembly):
                 if (any(op.startswith("ld") for op,_ in body)
                         and any(op.startswith("st") for op,_ in body)
                         and any(op.startswith("add") for op,_ in body)
-                        and any("x21" in args for _,args in body)):
+                        and any("x21" in args for _,args in body)
+                        and (not stream or (any(op=="eor" for op,_ in body) and
+                             any("[x21" in args for op,args in body if op.startswith(("ld","st")))))):
                     bodies.append((target,pc+4))
     entries = {}
-    for symbol in ("pi4_migration_m", "pi4_migration_p0", "pi4_migration_p1_open", "pi4_migration_p1"):
+    entry = "pi4_stream_crc32_m_v1" if stream else "pi4_migration_m"
+    for symbol in (entry, "pi4_migration_p0", "pi4_migration_p1_open", "pi4_migration_p1"):
         items = table.get_symbol_by_name(symbol) or []
         need(len(items)==1 and items[0]["st_size"]>0, "missing/ambiguous task entry: "+symbol)
         entries[symbol]=items[0]["st_value"]
@@ -142,7 +148,26 @@ def journal(raw, case, wire=1):
     need(end[0]==1 and end[1]==sum(map(len,sections.values())),"guest failure or count mismatch")
     return sections,freq,end[2:]
 
-def checkpoint_summary(task, epoch):
+@lru_cache(maxsize=1)
+def stream_reference():
+    prefixes = {}
+    crc = digest_value = 0
+    mask = (1 << 64) - 1
+    for block in range(4096):
+        start = block * 1024
+        end = start + 1024
+        data = bytes((i ^ (i >> 8) ^ (i >> 16)) & 255 for i in range(start, end))
+        crc = zlib.crc32(data, crc)
+        prefixes[end] = crc
+        rotated = ((digest_value << 7) | (digest_value >> 57)) & mask
+        digest_value = ((rotated ^ end) + crc) & mask
+    need((crc, digest_value) == (0x78d22ad1, 8765611335505774534), "stream reference product")
+    return prefixes, (4096, digest_value, 4194304, crc)
+
+
+def checkpoint_summary(task, epoch, workload=BASELINE):
+    if task == 0 and workload == STREAM:
+        return stream_reference()[1]
     start, stop = {(0,1):(0,65536), (1,1):(0,32), (2,0):(0,16), (2,1):(16,32)}[task,epoch]
     count = digest_value = partial_sum = 0
     mask = (1 << 64) - 1
@@ -155,7 +180,9 @@ def checkpoint_summary(task, epoch):
     return count, digest_value, stop, partial_sum
 
 
-def score(sections, freq, totals, case, bodies, wire=1):
+def score(sections, freq, totals, case, bodies, wire=1, workload=BASELINE):
+    stream = workload == STREAM
+    final_index = 4194304 if stream else 65536
     rows=[(cpu,seq,kind,data) for cpu in range(2)
           for seq,(kind,data) in enumerate(sections[cpu])]
     def events(kind):
@@ -278,6 +305,8 @@ def score(sections, freq, totals, case, bodies, wire=1):
         need(task in range(3) and index and index%16==0 and inside(task,local)
              and inside(task,sp) and pc%4==0 and 0x80000<=pc<0x100000,"task marker range")
         expected=index*(index+1)//2
+        if stream and task == 0:
+            expected = stream_reference()[0].get(index)
         if task==2 and index==32:
             expected-=136
         need(value==expected and after in claimed and claimed[after][1]==task,
@@ -294,10 +323,10 @@ def score(sections, freq, totals, case, bodies, wire=1):
         points=checkpoints[l]
         need(points and all(a[0]<b[0] for a,b in zip(points,points[1:])), "M checkpoint progression/cookie")
     need(checkpoints[m_leases[0]][-1][0]<checkpoints[m_leases[1]][0][0]
-         and checkpoints[m_leases[1]][-1][0]==65536,"resumed M progress/final")
+         and checkpoints[m_leases[1]][-1][0]==final_index,"resumed M progress/final")
     need(any(point[2] for point in checkpoints[m_leases[1]]),"no unambiguous resumed checkpoint")
     finished=sorted((d[0],d[1]) for _,_,d in events(9))
-    need(finished==[(0,2147516416),(1,528),(2,136),(2,392)],"terminal products")
+    need(finished==[(0,0x78d22ad1 if stream else 2147516416),(1,528),(2,136),(2,392)],"terminal products")
     for c,n,(task,value,l,ep,*_) in events(9):
         need(l in retired and retired[l][0]==c and retired[l][2]==task
              and dispatches[l][1]<n<retired[l][1],"finish lacks owned lease")
@@ -308,7 +337,7 @@ def score(sections, freq, totals, case, bodies, wire=1):
             key = task,ep
             need(key in ((0,1),(1,1),(2,0),(2,1)) and key not in summaries,
                  "unknown or duplicate activation summary")
-            need(reserved == 0 and (count,h,index,value) == checkpoint_summary(task,ep),
+            need(reserved == 0 and (count,h,index,value) == checkpoint_summary(task,ep,workload),
                  "arithmetic checkpoint count/digest/final value mismatch")
             need(n+1<len(sections[c]) and sections[c][n+1]==(9,(task,value,lease,ep,0,0,0,0))
                  and claimed.get(lease,())[:2]==(ep,task), "summary not bound to actual finish")
@@ -358,6 +387,12 @@ def replay(root, ordinal, trusted):
     for name in ident:
         need(Path(name).name==name,"nonlocal artifact name")
         checked(folder/name,ident[name],64*1024*1024)
+    workload = frozen.get("workload", BASELINE)
+    need(workload in (BASELINE, STREAM), "unknown migration workload")
+    need(workload != STREAM or (sess["platform"] == "raspi4b-tcg" and
+         frozen["qemu_sha256"] == STOCK_SHA and frozen.get("wire_version") == 2), "stream model contract")
+    if workload == STREAM:
+        bodies,entries=layout(elf,image,dis,workload)
     if sess["reason"]!="terminal_quiet" or sess["quiet_ns"]<1_000_000_000:
         raise Unobserved("first attempt ended without terminal quiet: "+sess["reason"])
     need(sess["quiet_ns"]<=sess["elapsed_ns"]<=30_000_000_000,"capture ceiling")
@@ -372,12 +407,13 @@ def replay(root, ordinal, trusted):
     wire=frozen.get("wire_version",1)
     need(type(wire) is int and wire in (1,2), "unsupported frozen wire version")
     sections,hz,totals=journal(uart,case,wire)
-    bodies,entries=layout(elf,image,dis)
+    if workload == BASELINE:
+        bodies,entries=layout(elf,image,dis,workload)
     for cpu in (0,1):
         for kind,d in sections[cpu]:
             if kind==2:
                 ep,task=d[:2]
-                symbol={(0,0):"pi4_migration_m",(0,2):"pi4_migration_p1_open",
+                symbol={(0,0):"pi4_stream_crc32_m_v1" if workload == STREAM else "pi4_migration_m",(0,2):"pi4_migration_p1_open",
                         (1,1):"pi4_migration_p0",(1,2):"pi4_migration_p1"}.get((ep,task))
                 if symbol:
                     need(d[4]==entries[symbol],"claimed wrong linked task entry")
@@ -389,7 +425,9 @@ def replay(root, ordinal, trusted):
                 off=d[6]-0x80000
                 need(0<=off<=len(image)-4 and int.from_bytes(image[off:off+4],"little")&0xffffffe0==0x10000000,
                      "task evidence PC does not identify the linked ADR-self probe")
-    result=score(sections,hz,totals,case,bodies,wire)
+    result=score(sections,hz,totals,case,bodies,wire,workload)
+    if workload == STREAM:
+        result["workload"] = workload
     if sess["platform"]=="physical":
         need(sess["card_readback"]==frozen["card_readback"] and sess["cycle_witness"].strip(),
              "physical witness/readback association")
