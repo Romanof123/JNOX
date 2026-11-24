@@ -107,3 +107,5 @@ CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md)
 [호스트 위상별 수용 분석](fs-m3-admission.md) · POL-004 #94의 CHG-045 / IMP-043. 조건부 호스트 산술과 CLI는 독립 재현을 통과했다. 런타임 추적 및 실측 예산 근거는 미확보다. [EVD-043](evidence/evd-043.md)
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+CHG-046의 P/Q 비교 타이머 지연은 VER-002/005/023의 별도 계획 사례이다. 실제 비교값 되읽기, IRQ 진입, 예외 복귀, 작업·유휴 관측과 경과 시간 귀속을 보존한다. 작업 자체 마스킹 사례에는 독립 근거가 필요하다. [시간 기준](pol-006-rust-partition-plan.md#가상-타이머-통지-지연-추가-사례)

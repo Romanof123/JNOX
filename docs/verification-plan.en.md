@@ -107,3 +107,5 @@ CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel
 [Host segmented admission method](fs-m3-admission.md) · CHG-045 / IMP-043, POL-004 #94. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+For CHG-046, record P/Q controlled delayed-compare cases as separate planned tests under VER-002/005/023. Preserve actual timer readback, IRQ entry, exception return, worker/idle observations and elapsed attribution. The worker-masked cases retain their independent evidence requirement. [Timing criteria](pol-006-rust-partition-plan.en.md#additional-virtual-delayed-notice-cases)
