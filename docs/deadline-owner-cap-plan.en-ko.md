@@ -102,3 +102,5 @@ exit "$result"
 [First independent result / 최초 독립 판정](evidence/deadline-owner-window-first.en-ko.md).
 
 [EVD-100 English](evidence/evd-100.en.md) · [한국어](evidence/evd-100.md).
+
+[Independent combined verification and raw captures / 독립 결합 검증 및 원본](evidence/strict-class-owner-window-combined.en-ko.md).

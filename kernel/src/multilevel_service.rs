@@ -164,6 +164,8 @@ pub fn run(tasks: &'static [Task], mode: Mode) -> ! {
     }
     init_timer_irq();
     let state = unsafe { (&mut *(&raw mut STATE)).insert(runtime) };
+    #[cfg(jnox_mlq_admission)]
+    super::mlq_admission::epoch(counter());
     unsafe { sched_start_frame(state.select(Event::default())) }
 }
 
@@ -212,6 +214,8 @@ impl Runtime {
                 }
                 if ctl & 1 != 0 { fail() }
             }
+            #[cfg(jnox_mlq_admission)]
+            super::mlq_admission::terminal(self.service);
             if self.live.contains(&true) {
                 super::uart_write(b"MULTILEVEL STALL\n");
             } else {
@@ -224,6 +228,8 @@ impl Runtime {
             grant = grant.min(period - self.total % period);
         }
         self.start = counter();
+        #[cfg(jnox_mlq_admission)]
+        super::mlq_admission::dispatch(id, self.start, self.service, event.owner, event.kind);
         self.due = self.start.checked_add(grant).unwrap_or_else(|| fail());
         let compare = self.due;
         #[cfg(jnox_app = "mlfq-delayed")]
