@@ -25,20 +25,35 @@ fn next_word(state: &mut u64) -> u64 {
 /// length is divisible by total, so each remainder has equal multiplicity.
 /// The permutation cannot repeat a rejected word: after at most cutoff
 /// rejections the next sample must succeed. Here 1 <= total <= 32 * 16.
-fn uniform_ticket(state: &mut u64, total: u32) -> u32 {
+#[derive(Clone, Copy)]
+#[cfg_attr(not(jnox_ordinary_prop), allow(dead_code))]
+pub(crate) struct Draw {
+    pub(crate) before: u64, pub(crate) after: u64, pub(crate) words: u64,
+    pub(crate) raw: u64, pub(crate) ticket: u32, pub(crate) total: u32,
+}
+
+pub(crate) fn reduce_word(word: u64, total: u32) -> Option<u32> {
+    if total == 0 { return None }
+    let bound = u64::from(total);
+    (word >= bound.wrapping_neg() % bound).then(|| (word % bound) as u32)
+}
+
+fn uniform_ticket(state: &mut u64, total: u32) -> Option<Draw> {
+    if total == 0 { return None }
+    let before = *state;
     let bound = u64::from(total);
     let cutoff = bound.wrapping_neg() % bound;
-    for _ in 0..=cutoff {
+    for attempt in 0..=cutoff {
         let word = next_word(state);
-        if word >= cutoff {
-            return (word % bound) as u32;
+        if let Some(ticket) = reduce_word(word,total) {
+            return Some(Draw {before,after:*state,words:attempt+1,raw:word,ticket,total});
         }
     }
-    unreachable!("SplitMix64 exhausted the rejected prefix")
+    None
 }
 
 enum Method<const N: usize> {
-    Lottery { state: u64, last_draw: Option<(u32, u32)> },
+    Lottery { state: u64, last_draw: Option<(u32,u32)> },
     Stride { pass: [u64; N], last_base: Option<u64> },
 }
 
@@ -47,6 +62,8 @@ pub(crate) struct Proportional<const N: usize> {
     ready: u32,
     running: Option<usize>,
     method: Method<N>,
+    #[cfg(jnox_ordinary_prop)]
+    audit: Option<Draw>,
 }
 
 impl<const N: usize> Proportional<N> {
@@ -57,7 +74,7 @@ impl<const N: usize> Proportional<N> {
         {
             return None;
         }
-        Some(Self { weights, ready: 0, running: None, method })
+        Some(Self { weights, ready: 0, running: None, method, #[cfg(jnox_ordinary_prop)] audit: None })
     }
 
     pub(crate) fn lottery(weights: [u8; N], seed: u64) -> Option<Self> {
@@ -126,6 +143,16 @@ impl<const N: usize> Proportional<N> {
         }
     }
 
+    #[cfg(jnox_ordinary_prop)]
+    pub(crate) fn lottery_state(&self) -> Option<u64> {
+        match self.method { Method::Lottery {state,..} => Some(state), _ => None }
+    }
+
+    #[cfg(jnox_ordinary_prop)]
+    pub(crate) fn draw_record(&self) -> Option<Draw> {
+        self.audit
+    }
+
     pub(crate) fn pass(&self, id: usize) -> Option<u64> {
         match &self.method {
             Method::Stride { pass, .. } => pass.get(id).copied(),
@@ -148,9 +175,11 @@ impl<const N: usize> Proportional<N> {
             Method::Lottery { state, last_draw } => {
                 let tickets = Self::tickets(&self.weights, self.ready);
                 let total = tickets.iter().sum();
-                let draw = uniform_ticket(state, total);
-                *last_draw = Some((draw, total));
-                lottery_winner(&tickets, u64::from(draw)).expect("accepted ticket has an owner")
+                let draw = uniform_ticket(state, total)?;
+                *last_draw = Some((draw.ticket, draw.total));
+                #[cfg(jnox_ordinary_prop)]
+                { self.audit = Some(draw); }
+                lottery_winner(&tickets, u64::from(draw.ticket)).expect("accepted ticket has an owner")
             }
             Method::Stride { pass, last_base } => {
                 let winner = (0..N)

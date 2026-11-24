@@ -14,7 +14,7 @@ Record per decision preceding and resulting state, raw word count, accepted raw 
 
 **Stride.** At 25 residency ticks/s (40 ms), no draw or state advance. A yields by real SVC after one observed whole tick; B/C remain runnable for two ticks and timer preemption. With A/B ready expect A,B four times, service 4/8/0. Admit C once at the incumbent floor at the boundary between grants 8 and 9, with no fabricated prior service. Expect A,B,C,C twice, incremental service 2/4/8. Select min(pass,ID), record eligible floor and order before/after subtracting the common floor, clamp older sleeper debt as implemented; charge 720720/w × floor((actual sampled stop−start)/(F/25)) with checked arithmetic. Preserve raw partial-tick remainders, IRQ/return overhead and bounds: sampled residency is not an instruction-level CPU measurement. Require the original regular whole-tick counts, then separately hold a weight-one two-tick grant beyond the third tick under the opt-in simulator diagnostic. Charge all observed whole ticks (≥3); verify pass growth and preemption with PPI30. No ordinary client interface to suppress another client's timer.
 
-**Independent verdict.** For each cold first launch use native Linux capture paths, retain prelaunch errors/timeouts and UART, raw rows, counter compare/start/stop, progress/stack, exact ELF and external IRQ/SVC/ERET PCs. Join actual return to the authorized task and saved continuation. Keep a bounded RAM trace with post-run output; any truncation, missing grant, overwritten failure or unaccounted residency is unqualified. Reuse #79 first-failure fields (source line, epoch, slot, actual, expected), with line zero meaning uncommitted. Qualify seed 1, seed 2, stride join and delayed-charge observations separately. An explicit first-lottery two-tick perturbation must fail the original one-tick test, retaining measured row and first predicate. Keep a naturally earlier failure primary even if replay later succeeds. Independently identify diagnostic vs ordinary images. Statistical coverage is finite and conditional on this source/load/window; physical board timing, interference and product scheduling qualification remain open. REQ-002/005/023 → DES-003/012 → VER-002/005/023. Implementation and evidence for the ordinary application are pending.
+**Independent verdict.** For each cold first launch use native Linux capture paths, retain prelaunch errors/timeouts and UART, raw rows, counter compare/start/stop, progress/stack, exact ELF and external IRQ/SVC/ERET PCs. Join actual return to the authorized task and saved continuation. Keep a bounded RAM trace with post-run output; any truncation, missing grant, overwritten failure or unaccounted residency is unqualified. Reuse #79 first-failure fields (source line, epoch, slot, actual, expected), with line zero meaning uncommitted. Qualify seed 1, seed 2, stride join and delayed-charge observations separately. An explicit first-lottery two-tick perturbation must fail the original one-tick test, retaining measured row and first predicate. Keep a naturally earlier failure primary even if replay later succeeds. Independently identify diagnostic vs ordinary images. Statistical coverage is finite and conditional on this source/load/window; physical board timing, interference and product scheduling qualification remain open. REQ-002/005/023 → DES-003/012 → VER-002/005/023. The first three ordinary runs are recorded in [EVD-055](evidence/evd-055.en.md).
 
 ## 한국어
 
@@ -25,3 +25,39 @@ Record per decision preceding and resulting state, raw word count, accepted raw 
 - **판정.** 시드 1·2를 각각 콜드 실행하고 세 작업이 계속 준비된 상태에서 100 grants/s(10 ms)로 32번 실제 부여한다. 상태 전후·소모 원시 단어 수·수용 값·준비 마스크·가중치·티켓 구간·실제 소유자를 남긴다. 독립 오라클이 거부값까지 재생한다. 호스트 공급값 대조에서 원시 0·1·2는 거부·거부·수용, 티켓 0=A, 1–2=B, 3–6=C, 7·총량 0은 거부다. 구현 공유 없이 순서 전체와 시드별 10/8/14 및 5/11/16회를 확인하고 각 작업의 32w/7 대비 오차 ≤8회를 적용한다. 호스트 시드 1~8은 각각 4,096회, 시드·작업별 w/7 대비 절대 오차 ≤3%p다. 부여 수와 실측 서비스를 분리한다.
 - **스트라이드.** 초당 25서비스틱(40 ms)에서 A는 실제 1틱 후 SVC 양보, B/C는 2틱 IRQ 선점이다. A/B 네 쌍의 서비스 4/8/0 후 9번째 부여 전 C를 기존 패스 최솟값에 참여시키고 A,B,C,C 두 차례의 추가 2/4/8틱을 확인한다. 최소 (pass,ID)와 공통 최솟값 정규화 전후 순서 및 수면 작업의 낮은 패스 처리를 대조한다. 실제 표본 경과의 온전한 틱 수 ×720720/w를 차감하고 잔여 틱도 남긴다. 별도 진단에서 가중치 1의 2틱 부여를 3틱 이후까지 지연하고 모든 실제 온전한 틱(≥3)의 차감·PPI30·패스 증가를 검증한다. 이 계측은 명령별 CPU 시간이나 물리 지연 보장이 아니다.
 - **독립 관측.** Linux 기본 저장소에 첫 부팅 실패·시간초과·UART·원시 행·비교값·진행·스택·ELF·IRQ/SVC/ERET를 보존하며 유실·덮어쓰기·잘린 기록은 부적격이다. #79의 최초 실패 필드(소스 행·epoch·슬롯·실제·기대값)를 유지한다. 소스 행 0은 미확정이다. 시드별 복권, 후발 참여, 지연 차감 결과를 각각 판정한다. 첫 복권 슬롯만 2틱으로 늘린 대조는 원래 1틱 기준에서 실패해야 한다. 자연 발생한 선행 실패도 그대로 남긴다. 실제 보드 간섭·제품 수용과 일반 작업의 독립 실행 근거는 미완료다.
+
+## IMP-055 source candidate / 소스 후보
+
+Use a native Linux checkout and target directory under /tmp. From kernel/, run each configuration in its own new directory. The five selectors are lottery1, lottery2, stride, lottery-miss and stride-delay. Each ELF embeds one configuration. The legacy assembly baseline uses unset profile/app and Cargo feature proportional-bench. Preserve the initial UART, QEMU exception log, launch arguments, QEMU version, toolchain, ELF digest and disassembly. Stop a parked guest only after the complete terminal record or the declared timeout. / Linux /tmp의 소스·빌드 경로에서 각 선택자를 새 디렉터리로 한 번씩 실행한다. 기존 어셈블리 비교군은 프로필·앱을 해제하고 proportional-bench 기능으로 빌드한다. 첫 UART·예외 로그·인수·버전·ELF·해시·역어셈블리를 남긴다. 종료 행 또는 정해 둔 시간 제한을 기록한다.
+
+```sh
+case_name=lottery1
+out="/tmp/jnox-prop-$case_name"
+mkdir "$out" || exit 1
+CARGO_TARGET_DIR="$out/build" JNOX_PROFILE=proportional JNOX_APP="$case_name" cargo build --release || exit 1
+cp "$out/build/aarch64-unknown-none/release/jnox-kernel" "$out/kernel.elf"
+sha256sum "$out/kernel.elf" > "$out/sha256"
+llvm-objdump -d "$out/kernel.elf" > "$out/disassembly"
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -m 128M -accel tcg -nodefaults -display none -monitor none -serial "file:$out/uart" -d int -D "$out/exceptions" -kernel "$out/kernel.elf"
+# Legacy comparison / 기존 비교군
+env -u JNOX_PROFILE -u JNOX_APP cargo build --release --features proportional-bench
+```
+
+Leave `JNOX_CONTROL_CASE` unset for every proportional app. For the first integration gate, build `JNOX_PROFILE=proportional JNOX_APP=lottery1 JNOX_CONTROL_CASE=healthy cargo build --release` from `kernel/` on virt with no benchmark features. Require a nonzero exit and the diagnostic `JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional`.
+
+모든 비례 배분 앱에서 `JNOX_CONTROL_CASE`를 해제한다. 첫 통합 검증에서는 virt에서 벤치마크 기능 없이 `kernel/`에서 위 명령을 실행한다. 종료 코드가 0이 아니고 위 진단 문구가 출력되어야 한다.
+
+The boot dispatches a real idle frame while the eligible set is empty and checks RNG state continuity. The first PPI enables the frozen ready set. Starts are sampled immediately before each compare write. Stops are the counter saved by the shared vector after its scratch save, before the handler. The pre-ERET sample precedes the final GPR restore. Early yield, partial ticks, kernel tail and IRQ entry therefore need the original brackets. Worker observations come from private double-buffered stack tuples (count, checksum, physical counter); all three clients are inspected at every stop. END reports first failed source line, configuration, slot, actual and expected. Line zero denotes a completed run with no guest predicate failure. [First three cold boots](evidence/evd-055.en.md). / 빈 준비 집합에서 실제 유휴 프레임으로 복귀하고 난수 상태를 검사한다. 첫 PPI에서 준비 집합을 설정한다. 시작은 비교값 쓰기 직전, 중단은 벡터에서 레지스터 임시 저장 직후, 복귀 표본은 마지막 범용 레지스터 복원 전이다. 매 중단에서 세 작업의 스택 내 이중 버퍼 반복 수·체크섬·카운터를 확인한다. END는 최초 실패 소스 행·구성·슬롯·실측·기대값이며 0행은 게스트 조건 실패 없이 끝났음을 표시한다. [최초 콜드 실행 3회](evidence/evd-055.md).
+
+| Raw tag / 행 | Six unsigned fields / 여섯 필드 |
+| --- | --- |
+| 1 | mode (0 seed1, 1 seed2, 2 stride, 3 lottery-miss, 4 stride-delay), seed, F, tick, packed weights, zero |
+| 2 | client, stack low, stack high, entry PC, TPIDR, zero |
+| 3 / 4 | slot, preceding state, resulting state, word count, raw word, ticket / slot, ready mask, total, low, exclusive high, owner |
+| 5 / 6 | slot, ready mask, pre-normalization passes A/B/C, floor / slot, owner, normalized passes A/B/C, zero |
+| 7 / 8 | slot, owner, start, compare, frame, entry/resume PC / slot, owner, returned frame, return PC, pre-ERET sample, vector sample |
+| 9 / 10 | slot, owner, IRQ flag, interrupted PC, stop, whole ticks / slot, post-charge passes A/B/C, remainder, interrupted frame |
+| 11 / 12 | slot, incumbent passes A/B/C, old/new masks / slot, observed client, count, checksum, sample time, private stack pointer |
+| 13 / 14 | current slot, raw GIC acknowledge, timer control, three zeros / slot, task, selection=0 or stop=1, frame, PC, register fingerprint |
+
+The lottery-miss image programs two ticks on its first grant and still applies the one-tick predicate. The stride-delay selector gives A a two-tick IRQ grant and charges its actual observed residency. Its three-tick predicate can succeed only on an observed late interrupt. This image contains no controlled IRQ delay; deliberately producing that late observation remains open. Preserve short/early failures and the measured charge. / lottery-miss는 첫 두 틱 부여에서 원래 한 틱 조건을 검사한다. stride-delay는 A에 두 틱 비교값을 적용하고 실제 경과 전체를 차감한다. 세 틱 이상이 실제 관측된 경우에만 해당 조건을 충족한다. 제어된 IRQ 지연 실험은 미결이며 최초 실패 및 차감 기록을 보존한다.
