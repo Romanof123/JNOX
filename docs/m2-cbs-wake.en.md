@@ -21,3 +21,5 @@ The guest appends CBS WAKE TIMER STOP and CBS WAKE PASS to the standard boot and
 The instrumented launcher allows 15 seconds of host wall time for startup, capture and UART. Inside the guest the physical timer schedules 34 consecutive 50 ms slots. Every observed IRQ must still arrive within its existing one-slot bound and every journal row and both terminal markers are required. The first 5-second observation ended after 25 complete rows. It is retained as a partial run. The host allowance changes no guest deadline.
 
 The launcher runs a local Python capture script with its current Python interpreter, including when the checkout uses Windows line endings.
+
+The independent guest record includes the frozen image identifier and observed cases. [EVD-029](evidence/evd-029.en.md)

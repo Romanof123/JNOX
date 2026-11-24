@@ -1,0 +1,1550 @@
+{
+  "frozen": "93c64c853c3d1bf3f6286da59d83d7dc8394f7b9",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2",
+  "cargo_lock_sha256": "ebf37879f659f886cbaafd87f9de8fa665788968b5d1ce317e3b2499f4417274",
+  "images": {
+    "boot": {
+      "sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "cargo_features": [],
+      "filename": "boot.elf"
+    },
+    "scheduler": {
+      "sha256": "5252daab21006f8ef1b752ebaf5fd513e7ed81346c9c9c6352553838b600fa47",
+      "cargo_features": [
+        "--features",
+        "sched-bench"
+      ],
+      "filename": "scheduler.elf"
+    },
+    "fifo": {
+      "sha256": "a7da4f649e6acbb2f97c194966e14c8dad2f8cf49c88b6b352e59d953710db4c",
+      "cargo_features": [
+        "--features",
+        "fifo-bench"
+      ],
+      "filename": "fifo.elf"
+    },
+    "rr": {
+      "sha256": "9cfaf36e4c3fb84213027a86bd3d731bbd1af4a037d948d274d5dd52b66ae891",
+      "cargo_features": [
+        "--features",
+        "rr-bench"
+      ],
+      "filename": "rr.elf"
+    },
+    "edf": {
+      "sha256": "21fd814504539f1643bf8d2f378fb7393fa0d079726534c4994099903846ddf1",
+      "cargo_features": [
+        "--features",
+        "edf-bench"
+      ],
+      "filename": "edf.elf"
+    },
+    "periodic": {
+      "sha256": "5c5d9813b3fc867e7d42b452425decb24d8259241df2e515eb19e38ffa4685cb",
+      "cargo_features": [
+        "--features",
+        "periodic-bench"
+      ],
+      "filename": "periodic.elf"
+    },
+    "periodic-preempt": {
+      "sha256": "46d306d9600dca960a5c0b8f7d575f633f097bc3d7f863d32b6900edcde6646d",
+      "cargo_features": [
+        "--features",
+        "periodic-preempt-bench"
+      ],
+      "filename": "periodic-preempt.elf"
+    },
+    "cbs": {
+      "sha256": "e57c291189c829ec3678d15d170fb919c85c4b7ee5219e90e4d3b909dffbc012",
+      "cargo_features": [
+        "--features",
+        "cbs-bench"
+      ],
+      "filename": "cbs.elf"
+    },
+    "partition": {
+      "sha256": "9a4e32ce9acf1f3f0c8bc9b513f9f5392a2488ad4d0cb135054da2a7751ef978",
+      "cargo_features": [
+        "--features",
+        "partition-bench"
+      ],
+      "filename": "partition.elf"
+    },
+    "coop": {
+      "sha256": "7c5991e12f0c023a3cf9b70ec1761c27bad6d5d105029851511237143e90aef0",
+      "cargo_features": [
+        "--features",
+        "coop-bench"
+      ],
+      "filename": "coop.elf"
+    },
+    "batch": {
+      "sha256": "8148673a5b338f7ec091cf1367eaf70f85e098617842177a03c8597fd96e3a73",
+      "cargo_features": [
+        "--features",
+        "batch-bench"
+      ],
+      "filename": "batch.elf"
+    },
+    "deadline": {
+      "sha256": "ccdf5f02f7a794c5a738592dedff13192b500683d5e43dcf694eb8e8e9b330e2",
+      "cargo_features": [
+        "--features",
+        "deadline-bench"
+      ],
+      "filename": "deadline.elf"
+    },
+    "aperiodic": {
+      "sha256": "3937364c5b61b0356b120f01aa68391ffd675338d813679a280838ee9531e09f",
+      "cargo_features": [
+        "--features",
+        "aperiodic-bench"
+      ],
+      "filename": "aperiodic.elf"
+    },
+    "smp": {
+      "sha256": "e89f7166091609c5706f741a5d1eb44d8b2aceee2d5582b8dde210903e9cbf69",
+      "cargo_features": [
+        "--features",
+        "smp-bench"
+      ],
+      "filename": "smp.elf"
+    },
+    "mutex": {
+      "sha256": "89ce584f3d2ceb44c74cdbdcfbd608c0c7052260c967ef5ffd3d0fcf2fd4b43d",
+      "cargo_features": [
+        "--features",
+        "mutex-bench"
+      ],
+      "filename": "mutex.elf"
+    },
+    "multilevel": {
+      "sha256": "3a8b9286831fa4484852d08b0162790affc43a563555d6048d69bf274c504bd7",
+      "cargo_features": [
+        "--features",
+        "multilevel-bench"
+      ],
+      "filename": "multilevel.elf"
+    },
+    "amc": {
+      "sha256": "37727c7dbeca68ec5af98118b10d6569d46346008901e256b5c8f1cc91e941ac",
+      "cargo_features": [
+        "--features",
+        "amc-bench"
+      ],
+      "filename": "amc.elf"
+    },
+    "proportional": {
+      "sha256": "8f520217b48a8fec89d5aa3a453f172860bc4c9fab0906a84788f5c271080f89",
+      "cargo_features": [
+        "--features",
+        "proportional-bench"
+      ],
+      "filename": "proportional.elf"
+    },
+    "vruntime": {
+      "sha256": "d34991dec3a328fd39f282f89bb33b9e21614fce44f95ed7121de21b050dbc98",
+      "cargo_features": [
+        "--features",
+        "vruntime-bench"
+      ],
+      "filename": "vruntime.elf"
+    },
+    "eevdf": {
+      "sha256": "1b3d390e2cb77ec355221ee4e1871df0264f2058df6a69d414c3ba0a2fead5cf",
+      "cargo_features": [
+        "--features",
+        "eevdf-bench"
+      ],
+      "filename": "eevdf.elf"
+    },
+    "hierarchy": {
+      "sha256": "2e498fd3068aadca24af7c0e5fb955f695c3bc0ee964fd25f05089de37718a38",
+      "cargo_features": [
+        "--features",
+        "hierarchy-bench"
+      ],
+      "filename": "hierarchy.elf"
+    },
+    "power": {
+      "sha256": "ff4864f91bd1fb9f39d6bac5208cda9742b35112149e24ca8329fabd358c879a",
+      "cargo_features": [
+        "--features",
+        "power-bench"
+      ],
+      "filename": "power.elf"
+    },
+    "extension": {
+      "sha256": "2c20aa2f12ae6083bfcbd29828522118cf3e790024c69981d4c0810a9bb1d29d",
+      "cargo_features": [
+        "--features",
+        "extension-bench"
+      ],
+      "filename": "extension.elf"
+    },
+    "priority-resume": {
+      "sha256": "b1d003f72b8aa7b06461313fa6577411bed287e2d8c4ec866d7146b3aae0c337",
+      "cargo_features": [
+        "--features",
+        "priority-resume-bench"
+      ],
+      "filename": "priority-resume.elf"
+    },
+    "periodic-overrun": {
+      "sha256": "f1f7bc9d6a67665d6c25469e542bdb5a29cf853372c1c6c54cfc7fcd9590710d",
+      "cargo_features": [
+        "--features",
+        "periodic-overrun-bench"
+      ],
+      "filename": "periodic-overrun.elf"
+    },
+    "cbs-wake": {
+      "sha256": "dfbb1d9e04c7219bc1c47fd96af0f2465e1d924a5c64f5b03ac45757d4731706",
+      "cargo_features": [
+        "--features",
+        "cbs-wake-bench"
+      ],
+      "filename": "cbs-wake.elf"
+    },
+    "priority-overrun": {
+      "sha256": "1f0e85064f55d4ed6c0cd6d551d8683144401dfdc6fff26f48f3cea40566cb4a",
+      "cargo_features": [
+        "--features",
+        "priority-resume-bench,periodic-overrun-bench"
+      ],
+      "filename": "priority-overrun.elf"
+    },
+    "overrun-cbs": {
+      "sha256": "1c668a746b5bbba61f5dc63b5d9fb85cf32b30c322453f4faed8f846956105c7",
+      "cargo_features": [
+        "--features",
+        "periodic-overrun-bench,cbs-wake-bench"
+      ],
+      "filename": "overrun-cbs.elf"
+    },
+    "rr-priority": {
+      "sha256": "f832be834b971fd5dd90663147126b09045d8bacbdf13a58bcff683a6549df02",
+      "cargo_features": [
+        "--features",
+        "rr-bench,priority-resume-bench"
+      ],
+      "filename": "rr-priority.elf"
+    },
+    "all": {
+      "sha256": "a237b289d558b225f093324aaa9e27c7fb1162a2809580f4dee972cd97776108",
+      "cargo_features": [
+        "--all-features"
+      ],
+      "filename": "all.elf"
+    }
+  },
+  "checks": [
+    {
+      "name": "rust-host-build",
+      "argv": [
+        "rustc",
+        "+1.95.0",
+        "--edition=2024",
+        "--test",
+        "tools/scheduling_tests.rs",
+        "-o",
+        "D:\\codex\\.jnox-work\\release-cases\\all-profile-regression\\host.exe"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "rust-host-suite",
+      "argv": [
+        "D:\\codex\\.jnox-work\\release-cases\\all-profile-regression\\host.exe",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "stdout": "\nrunning 120 tests\ntest amc_tests::denied_service_cannot_trigger_a_high_mode_transition ... ok\ntest amc_tests::exact_lo_completion_keeps_lower_criticality_jobs_and_deadline_is_inclusive ... ok\ntest amc_tests::full_task_mask_and_partial_high_carry_in_survive_the_transition ... ok\ntest amc_tests::invalid_release_config_and_repeated_dispatch_have_no_effect ... ok\ntest amc_tests::maximum_live_carry_in_discards_every_low_job_and_retains_high_service ... ok\ntest aperiodic_policy::tests::full_replenishment_queue_delays_credit_and_preserves_budget ... ok\ntest aperiodic_policy::tests::identical_releases_distinguish_the_three_servers ... ok\ntest aperiodic_policy::tests::invalid_parameters_and_overflows_preserve_state ... ok\ntest aperiodic_policy::tests::periodic_servers_handle_preemption_drain_and_boundary ... ok\ntest batch_tests::all_small_arrivals_estimates_and_id_orders_match_a_tick_calendar ... ok\ntest batch_tests::clock_sized_charge_preserves_one_tick_until_explicit_completion ... ok\ntest batch_tests::empty_capacity_remains_idle_through_clock_limit ... ok\ntest batch_tests::failed_operations_preserve_clock_budgets_runner_and_fifo_order ... ok\ntest batch_tests::hrrn_resolves_a_unit_difference_between_full_width_products ... ok\ntest batch_tests::release_and_completion_charge_elapsed_time_without_dispatch ... ok\ntest cbs_admission_and_service_match_demand_over_common_frame ... ok\ntest cooperative_events_can_repeat_and_enqueue_multiple_successors ... ok\ntest cooperative_turns_preserve_fifo_across_wraparound ... ok\ntest cyclic_decisions_match_expanded_slots ... ok\ntest cyclic_window_end_at_clock_limit ... ok\ntest deadline_tests::a_switch_consumes_the_boundary_and_skipped_boundaries_are_not_replayed ... ok\ntest deadline_tests::epoch_near_clock_limit_keeps_only_representable_boundaries ... ok\ntest deadline_tests::laxity_retains_full_signed_range_for_waiting_jobs ... ok\ntest deadline_tests::llf_retains_the_incumbent_at_equal_slack_then_reverses ... ok\ntest deadline_tests::one_consideration_per_boundary_including_retention_and_idle_dispatch ... ok\ntest deadline_tests::ordered_arrivals_on_small_tick_calendars ... ok\ntest deadline_tests::preempted_runner_resumes_ahead_of_an_equal_waiter ... ok\ntest deadline_tests::rejected_calls_preserve_time_service_queue_and_boundary ... ok\ntest deadline_tests::zero_capacity_and_zero_quantum ... ok\ntest dispatch_matches_stable_sort_for_all_ordered_triples ... ok\ntest eevdf_policy::tests::an_unrepresentable_renewal_reweight_or_wake_is_atomic ... ok\ntest eevdf_tests::an_idle_gap_preserves_the_last_clock_and_a_partial_sleeping_request ... ok\ntest eevdf_tests::invalid_transitions_preserve_request_anchor_and_charge_once ... ok\ntest eevdf_tests::twelve_live_grants_match_rational_eligibility_service_and_response ... ok\ntest extension_tests::a_cycle_runs_at_most_the_supplied_fuel_and_the_final_step_can_still_submit ... ok\ntest extension_tests::conditional_extension_consumes_only_visited_operations_and_gate_checks_all_fields ... ok\ntest extension_tests::independent_reservation_blocks_crossing_grants_and_never_lends_an_empty_slot ... ok\ntest extension_tests::malformed_or_absent_code_returns_without_executing_any_instruction ... ok\ntest extension_tests::nine_timer_boundaries_preserve_each_reserved_slot_through_distinct_failure_modes ... ok\ntest extension_tests::rejects_invalid_domains_and_bounds_arithmetic_near_the_u64_horizon ... ok\ntest extension_tests::watchdog_expires_on_the_sampled_deadline_and_only_forward_progress_rearms_it ... ok\ntest fair_policy::tests::weighted_service_and_eligible_deadlines ... ok\ntest guest_checks::aperiodic_policy ... ok\ntest guest_checks::dispatch_policy ... ok\ntest guest_checks::domain_policy ... ok\ntest guest_checks::fair_policy ... ok\ntest guest_checks::feedback_policy ... ok\ntest guest_checks::group_policy ... ok\ntest guest_checks::service_policy ... ok\ntest guest_checks::temporal_policy ... ok\ntest hierarchy_oracle::exhaustive_pairs_of_ready_sets_and_requests_update_only_the_awarded_path ... ok\ntest hierarchy_oracle::guest_workload_consumes_exactly_one_tick_at_each_ancestor_for_two_windows ... ok\ntest hierarchy_oracle::skipped_windows_and_unrepresentable_interval_end_never_create_extra_ticks ... ok\ntest hierarchy_oracle::unit_chunks_and_one_contiguous_grant_agree_when_the_same_owner_remains_ready ... ok\ntest hierarchy_tests::denial_is_transactional_and_time_never_wraps ... ok\ntest hierarchy_tests::invalid_budgets_and_relationships_are_rejected ... ok\ntest hierarchy_tests::priority_is_lexicographic_and_caps_are_shared ... ok\ntest hrrn_distinguishes_adjacent_ratios_at_the_clock_limit ... ok\ntest multilevel_oracle::feedback_matches_all_five_stop_sequences_and_irregular_boost_epochs ... ok\ntest multilevel_oracle::strict_class_matches_all_arrival_orders_and_low_class_placements ... ok\ntest multilevel_policy::tests::feedback_carries_yields_and_sleep_and_preserves_order_on_boost ... ok\ntest multilevel_policy::tests::invalid_or_repeated_stop_leaves_the_open_interval_unchanged ... ok\ntest multilevel_policy::tests::saturated_high_class_rotates_in_arrival_order_and_excludes_low ... ok\ntest mutex_tests::a_waiter_that_rises_to_a_tie_keeps_its_earlier_arrival ... ok\ntest mutex_tests::configuration_and_id_checks_cover_the_full_user_mask ... ok\ntest mutex_tests::cycles_are_rejected_before_any_priority_or_wait_state_changes ... ok\ntest mutex_tests::nested_ceilings_depth_lifo_and_access_control_restore_each_prior_boost ... ok\ntest mutex_tests::timeout_and_rejoin_puts_an_equal_waiter_at_the_back ... ok\ntest mutex_tests::transfer_uses_current_effective_priority_and_original_arrival_among_ties ... ok\ntest mutex_tests::transitive_priorities_match_reachable_donors_across_mixed_protocol_chains ... ok\ntest power_oracle::arithmetic_horizon_and_protected_margin_use_full_width_values ... ok\ntest power_oracle::duplicate_keys_invalidate_the_whole_model_before_cpu_filtering ... ok\ntest power_oracle::empty_inputs_unusable_capacity_and_late_eligible_routes_have_distinct_outcomes ... ok\ntest power_oracle::energy_comparison_preserves_upper_product_bits ... ok\ntest power_oracle::equal_energy_is_ordered_by_cpu_then_opp_even_with_a_cheaper_fallback ... ok\ntest power_oracle::highest_mask_bit_is_usable_and_core_indices_outside_it_are_ineligible ... ok\ntest power_oracle::small_placements_match_work_lane_and_tick_enumeration ... ok\ntest power_tests::same_workload_across_catalogue_and_constraints ... ok\ntest power_tests::trusted_fallback_obeys_constraints_and_overflow_bounds ... ok\ntest proportional_tests::configuration_and_mask_bounds_include_the_last_bit ... ok\ntest proportional_tests::every_active_ticket_interval_and_its_endpoints ... ok\ntest proportional_tests::forced_rejection_and_replay_use_the_released_draw_path ... ok\ntest proportional_tests::lottery_finite_seed_windows_use_predeclared_integer_tolerances ... ok\ntest proportional_tests::stride_debt_survives_short_sleep_large_charges_and_idle ... ok\ntest proportional_tests::stride_delivers_weighted_service_with_unequal_dispatch_durations ... ok\ntest proportional_tests::stride_late_join_uses_the_active_floor_and_normalization_preserves_order ... ok\ntest ready_queue::tests::preempted_task_precedes_peers_and_higher_priorities_still_win ... ok\ntest ready_queue::tests::rejected_insertions_preserve_contents_and_order ... ok\ntest ready_queue::tests::yield_moves_to_tail_even_when_ids_arrive_in_reverse_order ... ok\ntest request_server_tests::capacity_validation_and_clock_overflows_leave_the_previous_state_available ... ok\ntest request_server_tests::foreign_receipts_and_receipts_from_before_restart_cannot_complete_matching_ids ... ok\ntest request_server_tests::full_sporadic_queue_keeps_the_oldest_credit_at_its_original_due_tick ... ok\ntest request_server_tests::queue_and_aggregate_work_limits_are_atomic_even_with_an_outstanding_receipt ... ok\ntest request_server_tests::small_arrival_and_cpu_availability_masks_match_individual_credits ... ok\ntest request_server_tests::submitting_during_a_grant_preserves_identity_and_service_order ... ok\ntest request_server_tests::ten_interval_fifo_service_and_conservative_credit_merging ... ok\ntest saturated_hard_server_runs_only_its_quota_each_period ... ok\ntest service_policy::tests::aligned_budget_throttles_and_replenishes ... ok\ntest service_policy::tests::stride_shares_service_and_accounts_for_wakeups ... ok\ntest smp_tests::charge_overflow_preserves_both_owner_and_balance ... ok\ntest smp_tests::clustered_singletons_leave_the_flexible_task_on_another_cpu ... ok\ntest smp_tests::construction_checks_every_mask_and_task_limit ... ok\ntest smp_tests::highest_task_and_cpu_bits_support_a_full_lease_cycle ... ok\ntest smp_tests::invalid_rank_and_claim_inputs_preserve_ready_tasks ... ok\ntest smp_tests::migrating_task_has_one_owner_and_rejects_stale_leases ... ok\ntest smp_tests::release_validates_the_entire_selection_before_mutating ... ok\ntest smp_tests::two_cpu_plans_match_exhaustive_ranked_subset_oracle ... ok\ntest temporal_policy::tests::cyclic_frame_boundaries_and_configuration ... ok\ntest temporal_policy::tests::hard_cbs_activation_and_throttling ... ok\ntest temporal_policy::tests::hard_cbs_admission_boundaries ... ok\ntest temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok\ntest temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok\ntest vruntime_tests::compare_each_dispatch_charge_floor_and_wake_against_two_weight_integer_oracle ... ok\ntest vruntime_tests::equal_timestamps_choose_lowest_id_and_each_lease_can_charge_only_once ... ok\ntest vruntime_tests::overflowing_wake_and_virtual_charge_leave_states_available_for_a_valid_retry ... ok\ntest vruntime_tests::physical_service_overflow_preserves_fraction_and_unretired_owner ... ok\ntest vruntime_tests::validates_task_count_weights_and_readiness_transitions ... ok\ntest vruntime_tests::wake_rounds_to_own_grid_and_preserves_ahead_service_when_the_floor_is_unchanged ... ok\ntest weighted_and_eligible_deadline_selection_in_twelfths ... ok\ntest zero_capacity_returns_owned_event ... ok\n\ntest result: ok. 120 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s\n\n",
+      "stderr": ""
+    },
+    {
+      "name": "python-host-suite",
+      "argv": [
+        "C:\\Users\\jonki\\anaconda3\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "test_*.py"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "............................\n----------------------------------------------------------------------\nRan 28 tests in 0.622s\n\nOK\n"
+    },
+    {
+      "name": "build-boot",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.06s\n"
+    },
+    {
+      "name": "guest-boot",
+      "profile": "boot",
+      "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "boot",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/boot.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/boot.elf\"]\n  QEMU PID = 475\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 394 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-scheduler",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "sched-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: multiple variants are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n11 |     ShortestJobFirst,\n   |     ^^^^^^^^^^^^^^^^\n12 |     ShortestRemainingTimeFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n13 |     HighestResponseRatioNext,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^\n14 |     RateMonotonic,\n   |     ^^^^^^^^^^^^^\n15 |     DeadlineMonotonic,\n   |     ^^^^^^^^^^^^^^^^^\n16 |     EarliestDeadlineFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `pop_preferred` and `pop_highest` are never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 3.04s\n"
+    },
+    {
+      "name": "guest-scheduler",
+      "profile": "scheduler",
+      "elf_sha256": "5252daab21006f8ef1b752ebaf5fd513e7ed81346c9c9c6352553838b600fa47",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "scheduler",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/scheduler.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 5252daab21006f8ef1b752ebaf5fd513e7ed81346c9c9c6352553838b600fa47\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/scheduler.elf\"]\n  QEMU PID = 481\n  UART (101 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nSCHED HIGH RUN\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 480 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-fifo",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "fifo-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: multiple variants are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n11 |     ShortestJobFirst,\n   |     ^^^^^^^^^^^^^^^^\n12 |     ShortestRemainingTimeFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n13 |     HighestResponseRatioNext,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^\n14 |     RateMonotonic,\n   |     ^^^^^^^^^^^^^\n15 |     DeadlineMonotonic,\n   |     ^^^^^^^^^^^^^^^^^\n16 |     EarliestDeadlineFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `pop_preferred` and `pop_highest` are never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 1.26s\n"
+    },
+    {
+      "name": "guest-fifo",
+      "profile": "fifo",
+      "elf_sha256": "a7da4f649e6acbb2f97c194966e14c8dad2f8cf49c88b6b352e59d953710db4c",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "fifo",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/fifo.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = a7da4f649e6acbb2f97c194966e14c8dad2f8cf49c88b6b352e59d953710db4c\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/fifo.elf\"]\n  QEMU PID = 492\n  UART (142 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nFIFO A FIRST\\nFIFO B FIRST\\nFIFO A RESUMED\\nFIFO B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 491 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-rr",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "rr-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: methods `now`, `remaining_quota`, `unreserved_work`, and `pending_replenishments` are never used\n  --> src\\aperiodic_policy.rs:80:19\n   |\n51 | impl<const R: usize> AperiodicServer<R> {\n   | --------------------------------------- methods in this implementation\n...\n80 |     pub(crate) fn now(&self) -> u64 {\n   |                   ^^^\n...\n84 |     pub(crate) fn remaining_quota(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n88 |     pub(crate) fn unreserved_work(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n94 |     pub(crate) fn pending_replenishments(&self) -> &[Replenishment] {\n   |                   ^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: method `parts` is never used\n  --> src\\fair_policy.rs:26:19\n   |\n17 | impl VirtualTime {\n   | ---------------- method in this implementation\n...\n26 |     pub(crate) fn parts(self) -> (u64, u64, u64) {\n   |                   ^^^^^\n\nwarning: struct `WindowDecision` is never constructed\n  --> src\\temporal_policy.rs:13:19\n   |\n13 | pub(crate) struct WindowDecision {\n   |                   ^^^^^^^^^^^^^^\n\nwarning: method `decision` is never used\n  --> src\\temporal_policy.rs:63:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- method in this implementation\n...\n63 |     pub(crate) fn decision(\n   |                   ^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 2.56s\n"
+    },
+    {
+      "name": "guest-rr",
+      "profile": "rr",
+      "elf_sha256": "9cfaf36e4c3fb84213027a86bd3d731bbd1af4a037d948d274d5dd52b66ae891",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "rr",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/rr.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 9cfaf36e4c3fb84213027a86bd3d731bbd1af4a037d948d274d5dd52b66ae891\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/rr.elf\"]\n  QEMU PID = 516\n  UART (171 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPOLICY RANK PASS\\nPOLICY SERVICE PASS\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nRR A FIRST\\nRR B FIRST\\nRR A RESUMED\\nRR B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 515 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-edf",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "edf-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: multiple variants are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n   |     ^^^^^^^^^^^^^\n11 |     ShortestJobFirst,\n   |     ^^^^^^^^^^^^^^^^\n12 |     ShortestRemainingTimeFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n13 |     HighestResponseRatioNext,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^\n14 |     RateMonotonic,\n   |     ^^^^^^^^^^^^^\n15 |     DeadlineMonotonic,\n   |     ^^^^^^^^^^^^^^^^^\n16 |     EarliestDeadlineFirst,\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `pop_preferred` and `pop_highest` are never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 1.08s\n"
+    },
+    {
+      "name": "guest-edf",
+      "profile": "edf",
+      "elf_sha256": "21fd814504539f1643bf8d2f378fb7393fa0d079726534c4994099903846ddf1",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "edf",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/edf.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 21fd814504539f1643bf8d2f378fb7393fa0d079726534c4994099903846ddf1\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/edf.elf\"]\n  QEMU PID = 528\n  UART (101 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nEDF URGENT RUN\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 527 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-periodic",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "periodic-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: multiple variants are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n   |     ^^^^^^^^^^^^^\n11 |     ShortestJobFirst,\n   |     ^^^^^^^^^^^^^^^^\n12 |     ShortestRemainingTimeFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n13 |     HighestResponseRatioNext,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^\n...\n16 |     EarliestDeadlineFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `push_front`, `pop_preferred`, and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 1.08s\n"
+    },
+    {
+      "name": "guest-periodic",
+      "profile": "periodic",
+      "elf_sha256": "5c5d9813b3fc867e7d42b452425decb24d8259241df2e515eb19e38ffa4685cb",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "periodic",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/periodic.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 5c5d9813b3fc867e7d42b452425decb24d8259241df2e515eb19e38ffa4685cb\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/periodic.elf\"]\n  QEMU PID = 540\n  UART (111 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nRM 0 A\\nRM 0 B\\nRM 2 A\\nRM 3 B\\nRM 4 A\\nDM 0 B\\nDM 0 A\\nDM 2 A\\nDM 3 B\\nDM 4 A\\nPERIODIC PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 538 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-periodic-preempt",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "periodic-preempt-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: multiple variants are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n   |     ^^^^^^^^^^^^^\n11 |     ShortestJobFirst,\n   |     ^^^^^^^^^^^^^^^^\n12 |     ShortestRemainingTimeFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n13 |     HighestResponseRatioNext,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^\n...\n16 |     EarliestDeadlineFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `push_front`, `pop_preferred`, and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 1.14s\n"
+    },
+    {
+      "name": "guest-periodic-preempt",
+      "profile": "periodic-preempt",
+      "elf_sha256": "46d306d9600dca960a5c0b8f7d575f633f097bc3d7f863d32b6900edcde6646d",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "periodic-preempt",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/periodic-preempt.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 46d306d9600dca960a5c0b8f7d575f633f097bc3d7f863d32b6900edcde6646d\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/periodic-preempt.elf\"]\n  QEMU PID = 554\n  UART (178 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nRM 0 A\\nRM 0 B\\nRM 2 A\\nRM 3 B\\nRM 4 A\\nDM 0 B\\nDM 0 A\\nDM 2 A\\nDM 3 B\\nDM 4 A\\nRM A START\\nRM A CONTINUE\\nRM B RUN\\nDM A START\\nDM B RUN\\nDM A CONTINUE\\nPREEMPT PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 552 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-cbs",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "cbs-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: struct `Window` is never constructed\n --> src\\temporal_policy.rs:7:8\n  |\n7 | struct Window {\n  |        ^^^^^^\n  |\n  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: struct `WindowDecision` is never constructed\n  --> src\\temporal_policy.rs:13:19\n   |\n13 | pub(crate) struct WindowDecision {\n   |                   ^^^^^^^^^^^^^^\n\nwarning: struct `CyclicExecutive` is never constructed\n  --> src\\temporal_policy.rs:20:19\n   |\n20 | pub(crate) struct CyclicExecutive<const N: usize> {\n   |                   ^^^^^^^^^^^^^^^\n\nwarning: associated items `new`, `dispatch`, `decision`, and `window_at` are never used\n  --> src\\temporal_policy.rs:28:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- associated items in this implementation\n...\n28 |     pub(crate) fn new(\n   |                   ^^^\n...\n56 |     pub(crate) fn dispatch(&self, tick: u64, ready: impl FnOnce(usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^\n...\n63 |     pub(crate) fn decision(\n   |                   ^^^^^^^^\n...\n77 |     fn window_at(&self, tick: u64) -> Option<(&Window, u64)> {\n   |        ^^^^^^^^^\n\nwarning: function `cyclic_checks` is never used\n   --> src\\temporal_policy.rs:239:4\n    |\n239 | fn cyclic_checks() -> bool {\n    |    ^^^^^^^^^^^^^\n\nwarning: function `tick_trace` is never used\n   --> src\\temporal_policy.rs:266:4\n    |\n266 | fn tick_trace<const N: usize>(policy: &mut HardCbs<N>, expected: &[Option<usize>]) -> bool {\n    |    ^^^^^^^^^^\n\nwarning: function `cbs_wake_checks` is never used\n   --> src\\temporal_policy.rs:270:4\n    |\n270 | fn cbs_wake_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^\n\nwarning: function `cbs_dispatch_checks` is never used\n   --> src\\temporal_policy.rs:314:4\n    |\n314 | fn cbs_dispatch_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_error_checks` is never used\n   --> src\\temporal_policy.rs:340:4\n    |\n340 | fn cbs_error_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_admission_checks` is never used\n   --> src\\temporal_policy.rs:374:4\n    |\n374 | fn cbs_admission_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `bench_checks` is never used\n   --> src\\temporal_policy.rs:389:15\n    |\n389 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 11 warnings\n    Finished `release` profile [optimized] target(s) in 1.07s\n"
+    },
+    {
+      "name": "guest-cbs",
+      "profile": "cbs",
+      "elf_sha256": "e57c291189c829ec3678d15d170fb919c85c4b7ee5219e90e4d3b909dffbc012",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "cbs",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/cbs.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = e57c291189c829ec3678d15d170fb919c85c4b7ee5219e90e4d3b909dffbc012\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/cbs.elf\"]\n  QEMU PID = 570\n  UART (112 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCBS A FIRST\\nCBS B FIRST\\nCBS IDLE\\nCBS A RESUMED\\nCBS B RESUMED\\nCBS TIMER STOP\\nCBS PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 569 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-partition",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "partition-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: method `dispatch` is never used\n  --> src\\temporal_policy.rs:56:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- method in this implementation\n...\n56 |     pub(crate) fn dispatch(&self, tick: u64, ready: impl FnOnce(usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: struct `Server` is never constructed\n  --> src\\temporal_policy.rs:85:8\n   |\n85 | struct Server {\n   |        ^^^^^^\n\nwarning: enum `CbsError` is never used\n  --> src\\temporal_policy.rs:94:17\n   |\n94 | pub(crate) enum CbsError {\n   |                 ^^^^^^^^\n\nwarning: function `gcd` is never used\n   --> src\\temporal_policy.rs:102:4\n    |\n102 | fn gcd(mut a: u128, mut b: u128) -> u128 {\n    |    ^^^\n\nwarning: function `admits` is never used\n   --> src\\temporal_policy.rs:112:4\n    |\n112 | fn admits(reservations: &[(u32, u32)]) -> Option<()> {\n    |    ^^^^^^\n\nwarning: struct `HardCbs` is never constructed\n   --> src\\temporal_policy.rs:139:19\n    |\n139 | pub(crate) struct HardCbs<const N: usize> {\n    |                   ^^^^^^^\n\nwarning: associated items `new`, `now`, `release`, and `tick` are never used\n   --> src\\temporal_policy.rs:146:19\n    |\n144 | impl<const N: usize> HardCbs<N> {\n    | ------------------------------- associated items in this implementation\n145 |     /// Reservation parameters are (quota, period), in whole ticks.\n146 |     pub(crate) fn new(start_tick: u64, reservations: [(u32, u32); N]) -> Option<Self> {\n    |                   ^^^\n...\n161 |     pub(crate) fn now(&self) -> u64 {\n    |                   ^^^\n...\n174 |     pub(crate) fn release(&mut self, id: usize, work: u32) -> Result<(), CbsError> {\n    |                   ^^^^^^^\n...\n202 |     pub(crate) fn tick(&mut self) -> Result<Option<usize>, CbsError> {\n    |                   ^^^^\n\nwarning: function `cyclic_checks` is never used\n   --> src\\temporal_policy.rs:239:4\n    |\n239 | fn cyclic_checks() -> bool {\n    |    ^^^^^^^^^^^^^\n\nwarning: function `tick_trace` is never used\n   --> src\\temporal_policy.rs:266:4\n    |\n266 | fn tick_trace<const N: usize>(policy: &mut HardCbs<N>, expected: &[Option<usize>]) -> bool {\n    |    ^^^^^^^^^^\n\nwarning: function `cbs_wake_checks` is never used\n   --> src\\temporal_policy.rs:270:4\n    |\n270 | fn cbs_wake_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^\n\nwarning: function `cbs_dispatch_checks` is never used\n   --> src\\temporal_policy.rs:314:4\n    |\n314 | fn cbs_dispatch_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_error_checks` is never used\n   --> src\\temporal_policy.rs:340:4\n    |\n340 | fn cbs_error_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_admission_checks` is never used\n   --> src\\temporal_policy.rs:374:4\n    |\n374 | fn cbs_admission_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `bench_checks` is never used\n   --> src\\temporal_policy.rs:389:15\n    |\n389 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 14 warnings\n    Finished `release` profile [optimized] target(s) in 1.15s\n"
+    },
+    {
+      "name": "guest-partition",
+      "profile": "partition",
+      "elf_sha256": "9a4e32ce9acf1f3f0c8bc9b513f9f5392a2488ad4d0cb135054da2a7751ef978",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "partition",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/partition.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 9a4e32ce9acf1f3f0c8bc9b513f9f5392a2488ad4d0cb135054da2a7751ef978\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/partition.elf\"]\n  QEMU PID = 583\n  UART (135 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPART A FIRST\\nPART IDLE FIRST\\nPART B READY\\nPART A RESUMED\\nPART B FIRST\\nPART IDLE RESUMED\\nPART STOP\\nPART PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 582 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-coop",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "coop-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: methods `push_front` and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.09s\n"
+    },
+    {
+      "name": "guest-coop",
+      "profile": "coop",
+      "elf_sha256": "7c5991e12f0c023a3cf9b70ec1761c27bad6d5d105029851511237143e90aef0",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "coop",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/coop.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 7c5991e12f0c023a3cf9b70ec1761c27bad6d5d105029851511237143e90aef0\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/coop.elf\"]\n  QEMU PID = 596\n  UART (163 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCOOP A FIRST\\nCOOP IRQ B READY\\nCOOP A RETAINED\\nCOOP B FIRST\\nCOOP A RESUMED\\nCOOP B WOKEN\\nCOOP B RESUMED\\nEVENT 1\\nEVENT 2\\nEVENT 3\\nCOOP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 595 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-batch",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "batch-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: method `now` is never used\n  --> src\\batch_policy.rs:42:19\n   |\n31 | impl<const N: usize> BatchScheduler<N> {\n   | -------------------------------------- method in this implementation\n...\n42 |     pub(crate) fn now(&self) -> u64 {\n   |                   ^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: variants `FirstComeFirstServed`, `FixedPriority`, `RateMonotonic`, `DeadlineMonotonic`, `EarliestDeadlineFirst`, and `LeastLaxityFirst` are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n   |     ^^^^^^^^^^^^^\n...\n14 |     RateMonotonic,\n   |     ^^^^^^^^^^^^^\n15 |     DeadlineMonotonic,\n   |     ^^^^^^^^^^^^^^^^^\n16 |     EarliestDeadlineFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `pop_preferred` and `pop_highest` are never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 5 warnings\n    Finished `release` profile [optimized] target(s) in 1.18s\n"
+    },
+    {
+      "name": "guest-batch",
+      "profile": "batch",
+      "elf_sha256": "8148673a5b338f7ec091cf1367eaf70f85e098617842177a03c8597fd96e3a73",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "batch",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/batch.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 8148673a5b338f7ec091cf1367eaf70f85e098617842177a03c8597fd96e3a73\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/batch.elf\"]\n  QEMU PID = 608\n  UART (301 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nBATCH SJF A FIRST\\nBATCH SJF IRQ B READY\\nBATCH SJF A RETAINED\\nBATCH SJF B FIRST\\nBATCH SRTF A FIRST\\nBATCH SRTF IRQ B READY\\nBATCH SRTF B FIRST\\nBATCH SRTF A RESUMED\\nBATCH HRRN A FIRST\\nBATCH HRRN IRQ C READY\\nBATCH HRRN A RETAINED\\nBATCH HRRN B FIRST\\nBATCH HRRN C FIRST\\nBATCH PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 607 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-deadline",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "deadline-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: methods `pop_preferred` and `pop_highest` are never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.23s\n"
+    },
+    {
+      "name": "guest-deadline",
+      "profile": "deadline",
+      "elf_sha256": "ccdf5f02f7a794c5a738592dedff13192b500683d5e43dcf694eb8e8e9b330e2",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "deadline",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/deadline.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = ccdf5f02f7a794c5a738592dedff13192b500683d5e43dcf694eb8e8e9b330e2\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/deadline.elf\"]\n  QEMU PID = 620\n  UART (346 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nDEADLINE EDF A FIRST\\nDEADLINE EDF IRQ C READY\\nDEADLINE EDF C FIRST\\nDEADLINE EDF A RESUMED\\nDEADLINE EDF B FIRST\\nDEADLINE LLF B FIRST\\nDEADLINE LLF B TIE RETAINED\\nDEADLINE LLF T6 CROSSOVER\\nDEADLINE LLF A FIRST\\nDEADLINE LLF B RESUMED T6\\nDEADLINE LLF IRQ C READY\\nDEADLINE LLF C FIRST\\nDEADLINE LLF B RESUMED T7\\nDEADLINE PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 619 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-aperiodic",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "aperiodic-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: function `service_trace_checks` is never used\n   --> src\\aperiodic_policy.rs:156:4\n    |\n156 | fn service_trace_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^\n    |\n    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `periodic_boundary_checks` is never used\n   --> src\\aperiodic_policy.rs:191:4\n    |\n191 | fn periodic_boundary_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `sporadic_queue_checks` is never used\n   --> src\\aperiodic_policy.rs:222:4\n    |\n222 | fn sporadic_queue_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `error_checks` is never used\n   --> src\\aperiodic_policy.rs:266:4\n    |\n266 | fn error_checks() -> bool {\n    |    ^^^^^^^^^^^^\n\nwarning: function `bench_checks` is never used\n   --> src\\aperiodic_policy.rs:310:15\n    |\n310 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 5 warnings\n    Finished `release` profile [optimized] target(s) in 1.30s\n"
+    },
+    {
+      "name": "guest-aperiodic",
+      "profile": "aperiodic",
+      "elf_sha256": "3937364c5b61b0356b120f01aa68391ffd675338d813679a280838ee9531e09f",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "aperiodic",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/aperiodic.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 3937364c5b61b0356b120f01aa68391ffd675338d813679a280838ee9531e09f\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/aperiodic.elf\"]\n  QEMU PID = 636\n  UART (1659 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nAPER BEGIN PS\\nAPER t=0 id=0 budget=0 credits=-\\nAPER t=1 id=0 budget=0 credits=-\\nAPER t=2 id=0 budget=0 credits=-\\nAPER t=3 id=0 budget=0 credits=-\\nAPER t=4 id=1 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=2 budget=1 credits=-\\nAPER t=9 id=2 budget=0 credits=-\\nAPER END pending=2 charged=4 completed=4\\nAPER BEGIN DS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=-\\nAPER t=2 id=0 budget=1 credits=-\\nAPER t=3 id=2 budget=0 credits=-\\nAPER t=4 id=2 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=3 budget=1 credits=-\\nAPER t=9 id=4 budget=0 credits=-\\nAPER END pending=0 charged=6 completed=6\\nAPER BEGIN SS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=5:1,7:1\\nAPER t=4 id=0 budget=0 credits=5:1,7:1\\nAPER t=5 id=2 budget=0 credits=7:1,9:1\\nAPER t=6 id=0 budget=0 credits=7:1,9:1\\nAPER t=7 id=2 budget=0 credits=9:1,11:1\\nAPER t=8 id=0 budget=0 credits=9:1,11:1\\nAPER t=9 id=3 budget=0 credits=11:1,13:1\\nAPER END pending=1 charged=5 completed=5\\nAPER BEGIN SS1\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=7:2\\nAPER t=4 id=0 budget=0 credits=7:2\\nAPER t=5 id=0 budget=0 credits=7:2\\nAPER t=6 id=0 budget=0 credits=7:2\\nAPER t=7 id=2 budget=1 credits=11:1\\nAPER t=8 id=2 budget=0 credits=12:2\\nAPER t=9 id=0 budget=0 credits=12:2\\nAPER END pending=2 charged=4 completed=4\\nAPER STOP\\nAPER PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 635 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-smp",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "smp-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.36s\n"
+    },
+    {
+      "name": "guest-smp",
+      "profile": "smp",
+      "elf_sha256": "e89f7166091609c5706f741a5d1eb44d8b2aceee2d5582b8dde210903e9cbf69",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "smp",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/smp.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = e89f7166091609c5706f741a5d1eb44d8b2aceee2d5582b8dde210903e9cbf69\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/smp.elf\"]\n  QEMU PID = 657\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 655 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-mutex",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "mutex-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: method `pop_preferred` is never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- method in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.36s\n"
+    },
+    {
+      "name": "guest-mutex",
+      "profile": "mutex",
+      "elf_sha256": "89ce584f3d2ceb44c74cdbdcfbd608c0c7052260c967ef5ffd3d0fcf2fd4b43d",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "mutex",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/mutex.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 89ce584f3d2ceb44c74cdbdcfbd608c0c7052260c967ef5ffd3d0fcf2fd4b43d\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/mutex.elf\"]\n  QEMU PID = 672\n  UART (97 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nMUTEX PI TRANSFER\\nMUTEX CHAIN TIMEOUT\\nMUTEX CEILING NESTED\\nMUTEX PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 671 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-multilevel",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "multilevel-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: methods `push_front` and `pop_preferred` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.21s\n"
+    },
+    {
+      "name": "guest-multilevel",
+      "profile": "multilevel",
+      "elf_sha256": "3a8b9286831fa4484852d08b0162790affc43a563555d6048d69bf274c504bd7",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "multilevel",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/multilevel.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 3a8b9286831fa4484852d08b0162790affc43a563555d6048d69bf274c504bd7\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/multilevel.elf\"]\n  QEMU PID = 684\n  UART (96 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nMLQ STRICT FOUR\\nMLFQ YIELDS DEMOTED\\nMLFQ BOOST ORDER\\nMULTILEVEL PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 683 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-amc",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "amc-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.37s\n"
+    },
+    {
+      "name": "guest-amc",
+      "profile": "amc",
+      "elf_sha256": "37727c7dbeca68ec5af98118b10d6569d46346008901e256b5c8f1cc91e941ac",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "amc",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/amc.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 37727c7dbeca68ec5af98118b10d6569d46346008901e256b5c8f1cc91e941ac\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/amc.elf\"]\n  QEMU PID = 700\n  UART (1146 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nAMC BEGIN\\nAMC CLOCK freq=62500000 origin=54420 quantum=3125000\\nAMC SLOT t=0 id=0 mode=0 used=1 left=0 deadline=3 cval=3179420 irq=3197998 elr=1075843704 sp=1075872960 progress=193652034 value=36\\nAMC SLOT t=1 id=1 mode=0 used=1 left=3 deadline=5 cval=6304420 irq=6311646 elr=1075843916 sp=1075905728 progress=37493141 value=0\\nAMC SLOT t=2 id=1 mode=1 used=2 left=2 deadline=5 cval=9429420 irq=9436073 elr=1075843916 sp=1075905728 progress=147152596 value=0\\nAMC SLOT t=3 id=1 mode=1 used=3 left=1 deadline=5 cval=12554420 irq=12561978 elr=1075843916 sp=1075905728 progress=258288120 value=0\\nAMC SLOT t=4 id=3 mode=1 used=1 left=0 deadline=6 cval=15679420 irq=15685912 elr=1075843808 sp=1075938496 progress=194002111 value=528\\nAMC SLOT t=5 id=0 mode=0 used=1 left=0 deadline=8 cval=18804420 irq=18809980 elr=1075843860 sp=1075954880 progress=196441374 value=136\\nAMC SWITCH t=2 carry=2,3,2,1 drop=5 irq=6311646 commit=6322256 work=6330203 latency=25783\\nAMC GUARD new_lo=0 early_reset=0 fourth=0 fault=1\\nAMC DEADLINE id=3 end=5 due=6 irq=15685912 limit=18804420 value=528\\nAMC RESET unapproved=0 approved=1\\nAMC STOP\\nAMC PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 699 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-proportional",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "proportional-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.28s\n"
+    },
+    {
+      "name": "guest-proportional",
+      "profile": "proportional",
+      "elf_sha256": "8f520217b48a8fec89d5aa3a453f172860bc4c9fab0906a84788f5c271080f89",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "proportional",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/proportional.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 8f520217b48a8fec89d5aa3a453f172860bc4c9fab0906a84788f5c271080f89\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/proportional.elf\"]\n  QEMU PID = 715\n  UART (116 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nLOTTERY SEED A\\nLOTTERY SEED B\\nSTRIDE SERVICE JOIN\\nSTRIDE DELAY CHARGED\\nPROPORTIONAL PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 713 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-vruntime",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "vruntime-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.29s\n"
+    },
+    {
+      "name": "guest-vruntime",
+      "profile": "vruntime",
+      "elf_sha256": "d34991dec3a328fd39f282f89bb33b9e21614fce44f95ed7121de21b050dbc98",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "vruntime",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/vruntime.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = d34991dec3a328fd39f282f89bb33b9e21614fce44f95ed7121de21b050dbc98\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/vruntime.elf\"]\n  QEMU PID = 734\n  UART (3887 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nVR BEGIN\\nVR CLOCK freq=62500000 quantum=1250000\\nVR SLOT t=0 id=0 ready=3 start=57932 cval=1307932 irq=1322972 charge=1265040 a2=2530080 b2=0 floor2=0 elr=1075843684 sp=1075878144 progress=74981183\\nVR SLOT t=1 id=1 ready=3 start=1346586 cval=2596586 irq=2600983 charge=1254397 a2=2530080 b2=1254397 floor2=1254397 elr=1075843716 sp=1075894528 progress=78581523\\nVR SLOT t=2 id=1 ready=3 start=2603681 cval=3853681 irq=3858231 charge=1254550 a2=2530080 b2=2508947 floor2=2508947 elr=1075843716 sp=1075894528 progress=157148082\\nVR SLOT t=3 id=1 ready=3 start=3864196 cval=5114196 irq=5118029 charge=1253833 a2=2530080 b2=3762780 floor2=2530080 elr=1075843716 sp=1075894528 progress=235555921\\nVR SLOT t=4 id=0 ready=3 start=5118572 cval=6368572 irq=6373513 charge=1254941 a2=5039962 b2=3762780 floor2=3762780 elr=1075843684 sp=1075878144 progress=150672583\\nVR SLOT t=5 id=1 ready=3 start=6373876 cval=7623876 irq=7629822 charge=1255946 a2=5039962 b2=5018726 floor2=5018726 elr=1075843716 sp=1075894528 progress=312788801\\nVR SLOT t=6 id=1 ready=3 start=7631551 cval=8881551 irq=8886098 charge=1254547 a2=5039962 b2=6273273 floor2=5039962 elr=1075843716 sp=1075894528 progress=388774530\\nVR SLOT t=7 id=0 ready=3 start=8886801 cval=10136801 irq=10141194 charge=1254393 a2=7548748 b2=6273273 floor2=6273273 elr=1075843684 sp=1075878144 progress=229148349\\nVR SLOT t=8 id=1 ready=3 start=10142608 cval=11392608 irq=11398468 charge=1255860 a2=7548748 b2=7529133 floor2=7529133 elr=1075843716 sp=1075894528 progress=467898220\\nVR SLOT t=9 id=1 ready=3 start=11398816 cval=12648816 irq=12654739 charge=1255923 a2=7548748 b2=8785056 floor2=7548748 elr=1075843716 sp=1075894528 progress=546384224\\nVR SLOT t=10 id=0 ready=3 start=12655361 cval=13905361 irq=13912804 charge=1257443 a2=10063634 b2=8785056 floor2=8785056 elr=1075843684 sp=1075878144 progress=307518956\\nVR SLOT t=11 id=1 ready=3 start=13913656 cval=15163656 irq=15168369 charge=1254713 a2=10063634 b2=10039769 floor2=10039769 elr=1075843716 sp=1075894528 progress=624922866\\nVR SLOT t=12 id=0 ready=1 start=15176213 cval=16426213 irq=16432348 charge=1256135 a2=12575904 b2=10039769 floor2=12575904 elr=1075843684 sp=1075878144 progress=385402681\\nVR SLOT t=13 id=0 ready=1 start=16433822 cval=17683822 irq=17689357 charge=1255535 a2=15086974 b2=10039769 floor2=15086974 elr=1075843684 sp=1075878144 progress=464157958\\nVR SLOT t=14 id=0 ready=1 start=17690074 cval=18940074 irq=18946353 charge=1256279 a2=17599532 b2=10039769 floor2=17599532 elr=1075843684 sp=1075878144 progress=536661466\\nVR SLOT t=15 id=0 ready=3 start=18958369 cval=20208369 irq=20215090 charge=1256721 a2=20112974 b2=17599532 floor2=17599532 elr=1075843684 sp=1075878144 progress=608828957\\nVR SLOT t=16 id=1 ready=3 start=20216270 cval=21466270 irq=21472860 charge=1256590 a2=20112974 b2=18856122 floor2=18856122 elr=1075843716 sp=1075894528 progress=699629704\\nVR SLOT t=17 id=1 ready=3 start=21474407 cval=22724407 irq=22731000 charge=1256593 a2=20112974 b2=20112715 floor2=20112715 elr=1075843716 sp=1075894528 progress=746573102\\nVR SLOT t=18 id=1 ready=3 start=22732441 cval=23982441 irq=23989990 charge=1257549 a2=20112974 b2=21370264 floor2=20112974 elr=1075843716 sp=1075894528 progress=824967613\\nVR SLOT t=19 id=0 ready=3 start=23990917 cval=25240917 irq=25245760 charge=1254843 a2=22622660 b2=21370264 floor2=21370264 elr=1075843684 sp=1075878144 progress=683569793\\nVR SLOT t=20 id=1 ready=3 start=25246896 cval=26496896 irq=26501537 charge=1254641 a2=22622660 b2=22624905 floor2=22622660 elr=1075843716 sp=1075894528 progress=903511299\\nVR SHARE slots=12 a=5031817 b=10039769 error=23865 tolerance=5000000\\nVR SLEEP t=12 id=1 before2=10039769 floor2=10063634\\nVR WAKE t=15 id=1 before2=10039769 floor2=17599532 after2=17599532 lag_before=7559763 lag_after=0\\nVR END slots=21 a=11311330 b=15065142 floor2=22622660 lag_b=-2245\\nVR STOP\\nVR PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 733 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-eevdf",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "eevdf-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.37s\n"
+    },
+    {
+      "name": "guest-eevdf",
+      "profile": "eevdf",
+      "elf_sha256": "1b3d390e2cb77ec355221ee4e1871df0264f2058df6a69d414c3ba0a2fead5cf",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "eevdf",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/eevdf.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 1b3d390e2cb77ec355221ee4e1871df0264f2058df6a69d414c3ba0a2fead5cf\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/eevdf.elf\"]\n  QEMU PID = 749\n  UART (139 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nEEVDF BEGIN\\nEEVDF EARLY INELIGIBLE\\nEEVDF SLICE CHANGE\\nEEVDF WEIGHT CHANGE\\nEEVDF TWO WAKES\\nEEVDF STOP\\nEEVDF PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 747 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-hierarchy",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "hierarchy-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.20s\n"
+    },
+    {
+      "name": "guest-hierarchy",
+      "profile": "hierarchy",
+      "elf_sha256": "2e498fd3068aadca24af7c0e5fb955f695c3bc0ee964fd25f05089de37718a38",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "hierarchy",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/hierarchy.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 2e498fd3068aadca24af7c0e5fb955f695c3bc0ee964fd25f05089de37718a38\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/hierarchy.elf\"]\n  QEMU PID = 762\n  UART (93 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nHIERARCHY WAIT\\nHIERARCHY THROTTLE\\nHIERARCHY REFILL\\nHIERARCHY PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 760 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-power",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "power-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\n    Finished `release` profile [optimized] target(s) in 1.26s\n"
+    },
+    {
+      "name": "guest-power",
+      "profile": "power",
+      "elf_sha256": "ff4864f91bd1fb9f39d6bac5208cda9742b35112149e24ca8329fabd358c879a",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "power",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/power.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = ff4864f91bd1fb9f39d6bac5208cda9742b35112149e24ca8329fabd358c879a\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/power.elf\"]\n  QEMU PID = 776\n  UART (122 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPOWER BASE\\nPOWER THERMAL\\nPOWER SHARED\\nPOWER DEADLINE MISS\\nPOWER FALLBACK\\nPOWER IDLE\\nPOWER PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 775 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-extension",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "extension-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: variant `Yield` is never constructed\n  --> src\\extension_policy.rs:16:5\n   |\n12 | pub(crate) enum Op {\n   |                 -- variant in this enum\n...\n16 |     Yield,\n   |     ^^^^^\n   |\n   = note: `Op` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.25s\n"
+    },
+    {
+      "name": "guest-extension",
+      "profile": "extension",
+      "elf_sha256": "2c20aa2f12ae6083bfcbd29828522118cf3e790024c69981d4c0810a9bb1d29d",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "extension",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/extension.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 2c20aa2f12ae6083bfcbd29828522118cf3e790024c69981d4c0810a9bb1d29d\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/extension.elf\"]\n  QEMU PID = 790\n  UART (233 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nEXTENSION BEGIN\\nEXTENSION PROPOSAL ACCEPTED\\nEXTENSION MASK FALLBACK\\nEXTENSION STALE FALLBACK\\nEXTENSION FUEL FALLBACK\\nEXTENSION WATCHDOG FALLBACK\\nEXTENSION EMPTY IDLE\\nEXTENSION RESERVED THREE\\nEXTENSION PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 788 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-priority-resume",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "priority-resume-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: method `pop_preferred` is never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- method in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.03s\n"
+    },
+    {
+      "name": "guest-priority-resume",
+      "profile": "priority-resume",
+      "elf_sha256": "b1d003f72b8aa7b06461313fa6577411bed287e2d8c4ec866d7146b3aae0c337",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "priority-resume",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/priority-resume.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = b1d003f72b8aa7b06461313fa6577411bed287e2d8c4ec866d7146b3aae0c337\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/priority-resume.elf\"]\n  QEMU PID = 805\n  UART (70 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPRIORITY RESUME BEGIN\\nPRIORITY RESUME PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 803 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-periodic-overrun",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "periodic-overrun-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: multiple variants are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n   |     ^^^^^^^^^^^^^\n11 |     ShortestJobFirst,\n   |     ^^^^^^^^^^^^^^^^\n12 |     ShortestRemainingTimeFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n13 |     HighestResponseRatioNext,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^\n...\n16 |     EarliestDeadlineFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `push_front`, `pop_preferred`, and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 1.11s\n"
+    },
+    {
+      "name": "guest-periodic-overrun",
+      "profile": "periodic-overrun",
+      "elf_sha256": "f1f7bc9d6a67665d6c25469e542bdb5a29cf853372c1c6c54cfc7fcd9590710d",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "periodic-overrun",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/periodic-overrun.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = f1f7bc9d6a67665d6c25469e542bdb5a29cf853372c1c6c54cfc7fcd9590710d\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/periodic-overrun.elf\"]\n  QEMU PID = 817\n  UART (81 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nOVERRUN RM DONE\\nOVERRUN DM DONE\\nPERIODIC OVERRUN PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 816 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-cbs-wake",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "cbs-wake-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: struct `Window` is never constructed\n --> src\\temporal_policy.rs:7:8\n  |\n7 | struct Window {\n  |        ^^^^^^\n  |\n  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: struct `WindowDecision` is never constructed\n  --> src\\temporal_policy.rs:13:19\n   |\n13 | pub(crate) struct WindowDecision {\n   |                   ^^^^^^^^^^^^^^\n\nwarning: struct `CyclicExecutive` is never constructed\n  --> src\\temporal_policy.rs:20:19\n   |\n20 | pub(crate) struct CyclicExecutive<const N: usize> {\n   |                   ^^^^^^^^^^^^^^^\n\nwarning: associated items `new`, `dispatch`, `decision`, and `window_at` are never used\n  --> src\\temporal_policy.rs:28:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- associated items in this implementation\n...\n28 |     pub(crate) fn new(\n   |                   ^^^\n...\n56 |     pub(crate) fn dispatch(&self, tick: u64, ready: impl FnOnce(usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^\n...\n63 |     pub(crate) fn decision(\n   |                   ^^^^^^^^\n...\n77 |     fn window_at(&self, tick: u64) -> Option<(&Window, u64)> {\n   |        ^^^^^^^^^\n\nwarning: function `cyclic_checks` is never used\n   --> src\\temporal_policy.rs:239:4\n    |\n239 | fn cyclic_checks() -> bool {\n    |    ^^^^^^^^^^^^^\n\nwarning: function `tick_trace` is never used\n   --> src\\temporal_policy.rs:266:4\n    |\n266 | fn tick_trace<const N: usize>(policy: &mut HardCbs<N>, expected: &[Option<usize>]) -> bool {\n    |    ^^^^^^^^^^\n\nwarning: function `cbs_wake_checks` is never used\n   --> src\\temporal_policy.rs:270:4\n    |\n270 | fn cbs_wake_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^\n\nwarning: function `cbs_dispatch_checks` is never used\n   --> src\\temporal_policy.rs:314:4\n    |\n314 | fn cbs_dispatch_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_error_checks` is never used\n   --> src\\temporal_policy.rs:340:4\n    |\n340 | fn cbs_error_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^\n\nwarning: function `cbs_admission_checks` is never used\n   --> src\\temporal_policy.rs:374:4\n    |\n374 | fn cbs_admission_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `bench_checks` is never used\n   --> src\\temporal_policy.rs:389:15\n    |\n389 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 11 warnings\n    Finished `release` profile [optimized] target(s) in 1.11s\n"
+    },
+    {
+      "name": "guest-cbs-wake",
+      "profile": "cbs-wake",
+      "elf_sha256": "dfbb1d9e04c7219bc1c47fd96af0f2465e1d924a5c64f5b03ac45757d4731706",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "cbs-wake",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/cbs-wake.elf",
+        "--timeout",
+        "15"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = dfbb1d9e04c7219bc1c47fd96af0f2465e1d924a5c64f5b03ac45757d4731706\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/cbs-wake.elf\"]\n  QEMU PID = 839\n  UART (61 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCBS WAKE TIMER STOP\\nCBS WAKE PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 838 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-priority-overrun",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "priority-resume-bench,periodic-overrun-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: method `pop_preferred` is never used\n  --> src\\ready_queue.rs:44:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- method in this implementation\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.19s\n"
+    },
+    {
+      "name": "guest-priority-overrun",
+      "profile": "priority-resume",
+      "elf_sha256": "1f0e85064f55d4ed6c0cd6d551d8683144401dfdc6fff26f48f3cea40566cb4a",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "priority-resume",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/priority-overrun.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 1f0e85064f55d4ed6c0cd6d551d8683144401dfdc6fff26f48f3cea40566cb4a\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/priority-overrun.elf\"]\n  QEMU PID = 858\n  UART (70 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPRIORITY RESUME BEGIN\\nPRIORITY RESUME PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 857 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-overrun-cbs",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "periodic-overrun-bench,cbs-wake-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: multiple variants are never constructed\n  --> src\\dispatch_policy.rs:9:5\n   |\n 8 | pub(crate) enum DispatchPolicy {\n   |                 -------------- variants in this enum\n 9 |     FirstComeFirstServed,\n   |     ^^^^^^^^^^^^^^^^^^^^\n10 |     FixedPriority,\n   |     ^^^^^^^^^^^^^\n11 |     ShortestJobFirst,\n   |     ^^^^^^^^^^^^^^^^\n12 |     ShortestRemainingTimeFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n13 |     HighestResponseRatioNext,\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^\n...\n16 |     EarliestDeadlineFirst,\n   |     ^^^^^^^^^^^^^^^^^^^^^\n17 |     LeastLaxityFirst,\n   |     ^^^^^^^^^^^^^^^^\n   |\n   = note: `DispatchPolicy` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `bench_checks` is never used\n   --> src\\dispatch_policy.rs:117:15\n    |\n117 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: function `pick` is never used\n   --> src\\dispatch_policy.rs:310:4\n    |\n310 | fn pick(\n    |    ^^^^\n\nwarning: methods `push_front`, `pop_preferred`, and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n44 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {\n   |                   ^^^^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 1.20s\n"
+    },
+    {
+      "name": "guest-overrun-cbs",
+      "profile": "periodic-overrun",
+      "elf_sha256": "1c668a746b5bbba61f5dc63b5d9fb85cf32b30c322453f4faed8f846956105c7",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "periodic-overrun",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/overrun-cbs.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 1c668a746b5bbba61f5dc63b5d9fb85cf32b30c322453f4faed8f846956105c7\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/overrun-cbs.elf\"]\n  QEMU PID = 871\n  UART (81 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nOVERRUN RM DONE\\nOVERRUN DM DONE\\nPERIODIC OVERRUN PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 870 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-rr-priority",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "rr-bench,priority-resume-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: methods `now`, `remaining_quota`, `unreserved_work`, and `pending_replenishments` are never used\n  --> src\\aperiodic_policy.rs:80:19\n   |\n51 | impl<const R: usize> AperiodicServer<R> {\n   | --------------------------------------- methods in this implementation\n...\n80 |     pub(crate) fn now(&self) -> u64 {\n   |                   ^^^\n...\n84 |     pub(crate) fn remaining_quota(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n88 |     pub(crate) fn unreserved_work(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n94 |     pub(crate) fn pending_replenishments(&self) -> &[Replenishment] {\n   |                   ^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: method `parts` is never used\n  --> src\\fair_policy.rs:26:19\n   |\n17 | impl VirtualTime {\n   | ---------------- method in this implementation\n...\n26 |     pub(crate) fn parts(self) -> (u64, u64, u64) {\n   |                   ^^^^^\n\nwarning: struct `WindowDecision` is never constructed\n  --> src\\temporal_policy.rs:13:19\n   |\n13 | pub(crate) struct WindowDecision {\n   |                   ^^^^^^^^^^^^^^\n\nwarning: method `decision` is never used\n  --> src\\temporal_policy.rs:63:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- method in this implementation\n...\n63 |     pub(crate) fn decision(\n   |                   ^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 4 warnings\n    Finished `release` profile [optimized] target(s) in 2.46s\n"
+    },
+    {
+      "name": "guest-rr-priority",
+      "profile": "rr",
+      "elf_sha256": "f832be834b971fd5dd90663147126b09045d8bacbdf13a58bcff683a6549df02",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "rr",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/rr-priority.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = f832be834b971fd5dd90663147126b09045d8bacbdf13a58bcff683a6549df02\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/rr-priority.elf\"]\n  QEMU PID = 899\n  UART (171 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPOLICY RANK PASS\\nPOLICY SERVICE PASS\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nRR A FIRST\\nRR B FIRST\\nRR A RESUMED\\nRR B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 897 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "build-all",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--all-features"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\release-cases\\src\\kernel)\nwarning: methods `push_front` and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.01s\n"
+    },
+    {
+      "name": "guest-all",
+      "profile": "coop",
+      "elf_sha256": "a237b289d558b225f093324aaa9e27c7fb1162a2809580f4dee972cd97776108",
+      "argv": [
+        "wsl",
+        "-d",
+        "Ubuntu",
+        "--",
+        "python3",
+        "-B",
+        "/mnt/d/codex/.jnox-work/release-cases/src/tools/qemu_boot.py",
+        "--profile",
+        "coop",
+        "--runs",
+        "1",
+        "--kernel",
+        "/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/all.elf"
+      ],
+      "exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = a237b289d558b225f093324aaa9e27c7fb1162a2809580f4dee972cd97776108\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/all-profile-regression/images/all.elf\"]\n  QEMU PID = 910\n  UART (163 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCOOP A FIRST\\nCOOP IRQ B READY\\nCOOP A RETAINED\\nCOOP B FIRST\\nCOOP A RESUMED\\nCOOP B WOKEN\\nCOOP B RESUMED\\nEVENT 1\\nEVENT 2\\nEVENT 3\\nCOOP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 909 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    }
+  ],
+  "final_python_capture_regression": {
+    "observer": "775ecb7426d57204091f3f1ffbecc2c0f8ec02c8",
+    "kernel_source": "93c64c853c3d1bf3f6286da59d83d7dc8394f7b9",
+    "runs": [
+      {
+        "argv": [
+          "wsl",
+          "-d",
+          "Ubuntu",
+          "--",
+          "env",
+          "PERIODIC_OVERRUN_CAPTURE_DIR=/mnt/d/codex/.jnox-work/release-cases/observer-final-runs/periodic-overrun-raw",
+          "python3",
+          "-B",
+          "/mnt/d/codex/.jnox-work/release-cases/observer-final/tools/qemu_boot.py",
+          "--profile",
+          "periodic-overrun",
+          "--timeout",
+          "15",
+          "--runs",
+          "1",
+          "--qemu",
+          "/mnt/d/codex/.jnox-work/release-cases/observer-final/tools/periodic_overrun_capture.py",
+          "--kernel",
+          "/mnt/d/codex/.jnox-work/release-cases/target-periodic-overrun/aarch64-unknown-none/release/jnox-kernel"
+        ],
+        "stdout": "Run 1/1  ELF SHA-256 = f1f7bc9d6a67665d6c25469e542bdb5a29cf853372c1c6c54cfc7fcd9590710d\n  argv = [\"/usr/bin/python3\", \"-B\", \"/mnt/d/codex/.jnox-work/release-cases/observer-final/tools/periodic_overrun_capture.py\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/target-periodic-overrun/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 476\n  UART (81 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nOVERRUN RM DONE\\nOVERRUN DM DONE\\nPERIODIC OVERRUN PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 476 (/usr/bin/python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+        "stderr": "",
+        "exit": 0,
+        "elf_sha256": "f1f7bc9d6a67665d6c25469e542bdb5a29cf853372c1c6c54cfc7fcd9590710d",
+        "wrapper_has_crlf": true,
+        "raw_sha256": {
+          "audit.bin": "8f805627fc60374a27e6e7b9a79e0b3833c7a57dd06d275de594b219a95d3270",
+          "exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+          "int.trace": "f5e9d565edca7a71bcbc07a508d8097944de325cfc9bb6807f6ca08f4070b1f9",
+          "launch.json": "54e6453976dc282ab5e5e05b4d743f166fc39138eefba44c7d5635a4466715fe",
+          "qmp.json": "47e7c81e66ab199f755eebbc05be14ff9e0affa4fea8e535d4aa83dfd0f6160e",
+          "uart.bin": "4fc267a7d7640e20f48a1c8664b7122533f067650b140fc89be5421d49a48e00"
+        }
+      },
+      {
+        "argv": [
+          "wsl",
+          "-d",
+          "Ubuntu",
+          "--",
+          "env",
+          "CBS_WAKE_CAPTURE_DIR=/mnt/d/codex/.jnox-work/release-cases/observer-final-runs/cbs-wake-raw",
+          "python3",
+          "-B",
+          "/mnt/d/codex/.jnox-work/release-cases/observer-final/tools/qemu_boot.py",
+          "--profile",
+          "cbs-wake",
+          "--timeout",
+          "15",
+          "--runs",
+          "1",
+          "--qemu",
+          "/mnt/d/codex/.jnox-work/release-cases/observer-final/tools/cbs_wake_capture.py",
+          "--kernel",
+          "/mnt/d/codex/.jnox-work/release-cases/target-cbs-wake/aarch64-unknown-none/release/jnox-kernel"
+        ],
+        "stdout": "Run 1/1  ELF SHA-256 = dfbb1d9e04c7219bc1c47fd96af0f2465e1d924a5c64f5b03ac45757d4731706\n  argv = [\"/usr/bin/python3\", \"-B\", \"/mnt/d/codex/.jnox-work/release-cases/observer-final/tools/cbs_wake_capture.py\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/release-cases/target-cbs-wake/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 504\n  UART (61 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCBS WAKE TIMER STOP\\nCBS WAKE PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 504 (/usr/bin/python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+        "stderr": "",
+        "exit": 0,
+        "elf_sha256": "dfbb1d9e04c7219bc1c47fd96af0f2465e1d924a5c64f5b03ac45757d4731706",
+        "wrapper_has_crlf": true,
+        "raw_sha256": {
+          "audit.bin": "4d2a4ebe7768a063a0ac35adca54427fd1393bc2b84d9176525d02f1521e00da",
+          "exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+          "int.trace": "cd827f917876613ab4ff1675b83e3c2706de246ce9b7dce7595223dbd6e6893a",
+          "launch.json": "a410c69820679d0022d95f1d13e2daa56e0704eb3f58e3484d9277c3d717ff08",
+          "qmp.json": "cd29beb7f6ef5d356b40e487da2cc4c0a1cac219fcb4f99052cb546b5033295b",
+          "uart.bin": "16caf21f8303d459234394080667b4a8a67636a71c29c0b9837f9ea1ed2bbe3c"
+        }
+      }
+    ],
+    "python": {
+      "argv": [
+        "C:\\Users\\jonki\\anaconda3\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "test_*.py"
+      ],
+      "stdout": "",
+      "stderr": "............................\n----------------------------------------------------------------------\nRan 28 tests in 0.608s\n\nOK\n",
+      "exit": 0
+    }
+  }
+}

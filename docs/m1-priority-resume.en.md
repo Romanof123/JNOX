@@ -45,3 +45,5 @@ Epochs 0, 1, 2 select preemptive FIFO, deferred FIFO and preemptive RR. Events 0
 4. For retained A compare both frame addresses and PCs within the same row. Across switches pair each suspended frame address and saved PC with its later selection, including post-yield restoration. Check distinct task stacks using linked frame size and stack bounds. Compare outgoing X20 with prior observations of that worker, require positive progress, and check B/HIGH exit with 4097. Record the existing FIFO and RR profile regression results separately.
 
 The launcher runs a local Python capture script with its current Python interpreter, including when the checkout uses Windows line endings.
+
+The independent guest record includes the frozen image identifier and observed cases. [EVD-027](evidence/evd-027.en.md)
