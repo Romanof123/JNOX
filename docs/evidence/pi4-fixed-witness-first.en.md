@@ -18,3 +18,5 @@ python3 witness/restore.py
 cd witness/restored
 python3 tools/pi4_fixed_witness.py fifo-eng/first/uart.bin --profile pi4-fixed-fifo-witness --manifest fifo-eng/first/manifest.json --elf fifo-eng/first/kernel.elf --image fifo-eng/first/boot/kernel8.img
 ```
+
+The original decoder returned 1 on both archived UARTs. The corrected decoder returned 0 on the same FIFO and RR bytes. The replay launched no guests. [Corrected Pi 4 witness decoder · Host replay](pi4-fixed-witness-replay.en.md)

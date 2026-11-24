@@ -18,3 +18,5 @@ python3 witness/restore.py
 cd witness/restored
 python3 tools/pi4_fixed_witness.py fifo-eng/first/uart.bin --profile pi4-fixed-fifo-witness --manifest fifo-eng/first/manifest.json --elf fifo-eng/first/kernel.elf --image fifo-eng/first/boot/kernel8.img
 ```
+
+보존된 FIFO와 RR UART를 원래 디코더는 모두 코드 1로 거절했고, 수정 디코더는 같은 바이트에서 모두 코드 0을 반환했다. 새 게스트 부팅은 없었다. [수정된 Pi 4 증빙 디코더 · 호스트 재생](pi4-fixed-witness-replay.md)
