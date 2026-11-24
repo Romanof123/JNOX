@@ -1,6 +1,6 @@
 # 스케줄링 정책과 출시 검증 기준
 
-한국어 · [English](scheduling-policies.en.md)
+[English](scheduling-policies.en.md) · [계열별 출시 사례와 남은 검증](scheduling-release-cases.md)
 
 J-NOX는 프로파일마다 다음 스레드를 고르는 규칙, 선점 시점, 실행 가능한 CPU, 사용할 수 있는 CPU 시간을 정한다. 예를 들어 제어 프로파일은 스레드를 한 CPU에 고정하고 주기로 우선순위를 정한 뒤, 동순위에서는 FIFO를 적용하고 공유 뮤텍스에는 우선순위 상한을 둘 수 있다. 확장 프로파일은 서비스 그룹에 CPU 시간을 예약하고 그 안에서 가중치에 따라 스레드를 실행할 수 있다. 실제로 조합한 구성마다 검증 기록을 남긴다.
 
