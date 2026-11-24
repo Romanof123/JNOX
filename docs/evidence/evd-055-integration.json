@@ -1,0 +1,327 @@
+{
+  "evidence_id": "EVD-055",
+  "record": "integrated gate",
+  "archive": "evd-055-integration.zip",
+  "archive_sha256": "e75dfca6bc32e2bc9b0c651c05423057a3d424aaa0fbeaa1c6bf26ab3f8684cc",
+  "archive_files": 74,
+  "reviewer_report_sha256": "6f31ce8c25042915377f30e5938697f355f93222da00d4dea28390365aab4b3a",
+  "reviewer_report": {
+    "source": "589e927bdc2e21ed68de1315d030d6231d18bacb",
+    "tree": "210b881f91ce9ed10f3f953726c8e5c7788b61da",
+    "build_index_sha": "ce52d0421d81c927e3227e6c45f6ec6656ebd872293bfc383a4b911d8e3141d6",
+    "freeze_sha": "3ee59a0ef464be8a3fd00dd6d9ca2fc2371a152704ff588d30251b8f6faa57e9",
+    "launch_sha": "52fbe9c5a5dc734cb6f167f76e6b23276b809f1e1b73f50ef6d553bee9ab6fab",
+    "comparisons": {
+      "lottery1": {
+        "whole": false,
+        "load": true,
+        "text": true,
+        "sha": "34bb9488aea5439582438991df15a1851e9ed4a14bb5b7bab961821a65ade63b",
+        "reference": "784971ba24d1f9d8f5eaec62b2f971e4634bbec248097991cd0a3fd2fc4e2c83"
+      },
+      "lottery2": {
+        "whole": false,
+        "load": true,
+        "text": true,
+        "sha": "e23a4586e1601491f0a5e25f93994346859c2acdd923717da6d9b7578ee9a9bc",
+        "reference": "bcf148a81bed8171281360f93975ad059b59b196a376e7902f041162f02b6691"
+      },
+      "stride": {
+        "whole": false,
+        "load": true,
+        "text": true,
+        "sha": "d3930aaca32c9f86f65fb407ab3d1668521045e11968dfe37f342df39f4bb080",
+        "reference": "090a9258cd2671edb61b07ab833e25d0d4eb0af1f4cca4c7735faa46c0993919"
+      },
+      "markers-rm-marker": {
+        "whole": false,
+        "load": true,
+        "text": true,
+        "sha": "7001be91575ecd745d4e43bb7c54dec7806c7d9d42b4793f8f333bd3085f3ce9",
+        "reference": "708e3c7f75d3710c558da0606f320973be28931a99939bc73d7eefc327be0b60"
+      },
+      "markers-rm-baseline": {
+        "whole": false,
+        "load": true,
+        "text": true,
+        "sha": "6829210d310a5d8bcccea4ff9863e0ed12cf09e7187ca3ccf67c7795455481ed",
+        "reference": "adcc2c107940bbe5f16a0279ea263d1f4c6b552caa73836a1b49436005cee68b"
+      }
+    },
+    "builds": {
+      "lottery1": [
+        0,
+        true,
+        null
+      ],
+      "lottery2": [
+        0,
+        true,
+        null
+      ],
+      "stride": [
+        0,
+        true,
+        null
+      ],
+      "markers-rm-marker": [
+        0,
+        true,
+        null
+      ],
+      "markers-rm-baseline": [
+        0,
+        true,
+        null
+      ],
+      "wrong-control": [
+        101,
+        true,
+        "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional"
+      ],
+      "wrong-board": [
+        101,
+        true,
+        "ordinary proportional requires virt and no benchmark features"
+      ],
+      "wrong-app": [
+        101,
+        true,
+        "ordinary proportional requires an explicit lottery, stride or diagnostic app"
+      ],
+      "wrong-profile": [
+        101,
+        true,
+        "invalid aperiodic application"
+      ],
+      "mixed": [
+        101,
+        true,
+        "ordinary proportional requires virt and no benchmark features"
+      ]
+    },
+    "standalone_selectors": {
+      "lottery1": {
+        "exit": 0,
+        "ok": true
+      },
+      "lottery2": {
+        "exit": 0,
+        "ok": true
+      },
+      "stride": {
+        "exit": 0,
+        "ok": true
+      },
+      "markers-rm-marker": {
+        "exit": 0,
+        "ok": true
+      },
+      "markers-rm-baseline": {
+        "exit": 0,
+        "ok": true
+      },
+      "wrong-control": {
+        "exit": 101,
+        "ok": true
+      },
+      "wrong-board": {
+        "exit": 101,
+        "ok": true
+      },
+      "wrong-app": {
+        "exit": 101,
+        "ok": true
+      },
+      "wrong-profile": {
+        "exit": 101,
+        "ok": true
+      },
+      "mixed": {
+        "exit": 101,
+        "ok": true
+      }
+    },
+    "native": {
+      "results": "test result: ok. 130 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.57s",
+      "log_sha": "8de0e0ed61f849101d63c58a7d017a188352ebc0d47a38c0d4271c63ec3c8a9f",
+      "witness": "empty state 61c8864680b583eb; rejected zero then accepted e220a8397b1dcdaf in 2 words; ticket 2 owner 1",
+      "first_harness_attempt": "compile failed because scratch harness omitted feedback_policy; original compiler diagnostics retained, second harness includes the actual pinned module"
+    },
+    "guests": {
+      "lottery1": {
+        "qualified": true,
+        "findings": [],
+        "counts": [
+          10,
+          8,
+          14
+        ],
+        "service": [
+          10,
+          8,
+          14
+        ],
+        "phase_service": null,
+        "irq": 33,
+        "svc": 0,
+        "eret": 33,
+        "outcome": {
+          "reason": "complete footer",
+          "elapsed_s": 0.5837077979999998,
+          "pid": 482,
+          "exit": 0
+        },
+        "hashes": {
+          "exceptions": "b16b89d8b00cf062dfd58cff2f72eef22f7baf06b673d472ade05aedfefe78da",
+          "kernel.elf": "34bb9488aea5439582438991df15a1851e9ed4a14bb5b7bab961821a65ade63b",
+          "outcome.json": "d9bf823e9c1668dfe61c2229acdfee8c3b42eac0cb5277ec513d5b4f168ba2ca",
+          "score.json": "d996c5104d53d2085e53bfdc596f4a83fc9ecfe2b55ea07b239347b64e62480a",
+          "stderr": "b28d56b3dd95de3196befa3b8955a507a0f295dcefb2c12efa93461fd62a6026",
+          "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uart": "c21b97c4674963b6a8530670ea40a8ca7cc0fe9e517dad097482f1dd64c51567"
+        }
+      },
+      "lottery2": {
+        "qualified": true,
+        "findings": [],
+        "counts": [
+          5,
+          11,
+          16
+        ],
+        "service": [
+          5,
+          11,
+          16
+        ],
+        "phase_service": null,
+        "irq": 33,
+        "svc": 0,
+        "eret": 33,
+        "outcome": {
+          "reason": "complete footer",
+          "elapsed_s": 0.5580889630000003,
+          "pid": 485,
+          "exit": 0
+        },
+        "hashes": {
+          "exceptions": "102ed47a4db6cae1b2c2a22cb3c6cde549c41bd47716c85cfe3950990dc16608",
+          "kernel.elf": "e23a4586e1601491f0a5e25f93994346859c2acdd923717da6d9b7578ee9a9bc",
+          "outcome.json": "c90c577016e4bd37337a56abfdaeede11af75474af74c0e8d5398e35a6ee63f8",
+          "score.json": "f549f1c6e6736c2b1b6c9099d40649cffddd91f0626dd4e9128ab93cd2746a81",
+          "stderr": "b28d56b3dd95de3196befa3b8955a507a0f295dcefb2c12efa93461fd62a6026",
+          "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uart": "401e2030b9ece7aa3ec26b34933e2888b5c79638533990f96762374508f4948d"
+        }
+      },
+      "stride": {
+        "qualified": true,
+        "findings": [],
+        "counts": [
+          6,
+          6,
+          4
+        ],
+        "service": [
+          6,
+          12,
+          8
+        ],
+        "phase_service": [
+          [
+            4,
+            8,
+            0
+          ],
+          [
+            2,
+            4,
+            8
+          ]
+        ],
+        "irq": 11,
+        "svc": 6,
+        "eret": 17,
+        "outcome": {
+          "reason": "complete footer",
+          "elapsed_s": 1.2908944359999994,
+          "pid": 488,
+          "exit": 0
+        },
+        "hashes": {
+          "exceptions": "da9334b1d48a99c0453901cbaf4e9edb646a088788818e4880e895f7f0867299",
+          "kernel.elf": "d3930aaca32c9f86f65fb407ab3d1668521045e11968dfe37f342df39f4bb080",
+          "outcome.json": "0b59a8de2c133093ce3322205857e7fc2268c19637a5c16f9a44b7779b0d534f",
+          "score.json": "d5042914f1bd1ad056418d5a9b50549d715d6f4e64d291df20739f7a4309635a",
+          "stderr": "b28d56b3dd95de3196befa3b8955a507a0f295dcefb2c12efa93461fd62a6026",
+          "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uart": "1fdff6dd2021df07b70148f506533c222c785b7bc81ab7f0b5f4280b72724729"
+        }
+      }
+    },
+    "archive": {
+      "zip_sha": "1e929056944f2f7396026369953c739b03cf9c61897eaf904e39a05d5d0ed393",
+      "zip_entries": 35,
+      "manifest_verified": 34,
+      "replays": {
+        "lottery1": true,
+        "lottery2": true,
+        "stride": true
+      },
+      "verifier_sha": "787106826e30b8346b12709efbefb5caf0932ad77e3a46308abb44705df4fdb3"
+    },
+    "audit": {
+      "findings": [],
+      "typed": {
+        "affected_requirements": {
+          "CHG-057": [
+            "REQ-002",
+            "REQ-005",
+            "REQ-023"
+          ]
+        },
+        "cited_changes": [
+          "CHG-057"
+        ],
+        "cited_implementations": [
+          "IMP-055"
+        ],
+        "documents": [
+          "docs/evidence/evd-055.md",
+          "docs/evidence/evd-055.en.md"
+        ],
+        "json_attachments": [
+          "docs/evidence/evd-055.json"
+        ],
+        "tested_implementations": {
+          "IMP-055": {
+            "designs": [
+              "DES-003",
+              "DES-012"
+            ],
+            "requirements_for_verifications": {
+              "REQ-002": [
+                "DES-003"
+              ],
+              "REQ-005": [
+                "DES-003"
+              ],
+              "REQ-023": [
+                "DES-003",
+                "DES-012"
+              ]
+            },
+            "verifications": [
+              "VER-002",
+              "VER-005",
+              "VER-023"
+            ]
+          }
+        }
+      },
+      "sha": "09a2624ecf86369dee3700af642e5e5bda7f996da570b77294303b465f0acaad"
+    },
+    "scope": "Three ordinary default-clock guests. Both control images built and compared only; no new control timing observations. No injected timing or enforcement arms. External exceptions establish ordered PCs; integer service and fingerprints use guest data. Windows-built ELFs copied to native Linux /tmp. Historical first captures kept separately."
+  }
+}

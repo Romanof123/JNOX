@@ -161,3 +161,14 @@ fn configuration_and_mask_bounds_include_the_last_bit() {
     assert!(full.set_ready_mask(1 << 31));
     assert_eq!(full.dispatch(), Some(31));
 }
+
+#[test]
+fn supplied_words_do_not_advance_an_autonomous_draw() {
+    use crate::proportional_policy::reduce_word;
+    assert_eq!(reduce_word(0, 7), None);
+    assert_eq!(reduce_word(1, 7), None);
+    assert_eq!(reduce_word(2, 7), Some(2));
+    assert_eq!(reduce_word(7, 7), Some(0));
+    assert_eq!(reduce_word(6, 7), Some(6));
+    assert_eq!(reduce_word(2, 0), None);
+}
