@@ -172,3 +172,38 @@ fn supplied_words_do_not_advance_an_autonomous_draw() {
     assert_eq!(reduce_word(6, 7), Some(6));
     assert_eq!(reduce_word(2, 0), None);
 }
+
+#[test]
+fn finite_windows_cover_edges_and_reject_unsupported_contracts() {
+    use crate::proportional_policy::WindowInput;
+    let input = WindowInput {
+        seed: 1, weights: WEIGHTS, ready: 7, horizon: 48, width: 24, floors: [5, 3, 11],
+    };
+    let admitted = input.analyze().unwrap();
+    assert_eq!(admitted.minimum, input.floors);
+    assert_eq!(admitted.first_short, None);
+    let tight = WindowInput { floors: [6, 3, 11], ..input }.analyze().unwrap();
+    assert_eq!(tight.minimum, admitted.minimum);
+    assert_eq!(tight.first_short, Some((24, 0, 5)));
+    let seed_two = WindowInput { seed: 2, floors: [1, 7, 10], ..input };
+    assert_eq!(seed_two.analyze().unwrap().minimum, seed_two.floors);
+    assert_eq!(seed_two.analyze().unwrap().first_short, None);
+    let whole = WindowInput { width: 48, floors: [11, 14, 23], ..input };
+    assert_eq!(whole.analyze().unwrap().minimum, whole.floors);
+    for invalid in [
+        WindowInput { horizon: 0, ..input },
+        WindowInput { horizon: 65, ..input },
+        WindowInput { width: 0, ..input },
+        WindowInput { width: 49, ..input },
+        WindowInput { width: 1, floors: [1; 3], ..input },
+        WindowInput { weights: [0, 2, 4], ..input },
+        WindowInput { weights: [17, 2, 4], ..input },
+        WindowInput { ready: 3, ..input },
+        WindowInput { ready: 15, ..input },
+        WindowInput { floors: [0, 1, 1], ..input },
+        WindowInput { floors: [25, 1, 1], ..input },
+        WindowInput { floors: [1, 12, 12], ..input },
+    ] {
+        assert!(invalid.analyze().is_none());
+    }
+}
