@@ -82,3 +82,5 @@ POWER PASS
 `counter_hz`, `trigger_tick`, `release_tick`, `wake_tick`, `first_tick`, `complete_tick`, `deadline_tick`, `idle_start_tick`, `idle_end_tick`은 정수다. 공통 에지의 계측기 시각이 `trigger_ns`이며 계측기 시각(ns)은 trigger_ns + (tick − trigger_tick) × 10⁹ / counter_hz이다. 래핑을 해소한 단조 카운터와 고정 주파수를 사용한다. 정렬·드리프트 불확도 `sync_uncertainty_ns`와 사전 허용 샘플 간격 `max_gap_ns`를 정수로 기록한다. 샘플 배열은 시간순 [계측기 ns, µV, µA] 정수 셋이며 양전류는 소비다. 입력 파일당 4 MiB, 샘플 100,000개, 정수 절댓값 2⁶⁴ 미만으로 제한한다.
 
 인접 순간 전력(V × I)을 선형 보간해 구간 경계에서 잘라 사다리꼴 적분(J)한다. 릴리스부터 완료까지의 구간과 겹치지 않는 동일 조건 유휴 구간 각각에서 양 끝 샘플과 허용 간격을 확인한다. 확보한 길이를 보고하고 누락 시 외삽 없이 실패한다. 실행 에너지에서 유휴 평균 전력 × 실행 시간을 뺀 부호를 유지한다. 기상은 첫 실행 − 기상 요청, 응답은 완료 − 릴리스, 여유는 기한 − 완료이며 단위는 초다. 음수 여유는 관측 기한 위반이다. 물리 오차는 교정·시각 정렬·보간에 의존한다. 반복 측정과 원본을 보존하고 #34 / #1에서 물리 불확도와 제품 허용값을 평가한다. 예제 및 EVD-025로 실물 허용값을 정할 수 없다.
+
+[분석 도구의 독립 검산 및 원본](evidence/synchronized-power-reducer-first.en-ko.md).
