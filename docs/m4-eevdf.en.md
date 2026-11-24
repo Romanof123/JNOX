@@ -66,3 +66,5 @@ python3 tools/qemu_boot.py --profile eevdf --runs 1 \
 ```
 
 Retain source and ELF hashes with `launch.json`, `uart.bin`, `int.trace`, `audit.bin`, `qmp.json` and `exit.json` from the same launch. After the two boot lines the expected EEVDF milestones are `BEGIN`, `EARLY INELIGIBLE`, `SLICE CHANGE`, `WEIGHT CHANGE`, `TWO WAKES`, `STOP` and `PASS`. Preserve the first capture even if a later replay is necessary.
+
+The independent virtual-guest results and frozen image are recorded in [EVD-023](evidence/evd-023.en.md)

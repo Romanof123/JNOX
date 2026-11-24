@@ -70,3 +70,5 @@ For an independent instruction check, resolve `power_work_loop` and `power_work_
 ## Physical board calibration
 
 Record board revision, firmware, governor, cooling, supply, ambient conditions and workload identity. For each allowed CPU/OPP and idle state, confirm the actual OPP and temperature, repeat the identical workload, and timestamp release, wake request, first work and completion. Synchronize an external power meter or shunt trace with those events, record voltage/current sample times and integrate power over stated windows with a documented idle baseline. Repeat under controlled competing load and observed thermal throttling. Preserve raw traces, calibration uncertainty, counter frequency, measured capacity, wake latency, energy, response margins and observed deadline misses. Compare against the declared board profile's criteria. Physical energy, wake latency, OPP transitions, temperature and board deadline behavior require these measurements.
+
+The independent virtual-guest results and frozen image are recorded in [EVD-025](evidence/evd-025.en.md)

@@ -67,3 +67,5 @@ For independent replay, compare the nine decisions with the table and the six ev
 The policy, trusted gate, timer/journal code and assembly loops can be inspected together with the host decision tests. [Interpreter](../kernel/src/extension_policy.rs) · [Gate](../kernel/src/group_policy.rs) · [Guest](../kernel/src/extension.rs) · [Task code](../kernel/src/extension.S) · [Host tests](../tools/extension_tests.rs)
 
 The interpreter and trusted gate execute at EL1 in a shared address space. Private stacks, checked data, fuel and time limits provide the containment exercised by this prototype. Product adoption, protection against arbitrary native code, physical worst-case response time, workload qualification, hazard analysis and functional-safety approval remain open.
+
+The independent virtual-guest results and frozen image are recorded in [EVD-026](evidence/evd-026.en.md)

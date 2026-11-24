@@ -66,3 +66,5 @@ python3 tools/qemu_boot.py --profile eevdf --runs 1 \
 ```
 
 소스·ELF 해시와 함께 같은 실행에서 나온 `launch.json`, `uart.bin`, `int.trace`, `audit.bin`, `qmp.json`, `exit.json`을 보존한다. 부팅 메시지 두 줄 뒤에 기대하는 EEVDF 메시지는 `BEGIN`, `EARLY INELIGIBLE`, `SLICE CHANGE`, `WEIGHT CHANGE`, `TWO WAKES`, `STOP`, `PASS` 순이다. 다시 실행하더라도 최초 캡처는 보존한다.
+
+독립 가상 게스트 결과와 시험 이미지 식별자는 다음 기록에서 확인할 수 있다. [EVD-023](evidence/evd-023.md)

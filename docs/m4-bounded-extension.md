@@ -67,3 +67,5 @@ service_pc service_frame service_work eval_ppi service_ppi
 정책과 커널 검증 코드, 타이머·저널 처리, 어셈블리 작업 루프 및 호스트 결정 시험을 함께 확인할 수 있다. [인터프리터](../kernel/src/extension_policy.rs) · [제안 검증](../kernel/src/group_policy.rs) · [게스트](../kernel/src/extension.rs) · [작업 코드](../kernel/src/extension.S) · [호스트 시험](../tools/extension_tests.rs)
 
 인터프리터와 커널 검증 코드는 EL1의 같은 주소 공간에서 실행된다. 이 시제품은 전용 스택, 입력 검증, 명령 수 및 시간 제한에 의한 보호를 시험한다. 제품 채택, 임의 네이티브 코드에 대한 격리, 실물 하드웨어 최악 응답시간, 제품 부하 적격성, 위험 분석 및 기능안전 승인은 별도 과제로 남는다.
+
+독립 가상 게스트 결과와 시험 이미지 식별자는 다음 기록에서 확인할 수 있다. [EVD-026](evidence/evd-026.md)

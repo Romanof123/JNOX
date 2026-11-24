@@ -42,3 +42,5 @@ QMP reads the ELF symbol hierarchy_witness from physical memory. Decode 1,584 by
 | 13–15 | Dispatch counter, IRQ observation counter, saved X20 work counter |
 
 Replay each reservation using the table. Its post-reservation balances repeat for all its slots. Check that each stop counter meets its anchored end boundary and precedes the next. Resolve raw PCs against the launched ELF. Each leaf's first selected PC is h_leafN_wake after its SVC. Later selections restore its last interrupted PC in [h_leafN_work, h_leafN_end). Match the four waits, initial idle IRQ, 12 leaf IRQs and exception returns to int.trace. Retain the actual intervals and frame addresses with the raw dump for EVD-024.
+
+The independent virtual-guest results and frozen image are recorded in [EVD-024](evidence/evd-024.en.md)
