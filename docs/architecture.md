@@ -141,3 +141,5 @@ CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd
 [#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).
 
 [POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.
+
+CHG-049 / IMP-050. 일반 이미지 정상 판정 0/32, 진단 모드 초기화 0/96이었다. 콜드 행렬은 가상 시간만 다룬다. [EVD-050](evidence/evd-050.md)

@@ -141,3 +141,5 @@ CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-0
 [Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
 
 [POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. Implementation and independent evidence are pending.
+
+CHG-049 / IMP-050. Stock healthy 0/32; diagnostic mode initialization 0/96. The cold matrix records virtual timing only. [EVD-050](evidence/evd-050.en.md)

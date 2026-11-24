@@ -1,0 +1,18 @@
+{
+  "evidence_id": "EVD-050",
+  "implementation": "IMP-050",
+  "change": "CHG-049",
+  "verdict": "Stock healthy 0/32; diagnostic mode initialization 0/96",
+  "versions": [
+    {
+      "version": 1,
+      "source": "0bc8f6bf778c75aafb603d4b2cc3684818166f68",
+      "english": "evd-050-v1.en.md",
+      "korean": "evd-050-v1.md",
+      "evidence": "evd-050-v1.json",
+      "sha256": "e6bcc536fb9cc69032a45a23abac69d239230a78bfca9de6097d837aae35f3d1",
+      "reviewer_manifest_sha256": "15945aa4cb22eb22e845afa08d75eb013b7b53ab46a503ac108e0f545c67a423"
+    }
+  ],
+  "related": "EVD-042"
+}
