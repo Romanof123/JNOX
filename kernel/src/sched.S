@@ -196,13 +196,36 @@ sched_work_end:
     b {pass}
 .size sched_low_entry, . - sched_low_entry
 
-.global sched_high_entry
-.type sched_high_entry, %function
-sched_high_entry:
+// Each expansion has its own entry and post-SVC labels. Its literal task ID
+// and live stack identify which task actually reached each UART callback.
+.macro high_task entry, resume, finish, id, witness
+.global \entry
+.type \entry, %function
+\entry:
     mov x0, sp
+    mov x1, #\id
+    mov x2, #0
     bl {high_start}
     sub sp, sp, #16
     stp xzr, xzr, [sp]
+    .if {fifo}
+    mov x19, #\witness
+    str x19, [sp]
+    svc #2
+.global \resume
+\resume:
+    // The other peer installed a different X19 and used a different stack.
+    mov x0, #\witness
+    cmp x19, x0
+    b.ne .Lunexpected
+    ldr x1, [sp]
+    cmp x1, x0
+    b.ne .Lunexpected
+    mov x0, sp
+    mov x1, #\id
+    mov x2, #1
+    bl {high_start}
+    .endif
     // Destroy the low witnesses in the live CPU registers before the SVC.
     mov x9, xzr
     mov x12, xzr
@@ -214,7 +237,13 @@ sched_high_entry:
     msr tpidr_el1, xzr
     msr nzcv, xzr
     svc #1
-.global sched_high_return
-sched_high_return:
+.global \finish
+\finish:
     b .Lunexpected
-.size sched_high_entry, . - sched_high_entry
+.size \entry, . - \entry
+.endm
+
+high_task sched_high_entry, sched_high_resume, sched_high_return, {high_id}, 0xa19
+.if {fifo}
+high_task sched_b_entry, sched_b_resume, sched_b_return, {b_id}, 0xb19
+.endif

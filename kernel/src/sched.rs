@@ -5,10 +5,14 @@ use core::mem::{offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use super::{park, uart_write};
+use super::{park, ready_queue::ReadyQueue, uart_write};
 
 const LOW: usize = 0;
-const HIGH: usize = 1;
+// The first woken peer (HIGH / FIFO A) deliberately has the larger ID in FIFO.
+const HIGH: usize = if cfg!(feature = "fifo-bench") { 2 } else { 1 };
+const PEER_B: usize = 1;
+const TASK_COUNT: usize = HIGH + 1;
+const HIGH_PRIORITY: u8 = 2;
 const STACK_BYTES: usize = 16 * 1024;
 const TIMER_IRQ: u32 = 30; // Nonsecure EL1 physical timer PPI
 const GICD: usize = 0x0800_0000;
@@ -37,6 +41,8 @@ struct Frame {
 
 static mut LOW_STACK: Stack = Stack([0; STACK_BYTES]);
 static mut HIGH_STACK: Stack = Stack([0; STACK_BYTES]);
+#[cfg(feature = "fifo-bench")]
+static mut B_STACK: Stack = Stack([0; STACK_BYTES]);
 // The SVC handler publishes completion to the assembly loop's aligned LDAR.
 static HIGH_DONE: AtomicU64 = AtomicU64::new(0);
 
@@ -45,8 +51,16 @@ unsafe extern "C" {
     static sched_work_begin: u8;
     static sched_work_end: u8;
     static sched_high_return: u8;
+    #[cfg(feature = "fifo-bench")]
+    static sched_high_resume: u8;
+    #[cfg(feature = "fifo-bench")]
+    static sched_b_resume: u8;
+    #[cfg(feature = "fifo-bench")]
+    static sched_b_return: u8;
     fn sched_low_entry();
     fn sched_high_entry();
+    #[cfg(feature = "fifo-bench")]
+    fn sched_b_entry();
     fn sched_start_frame(frame: *mut Frame) -> !;
 }
 
@@ -58,11 +72,14 @@ global_asm!(
     tpidr_el1 = const offset_of!(Frame, tpidr_el1),
     tpidr_el0 = const offset_of!(Frame, tpidr_el0),
     simd = const offset_of!(Frame, simd),
+    fifo = const cfg!(feature = "fifo-bench") as usize,
+    high_id = const HIGH,
+    b_id = const PEER_B,
     done = sym HIGH_DONE,
     low_start = sym low_start,
     high_start = sym high_start,
     irq = sym timer_interrupt,
-    svc = sym finish_high,
+    svc = sym service_call,
     pass = sym low_resumed,
     fail = sym fail,
 );
@@ -92,22 +109,31 @@ impl Task {
 }
 
 struct Scheduler {
-    tasks: [Task; 2],
+    tasks: [Task; TASK_COUNT],
+    ready: ReadyQueue<TASK_COUNT>,
     current: Option<usize>,
 }
 
 impl Scheduler {
+    fn peers_finished(&self) -> bool {
+        self.tasks[1..]
+            .iter()
+            .all(|task| task.state == State::Finished)
+    }
+
+    fn wake(&mut self, id: usize) {
+        let task = &mut self.tasks[id];
+        require(task.state == State::Blocked && !task.frame.is_null());
+        require(self.ready.push_back(id));
+        task.state = State::Ready;
+    }
+
     fn dispatch(&mut self) -> *mut Frame {
-        let Some((id, selected)) = self
-            .tasks
-            .iter_mut()
-            .enumerate()
-            .filter(|(_, task)| task.state == State::Ready)
-            .max_by_key(|(_, task)| task.priority)
-        else {
+        let Some(id) = self.ready.pop_highest(|id| self.tasks[id].priority) else {
             fail()
         };
-        require(!selected.frame.is_null());
+        let selected = &mut self.tasks[id];
+        require(selected.state == State::Ready && !selected.frame.is_null());
         selected.state = State::Running;
         self.current = Some(id);
         core::mem::replace(&mut selected.frame, ptr::null_mut())
@@ -115,7 +141,13 @@ impl Scheduler {
 }
 
 static mut SCHEDULER: Scheduler = Scheduler {
-    tasks: [Task::new(1, State::Ready), Task::new(2, State::Blocked)],
+    tasks: [
+        Task::new(1, State::Blocked),
+        Task::new(HIGH_PRIORITY, State::Blocked),
+        #[cfg(feature = "fifo-bench")]
+        Task::new(HIGH_PRIORITY, State::Blocked),
+    ],
+    ready: ReadyQueue::new(),
     current: None,
 };
 
@@ -144,10 +176,12 @@ extern "C" fn fail() -> ! {
 }
 
 fn stack_top(id: usize) -> *mut u8 {
-    let base = if id == LOW {
-        &raw mut LOW_STACK
-    } else {
-        &raw mut HIGH_STACK
+    let base = match id {
+        LOW => &raw mut LOW_STACK,
+        HIGH => &raw mut HIGH_STACK,
+        #[cfg(feature = "fifo-bench")]
+        PEER_B => &raw mut B_STACK,
+        _ => fail(),
     };
     base.cast::<u8>().wrapping_add(STACK_BYTES)
 }
@@ -196,8 +230,18 @@ pub(super) fn run() -> ! {
     let frame = with_scheduler(|sched| {
         sched.tasks[LOW].frame = initial_frame(LOW, sched_low_entry, 0x3c5); // EL1h, DAIF masked
         sched.tasks[HIGH].frame = initial_frame(HIGH, sched_high_entry, 0x345); // EL1h, IRQ enabled
+        #[cfg(feature = "fifo-bench")]
+        {
+            sched.tasks[PEER_B].frame = initial_frame(PEER_B, sched_b_entry, 0x345);
+        }
+        sched.wake(LOW);
         let frame = sched.dispatch();
-        require(sched.current == Some(LOW) && sched.tasks[HIGH].state == State::Blocked);
+        require(sched.current == Some(LOW));
+        require(
+            sched.tasks[1..]
+                .iter()
+                .all(|task| task.state == State::Blocked),
+        );
         frame
     });
     // SAFETY: All scheduler borrows have ended. Restore the selected stack
@@ -239,10 +283,12 @@ extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
     let next = with_scheduler(|sched| {
         require(sched.current == Some(LOW) && sched.tasks[LOW].state == State::Running);
-        require(sched.tasks[HIGH].state == State::Blocked);
         sched.tasks[LOW].frame = frame;
         sched.tasks[LOW].state = State::Ready;
-        sched.tasks[HIGH].state = State::Ready;
+        require(sched.ready.push_front(LOW)); // Interrupted LOW keeps its turn.
+        sched.wake(HIGH);
+        #[cfg(feature = "fifo-bench")]
+        sched.wake(PEER_B);
         let next = sched.dispatch();
         require(sched.current == Some(HIGH) && sched.tasks[LOW].state == State::Ready);
         next
@@ -251,32 +297,83 @@ extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
     next
 }
 
-extern "C" fn high_start(sp: usize) {
-    require(sp == stack_top(HIGH).addr());
-    // SAFETY: The high task starts with IRQ enabled. Serialize its marker
-    // and scheduler access, then return it to that same IRQ state.
+// Called by the task body on its own stack. The entry's literal ID and the
+// post-yield call site select the marker, independently of dispatch.
+extern "C" fn high_start(sp: usize, id: usize, resumed: usize) {
+    // SAFETY: These tasks run with IRQ enabled. Serialize their marker
+    // and scheduler access, then return to that same IRQ state.
     unsafe { asm!("msr daifset, #2", options(nostack, preserves_flags)) };
+    let line: &[u8] = match (id, resumed) {
+        #[cfg(not(feature = "fifo-bench"))]
+        (HIGH, 0) => b"SCHED HIGH RUN\n",
+        #[cfg(feature = "fifo-bench")]
+        (HIGH, 0) => b"FIFO A FIRST\n",
+        #[cfg(feature = "fifo-bench")]
+        (PEER_B, 0) => b"FIFO B FIRST\n",
+        #[cfg(feature = "fifo-bench")]
+        (HIGH, 1) => b"FIFO A RESUMED\n",
+        #[cfg(feature = "fifo-bench")]
+        (PEER_B, 1) => b"FIFO B RESUMED\n",
+        _ => fail(),
+    };
+    require(sp == stack_top(id).addr() - resumed * 16);
     with_scheduler(|sched| {
-        require(sched.current == Some(HIGH) && sched.tasks[LOW].state == State::Ready)
+        require(sched.current == Some(id) && sched.tasks[id].state == State::Running);
+        require(sched.tasks[LOW].state == State::Ready);
     });
-    uart_write(b"SCHED HIGH RUN\n");
+    uart_write(line);
     unsafe { asm!("msr daifclr, #2", options(nostack, preserves_flags)) };
 }
 
-extern "C" fn finish_high(frame: *mut Frame) -> *mut Frame {
+extern "C" fn service_call(frame: *mut Frame) -> *mut Frame {
     let esr: u64;
     // SAFETY: Only the current-EL/SPx synchronous vector calls this function.
     unsafe { asm!("mrs {}, esr_el1", out(reg) esr, options(nostack, preserves_flags)) };
-    require(esr >> 26 == 0x15 && esr & 0x01ff_ffff == 1); // AArch64 SVC #1
-    require(frame.addr() == stack_top(HIGH).addr() - 16 - size_of::<Frame>());
-    // SAFETY: The vector built this frame on the verified high stack.
-    require(unsafe { (*frame).elr as usize } == (&raw const sched_high_return).addr());
+    require(esr >> 26 == 0x15); // AArch64 SVC
+    let immediate = esr & 0x01ff_ffff;
     with_scheduler(|sched| {
-        require(sched.current == Some(HIGH) && sched.tasks[HIGH].state == State::Running);
-        sched.tasks[HIGH].state = State::Finished;
+        let Some(id) = sched.current else { fail() };
+        require(id != LOW && sched.tasks[id].state == State::Running);
+        require(sched.tasks[LOW].state == State::Ready);
+        require(frame.addr() == stack_top(id).addr() - 16 - size_of::<Frame>());
+        // SAFETY: The vector built this frame on the verified task stack.
+        let saved = unsafe { &*frame };
+        require(saved.spsr & 0x8f == 5); // IRQ-enabled EL1h
+        let elr = saved.elr as usize;
+
+        #[cfg(feature = "fifo-bench")]
+        let (peer, resume_pc, finish_pc) = if id == HIGH {
+            (
+                PEER_B,
+                &raw const sched_high_resume,
+                &raw const sched_high_return,
+            )
+        } else {
+            (HIGH, &raw const sched_b_resume, &raw const sched_b_return)
+        };
+        #[cfg(feature = "fifo-bench")]
+        if immediate == 2 {
+            require(elr == resume_pc.addr() && sched.tasks[peer].state == State::Ready);
+            sched.tasks[id].frame = frame;
+            sched.tasks[id].state = State::Ready;
+            require(sched.ready.push_back(id)); // Voluntary yield gives up this FIFO turn.
+            let next = sched.dispatch();
+            require(sched.current == Some(peer));
+            return next;
+        }
+
+        #[cfg(not(feature = "fifo-bench"))]
+        let finish_pc = &raw const sched_high_return;
+        require(immediate == 1 && elr == finish_pc.addr());
+        sched.tasks[id].state = State::Finished;
         let next = sched.dispatch();
-        require(sched.current == Some(LOW));
-        HIGH_DONE.store(1, Ordering::Release);
+        #[cfg(feature = "fifo-bench")]
+        if id == HIGH {
+            require(sched.current == Some(PEER_B));
+            return next;
+        }
+        require(sched.current == Some(LOW) && sched.peers_finished());
+        HIGH_DONE.store(1, Ordering::Release); // Let LOW exit only after the final peer.
         next
     })
 }
@@ -286,9 +383,7 @@ extern "C" fn low_resumed(sp: usize) -> ! {
     // with interrupts masked on its original stack.
     unsafe { asm!("msr daifset, #2", options(nostack, preserves_flags)) };
     require(sp == stack_top(LOW).addr() - 16 && HIGH_DONE.load(Ordering::Acquire) == 1);
-    with_scheduler(|sched| {
-        require(sched.current == Some(LOW) && sched.tasks[HIGH].state == State::Finished)
-    });
+    with_scheduler(|sched| require(sched.current == Some(LOW) && sched.peers_finished()));
     uart_write(b"SCHED LOW RESUMED\nSCHED PASS\n");
     park()
 }

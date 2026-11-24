@@ -1,0 +1,465 @@
+{
+  "case": "EVD-003",
+  "scope": "Single-core fixed-priority FIFO release, yield, finish and interrupted LOW resumption on QEMU virt.",
+  "date": "2026-11-24",
+  "requirements": [
+    "REQ-002",
+    "REQ-005"
+  ],
+  "design": "DES-003",
+  "change": "CHG-003",
+  "implementation": "IMP-003",
+  "verification": [
+    "VER-002 (partial)",
+    "VER-005 (partial)"
+  ],
+  "baseline_commit": "715b02faeb72c561a218b0aa8f1fa8b93f6fd751",
+  "source_commit": "76b88ee7fe4c8ece0eb206bd3ed2126d1b761ff1",
+  "source_tree": "4b5ab17ac92dd1ac405b5e903cd318de62a43706",
+  "elf_sha256": "b5f87bf6086cf8a33eadb54a7c0b91622bfcaf6a16b29b81ddcdf5c65ab8806d",
+  "elf_bytes": 90208,
+  "verdict": "PASS",
+  "independence": "Fresh verifier separate from implementation and build. Both UART verdicts were recorded and reported before inspecting the scheduler source or disassembly. Same supplied ELF and clean detached checkout. No verifier build.",
+  "tools": {
+    "host": "WSL2 Ubuntu 22.04.3 LTS, Linux 6.18.58.1-microsoft-standard-WSL2",
+    "qemu": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+    "runner_python": "Python 3.10.12",
+    "inspection": "GNU aarch64-linux-gnu-objdump, nm and readelf, binutils 2.38",
+    "compiler_elf_comment": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "linker_elf_comment": "LLD 22.1.2 (llvm-project 1cb4e3833c1919c2e6fb579a23ac0e2b22587b7e)",
+    "bench": "Full-system virt,gic-version=2, cortex-a72, one vCPU, TCG, 128 MiB, PL011 to stdio, no external firmware argument; guest runs in EL1h."
+  },
+  "inputs": {
+    "configuration": "fifo-bench enables sched-bench; release ELF; target aarch64-unknown-none; target-cpu=cortex-a72.",
+    "canonical_git_blob_sha256": {
+      "kernel/.cargo/config.toml": "a05da1e36e3aea280bdb909ceaa2a7db80dc015439076d5c6490ce53e8a67145",
+      "kernel/Cargo.toml": "4eead21764022d5f1314714fcb50f94c0cd52d673bfbc64f8c7b77158acc87fc",
+      "kernel/Cargo.lock": "b05024c07be4893f0ba0ed6f54b6e03064be794135ba896429eb9bb45d1f37b3",
+      "kernel/rust-toolchain.toml": "6e44d3b835ef24eb96aa56f3c3701a85247866f43fd0c53a274ab0c0b8620c88",
+      "kernel/link.ld": "efce3c6dc39e3e0c89aa8c9a469ed20f335ff851685fc5ccc5f1cf0e45dca7e9",
+      "kernel/build.rs": "b5612bca1345376f5391baab2b811b7358c4d2a6265e647307b74cf3b13cdbe6",
+      "kernel/src/main.rs": "da885bcdb23124c9bce6ffb2a777d08ed037ad1d938244335f6d10b5b094cd7f",
+      "kernel/src/start.S": "80c49bc9c8a8638b60c2af50a655c148217062c49651b6d7c203d12a714b59fb",
+      "kernel/src/sched.rs": "4ba02c2763cce2119056d68a69664bc33d65853b2f9a78be0e6e9e605767774d",
+      "kernel/src/sched.S": "7f3dc784ca0d75cec6f6785026ef4b16fd411914d31972c6ac7797f368e5e89e",
+      "kernel/src/ready_queue.rs": "470ee5223776df86d609d4593690bd781852f7f3e872218a7d3d94edee4ca426",
+      "tools/qemu_boot.py": "7d636e230f294e3088c5188146f1f8ea26778819df81885357460f9424834666",
+      "docs/m1-fifo.en.md": "2b6c10f8dacb9484f8781fe09b82a87f41fbc101bac03642337e165e03ebbee7"
+    },
+    "runner_checkout_bytes_sha256": "ef4983fdb29ed3b1d1bc9d5ae8bb11287af83d8225a3555692996a20e9e5354f",
+    "digest_note": "Git blob digests use canonical bytes. The tested Windows checkout materializes tracked text with CRLF."
+  },
+  "guest_accounting": {
+    "attempts_launched": 2,
+    "attempts_with_complete_fifo_uart": 1,
+    "parallel_guests": false,
+    "retry": "One explicitly authorized sequential retry after host observer ENODATA, unchanged ELF. All accepted observations and transitions below come from guest 2 alone."
+  },
+  "initial_attempt": {
+    "attempt": 1,
+    "runner_exit": 1,
+    "runner_verdict": "FAIL: [Errno 61] No data available",
+    "guest_behavior_verdict": "INCONCLUSIVE",
+    "frozen_verdict_before_source_or_disassembly": true,
+    "runner_log_timestamp_utc": "2026-11-24T02:13:41.813951+00:00",
+    "qemu_pid": 547,
+    "capture": "Public runner used TMPDIR on /mnt/d. Its QEMU wrapper hard-linked the temporary UART and stderr files before exec. Exact origin of the host ENODATA error was unconfirmed.",
+    "uart_bytes": 83,
+    "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\n",
+    "uart_sha256": "3fe4f73dbeb88ca8af3403e14a51679074b652a680b36d77c11ff14d09aab695",
+    "raw_qemu_int_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012bc\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020134c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201370\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402013c4\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x402013e8\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\n",
+    "qemu_stderr": "qemu-system-aarch64: terminating on signal 15 from pid 545 (python3)\n",
+    "quiet_window_completed": false,
+    "stop_reason": "Python sent SIGTERM after its observer error. No acceptance credit.",
+    "first_frozen_record_sha256": "f6cef3fcb7d2094f82e81e0aa4ef974cff1e7e64787d9275d4a13f98b2bd9a8a"
+  },
+  "black_box": {
+    "attempt": 2,
+    "verdict_before_kernel_source_or_disassembly_review": "PASS",
+    "runner_log_timestamp_utc": "2026-11-24T02:14:48.880001+00:00",
+    "public_runner_exit": 0,
+    "qemu_pid": 477,
+    "uart_deadline_seconds": 5,
+    "quiet_window_seconds": 0.1,
+    "stop_reason": "Host sent SIGTERM after the complete public transcript and quiet window. Public runner rechecked UART after stopping its QEMU.",
+    "uart_bytes": 142,
+    "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+    "uart_sha256": "6496878a8c65386195376bcd6dd39c49dad3beed782d5d15fc97c2b629f2b140",
+    "capture": "UART and stderr restored losslessly from the complete Python bytes repr in the public runner stdout. UART length verified against the reported byte count. Interrupt trace captured directly by QEMU.",
+    "qemu_stderr": "qemu-system-aarch64: terminating on signal 15 from pid 469 (python3)\n",
+    "raw_qemu_int_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012bc\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020134c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201370\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402013c4\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x402013e8\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201370\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x402013c0\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402013e8\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201438\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012bc\n",
+    "trace_sha256": "437da3ea127d1a7e1441325e24c1afe8fe57cb774f618f05fd760202e138ee55",
+    "first_eret_pc": "0x4020124c"
+  },
+  "decoded_transitions": [
+    {
+      "event": "LOW timer IRQ",
+      "exception": "IRQ",
+      "esr": "0x0/0x0",
+      "elr": "0x402012bc",
+      "linked_elr_symbol": "sched_work_begin",
+      "el1_vector": "0x40200a80",
+      "vector_pstate": "0x3c5",
+      "eret_to": "0x4020134c",
+      "linked_eret_symbol": "sched_high_entry"
+    },
+    {
+      "event": "A yields",
+      "exception": "SVC",
+      "esr": "0x15/0x56000002",
+      "elr": "0x40201370",
+      "linked_elr_symbol": "sched_high_resume",
+      "el1_vector": "0x40200a00",
+      "vector_pstate": "0x3c5",
+      "eret_to": "0x402013c4",
+      "linked_eret_symbol": "sched_b_entry",
+      "svc_instruction": "0x4020136c",
+      "svc_immediate": 2
+    },
+    {
+      "event": "B yields",
+      "exception": "SVC",
+      "esr": "0x15/0x56000002",
+      "elr": "0x402013e8",
+      "linked_elr_symbol": "sched_b_resume",
+      "el1_vector": "0x40200a00",
+      "vector_pstate": "0x3c5",
+      "eret_to": "0x40201370",
+      "linked_eret_symbol": "sched_high_resume",
+      "svc_instruction": "0x402013e4",
+      "svc_immediate": 2
+    },
+    {
+      "event": "A exits",
+      "exception": "SVC",
+      "esr": "0x15/0x56000001",
+      "elr": "0x402013c0",
+      "linked_elr_symbol": "sched_high_return",
+      "el1_vector": "0x40200a00",
+      "vector_pstate": "0x3c5",
+      "eret_to": "0x402013e8",
+      "linked_eret_symbol": "sched_b_resume",
+      "svc_instruction": "0x402013bc",
+      "svc_immediate": 1
+    },
+    {
+      "event": "B exits",
+      "exception": "SVC",
+      "esr": "0x15/0x56000001",
+      "elr": "0x40201438",
+      "linked_elr_symbol": "sched_b_return",
+      "el1_vector": "0x40200a00",
+      "vector_pstate": "0x3c5",
+      "eret_to": "0x402012bc",
+      "linked_eret_symbol": "sched_work_begin",
+      "svc_instruction": "0x40201434",
+      "svc_immediate": 1
+    }
+  ],
+  "linked_image_witnesses": {
+    "basis": "QEMU directly reports exception kinds, syndromes, vector PCs, saved ELRs and ERET destinations. IDs, priorities, queue contents, stacks, register values and timer source below derive from the ELF, source and guards required to reach UART PASS. The exception logger does not sample SP, GPRs, MMIO, or queue memory.",
+    "preemption": "LOW first entered sched_low_entry. The IRQ ELR and final ERET PC both equal 0x402012bc, the ADD at the start of the four-instruction non-yielding work range [0x402012bc,0x402012cc). The timer callback at 0x4020196c verifies GICC_IAR INTID 30 and CNTP_CTL_EL0 low bits 5, a work-range ELR, nonzero saved X9, and an IRQ-enabled EL1h frame. At 0x40201a04..0x40201a14 it disables CNTP before writing back the IAR token to EOIR.",
+    "vectors_and_frames": "IRQ vector 0x40200a80 branches to 0x40201004; SVC vector 0x40200a00 branches to 0x402010c8. Both allocate 0x340 bytes, save X0..X30, Q0..Q31, ELR/SPSR, FPCR/FPSR and TLS/SP registers, and pass the frame to their callback. At 0x4020118c selection changes SP, restores the selected frame and executes ERET at 0x40201248.",
+    "priority_fifo": "The initialized task priority bytes at 0x40204018/28/38 are 1/2/2 for task IDs 0/1/2. At 0x40201ab0..0x40201ac8 the handler places LOW in the front slot and calls wake(2) then wake(1) before dispatch. At 0x40201c50..0x40201c68 wake appends at length. At 0x40201d0c..0x40201d1c dispatch replaces the best index only under unsigned HI. At 0x40201d54..0x40201d84 it removes the winner by shifting later entries forward without changing their order.",
+    "ready_queues_inferred_before_selection": [
+      [
+        "LOW",
+        "A",
+        "B"
+      ],
+      [
+        "LOW",
+        "B",
+        "A"
+      ],
+      [
+        "LOW",
+        "A",
+        "B"
+      ],
+      [
+        "LOW",
+        "B"
+      ],
+      [
+        "LOW"
+      ]
+    ],
+    "yield_and_finish": "Peer IDs 2 (A) and 1 (B) appear literally in the two thread entries. SVC #2 validates the current Running peer, the other Ready peer, the exact post-yield ELR and work-stack frame. The handler saves the frame, marks Ready, appends at 0x40201828..0x40201838 and dispatches. SVC #1 verifies the finish ELR and sets state 3 (Finished) at 0x402017fc..0x40201800; it does not requeue. The first exit selects B and the second selects LOW, then all-peer Finished checks precede the completion release-store. LOW stays Ready while the peers run. The exception trace contains exactly one exit SVC from each peer.",
+    "stack_ranges": [
+      {
+        "thread": "LOW",
+        "id": 0,
+        "priority": 1,
+        "symbol": "LOW_STACK",
+        "base": "0x4020c070",
+        "end_exclusive": "0x40210070",
+        "bytes": 16384,
+        "initial_frame": "0x4020fd30",
+        "work_sp": "0x40210060",
+        "saved_irq_or_svc_frame": "0x4020fd20"
+      },
+      {
+        "thread": "A",
+        "id": 2,
+        "priority": 2,
+        "symbol": "HIGH_STACK",
+        "base": "0x40204060",
+        "end_exclusive": "0x40208060",
+        "bytes": 16384,
+        "initial_frame": "0x40207d20",
+        "work_sp": "0x40208050",
+        "saved_irq_or_svc_frame": "0x40207d10"
+      },
+      {
+        "thread": "B",
+        "id": 1,
+        "priority": 2,
+        "symbol": "B_STACK",
+        "base": "0x40208060",
+        "end_exclusive": "0x4020c060",
+        "bytes": 16384,
+        "initial_frame": "0x4020bd20",
+        "work_sp": "0x4020c050",
+        "saved_irq_or_svc_frame": "0x4020bd10"
+      }
+    ],
+    "peer_state": "A keeps 0xa19 and B keeps 0xb19 in X19 and a private stack word across their SVC #2. Each resume compares both and branches to fail on mismatch before printing its resumed line. high_start validates the actual work SP, current ID/state and LOW Ready. The SVC callback checks frame address equals the respective top minus 16 minus 0x340. Three static disjoint 16-KiB stacks share one kernel address space.",
+    "low_state": "Before exit each peer clears live X9/X12/X15/X19/V31, FPCR/FPSR, TPIDR_EL1 and NZCV. After returning to its interrupted ADD, LOW acquires completion and checks saved Z/C, X15=0x15a5, X19=0x19b6, matching private stack words, TPIDR_EL1=0x19b6, both halves of V31 filled with 0x55, FPCR=0x400000 and FPSR=0x08000000. Its final callback checks the original work SP, completion value 1, current LOW and both peers Finished before writing the last two lines."
+  },
+  "host_only_controls": [
+    {
+      "case": "unaltered FIFO",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "6496878a8c65386195376bcd6dd39c49dad3beed782d5d15fc97c2b629f2b140",
+      "exit_on_poll": null,
+      "expected": null,
+      "observed": null
+    },
+    {
+      "case": "FIFO CRLF",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\r\nJNOX M1 READY\r\nSCHED LOW RUN\r\nSCHED TIMER IRQ\r\nFIFO A FIRST\r\nFIFO B FIRST\r\nFIFO A RESUMED\r\nFIFO B RESUMED\r\nSCHED LOW RESUMED\r\nSCHED PASS\r\n",
+      "uart_sha256": "965568a1a3edfffb1668ccef8664da0e3965004ae41a3370072577242677779f",
+      "exit_on_poll": null,
+      "expected": null,
+      "observed": null
+    },
+    {
+      "case": "swap initial dispatch",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO B FIRST\nFIFO A FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "1cc77b1bbc1b8f743d658c3c16902dae76cd3ee07a8a299f9c84405b216a5d42",
+      "exit_on_poll": null,
+      "expected": "unexpected UART bytes or marker order",
+      "observed": "unexpected UART bytes or marker order"
+    },
+    {
+      "case": "missing A resumption",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "9d1bc5565c097ab10add79edaee50c1701c04ec50193574bcb06a4b11aa13b08",
+      "exit_on_poll": null,
+      "expected": "unexpected UART bytes or marker order",
+      "observed": "unexpected UART bytes or marker order"
+    },
+    {
+      "case": "duplicate B resumption",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "d03010a169c5c98f6af8d612bb8934ed46a894b0abf72d58ab8cb36fcaf128c5",
+      "exit_on_poll": null,
+      "expected": "unexpected UART bytes or marker order",
+      "observed": "unexpected UART bytes or marker order"
+    },
+    {
+      "case": "extra byte",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n!",
+      "uart_sha256": "bdae39c3d7ee8cc6aa167ef6106a52e42113795f2a613a5cb6287d6111787c4b",
+      "exit_on_poll": null,
+      "expected": "unexpected UART bytes or marker order",
+      "observed": "unexpected UART bytes or marker order"
+    },
+    {
+      "case": "missing final marker",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\n",
+      "uart_sha256": "f216f3d6aadac887e5cd176f8c3c741c26b1109f7e25f1c6b5aef8b9bba56292",
+      "exit_on_poll": null,
+      "expected": "UART deadline exceeded (0.25s)",
+      "observed": "UART deadline exceeded (0.25s)"
+    },
+    {
+      "case": "missing final newline",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS",
+      "uart_sha256": "f4de160f03ed4ec83189808b7796dd328357ac26b5b9011897b896541795008f",
+      "exit_on_poll": null,
+      "expected": "UART deadline exceeded (0.25s)",
+      "observed": "UART deadline exceeded (0.25s)"
+    },
+    {
+      "case": "timeout with no output",
+      "profile": "fifo",
+      "uart_ascii": "",
+      "uart_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_on_poll": null,
+      "expected": "UART deadline exceeded (0.25s)",
+      "observed": "UART deadline exceeded (0.25s)"
+    },
+    {
+      "case": "exit during quiet window",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "6496878a8c65386195376bcd6dd39c49dad3beed782d5d15fc97c2b629f2b140",
+      "exit_on_poll": 2,
+      "expected": "QEMU exited before host stop (status 0)",
+      "observed": "QEMU exited before host stop (status 0)"
+    },
+    {
+      "case": "previous EVD-002 scheduler recording",
+      "profile": "scheduler",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nSCHED HIGH RUN\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "e011aa222990ab7912b36096152cb6b5e9dd036f0e45d99e2adbd167cd048159",
+      "exit_on_poll": null,
+      "expected": null,
+      "observed": null
+    },
+    {
+      "case": "FIFO sent to scheduler observer",
+      "profile": "scheduler",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "6496878a8c65386195376bcd6dd39c49dad3beed782d5d15fc97c2b629f2b140",
+      "exit_on_poll": null,
+      "expected": "unexpected UART bytes or marker order",
+      "observed": "unexpected UART bytes or marker order"
+    },
+    {
+      "case": "previous scheduler recording sent to FIFO observer",
+      "profile": "fifo",
+      "uart_ascii": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nSCHED HIGH RUN\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "uart_sha256": "e011aa222990ab7912b36096152cb6b5e9dd036f0e45d99e2adbd167cd048159",
+      "exit_on_poll": null,
+      "expected": "unexpected UART bytes or marker order",
+      "observed": "unexpected UART bytes or marker order"
+    }
+  ],
+  "reproduce": {
+    "build": "Use the candidate checkout and pinned toolchain: cd kernel && cargo build --release --locked --features fifo-bench -j 1. In this verification the coordinator supplied the built ELF.",
+    "guest": "From repository root with the environment variables ELF, WORK and QEMU_WRAPPER set to the ELF, evidence directory and executable wrapper: unset TMPDIR TMP TEMP; python3 tools/qemu_boot.py --profile fifo --qemu \"$QEMU_WRAPPER\" --kernel \"$ELF\". Default FIFO run count is one. Use WSL Linux /tmp for the runner temp directory.",
+    "wrapper": "#!/bin/sh\nexec /usr/bin/qemu-system-aarch64 -d int -D \"$WORK/attempt2-int.log\" \"$@\"\n",
+    "wrapper_note": "Set and export WORK first. The actual retry wrapper embedded the equivalent absolute trace pathname.",
+    "argv": [
+      "qemu-system-aarch64",
+      "-d",
+      "int",
+      "-D",
+      "$WORK/attempt2-int.log",
+      "-machine",
+      "virt,gic-version=2",
+      "-cpu",
+      "cortex-a72",
+      "-smp",
+      "1",
+      "-accel",
+      "tcg",
+      "-m",
+      "128M",
+      "-nodefaults",
+      "-display",
+      "none",
+      "-monitor",
+      "none",
+      "-serial",
+      "stdio",
+      "-kernel",
+      "$ELF"
+    ],
+    "inspect": [
+      "aarch64-linux-gnu-nm -n -S -C \"$ELF\"",
+      "aarch64-linux-gnu-objdump -d -C \"$ELF\"",
+      "aarch64-linux-gnu-objdump -s -j .data \"$ELF\"",
+      "aarch64-linux-gnu-objdump -D -C -j .text --start-address=0x40200a00 --stop-address=0x4020118c \"$ELF\"",
+      "aarch64-linux-gnu-readelf -p .comment \"$ELF\""
+    ],
+    "host_only": "Import tools/qemu_boot.py from the candidate. For each host_only_controls entry call observe(process, io.BytesIO(uart_ascii.encode('ascii')), 0.25, TRANSCRIPTS[profile]). poll() returns None until exit_on_poll, then sets returncode=0 and returns 0. JSON null in expected or observed means observer acceptance. The scheduler input is raw UART from EVD-002; no scheduler-profile guest was booted."
+  },
+  "artifact_digests": {
+    "attempt1-verification.json": {
+      "bytes": 2549,
+      "sha256": "f6cef3fcb7d2094f82e81e0aa4ef974cff1e7e64787d9275d4a13f98b2bd9a8a"
+    },
+    "runner.log": {
+      "bytes": 447,
+      "sha256": "31fefab32415f819e769618ca571a3f2620ee82d7cbfc1c5f978e1a32a4fe9b3"
+    },
+    "uart.bin": {
+      "bytes": 83,
+      "sha256": "3fe4f73dbeb88ca8af3403e14a51679074b652a680b36d77c11ff14d09aab695"
+    },
+    "qemu.stderr": {
+      "bytes": 69,
+      "sha256": "e66b7a60047024d0b8de1641c8e3c86c97161d4a4a4a6cbe539ce31397e2c3eb"
+    },
+    "qemu-int.log": {
+      "bytes": 577,
+      "sha256": "dd489ca760946cf95bfd64da07acc2bbc59fd4f13683081c79becbd56e604a50"
+    },
+    "trace-qemu.sh": {
+      "bytes": 241,
+      "sha256": "4bfafdc5676db084f9dc4b83e6b99415ec853e0434b60a7c5d2962bcbdeba03a"
+    },
+    "attempt2-runner.log": {
+      "bytes": 753,
+      "sha256": "023381c4c8370a01530313bfaa0ca41e539f6223c488ae4725aa348554b09ebc"
+    },
+    "attempt2-uart.bin": {
+      "bytes": 142,
+      "sha256": "6496878a8c65386195376bcd6dd39c49dad3beed782d5d15fc97c2b629f2b140"
+    },
+    "attempt2-qemu.stderr": {
+      "bytes": 69,
+      "sha256": "9761be107257ac50b036e50e7f52f04595da63c76ca4cfc64d0ead0aaca608f6"
+    },
+    "attempt2-int.log": {
+      "bytes": 1030,
+      "sha256": "437da3ea127d1a7e1441325e24c1afe8fe57cb774f618f05fd760202e138ee55"
+    },
+    "attempt2-qemu.sh": {
+      "bytes": 116,
+      "sha256": "7c63c5eeba4b76ac8474359c658ef32522955884563c70960568c520e9233b09"
+    },
+    "attempt2-disassembly.txt": {
+      "bytes": 110780,
+      "sha256": "d6655bbec7d7690fd14131bd7ae6221a5394e4530476c1ee3415fedf18254fa5"
+    },
+    "attempt2-vectors.txt": {
+      "bytes": 5562,
+      "sha256": "eb7edc72ca19105020c88728467cd72e80cf42e9336588ed417d7b03076056b1"
+    },
+    "attempt2-symbols.txt": {
+      "bytes": 2548,
+      "sha256": "04680f29e650f07ffe0b8b520687960dbb65f4f144577e514baf248efc5d77df"
+    },
+    "attempt2-data.txt": {
+      "bytes": 498,
+      "sha256": "28bf1286b9d8227288975dac8198035b3c2f4c5673db4bd1c740e3d2cf0750c4"
+    },
+    "host-controls.json": {
+      "bytes": 5653,
+      "sha256": "9283aa466b1fb485f455a49588025abf786d7da5f9b1a5f28ce3f85e1c0477e0"
+    },
+    "replay.py": {
+      "bytes": 3169,
+      "sha256": "88e7aa1ab5ca5530944c27d2c9793c0f7ce22a1edb9e72d3a3d18f7570796722"
+    }
+  },
+  "limitations": [
+    "Exactly one complete FIFO guest supplied the accepted UART and trace. The earlier interrupted observation remains inconclusive.",
+    "Single CPU and one fixed three-task workload. Other interleavings, SMP, time slicing, physical hardware, deadlines, throughput, real-time bounds, certification and comprehensive context coverage were outside this test.",
+    "Scheduler-profile compatibility here is host replay of EVD-002 only. It does not establish a new live scheduler-profile run.",
+    "The verifier confirmed the supplied ELF digest and its linked behavior. No independent rebuild was performed."
+  ]
+}

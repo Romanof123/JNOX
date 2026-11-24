@@ -4,6 +4,8 @@
 
 The verifier compared UART output and exception addresses from the same boot. [EVD-002 verification results](evidence/evd-002.en.md)
 
+A separate profile exercises two equal-priority threads becoming ready, yielding and exiting. [FIFO acceptance contract](m1-fifo.en.md)
+
 `CHG-002` adds the optional `sched-bench` Cargo feature to boot baseline `d17052a`. `IMP-002` addresses one question. If a timer IRQ makes a high-priority thread (HIGH) ready while a low-priority thread (LOW) keeps using the CPU, does HIGH run to completion before LOW continues the interrupted computation? The default build uses the existing two-line UART contract for boot regression checks. [M1 boot bench](m1-boot.en.md)
 
 | Trace | Behavior under observation |
