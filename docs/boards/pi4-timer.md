@@ -33,3 +33,5 @@ SCHED PASS
 실보드는 부트 펌웨어의 GIC 모드와 비보안 그룹 위임, 코어 0의 EL1 물리 카운터·타이머 접근 권한이 필요하다. 낮은 주변장치 주소 모드에서 GICD는 0xff841000, GICC는 0xff842000이다. 펌웨어와 EEPROM 버전, 실제 보드 리비전, raw/ELF 해시를 기록한다. 기존 Pi 4 직렬 연결 절차로 동일 SD 카드를 완전히 껐다 켜며 두 번 캡처한다. 각 회차 전원 인가 후 30초 내 아래 바이트를 모두 수신하고 1초간 무출력을 확인한다. 모델은 EEPROM과 VideoCore 펌웨어를 거치지 않는다. 이 출력만으로 실보드 IRQ의 중단 PC·서비스 지연을 측정한 것으로 보지 않는다. 실제 PC 대응에는 보드 추적·디버거 자료, 시간 한계 승인에는 별도 측정이 필요하다. [Pi 4 UART](pi4-p1.md)
 
 [BCM2711 Arm stub](https://github.com/raspberrypi/tools/blob/master/armstubs/armstub8.S) · [BCM2711 timer / GIC](https://github.com/raspberrypi/linux/blob/rpi-6.18.y/arch/arm/boot/dts/broadcom/bcm2711.dtsi) · [QEMU BCM2838 model](https://github.com/qemu/qemu/blob/master/hw/arm/bcm2838.c)
+
+[EVD-014](../evidence/evd-014.md)

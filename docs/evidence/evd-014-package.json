@@ -1,0 +1,83 @@
+{
+  "source": "2c8c463653dd6253cb3ec5cfc60a48f715c1f769",
+  "scheduler_raw_sha256": "991b31d9ef332251aa9f8a1adc3570e11d5823aeb1c34dcaff22c428e83bf5ea",
+  "scheduler_elf_sha256": "253119b904a9296f7f83c5e26a5a674c321bb47c744b8716d4356387b851c164",
+  "serial_raw_sha256": "f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0",
+  "clean_rebuild_matched": true,
+  "sequential_boots": [
+    {
+      "profile": "pi4-scheduler",
+      "observer_exit": 0,
+      "runner": "Run 1/1  raw image SHA-256 = 991b31d9ef332251aa9f8a1adc3570e11d5823aeb1c34dcaff22c428e83bf5ea\n  argv = [\"/mnt/d/codex/arm-speed-lab/build/system/qemu-system-aarch64\", \"-machine\", \"raspi4b\", \"-accel\", \"tcg\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/batch-bd72722993/pi-irq-sd/kernel8.img\"]\n  QEMU PID = 475\n  UART (103 bytes) = b'JNOX PI4 BOOT\\nJNOX PI4 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nSCHED HIGH RUN\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 474 (python3)\\n\\nARM_SYSTEM_STATS {\"native_calls\":0,\"native_blocks\":0,\"guard_exits\":0,\"tcg_fallbacks\":0}\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n"
+    },
+    {
+      "profile": "pi4",
+      "observer_exit": 0,
+      "runner": "Run 1/1  raw image SHA-256 = f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0\n  argv = [\"/mnt/d/codex/arm-speed-lab/build/system/qemu-system-aarch64\", \"-machine\", \"raspi4b\", \"-accel\", \"tcg\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/batch-bd72722993/pi-irq-serial-sd/kernel8.img\"]\n  QEMU PID = 507\n  UART (29 bytes) = b'JNOX PI4 BOOT\\nJNOX PI4 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 506 (python3)\\n\\nARM_SYSTEM_STATS {\"native_calls\":0,\"native_blocks\":0,\"guard_exits\":0,\"tcg_fallbacks\":0}\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n"
+    },
+    {
+      "profile": "scheduler",
+      "observer_exit": 0,
+      "runner": "Run 1/1  ELF SHA-256 = 5252daab21006f8ef1b752ebaf5fd513e7ed81346c9c9c6352553838b600fa47\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/batch-bd72722993/pi-irq-reg/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 524\n  UART (101 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nSCHED HIGH RUN\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 522 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n"
+    }
+  ],
+  "rejected_pi_features": [
+    {
+      "cargo_args": [
+        "--features",
+        "edf-bench"
+      ],
+      "rejected": true
+    },
+    {
+      "cargo_args": [
+        "--features",
+        "fifo-bench"
+      ],
+      "rejected": true
+    },
+    {
+      "cargo_args": [
+        "--features",
+        "batch-bench"
+      ],
+      "rejected": true
+    },
+    {
+      "cargo_args": [
+        "--features",
+        "sched-bench,cbs-bench"
+      ],
+      "rejected": true
+    },
+    {
+      "cargo_args": [
+        "--all-features"
+      ],
+      "rejected": true
+    }
+  ],
+  "scheduler_sd_manifest": {
+    "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+    "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+    "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+    "config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+    "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+    "kernel8.img": "991b31d9ef332251aa9f8a1adc3570e11d5823aeb1c34dcaff22c428e83bf5ea",
+    "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+    "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593"
+  },
+  "serial_sd_manifest": {
+    "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+    "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+    "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+    "config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+    "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+    "kernel8.img": "f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0",
+    "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+    "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593"
+  },
+  "scheduler_zip_sha256": "07e0c15435ed6fbe8a03fe4ec033e10bf593ee061a0f71095d8fc90c9ea1de2a",
+  "scheduler_zip_bytes": 1361950,
+  "physical_media": "Pending physical board and card readback."
+}

@@ -33,3 +33,5 @@ SCHED PASS
 Physical operation requires the boot firmware to enable the GIC path and delegate the timer to the nonsecure group, and the boot core to have EL1 permission to access the physical timer and counter. In low peripheral mode GICD is at 0xff841000 and GICC at 0xff842000. Record firmware, EEPROM, board revision and raw/ELF hashes. Follow the Pi 4 serial wiring guide. Capture two fully power-cycled starts from the same SD card. For each, receive the exact bytes below within 30 s of power-on and observe 1 s of silence. The board model bypasses the EEPROM and VideoCore firmware. UART establishes marker order. A physical interrupted-PC claim needs an on-board trace or debugger evidence, and timing approval needs separate measurements. [Pi 4 UART](pi4-p1.en.md)
 
 [BCM2711 Arm stub](https://github.com/raspberrypi/tools/blob/master/armstubs/armstub8.S) · [BCM2711 timer / GIC](https://github.com/raspberrypi/linux/blob/rpi-6.18.y/arch/arm/boot/dts/broadcom/bcm2711.dtsi) · [QEMU BCM2838 model](https://github.com/qemu/qemu/blob/master/hw/arm/bcm2838.c)
+
+[EVD-014](../evidence/evd-014.en.md)
