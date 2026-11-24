@@ -349,24 +349,29 @@ impl State {
         }
         self.frames[p] = *f;
         let start = unsafe { ptr::read_volatile(&raw const native_vruntime_return_tick) };
+        // Reading GICC_IAR acknowledges the level-sensitive PPI. Keep its
+        // source asserted through acknowledgement. SVC never reads the IAR.
+        let iar = if vector == 0x480 {
+            u64::from(read(CPU + 12))
+        } else {
+            u64::MAX
+        };
         let compare: u64;
         let ctl: u64;
         unsafe {
             asm!("mrs {},cntp_cval_el0","mrs {},cntp_ctl_el0","msr cntp_ctl_el0,xzr","isb",out(reg)compare,out(reg)ctl,options(nostack))
         }
-        let iar = if vector == 0x480 {
-            let iar = read(CPU + 12);
+        if vector == 0x480 {
             if iar & 1023 != 30 || ctl & 7 != 5 || entry < compare {
+                // Failure-only row: no interval, service or return is credited.
+                row(13, entry, p, &[l.sequence, vector, iar, ctl, compare, start, f.elr]);
                 fail(11)
             }
-            write(CPU + 16, iar);
+            write(CPU + 16, iar as u32);
             unsafe { asm!("dsb sy", options(nostack)) };
-            iar as u64
-        } else if vector == 0x400 && f.esr >> 26 == 0x15 && f.esr & 0xffff == 0x4a01 {
-            u64::MAX
-        } else {
+        } else if vector != 0x400 || f.esr >> 26 != 0x15 || f.esr & 0xffff != 0x4a01 {
             fail(12)
-        };
+        }
         if start == 0
             || compare
                 != start
