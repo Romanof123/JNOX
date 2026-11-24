@@ -2,9 +2,9 @@
 
 [English](README.md) · 한국어
 
-J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Rust로 개발하는 경량 실시간 마이크로커널입니다.
+J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Rust로 개발하는 실시간 운영체제입니다. 예측 가능한 실행 시간과 격리, 멀티스레딩, 응용 프로그램과 장치 드라이버 지원을 우선합니다.
 
-J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 서비스 격리, 네이티브 Rust 드라이버, Linux 드라이버를 위한 별도 호환 영역을 설계 목표로 삼습니다.
+J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 중심에는 작은 신뢰 커널과 격리된 서비스가 있습니다. 네이티브 Rust 드라이버와 Linux 드라이버용 별도 호환 영역을 지원하는 것이 목표입니다.
 
 AArch64 QEMU `virt`에서 네이티브 v1 SDK로 빌드한 정적 C 실행 파일 하나가 사용자 모드(EL0)에 진입해 37을 계산하고 종료값 37을 전달했습니다. 표준 출력 쓰기 시스템 호출은 `-ENOSYS`를 반환했고 출력은 0바이트였습니다. [네이티브 C 시작·종료 검증](docs/native-el0-startup.md)
 

@@ -26,7 +26,7 @@ All ranges are half-open. Unions count overlapping bytes once within each metric
 
 ## CHG-090 · Minimal virt engineering acceptance
 
-For #4 and #21, apply the two REQ-009 ceilings to one named linked configuration. Both limits are inclusive. This decision defines the static portion of VER-009 under DES-001 and DES-004. Independent artifact results remain pending. [REQ-009](requirements.en.md) · [VER-009](verification-plan.en.md)
+CHG-090 defined two inclusive limits for the single linked configuration below (#4, #21). Under CHG-111 (#285), these limits and the comparison procedure apply only when running this optional historical benchmark. Product profiles use their own allocations under DES-001 and DES-004. [REQ-009](requirements.en.md) · [VER-009](verification-plan.en.md)
 
 | Role | Exact configuration |
 |---|---|
