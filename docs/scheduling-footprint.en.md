@@ -53,3 +53,4 @@ For either input, [the virt linker script](../kernel/link.ld) aligns the output 
 The same linker script produced a valid retained .rodata section that the original checker rejected. SHF_GNU_RETAIN (0x200000) controls linker retention and is permitted alongside the required section type and access flags. Its presence does not change byte accounting.
 
 The valid original minimal and fixed-RR measurements remain part of the first-gate record. The corrected checker must reproduce their byte counts and deltas from those same ELFs. Both input positions must reject each off-boundary BSS control, and retained read-only constants must reproduce the ordinary read-only accounting.
+The first independent static measurements and the original checker findings for #188 are recorded in [EVD-090](evidence/evd-090-virt-static-first.en.md).

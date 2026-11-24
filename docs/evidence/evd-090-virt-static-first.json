@@ -1,0 +1,145 @@
+{
+  "evidence": "EVD-090",
+  "requirement": "REQ-009",
+  "verification": "VER-009",
+  "change": "CHG-090",
+  "coverage": "static-partial",
+  "issues": [
+    4,
+    21
+  ],
+  "pr": 185,
+  "source": "34454f955a30b0d3be0a4dfc73435a344f2dbff9",
+  "artifact_disposition": "pass",
+  "first_checker_disposition": "repair required",
+  "archive": "evd-090-virt-static-first.zip",
+  "archive_sha256": "8810c8505a82e821f5532d7ff171155f083c09cc633d23d8863bbb0648d72102",
+  "metrics": {
+    "minimal": {
+      "sha256": "c90b56c85e939df91710124411204c0024ebc054b3a35f314fce7a96967d06be",
+      "bytes": {
+        "immutable_span": 275,
+        "writable_span": 16400,
+        "segment_gap": 3821,
+        "ram_span": 20496,
+        "immutable_padding": 0,
+        "writable_padding": 8,
+        "linker_stack": 16384,
+        "load_file": 275,
+        "load_memory": 16675,
+        "elf_file": 71128
+      },
+      "physical_ranges": {
+        "rx": [
+          "0x40200000",
+          "0x40200113"
+        ],
+        "gap": [
+          "0x40200113",
+          "0x40201000"
+        ],
+        "rw": [
+          "0x40201000",
+          "0x40205010"
+        ],
+        "stack": [
+          "0x40201010",
+          "0x40205010"
+        ]
+      },
+      "section_bytes": {
+        ".text": 248,
+        ".rodata": 27,
+        ".data": 0,
+        ".bss": 8,
+        ".stack": 16384
+      }
+    },
+    "fixed-rr": {
+      "sha256": "c852c3f0c53af512c9e3320d256459fa9eb1615a6c7857b25e8c15dc9fde07ec",
+      "bytes": {
+        "immutable_span": 14728,
+        "writable_span": 98672,
+        "segment_gap": 1656,
+        "ram_span": 115056,
+        "immutable_padding": 0,
+        "writable_padding": 8,
+        "linker_stack": 16384,
+        "load_file": 15016,
+        "load_memory": 113400,
+        "elf_file": 94096
+      },
+      "physical_ranges": {
+        "rx": [
+          "0x40200000",
+          "0x40203988"
+        ],
+        "gap": [
+          "0x40203988",
+          "0x40204000"
+        ],
+        "rw": [
+          "0x40204000",
+          "0x4021c170"
+        ],
+        "stack": [
+          "0x40218170",
+          "0x4021c170"
+        ]
+      },
+      "section_bytes": {
+        ".text": 13368,
+        ".rodata": 1360,
+        ".data": 288,
+        ".bss": 81992,
+        ".stack": 16384
+      }
+    },
+    "signed_fixed_rr_minus_minimal": {
+      "immutable_span": 14453,
+      "writable_span": 82272,
+      "segment_gap": -2165,
+      "ram_span": 94560,
+      "immutable_padding": 0,
+      "writable_padding": 0,
+      "linker_stack": 0,
+      "load_file": 14741,
+      "load_memory": 96725,
+      "elf_file": 22968
+    },
+    "minimal_headroom": {
+      "code": 261869,
+      "ram": 2076656
+    }
+  },
+  "classes": {
+    "equal": 0,
+    "code_plus_one": 1,
+    "ram_plus_16": 1,
+    "both_over": 1,
+    "over_budget_comparator": 0,
+    "short_elf": 2
+  },
+  "first_failures": [
+    {
+      "fixture": "unaligned-bss-end.elf",
+      "actual": 0,
+      "expected": 2,
+      "roles": [
+        "minimal",
+        "comparison"
+      ]
+    },
+    {
+      "fixture": "retain.elf",
+      "actual": 2,
+      "expected": 0,
+      "roles": [
+        "minimal",
+        "comparison"
+      ]
+    }
+  ],
+  "host_tests_passed": 7,
+  "guest_runs": 0
+}
