@@ -20,3 +20,5 @@ For the first independent run use new package and capture directories. Pass the 
 python3 tools/native_el0_capture.py NEW_CAPTURE_DIR NEW_DIRECTORY/kernel.elf NEW_DIRECTORY/user.elf examples/portability/native_startup_probe.c SOURCE_REV
 python3 tools/native_el0_replay.py NEW_CAPTURE_DIR SESSION_SHA256
 ```
+
+**Observer correction frozen after the first cold capture.** Preserve the original capture and the original replay result (exit code 1). The kernel emitted its common privileged startup lines before the native-profile lines. Score the complete raw UART against exactly four LF-terminated lines in order: `JNOX M1 BOOT`, `JNOX M1 READY`, `NATIVE EL0 ELF <lowercase user ELF SHA-256>`, and `NATIVE EL0 EXIT 37`. Missing, changed, reordered or additional bytes fail, including application output and CRLF substitutions. Apply the corrected observer to the same retained run.

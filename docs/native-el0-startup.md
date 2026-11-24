@@ -20,3 +20,5 @@
 python3 tools/native_el0_capture.py NEW_CAPTURE_DIR NEW_DIRECTORY/kernel.elf NEW_DIRECTORY/user.elf examples/portability/native_startup_probe.c SOURCE_REV
 python3 tools/native_el0_replay.py NEW_CAPTURE_DIR SESSION_SHA256
 ```
+
+**첫 콜드 캡처 뒤 고정한 관측기 정정 기준.** 최초 캡처와 최초 재생 결과(종료 코드 1)를 보존한다. 커널은 네이티브 프로필 메시지 앞에 공통 특권 부팅 메시지를 출력했다. 원시 UART 전체가 LF로 끝나는 네 줄 `JNOX M1 BOOT`, `JNOX M1 READY`, `NATIVE EL0 ELF <사용자 ELF의 소문자 SHA-256>`, `NATIVE EL0 EXIT 37`과 순서대로 바이트 단위로 일치해야 한다. 누락·변경·순서 뒤바뀜·추가 바이트는 모두 실패이며, 응용 출력과 CRLF 치환도 여기에 포함된다. 정정한 관측기는 같은 최초 캡처에 적용한다.
