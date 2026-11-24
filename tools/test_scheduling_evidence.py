@@ -39,6 +39,8 @@ class SchedulingEvidenceTests(unittest.TestCase):
             self.rows.append((policy, "has-partial-policy-evidence", "EVD-004"))
         self.bilingual(self.docs / "scheduling-policies",
                        "\n".join("| %s · family | rule |" % p for p in POLICIES))
+        self.bilingual(self.docs / "scheduling-release-cases",
+                       "| Policy | Recorded subcases | Remaining work |")
         self.bilingual(self.docs / "requirements", "| REQ-023 | policy selection |")
         self.bilingual(self.docs / "architecture", "## DES-012 policy layers")
         self.bilingual(self.docs / "verification-plan", "| VER-023 | tests |")
@@ -93,6 +95,32 @@ class SchedulingEvidenceTests(unittest.TestCase):
         self.assertEqual(result["policies"]["POL-010"]["catalog_citations_without_policy_edge"],
                          ["EVD-005"])
         self.assertEqual(result["policies"]["POL-003"]["classification"], "analysis_recorded")
+
+    def test_removing_amc_policy_claim_leaves_directly_tested_release_citation(self):
+        claim = ("POL-015", "has-partial-policy-evidence", "EVD-058")
+        self.rows.extend([claim, ("POL-015", "partially-implemented-by", "IMP-058"),
+                          ("IMP-058", "tested-in", "EVD-058"),
+                          ("IMP-058", "partially-verified-by", "VER-023"),
+                          ("VER-023", "has-partial-evidence", "EVD-058")])
+        self.bilingual(self.records / "evd-058", "# EVD-058\nIMP-058")
+        self.bilingual(self.docs / "scheduling-release-cases",
+                       "| POL-015 | [EVD-058](evidence/ordinary-amc-finite-first.en-ko.md) | M5 |")
+        self.assertEqual(self.report()["findings"], [])
+        self.rows.remove(claim)
+        self.assertEqual(self.report()["findings"], [
+            "catalog and direct implementation cite EVD-058 without a typed POL-015 evidence link"])
+
+    def test_release_context_and_pending_work_do_not_assign_ownership(self):
+        self.rows.remove(("POL-002", "has-switch-evidence", "EVD-004"))
+        self.rows.remove(("POL-002", "has-partial-policy-evidence", "EVD-004"))
+        self.rows.remove(("POL-010", "has-partial-policy-evidence", "EVD-004"))
+        self.bilingual(self.docs / "scheduling-release-cases",
+                       "| POL-002 | [EVD-090](static.md) | [EVD-004](board-plan.md) |\n"
+                       "| POL-010 | [EVD-004](shared.md) | product workload |")
+        result = self.report()
+        self.assertEqual(result["findings"], [])
+        self.assertNotIn("EVD-090", result["evidence"])
+        self.assertEqual(result["policies"]["POL-010"]["classification"], "no_classified_record")
 
     def test_unrelated_verification_evidence_cannot_complete_path(self):
         self.rows.remove(("VER-023", "has-partial-evidence", "EVD-004"))

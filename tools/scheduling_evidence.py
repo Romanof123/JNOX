@@ -127,7 +127,16 @@ def catalogs(root, findings):
     for policy in POLICIES:
         if policy not in definitions["POL"]:
             findings.add("missing bilingual scheduling catalog definition for " + policy)
-    return definitions, cited
+    release_citations = defaultdict(set)
+    for suffix in (".md", ".en.md"):
+        matrix = root / "docs" / ("scheduling-release-cases" + suffix)
+        for line in matrix.read_text(encoding="utf-8-sig").splitlines():
+            cells = line.split("|", 3)
+            if len(cells) == 4 and not cells[0].strip():
+                policy = cells[1].strip()
+                if policy in POLICIES:
+                    release_citations[policy].update(EVD_LINK.findall(cells[2]))
+    return definitions, cited, release_citations
 
 
 def check_graph(trace, scope, findings):
@@ -191,7 +200,7 @@ def audit(root):
     trace = Trace(root / "trace/links.csv")
     outgoing, incoming = trace.outgoing, trace.incoming
     findings = set()
-    definitions, cited = catalogs(root, findings)
+    definitions, cited, release_citations = catalogs(root, findings)
     scope = set(POLICIES)
     policies, evidence = {}, {}
     for policy in POLICIES:
@@ -220,7 +229,10 @@ def audit(root):
                 direct_paths[imp][ver] = sorted(matched)
                 if not matched:
                     findings.add("no matching evidence for %s %s %s" % (policy, imp, ver))
-        for evd in sorted(cited_only & directly_tested):
+        # Release rows also cite contextual records. Only a direct tested-in
+        # path puts such a citation within this policy's ownership check.
+        missing_claims = (cited_only | (release_citations[policy] - claimed)) & directly_tested
+        for evd in sorted(missing_claims):
             findings.add("catalog and direct implementation cite %s without a typed %s evidence link"
                          % (evd, policy))
         for evd in sorted(claimed | cited_only | directly_tested):
