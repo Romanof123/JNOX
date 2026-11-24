@@ -288,6 +288,17 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_deadline)");
     println!("cargo::rustc-check-cfg=cfg(jnox_deadline_trace)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_deadline_owner_cap)");
+    if let Some(value) = selector("JNOX_DEADLINE_OWNER_CAP") {
+        assert!(profile.as_deref() == Some("deadline")
+            && matches!(app.as_deref(), Some("ordinary-edf-supply" | "ordinary-llf-supply")),
+            "JNOX_DEADLINE_OWNER_CAP requires an ordinary finite supply profile");
+        assert!(!value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()),
+            "owner cap must be an unsigned decimal integer");
+        let ceiling: u64 = value.parse().expect("owner cap exceeds u64");
+        println!("cargo::rustc-env=JNOX_OWNER_CEILING={ceiling}");
+        println!("cargo::rustc-cfg=jnox_deadline_owner_cap");
+    }
     if let Some(value) = selector("JNOX_DEADLINE_TRACE") {
         assert!(value == "1" && profile.as_deref() == Some("deadline"), "JNOX_DEADLINE_TRACE=1 requires ordinary deadline profile");
         println!("cargo::rustc-cfg=jnox_deadline_trace");

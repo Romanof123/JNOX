@@ -71,3 +71,63 @@ fn withheld_incumbent_keeps_its_turn_and_remaining() {
         assert_eq!(model.decide(3), Ok(Some(1)));
     }
 }
+
+#[test]
+fn owner_window_dimensions_and_checked_arithmetic() {
+    for (q, cells, width) in [(0, 2, 1), (2, 0, 1), (2, 2, 0), (2, 2, 5)] {
+        assert_eq!(owner_window_bound(q, cells, width, 0), Err(Refusal::Grid));
+    }
+    assert_eq!(owner_window_bound(u64::MAX, 2, 1, 0), Err(Refusal::Overflow));
+    assert_eq!(owner_window_bound(1, 1, 1, u64::MAX), Err(Refusal::Overflow));
+    assert_eq!(owner_window_bound(1, u64::MAX, u64::MAX, 0), Ok(u64::MAX));
+    for jobs in 0..=N as u64 {
+        for (q, cells, width, timers) in [
+            (1, 4, 1, 1), (1, 4, 3, 3), (4, 3, 1, 1),
+            (4, 3, 4, 2), (4, 3, 5, 2), (4, 3, 6, 3), (4, 3, 12, 3),
+        ] {
+            assert_eq!(owner_window_bound(q, cells, width, jobs), Ok(timers + jobs));
+        }
+    }
+}
+
+#[test]
+fn owner_window_exhaustive_irq_offsets_and_early_completions() {
+    // Enumerate every placement, including completions at identical counter
+    // ticks and on either side of a timer. Such coincidences enlarge the
+    // admissible set, making this a conservative event-count oracle.
+    for q in 1..=3u64 {
+        for cells in 1..=3u32 {
+            let domain = q * u64::from(cells);
+            for jobs in 0..=2u32 {
+                let mut peaks = vec![0u64; domain as usize + 1];
+                for offsets in 0..q.pow(cells) {
+                    for completions in 0..domain.pow(jobs) {
+                        let mut counts = vec![0u64; domain as usize];
+                        for cell in 0..cells {
+                            let tick = u64::from(cell) * q + offsets / q.pow(cell) % q;
+                            counts[tick as usize] += 1;
+                        }
+                        for job in 0..jobs {
+                            let tick = completions / domain.pow(job) % domain;
+                            counts[tick as usize] += 1;
+                        }
+                        for start in 0..counts.len() {
+                            let mut events = 0;
+                            for (offset, count) in counts[start..].iter().enumerate() {
+                                events += count;
+                                peaks[offset + 1] = peaks[offset + 1].max(events);
+                            }
+                        }
+                    }
+                }
+                for width in 1..=domain {
+                    assert_eq!(
+                        owner_window_bound(q, u64::from(cells), width, u64::from(jobs)),
+                        Ok(peaks[width as usize]),
+                        "q={q} cells={cells} width={width} jobs={jobs}",
+                    );
+                }
+            }
+        }
+    }
+}
