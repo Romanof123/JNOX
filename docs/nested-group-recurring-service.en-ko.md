@@ -21,3 +21,5 @@ Freeze four independent first cold boots in order: original ordinary plain, recu
 기본 일반, 반복 일반, 기본 진단, 반복 진단 순서로 각각 최초 부팅을 보존한다. 진단은 원시 저널과 외부 예외 추적, 스택·프레임 및 복귀를 대조한다. 서로 다른 세 창에서 부모 0의 예산 소진, 동료 부모의 두 번 만료, 세 번의 실제 유휴 복귀, 적어도 두 번의 양수 부모 부채를 요구한다. 각 경과량은 실행 경로 세 단계에 한 번씩만 부과하며 유휴에는 부과하지 않는다. 같은 부모의 형제는 부모 소진 동안 실행할 수 없다. 타이머 반응 P/8과 관측 간 최대 8주기를 유지한다. 기본 진단 8행, 반복 진단 14행을 각각 검사한다. 산술 경계의 합성 호스트 대조와 제품 수용·실기 지연·격리 판정은 별도 근거로 관리한다.
 
 [Independent first runs, signed ledger and originals / 최초 실행과 독립 검증 기록](evidence/recurring-hierarchical-first.en-ko.md).
+
+[Combined telemetry and groups integration / 배치 및 그룹 통합 실행](evidence/cross-profile-integration.en-ko.md).
