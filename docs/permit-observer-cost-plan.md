@@ -30,3 +30,19 @@ The frozen installed /usr/share/qemu/trace-events-all declares those six names p
 - 양쪽 모두 부팅 전부터 같은 실시간 증분 감시를 사용해 분할된 줄을 조립한다. bit0을 대상으로 한 마스킹 데이터 별칭에 ON 쓰기, 실제 “setting output 0 to 1”, 출력이 활성인 high 갱신, F의 high 읽기, 게스트 차단 경보 중 하나라도 관측하면 즉시 QEMU를 멈추고 나머지 실행을 중단한다. 첫 원본 줄·장치·시각과 사용 가능한 게스트 독립 OFF 처리 구간을 남긴다. 종료한 에뮬레이터의 사후 읽기를 추정하지 않는다. 부팅/마지막 OFF만으로 중간 ON을 지우지 않는다. 감시 손실·리셋/방향 누락·장치 귀속 불명은 미입증이다. ON 실제 주입 없이 합성/보관 스트림으로 분할 줄·별칭 ON·단순 방향 쓰기·리셋/순서·ERET/종료 누락과 R 읽기 생략을 대조한다.
 - 실제 예외 순서·ELF PC·작업·프레임을 게스트 기록에 연결하고 IRQ 지연은 위상 인덱스 대신 이전 행 2 절대 비교와 행 3 진입을 쓴다. 게스트 쓰기 순번·전후 readback·시작/끝·가상 행 84를 장치 쓰기/단자 사건과 대조한다. QEMU 로그에는 게스트 카운터 시각이 없으므로 실제 전이 틱·전기적 연속 OFF·교차 스트림 지연은 미입증이다. R은 외부 읽기 값을 검증할 수 없다.
 - 첫 비교→IRQ→선택/복귀→판정→과금 및 첫 차단, 이후 도달한 단계와 미실행 기회를 따로 기록한다. 발행·수면·깨움·전달·명령을 실제로 관측한 경우만 짝별 R−F 차이를 산출한다. 제어 250 µs·송신 750 µs, 0.5/1/5/10 ms 및 진단 가드 250/25/50/15/50/25 µs를 유지한다. 62.5 MHz에서 625000/937500틱의 실제 단일 시각 증거를 요구한다. 이 시험은 OFF 전용이며 수용·재무장·제품 성능 판정이 없다. 두 팔이 같은 지점에서 실패하면 가장 큰 실측 콜드 구간을 별도 소스 변경 대상으로 삼는다. 결과 차이가 나더라도 호스트 부하와 저장소 효과를 통제하기 전에는 로그량·동일 스케줄·호스트 경과만으로 인과를 결론내리지 않는다.
+
+## Host collector source / 호스트 수집기 소스
+
+[Collector](../tools/permit_observer_cost.py) · [stream guard and clock join](../tools/permit_cost_guard.py) · [synthetic vectors](../tools/permit_cost_guard_vectors.py) · [change #140](https://github.com/Romanof123/JNOX/pull/140)
+
+Extract the four original `{rm,dm}-off-{1,2}/kernel.elf` members of the EVD-054 nested first-verification.tar.gz to a read-only input directory. Freeze and collect in separate commands on the original native Linux ext4 host. Preserve the printed SHA-256 independently before launching. The offline parser vectors require Python only and never launch QEMU.
+
+~~~sh
+python3 tools/permit_cost_guard_vectors.py
+python3 tools/permit_observer_cost.py freeze /path/to/extracted /tmp/permit061-first
+python3 tools/permit_observer_cost.py collect /tmp/permit061-first FROZEN_SHA256
+~~~
+
+Replace the final placeholder with the actual hexadecimal digest. Each frozen case reuses verified image bytes and captures the original mechanism and UART files, including unread bytes after termination. A signaling interruption, timeout, coverage failure, malformed/oversized record or containment alarm stops the cohort; retain remaining positions as unlaunched. External ON immediately terminates the emulator upon live host detection; native logging and host polling have unbounded real-time latency. It cannot establish a guest tick for that edge. An OFF-only result is evidence for the captured interval under this model. Use per-position first service/phase/IRQ and pairwise R−F deltas; missing intervals are null. There is no positive operational credit. The approved source trace is CHG-061 → REQ-002/003/005/023 → DES-003/006/012 → VER-002/003/005/023. The observation configuration and synthetic controls await independent execution and review; no new evidence ID is assigned.
+
+EVD-054의 중첩 first-verification.tar.gz에서 OFF ELF 네 개를 원래 디렉터리명으로 추출한다. 기존 호스트의 Linux ext4에서 위 freeze 명령을 실행해 출력 해시를 독립 보존한 뒤 collect에 실제 해시를 전달한다. 합성 대조는 QEMU를 실행하지 않는다. 수집기는 최초 경보·누락·시간초과·신호 중단에서 종료해 남은 자리를 미실행으로 보존한다. 실제 출력 ON 감지 후 에뮬레이터를 중지해도 호스트 폴링 지연과 로그 출력 지연은 게스트 시각 증거가 아니다. R에는 모델 읽기 기록이 없고, 짝 중 도달하지 않은 구간의 차이는 null이다. 이전 EVD-054 판정을 유지하며 독립 실행 전 새 증거 ID나 운영 자격을 부여하지 않는다.

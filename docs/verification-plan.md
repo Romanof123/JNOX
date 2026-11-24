@@ -132,3 +132,5 @@ VER-002/005/023 · 콜드 24회 중 22회가 억제됐고 기술자 DM 2회는 �
 CHG-055 · REQ-002/003/005/023 · [일반 허가 게시 및 독립 명령 시각 계획](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
 
 IMP-054 · VER-002/003/005. 운영 0/20. 결정적 OFF 4건에서 허가 28건을 수락했고 출력은 OFF였다. [EVD-054](evidence/evd-054.md)
+
+CHG-061 · [OFF 전용 비교 수집기와 미실행 합성 대조](permit-observer-cost-plan.md) · VER-002/003/005/023

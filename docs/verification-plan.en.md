@@ -132,3 +132,5 @@ VER-002/005/023 · Twenty-two of 24 boots inhibited. Two descriptor DM boots acc
 CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
 
 IMP-054 · VER-002/003/005. Operational qualification was 0/20. Four deterministic OFF runs accepted 28 permits and remained OFF. [EVD-054](evidence/evd-054.en.md)
+
+CHG-061 · [OFF-only comparison collector and pending synthetic controls](permit-observer-cost-plan.md) · VER-002/003/005/023
