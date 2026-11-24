@@ -99,6 +99,8 @@ The minimum safety configuration can omit the Linux user-space ABI service. Dire
 
 The kernel owns the ready queue and execution contexts. Selectors order eligible tasks. Budget, weighted-service and time-partition modules compute which task or group may run and for how long. The timer, preemption points, context restoration and protection boundaries have separate integration and acceptance steps. The minimum boot image and extended policy bench use different build profiles. [Policy scope and conditions](scheduling-policies.en.md) · [Round-robin execution test](m1-rr.en.md)
 
+The sampled EDF/LLF profile accounts elapsed service to the designated incumbent and permits at most one involuntary switch at a grid boundary. Its evidence separates dispatch after completion from preemption of an active context. [Decision grid and tie rules](m1-deadline.en.md)
+
 ## DES-013 IPC ownership and service boundaries
 
 The kernel owns endpoint authority, wait and wake transitions, and bounded cross-domain transfer. User services own socket transports, publish/subscribe delivery and protocol-specific queues. The safety receiver checks protected data and controls expiry under DES-010. Each profile binds pool sizes, resource accounting, timeouts and restart generations before implementation. [IPC design and acceptance](ipc-mechanisms.en.md)

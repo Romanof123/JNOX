@@ -1,0 +1,236 @@
+{
+  "commit": "21d82d4c78cc27d933558060b74e6119fb4cb8b5",
+  "tree": "f0cad924468d09ab1343991927a4aec39f935a44",
+  "elf_sha256": "252856aa78e77ed5c2a7b3278252751b56d4a57a97f646c0098ab627ec61e1e1",
+  "cold_launches": 1,
+  "first_verdict": "PASS. Native observer exit 0. Exact 346-byte UART matches the public 16-line transcript. Observer reported host termination after quiet window and one cold boot. Recorded before trace, counter or implementation access.",
+  "native_observer_exit": 0,
+  "qmp_at_end_of_quiet": {
+    "status": "running",
+    "singlestep": false,
+    "running": true
+  },
+  "quiet_seconds": 0.1,
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nDEADLINE EDF A FIRST\nDEADLINE EDF IRQ C READY\nDEADLINE EDF C FIRST\nDEADLINE EDF A RESUMED\nDEADLINE EDF B FIRST\nDEADLINE LLF B FIRST\nDEADLINE LLF B TIE RETAINED\nDEADLINE LLF T6 CROSSOVER\nDEADLINE LLF A FIRST\nDEADLINE LLF B RESUMED T6\nDEADLINE LLF IRQ C READY\nDEADLINE LLF C FIRST\nDEADLINE LLF B RESUMED T7\nDEADLINE PASS\n",
+  "uart_bytes": 346,
+  "uart_sha256": "2203dba50eb388a281fc7ecc8eb2e4fe5ecd20c9a3798ba7d73e7d4a1a9e853b",
+  "observer_stdout": "Run 1/1  ELF SHA-256 = 252856aa78e77ed5c2a7b3278252751b56d4a57a97f646c0098ab627ec61e1e1\n  argv = [\"/tmp/jnox-witness-3VoHsc\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/deadline-2d59261b56/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 480\n  UART (346 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nDEADLINE EDF A FIRST\\nDEADLINE EDF IRQ C READY\\nDEADLINE EDF C FIRST\\nDEADLINE EDF A RESUMED\\nDEADLINE EDF B FIRST\\nDEADLINE LLF B FIRST\\nDEADLINE LLF B TIE RETAINED\\nDEADLINE LLF T6 CROSSOVER\\nDEADLINE LLF A FIRST\\nDEADLINE LLF B RESUMED T6\\nDEADLINE LLF IRQ C READY\\nDEADLINE LLF C FIRST\\nDEADLINE LLF B RESUMED T7\\nDEADLINE PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 480 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "observer_stderr": "",
+  "artifact_sha256": {
+    "at-host-stop.json": "f7242fface26a10142e7cb5f4c3ea26a2feed4719a05f9db4ca3a2a9f6a41750",
+    "clock.bin": "dafe09f6e3c72f54a8a172f793a6827ddfc9df2fc96c42c1b81c44c897b21e6f",
+    "exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "first-verdict.txt": "b136c54f65701dfa9233b7293848b001371f5e530a90fd101b7cfb0bd18e4d89",
+    "int.trace": "3be6f790b49332646b9b03f6694dfd38d8ec59dc49f08a6484da2c650de9534e",
+    "qemu.json": "d37504f042b04c35a5296edae6cccad9e17a13a2a3218727256a363a2651e0a9",
+    "run.sh": "d739968766c96c67403a728a1ee51e4801a0d6e063a164beb0c41b3d98661474",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "9cd5d5580159cd81c34f77b63c9b943243c1939ef1bc12f206045cee71058775"
+  },
+  "clock_address": "0x4021d110",
+  "clock_bytes_hex": "a0acb90300000000e31d010000000000105e5f0000000000366a630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0acb903000000009f2c6c0000000000105e5f00000000005d2ecf000000000065202d0100000000c96d8c0100000000e11fec01000000009e3d4b02000000000dc5aa02000000005bc1090300000000",
+  "clock_layout": "Two ten-u64 little-endian records. Counts are guest physical timer ticks.",
+  "samples": [
+    {
+      "event": "EDF1",
+      "frequency_Hz": 62500000,
+      "origin_counts": 73187,
+      "period_counts": 6250000,
+      "observed_counts": 6515254,
+      "inclusive_lower_counts": 6323187,
+      "exclusive_upper_counts": 12573187,
+      "lateness_counts": 192067,
+      "lateness_us": 3073.072,
+      "in_window": true
+    },
+    {
+      "event": "LLF1",
+      "frequency_Hz": 62500000,
+      "origin_counts": 7089311,
+      "period_counts": 6250000,
+      "observed_counts": 13577821,
+      "inclusive_lower_counts": 13339311,
+      "exclusive_upper_counts": 19589311,
+      "lateness_counts": 238510,
+      "lateness_us": 3816.16,
+      "in_window": true
+    },
+    {
+      "event": "LLF2",
+      "frequency_Hz": 62500000,
+      "origin_counts": 7089311,
+      "period_counts": 6250000,
+      "observed_counts": 19734629,
+      "inclusive_lower_counts": 19589311,
+      "exclusive_upper_counts": 25839311,
+      "lateness_counts": 145318,
+      "lateness_us": 2325.088,
+      "in_window": true
+    },
+    {
+      "event": "LLF3",
+      "frequency_Hz": 62500000,
+      "origin_counts": 7089311,
+      "period_counts": 6250000,
+      "observed_counts": 25980361,
+      "inclusive_lower_counts": 25839311,
+      "exclusive_upper_counts": 32089311,
+      "lateness_counts": 141050,
+      "lateness_us": 2256.8,
+      "in_window": true
+    },
+    {
+      "event": "LLF4",
+      "frequency_Hz": 62500000,
+      "origin_counts": 7089311,
+      "period_counts": 6250000,
+      "observed_counts": 32251873,
+      "inclusive_lower_counts": 32089311,
+      "exclusive_upper_counts": 38339311,
+      "lateness_counts": 162562,
+      "lateness_us": 2600.992,
+      "in_window": true
+    },
+    {
+      "event": "LLF5",
+      "frequency_Hz": 62500000,
+      "origin_counts": 7089311,
+      "period_counts": 6250000,
+      "observed_counts": 38485406,
+      "inclusive_lower_counts": 38339311,
+      "exclusive_upper_counts": 44589311,
+      "lateness_counts": 146095,
+      "lateness_us": 2337.52,
+      "in_window": true
+    },
+    {
+      "event": "LLF6",
+      "frequency_Hz": 62500000,
+      "origin_counts": 7089311,
+      "period_counts": 6250000,
+      "observed_counts": 44745997,
+      "inclusive_lower_counts": 44589311,
+      "exclusive_upper_counts": 50839311,
+      "lateness_counts": 156686,
+      "lateness_us": 2506.976,
+      "in_window": true
+    },
+    {
+      "event": "LLF7",
+      "frequency_Hz": 62500000,
+      "origin_counts": 7089311,
+      "period_counts": 6250000,
+      "observed_counts": 50970971,
+      "inclusive_lower_counts": 50839311,
+      "exclusive_upper_counts": 57089311,
+      "lateness_counts": 131660,
+      "lateness_us": 2106.56,
+      "in_window": true
+    }
+  ],
+  "events": [
+    {
+      "type": "IRQ",
+      "elr": "0x4020129c",
+      "elr_symbol": "deadline_edf_a_begin",
+      "return_pc": "0x4020150c",
+      "return_symbol": "deadline_c_entry"
+    },
+    {
+      "type": "SVC",
+      "elr": "0x40201530",
+      "elr_symbol": "deadline_c_after_exit",
+      "return_pc": "0x4020129c",
+      "return_symbol": "deadline_edf_a_begin"
+    },
+    {
+      "type": "SVC",
+      "elr": "0x4020130c",
+      "elr_symbol": "deadline_a_after_exit",
+      "return_pc": "0x40201310",
+      "return_symbol": "deadline_b_entry"
+    },
+    {
+      "type": "SVC",
+      "elr": "0x40201508",
+      "elr_symbol": "deadline_b_after_exit",
+      "return_pc": "0x40201310",
+      "return_symbol": "deadline_b_entry"
+    },
+    {
+      "type": "IRQ",
+      "elr": "0x40201360",
+      "elr_symbol": "deadline_llf_b_hold_begin",
+      "return_pc": "0x40201360",
+      "return_symbol": "deadline_llf_b_hold_begin"
+    },
+    {
+      "type": "IRQ",
+      "elr": "0x40201360",
+      "elr_symbol": "deadline_llf_b_hold_begin",
+      "return_pc": "0x40201360",
+      "return_symbol": "deadline_llf_b_hold_begin"
+    },
+    {
+      "type": "IRQ",
+      "elr": "0x40201360",
+      "elr_symbol": "deadline_llf_b_hold_begin",
+      "return_pc": "0x40201360",
+      "return_symbol": "deadline_llf_b_hold_begin"
+    },
+    {
+      "type": "IRQ",
+      "elr": "0x40201360",
+      "elr_symbol": "deadline_llf_b_hold_begin",
+      "return_pc": "0x40201360",
+      "return_symbol": "deadline_llf_b_hold_begin"
+    },
+    {
+      "type": "IRQ",
+      "elr": "0x40201360",
+      "elr_symbol": "deadline_llf_b_hold_begin",
+      "return_pc": "0x40201360",
+      "return_symbol": "deadline_llf_b_hold_begin"
+    },
+    {
+      "type": "IRQ",
+      "elr": "0x40201400",
+      "elr_symbol": "deadline_llf_b_cross_begin",
+      "return_pc": "0x4020124c",
+      "return_symbol": "deadline_a_entry"
+    },
+    {
+      "type": "SVC",
+      "elr": "0x4020130c",
+      "elr_symbol": "deadline_a_after_exit",
+      "return_pc": "0x40201400",
+      "return_symbol": "deadline_llf_b_cross_begin"
+    },
+    {
+      "type": "IRQ",
+      "elr": "0x40201498",
+      "elr_symbol": "deadline_llf_b_negative_begin",
+      "return_pc": "0x4020150c",
+      "return_symbol": "deadline_c_entry"
+    },
+    {
+      "type": "SVC",
+      "elr": "0x40201530",
+      "elr_symbol": "deadline_c_after_exit",
+      "return_pc": "0x40201498",
+      "return_symbol": "deadline_llf_b_negative_begin"
+    },
+    {
+      "type": "SVC",
+      "elr": "0x40201508",
+      "elr_symbol": "deadline_b_after_exit",
+      "return_pc": null,
+      "return_symbol": null
+    }
+  ],
+  "irq_count": 8,
+  "svc_1_count": 6,
+  "initial_return_pc": "0x4020124c",
+  "interpretation": "EDF C completion restores interrupted A. LLF B retains identical PC on ticks 1 through 5 including equality. At tick 6 IRQ dispatches A and its completion restores B crossover PC. At tick 7 IRQ dispatches C and its completion restores B negative-laxity PC. Final B SVC has no subsequent ERET before termination. QMP observed running after observer quiet window before pmemsave and terminate.",
+  "limitations": "One single-core QEMU TCG cold boot. Running status is an endpoint observation. No wall-clock, hardware deadline, WCET or production safety claim. Workload release and completion times and service estimates are logical."
+}

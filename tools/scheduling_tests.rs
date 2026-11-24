@@ -568,3 +568,8 @@ mod batch_tests {
         }
     }
 }
+
+#[path = "../kernel/src/deadline_policy.rs"]
+mod deadline_policy;
+#[path = "deadline_tests.rs"]
+mod deadline_tests;

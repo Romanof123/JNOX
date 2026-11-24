@@ -1,0 +1,41 @@
+[
+  {
+    "profile": "deadline",
+    "features": [
+      "--features",
+      "deadline-bench,periodic-preempt-bench,partition-bench"
+    ],
+    "elf_sha256": "918fd0b939bd9cc7d178dcc119e876d4b169f1a556357968f5b96c3e09f51589",
+    "observer_exit": 0,
+    "uart": "UART (346 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nDEADLINE EDF A FIRST\\nDEADLINE EDF IRQ C READY\\nDEADLINE EDF C FIRST\\nDEADLINE EDF A RESUMED\\nDEADLINE EDF B FIRST\\nDEADLINE LLF B FIRST\\nDEADLINE LLF B TIE RETAINED\\nDEADLINE LLF T6 CROSSOVER\\nDEADLINE LLF A FIRST\\nDEADLINE LLF B RESUMED T6\\nDEADLINE LLF IRQ C READY\\nDEADLINE LLF C FIRST\\nDEADLINE LLF B RESUMED T7\\nDEADLINE PASS\\n'"
+  },
+  {
+    "profile": "batch",
+    "features": [
+      "--features",
+      "batch-bench,deadline-bench"
+    ],
+    "elf_sha256": "f30ed0982f301a9f4cdd75d3ef84b55a97ad82bd2eed2663ae24b66d41d41dae",
+    "observer_exit": 0,
+    "uart": "UART (301 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nBATCH SJF A FIRST\\nBATCH SJF IRQ B READY\\nBATCH SJF A RETAINED\\nBATCH SJF B FIRST\\nBATCH SRTF A FIRST\\nBATCH SRTF IRQ B READY\\nBATCH SRTF B FIRST\\nBATCH SRTF A RESUMED\\nBATCH HRRN A FIRST\\nBATCH HRRN IRQ C READY\\nBATCH HRRN A RETAINED\\nBATCH HRRN B FIRST\\nBATCH HRRN C FIRST\\nBATCH PASS\\n'"
+  },
+  {
+    "profile": "coop",
+    "features": [
+      "--all-features"
+    ],
+    "elf_sha256": "2fda1fbb12de5422f8fcfc120c2b24a96e1021fe9532a668491e68db74a91d97",
+    "observer_exit": 0,
+    "uart": "UART (163 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCOOP A FIRST\\nCOOP IRQ B READY\\nCOOP A RETAINED\\nCOOP B FIRST\\nCOOP A RESUMED\\nCOOP B WOKEN\\nCOOP B RESUMED\\nEVENT 1\\nEVENT 2\\nEVENT 3\\nCOOP PASS\\n'"
+  },
+  {
+    "profile": "edf",
+    "features": [
+      "--features",
+      "edf-bench"
+    ],
+    "elf_sha256": "21fd814504539f1643bf8d2f378fb7393fa0d079726534c4994099903846ddf1",
+    "observer_exit": 0,
+    "uart": "UART (101 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nEDF URGENT RUN\\nSCHED LOW RESUMED\\nSCHED PASS\\n'"
+  }
+]
