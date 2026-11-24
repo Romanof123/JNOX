@@ -1,6 +1,6 @@
 # Scheduling policies and release criteria
 
-[한국어](scheduling-policies.md) · English
+[한국어](scheduling-policies.md) · [Release cases and remaining verification](scheduling-release-cases.en.md)
 
 J-NOX profiles select how a CPU chooses its next thread, which events may preempt it, where it may run, and how much CPU time it may use. For example, a control profile can pin threads to one CPU, assign priorities by period, use FIFO within a priority, and apply a ceiling to a shared mutex. An extended profile can schedule weighted service threads inside a CPU reservation. Each combination has its own configuration and verification record.
 
