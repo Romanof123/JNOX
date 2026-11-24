@@ -212,7 +212,7 @@ TRANSCRIPTS = {
     "amc": None,  # Counter values vary per boot. Freeze the validated UART before quiet.
     "vruntime": DynamicTranscript.VRUNTIME,
     "proportional": BOOT_TRANSCRIPT + (
-        b"LOTTERY SEED A\nLOTTERY SEED B\nSTRIDE SERVICE JOIN\nPROPORTIONAL PASS\n"
+        b"LOTTERY SEED A\nLOTTERY SEED B\nSTRIDE SERVICE JOIN\nSTRIDE DELAY CHARGED\nPROPORTIONAL PASS\n"
     ),
     "multilevel": BOOT_TRANSCRIPT + (
         b"MLQ STRICT FOUR\nMLFQ YIELDS DEMOTED\nMLFQ BOOST ORDER\nMULTILEVEL PASS\n"

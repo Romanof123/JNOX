@@ -12,15 +12,17 @@ const WEIGHTS: [u8; 3] = [1, 2, 4];
 const SEEDS: [u64; 2] = [1, 2];
 const WINDOW: usize = 32;
 const STRIDE_SLOTS: usize = 16;
-const ROWS: usize = 2 * WINDOW + STRIDE_SLOTS;
+const DELAY_EPOCH: usize = 3;
+const ROWS: usize = 2 * WINDOW + STRIDE_SLOTS + 1;
 const NONE: u8 = 255;
-const SCALE: u32 = 720_720;
+const SCALE: u64 = 720_720;
 
 unsafe extern "C" {
     fn prop_cpu_a();
     fn prop_cpu_b();
     fn prop_cpu_c();
     fn prop_yielder();
+    fn prop_delayed();
     static prop_cpu_a_work: u8;
     static prop_cpu_a_end: u8;
     static prop_cpu_b_work: u8;
@@ -28,6 +30,8 @@ unsafe extern "C" {
     static prop_cpu_c_work: u8;
     static prop_cpu_c_end: u8;
     static prop_yield_return: u8;
+    static prop_delayed_work: u8;
+    static prop_delayed_end: u8;
 }
 
 global_asm!(
@@ -35,7 +39,7 @@ global_asm!(
     frame_size = const size_of::<Frame>(), elr = const offset_of!(Frame, elr),
     fpcr = const offset_of!(Frame, fpcr), tpidr_el1 = const offset_of!(Frame, tpidr_el1),
     tpidr_el0 = const offset_of!(Frame, tpidr_el0), simd = const offset_of!(Frame, simd),
-    irq = sym timer_irq, svc = sym yield_call, fail = sym fail, yield_time = sym YIELD_TIME,
+    irq = sym timer_irq, svc = sym yield_call, fail = sym fail, counter_target = sym COUNTER_TARGET,
 );
 
 #[repr(C)]
@@ -49,20 +53,21 @@ struct Row {
     stop: u64,
     deadline: u64,
     progress: u64,
-    normalization: u32,
-    pass_start: [u32; 3],
-    pass_stop: [u32; 3],
+    normalization: u64,
+    pass_start: [u64; 3],
+    pass_stop: [u64; 3],
+    elapsed: u64,
     epoch: u8,
     slot: u8,
     task: u8,
     ready: u8,
-    charge: u8,
     ppi: u8,
     draw: u8,
     total: u8,
     low: u8,
     high: u8,
-    reserved: [u8; 2],
+    applied: u8, // policy accepted the full elapsed count
+    reserved: [u8; 6],
 }
 
 #[repr(C)]
@@ -96,18 +101,19 @@ static mut proportional_witness: Witness = Witness {
         slot: 0,
         task: 0,
         ready: 0,
-        charge: 0,
+        elapsed: 0,
         ppi: 0,
         draw: 0,
         total: 0,
         low: 0,
         high: 0,
-        reserved: [0; 2],
+        applied: 0,
+        reserved: [0; 6],
     }; ROWS],
 };
-const _: () = assert!(size_of::<Row>() == 88);
-static YIELD_TIME: AtomicU64 = AtomicU64::new(0);
-static mut STACKS: [Stack; 9] = [const { Stack([0; STACK_BYTES]) }; 9];
+const _: () = assert!(size_of::<Row>() == 128);
+static COUNTER_TARGET: AtomicU64 = AtomicU64::new(0);
+static mut STACKS: [Stack; 12] = [const { Stack([0; STACK_BYTES]) }; 12];
 static mut ACTIVE: Option<Bench> = None;
 
 extern "C" fn fail() -> ! {
@@ -146,11 +152,12 @@ struct Bench {
     current: Option<usize>,
     frames: [*mut Frame; 3],
     progress: [u64; 3],
-    served: [u32; 3],
+    served: [u64; 3],
+    selections: [u32; 3],
     ticks: [u64; 2],
     start: u64,
     deadline: u64,
-    pass_start: [u32; 3],
+    pass_start: [u64; 3],
 }
 
 fn with_bench<R>(operation: impl FnOnce(&mut Bench) -> R) -> R {
@@ -177,6 +184,7 @@ impl Bench {
             frames: [ptr::null_mut(); 3],
             progress: [0; 3],
             served: [0; 3],
+            selections: [0; 3],
             ticks,
             start: 0,
             deadline: 0,
@@ -185,7 +193,7 @@ impl Bench {
     }
 
     fn stride(&self) -> bool {
-        self.epoch == SEEDS.len()
+        self.epoch >= SEEDS.len()
     }
 
     fn top(&self, id: usize) -> *mut u8 {
@@ -199,7 +207,9 @@ impl Bench {
     }
 
     fn begin(&mut self) -> *mut Frame {
-        let first: unsafe extern "C" fn() = if self.stride() {
+        let first: unsafe extern "C" fn() = if self.epoch == DELAY_EPOCH {
+            prop_delayed
+        } else if self.stride() {
             prop_yielder
         } else {
             prop_cpu_a
@@ -216,10 +226,13 @@ impl Bench {
                 self.frames[id] = f;
             }
         }
-        require(
-            self.policy
-                .set_ready_mask(if self.stride() { 3 } else { 7 }),
-        );
+        let ready = match self.epoch {
+            0 | 1 => 7,
+            2 => 3,
+            DELAY_EPOCH => 1,
+            _ => fail(),
+        };
+        require(self.policy.set_ready_mask(ready));
         if !self.stride() {
             // Checking the inclusive first and last ticket of every interval
             // must leave the generator untouched for the published seed.
@@ -232,12 +245,9 @@ impl Bench {
         self.dispatch()
     }
 
-    fn passes(&self) -> [u32; 3] {
+    fn passes(&self) -> [u64; 3] {
         if self.stride() {
-            core::array::from_fn(|id| {
-                u32::try_from(self.policy.pass(id).unwrap_or_else(|| fail()))
-                    .unwrap_or_else(|_| fail())
-            })
+            core::array::from_fn(|id| self.policy.pass(id).unwrap_or_else(|| fail()))
         } else {
             [0; 3]
         }
@@ -259,7 +269,8 @@ impl Bench {
         let grant = if self.stride() { 2 } else { 1 };
         self.start = counter();
         self.deadline = self.start + grant * tick;
-        YIELD_TIME.store(self.start + tick, Ordering::Release);
+        let target_ticks = if self.epoch == DELAY_EPOCH { 3 } else { 1 };
+        COUNTER_TARGET.store(self.start + target_ticks * tick, Ordering::Release);
         unsafe {
             asm!("msr cntp_cval_el0, {}", "msr cntp_ctl_el0, {}", "isb",
                 in(reg) self.deadline, in(reg) 1u64, options(nostack, preserves_flags));
@@ -280,36 +291,12 @@ impl Bench {
         require(unsafe { ptr::read_volatile(self.top(id).sub(16).cast::<u64>()) } == cookie);
         let pc = f.elr;
         let progress = f.gpr[20];
-        require(progress > self.progress[id]);
-        self.progress[id] = progress;
         self.frames[id] = frame;
         let elapsed = stopped.checked_sub(self.start).unwrap_or_else(|| fail()) / self.tick();
-        let charge = if ppi == NONE {
-            require(self.stride() && id == 0 && pc == (&raw const prop_yield_return).addr() as u64);
-            require(stopped < self.deadline && elapsed == 1);
-            elapsed as u32
-        } else {
-            let grant = if self.stride() { 2 } else { 1 };
-            require(stopped >= self.deadline && elapsed >= u64::from(grant));
-            let (lo, hi) = match id {
-                0 if !self.stride() => (&raw const prop_cpu_a_work, &raw const prop_cpu_a_end),
-                1 => (&raw const prop_cpu_b_work, &raw const prop_cpu_b_end),
-                2 => (&raw const prop_cpu_c_work, &raw const prop_cpu_c_end),
-                _ => fail(),
-            };
-            require((lo.addr()..hi.addr()).contains(&(pc as usize)));
-            grant
-        };
         let ready = self.policy.ready_mask() as u8;
         let (draw, total, low, high, normalization) = if self.stride() {
             let offset = self.policy.last_normalization().unwrap_or_else(|| fail());
-            (
-                NONE,
-                0,
-                0,
-                0,
-                u32::try_from(offset).unwrap_or_else(|_| fail()),
-            )
+            (NONE, 0, 0, 0, offset)
         } else {
             let (draw, total) = self.policy.last_draw().unwrap_or_else(|| fail());
             let low: u32 = WEIGHTS[..id].iter().copied().map(u32::from).sum();
@@ -317,7 +304,10 @@ impl Bench {
             require(total == 7 && (low..high).contains(&draw));
             (draw as u8, total as u8, low as u8, high as u8, 0)
         };
-        require(self.policy.stop(id, charge));
+        // Charge physical residency, including any interrupt-delivery delay.
+        // The journal retains full-width timing even if the policy cannot
+        // represent the interval, or a normally punctual fixture slot overruns.
+        let applied = u32::try_from(elapsed).is_ok_and(|charge| self.policy.stop(id, charge));
         let pass_stop = self.passes();
         let row = Row {
             pc,
@@ -333,13 +323,14 @@ impl Bench {
             slot: self.slot as u8,
             task: id as u8,
             ready,
-            charge: charge as u8,
+            elapsed,
             ppi,
             draw,
             total,
             low,
             high,
-            reserved: [0; 2],
+            applied: u8::from(applied),
+            reserved: [0; 6],
         };
         unsafe {
             let index = ptr::read_volatile(&raw const proportional_witness.count) as usize;
@@ -347,19 +338,32 @@ impl Bench {
             ptr::write_volatile(&raw mut proportional_witness.rows[index], row);
             ptr::write_volatile(&raw mut proportional_witness.count, index as u64 + 1);
         }
-        self.served[id] += charge;
+        require(applied && progress > self.progress[id]);
+        self.progress[id] = progress;
+        self.check_interval(&row);
+        self.served[id] += elapsed;
+        self.selections[id] += 1;
         self.slot += 1;
-        if self.stride() {
+        if self.epoch == DELAY_EPOCH {
+            let target = self.start + 3 * self.tick();
+            require(f.gpr[10] == target && f.gpr[11] >= target && f.gpr[11] <= stopped);
+            require(row.ready == 1 && self.slot == 1 && row.pass_start == [0; 3]);
+            require(row.pass_stop == [SCALE * elapsed, 0, 0]);
+            uart_write(b"STRIDE DELAY CHARGED\nPROPORTIONAL PASS\n");
+            park()
+        } else if self.stride() {
             self.check_stride(row);
             if self.slot == STRIDE_SLOTS {
                 require(self.served == [2, 4, 8]);
-                uart_write(b"STRIDE SERVICE JOIN\nPROPORTIONAL PASS\n");
-                park()
+                uart_write(b"STRIDE SERVICE JOIN\n");
+                *self = Self::new(DELAY_EPOCH, self.ticks);
+                return self.begin();
             }
         } else if self.slot == WINDOW {
             // Compare exact integer fractions. The two independent 32-quantum
             // windows each allow an absolute count deviation of eight quanta.
-            for (observed, weight) in self.served.into_iter().zip(WEIGHTS) {
+            require(self.served == self.selections.map(u64::from));
+            for (observed, weight) in self.selections.into_iter().zip(WEIGHTS) {
                 require(
                     observed > 0
                         && (observed * 7).abs_diff(WINDOW as u32 * u32::from(weight)) <= 8 * 7,
@@ -376,6 +380,33 @@ impl Bench {
         self.dispatch()
     }
 
+    fn check_interval(&self, row: &Row) {
+        if row.ppi == NONE {
+            require(
+                self.epoch == 2
+                    && row.task == 0
+                    && row.pc == (&raw const prop_yield_return).addr() as u64,
+            );
+            require(row.stop < row.deadline && row.elapsed == 1);
+            return;
+        }
+        require(u32::from(row.ppi) == TIMER_IRQ && row.stop >= row.deadline);
+        let (lo, hi) = match (self.epoch, row.task) {
+            (DELAY_EPOCH, 0) => (&raw const prop_delayed_work, &raw const prop_delayed_end),
+            (0 | 1, 0) => (&raw const prop_cpu_a_work, &raw const prop_cpu_a_end),
+            (_, 1) => (&raw const prop_cpu_b_work, &raw const prop_cpu_b_end),
+            (_, 2) => (&raw const prop_cpu_c_work, &raw const prop_cpu_c_end),
+            _ => fail(),
+        };
+        require((lo.addr()..hi.addr()).contains(&(row.pc as usize)));
+        require(match self.epoch {
+            0 | 1 => row.elapsed == 1,
+            2 => row.elapsed == 2,
+            DELAY_EPOCH => row.elapsed >= 3,
+            _ => false,
+        });
+    }
+
     fn check_stride(&mut self, row: Row) {
         // Verify the policy's choice only after this task actually executed.
         let slot = usize::from(row.slot);
@@ -387,7 +418,7 @@ impl Bench {
         require(row.task == expected && row.ready == if slot < 8 { 3 } else { 7 });
         let mut charged = row.pass_start;
         charged[usize::from(expected)] +=
-            u32::from(row.charge) * (SCALE / u32::from(WEIGHTS[usize::from(expected)]));
+            row.elapsed * (SCALE / u64::from(WEIGHTS[usize::from(expected)]));
         require(row.pass_stop == charged);
         if slot == 8 {
             require(row.normalization == SCALE && row.pass_start == [0; 3])
@@ -400,8 +431,15 @@ impl Bench {
             let joined = self.passes();
             require(joined == [SCALE; 3]);
             unsafe {
-                ptr::write_volatile(&raw mut proportional_witness.join_before, row.pass_stop);
-                ptr::write_volatile(&raw mut proportional_witness.join_after, joined);
+                ptr::write_volatile(
+                    &raw mut proportional_witness.join_before,
+                    row.pass_stop
+                        .map(|p| u32::try_from(p).unwrap_or_else(|_| fail())),
+                );
+                ptr::write_volatile(
+                    &raw mut proportional_witness.join_after,
+                    joined.map(|p| u32::try_from(p).unwrap_or_else(|_| fail())),
+                );
             }
             self.served = [0; 3];
         }
@@ -412,7 +450,7 @@ pub(super) fn run() -> ! {
     init_timer_irq();
     let freq: u64;
     unsafe { asm!("mrs {}, cntfrq_el0", out(reg) freq, options(nostack, preserves_flags)) };
-    let ticks = [freq / 100, freq / 40];
+    let ticks = [freq / 100, freq / 25];
     require(ticks[0] != 0 && ticks[1] != 0);
     unsafe {
         ptr::write_volatile(&raw mut proportional_witness.ticks, ticks);
