@@ -5,6 +5,7 @@ use core::mem::{offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, Ordering};
 
+use super::context::*;
 use super::dispatch_policy::{DispatchJob, DispatchPolicy};
 use super::{park, ready_queue::ReadyQueue, uart_write};
 
@@ -16,32 +17,6 @@ const TASK_COUNT: usize = HIGH + 1;
 const EDF: bool = cfg!(all(feature = "edf-bench", not(feature = "fifo-bench")));
 const LOW_PRIORITY: u8 = if EDF { 3 } else { 1 };
 const HIGH_PRIORITY: u8 = 2;
-const STACK_BYTES: usize = 16 * 1024;
-const TIMER_IRQ: u32 = 30; // Nonsecure EL1 physical timer PPI
-const GICD: usize = 0x0800_0000;
-const GICC: usize = 0x0801_0000;
-
-#[repr(C, align(16))]
-struct Stack([u8; STACK_BYTES]);
-
-// Each task owns one stack. Its saved SP points to a complete Frame beneath
-// its interrupted SP. The CPU-wide translation and vector configuration is
-// shared. The benchmark never uses exclusive monitors as task-local state.
-#[repr(C, align(16))]
-struct Frame {
-    gpr: [u64; 31],
-    elr: u64,
-    spsr: u64,
-    fpcr: u64,
-    fpsr: u64,
-    tpidr_el1: u64,
-    sp_el0: u64,
-    tpidr_el0: u64,
-    tpidrro_el0: u64,
-    reserved: u64,
-    simd: [[u64; 2]; 32],
-}
-
 static mut LOW_STACK: Stack = Stack([0; STACK_BYTES]);
 static mut HIGH_STACK: Stack = Stack([0; STACK_BYTES]);
 #[cfg(feature = "fifo-bench")]
@@ -52,7 +27,6 @@ static HIGH_DONE: AtomicU64 = AtomicU64::new(0);
 static RR_ROTATIONS: AtomicU64 = AtomicU64::new(0);
 
 unsafe extern "C" {
-    static sched_vectors: u8;
     static sched_work_begin: u8;
     static sched_work_end: u8;
     static sched_high_return: u8;
@@ -74,10 +48,10 @@ unsafe extern "C" {
     fn sched_high_entry();
     #[cfg(feature = "fifo-bench")]
     fn sched_b_entry();
-    fn sched_start_frame(frame: *mut Frame) -> !;
 }
 
 global_asm!(
+    include_str!("context.S"),
     include_str!("sched.S"),
     frame_size = const size_of::<Frame>(),
     elr = const offset_of!(Frame, elr),
@@ -278,36 +252,8 @@ fn initial_frame(id: usize, entry: unsafe extern "C" fn(), pstate: u64) -> *mut 
     }
 }
 
-fn gic_read(address: usize) -> u32 {
-    // SAFETY: Callers use aligned readable GICv2 MMIO registers with MMU off.
-    unsafe { ptr::read_volatile(address as *const u32) }
-}
-
-fn gic_write(address: usize, value: u32) {
-    // SAFETY: Callers use aligned writable GICv2 MMIO registers, single CPU.
-    unsafe { ptr::write_volatile(address as *mut u32, value) }
-}
-
 pub(super) fn run() -> ! {
-    // SAFETY: Boot masked exceptions. VBAR is 2-KiB aligned. Keep CNTP
-    // disabled until low's private work and register witnesses are ready.
-    unsafe {
-        asm!("msr vbar_el1, {}", "msr cntp_ctl_el0, xzr", "isb",
-            in(reg) &raw const sched_vectors, options(nostack, preserves_flags));
-    }
-    // With secure=off the GIC exposes both groups. Use Group 0 as IRQ (FIQEn
-    // clear), with priority 0x80 allowed by PMR. PPIs are banked per CPU.
-    gic_write(GICD, 0);
-    gic_write(GICC, 0);
-    gic_write(GICD + 0x80, gic_read(GICD + 0x80) & !(1 << TIMER_IRQ));
-    unsafe { ptr::write_volatile((GICD + 0x400 + TIMER_IRQ as usize) as *mut u8, 0x80) };
-    gic_write(GICD + 0x280, 1 << TIMER_IRQ); // ICPENDR0
-    gic_write(GICD + 0x100, 1 << TIMER_IRQ); // ISENABLER0
-    gic_write(GICC + 4, 0xff); // PMR
-    gic_write(GICD, 1);
-    gic_write(GICC, 1);
-    unsafe { asm!("dsb sy", "isb", options(nostack, preserves_flags)) };
-
+    init_timer_irq();
     let frame = with_scheduler(|sched| {
         sched.tasks[LOW].frame = initial_frame(LOW, sched_low_entry, 0x3c5); // EL1h, DAIF masked
         // RR peers enable IRQs at their work loop once their witnesses are live.

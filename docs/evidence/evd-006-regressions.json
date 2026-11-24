@@ -1,0 +1,46 @@
+{
+  "revision": "6ee2ebb48e78b60e3c46fd0f04f453c97d2eae71",
+  "regression_guests": [
+    {
+      "profile": "boot",
+      "feature": null,
+      "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "runner_exit": 0,
+      "uart": "JNOX M1 BOOT\nJNOX M1 READY\n",
+      "bytes": 27
+    },
+    {
+      "profile": "scheduler",
+      "feature": "sched-bench",
+      "elf_sha256": "26ae730902a73853757f5e5d7d38dfddcdb6cb8fb7badba6ad69a1026f923c18",
+      "runner_exit": 0,
+      "uart": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nSCHED HIGH RUN\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "bytes": 101
+    },
+    {
+      "profile": "fifo",
+      "feature": "fifo-bench",
+      "elf_sha256": "3ee779d511d8b0c07c97253d0cbd767b7dbe76aac177c2b3d517afe215b9146b",
+      "runner_exit": 0,
+      "uart": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nFIFO A FIRST\nFIFO B FIRST\nFIFO A RESUMED\nFIFO B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "bytes": 142
+    },
+    {
+      "profile": "rr",
+      "feature": "rr-bench",
+      "elf_sha256": "2e3fdd13738e1c5676d2fea01c70f3d12f0c4ec5a9f4c044bde73cc19b9c14d2",
+      "runner_exit": 0,
+      "uart": "JNOX M1 BOOT\nJNOX M1 READY\nPOLICY RANK PASS\nPOLICY SERVICE PASS\nSCHED LOW RUN\nSCHED TIMER IRQ\nRR A FIRST\nRR B FIRST\nRR A RESUMED\nRR B RESUMED\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "bytes": 171
+    },
+    {
+      "profile": "edf",
+      "feature": "edf-bench",
+      "elf_sha256": "42e987e7a9014abf955524ec0717c98cac4afc9359fd142870eddad91716eee1",
+      "runner_exit": 0,
+      "uart": "JNOX M1 BOOT\nJNOX M1 READY\nSCHED LOW RUN\nSCHED TIMER IRQ\nEDF URGENT RUN\nSCHED LOW RESUMED\nSCHED PASS\n",
+      "bytes": 101
+    }
+  ],
+  "all_features_release_check": true
+}

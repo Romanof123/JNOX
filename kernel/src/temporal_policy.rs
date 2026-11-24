@@ -75,10 +75,41 @@ pub(crate) enum CbsError {
     TimeOverflow,
 }
 
+fn gcd(mut a: u128, mut b: u128) -> u128 {
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    a
+}
+
+/// Accumulate exact reduced fractions in input order. Each intermediate
+/// cross-product has a u64 factor and a u32 factor, so their sum fits u128.
+/// Reject if the reduced running total exceeds one or cannot fit in two u64s.
+fn admits(reservations: &[(u32, u32)]) -> Option<()> {
+    let (mut numerator, mut denominator) = (0u64, 1u64);
+    for &(quota, period) in reservations {
+        if quota == 0 || quota > period {
+            return None;
+        }
+        let period = u128::from(period);
+        let denominator_wide = u128::from(denominator);
+        let total = u128::from(numerator) * period + u128::from(quota) * denominator_wide;
+        let scale = denominator_wide * period;
+        if total > scale {
+            return None;
+        }
+        let divisor = gcd(total, scale);
+        numerator = u64::try_from(total / divisor).ok()?;
+        denominator = u64::try_from(scale / divisor).ok()?;
+    }
+    Some(())
+}
+
 /// Hard constant-bandwidth servers under preemptive uniprocessor EDF. Each
 /// reservation has an implicit relative deadline equal to its period and at
 /// most one outstanding job. Jobs release at tick boundaries and run until
-/// completion or preemption. The caller supplies an admitted reservation set.
+/// completion or preemption. Admission assumes independent reservations on one
+/// CPU with no blocking, IRQ interference or scheduling overhead.
 /// Equal scheduling deadlines use ascending server ID. No bandwidth reclaiming.
 /// See <https://docs.kernel.org/scheduler/sched-deadline.html#main-algorithm>.
 pub(crate) struct HardCbs<const N: usize> {
@@ -89,12 +120,7 @@ pub(crate) struct HardCbs<const N: usize> {
 impl<const N: usize> HardCbs<N> {
     /// Reservation parameters are (quota, period), in whole ticks.
     pub(crate) fn new(start_tick: u64, reservations: [(u32, u32); N]) -> Option<Self> {
-        if reservations
-            .iter()
-            .any(|&(quota, period)| quota == 0 || quota > period)
-        {
-            return None;
-        }
+        admits(&reservations)?;
         let servers = reservations.map(|(quota, period)| Server {
             quota,
             period,
@@ -283,18 +309,15 @@ fn cbs_dispatch_checks() -> bool {
 }
 
 fn cbs_error_checks() -> bool {
-    let Some(mut overloaded) = HardCbs::new(0, black_box([(1, 1), (1, 1)])) else {
+    let Some(mut active) = HardCbs::new(0, black_box([(1, 2), (1, 2)])) else {
         return false;
     };
-    if overloaded.release(2, 1) != Err(CbsError::UnknownServer)
-        || overloaded.release(0, 0) != Err(CbsError::EmptyJob)
-        || overloaded.release(0, 2).is_err()
-        || overloaded.release(1, 1).is_err()
-        || overloaded.release(0, 3) != Err(CbsError::JobPending)
-        || overloaded.tick() != Ok(Some(0))
-        || overloaded.tick() != Err(CbsError::MissedDeadline(1))
-        || overloaded.now() != 1
-        || overloaded.servers[0].work != 1
+    if active.release(2, 1) != Err(CbsError::UnknownServer)
+        || active.release(0, 0) != Err(CbsError::EmptyJob)
+        || active.release(0, 2).is_err()
+        || active.release(1, 1).is_err()
+        || active.release(0, 3) != Err(CbsError::JobPending)
+        || !tick_trace(&mut active, &[Some(0), Some(1), Some(0)])
     {
         return false;
     }
@@ -317,12 +340,29 @@ fn cbs_error_checks() -> bool {
         && tick_trace(&mut end, &[Some(0), None])
         && end.tick() == Err(CbsError::TimeOverflow)
         && end.now() == u64::MAX
+}
+
+fn cbs_admission_checks() -> bool {
+    let n = black_box(u32::MAX);
+    // The second sum exceeds capacity by just 1/(n*(n-1)).
+    HardCbs::new(0, [(n - 1, n), (1, n)]).is_some()
+        && HardCbs::new(0, [(n - 1, n), (1, n - 1)]).is_none()
+        && HardCbs::new(0, [(1, 2), (1, 3), (1, 6)]).is_some()
+        && HardCbs::new(0, [(1, 1), (1, 1)]).is_none()
         && HardCbs::new(0, [(0, 1)]).is_none()
+        && HardCbs::new(0, [(0, 0)]).is_none()
+        && HardCbs::new(0, [(1, 0)]).is_none()
         && HardCbs::new(0, [(2, 1)]).is_none()
+        // Pairwise coprime periods give a reduced denominator wider than u64.
+        && HardCbs::new(0, [(1, 1 << 31), (1, (1 << 31) - 1), (1, (1 << 31) - 3)]).is_none()
 }
 
 pub(crate) fn bench_checks() -> bool {
-    cyclic_checks() && cbs_wake_checks() && cbs_dispatch_checks() && cbs_error_checks()
+    cyclic_checks()
+        && cbs_admission_checks()
+        && cbs_wake_checks()
+        && cbs_dispatch_checks()
+        && cbs_error_checks()
 }
 
 #[cfg(test)]
@@ -332,6 +372,11 @@ mod tests {
     #[test]
     fn cyclic_frame_boundaries_and_configuration() {
         assert!(cyclic_checks());
+    }
+
+    #[test]
+    fn hard_cbs_admission_boundaries() {
+        assert!(cbs_admission_checks());
     }
 
     #[test]

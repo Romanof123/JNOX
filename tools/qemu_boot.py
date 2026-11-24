@@ -48,12 +48,22 @@ RR_TRANSCRIPT = BOOT_TRANSCRIPT + (
     b"SCHED LOW RESUMED\n"
     b"SCHED PASS\n"
 )
+CBS_TRANSCRIPT = BOOT_TRANSCRIPT + (
+    b"CBS A FIRST\n"
+    b"CBS B FIRST\n"
+    b"CBS IDLE\n"
+    b"CBS A RESUMED\n"
+    b"CBS B RESUMED\n"
+    b"CBS TIMER STOP\n"
+    b"CBS PASS\n"
+)
 TRANSCRIPTS = {
     "boot": BOOT_TRANSCRIPT,
     "scheduler": SCHEDULER_TRANSCRIPT,
     "edf": EDF_TRANSCRIPT,
     "fifo": FIFO_TRANSCRIPT,
     "rr": RR_TRANSCRIPT,
+    "cbs": CBS_TRANSCRIPT,
 }
 QUIET_SECONDS = 0.1
 

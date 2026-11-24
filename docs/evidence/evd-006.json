@@ -1,0 +1,191 @@
+{
+  "revision": "6ee2ebb48e78b60e3c46fd0f04f453c97d2eae71",
+  "tree": "5d303f40c211c35d83223ac41f0a12707a014718",
+  "detached_clean": true,
+  "elf_sha256": "5e7c0098151706243d66fc0c41080888fdc2b074706450fee452bd49087b0e6c",
+  "first_verdict": "PASS first launch. Exit 0, expected 112 UART bytes, quiet-window host stop. Source, disassembly and trace unread.",
+  "guest_launches": 1,
+  "guest_pid": 517,
+  "qemu_argv": [
+    "qemu-system-aarch64",
+    "-d",
+    "int",
+    "-D",
+    "/tmp/tmp.NB2cQh2fs0/int.log",
+    "-machine",
+    "virt,gic-version=2",
+    "-cpu",
+    "cortex-a72",
+    "-smp",
+    "1",
+    "-accel",
+    "tcg",
+    "-m",
+    "128M",
+    "-nodefaults",
+    "-display",
+    "none",
+    "-monitor",
+    "none",
+    "-serial",
+    "stdio",
+    "-kernel",
+    "/tmp/tmp.NB2cQh2fs0/kernel.elf"
+  ],
+  "uart_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a43425320412046495253540a43425320422046495253540a4342532049444c450a434253204120524553554d45440a434253204220524553554d45440a4342532054494d45522053544f500a43425320504153530a",
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nCBS A FIRST\nCBS B FIRST\nCBS IDLE\nCBS A RESUMED\nCBS B RESUMED\nCBS TIMER STOP\nCBS PASS\n",
+  "runner_stdout": "Run 1/1  ELF SHA-256 = 5e7c0098151706243d66fc0c41080888fdc2b074706450fee452bd49087b0e6c\n  argv = [\"/tmp/tmp.NB2cQh2fs0/qemu-int\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/tmp/tmp.NB2cQh2fs0/kernel.elf\"]\n  QEMU PID = 517\n  UART (112 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCBS A FIRST\\nCBS B FIRST\\nCBS IDLE\\nCBS A RESUMED\\nCBS B RESUMED\\nCBS TIMER STOP\\nCBS PASS\\n'\n  QEMU stderr = b''\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "runner_stderr": "",
+  "runner_exit": 0,
+  "qemu_stderr": "qemu-system-aarch64: terminating on signal 15 from pid 516 (python3)\n",
+  "quiet_seconds": 0.1,
+  "exception_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201278\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012d0\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012fc\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201354\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201380\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201278\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012c8\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012fc\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x4020134c\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\n",
+  "trace_sha256": "d6905194d3cc5c0f03b24a05bfb79cd631446651292f3deefa314b6cab50b757",
+  "irqs": [
+    {
+      "boundary": 1,
+      "interrupted": "A",
+      "elr": "0x40201278",
+      "instruction": "add x20,x20,#1",
+      "vector": "0x40200a80",
+      "eret": "0x402012d0",
+      "target": "B entry"
+    },
+    {
+      "boundary": 2,
+      "interrupted": "B",
+      "elr": "0x402012fc",
+      "instruction": "add x20,x20,#1",
+      "vector": "0x40200a80",
+      "eret": "0x40201354",
+      "target": "idle entry"
+    },
+    {
+      "boundary": 3,
+      "interrupted": "idle",
+      "elr": "0x40201380",
+      "instruction": "add x20,x20,#1",
+      "vector": "0x40200a80",
+      "eret": "0x40201278",
+      "target": "A exact saved PC"
+    },
+    {
+      "boundary": 4,
+      "interrupted": "A",
+      "elr": "0x402012c8",
+      "instruction": "add x20,x20,#1",
+      "vector": "0x40200a80",
+      "eret": "0x402012fc",
+      "target": "B exact saved PC"
+    },
+    {
+      "boundary": 5,
+      "interrupted": "B",
+      "elr": "0x4020134c",
+      "instruction": "add x20,x20,#1",
+      "vector": "0x40200a80",
+      "eret": null,
+      "target": "timer disabled; terminal WFE at 0x40201824"
+    }
+  ],
+  "initial_eret": "0x4020124c",
+  "svc_count": 0,
+  "policy": "HardCbs::tick loads work, residual budget and deadlines 0x40201ba4-1bbc, replenishes at deadline 0x40201bdc-1be8, chooses earliest deadline, charges residual budget and work at 0x40201c48-1c58, selects idle when no winner. EXPECTED only compared at 0x40201c74-1c7c; actual winner indexes frame at 0x40201c80-1c84. Q/P = 1/3,1/4; work=3 each. Deadlines 3,4 initially; replenished deadlines 6,8.",
+  "quantum": "CNTFRQ_EL0 / 20 integer counter ticks, nominal 50 ms; CNTPCT epoch plus absolute slot index times quantum with checked arithmetic; counter must be in current boundary interval, subsequent compare must still be in future.",
+  "timer": "IAR low 10 bits must equal 30 and CNTP_CTL low 3 bits equal 5. Mask and disable via CTL=2 at 0x402015dc, barriers, full IAR EOI; terminal branch emits stop/pass then WFE without rearm or ERET.",
+  "stacks": "3 disjoint 16 KiB slots at base 0x40203490, tops 0x40207490,0x4020b490,0x4020f490. Outgoing IRQ frame checked at top-16-sizeof(Frame). X19 and TPIDR_EL1 match private tags a19/b19/c19, X20 high tag and increasing low progress, two private stack words. On restore task checks X20 against saved progress allowing one increment, stack tag, X19, TPIDR_EL1, and SP before marker.",
+  "observer_controls": {
+    "missing": "UART deadline exceeded (0.15s)",
+    "reordered": "unexpected UART bytes or marker order",
+    "extra": "unexpected UART bytes or marker order"
+  },
+  "host_admission_oracle": [
+    {
+      "case": [
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          4
+        ]
+      ],
+      "admit": true
+    },
+    {
+      "case": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "admit": true
+    },
+    {
+      "case": [
+        [
+          2,
+          3
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "admit": false
+    },
+    {
+      "case": [
+        [
+          0,
+          1
+        ]
+      ],
+      "admit": false
+    },
+    {
+      "case": [
+        [
+          1,
+          0
+        ]
+      ],
+      "admit": false
+    },
+    {
+      "case": [
+        [
+          2,
+          1
+        ]
+      ],
+      "admit": false
+    },
+    {
+      "case": [
+        [
+          1,
+          2147483648
+        ],
+        [
+          1,
+          2147483647
+        ],
+        [
+          1,
+          2147483645
+        ]
+      ],
+      "admit": false
+    }
+  ],
+  "host_test_sha256": "db3bc52591c1cf540699f880e8cf2510ed6afc7e25bd0352255f6162fba4df39",
+  "host_test_stdout": "\nrunning 5 tests\ntest temporal_policy::tests::hard_cbs_activation_and_throttling ... ok\ntest temporal_policy::tests::hard_cbs_admission_boundaries ... ok\ntest temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok\ntest temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok\ntest cbs_admission_and_service_match_demand_over_common_frame ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s\n\n",
+  "limitations": "One emulated cold boot, no independent rebuild or physical board timing. Host tests used supplied executable; exact admission examples also checked with an independent rational-arithmetic oracle. No register dump, timer rate measurement, or instruction trace; handler/stack/policy details inferred from linked instructions, enforced predicates and successful markers. QEMU diagnostic stderr was captured separately by wrapper. Native temporary ELF unavailable after WSL invocation; disassembled the supplied ELF with the same verified digest.",
+  "verdict": "PASS"
+}

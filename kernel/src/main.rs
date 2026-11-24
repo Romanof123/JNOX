@@ -5,25 +5,29 @@ use core::arch::{asm, global_asm};
 use core::panic::PanicInfo;
 use core::ptr;
 
-#[cfg(feature = "rr-bench")]
+#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
 mod aperiodic_policy;
-#[cfg(feature = "sched-bench")]
+#[cfg(feature = "cbs-bench")]
+mod cbs;
+#[cfg(any(feature = "sched-bench", feature = "cbs-bench"))]
+mod context;
+#[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
 mod dispatch_policy;
-#[cfg(feature = "rr-bench")]
+#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
 mod domain_policy;
-#[cfg(feature = "rr-bench")]
+#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
 mod fair_policy;
-#[cfg(feature = "rr-bench")]
+#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
 mod feedback_policy;
-#[cfg(feature = "rr-bench")]
+#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
 mod group_policy;
-#[cfg(feature = "sched-bench")]
+#[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
 mod ready_queue;
-#[cfg(feature = "sched-bench")]
+#[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
 mod sched;
-#[cfg(feature = "rr-bench")]
+#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
 mod service_policy;
-#[cfg(feature = "rr-bench")]
+#[cfg(any(feature = "rr-bench", feature = "cbs-bench"))]
 mod temporal_policy;
 
 static mut BSS_PROBE: u64 = 0;
@@ -45,7 +49,7 @@ extern "C" fn kernel_main() -> ! {
 
     uart_init();
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
-    #[cfg(feature = "rr-bench")]
+    #[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
     {
         if !dispatch_policy::bench_checks() {
             uart_write(b"POLICY RANK FAIL\n");
@@ -65,9 +69,11 @@ extern "C" fn kernel_main() -> ! {
         }
         uart_write(b"POLICY SERVICE PASS\n");
     }
-    #[cfg(feature = "sched-bench")]
+    #[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
     sched::run();
-    #[cfg(not(feature = "sched-bench"))]
+    #[cfg(feature = "cbs-bench")]
+    cbs::run();
+    #[cfg(not(any(feature = "sched-bench", feature = "cbs-bench")))]
     park()
 }
 

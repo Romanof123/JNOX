@@ -190,3 +190,42 @@ fn saturated_hard_server_runs_only_its_quota_each_period() {
         }
     }
 }
+
+#[test]
+fn cbs_admission_and_service_match_demand_over_common_frame() {
+    use temporal_policy::HardCbs;
+
+    // Sixty ticks is divisible by every tested period. Count requested CPU
+    // ticks directly instead of adding fractions as the constructor does.
+    const FRAME: u32 = 60;
+    let choices: Vec<_> = (1..=5)
+        .flat_map(|period| (1..=period).map(move |quota| (quota, period)))
+        .collect();
+    for &a in &choices {
+        for &b in &choices {
+            for &c in &choices {
+                let reservations = [a, b, c];
+                let demand: u32 = reservations.iter().map(|(q, p)| q * (FRAME / p)).sum();
+                let schedule = HardCbs::new(7, reservations);
+                assert_eq!(schedule.is_some(), demand <= FRAME, "{reservations:?}");
+                let Some(mut schedule) = schedule else { continue };
+                for id in 0..reservations.len() {
+                    schedule.release(id, FRAME * 2 + 1).unwrap();
+                }
+                let mut consumed = [0; 3];
+                for elapsed in 1..=FRAME * 2 {
+                    if let Some(id) = schedule.tick().unwrap() {
+                        consumed[id] += 1;
+                    }
+                    for (id, (quota, period)) in reservations.iter().enumerate() {
+                        assert!(consumed[id] <= *quota, "{reservations:?} at {elapsed}");
+                        if elapsed % period == 0 {
+                            assert_eq!(consumed[id], *quota, "{reservations:?} at {elapsed}");
+                            consumed[id] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
