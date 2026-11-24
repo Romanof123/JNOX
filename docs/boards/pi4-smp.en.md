@@ -2,7 +2,9 @@
 
 [한국어](pi4-smp.md) · [Board #34](https://github.com/Romanof123/JNOX/issues/34) · [POL-013 #47](https://github.com/Romanof123/JNOX/issues/47)
 
-CHG-070 plans a dedicated opt-in Pi 4 raw image. Existing Pi 4 serial boot, timer and fixed FIFO/RR use core zero. EVD-017 already covers placement and contended migration on two QEMU virt CPUs. This milestone adds board-specific secondary startup and a directed cross-core ready transition during useful pinned work. Keep existing image selectors, feature precedence and baseline bytes. Implementation and evidence are pending. [Board](pi4-p1.en.md) · [Existing SMP](../m3-smp.en.md) · [Fixed tasks](pi4-fixed-runtime.en.md)
+CHG-070 plans a dedicated opt-in Pi 4 raw image. Existing Pi 4 serial boot, timer and fixed FIFO/RR use core zero. EVD-017 already covers placement and contended migration on two QEMU virt CPUs. This milestone adds board-specific secondary startup and a directed cross-core ready transition during useful pinned work. Keep existing image selectors, feature precedence and baseline bytes. Source is staged for verification. [Board](pi4-p1.en.md) · [Existing SMP](../m3-smp.en.md) · [Fixed tasks](pi4-fixed-runtime.en.md)
+
+`JNOX_BOARD=pi4 JNOX_PROFILE=smp JNOX_APP=directed-wake` selects `pi4_smp_boot.S` and `pi4_smp_bsp.rs` for secondary startup and interrupt delivery, and `pi4_smp_workload.rs` for pinned tasks and terminal UART records. Model and physical verification remain pending. [BSP](pi4-smp-bsp.en.md) · [Workload and UART format](pi4-smp-workload.en.md)
 
 ## Entry and reserved memory
 

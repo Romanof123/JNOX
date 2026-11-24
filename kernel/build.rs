@@ -201,7 +201,15 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
+    println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
     match profile.as_deref() {
+        Some("smp") => {
+            assert!(board == "pi4" && app.as_deref() == Some("directed-wake")
+                && bench == "boot" && trace.is_none() && scenario.is_none()
+                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                "directed-wake requires Pi 4, smp profile and no other benchmark or runtime selector");
+            println!("cargo::rustc-cfg=jnox_pi4_smp");
+        }
         Some("proportional") => {
             assert!(scenario.is_none(), "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional");
             assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");

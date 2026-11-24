@@ -2,7 +2,9 @@
 
 [English](pi4-smp.en.md) · [보드 #34](https://github.com/Romanof123/JNOX/issues/34) · [POL-013 #47](https://github.com/Romanof123/JNOX/issues/47)
 
-CHG-070은 별도 선택 Pi 4 원시 이미지 계획이다. 기존 Pi 4 직렬 부팅·타이머·고정 FIFO/RR은 코어 0을 사용한다. EVD-017은 이미 QEMU virt 두 CPU의 배치·경합 이동을 다뤘다. 이번 범위는 보드별 보조 코어 기동과 실제 고정 작업 중 지정 코어 깨우기다. 기존 선택자·기능 우선순위·기준 이미지 바이트를 유지한다. 구현·근거 수집은 대기 중이다. [보드](pi4-p1.md) · [기존 SMP](../m3-smp.md) · [고정 작업](pi4-fixed-runtime.md)
+CHG-070은 별도 선택 Pi 4 원시 이미지 계획이다. 기존 Pi 4 직렬 부팅·타이머·고정 FIFO/RR은 코어 0을 사용한다. EVD-017은 이미 QEMU virt 두 CPU의 배치·경합 이동을 다뤘다. 이번 범위는 보드별 보조 코어 기동과 실제 고정 작업 중 지정 코어 깨우기다. 기존 선택자·기능 우선순위·기준 이미지 바이트를 유지한다. 구현 소스는 검증 대기 중이다. [보드](pi4-p1.md) · [기존 SMP](../m3-smp.md) · [고정 작업](pi4-fixed-runtime.md)
+
+`JNOX_BOARD=pi4 JNOX_PROFILE=smp JNOX_APP=directed-wake`는 보조 코어 기동과 인터럽트 전달에 `pi4_smp_boot.S`와 `pi4_smp_bsp.rs`를, 고정 작업과 종료 시 UART 기록에 `pi4_smp_workload.rs`를 선택한다. 모델 및 실물 보드 검증은 대기 중이다. [BSP](pi4-smp-bsp.md) · [작업 및 UART 형식](pi4-smp-workload.md)
 
 ## 진입과 예약 영역
 
