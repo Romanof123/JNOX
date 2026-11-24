@@ -162,7 +162,17 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("weighted"));
         println!("cargo::rustc-cfg=jnox_weighted_trace");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
     match profile.as_deref() {
+        Some("proportional") => {
+            assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");
+            let case = app.as_deref().unwrap_or("");
+            assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"),
+                    "ordinary proportional requires an explicit lottery, stride or diagnostic app");
+            println!("cargo::rustc-cfg=jnox_ordinary_prop");
+            println!("cargo::rustc-cfg=jnox_prop_case=\"{case}\"");
+        }
         Some("aperiodic") => {
             assert!(board == "virt" && bench == "boot", "ordinary aperiodic requires virt without benchmarks");
             let name = app.as_deref().expect("aperiodic profile requires JNOX_APP");

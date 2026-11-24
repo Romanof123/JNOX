@@ -1090,3 +1090,9 @@ VER-023,has-partial-evidence,EVD-047
 CHG-057,affects,REQ-002
 CHG-057,affects,REQ-005
 CHG-057,affects,REQ-023
+DES-003,implemented-by,IMP-055
+DES-012,implemented-by,IMP-055
+POL-010,partially-implemented-by,IMP-055
+REQ-002,partially-implemented-by,IMP-055
+REQ-005,partially-implemented-by,IMP-055
+REQ-023,partially-implemented-by,IMP-055
