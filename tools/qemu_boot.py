@@ -233,6 +233,22 @@ TRANSCRIPTS = {
     "boot": BOOT_TRANSCRIPT,
     "pi4": PI4_BOOT_TRANSCRIPT,
     "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
+    "eevdf": BOOT_TRANSCRIPT + (
+        b"EEVDF BEGIN\nEEVDF EARLY INELIGIBLE\nEEVDF SLICE CHANGE\n"
+        b"EEVDF WEIGHT CHANGE\nEEVDF TWO WAKES\nEEVDF STOP\nEEVDF PASS\n"
+    ),
+    "hierarchy": BOOT_TRANSCRIPT + (
+        b"HIERARCHY WAIT\nHIERARCHY THROTTLE\nHIERARCHY REFILL\nHIERARCHY PASS\n"
+    ),
+    "power": BOOT_TRANSCRIPT + (
+        b"POWER BASE\nPOWER THERMAL\nPOWER SHARED\nPOWER DEADLINE MISS\n"
+        b"POWER FALLBACK\nPOWER IDLE\nPOWER PASS\n"
+    ),
+    "extension": BOOT_TRANSCRIPT + (
+        b"EXTENSION BEGIN\nEXTENSION PROPOSAL ACCEPTED\nEXTENSION MASK FALLBACK\n"
+        b"EXTENSION STALE FALLBACK\nEXTENSION FUEL FALLBACK\nEXTENSION WATCHDOG FALLBACK\n"
+        b"EXTENSION EMPTY IDLE\nEXTENSION RESERVED THREE\nEXTENSION PASS\n"
+    ),
     "partition": PARTITION_TRANSCRIPT,
     "scheduler": SCHEDULER_TRANSCRIPT,
     "edf": EDF_TRANSCRIPT,
@@ -436,9 +452,10 @@ def main():
             command = [args.qemu, "-machine", "raspi4b", "-accel", "tcg"]
         else:
             machine = "virt" if boot else "virt,gic-version=2"
-            smp = args.profile in ("smp", "smp-single")
-            accelerator = {"smp": "tcg,thread=multi", "smp-single": "tcg,thread=single"}.get(args.profile, "tcg")
+            smp = args.profile in ("smp", "smp-single", "power")
+            accelerator = "tcg"
             if smp:
+                accelerator = "tcg,thread=single" if args.profile == "smp-single" else "tcg,thread=multi"
                 machine += ",secure=off,virtualization=off"
             command = [
                 args.qemu, "-machine", machine, "-cpu", "cortex-a72", "-smp", "2" if smp else "1",

@@ -3,6 +3,10 @@ use core::arch::{asm, global_asm};
 use core::sync::atomic::{AtomicU32, Ordering};
 
 use super::{park, uart_write};
+#[cfg(jnox_bench = "power")]
+use super::power::cpu_main;
+#[cfg(jnox_bench = "smp")]
+use super::smp::cpu_main;
 
 const TOKEN: u64 = 0x471;
 const REQUEST: u32 = 0x47aa;
@@ -72,7 +76,7 @@ pub(super) fn boot() -> ! {
         wait_for_peer();
     }
     HANDOFF.store(START, Ordering::Release);
-    super::smp::cpu_main(0)
+    cpu_main(0)
 }
 
 extern "C" fn secondary() -> ! {
@@ -87,5 +91,5 @@ extern "C" fn secondary() -> ! {
     while HANDOFF.load(Ordering::Acquire) != START {
         wait_for_peer();
     }
-    super::smp::cpu_main(1)
+    cpu_main(1)
 }

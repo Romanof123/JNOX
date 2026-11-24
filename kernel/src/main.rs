@@ -19,7 +19,7 @@ mod batch;
 mod batch_policy;
 #[cfg(jnox_bench = "cbs")]
 mod cbs;
-#[cfg(not(jnox_bench = "boot"))]
+#[cfg(not(any(jnox_bench = "boot", jnox_bench = "power")))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -37,16 +37,29 @@ mod dispatch_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
 #[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"), allow(dead_code))]
 mod domain_policy;
+#[cfg(jnox_bench = "eevdf")]
+mod eevdf;
+#[cfg(jnox_bench = "eevdf")]
+mod eevdf_policy;
 #[cfg(jnox_bench = "coop")]
 mod event_loop;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime"))]
-#[cfg_attr(jnox_bench = "vruntime", allow(dead_code))]
+#[cfg(jnox_bench = "extension")]
+mod extension;
+#[cfg(jnox_bench = "extension")]
+mod extension_policy;
+#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf"))]
+#[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf"), allow(dead_code))]
 mod fair_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
 mod feedback_policy;
-#[cfg(jnox_bench = "rr")]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "power", jnox_bench = "extension"))]
+#[cfg_attr(any(jnox_bench = "power", jnox_bench = "extension"), allow(dead_code))]
 mod group_policy;
+#[cfg(jnox_bench = "hierarchy")]
+mod hierarchy;
+#[cfg(jnox_bench = "hierarchy")]
+mod hierarchy_policy;
 #[cfg(jnox_bench = "mutex")]
 mod mutex;
 #[cfg(jnox_bench = "mutex")]
@@ -59,6 +72,10 @@ mod multilevel_policy;
 mod partition;
 #[cfg(jnox_bench = "periodic")]
 mod periodic;
+#[cfg(jnox_bench = "power")]
+mod power;
+#[cfg(jnox_bench = "power")]
+mod power_policy;
 #[cfg(jnox_bench = "proportional")]
 mod proportional;
 #[cfg(jnox_bench = "proportional")]
@@ -82,7 +99,7 @@ mod sched;
 mod service_policy;
 #[cfg(jnox_bench = "smp")]
 mod smp;
-#[cfg(jnox_bench = "smp")]
+#[cfg(any(jnox_bench = "smp", jnox_bench = "power"))]
 mod smp_boot;
 #[cfg(jnox_bench = "smp")]
 mod smp_policy;
@@ -131,8 +148,14 @@ fn run_bench() -> ! {
     multilevel::run();
     #[cfg(jnox_bench = "mutex")]
     mutex::run();
-    #[cfg(jnox_bench = "smp")]
+    #[cfg(any(jnox_bench = "smp", jnox_bench = "power"))]
     smp_boot::boot();
+    #[cfg(jnox_bench = "eevdf")]
+    eevdf::run();
+    #[cfg(jnox_bench = "hierarchy")]
+    hierarchy::run();
+    #[cfg(jnox_bench = "extension")]
+    extension::run();
     #[cfg(jnox_bench = "rr")]
     {
         if !dispatch_policy::bench_checks() {

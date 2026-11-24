@@ -56,3 +56,5 @@
 [다단계 큐](m4-multilevel.md) · [혼합 임계도](m3-mixed-criticality.md)
 
 [복권·스트라이드](m4-proportional.md) · [가중 가상 실행시간](m4-vruntime.md)
+
+[EEVDF](m4-eevdf.md) · [계층형 그룹](m4-hierarchy.md) · [전력·기한 배치](m3-power-placement.md) · [제한된 정책 확장](m4-bounded-extension.md)
