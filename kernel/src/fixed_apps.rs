@@ -27,10 +27,17 @@ static fixed_app_observations: Observations = Observations {
     b_at_a_done: AtomicU64::new(0),
 };
 
+#[cfg(jnox_pi4_witness)]
+pub(crate) fn witness_progress() -> [u64;2] {
+    core::array::from_fn(|i| fixed_app_observations.progress[i].load(Ordering::Acquire))
+}
+
 fn record_stack(role: usize) {
     let sp: u64;
     unsafe { asm!("mov {}, sp", out(reg) sp, options(nomem, nostack, preserves_flags)) };
     fixed_app_observations.stack_pointer[role].store(sp, Ordering::Relaxed);
+    #[cfg(jnox_pi4_witness)]
+    rt::witness::activation(role);
 }
 
 // Each counter has exactly one writer. The atomic publications also keep
@@ -39,10 +46,26 @@ fn record_stack(role: usize) {
 fn work_until(worker: usize, ready: &AtomicU64) {
     let progress = &fixed_app_observations.progress[worker];
     let mut n = progress.load(Ordering::Relaxed);
+    #[cfg(jnox_pi4_witness)]
+    let mut observed = 0;
     loop {
+        #[cfg(jnox_pi4_witness)]
+        let generation = rt::witness::generation();
         n = n.wrapping_add(1);
         progress.store(n, Ordering::Release);
-        if ready.load(Ordering::Acquire) != 0 {
+        #[cfg(jnox_pi4_witness)]
+        if generation != observed && rt::witness::probe(generation,worker,1,n) {
+            observed = generation;
+        }
+        #[cfg(jnox_rr_handoff)]
+        let value = if worker == 1 {
+            rt::witness::handoff::consume(ready)
+        } else {
+            ready.load(Ordering::Acquire)
+        };
+        #[cfg(not(jnox_rr_handoff))]
+        let value = ready.load(Ordering::Acquire);
+        if value != 0 {
             return;
         }
     }
@@ -115,6 +138,9 @@ mod selected {
         work_until(0, &fixed_app_observations.progress[1]);
         let peer = fixed_app_observations.progress[1].load(Ordering::Acquire);
         uart_write(b"FIXED RR A DONE\n");
+        #[cfg(jnox_rr_handoff)]
+        rt::witness::handoff::publish(&fixed_app_observations.b_at_a_done, peer);
+        #[cfg(not(jnox_rr_handoff))]
         fixed_app_observations.b_at_a_done.store(peer, Ordering::Release);
     }
 

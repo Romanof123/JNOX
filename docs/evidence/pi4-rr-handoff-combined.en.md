@@ -1,0 +1,11 @@
+# Combined Pi 4 RR load-image comparison and archive replay
+
+Combined commit 42a1ffe678a015913fda9c8656a30e204927dafd merges the #159 evidence parent 39d2c2e8f54fd29b26b3cbb60f46ee9a5e43b7f4 and #157 main 29b7f79c4c50e8c92a7abde4e74bc4fc9476d4c9. All comparisons used a fresh target at the same checkout and build paths, Rust 1.95.0 and one Cargo job. This receipt covers static builds and archived UART replay. New guest launches: zero.
+
+Against measured #159 source f1e2a730614f9313e711b89dcc5a1a9f0b96e760, ordinary RR, engineering RR and v1 FIFO/RR had equal entry points, PT_LOAD headers and payloads. Full ELFs differed. Both RR raw images matched their archived, executed bytes. The decoder received the archived UART and fresh combined ELF/image. Its inputs excluded archived verdicts. The original ordinary sequences passed O1/O2. E1/E2 returned 2, with valid structure and HIGH resumption. A released 1,958,498 and 1,744,682 in generation 5. Both matching B acquire intervals spanned generations 4–6. Single-generation attribution and later arithmetic progress remain unconfirmed.
+
+Against #157 main, the eight ordinary mutex images (PI/ceiling with default, prepared, stages or selected-return), legacy mutex, virt/Pi default and Pi directed-wake matched as whole ELFs. In 18 other fixed-priority/cooperative comparisons, entry and executable text matched. Each load image differed at exactly two source-line bytes. For each differing byte the receipt records virtual address, filename, line, and unchanged column. Cases cover Pi and virt FIFO/RR, virt empty/delayed/ties/late, cooperative events/single, virt fixed traces and FIFO/RR cost. The result retains the scope of the earlier mutex first boots and SMP build comparison. Physical-board behavior remains unmeasured.
+
+[ZIP](pi4-rr-handoff-combined.zip) · [CHG-073](pi4-rr-handoff-integration.en.md) · [CHG-072](ordinary-mutex-anchor-integrated/README.md)
+
+[Finite AMC integration / 유한 AMC 통합](pi4-rr-after-amc.en-ko.md)

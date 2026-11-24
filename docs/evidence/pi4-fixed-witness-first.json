@@ -1,0 +1,298 @@
+{
+  "record": "CHG-063 first model witness sessions",
+  "source": "c388505e576f3019966ae2c74215767097c6fc18",
+  "engineering_sessions": 2,
+  "decoder_exit_codes": [
+    1,
+    1
+  ],
+  "ordinary_sessions": 2,
+  "archive": "pi4-fixed-witness-first.zip",
+  "archive_bytes": 1718899,
+  "archive_sha256": "bb721e92f950075ed9427719bc5eca5db7c793c56343154fed45ddfa8e468394",
+  "paths": 182,
+  "unique_objects": 126,
+  "independent_report_sha256": "4fcc9f413e2203f64c8c86dfcd24003a902922c38dd9b1fd3cc317c9971bb899",
+  "original_session_hashes": {
+    "fifo-eng/first/verified.json": {
+      "stderr": "0e53ad00ce6c4773a605ed58ca60c687081f9f24860bb990ad47b1ff37a15cc8",
+      "uart.bin": "3c0977fc5875d5bc35852ba79dd499077795a2356ef73975d3dee280bc2c09bc",
+      "exceptions.log": "d0242f540d743d330c772aa425cd6fba1bacd0c51d0ebaf547a4393aba8df65b",
+      "manifest.json": "76000635781f35538491d72be83371d773ce92cb1634497ac5af275ca2f2cdb2",
+      "package-verify.log": "ca0f9b8d5cccf4f7c0bba37f6487ccd29653c081b1684c312f4a9f63b3b05272",
+      "kernel.elf": "bd309a1f80bd45f56b582f7d3c55836d1df2c7863880f7fca6526a34b0399991",
+      "kernel8.img": "a1c84352e8e022fa969375097bc6fbc8e64ceda8ca2f2ad75bb901e8979fa91e",
+      "run.json": "4b4116ec2bdd6fbb44084389e0aeebca74cb7633b213b758ccf8463e25b86fe6",
+      "boot/LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+      "boot/fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+      "boot/SHA256SUMS": "4cc50e6d38956178d57f0dd08aa76319bc63bf89dee65c48602fe44415510afb",
+      "boot/bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+      "boot/COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+      "boot/config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+      "boot/kernel8.img": "a1c84352e8e022fa969375097bc6fbc8e64ceda8ca2f2ad75bb901e8979fa91e",
+      "boot/start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+      "boot/overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02"
+    },
+    "fifo-normal/first/verified.json": {
+      "stderr": "0e53ad00ce6c4773a605ed58ca60c687081f9f24860bb990ad47b1ff37a15cc8",
+      "uart.bin": "27b7fd073a1169532eedc29242273597da093866d031ac4c4d00fdc6c008f15f",
+      "exceptions.log": "95f6247c4620c4af25791654ffed117f98eff640cbc97312f820b051c25e9654",
+      "manifest.json": "76fcf839d99c623ae889ac6c6fa073fd804c56a26487052760a54d8fc7e5aad3",
+      "package-verify.log": "ca0f9b8d5cccf4f7c0bba37f6487ccd29653c081b1684c312f4a9f63b3b05272",
+      "kernel.elf": "1b8392a7c35d42959388952c1e90ed344d3ec9af8fd621a7040af19b6321ef1c",
+      "kernel8.img": "28024395205b3c8a96d52323e937a3e46c9f03aab96fab81bf21e4b9af7d3118",
+      "run.json": "3c0bc32aabb02c358b2ac4732ac3fc9a62737af04f0ba4b7f0043a333d14d64d",
+      "boot/LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+      "boot/fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+      "boot/SHA256SUMS": "adb0c0d2df537aaa658f8dff7ae4304219cedd638661182b55aaee273d187538",
+      "boot/bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+      "boot/COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+      "boot/config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+      "boot/kernel8.img": "28024395205b3c8a96d52323e937a3e46c9f03aab96fab81bf21e4b9af7d3118",
+      "boot/start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+      "boot/overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02"
+    },
+    "rr-eng/first/verified.json": {
+      "stderr": "0e53ad00ce6c4773a605ed58ca60c687081f9f24860bb990ad47b1ff37a15cc8",
+      "uart.bin": "eeccb78bea27a54126b8abc0ff0899a1caaf24d2f6359b60f5ddf0b4da5c9c8d",
+      "exceptions.log": "69a1a44aa4d11053076cb1a0247211e10b4bf4a4f20ca47afcfc5d25e5cdf11d",
+      "manifest.json": "e059178316772c132b6633e249f990f784f10ad86979087cbfc21a8ba466c4c5",
+      "package-verify.log": "ca0f9b8d5cccf4f7c0bba37f6487ccd29653c081b1684c312f4a9f63b3b05272",
+      "kernel.elf": "15d6b1336f80b24462c16192a4b3ae733f237bbcbb0445e976c73b559f953ed7",
+      "kernel8.img": "f7cbb3dda3a279cfda0e4f3f6fc7b3f19620152909f69323527db75e922b4a36",
+      "run.json": "13709fc2d0e5b2e93983ba872d00c2d9b4788ad201993d39296b9dc93fab85f6",
+      "boot/LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+      "boot/fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+      "boot/SHA256SUMS": "422cb07ddb8716b6f65c929bfa4b92fee8c00c2186f12749f2ead960fb3b836b",
+      "boot/bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+      "boot/COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+      "boot/config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+      "boot/kernel8.img": "f7cbb3dda3a279cfda0e4f3f6fc7b3f19620152909f69323527db75e922b4a36",
+      "boot/start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+      "boot/overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02"
+    },
+    "rr-normal/first/verified.json": {
+      "stderr": "0e53ad00ce6c4773a605ed58ca60c687081f9f24860bb990ad47b1ff37a15cc8",
+      "uart.bin": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+      "exceptions.log": "77e207fb9e330c7070d2a551fdf97bea39ef46e432a9cdf14db18e912c331a34",
+      "manifest.json": "5758f336940e7e7f790691f79f18ee9de5b697abf4b61f7d5db0a812a706e4ef",
+      "package-verify.log": "ca0f9b8d5cccf4f7c0bba37f6487ccd29653c081b1684c312f4a9f63b3b05272",
+      "kernel.elf": "ec12da6a702f9548f7b9cb6d02032a425e30415fc34de66fc438b27b7212b31e",
+      "kernel8.img": "69db6275a2f6b2dbab0893e92495ce4d6bd3a7480027b1b16ddd5acf9c64beee",
+      "run.json": "e079eb47d4234903eceb5e0eb0ad39e4563e3b761e8f6b3b0308f1db56a8b2a0",
+      "boot/LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+      "boot/fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+      "boot/SHA256SUMS": "c6f9e60104c288c97c9b5c5b4c5f9121642cfc0791ac11ce8dde6ccc7f619462",
+      "boot/bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+      "boot/COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+      "boot/config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+      "boot/kernel8.img": "69db6275a2f6b2dbab0893e92495ce4d6bd3a7480027b1b16ddd5acf9c64beee",
+      "boot/start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+      "boot/overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02"
+    }
+  },
+  "findings": {
+    "fifo": {
+      "normal": {
+        ".text": 13560,
+        ".rodata": 1464,
+        ".data": 288,
+        ".bss": 81992,
+        ".stack": 16384,
+        ".comment": 153,
+        ".symtab": 6096,
+        ".shstrtab": 68,
+        ".strtab": 5123,
+        "elf": 94296,
+        "raw": 16672,
+        "linked_witness_symbols": [],
+        "uart_sha256": "27b7fd073a1169532eedc29242273597da093866d031ac4c4d00fdc6c008f15f"
+      },
+      "eng": {
+        ".text": 17340,
+        ".rodata": 1736,
+        ".data": 288,
+        ".bss": 101560,
+        ".stack": 16384,
+        ".comment": 153,
+        ".symtab": 7464,
+        ".shstrtab": 68,
+        ".strtab": 6799,
+        "elf": 101440,
+        "raw": 20768,
+        "linked_witness_symbols": [
+          "0000000000082d54 000000000000001c T pi4_witness_site",
+          "0000000000085170 0000000000014000 B pi4_witness_stacks",
+          "0000000000082d70 0000000000000318 T pi4_witness_terminal"
+        ],
+        "uart_sha256": "3c0977fc5875d5bc35852ba79dd499077795a2356ef73975d3dee280bc2c09bc"
+      },
+      "observed": {
+        "high_generation": 4,
+        "resumed_generation": 5,
+        "progress_before_after": [
+          15257564,
+          15257565
+        ],
+        "frame_elr_sp": [
+          560512,
+          529080,
+          561344
+        ],
+        "sample_brackets": [
+          {
+            "gen": 1,
+            "phase": 0,
+            "role": 0,
+            "ticks": 23009,
+            "stack_depth": 144
+          },
+          {
+            "gen": 2,
+            "phase": 0,
+            "role": 1,
+            "ticks": 2722,
+            "stack_depth": 144
+          },
+          {
+            "gen": 3,
+            "phase": 1,
+            "role": 0,
+            "ticks": 12769,
+            "stack_depth": 176
+          },
+          {
+            "gen": 4,
+            "phase": 0,
+            "role": 2,
+            "ticks": 2947,
+            "stack_depth": 160
+          },
+          {
+            "gen": 5,
+            "phase": 1,
+            "role": 0,
+            "ticks": 2029,
+            "stack_depth": 176
+          }
+        ],
+        "peer_irq_generations": []
+      },
+      "parent_raw_size": 16672,
+      "changed_common_raw_bytes": 2
+    },
+    "rr": {
+      "normal": {
+        ".text": 13472,
+        ".rodata": 1360,
+        ".data": 288,
+        ".bss": 81992,
+        ".stack": 16384,
+        ".comment": 153,
+        ".symtab": 5976,
+        ".shstrtab": 68,
+        ".strtab": 5106,
+        "elf": 94160,
+        "raw": 16672,
+        "linked_witness_symbols": [],
+        "uart_sha256": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0"
+      },
+      "eng": {
+        ".text": 17304,
+        ".rodata": 1629,
+        ".data": 288,
+        ".bss": 101560,
+        ".stack": 16384,
+        ".comment": 153,
+        ".symtab": 7344,
+        ".shstrtab": 68,
+        ".strtab": 6782,
+        "elf": 101304,
+        "raw": 20768,
+        "linked_witness_symbols": [
+          "0000000000082d10 000000000000001c T pi4_witness_site",
+          "0000000000085170 0000000000014000 B pi4_witness_stacks",
+          "0000000000082d2c 0000000000000338 T pi4_witness_terminal"
+        ],
+        "uart_sha256": "eeccb78bea27a54126b8abc0ff0899a1caaf24d2f6359b60f5ddf0b4da5c9c8d"
+      },
+      "observed": {
+        "high_generation": 2,
+        "resumed_generation": 3,
+        "progress_before_after": [
+          18722743,
+          18722744
+        ],
+        "frame_elr_sp": [
+          560496,
+          529288,
+          561328
+        ],
+        "sample_brackets": [
+          {
+            "gen": 1,
+            "phase": 0,
+            "role": 0,
+            "ticks": 10984,
+            "stack_depth": 160
+          },
+          {
+            "gen": 1,
+            "phase": 1,
+            "role": 0,
+            "ticks": 20113,
+            "stack_depth": 192
+          },
+          {
+            "gen": 2,
+            "phase": 0,
+            "role": 2,
+            "ticks": 1749,
+            "stack_depth": 160
+          },
+          {
+            "gen": 3,
+            "phase": 1,
+            "role": 0,
+            "ticks": 3295,
+            "stack_depth": 192
+          },
+          {
+            "gen": 4,
+            "phase": 0,
+            "role": 1,
+            "ticks": 4020,
+            "stack_depth": 160
+          },
+          {
+            "gen": 4,
+            "phase": 1,
+            "role": 1,
+            "ticks": 10009,
+            "stack_depth": 192
+          },
+          {
+            "gen": 5,
+            "phase": 1,
+            "role": 0,
+            "ticks": 950,
+            "stack_depth": 192
+          },
+          {
+            "gen": 6,
+            "phase": 1,
+            "role": 1,
+            "ticks": 236,
+            "stack_depth": 192
+          }
+        ],
+        "peer_irq_generations": [
+          4,
+          5
+        ]
+      },
+      "parent_raw_size": 16672,
+      "changed_common_raw_bytes": 2
+    }
+  }
+}

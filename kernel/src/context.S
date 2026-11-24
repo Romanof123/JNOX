@@ -246,6 +246,15 @@ sched_start_frame:
     mrs x10, cntpct_el0
     str x10, [x9, #16]
     .endif
+    .ifdef JNOX_PI4_MIG
+    mrs x9, mpidr_el1
+    and x9, x9, #1
+    adrp x10, pi4_migration_return_ticks
+    add x10, x10, :lo12:pi4_migration_return_ticks
+    isb
+    mrs x11, cntpct_el0
+    str x11, [x10, x9, lsl #3]
+    .endif
     integer_pairs ldp
     ldr x30, [sp, #240]
     add sp, sp, #{frame_size}

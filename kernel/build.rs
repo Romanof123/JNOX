@@ -173,6 +173,31 @@ fn main() {
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_pi4_witness)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_rr_handoff)");
+    let handoff = selector("JNOX_RR_HANDOFF");
+    let witness = selector("JNOX_PI4_WITNESS");
+    let image_id = selector("JNOX_PI4_WITNESS_ID");
+    if let Some(value) = handoff {
+        assert!(value == "1" && witness.as_deref() == Some("1") && app.as_deref() == Some("fixed-rr")
+            && env::var("TARGET").as_deref() == Ok("aarch64-unknown-none")
+            && selector("JNOX_ARCH").as_deref().unwrap_or("aarch64") == "aarch64",
+            "JNOX_RR_HANDOFF=1 requires the AArch64 Pi 4 fixed RR witness");
+        println!("cargo::rustc-cfg=jnox_rr_handoff");
+    }
+    if let Some(mode) = witness {
+        assert!(mode == "1" && board == "pi4" && bench == "boot"
+            && profile.as_deref() == Some("fixed") && trace.is_none()
+            && matches!(app.as_deref(), Some("fixed-fifo" | "fixed-rr"))
+            && env::vars_os().all(|(k,_)| !k.to_string_lossy().starts_with("CARGO_FEATURE_")),
+            "JNOX_PI4_WITNESS=1 requires pi4 fixed FIFO/RR without features, cost or trace");
+        let id = image_id.as_deref().and_then(|s| s.parse::<u64>().ok()).filter(|&v| v != 0)
+            .expect("provide a nonzero decimal JNOX_PI4_WITNESS_ID for the capture manifest");
+        println!("cargo::rustc-env=PI4_WITNESS_ID={id}");
+        println!("cargo::rustc-cfg=jnox_pi4_witness");
+    } else {
+        assert!(image_id.is_none(), "JNOX_PI4_WITNESS_ID requires JNOX_PI4_WITNESS=1");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_cost)");
     if let Some(value) = selector("JNOX_FIXED_COST") {
         assert!(value == "1" && board == "virt" && profile.as_deref() == Some("fixed")
@@ -222,6 +247,7 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_mutex_anchor");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_rust_amc)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_pi4_migration)");
     println!("cargo::rustc-check-cfg=cfg(jnox_eevdf_app)");
     match profile.as_deref() {
         Some("eevdf") => {
@@ -241,11 +267,16 @@ fn main() {
             println!("cargo::rustc-env=JNOX_AMC_APP={name}");
         }
         Some("smp") => {
-            assert!(board == "pi4" && app.as_deref() == Some("directed-wake")
+            let selected = app.as_deref().unwrap_or("");
+            assert!(board == "pi4" && matches!(selected, "directed-wake" | "migration-global" | "migration-partitioned" | "migration-clustered")
                 && bench == "boot" && trace.is_none() && scenario.is_none()
                 && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
                 "directed-wake requires Pi 4, smp profile and no other benchmark or runtime selector");
             println!("cargo::rustc-cfg=jnox_pi4_smp");
+            if selected != "directed-wake" {
+                println!("cargo::rustc-cfg=jnox_pi4_migration");
+                println!("cargo::rustc-env=JNOX_MIGRATION_APP={selected}");
+            }
         }
         Some("mutex") => {
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),

@@ -69,7 +69,7 @@ mod deadline_policy;
     jnox_bench = "periodic_overrun"
 ))]
 mod dispatch_policy;
-#[cfg(any(jnox_rust_amc, jnox_ordinary_mutex, jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
+#[cfg(any(jnox_pi4_migration, jnox_rust_amc, jnox_ordinary_mutex, jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
 #[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"), allow(dead_code))]
 mod domain_policy;
 #[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
@@ -165,7 +165,7 @@ mod service_policy;
 mod smp;
 #[cfg(any(jnox_bench = "smp", jnox_bench = "power"))]
 mod smp_boot;
-#[cfg(jnox_bench = "smp")]
+#[cfg(any(jnox_pi4_migration, jnox_bench = "smp"))]
 mod smp_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "cbs_wake", jnox_bench = "partition"))]
 mod temporal_policy;
@@ -178,8 +178,14 @@ mod vruntime_policy;
 
 #[cfg(jnox_pi4_smp)]
 mod pi4_smp_bsp;
-#[cfg(jnox_pi4_smp)]
+#[cfg(all(jnox_pi4_smp, not(jnox_pi4_migration)))]
 mod pi4_smp_workload;
+#[cfg(jnox_pi4_migration)]
+mod pi4_migration;
+#[cfg(jnox_pi4_migration)]
+mod pi4_migration_tasks;
+#[cfg(jnox_pi4_migration)]
+mod pi4_migration_log;
 
 static mut BSS_PROBE: u64 = 0;
 
