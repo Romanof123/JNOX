@@ -14,6 +14,8 @@ SDK = ROOT / "sdk/native-aarch64"
 SOURCES = {
     "startup-probe": "native_startup_probe.c",
     "weighted-share": "native_weighted_monitor.c",
+    "partition-p": "native_partition_monitor.c",
+    "partition-q": "native_partition_monitor.c",
     "weighted-wake": "native_weighted_monitor.c",
 }
 TARGET = "aarch64-unknown-none"

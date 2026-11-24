@@ -1,17 +1,40 @@
-//! Single CPU, two private EL0 contexts. Only masked EL1 code mutates State.
+//! Single CPU with private native EL0 contexts. Only masked EL1 code mutates State.
+#[cfg(not(jnox_native_partition))]
+use crate::vruntime_policy::{Lease, VruntimeScheduler};
 use crate::{
     native_elf::{self, Permission},
     native_process_mmu as mmu,
     native_v1_note::{native_v1_note, result_object},
     park, uart_write,
-    vruntime_policy::{Lease, VruntimeScheduler},
 };
+#[cfg(jnox_native_partition)]
+#[path = "native_partition.rs"]
+mod partition;
+#[cfg(jnox_native_partition)]
+pub(super) fn run() -> ! {
+    partition::run()
+}
 use core::{
     arch::{asm, global_asm},
     mem::{offset_of, size_of},
     ptr,
 };
-global_asm!(include_str!("native_vruntime_vectors.S"), options(raw));
+#[cfg(jnox_native_partition)]
+global_asm!(
+    concat!(
+        ".set JNOX_CHECK_WINDOW,1\n",
+        include_str!("native_vruntime_vectors.S")
+    ),
+    options(raw)
+);
+#[cfg(not(jnox_native_partition))]
+global_asm!(
+    concat!(
+        ".set JNOX_CHECK_WINDOW,0\n",
+        include_str!("native_vruntime_vectors.S")
+    ),
+    options(raw)
+);
 unsafe extern "C" {
     fn native_vruntime_start(f: *const UserFrame) -> !;
     static native_vruntime_return_tick: u64;
@@ -92,6 +115,9 @@ fn ticks() -> u64 {
 fn fail(code: u64) -> ! {
     header(8, code);
     header(1, 4);
+    #[cfg(jnox_native_partition)]
+    uart_write(b"NATIVE PARTITION FAIL\n");
+    #[cfg(not(jnox_native_partition))]
     uart_write(b"NATIVE VRUNTIME FAIL\n");
     park()
 }
@@ -128,14 +154,9 @@ fn init_irq() {
     write(CPU, 1);
     unsafe { asm!("dsb sy", "isb", options(nostack)) }
 }
-fn tail(p: usize, wake: bool) -> [u8; 80] {
+fn arguments(args: [&[u8]; 3]) -> [u8; 80] {
     let mut bytes = [0; 80];
     let sp = mmu::STACK_TOP - bytes.len();
-    let args: [&[u8]; 3] = [
-        b"weighted\0",
-        if p == 0 { b"A\0" } else { b"B\0" },
-        if wake { b"wake\0" } else { b"share\0" },
-    ];
     bytes[..8].copy_from_slice(&3u64.to_le_bytes());
     let mut offset = 40;
     for (i, a) in args.iter().enumerate() {
@@ -145,6 +166,16 @@ fn tail(p: usize, wake: bool) -> [u8; 80] {
     }
     bytes
 }
+#[cfg(not(jnox_native_partition))]
+fn tail(p: usize, wake: bool) -> [u8; 80] {
+    let args: [&[u8]; 3] = [
+        b"weighted\0",
+        if p == 0 { b"A\0" } else { b"B\0" },
+        if wake { b"wake\0" } else { b"share\0" },
+    ];
+    arguments(args)
+}
+#[cfg(not(jnox_native_partition))]
 struct State {
     policy: VruntimeScheduler<2>,
     frames: [UserFrame; 2],
@@ -160,7 +191,9 @@ struct State {
     exited: [bool; 2],
     result: usize,
 }
+#[cfg(not(jnox_native_partition))]
 static mut STATE: Option<State> = None;
+#[cfg(not(jnox_native_partition))]
 impl State {
     fn service(&self, p: usize) -> u64 {
         self.policy.service(p).unwrap_or_else(|| fail(3))
@@ -339,39 +372,8 @@ impl State {
     fn trap(&mut self, f: &UserFrame, vector: u64, entry: u64) -> *const UserFrame {
         let l = self.live.take().unwrap_or_else(|| fail(9));
         let p = l.task;
-        if mmu::active() != Some(p)
-            || f.current_el != 4
-            || f.spsr & 0x3ff != 0x340
-            || !(mmu::STACK_BOTTOM as u64..=mmu::STACK_TOP as u64).contains(&f.sp)
-            || f.sp % 16 != 0
-        {
-            fail(10)
-        }
-        self.frames[p] = *f;
-        let start = unsafe { ptr::read_volatile(&raw const native_vruntime_return_tick) };
-        // Reading GICC_IAR acknowledges the level-sensitive PPI. Keep its
-        // source asserted through acknowledgement. SVC never reads the IAR.
-        let iar = if vector == 0x480 {
-            u64::from(read(CPU + 12))
-        } else {
-            u64::MAX
-        };
-        let compare: u64;
-        let ctl: u64;
-        unsafe {
-            asm!("mrs {},cntp_cval_el0","mrs {},cntp_ctl_el0","msr cntp_ctl_el0,xzr","isb",out(reg)compare,out(reg)ctl,options(nostack))
-        }
-        if vector == 0x480 {
-            if iar & 1023 != 30 || ctl & 7 != 5 || entry < compare {
-                // Failure-only row: no interval, service or return is credited.
-                row(13, entry, p, &[l.sequence, vector, iar, ctl, compare, start, f.elr]);
-                fail(11)
-            }
-            write(CPU + 16, iar as u32);
-            unsafe { asm!("dsb sy", options(nostack)) };
-        } else if vector != 0x400 || f.esr >> 26 != 0x15 || f.esr & 0xffff != 0x4a01 {
-            fail(12)
-        }
+        let (start, compare, ctl, iar) =
+            observe_trap(p, f, vector, entry, l.sequence, &mut self.frames[p]);
         if start == 0
             || compare
                 != start
@@ -454,6 +456,55 @@ impl State {
         self.select()
     }
 }
+fn observe_trap(
+    p: usize,
+    f: &UserFrame,
+    vector: u64,
+    entry: u64,
+    sequence: u64,
+    saved: &mut UserFrame,
+) -> (u64, u64, u64, u64) {
+    if mmu::active() != Some(p)
+        || f.current_el != 4
+        || f.spsr & 0x3ff != 0x340
+        || !(mmu::STACK_BOTTOM as u64..=mmu::STACK_TOP as u64).contains(&f.sp)
+        || f.sp % 16 != 0
+    {
+        fail(10)
+    }
+    *saved = *f;
+    let start = unsafe { ptr::read_volatile(&raw const native_vruntime_return_tick) };
+    // Reading GICC_IAR acknowledges the level-sensitive PPI. Keep its
+    // source asserted through acknowledgement. SVC never reads the IAR.
+    let iar = if vector == 0x480 {
+        u64::from(read(CPU + 12))
+    } else {
+        u64::MAX
+    };
+    let compare: u64;
+    let ctl: u64;
+    unsafe {
+        asm!("mrs {},cntp_cval_el0","mrs {},cntp_ctl_el0","msr cntp_ctl_el0,xzr","isb",out(reg)compare,out(reg)ctl,options(nostack))
+    }
+    if vector == 0x480 {
+        if iar & 1023 != 30 || ctl & 7 != 5 || entry < compare {
+            // Failure-only row: no interval, service or return is credited.
+            row(
+                13,
+                entry,
+                p,
+                &[sequence, vector, iar, ctl, compare, start, f.elr],
+            );
+            fail(11)
+        }
+        write(CPU + 16, iar as u32);
+        unsafe { asm!("dsb sy", options(nostack)) };
+    } else if vector != 0x400 || f.esr >> 26 != 0x15 || f.esr & 0xffff != 0x4a01 {
+        fail(12)
+    }
+    (start, compare, ctl, iar)
+}
+#[cfg(not(jnox_native_partition))]
 #[unsafe(no_mangle)]
 extern "C" fn native_vruntime_trap(
     frame: *const UserFrame,
@@ -463,7 +514,7 @@ extern "C" fn native_vruntime_trap(
     let s = unsafe { (*(&raw mut STATE)).as_mut().unwrap_or_else(|| fail(18)) };
     s.trap(unsafe { &*frame }, vector, entry)
 }
-pub(super) fn run() -> ! {
+fn load_plan() -> native_elf::LoadPlan<'static> {
     let plan = native_elf::plan(ELF, 0x400000..0x800000).unwrap_or_else(|_| fail(19));
     if plan.entry != 0x400000
         || !plan.segments().iter().map(|s| s.permission).eq([
@@ -475,6 +526,11 @@ pub(super) fn run() -> ! {
     {
         fail(20)
     }
+    plan
+}
+#[cfg(not(jnox_native_partition))]
+pub(super) fn run() -> ! {
+    let plan = load_plan();
     let result =
         result_object(ELF, &plan, b"native_weighted_result", 224).unwrap_or_else(|| fail(21));
     let wake = env!("JNOX_WEIGHTED_NATIVE_APP") == "weighted-wake";

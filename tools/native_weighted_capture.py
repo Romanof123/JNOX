@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture one native weighted boot: ARM CLOCK NEW_DIR KERNEL_ELF USER_ELF PROBE_C SOURCE_REV."""
+"""Capture one weighted or cyclic-partition boot: ARM CLOCK NEW_DIR KERNEL_ELF USER_ELF PROBE_C SOURCE_REV."""
 import argparse
 from pathlib import Path
 import re
@@ -14,6 +14,7 @@ SUCCESS = "END"
 TERMINAL = rb"(?m)^NATIVE VRUNTIME (END|FAIL)\n"
 
 ARMS = ("share", "wake")
+PARTITIONS = ("partition-p", "partition-q")
 CLOCKS = ("default", "icount3")
 
 
@@ -79,12 +80,13 @@ def capture(args):
             probe_sha256=sha(root / "probe.c"),
         ),
     )
-    return observe(root, cmd, base, limit, TERMINAL, SUCCESS, observer)
+    terminal = rb"(?m)^NATIVE PARTITION (END|FAIL)\n" if args.arm in PARTITIONS else TERMINAL
+    return observe(root, cmd, base, limit, terminal, SUCCESS, observer)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("arm", choices=ARMS)
+    parser.add_argument("arm", choices=(*ARMS, *PARTITIONS))
     parser.add_argument("clock", choices=CLOCKS)
     for name in ("root", "kernel", "user", "probe"):
         parser.add_argument(name, type=Path)

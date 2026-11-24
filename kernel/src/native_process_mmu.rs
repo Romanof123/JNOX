@@ -1,4 +1,4 @@
-//! Two immutable user address spaces on one virt CPU. Included only by the process scheduler.
+//! Fixed immutable user address spaces on one virt CPU. Included only by the process scheduler.
 use crate::native_elf::{LoadPlan, Permission};
 use core::{arch::asm, ptr};
 
@@ -49,7 +49,11 @@ impl Space {
     };
 }
 
-static mut SPACES: [Space; 2] = [const { Space::EMPTY }; 2];
+#[cfg(jnox_native_partition)]
+pub(super) const PROCESS_COUNT: usize = 3;
+#[cfg(not(jnox_native_partition))]
+pub(super) const PROCESS_COUNT: usize = 2;
+static mut SPACES: [Space; PROCESS_COUNT] = [const { Space::EMPTY }; PROCESS_COUNT];
 static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
 static mut UART: Table = Table::EMPTY;
@@ -159,9 +163,9 @@ fn root_id(pid: usize) -> u64 {
     (root as u64) | (((pid + 1) as u64) << 48)
 }
 
-/// Cold EL1h only, one core, both images and tails borrowed from kernel memory.
+/// Cold EL1h only, one core, all images and tails borrowed from kernel memory.
 /// The initial SP for each process is STACK_TOP minus its supplied tail length.
-pub(crate) unsafe fn install(plans: [&LoadPlan<'_>; 2], stack_tails: [&[u8]; 2], first: usize) -> Result<(), &'static str> {
+pub(crate) unsafe fn install(plans: [&LoadPlan<'_>; PROCESS_COUNT], stack_tails: [&[u8]; PROCESS_COUNT], first: usize) -> Result<(), &'static str> {
     let (el, masks, spsel, ctl, sp, pc): (u64, u64, u64, u64, usize, usize);
     unsafe {
         asm!("mrs {}, CurrentEL", "mrs {}, daif", "mrs {}, SPSel", "mrs {}, sctlr_el1",
@@ -181,9 +185,10 @@ pub(crate) unsafe fn install(plans: [&LoadPlan<'_>; 2], stack_tails: [&[u8]; 2],
         || !(rw..=end).contains(&sp) {
         return Err("native kernel identity span");
     }
-    if first >= 2 { return Err("native initial pid"); }
-    validate(plans[0], stack_tails[0])?;
-    validate(plans[1], stack_tails[1])?;
+    if first >= PROCESS_COUNT { return Err("native initial pid"); }
+    for p in 0..PROCESS_COUNT {
+        validate(plans[p], stack_tails[p])?;
+    }
     // Cold startup cleared all BSS. Every input rejection precedes these
     // writes, including the second process's size and address checks.
     unsafe {
@@ -197,13 +202,15 @@ pub(crate) unsafe fn install(plans: [&LoadPlan<'_>; 2], stack_tails: [&[u8]; 2],
         page(&raw mut UART, 0x0900_0000, 0x0900_0000, DEVICE);
         page(&raw mut GIC, 0x0800_0000, 0x0800_0000, DEVICE);
         page(&raw mut GIC, 0x0801_0000, 0x0801_0000, DEVICE);
-        // Same physical page for both tasks. Only its first u64 is published;
+        // Shared read-only control page. The first word signals completion and
+        // the partition selector also publishes a dispatch generation;
         // both adjacent virtual pages remain unmapped. Privileged code writes
         // through its identity alias; user mappings are read-only and XN.
         page(&raw mut CONTROL, CONTROL_VA, (&raw const CONTROL_RAM) as usize,
              NORMAL | USER | NG | RO | UXN | PXN);
-        populate(0, plans[0], stack_tails[0]);
-        populate(1, plans[1], stack_tails[1]);
+        for p in 0..PROCESS_COUNT {
+            populate(p, plans[p], stack_tails[p]);
+        }
         // Single CPU, cold uncached mappings. MAIR[0] Normal non-cacheable,
         // MAIR[1] Device-nGnRnE; no cacheable alias or dirty D-cache line.
         // T0SZ=25 starts at L1 (39-bit VA); TTBR1 walks disabled, 32-bit PA.
@@ -219,7 +226,7 @@ pub(crate) unsafe fn install(plans: [&LoadPlan<'_>; 2], stack_tails: [&[u8]; 2],
 }
 
 pub(crate) fn space_id(pid: usize) -> Option<u64> {
-    if pid >= 2 || !unsafe { INSTALLED } {
+    if pid >= PROCESS_COUNT || !unsafe { INSTALLED } {
         return None;
     }
     Some(root_id(pid))
@@ -231,7 +238,7 @@ pub(crate) fn active() -> Option<usize> {
     }
     let ttbr: u64;
     unsafe { asm!("mrs {}, ttbr0_el1", out(reg) ttbr, options(nostack, preserves_flags)) };
-    (0..2).find(|&pid| root_id(pid) == ttbr)
+    (0..PROCESS_COUNT).find(|&pid| root_id(pid) == ttbr)
 }
 
 fn irq_masked() -> bool {
@@ -342,4 +349,14 @@ pub(crate) fn set_end() -> bool {
              word = in(reg) word, options(nostack, preserves_flags));
     }
     true
+}
+
+/// EL1 publishes before ERET. User readers acquire the matching generation.
+#[cfg(jnox_native_partition)]
+pub(super) fn publish_generation(generation: u64) {
+    unsafe {
+        let word = (&raw mut CONTROL_RAM).cast::<u64>().add(1);
+        asm!("stlr {generation}, [{word}]", generation = in(reg) generation,
+             word = in(reg) word, options(nostack, preserves_flags));
+    }
 }

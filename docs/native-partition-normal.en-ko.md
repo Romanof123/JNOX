@@ -4,7 +4,7 @@
 
 ## Engineering requirements and design
 
-Trace REQ-002/005/023 → DES-003/012 → VER-002/005/023 for scheduling and REQ-020 → the native ELF launch path. The [upstream partition plan](pol-006-rust-partition-plan.en.md) defines the timing contract. This configuration replaces its EL1 fixture with two ordinary, separately mapped native EL0 processes and a third EL0 idle context. The three copies of one static SDK ELF have distinct TTBR0 roots, ASIDs, writable result pages, stacks and persistent register frames. EL1 selects contexts and programs the physical counter timer on a single Cortex-A72. EL0 reads the counter and a read-only dispatch generation. Only an ordinary exit SVC occurs after the scoring interval.
+Trace REQ-002/005/023 → DES-003/012 → VER-002/005/023 for scheduling and REQ-020 → DES-005 → VER-020 for the native application boundary. The [upstream partition plan](pol-006-rust-partition-plan.en.md) defines the timing contract. This configuration replaces its EL1 fixture with two ordinary, separately mapped native EL0 processes and a third EL0 idle context. The three copies of one static SDK ELF have distinct TTBR0 roots, ASIDs, writable result pages, stacks and persistent register frames. EL1 selects contexts and programs the physical counter timer on a single Cortex-A72. EL0 reads the counter and a read-only dispatch generation. Only an ordinary exit SVC occurs after the scoring interval.
 
 | Selector | Repeating half-open windows in units of q |
 | --- | --- |
@@ -17,11 +17,15 @@ Trace REQ-002/005/023 → DES-003/012 → VER-002/005/023 for scheduling and REQ
 4. For each nominal release d retain the previous IRQ entry i (E for initial dispatch), selection, last pre-ERET sample r, first observed user tick x and closing IRQ entry j; preserve actual CVAL/CTL/IAR. Score d ≤ i ≤ r ≤ x < j and x−d ≤ F/1000. Replay from the original E across wraps; count each [d,next d) once, including outgoing spill. Keep the measured entry-to-next-pre-ERET interval, pre-ERET-to-user observation bracket and user-observation-to-next-entry interval distinct. The vector samples j just after exception entry; this last interval includes that entry uncertainty. Use the independent QEMU exception trace to check ERET and interrupted PCs. Never convert the pre-ERET sample into an EL0 time. Close timing only when the raw counter evidence supports the original limit.
 5. Retain the first cold capture of each table and clock (`default` then `icount3`), one guest at a time. Package through `tools/build_native_el0.py --app partition-p|partition-q --out NEW_DIR`. Capture through `tools/native_weighted_capture.py TABLE CLOCK NEW_CAPTURE KERNEL USER PROBE SOURCE_REV`. A terminal marker only identifies capture completion. Independent validation needs the raw RAM, linked kernel and user ELFs, launch/configuration, UART and ordered exception trace. Include first-frame readiness, explicit idle, all wraps, bounds and both final result pages. Recheck the unchanged weighted selectors after shared-path changes.
 
+[Native dispatch source](../kernel/src/native_partition.rs) · [Worker and idle source](../examples/portability/native_partition_monitor.c) · [RAM/ELF and exception replay](../tools/native_partition_replay.py). Replay each preserved capture with `python3 tools/native_partition_replay.py CAPTURE SESSION_SHA256`. The report lists each generation, nominal and actual times, accounting intervals, observed spill, timing misses and final worker products. A timing miss produces a nonzero status after printing the bounded report.
+
 The #178 source provides the two-process launch, vector and timer primitives. Its weighted measurements do not establish these results. Native P/Q results, physical timing, target-specific safety constraints, fault cases and product acceptance require separate evidence.
 
 ## 한국어 요구사항과 설계
 
 [상위 POL-006 계획](pol-006-rust-partition-plan.md)의 표와 1 ms 기준을 그대로 사용한다. Cortex-A72 단일 코어에서 A, B 및 유휴 문맥을 각각 별도 TTBR0, ASID, 쓰기 가능 결과 페이지, 스택과 보존 프레임에 둔다. 동일한 네이티브 SDK ELF를 세 번 적재하며 EL1이 스케줄링과 물리 타이머를 담당한다. EL0는 읽기 전용 디스패치 세대 값과 물리 카운터를 읽는다.
+
+추적 경로는 스케줄링 REQ-002/005/023 → DES-003/012 → VER-002/005/023 및 사용자 경계 REQ-020 → DES-005 → VER-020이다. 위 원본 재생 도구에 보존한 세션 해시를 전달하면 각 창과 종료 결과를 확인할 수 있다.
 
 1. q=F/20, F는 1000의 배수다. 표 P는 A 2q, B 1q, 유휴 1q 순서이고 Q는 B 1q, 유휴 1q, A 2q, B 1q 순서다. 기존 순환 스케줄러가 양의 창 길이와 프레임 전체 길이를 검사한다. 처음에는 A만 준비 상태다. 첫 명시적 유휴 창에서 B를 준비시킨다. 준비 전 B 창에는 유휴 문맥이 실행된다. Q에서 B가 프레임 경계를 넘어 연속 실행할 때에도 각 창에 대한 타이머 인터럽트와 복귀 후 EL0 관측을 따로 기록한다.
 2. 세 프레임 전체와 네 번째 프레임의 첫 복귀를 측정한다. 마지막 관측 창은 닫는 인터럽트까지 실행하고 서비스 통계를 별도 표시한다. 이후 완료를 공개하고 A와 B의 종료 SVC를 차례로 회수한다. 각 회수 시간은 q 이내다. 모든 타이머 경계는 최초 E를 기준으로 계산한다. 정상 실행 중 놓친 경계는 미충족으로 기록한다.

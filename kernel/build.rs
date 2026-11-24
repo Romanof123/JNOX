@@ -303,6 +303,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_eevdf_app)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_el0)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_vruntime)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_partition)");
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
     if profile.as_deref() != Some("native") {
@@ -311,7 +312,7 @@ fn main() {
     }
     match profile.as_deref() {
         Some("native") => {
-            assert!(board == "virt" && matches!(app.as_deref(), Some("startup-probe" | "weighted-share" | "weighted-wake"))
+            assert!(board == "virt" && matches!(app.as_deref(), Some("startup-probe" | "weighted-share" | "weighted-wake" | "partition-p" | "partition-q"))
                 && bench == "boot" && trace.is_none() && scenario.is_none()
                 && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
                 "native startup-probe requires virt and no benchmark features");
@@ -320,6 +321,9 @@ fn main() {
             if app.as_deref() == Some("startup-probe") {
                 println!("cargo::rustc-cfg=jnox_native_el0");
             } else {
+                if matches!(app.as_deref(), Some("partition-p" | "partition-q")) {
+                    println!("cargo::rustc-cfg=jnox_native_partition");
+                }
                 println!("cargo::rustc-cfg=jnox_native_vruntime");
                 println!("cargo::rustc-env=JNOX_WEIGHTED_NATIVE_APP={}", app.as_deref().unwrap());
             }
