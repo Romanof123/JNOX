@@ -26,6 +26,26 @@ mod proportional_tests;
 mod vruntime_policy;
 #[path = "vruntime_tests.rs"]
 mod vruntime_tests;
+#[path = "../kernel/src/eevdf_policy.rs"]
+mod eevdf_policy;
+#[path = "eevdf_tests.rs"]
+mod eevdf_tests;
+#[path = "../kernel/src/hierarchy_policy.rs"]
+mod hierarchy_policy;
+#[path = "hierarchy_tests.rs"]
+mod hierarchy_tests;
+#[path = "hierarchy_oracle.rs"]
+mod hierarchy_oracle;
+#[path = "../kernel/src/power_policy.rs"]
+mod power_policy;
+#[path = "power_tests.rs"]
+mod power_tests;
+#[path = "power_oracle.rs"]
+mod power_oracle;
+#[path = "../kernel/src/extension_policy.rs"]
+mod extension_policy;
+#[path = "extension_tests.rs"]
+mod extension_tests;
 
 // Import each backend and register its guest check as a separate host test.
 macro_rules! policy_tests {

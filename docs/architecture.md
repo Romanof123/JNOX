@@ -114,3 +114,5 @@ EDF·LLF 시간 격자 구성은 실행 중인 작업에 경과 시간을 차감
 뮤텍스 구성은 실제 차단·타이머 만료·소유권 양도 때 유효 우선순위를 대조한다. [뮤텍스 합격 기준](m1-mutex.md)
 
 [복권·스트라이드](m4-proportional.md) · [가중 가상 실행시간](m4-vruntime.md)
+
+[EEVDF](m4-eevdf.md) · [계층형 그룹](m4-hierarchy.md) · [전력·기한 배치](m3-power-placement.md) · [제한된 정책 확장](m4-bounded-extension.md)

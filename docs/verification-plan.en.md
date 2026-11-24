@@ -56,3 +56,5 @@ The mutex configuration checks effective priority on real block, timer timeout a
 [Multilevel queues](m4-multilevel.en.md) · [Mixed-criticality budgets](m3-mixed-criticality.en.md)
 
 [Lottery and stride](m4-proportional.en.md) · [Weighted virtual runtime](m4-vruntime.en.md)
+
+[EEVDF](m4-eevdf.en.md) · [Hierarchical groups](m4-hierarchy.en.md) · [Energy-aware placement](m3-power-placement.en.md) · [Bounded policy extension](m4-bounded-extension.en.md)
