@@ -58,3 +58,5 @@ python3 tools/pi4_serial_capture.py --profile pi4-fixed-rr --replay /archive/rr/
 선택적 빌드 JSON 파일은 `profile`, `revision`, `build_options`, `elf_sha256`, 파일별 `files_sha256`, `package_manifest_sha256`, `firmware_commit`을 기록한다. 제출값과 호스트가 직접 계산한 해시를 대조하고 불일치를 세션에 기록한다. 해당 바이너리가 실제 부팅 카드에 쓰였는지는 실물 식별과 입회 기록이 필요하다. 자료에 보드 리비전·EEPROM 값이 없는 재생은 옵션을 생략하면 null로 남는다.
 
 실행마다 세션·실행 ID, 요청 프로필, 정확히 일치한 순서, 첫 불일치 바이트의 오프셋, 호스트 준비 시각과 무응답 관측 시간을 남긴다. 전원 차단 확인과 실제 전원 인가의 입회 기록을 함께 보존한다. EVD-031 모델 및 EVD-014 파일 재생은 호스트 도구 검증용이다. 실물 FIFO/RR 확인은 [#34](https://github.com/Romanof123/JNOX/issues/34)에서 계속 추적한다.
+
+통합 호스트 수집기는 시간 조건 시험 566건, 관찰 API 검사 8건, 모의 포트 사례 4건과 기존 캡처 시험 7건을 통과했다. [Pi 4 직렬 캡처 도구 · 호스트 검증](../evidence/pi4-fixed-serial-host.md)
