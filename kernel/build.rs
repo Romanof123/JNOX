@@ -12,6 +12,14 @@ fn selector(key: &str) -> Option<String> {
 fn main() {
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
+    println!("cargo::rustc-check-cfg=cfg(jnox_multilevel)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_multilevel_trace)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("mlq", "mlfq"))"#);
+    if let Some(value) = selector("JNOX_MULTILEVEL_TRACE") {
+        assert!(value == "1" && profile.as_deref() == Some("multilevel"),
+                "JNOX_MULTILEVEL_TRACE=1 requires multilevel profile");
+        println!("cargo::rustc-cfg=jnox_multilevel_trace");
+    }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
     if let Some(value) = trace.as_deref() {
@@ -66,6 +74,16 @@ fn main() {
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
     match profile.as_deref() {
+        Some("multilevel") => {
+            assert!(bench == "boot" && board == "virt", "multilevel requires virt without bench features");
+            match app.as_deref() {
+                Some(name @ ("mlq" | "mlfq")) => {
+                    println!("cargo::rustc-cfg=jnox_multilevel");
+                    println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
+                }
+                _ => panic!("multilevel requires JNOX_APP=mlq or mlfq"),
+            }
+        }
         Some("fixed") => {
             assert!(bench == "boot", "JNOX_PROFILE=fixed conflicts with bench features");
             if board == "pi4" {

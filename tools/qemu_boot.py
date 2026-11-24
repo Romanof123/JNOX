@@ -219,6 +219,8 @@ def fixed_edge_transcript(prefix):
 
 
 TRANSCRIPTS = {
+    "mlq": BOOT_TRANSCRIPT + b"MLQ START\nMULTILEVEL DONE\n",
+    "mlfq": BOOT_TRANSCRIPT + b"MLFQ START\nMULTILEVEL DONE\n",
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
     "fixed-delayed": BOOT_TRANSCRIPT + b"FIXED DELAYED START\nFIXED DELAYED TASK\n",
     "fixed-ties": fixed_edge_transcript(b"FIXED TIES"),
