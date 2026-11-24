@@ -141,3 +141,5 @@ CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-0
 [Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
 
 CHG-043 / IMP-041 instruments the single-core POL-002 runtime on virt. Boot owns the stack paint before frame construction. CPU0 writes the bounded event journal with IRQs masked, and the host reads it after the guest stops. [Measurement boundaries](fixed-cost.en.md)
+
+POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)

@@ -103,3 +103,5 @@ CHG-032 / IMP-030은 빌드 때 단일 코어 런타임과 정적 Rust 작업 �
 POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택했고 두 구간 모두 10틱에 A, 12틱에 B를 다시 실행했다. [EVD-033](evidence/evd-033.md)
 
 POL-010 · 최초 실행권 강제 거부 및 대조군 두 건 통과. [EVD-035](evidence/evd-035.md)
+
+POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [EVD-041](evidence/evd-041.md)

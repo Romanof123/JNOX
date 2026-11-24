@@ -88,4 +88,4 @@ CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-0
 
 [Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
 
-Issue #90 plans EVD-041 for the FIFO/RR parts of VER-002/005/009/023. Compare linked footprints and repeated observed handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)
+[EVD-041](evidence/evd-041.en.md) records measurements for the FIFO/RR parts of VER-002/005/009/023. Compare linked footprints and repeated observed handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)
