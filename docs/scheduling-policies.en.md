@@ -12,6 +12,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | --- | --- | --- |
 | Recorded context switches | `POL-002`, AArch64, one emulated CPU | A timer made a higher-priority thread runnable and LOW resumed at its interrupted PC. Two equal-priority threads ran on separate stacks in FIFO order and yielded to each other. The captures retain exception returns for the actual switches. [EVD-002](evidence/evd-002.en.md) · [EVD-003](evidence/evd-003.en.md) |
 | Verified context switches | `IMP-004`, fixed-priority round robin (RR) | Three timer expiries rotated non-yielding peers A → B → A → B. The interrupt trace and linked instructions identify each entry and resumption. [EVD-004](evidence/evd-004.en.md) · [M1 RR contract](m1-rr.en.md) |
+| Verified context switches | IMP-005, POL-005 EDF | A timer released a later-arriving task with lower static priority and an earlier absolute deadline. The trace shows its dispatch, exit and the original runner’s resumption. [EVD-005](evidence/evd-005.en.md) |
 | Verified selection and accounting | `IMP-004`, bounded primitives from POL-001 through POL-018 | Controlled ready sets, clocks, charges, draws, CPU masks and operating-point models passed in one guest. Each result covers its stated decision or state transition. [EVD-004](evidence/evd-004.en.md) |
 | Integrated profile release | Each enabled variant | Run actual blocking, wakeup, expiry, switch and exit paths that apply to that profile. Record target traces. Physical timing, analysis and product safety review have their own milestones. |
 

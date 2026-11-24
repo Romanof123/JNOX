@@ -13,6 +13,8 @@ const LOW: usize = 0;
 const HIGH: usize = if cfg!(feature = "fifo-bench") { 2 } else { 1 };
 const PEER_B: usize = 1;
 const TASK_COUNT: usize = HIGH + 1;
+const EDF: bool = cfg!(all(feature = "edf-bench", not(feature = "fifo-bench")));
+const LOW_PRIORITY: u8 = if EDF { 3 } else { 1 };
 const HIGH_PRIORITY: u8 = 2;
 const STACK_BYTES: usize = 16 * 1024;
 const TIMER_IRQ: u32 = 30; // Nonsecure EL1 physical timer PPI
@@ -107,6 +109,10 @@ enum State {
 
 struct Task {
     priority: u8,
+    #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+    release: u64,
+    #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+    deadline: u64,
     state: State,
     frame: *mut Frame,
 }
@@ -115,6 +121,10 @@ impl Task {
     const fn new(priority: u8, state: State) -> Self {
         Self {
             priority,
+            #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+            release: 0,
+            #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+            deadline: 0,
             state,
             frame: ptr::null_mut(),
         }
@@ -125,6 +135,8 @@ struct Scheduler {
     tasks: [Task; TASK_COUNT],
     ready: ReadyQueue<TASK_COUNT>,
     current: Option<usize>,
+    #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+    interrupted_low_pc: u64,
 }
 
 impl Scheduler {
@@ -137,17 +149,49 @@ impl Scheduler {
     fn wake(&mut self, id: usize) {
         let task = &mut self.tasks[id];
         require(task.state == State::Blocked && !task.frame.is_null());
+        #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+        {
+            let frequency: u64;
+            unsafe {
+                asm!("mrs {}, cntfrq_el0", out(reg) frequency, options(nostack, preserves_flags))
+            };
+            require(frequency > 0);
+            task.release = counter_ticks();
+            let seconds = if id == LOW { 60 } else { 1 };
+            let relative = frequency.checked_mul(seconds).unwrap_or_else(|| fail());
+            task.deadline = task.release.checked_add(relative).unwrap_or_else(|| fail());
+        }
         require(self.ready.push_back(id));
         task.state = State::Ready;
     }
 
     fn dispatch(&mut self) -> *mut Frame {
         let tasks = &self.tasks;
-        let Some(id) = DispatchPolicy::FixedPriority.pop_ready(&mut self.ready, 0, |id| {
-            Some(DispatchJob::fixed_priority(tasks[id].priority))
-        }) else {
-            fail()
+        #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+        let selected_id = {
+            let now = counter_ticks();
+            DispatchPolicy::EarliestDeadlineFirst.pop_ready(&mut self.ready, now, |id| {
+                let task = &tasks[id];
+                require(task.state == State::Ready && task.release <= now);
+                let relative = task
+                    .deadline
+                    .checked_sub(task.release)
+                    .unwrap_or_else(|| fail());
+                require(relative > 0);
+                Some(DispatchJob {
+                    release: task.release,
+                    relative_deadline: relative,
+                    ..DispatchJob::fixed_priority(task.priority)
+                })
+            })
         };
+        #[cfg(any(not(feature = "edf-bench"), feature = "fifo-bench"))]
+        let selected_id = {
+            DispatchPolicy::FixedPriority.pop_ready(&mut self.ready, 0, |id| {
+                Some(DispatchJob::fixed_priority(tasks[id].priority))
+            })
+        };
+        let Some(id) = selected_id else { fail() };
         let selected = &mut self.tasks[id];
         require(selected.state == State::Ready && !selected.frame.is_null());
         selected.state = State::Running;
@@ -170,13 +214,15 @@ impl Scheduler {
 
 static mut SCHEDULER: Scheduler = Scheduler {
     tasks: [
-        Task::new(1, State::Blocked),
+        Task::new(LOW_PRIORITY, State::Blocked),
         Task::new(HIGH_PRIORITY, State::Blocked),
         #[cfg(feature = "fifo-bench")]
         Task::new(HIGH_PRIORITY, State::Blocked),
     ],
     ready: ReadyQueue::new(),
     current: None,
+    #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+    interrupted_low_pc: 0,
 };
 
 fn with_scheduler<R>(operation: impl FnOnce(&mut Scheduler) -> R) -> R {
@@ -187,6 +233,13 @@ fn with_scheduler<R>(operation: impl FnOnce(&mut Scheduler) -> R) -> R {
     unsafe { asm!("mrs {}, daif", out(reg) daif, options(nostack, preserves_flags)) };
     require(daif & (1 << 7) != 0);
     unsafe { operation(&mut *(&raw mut SCHEDULER)) }
+}
+
+#[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+fn counter_ticks() -> u64 {
+    let ticks: u64;
+    unsafe { asm!("isb", "mrs {}, cntpct_el0", out(reg) ticks, options(nostack, preserves_flags)) };
+    ticks
 }
 
 fn require(ok: bool) {
@@ -386,10 +439,21 @@ extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
         let begin = (&raw const sched_work_begin).addr();
         let end = (&raw const sched_work_end).addr();
         require((begin..end).contains(&(saved.elr as usize)));
+        #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+        {
+            sched.interrupted_low_pc = saved.elr;
+        }
         sched.tasks[LOW].frame = frame;
         sched.tasks[LOW].state = State::Ready;
         require(sched.ready.push_front(LOW)); // Interrupted LOW keeps its turn.
         sched.wake(HIGH);
+        #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+        {
+            let low = &sched.tasks[LOW];
+            let urgent = &sched.tasks[HIGH];
+            require(low.priority > urgent.priority && low.release < urgent.release);
+            require(urgent.deadline < low.deadline);
+        }
         #[cfg(feature = "fifo-bench")]
         sched.wake(PEER_B);
         let next = sched.dispatch();
@@ -404,6 +468,8 @@ extern "C" fn high_start(sp: usize, id: usize, resumed: usize) {
     // SAFETY: Serialize the marker and scheduler access on this single CPU.
     unsafe { asm!("msr daifset, #2", options(nostack, preserves_flags)) };
     let line: &[u8] = match (id, resumed) {
+        #[cfg(not(feature = "fifo-bench"))]
+        (HIGH, 0) if EDF => b"EDF URGENT RUN\n",
         #[cfg(not(feature = "fifo-bench"))]
         (HIGH, 0) => b"SCHED HIGH RUN\n",
         #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
@@ -496,6 +562,12 @@ extern "C" fn service_call(frame: *mut Frame) -> *mut Frame {
             }
         }
         require(sched.current == Some(LOW) && sched.peers_finished());
+        #[cfg(all(feature = "edf-bench", not(feature = "fifo-bench")))]
+        {
+            require(next.addr() == stack_top(LOW).addr() - 16 - size_of::<Frame>());
+            // SAFETY: dispatch returned LOW's previously validated IRQ frame.
+            require(unsafe { (*next).elr } == sched.interrupted_low_pc);
+        }
         HIGH_DONE.store(1, Ordering::Release); // Let LOW exit only after the final peer.
         next
     })

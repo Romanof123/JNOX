@@ -1,0 +1,106 @@
+{
+  "verdict": "PASS",
+  "first_verdict": "PASS before implementation, disassembly or trace review. Earlier WSL Git path check aborted before guest launch; native Git confirmed clean revision/tree.",
+  "guest_runs": 1,
+  "revision": "2d5b5ffbda9b411c2c600f08808aae5f23b3646c",
+  "tree": "451f4354d545a8baacfac96921a80d457f953e4e",
+  "source_sha256": {
+    "docs/m1-edf.en.md": "b693e1df12c31562414d46f2eb9afa0a9a40be84d1346478b2b9ca4af4e16848",
+    "tools/qemu_boot.py": "c15b69d23a8afe793135afeaec5456d601efdb4cfa8528a2c30c8066ea320275",
+    "kernel/src/sched.rs": "25e520e1f9ebd23a824a9ba7637c21a5600526d552a24e1f9060d421c082fd1f",
+    "kernel/src/sched.S": "886c5f39d25812cf84213c8afbaae5db0e309e92ac174121858081389fc938b1",
+    "kernel/src/dispatch_policy.rs": "52d1ad21d552cd71810cac51fd7bbe04c8d2ee229946dede4beb740684c23704",
+    "kernel/src/ready_queue.rs": "7ecceda8a09ec1d28e8ac17dacfc7cf121608ee7605ec1f8cdf272990be9c10f"
+  },
+  "elf_sha256": "1363c7fe8b0e354be13ce40a52eb2b07f2b7adc9e7da0efcbf664e1c619ac4f5",
+  "qemu_version": "6.2.0 Debian 1:6.2+dfsg-2ubuntu6.31, WSL Ubuntu",
+  "pid": 533,
+  "argv": [
+    "/tmp/tmp.32lTyokhax/qemu-int",
+    "-machine",
+    "virt,gic-version=2",
+    "-cpu",
+    "cortex-a72",
+    "-smp",
+    "1",
+    "-accel",
+    "tcg",
+    "-m",
+    "128M",
+    "-nodefaults",
+    "-display",
+    "none",
+    "-monitor",
+    "none",
+    "-serial",
+    "stdio",
+    "-kernel",
+    "/mnt/d/codex/.jnox-work/edf-ipc-204ed135b3/target/aarch64-unknown-none/release/jnox-kernel"
+  ],
+  "runner_exit": 0,
+  "stop": "host SIGTERM after 0.1 s quiet; runner accepted shutdown",
+  "uart_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a5343484544204c4f572052554e0a53434845442054494d4552204952510a45444620555247454e542052554e0a5343484544204c4f5720524553554d45440a534348454420504153530a",
+  "uart_bytes": 101,
+  "uart_sha256": "4507c8e12449f935550ec2739d98f8ae4af144078d265a02e502cf01a0b21f64",
+  "trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x402012bc\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020134c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020138c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012bc\n",
+  "raw_base64": {
+    "stdout": "UnVuIDEvMSAgRUxGIFNIQS0yNTYgPSAxMzYzYzdmZThiMGUzNTRiZTEzY2U0MGE1MmViMmIwN2YyYjdhZGM5ZTdkYTBlZmNiZjY2NGUxYzYxOWFjNGY1CiAgYXJndiA9IFsiL3RtcC90bXAuMzJsVHlva2hheC9xZW11LWludCIsICItbWFjaGluZSIsICJ2aXJ0LGdpYy12ZXJzaW9uPTIiLCAiLWNwdSIsICJjb3J0ZXgtYTcyIiwgIi1zbXAiLCAiMSIsICItYWNjZWwiLCAidGNnIiwgIi1tIiwgIjEyOE0iLCAiLW5vZGVmYXVsdHMiLCAiLWRpc3BsYXkiLCAibm9uZSIsICItbW9uaXRvciIsICJub25lIiwgIi1zZXJpYWwiLCAic3RkaW8iLCAiLWtlcm5lbCIsICIvbW50L2QvY29kZXgvLmpub3gtd29yay9lZGYtaXBjLTIwNGVkMTM1YjMvdGFyZ2V0L2FhcmNoNjQtdW5rbm93bi1ub25lL3JlbGVhc2Uvam5veC1rZXJuZWwiXQogIFFFTVUgUElEID0gNTMzCiAgVUFSVCAoMTAxIGJ5dGVzKSA9IGInSk5PWCBNMSBCT09UXG5KTk9YIE0xIFJFQURZXG5TQ0hFRCBMT1cgUlVOXG5TQ0hFRCBUSU1FUiBJUlFcbkVERiBVUkdFTlQgUlVOXG5TQ0hFRCBMT1cgUkVTVU1FRFxuU0NIRUQgUEFTU1xuJwogIFFFTVUgc3RkZXJyID0gYidxZW11LXN5c3RlbS1hYXJjaDY0OiB0ZXJtaW5hdGluZyBvbiBzaWduYWwgMTUgZnJvbSBwaWQgNTMyIChweXRob24zKVxuJwogIFBBU1MgKGhvc3Qgc3RvcHBlZCBRRU1VIGFmdGVyIHRoZSBxdWlldCB3aW5kb3cpClBBU1M6IDEgY29sZCBib290KHMpCg==",
+    "stderr": "",
+    "rc": "MAo=",
+    "int.log": "RXhjZXB0aW9uIHJldHVybiBmcm9tIEFBcmNoNjQgRUwxIHRvIEFBcmNoNjQgRUwxIFBDIDB4NDAyMDEyNGMKVGFraW5nIGV4Y2VwdGlvbiA1IFtJUlFdCi4uLmZyb20gRUwxIHRvIEVMMQouLi53aXRoIEVTUiAweDAvMHgwCi4uLndpdGggRUxSIDB4NDAyMDEyYmMKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMzRjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzOGMKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMmJjCg==",
+    "qemu-int": "IyEvYmluL3NoCmV4ZWMgcWVtdS1zeXN0ZW0tYWFyY2g2NCAtZCBpbnQgLUQgIiRFREZfRVZJREVOQ0UvaW50LmxvZyIgIiRAIgo="
+  },
+  "exceptions": {
+    "initial_eret": "0x4020124c sched_low_entry",
+    "irq": {
+      "elr": "0x402012bc sched_work_begin: add x9,x9,#1",
+      "vector": "0x40200a80",
+      "eret": "0x4020134c sched_high_entry",
+      "condition": "EL1h LOW, loop [0x402012bc,0x402012cc), nonzero x9, IRQ enabled; IAR ID 30 and CNTP_CTL low 3 bits = 5 checked in timer_interrupt 0x40201780"
+    },
+    "svc": {
+      "instruction": "0x40201388 d4000021 svc #1",
+      "esr": "0x56000001",
+      "elr": "0x4020138c sched_high_return",
+      "vector": "0x40200a00",
+      "eret": "0x402012bc identical interrupted LOW instruction"
+    }
+  },
+  "policy": "wake 0x40201a64 reads CNTFRQ and CNTPCT; LOW deadline release_LOW + 60*frequency, URGENT release_URGENT + frequency, checked arithmetic. IRQ handler asserts release_LOW < release_URGENT, deadline_URGENT < deadline_LOW, priority LOW 3 > URGENT 2. LOW pushed to front still ready, wake appends URGENT. Dispatch 0x40201b58..0x40201bc4 scans eligible jobs, compares unsigned absolute deadlines at 0x40201ba0, retaining earlier enqueue on ties.",
+  "timer": "LOW writes CNTP_TVAL = floor(CNTFRQ / 100) and enables CNTP, then unmasks IRQ before loop. Handler disables timer and EOIs same GIC IAR.",
+  "context": "LOW stack [0x40207080,0x4020b080), URGENT [0x40203070,0x40207070). IRQ/SVC frames each at task top - 16 - 0x340. Save/restore x0..30, q0..31, ELR/SPSR, FPCR/FPSR, TLS registers and SP_EL0. Callback supplies selected frame to sched_start_frame 0x4020118c. LOW 0x402012cc..0x40201348 checks Z/C flags, x15=0x15a5, x19=0x19b6, stack pair, TPIDR_EL1, both v31 lanes, FPCR/FPSR; low_resumed validates SP/current/completion.",
+  "markers": [
+    "BOOT and READY: kernel_main",
+    "LOW RUN: low_start on LOW",
+    "TIMER IRQ: timer_interrupt after EDF decision",
+    "EDF URGENT RUN: high_start on URGENT",
+    "LOW RESUMED and PASS: low_resumed on restored LOW"
+  ],
+  "controls": {
+    "missing": {
+      "input_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a5343484544204c4f572052554e0a53434845442054494d4552204952510a45444620555247454e542052554e0a5343484544204c4f5720524553554d45440a",
+      "result": "UART deadline exceeded (0.03s)"
+    },
+    "extra": {
+      "input_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a5343484544204c4f572052554e0a53434845442054494d4552204952510a45444620555247454e542052554e0a5343484544204c4f5720524553554d45440a534348454420504153530a78",
+      "result": "unexpected UART bytes or marker order"
+    },
+    "wrong_policy": {
+      "input_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a5343484544204c4f572052554e0a53434845442054494d4552204952510a534348454420484947482052554e0a5343484544204c4f5720524553554d45440a534348454420504153530a",
+      "result": "unexpected UART bytes or marker order"
+    },
+    "duplicate": {
+      "input_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a5343484544204c4f572052554e0a53434845442054494d4552204952510a45444620555247454e542052554e0a5343484544204c4f5720524553554d45440a534348454420504153530a534348454420504153530a",
+      "result": "unexpected UART bytes or marker order"
+    },
+    "reordered": {
+      "input_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a5343484544204c4f572052554e0a45444620555247454e542052554e0a53434845442054494d4552204952510a5343484544204c4f5720524553554d45440a534348454420504153530a",
+      "result": "unexpected UART bytes or marker order"
+    },
+    "crlf": {
+      "input_hex": "4a4e4f58204d3120424f4f540d0a4a4e4f58204d312052454144590d0a5343484544204c4f572052554e0d0a53434845442054494d4552204952510d0a45444620555247454e542052554e0d0a5343484544204c4f5720524553554d45440d0a534348454420504153530d0a",
+      "result": "accepted"
+    }
+  },
+  "limitations": "One emulated single-core release and completion. Exact sampled counter/deadline numbers and live SP/GPR values were not logged; their relations follow executed checks and linked instructions. No latency bound, overload, hardware or SMP evidence."
+}

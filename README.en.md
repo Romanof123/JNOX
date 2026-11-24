@@ -18,6 +18,7 @@
 | [M1 timer preemption](docs/m1-scheduler.en.md) | Criteria for observing the timer interrupt, higher-priority dispatch and interrupted thread resumption in one boot |
 | [M1 equal-priority FIFO](docs/m1-fifo.en.md) | Acceptance criteria for ready order, voluntary yield and resumption of equal-priority threads |
 | [Scheduling policies and round robin](docs/scheduling-policies.en.md) | Selection, budget and isolation contracts, with execution evidence by policy |
+| [IPC profiles](docs/ipc-mechanisms.en.md) | Ten IPC families, their resource limits and acceptance cases after scheduling qualification |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
 | [Development lifecycle and change control](docs/lifecycle.en.md) | Traceability from planning through implementation and verification, including redesign and reapproval after a change |
 | [Trace links](trace/links.csv) | Machine-readable relationships shared by both language editions |
