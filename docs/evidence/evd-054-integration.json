@@ -1,0 +1,397 @@
+{
+  "evidence_id": "EVD-054",
+  "record": "integrated gate supplement",
+  "source": "2adccb563a525863e0f56c82703852082f5bc709",
+  "archive": "evd-054-integration.zip",
+  "archive_sha256": "efbdb4aaf7dff52d374bf7aa7c7bb2bf8b946929faff13d134f92080f08a7693",
+  "original_archive_sha256": "e90334533c0e5861682cb30ec79fc6ffd263a0cdeb9f184477ebe9120562cb87",
+  "original_archive_bytes": 4028262,
+  "manifest_sha256": "d3996d1e85dfe7f6389e09792b858c12035f0fcefd9962be5e775799495ac0dc",
+  "manifest_entries": 652,
+  "original_records": {
+    "REPORT.md": "2cb15ad68f01497a7d40b7295cb845a87263f2029829f7ffc5a27ab904257193",
+    "builds.json": "bb0c274c48cba6c294fb4c9cefcc7dd02c139519ef2059c21fbbe00e4c76aaba",
+    "load-audit.json": "d0013e3ea2cdff55f31c1b000c6308d38fc98332ebe31f63949afc339884a8c3",
+    "plan.json": "f7ad0899db544ab6dba0be14b2c7073b6e7d3c3d02683f972742a5e273516329",
+    "results.json": "1382c90fbbe533b193586b2e9e88fe9d1cccd3cb0506a87d303f5f409282461b",
+    "guard-controls.log": "b8621a3703c4e92ec97656dba9ecef8622eee04303e9d02621eee162aaecc52f",
+    "replays.json": "1b449e952f964def17b4d74a725276f1f735b2da4bf4285835bc6cbf9687306b",
+    "reg-host.json": "8878bb7d5ca19db266fda4be531fbec6f2b8f490602b7150dc669aa291d42c74",
+    "offline-replay.json": "4a5f7695c7900124bff12d888e68b13bf1eb4af5e01ace74d28bf90b10ca0a15",
+    "scheduling_evidence.log": "14d7dbaf7475b5e500f958917bb11ff59020cbeabcc0bb5ca36ce84f53845bfb",
+    "archive-audit.json": "51c258c655e8f257893f37723edb99451777113da315ebe8c463160b054430ab",
+    "freeze.json": "2a5e9070a680ab3ba5556a4d0f1843017017ae8b739b5f1621fd088c2bd43ab9"
+  },
+  "operational_healthy": 0,
+  "operational_positions": 20,
+  "off_default_stopped": 8,
+  "off_icount_completed": 4,
+  "positions": [
+    {
+      "id": "operational-rm-default-01-1",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 7,
+      "issue_delta": 588087,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-default-01-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-default-10-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-default-10-2",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 0,
+      "issue_delta": 587136,
+      "latch": [
+        13,
+        263922,
+        3,
+        0
+      ],
+      "reject": null
+    },
+    {
+      "id": "operational-rm-default-12-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-default-12-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-default-21-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-default-21-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-01-1",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 7,
+      "issue_delta": 591691,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-01-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-10-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-10-2",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 7,
+      "issue_delta": 591544,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-12-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-12-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-21-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-default-21-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-icount-12-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-rm-icount-12-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-icount-12-1",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "operational-dm-icount-12-2",
+      "disposition": "refused-before-workers",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "characterization-rm-default-12-1",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        293310,
+        3,
+        0
+      ],
+      "reject": [
+        296343,
+        103,
+        0
+      ]
+    },
+    {
+      "id": "characterization-rm-default-12-2",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        269339,
+        1,
+        0
+      ],
+      "reject": [
+        272495,
+        101,
+        0
+      ]
+    },
+    {
+      "id": "characterization-rm-default-21-1",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        293810,
+        3,
+        0
+      ],
+      "reject": [
+        296892,
+        103,
+        0
+      ]
+    },
+    {
+      "id": "characterization-rm-default-21-2",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        292350,
+        3,
+        0
+      ],
+      "reject": [
+        295419,
+        103,
+        0
+      ]
+    },
+    {
+      "id": "characterization-dm-default-12-1",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        285803,
+        3,
+        0
+      ],
+      "reject": [
+        288805,
+        103,
+        0
+      ]
+    },
+    {
+      "id": "characterization-dm-default-12-2",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        286509,
+        3,
+        0
+      ],
+      "reject": [
+        291242,
+        103,
+        0
+      ]
+    },
+    {
+      "id": "characterization-dm-default-21-1",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        291658,
+        3,
+        0
+      ],
+      "reject": [
+        294711,
+        103,
+        0
+      ]
+    },
+    {
+      "id": "characterization-dm-default-21-2",
+      "disposition": "observed-early-stop",
+      "issued": 0,
+      "accepted": 0,
+      "issue_delta": null,
+      "latch": [
+        13,
+        283012,
+        3,
+        0
+      ],
+      "reject": [
+        286043,
+        103,
+        0
+      ]
+    },
+    {
+      "id": "characterization-rm-icount-12-1",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 7,
+      "issue_delta": 625000,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "characterization-rm-icount-12-2",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 7,
+      "issue_delta": 625000,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "characterization-dm-icount-12-1",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 7,
+      "issue_delta": 625000,
+      "latch": null,
+      "reject": null
+    },
+    {
+      "id": "characterization-dm-icount-12-2",
+      "disposition": "observed-full-phase-horizon",
+      "issued": 7,
+      "accepted": 7,
+      "issue_delta": 625000,
+      "latch": null,
+      "reject": null
+    }
+  ],
+  "strict_findings": []
+}

@@ -23,3 +23,40 @@ python3 -m unittest discover -s tools -p "test_pi4_serial_capture.py"
 ```
 
 호스트 시험 9개가 통과했다. EVD-014 보관 패키지를 쓴 파일 재생에서 두 바이트열과 서로 다른 실행 ID를 확인했다. 추가 바이트와 기존 출력 폴더도 검출했다. 실보드의 전원 재인가와 보드 식별은 독립 입회가 필요하다. [호스트 검증 기록](../evidence/scheduling-tools-host-review.json)
+
+<a id="chg-062"></a>
+
+## CHG-062 · 물리 UART 프로파일 확장 계획
+
+현재 호스트 도구는 읽은 바이트를 단일 pi4-scheduler 전사와 비교한다. 포트 모드와 두 파일 재생 모드에 선택 인자 `--profile pi4-scheduler|pi4-fixed-fifo|pi4-fixed-rr`를 추가한다. 생략 시 기존 스케줄러 호출·출력 파일·종료 상태와 직접 관측 함수의 기본값을 보존한다. 고정 우선순위 이미지는 #71의 일반 비계측 Pi 빌드다. 실제 보드 승인은 [#34](https://github.com/Romanof123/JNOX/issues/34)와 [POL-002 / #21](../scheduling-release-cases.md)에서 추적한다.
+
+**바이트 계약.** 공통 시작은 `JNOX PI4 BOOT\nJNOX PI4 READY\n`이다. 아래 사건마다 접두어, 공백, 사건 문자열과 LF 하나로 한 줄을 구성한다. 표에 명시한 전체 순서만 허용한다.
+
+| 프로파일 | 접두어 | 순서 |
+|---|---|---|
+| pi4-scheduler | SCHED | LOW RUN → TIMER IRQ → HIGH RUN → LOW RESUMED → PASS |
+| pi4-fixed-fifo | FIXED FIFO | START → A START → B YIELD → A RESUME → HIGH → A DONE → B SLEEP → B DONE |
+| pi4-fixed-rr | FIXED RR | START → A START → HIGH → B START → A DONE → B DONE |
+| pi4-fixed-rr, HIGH 먼저 | FIXED RR | START → HIGH → A START → B START → A DONE → B DONE |
+
+시리얼·파일 재생 및 qemu_boot의 세 Pi 프로파일이 하나의 크기 제한 바이트 비교기를 공유한다. 기존 TRANSCRIPTS 키·고정 작업 관측 API·다른 보드 계약을 보존한다. 고정 Pi 항목은 DynamicTranscript이므로 바이트 배열처럼 자를 수 없다. 일반 RR 부분 순서 검사는 HIGH → B START → A START도 받아들인다. Pi 고정 작업의 두 경로에서는 이를 거부한다. 임의의 읽기 분할에서 가능한 접두어만 유지하며 마지막 LF에서 완료를 인식한다. 불가능한 접두어나 추가 바이트는 즉시 거부하고 마지막 LF와 같은 읽기에 포함된 경우에도 실패 원문과 오프셋을 보존한다. 실제 포트와 파일 재생은 LF만 허용한다. QEMU 호출자가 정한 줄끝 옵션과 시간 처리 계약을 보존한다.
+
+**입회와 출처.** 선택한 프로파일마다 같은 보드·카드·패키지로 전원을 완전히 제거한 뒤 두 번 독립적으로 입회 부팅한다. FIFO와 RR에는 각각 두 번이 필요하다. 전원이 꺼진 상태에서 관측을 시작하고 전원을 넣는다. 호스트 시작 후 30초 이내(경계 포함)에 마지막 LF가 도착해야 하며 이후 1초 동안 추가 수신이 없어야 한다. 실패·부분 캡처를 원래 ID로 유지하고 재시도는 새 디렉터리에 남긴다. 세션·실행 ID, 선언 프로파일, 실제 일치한 순서(실패 시 미일치), 출처 모드, 원문 해시, 읽기 시각·오프셋을 기록한다. 입회자가 두 전원 이벤트·보드 리비전·EEPROM·카드·어댑터 및 해시 대상이 마운트된 카드인지 스테이징 사본인지 명시한다. 선언한 빌드 옵션·리비전을 ELF, kernel8.img, config, 고정 펌웨어와 SHA256SUMS의 실제 해시로 연결한다. 파일명이나 UART 일치만으로 패키지 출처를 확정하지 않는다. 검증하지 못한 연결은 표시하고 모델 재생에는 보존된 패키지 정보만 사용한다.
+
+**호스트 검증.** EVD-031 아카이브와 멤버 해시를 확인한 후 FIFO·RR 각 run-1/run-2 원본 UART를 대응 패키지·ELF 정보로 재생한다. 보존된 RR 두 건은 A START가 먼저다. 구성한 HIGH 우선 순서는 호스트 대조군으로 표시한다. EVD-014의 uart_hex와 패키지 정보로 스케줄러 명시·생략 호출을 확인한다. 같은 스케줄러 자료를 두 번 재생한 결과는 실행 ID 독립성만 검증한다. 바이트 단위·마커 중간 분할, RR 두 순서와 같은 쌍 내 다른 순서, 잘못된 프로파일·보드 태그, 마지막 LF 누락, CRLF, 순서 변경·중복·누락, 비정상 바이트, 동일 읽기 또는 정숙 구간의 추가 출력, 짧은 읽기와 모의 호스트 시계의 마감·정숙 경계를 검사한다. 분할·일괄 읽기의 판정과 원문을 비교한다. 물리 UART 항목은 입회한 실제 실행 후 판정한다. USB 타임스탬프와 모델 예외 로그로 물리 IRQ 위임·중단 PC·보드 지연·WCET를 확정할 수 없다. [EVD-031 원자료](../evidence/evd-031-raw.json) · [패키지 색인](../evidence/evd-031.json) · [EVD-014](../evidence/evd-014.json) · [고정 작업 가이드](pi4-fixed-runtime.md)
+
+## 고정 정책의 물리 캡처와 파일 재생
+
+`--profile pi4-fixed-fifo` 또는 `--profile pi4-fixed-rr`를 선택하고 해당 빌드의 부트 디렉터리와 ELF를 지정한다. 생략 시 기존 `pi4-scheduler`를 사용한다. 정책마다 새로운 출력 디렉터리에서 같은 보드와 카드로 두 번 완전히 전원을 분리한다. 두 번째 프롬프트에서도 전원을 끈 채 Enter를 누르고 “Armed”가 출력된 뒤 전원을 인가한다.
+
+```sh
+python3 tools/pi4_serial_capture.py --profile pi4-fixed-fifo --port /dev/ttyUSB0 --boot-dir /mnt/pi-boot --elf /evidence/fifo/kernel.elf --board-revision "$REV" --eeprom "$EEPROM" --card-id "$CARD" --adapter-id "$ADAPTER" --witness "$WITNESS" --boot-dir-source mounted-card --build-record /evidence/fifo-build.json --output fifo-physical-01
+
+python3 tools/pi4_serial_capture.py --profile pi4-fixed-rr --replay /archive/rr/run-1/uart /archive/rr/run-2/uart --boot-dir /archive/rr/boot --elf /archive/rr/kernel.elf --boot-dir-source archive --output rr-replay-01
+```
+
+선택적 빌드 JSON 파일은 `profile`, `revision`, `build_options`, `elf_sha256`, 파일별 `files_sha256`, `package_manifest_sha256`, `firmware_commit`을 기록한다. 제출값과 호스트가 직접 계산한 해시를 대조하고 불일치를 세션에 기록한다. 해당 바이너리가 실제 부팅 카드에 쓰였는지는 실물 식별과 입회 기록이 필요하다. 자료에 보드 리비전·EEPROM 값이 없는 재생은 옵션을 생략하면 null로 남는다.
+
+실행마다 세션·실행 ID, 요청 프로필, 정확히 일치한 순서, 첫 불일치 바이트의 오프셋, 호스트 준비 시각과 무응답 관측 시간을 남긴다. 전원 차단 확인과 실제 전원 인가의 입회 기록을 함께 보존한다. EVD-031 모델 및 EVD-014 파일 재생은 호스트 도구 검증용이다. 실물 FIFO/RR 확인은 [#34](https://github.com/Romanof123/JNOX/issues/34)에서 계속 추적한다.
+
+통합 호스트 수집기는 시간 조건 시험 566건, 관찰 API 검사 8건, 모의 포트 사례 4건과 기존 캡처 시험 7건을 통과했다. [Pi 4 직렬 캡처 도구 · 호스트 검증](../evidence/pi4-fixed-serial-host.md)

@@ -1,0 +1,283 @@
+{
+  "evidence_id": "EVD-055",
+  "change": "CHG-057",
+  "implementation": "IMP-055",
+  "source": "b3994a99c2f40b57ed6cad779fde6a5f2488c7ed",
+  "verifier_sha256": "787106826e30b8346b12709efbefb5caf0932ad77e3a46308abb44705df4fdb3",
+  "build_index_sha256": "a35bab88d1d8536db1975dca4f4e05e8d25b037f8569e2bade51e1cad6fa324d",
+  "independent_scorer_sha256": "6192450488c3d2130decf0171965440c1eb79ad0f6537a9695066f01a34766e8",
+  "measurement": {
+    "schema": "jnox.ordinary-136.three-first-captures/1",
+    "revision": "b3994a99c2f40b57ed6cad779fde6a5f2488c7ed",
+    "tree": "6ba8e4e2f4b1b9e8ac41ba02299ee73461e6c35e",
+    "freeze_sha256": "e6e1ad3611d4deae7258a0970d524ea6238cb0b366aa38c18a2d8540dfa33019",
+    "launch_script_sha256": "63a13e0db25bba3645881b5d673d8a4d1bdc66a43a67ee0821cd20fd245fe450",
+    "cases": {
+      "lottery1": {
+        "outcome": {
+          "reason": "complete footer",
+          "elapsed_s": 0.5621406489999998,
+          "pid": 483,
+          "exit": 0
+        },
+        "qualified": true,
+        "counts": [
+          10,
+          8,
+          14
+        ],
+        "whole_service": [
+          10,
+          8,
+          14
+        ],
+        "stride_phase_service": null,
+        "irq": 33,
+        "svc": 0,
+        "eret": 33,
+        "uart_bytes": 16980,
+        "raw_rows": 394,
+        "first_failure_record": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "completed_work_counts": [
+          28998768,
+          20384000,
+          39267264
+        ],
+        "stream": [
+          1,
+          0,
+          1,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          0,
+          2,
+          2,
+          0,
+          0,
+          0,
+          1,
+          0,
+          2,
+          0,
+          2,
+          2
+        ],
+        "hashes": {
+          "exceptions": "b16b89d8b00cf062dfd58cff2f72eef22f7baf06b673d472ade05aedfefe78da",
+          "kernel.elf": "784971ba24d1f9d8f5eaec62b2f971e4634bbec248097991cd0a3fd2fc4e2c83",
+          "outcome.json": "97e68cc6711798f8646586cdb35663bb0d8f4bec351b72559b6cd8ddc1c9dd53",
+          "score.json": "3a5937b821bb1e68157cf0c879c188bd2c6d92413288ded516d39be6ae7b1c7d",
+          "stderr": "8913eca7a1044bbd8b5a033cfa18e0b83690a8f83714dfd96131f0cb053ddaf4",
+          "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uart": "d9265c456d80419c1e01517d85b7bc754408625d1107275974d42f065889b147"
+        }
+      },
+      "lottery2": {
+        "outcome": {
+          "reason": "complete footer",
+          "elapsed_s": 0.5840106220000001,
+          "pid": 486,
+          "exit": 0
+        },
+        "qualified": true,
+        "counts": [
+          5,
+          11,
+          16
+        ],
+        "whole_service": [
+          5,
+          11,
+          16
+        ],
+        "stride_phase_service": null,
+        "irq": 33,
+        "svc": 0,
+        "eret": 33,
+        "uart_bytes": 16984,
+        "raw_rows": 394,
+        "first_failure_record": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "completed_work_counts": [
+          9567088,
+          21120656,
+          33219936
+        ],
+        "stream": [
+          2,
+          0,
+          0,
+          1,
+          2,
+          1,
+          0,
+          2,
+          1,
+          1,
+          0,
+          1,
+          0,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1
+        ],
+        "hashes": {
+          "exceptions": "102ed47a4db6cae1b2c2a22cb3c6cde549c41bd47716c85cfe3950990dc16608",
+          "kernel.elf": "bcf148a81bed8171281360f93975ad059b59b196a376e7902f041162f02b6691",
+          "outcome.json": "a7b6c2e5ca1f6c48d6933ce75b3507df616eb2dfaf3e818c9200e6be3e87b3e1",
+          "score.json": "bb3e540fff45810076cefe716ef4e7e5386db07548471575968acc864efb4f0c",
+          "stderr": "8913eca7a1044bbd8b5a033cfa18e0b83690a8f83714dfd96131f0cb053ddaf4",
+          "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uart": "d2417452f45c87b7e6cc5dbb52918ef5eb3aa09762dd5f350375b82e2e151bf4"
+        }
+      },
+      "stride": {
+        "outcome": {
+          "reason": "complete footer",
+          "elapsed_s": 1.2948927480000005,
+          "pid": 489,
+          "exit": 0
+        },
+        "qualified": true,
+        "counts": [
+          6,
+          6,
+          4
+        ],
+        "whole_service": [
+          6,
+          12,
+          8
+        ],
+        "stride_phase_service": [
+          [
+            4,
+            8,
+            0
+          ],
+          [
+            2,
+            4,
+            8
+          ]
+        ],
+        "irq": 11,
+        "svc": 6,
+        "eret": 17,
+        "uart_bytes": 7811,
+        "raw_rows": 197,
+        "first_failure_record": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "completed_work_counts": [
+          35903984,
+          115049664,
+          69698928
+        ],
+        "stream": [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          2,
+          2,
+          0,
+          1,
+          2,
+          2
+        ],
+        "hashes": {
+          "exceptions": "da9334b1d48a99c0453901cbaf4e9edb646a088788818e4880e895f7f0867299",
+          "kernel.elf": "090a9258cd2671edb61b07ab833e25d0d4eb0af1f4cca4c7735faa46c0993919",
+          "outcome.json": "4d82ed6d2de976a053ba3ee82468b8c9359d2469dd2c609071e1af35a782cdbd",
+          "score.json": "50ac595533b455e93410b0eec810d2b56ed3607c4721d00dfdce264026ef26e3",
+          "stderr": "8913eca7a1044bbd8b5a033cfa18e0b83690a8f83714dfd96131f0cb053ddaf4",
+          "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uart": "42f2d24d15a30e8590cc104bc56275b2c51d4f4003ae3cbb195ce1e869dd53ab"
+        }
+      }
+    },
+    "unexecuted": [
+      "lottery-miss",
+      "stride-delay"
+    ],
+    "limitations": [
+      "Single default-clock QEMU TCG virtual CPU per image; external trace confirms exception order and PC, not exact instruction-level service, counter samples, GIC state or fingerprint values independently. Private-state progress and timer data are guest records cross-checked with physical exception transfers. Empty-ready RNG state inferred across idle. Build provenance from frozen index; retained Windows-built ELF was copied and hashed on native Linux. No physical board, interference, enforcement or late-charge experiment."
+    ],
+    "historical_reference_only": {
+      "summary": "EVD-021 initial 80 decisions had 40 Hz stride instead of 25 Hz and grant-based accounting. Corrected EVD-021 81 rows,75 IRQ,6 SVC, includes delayed grant. EVD-035 historical four IRQ failure was unattributed.",
+      "pinned_file_hashes": {
+        "evd-021-initial.json": "c1887a50228345df4f3f8809ab394eb753b77e8cd238f71cd216b7db86965df6",
+        "evd-021.json": "a94630f4e3b102f68b00a6b3c57e5a1bb660a2523e74981bf1663775a7301692",
+        "evd-035.json": "8a6a56b0f76d49140902a9feea424e2521579b6e97282b04f1af154fcf7ae39a",
+        "evd-021.en.md": "21281d5f044427e983e1cadf8909f8478f28c0e2b852488dcb22d3b959691dca",
+        "evd-035.en.md": "f9bf188e72ee548d2a63d4f019577f268d696fb07441a6d47bd5f8418e96710b"
+      }
+    }
+  },
+  "archive": {
+    "file": "evd-055-first-three.zip",
+    "sha256": "1e929056944f2f7396026369953c739b03cf9c61897eaf904e39a05d5d0ed393",
+    "bytes": 204798,
+    "entries": 35,
+    "offline_check": "Verify ZIP SHA-256, extract to a fresh directory, then run sha256sum -c FILES.sha256. From the extraction root run the following for lottery1, lottery2 and stride, replacing CASE with the case name. Compare raw_rows, grants, counts, whole_service, findings and first_guest_record with the archived CASE/score.json. Original paths in the score metadata are historical.",
+    "replay": "python3 ordinary-proportional-independent/score.py score CASE ordinary-136-first-three/CASE/uart --elf ordinary-136-first-three/CASE/kernel.elf --exceptions ordinary-136-first-three/CASE/exceptions"
+  },
+  "integration_supplement": {
+    "source": "589e927bdc2e21ed68de1315d030d6231d18bacb",
+    "file": "evd-055-integration.json",
+    "sha256": "30e89948b4bfaf6c3f2a95accf062e430976d2c6e960a63d08ebf2e37028e6a5"
+  }
+}
