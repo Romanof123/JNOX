@@ -11,6 +11,7 @@ LIMIT = 0x48000000
 CODE_LIMIT = 256 * 1024
 RAM_LIMIT = 2 * 1024 * 1024
 STACK_SIZE = 16 * 1024
+SHF_GNU_RETAIN = 0x200000
 
 
 def require(condition, message):
@@ -43,18 +44,24 @@ def profile(data):
     specs = {".text": (rx, 1, 6), ".rodata": (rx, 1, 2), ".data": (rw, 1, 3),
              ".bss": (rw, 8, 3), ".stack": (rw, 8, 3)}
     for name_idx, kind, flags, address, off, length, _, _, alignment, _ in table:
-        if not (flags & 2 and length):
+        if not flags & 2:
             continue
         name_start = names + name_idx
+        # Even a zero-length allocated BSS has a linker-defined boundary.
+        if not length and not data.startswith(b".bss\0", name_start, names + names_size):
+            continue
         name_end = data.find(b"\0", name_start, names + names_size)
         require(name_end >= name_start, "unterminated section name")
         name = data[name_start:name_end].decode("ascii")
         require(name in specs and name not in section_info, "unknown or duplicate allocated section: " + name)
         segment, expected_kind, expected_flags = specs[name]
-        require(kind == expected_kind and flags & ~0x30 == expected_flags,
+        require(kind == expected_kind and flags & ~(0x30 | SHF_GNU_RETAIN) == expected_flags,
                 "unexpected section type or flags: " + name)
         require(alignment in (0, 1) or (alignment & (alignment - 1) == 0 and address % alignment == 0),
                 "invalid section alignment: " + name)
+        if name == ".bss":
+            require(address % 8 == 0 and (address + length) % 8 == 0,
+                    "BSS start and exclusive end must both be 8-byte aligned")
         offset = address - segment[3]
         require(0 <= offset <= segment[6] - length, "section outside its prescribed segment: " + name)
         if kind == 1:
@@ -62,7 +69,8 @@ def profile(data):
                     "incorrect file backing for " + name)
         else:
             require(offset >= segment[5], "NOBITS overlaps file-backed load data: " + name)
-        section_info[name] = {"address": address, "bytes": length}
+        if length:
+            section_info[name] = {"address": address, "bytes": length}
 
     last = BASE
     for name in specs:

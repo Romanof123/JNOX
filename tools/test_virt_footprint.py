@@ -10,7 +10,8 @@ import scheduling_footprint as elf
 import virt_footprint as checker
 
 
-def fixture(code=29, ram=None):
+def fixture(code=29, ram=None, *, bss_offset=8, bss_size=8, bss_align=8,
+            rodata_flags=2):
     base = checker.BASE
     writable = (code + 4095) // 4096 * 4096
     ram = writable + 32 + checker.STACK_SIZE if ram is None else ram
@@ -25,9 +26,9 @@ def fixture(code=29, ram=None):
     data[768:768 + len(names)] = names
     sections = [
         (".text", 1, 6, base, 4096, 16, 4),
-        (".rodata", 1, 2, base + 24, 4096 + 24, code - 24, 1),
+        (".rodata", 1, rodata_flags, base + 24, 4096 + 24, code - 24, 1),
         (".data", 1, 3, base + writable, data_offset, 3, 1),
-        (".bss", 8, 3, base + writable + 8, data_offset + 3, 8, 8),
+        (".bss", 8, 3, base + writable + bss_offset, data_offset + 3, bss_size, bss_align),
         (".stack", 8, 3, base + ram - checker.STACK_SIZE, data_offset + 3, checker.STACK_SIZE, 16),
         (".shstrtab", 3, 0, 0, 768, len(names), 1),
     ]
@@ -68,6 +69,39 @@ class FootprintTests(unittest.TestCase):
             with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as invalid:
                 checker.main(["--minimal", str(minimal), "--fixed-rr", str(rr)])
             self.assertEqual(invalid.exception.code, 2)
+
+    def test_actual_bss_boundaries_for_either_input(self):
+        # A start at +9 with size 7 isolates the bad start; +8 with size 7
+        # isolates the bad exclusive end. Neither declares 8-byte alignment.
+        cases = [(9, 7, 2), (8, 7, 2), (9, 0, 2), (8, 0, 0), (8, 8, 0), (16, 16, 0)]
+        with tempfile.TemporaryDirectory() as td:
+            original, control = (Path(td) / n for n in ("original", "control"))
+            original.write_bytes(fixture())
+            for start, size, expected in cases:
+                control.write_bytes(fixture(bss_offset=start, bss_size=size, bss_align=1))
+                for minimal, rr in ((original, control), (control, original)):
+                    with self.subTest(start=start, size=size, minimal=minimal.name):
+                        argv = ["--minimal", str(minimal), "--fixed-rr", str(rr)]
+                        if expected:
+                            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as err:
+                                checker.main(argv)
+                            self.assertEqual(err.exception.code, expected)
+                        else:
+                            with contextlib.redirect_stdout(io.StringIO()):
+                                self.assertEqual(checker.main(argv), 0)
+
+    def test_absent_bss_and_retained_rodata(self):
+        empty = fixture(bss_size=0)
+        absent = empty.copy()
+        bss_header = 256 + 4 * elf.SECTION.size
+        absent[bss_header:bss_header + elf.SECTION.size] = bytes(elf.SECTION.size)
+        self.assertEqual(checker.profile(absent)["bytes"], checker.profile(empty)["bytes"])
+        plain = checker.profile(fixture())
+        retained = checker.profile(fixture(rodata_flags=2 | 0x200000))
+        self.assertEqual(retained["bytes"], plain["bytes"])
+        self.assertEqual(retained["sections"], plain["sections"])
+        with self.assertRaises(ValueError):
+            checker.profile(fixture(rodata_flags=3 | 0x200000))
 
     def test_invalid_layouts(self):
         cases = {
