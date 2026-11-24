@@ -5,9 +5,15 @@ use core::arch::asm;
 use core::panic::PanicInfo;
 use core::ptr;
 
-#[cfg(jnox_native_el0)]
+#[cfg(any(jnox_native_el0, jnox_native_vruntime))]
 #[path = "../native/elf.rs"]
 mod native_elf;
+#[cfg(any(jnox_native_el0, jnox_native_vruntime))]
+mod native_v1_note;
+#[cfg(jnox_native_vruntime)]
+mod native_process_mmu;
+#[cfg(jnox_native_vruntime)]
+mod native_vruntime;
 #[cfg(jnox_native_el0)]
 mod native_el0;
 #[cfg(jnox_native_el0)]
@@ -95,8 +101,8 @@ mod event_loop;
 mod extension;
 #[cfg(jnox_bench = "extension")]
 mod extension_policy;
-#[cfg(any(jnox_eevdf_app, jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
-#[cfg_attr(any(jnox_eevdf_app, jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
+#[cfg(any(jnox_native_vruntime, jnox_eevdf_app, jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
+#[cfg_attr(any(jnox_native_vruntime, jnox_eevdf_app, jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
 #[cfg(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
@@ -182,7 +188,7 @@ mod temporal_policy;
 mod vruntime;
 #[cfg(jnox_weighted)]
 mod weighted;
-#[cfg(any(jnox_weighted, jnox_bench = "vruntime"))]
+#[cfg(any(jnox_native_vruntime, jnox_weighted, jnox_bench = "vruntime"))]
 mod vruntime_policy;
 
 #[cfg(jnox_pi4_smp)]
@@ -216,6 +222,8 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(jnox_native_el0)]
     native_el0::run();
+    #[cfg(jnox_native_vruntime)]
+    native_vruntime::run();
     #[cfg(jnox_pi4_smp)]
     pi4_smp_bsp::primary();
     #[cfg(jnox_fixed)]
@@ -242,11 +250,11 @@ extern "C" fn kernel_main() -> ! {
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_native_el0, jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+    #[cfg(not(any(jnox_native_vruntime, jnox_native_el0, jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_native_el0, jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+#[cfg(not(any(jnox_native_vruntime, jnox_native_el0, jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

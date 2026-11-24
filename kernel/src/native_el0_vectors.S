@@ -97,9 +97,9 @@ native_el0_enter:
 .Lunexpected:
     msr daifset,#15
     bl native_el0_unexpected
-.Lpark:
+.Lnative_el0_park:
     wfe
-    b .Lpark
+    b .Lnative_el0_park
 
 .Luser_sync:
     msr daifset,#15

@@ -1,0 +1,429 @@
+{
+  "weighted-share": {
+    "selectors": {
+      "JNOX_BOARD": "virt",
+      "JNOX_PROFILE": "weighted",
+      "JNOX_APP": "weighted-share"
+    },
+    "args": [
+      "cargo",
+      "+1.95.0",
+      "build",
+      "--release",
+      "--locked",
+      "-j1"
+    ],
+    "base": {
+      "sha256": "a9d7faf5ec8751e1f0a08cb03249e8c58790b4d23b62e37893b5843e1e9fddf7",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          15260,
+          15260,
+          65536,
+          "6d5065461efb80e019bf1a7bbec10cc910996cf957768bac7662047fc9ef5e05"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66416,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "head": {
+      "sha256": "a9d7faf5ec8751e1f0a08cb03249e8c58790b4d23b62e37893b5843e1e9fddf7",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          15260,
+          15260,
+          65536,
+          "6d5065461efb80e019bf1a7bbec10cc910996cf957768bac7662047fc9ef5e05"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66416,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "whole": true,
+    "loads": true,
+    "entry": true,
+    "archived_uart": {
+      "default-weighted-share": {
+        "sha256": "35429e9a7092d428272a48d804191ec4d82d9a43f206fac58ef5dbfff004bf47",
+        "original_elf": "645e25dd581594e297fd8afa43b2662c71923c990d7f1ecdf0b2d838d6f9fd10",
+        "decoder_exit": 0
+      },
+      "icount3-weighted-share": {
+        "sha256": "5d834e5ec4264308b1cafa19531d59a4fc846869de8200fe3bf64953607bea97",
+        "original_elf": "645e25dd581594e297fd8afa43b2662c71923c990d7f1ecdf0b2d838d6f9fd10",
+        "decoder_exit": 0
+      }
+    }
+  },
+  "weighted-share-trace": {
+    "selectors": {
+      "JNOX_BOARD": "virt",
+      "JNOX_PROFILE": "weighted",
+      "JNOX_APP": "weighted-share",
+      "JNOX_WEIGHTED_TRACE": "1"
+    },
+    "args": [
+      "cargo",
+      "+1.95.0",
+      "build",
+      "--release",
+      "--locked",
+      "-j1"
+    ],
+    "base": {
+      "sha256": "7b46cc09fa210afc9f30e9a6922db8b2d84c604317f40cfa1688ccf55e1fca19",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          15356,
+          15356,
+          65536,
+          "8ea250bf09377d869d550c9cb0d9aa909f219fb89457865c20c12e0bf2cff9e7"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66416,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "head": {
+      "sha256": "7b46cc09fa210afc9f30e9a6922db8b2d84c604317f40cfa1688ccf55e1fca19",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          15356,
+          15356,
+          65536,
+          "8ea250bf09377d869d550c9cb0d9aa909f219fb89457865c20c12e0bf2cff9e7"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66416,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "whole": true,
+    "loads": true,
+    "entry": true,
+    "archived_uart": {
+      "default-weighted-share-trace": {
+        "sha256": "a075a44f0d0ffc910d25e37f345d2995b4e01cdd2f581e2fa0f077c6e5abf786",
+        "original_elf": "d824b15ccc8dafdea6898f94258dc7471fd72815b1de6de581f02dae8c5b9c31",
+        "decoder_exit": 0
+      },
+      "icount3-weighted-share-trace": {
+        "sha256": "5180042a7431eac6ac2b9b649227b42a46336a9adc5dd4438b31389374b8e56d",
+        "original_elf": "d824b15ccc8dafdea6898f94258dc7471fd72815b1de6de581f02dae8c5b9c31",
+        "decoder_exit": 0
+      }
+    }
+  },
+  "weighted-wake": {
+    "selectors": {
+      "JNOX_BOARD": "virt",
+      "JNOX_PROFILE": "weighted",
+      "JNOX_APP": "weighted-wake"
+    },
+    "args": [
+      "cargo",
+      "+1.95.0",
+      "build",
+      "--release",
+      "--locked",
+      "-j1"
+    ],
+    "base": {
+      "sha256": "7412a291c9e1d82f1c199380019b662ff2b69897f7597dcc9f7afe0c099ff1d0",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          16012,
+          16012,
+          65536,
+          "b090eb8142b46108956a98c6341f12b0aa3585b0311198d56c30ba770834f90a"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66448,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "head": {
+      "sha256": "7412a291c9e1d82f1c199380019b662ff2b69897f7597dcc9f7afe0c099ff1d0",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          16012,
+          16012,
+          65536,
+          "b090eb8142b46108956a98c6341f12b0aa3585b0311198d56c30ba770834f90a"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66448,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "whole": true,
+    "loads": true,
+    "entry": true,
+    "archived_uart": {
+      "default-weighted-wake": {
+        "sha256": "d35cb3f0c4435aa305a656f2319e2bb767d28a2d9b8ae125dc055e3f085846a6",
+        "original_elf": "83bc3fde72f01f201baa5f420b05d755b79c307f0dafc115a27d0b49f5077ef6",
+        "decoder_exit": 0
+      },
+      "icount3-weighted-wake": {
+        "sha256": "71276ac54f6647960225aba01e2034035239b9afea99c8309d0d3c81efe01f60",
+        "original_elf": "83bc3fde72f01f201baa5f420b05d755b79c307f0dafc115a27d0b49f5077ef6",
+        "decoder_exit": 0
+      }
+    }
+  },
+  "weighted-wake-trace": {
+    "selectors": {
+      "JNOX_BOARD": "virt",
+      "JNOX_PROFILE": "weighted",
+      "JNOX_APP": "weighted-wake",
+      "JNOX_WEIGHTED_TRACE": "1"
+    },
+    "args": [
+      "cargo",
+      "+1.95.0",
+      "build",
+      "--release",
+      "--locked",
+      "-j1"
+    ],
+    "base": {
+      "sha256": "6824333ece7ac62417b4b9bf3eca60f6bd3a2207358ecd5778ac28c72e50aa5f",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          16108,
+          16108,
+          65536,
+          "2ec90d445df68189d4ca83fd4a57e615c35354fdf9b303fc7e93553904b74f10"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66448,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "head": {
+      "sha256": "6824333ece7ac62417b4b9bf3eca60f6bd3a2207358ecd5778ac28c72e50aa5f",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          16108,
+          16108,
+          65536,
+          "2ec90d445df68189d4ca83fd4a57e615c35354fdf9b303fc7e93553904b74f10"
+        ],
+        [
+          1,
+          6,
+          81920,
+          1075855360,
+          1075855360,
+          320,
+          66448,
+          65536,
+          "473f459e647b90907ea0cee117225f0475e272399934abc7037451056322fdf2"
+        ]
+      ]
+    },
+    "whole": true,
+    "loads": true,
+    "entry": true,
+    "archived_uart": {
+      "default-weighted-wake-trace": {
+        "sha256": "7ed314a8085e2bd3aae99b136da85d12e4c3db244a5f7cb809fe4f7060461cb0",
+        "original_elf": "697f804967f766fef7389b1e98a59a7ff0b9f3f5b25ed28ef7847a01fde899cf",
+        "decoder_exit": 0
+      },
+      "icount3-weighted-wake-trace": {
+        "sha256": "b697dc46411e85cce092f21cb26ec94285875ee3c4b4f66708abde3a2c568e1d",
+        "original_elf": "697f804967f766fef7389b1e98a59a7ff0b9f3f5b25ed28ef7847a01fde899cf",
+        "decoder_exit": 0
+      }
+    }
+  },
+  "vruntime-bench": {
+    "selectors": {
+      "JNOX_BOARD": "virt"
+    },
+    "args": [
+      "cargo",
+      "+1.95.0",
+      "build",
+      "--release",
+      "--locked",
+      "-j1",
+      "--features",
+      "vruntime-bench"
+    ],
+    "base": {
+      "sha256": "934ec8929088e4729263b1f95db3daf5a5272ec923d3adb3e7cbf17afed2df00",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          17177,
+          17177,
+          65536,
+          "2027e1542289882b1b1b09223c64076a507c87f3890fef4409b17b3dc014132c"
+        ],
+        [
+          1,
+          6,
+          86016,
+          1075859456,
+          1075859456,
+          2320,
+          51488,
+          65536,
+          "319073026a38d19d55ac179e5d5e54564e1b00fb5591344dd43726680a829b71"
+        ]
+      ]
+    },
+    "head": {
+      "sha256": "934ec8929088e4729263b1f95db3daf5a5272ec923d3adb3e7cbf17afed2df00",
+      "entry": "0x40200000",
+      "segments": [
+        [
+          1,
+          5,
+          65536,
+          1075838976,
+          1075838976,
+          17177,
+          17177,
+          65536,
+          "2027e1542289882b1b1b09223c64076a507c87f3890fef4409b17b3dc014132c"
+        ],
+        [
+          1,
+          6,
+          86016,
+          1075859456,
+          1075859456,
+          2320,
+          51488,
+          65536,
+          "319073026a38d19d55ac179e5d5e54564e1b00fb5591344dd43726680a829b71"
+        ]
+      ]
+    },
+    "whole": true,
+    "loads": true,
+    "entry": true,
+    "archived_uart": {
+      "EVD-022": {
+        "sha256": "7de2c7d9fa91191220b727661626446d804b40cee46b8dded32c1f4e9a4148d3",
+        "original_elf": "d4dea231a8572c2dc732bccc422201a20383d1c5d14a2baff7cf21f201104203",
+        "accepted": true
+      }
+    }
+  }
+}
