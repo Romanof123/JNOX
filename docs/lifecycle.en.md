@@ -87,3 +87,5 @@ A standalone raw HTTP(S) URL will be treated as one token before Markdown bracke
 [PM snapshot of all open issues and primary PR owners, November 25 KST](evidence/pm-open-tracking-20261124T180640Z.en-ko.md).
 
 [Open issues, pull requests and primary owners, November 25 at 04:47 KST](evidence/pm-open-tracking-20261124T194750Z.en-ko.md).
+
+[05:32 KST open-work and document audit / 주 이슈·담당·문서 전수 점검](evidence/pm-tracking-20261124T203216Z.en-ko.md).
