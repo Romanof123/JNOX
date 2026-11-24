@@ -89,3 +89,5 @@ Kind 8 stores (decision start, decision end, phase). UART row 21 stores (end, ph
 The selector checks keep the marker, descriptor and cold diagnostic builds separate. Even with the marker hooks disabled, linking the integrated source may change code layout. Timing comparisons require the exact linked images.
 
 마커, 작업 기술자, 콜드 진단은 각각 별도 빌드로 선택한다. 마커 훅을 비활성화해도 통합 소스의 링크 결과에 따라 코드 배치가 달라질 수 있다. 시간 비교에는 실제 사용한 ELF를 식별해야 한다.
+
+[Independent marker replay](evidence/evd-052.en.md) · [마커 독립 재생](evidence/evd-052.md)

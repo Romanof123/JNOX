@@ -129,3 +129,5 @@ CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust r
 POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
 
 VER-002/005/023 · Twenty-two of 24 boots inhibited. Two descriptor DM boots accepted seven permits each and stayed OFF. Healthy sequences: 0/24. [EVD-051](evidence/evd-051.en.md)
+
+IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journals. None of six integrated control boots qualified operationally. [EVD-052](evidence/evd-052.en.md)
