@@ -25,3 +25,5 @@
 Run python verify.py in the extracted directory. The manifest authenticates bytes relative to the separately delivered ZIP digest. Regenerate the annotated #79 listing with aarch64-linux-gnu-objdump -d -C 79.elf; #110 uses the original archived listing. The original public records are docs/evidence/evd-032-regressions.json at 9b7653dd8d4c6a064ef4d52c1ae67b1e98850ae8 and docs/evidence/evd-047-raw.zip at f0c47f1d76da6040aec6cd711eaa09ea64e04525 in Romanof123/JNOX. The former embeds the original UART and exceptions in first_boot_files; the latter provides prior-failure/. Both ELFs came from the launch paths under D:/codex/.jnox-work/next-fixed.
 
 [Exact original records, linked listings and offline verification / 당시 실행과 연결 명령·독립 검사](historical-proportional-partition-firsts.zip) · SHA-256 865128a0e911908503f74fa5f328455e70f9e64b8c70582504c79f38232c95f9.
+
+[Independent review and replay records](historical-scheduler-first-peer.en-ko.md).
