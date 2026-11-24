@@ -81,3 +81,4 @@ VER에서 EVD로 향하는 간선은 각자의 관계 의미를 유지한다. CS
 그래프에 방향이나 관계가 틀린 간선을 추가하면 실패해야 한다. 위 클래스
 쌍 밖의 유효한 간선에 대해서는 기존 출력을 유지한다. 최초 증거는 #195에
 보존한다.
+[First independent result / 최초 독립 판정](evidence/requirement-graph-first.en-ko.md) · [Corrected graph, controls and independent replay / 수정 그래프·대조 시험·독립 재생](evidence/requirement-graph-corrected.en-ko.md).

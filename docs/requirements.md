@@ -46,3 +46,4 @@ CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
 CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 물리 UART 프로파일 계획](boards/pi4-serial-capture.md#chg-062)
 
 CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
+요구사항에서 기획·위험·가정과 설계·검증 계획을 찾거나 관련 ID에서 요구사항을 역추적하려면 [한영 그래프 기준과 오프라인 조회 명령](requirement-graph.md)을 사용한다.
