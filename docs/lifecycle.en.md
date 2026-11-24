@@ -24,6 +24,8 @@ Each round starts with a fresh verifier who had no role in designing, implementi
 
 ## Trace records
 
+Teams may write their assigned modules concurrently. The PM pins the integrated source commit and schedules builds, QEMU runs and reviews in sequence on the shared host. The verifier receives the acceptance criteria and candidate digest and observes the outcome independently of development verdicts. Cases that can share initial state run in one guest, with inputs, outputs and cleanup recorded per case. Assign a fresh boot when independent initial state or recovery is part of the acceptance criteria.
+
 | Record | ID and location | Relationship |
 | --- | --- | --- |
 | Product objectives | `OBJ` · [Product plan](product-plan.en.md) | Establish the origin of hazards, threats, and requirements. |

@@ -1,8 +1,7 @@
-"""Check the M1 AArch64 boot transcript across fresh full-system QEMU boots."""
+"""Check the AArch64 boot or scheduler UART transcript in fresh full-system QEMU guests."""
 
 import argparse
 import hashlib
-import itertools
 import json
 import math
 import os
@@ -14,12 +13,14 @@ import tempfile
 import time
 
 
-ENDINGS = (b"\n", b"\r\n")
-TRANSCRIPTS = tuple(
-    b"JNOX M1 BOOT" + first + b"JNOX M1 READY" + second
-    for first, second in itertools.product(ENDINGS, repeat=2)
+BOOT_TRANSCRIPT = b"JNOX M1 BOOT\nJNOX M1 READY\n"
+SCHEDULER_TRANSCRIPT = BOOT_TRANSCRIPT + (
+    b"SCHED LOW RUN\n"
+    b"SCHED TIMER IRQ\n"
+    b"SCHED HIGH RUN\n"
+    b"SCHED LOW RESUMED\n"
+    b"SCHED PASS\n"
 )
-READ_LIMIT = max(map(len, TRANSCRIPTS)) + 1
 QUIET_SECONDS = 0.1
 
 
@@ -34,21 +35,28 @@ def kernel_sha256(path):
     return digest.hexdigest()
 
 
-def observe(process, serial, timeout):
+def read_uart(serial, expected):
+    # All lines may use CRLF. One extra byte exposes any trailing output.
+    serial.seek(0)
+    return serial.read(len(expected) + expected.count(b"\n") + 1)
+
+
+def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT):
     deadline = time.monotonic() + timeout
     quiet_until = None
     while True:
         if process.poll() is not None:
             return f"QEMU exited before host stop (status {process.returncode})"
-        serial.seek(0)
-        received = serial.read(READ_LIMIT)
+        received = read_uart(serial, expected).replace(b"\r\n", b"\n")
+        # A trailing CR can be the first byte of the next line ending.
+        prefix = received[:-1] + b"\n" if received.endswith(b"\r") else received
         now = time.monotonic()
-        if not any(candidate.startswith(received) for candidate in TRANSCRIPTS):
+        if not expected.startswith(prefix):
             return "unexpected UART bytes or marker order"
         if quiet_until is None:
             if now >= deadline:
                 return f"UART deadline exceeded ({timeout:g}s)"
-            if received in TRANSCRIPTS:
+            if received == expected:
                 quiet_until = now + QUIET_SECONDS
         elif now >= quiet_until:
             return None
@@ -73,7 +81,7 @@ def stop(process):
     return None
 
 
-def run_boot(command, timeout):
+def run_boot(command, timeout, expected=BOOT_TRANSCRIPT):
     with tempfile.TemporaryDirectory(prefix="jnox-qemu-") as folder:
         uart_path = Path(folder) / "uart"
         stderr_path = Path(folder) / "stderr"
@@ -84,15 +92,21 @@ def run_boot(command, timeout):
             try:
                 print(f"  QEMU PID = {process.pid}", flush=True)
                 with uart_path.open("rb") as serial:
-                    problem = observe(process, serial, timeout)
+                    problem = observe(process, serial, timeout, expected)
             finally:
                 shutdown_problem = stop(process)
-        uart = uart_path.read_bytes()
-        print(f"  UART ({len(uart)} bytes) = {uart!r}")
-        print(f"  QEMU stderr = {stderr_path.read_bytes()!r}", flush=True)
+        with uart_path.open("rb") as serial:
+            uart = read_uart(serial, expected)
+        uart_size = uart_path.stat().st_size
+        uart_suffix = " (truncated)" if len(uart) < uart_size else ""
+        print(f"  UART ({uart_size} bytes) = {uart!r}{uart_suffix}")
+        with stderr_path.open("rb") as errors:
+            stderr = errors.read(4096)
+        stderr_suffix = " (truncated)" if len(stderr) < stderr_path.stat().st_size else ""
+        print(f"  QEMU stderr = {stderr!r}{stderr_suffix}", flush=True)
         if problem or shutdown_problem:
             raise ValueError(problem or shutdown_problem)
-        if uart not in TRANSCRIPTS:
+        if uart.replace(b"\r\n", b"\n") != expected:
             raise ValueError("unexpected UART bytes during shutdown")
 
 
@@ -100,11 +114,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kernel", type=Path, required=True, help="AArch64 kernel ELF")
     parser.add_argument("--qemu", default="qemu-system-aarch64", help="QEMU executable (default: %(default)s)")
-    parser.add_argument("--runs", type=int, default=2, help="fresh QEMU boots (default: %(default)s)")
+    parser.add_argument("--profile", choices=("boot", "scheduler"), default="boot",
+                        help="check M1 boot markers or the GICv2 scheduler sequence (default: %(default)s)")
+    parser.add_argument("--runs", type=int, help="fresh sequential QEMU boots (default: boot 2, scheduler 1)")
     parser.add_argument("--timeout", type=float, default=5, metavar="SECONDS",
                         help="UART deadline per boot, followed by a 0.1s quiet window (default: %(default)s)")
     args = parser.parse_args()
-    if args.runs < 1:
+    scheduler = args.profile == "scheduler"
+    runs = args.runs if args.runs is not None else (1 if scheduler else 2)
+    if runs < 1:
         parser.error("--runs must be positive")
     if not math.isfinite(args.timeout) or args.timeout <= 0:
         parser.error("--timeout must be positive and finite")
@@ -112,22 +130,24 @@ def main():
     try:
         kernel = args.kernel.resolve(strict=True)
         expected_hash = kernel_sha256(kernel)
+        machine = "virt,gic-version=2" if scheduler else "virt"
+        expected = SCHEDULER_TRANSCRIPT if scheduler else BOOT_TRANSCRIPT
         command = [
-            args.qemu, "-machine", "virt", "-cpu", "cortex-a72", "-smp", "1",
+            args.qemu, "-machine", machine, "-cpu", "cortex-a72", "-smp", "1",
             "-accel", "tcg", "-m", "128M", "-nodefaults", "-display", "none",
             "-monitor", "none", "-serial", "stdio", "-kernel", str(kernel),
         ]
-        for run in range(1, args.runs + 1):
-            print(f"Run {run}/{args.runs}  ELF SHA-256 = {expected_hash}")
+        for run in range(1, runs + 1):
+            print(f"Run {run}/{runs}  ELF SHA-256 = {expected_hash}")
             print(f"  argv = {json.dumps(command, ensure_ascii=True)}", flush=True)
-            run_boot(command, args.timeout)
+            run_boot(command, args.timeout, expected)
             if kernel_sha256(kernel) != expected_hash:
                 raise ValueError("kernel ELF changed during testing")
             print("  PASS (host stopped QEMU after the quiet window)", flush=True)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS: {args.runs} cold boot(s)")
+    print(f"PASS: {runs} cold boot(s)")
     return 0
 
 
