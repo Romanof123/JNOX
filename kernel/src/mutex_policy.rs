@@ -79,7 +79,7 @@ impl<const T: usize, const L: usize> LockSet<T, L> {
         self.blocked_on.get(task).copied().flatten()
     }
 
-    fn priorities(&self) -> Option<[u8; T]> {
+    pub(crate) fn priorities(&self) -> Option<[u8; T]> {
         let snapshot: [LockPriority; T] = core::array::from_fn(|task| {
             let held_ceiling = self.held[task]
                 .iter()
