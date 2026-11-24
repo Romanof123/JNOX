@@ -10,3 +10,37 @@ CHG-029 / IMP-027 / 예정 EVD-027 · POL-002 · #63, 상위 #21 · REQ-002/005/
 chmod +x tools/priority_resume_capture.py
 PRIORITY_RESUME_CAPTURE_DIR="$capture_dir" python3 tools/qemu_boot.py --profile priority-resume --qemu ./tools/priority_resume_capture.py --kernel "$kernel_elf"
 ```
+
+## 최초 빌드의 독립 재현
+
+[PR #67의 첫 구현 커밋](https://github.com/Romanof123/JNOX/commit/93c64c853c3d1bf3f6286da59d83d7dc8394f7b9)에서 빌드한 ELF의 해시·심볼·디스어셈블리와 첫 부팅의 `audit.bin`, `int.trace`, UART를 함께 보존한다. 시각은 각 부팅의 에뮬레이션 시스템 카운터 원점에서 읽은 CNTPCT_EL0 절대값이다. 구간과 예산은 헤더 주파수(초당 틱)에 따른 틱 수다.
+
+ELF 심볼 `priority_resume_witness`에서 부호 없는 리틀엔디언 64비트 워드를 읽는다. 헤더 0~2번 워드는 순서대로 기록 완료 행 수, CNTFRQ_EL0, 퀀텀이다. 최대 32행이며 완료된 행만 읽는다. i번째 행의 시작 바이트는 24 + 144 × i이다. 전체 실행은 회차별 7행으로 총 21행이다.
+
+| 워드 | 필드 | 의미 |
+| --- | --- | --- |
+| 0 | `epoch` | 회차 키 |
+| 1 | `event` | 결정 사건 키 |
+| 2 | `from` | 직전 실행 작업 |
+| 3 | `to` | 선택된 작업 |
+| 4 | `queue` | 선택 후 준비 대기열 |
+| 5 | `begin` | 직전 배정 시작 카운터 |
+| 6 | `end` | 직전 배정의 예외 콜백 진입 카운터 |
+| 7 | `due` | 직전 배정에 설정한 절대 타이머 시각 |
+| 8 | `budget_before` | 직전 배정 시작 시 RR 잔여량 |
+| 9 | `budget_after` | 이번 서비스 차감 후 만료 퀀텀 재설정 전 잔여량 |
+| 10 | `next_begin` | 선택된 배정의 시작 카운터 |
+| 11 | `next_due` | 선택된 배정에 설정한 절대 타이머 시각 |
+| 12 | `next_budget` | 선택된 작업의 RR 잔여량 |
+| 13 | `save_pc` | 직전 작업의 저장 ELR |
+| 14 | `return_pc` | 선택 프레임의 ELR |
+| 15 | `save_frame` | 직전 작업의 예외 프레임 주소 |
+| 16 | `return_frame` | 선택된 프레임 주소 |
+| 17 | `progress` | 직전 작업의 저장 X20 진행값 |
+
+회차 0, 1, 2는 선점형 FIFO, 비선점형 FIFO, 선점형 RR이다. 사건 0~5는 회차 시작, B 도착 IRQ, HIGH 도착 IRQ, 양보 SVC #2, 종료 SVC #1, RR 만료 IRQ 순서다. 작업은 HIGH=0, B=1, A=2, NONE=3이다. 대기열은 최하위 4비트부터 읽으며 각 값은 작업 ID + 1, 0은 끝이다. 우선순위를 통틀어 삽입 순서를 나타내며 선택된 작업은 빠진다. due가 0이면 타이머가 꺼져 있다. FIFO 예산은 0이다. 회차 시작은 from=NONE이고 직전 작업 관련 값은 0이다. 마지막 종료는 to=NONE이고 다음 작업 관련 값은 0이다.
+
+1. A로 회차를 시작한다. 도착·양보·만료 작업을 꼬리에 추가한다. 더 높은 우선순위에 선점되면 중단 작업을 맨 앞에 놓는다. 동순위 도착 때는 현재 작업을 유지하고 회차 1에서는 두 도착 모두 선점을 미룬다. 재선택 시 최고 우선순위 중 첫 작업을 꺼낸다. 매 행의 from, to, 대기열과 마지막 빈 대기열을 대조한다.
+2. 회차 내 연속 배정에서 작업 ID와 next_begin, next_due, next_budget이 다음 행의 begin, due, budget_before로 이어지는지 확인한다. 헤더 퀀텀과 두 번의 1/4 퀀텀 도착 기한을 확인한다. end > begin이어야 하며 IRQ는 [due, due + floor(퀀텀/8)] 안에 도착해야 한다. RR에서 max(0, budget_before − (end − begin))을 별도로 계산한다. HIGH 종료 시까지 A의 잔여량을 유지하고, A 재개 시 next_due − next_begin이 그 잔여량과 같으며 만료 시 0에 도달하는지 확인한다. 만료 뒤 다음 배정에서 새 퀀텀과 비교한다.
+3. IRQ/SVC 행을 CPU0 예외 트레이스 순서와 맞춘다. IRQ 저장 ELR은 A 작업 루프의 세 명령 중 하나다. SVC는 ELF에서 명령과 즉시값을 확인하고 저장 ELR을 해당 명령 주소 + 4와 비교한다. 실제 예외 복귀 PC를 return_pc와 비교한다. 최초 시작은 초기화된 진입 프레임을 사용한다. to=NONE인 마지막 종료는 해당 회차로 복귀하지 않는다. 회차 전환 시 직전 종료 SVC의 실제 ERET 목적지는 다음 회차 시작 행에 기록된다. 최종 종료 SVC에서는 CPU가 대기한다.
+4. A가 유지된 행에서 저장·선택 프레임 주소와 PC가 같은지 비교한다. 전환 시 양보 직후를 포함해 중단 작업의 프레임 주소와 저장 PC를 이후 선택 행과 짝짓는다. ELF 프레임 크기와 스택 범위로 작업별 스택을 대조한다. 작업별 X20 관측값을 비교해 진행량이 양수인지 확인하고 B/HIGH 종료값 4097을 검사한다. 기존 FIFO와 RR의 회귀 결과도 별도로 남긴다.
