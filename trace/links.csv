@@ -1096,3 +1096,11 @@ POL-010,partially-implemented-by,IMP-055
 REQ-002,partially-implemented-by,IMP-055
 REQ-005,partially-implemented-by,IMP-055
 REQ-023,partially-implemented-by,IMP-055
+IMP-055,tested-in,EVD-055
+POL-010,has-switch-evidence,EVD-055
+IMP-055,partially-verified-by,VER-002
+VER-002,has-partial-evidence,EVD-055
+IMP-055,partially-verified-by,VER-005
+VER-005,has-partial-evidence,EVD-055
+IMP-055,partially-verified-by,VER-023
+VER-023,has-partial-evidence,EVD-055

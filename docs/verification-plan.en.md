@@ -131,3 +131,5 @@ POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. 
 POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
 
 CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
+
+IMP-055 · VER-002/005/023. Three first boots replayed both seeds and C’s stride join. Two diagnostic cases remain unexecuted. [EVD-055](evidence/evd-055.en.md)
