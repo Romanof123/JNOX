@@ -185,3 +185,5 @@ POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 
 CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
 
 CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
+
+[DES-004 커널 아키텍처 선택](../arch/README.ko.md)
