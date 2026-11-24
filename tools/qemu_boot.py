@@ -31,7 +31,24 @@ FIFO_TRANSCRIPT = SCHEDULER_START + (
     b"SCHED LOW RESUMED\n"
     b"SCHED PASS\n"
 )
-TRANSCRIPTS = {"boot": BOOT_TRANSCRIPT, "scheduler": SCHEDULER_TRANSCRIPT, "fifo": FIFO_TRANSCRIPT}
+RR_TRANSCRIPT = BOOT_TRANSCRIPT + (
+    b"POLICY RANK PASS\n"
+    b"POLICY SERVICE PASS\n"
+    b"SCHED LOW RUN\n"
+    b"SCHED TIMER IRQ\n"
+    b"RR A FIRST\n"
+    b"RR B FIRST\n"
+    b"RR A RESUMED\n"
+    b"RR B RESUMED\n"
+    b"SCHED LOW RESUMED\n"
+    b"SCHED PASS\n"
+)
+TRANSCRIPTS = {
+    "boot": BOOT_TRANSCRIPT,
+    "scheduler": SCHEDULER_TRANSCRIPT,
+    "fifo": FIFO_TRANSCRIPT,
+    "rr": RR_TRANSCRIPT,
+}
 QUIET_SECONDS = 0.1
 
 
@@ -127,7 +144,7 @@ def main():
     parser.add_argument("--qemu", default="qemu-system-aarch64", help="QEMU executable (default: %(default)s)")
     parser.add_argument("--profile", choices=TRANSCRIPTS, default="boot",
                         help="expected UART transcript (default: %(default)s)")
-    parser.add_argument("--runs", type=int, help="fresh sequential QEMU boots (default: boot 2, scheduler/fifo 1)")
+    parser.add_argument("--runs", type=int, help="fresh sequential QEMU boots (default: boot 2, other profiles 1)")
     parser.add_argument("--timeout", type=float, default=5, metavar="SECONDS",
                         help="UART deadline per boot, followed by a 0.1s quiet window (default: %(default)s)")
     args = parser.parse_args()

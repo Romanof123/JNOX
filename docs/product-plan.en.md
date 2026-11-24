@@ -8,6 +8,8 @@ The first J-NOX product is an embedded operating system that gives control softw
 
 ## Product objectives
 
+The product scope includes time sharing, deadline-driven scheduling, cyclic tables, budget reservations, fair service and multicore placement alongside fixed-priority FIFO. Each policy has an applicable profile and release evidence. [Scheduling policies](scheduling-policies.en.md)
+
 Allocate product capabilities by profile and track each acceptance criterion alongside its current evidence. The catalog records the platform baseline and additional proposals awaiting an adoption decision. [Platform capability baseline](platform-capabilities.en.md)
 
 Safety tasks will be able to select a safety IPC channel for control data received from another task or through a Linux gateway. The first use case is a virtual output permit. When the last accepted permit expires, the receiver inhibits the output independently. [Safety IPC requirement](requirements.en.md)

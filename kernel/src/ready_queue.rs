@@ -1,4 +1,4 @@
-//! Fixed-priority ready queue for task IDs in `0..N`.
+//! Bounded, stable ready queue for task IDs in `0..N`.
 
 pub(crate) struct ReadyQueue<const N: usize> {
     ids: [usize; N],
@@ -40,17 +40,31 @@ impl<const N: usize> ReadyQueue<N> {
         true
     }
 
+    /// Removes the first best ID. Return true only for a strict preference.
+    pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {
+        self.pop_ranked(Some, prefer)
+    }
+
     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {
-        let queued = &self.ids[..self.len];
-        let mut best = 0;
-        let mut best_priority = priority(*queued.first()?);
-        for (index, &id) in queued.iter().enumerate().skip(1) {
-            let candidate = priority(id);
-            if candidate > best_priority {
-                best = index;
-                best_priority = candidate;
+        self.pop_ranked(|id| Some(priority(id)), |candidate, best| candidate > best)
+    }
+
+    /// Takes one snapshot per queued ID. An ID without a rank stays in place.
+    pub(crate) fn pop_ranked<T: Copy>(
+        &mut self,
+        rank: impl Fn(usize) -> Option<T>,
+        prefer: impl Fn(T, T) -> bool,
+    ) -> Option<usize> {
+        let mut winner = None;
+        for (index, &id) in self.ids[..self.len].iter().enumerate() {
+            let Some(candidate) = rank(id) else {
+                continue;
+            };
+            if winner.is_none_or(|(_, best)| prefer(candidate, best)) {
+                winner = Some((index, candidate));
             }
         }
+        let (best, _) = winner?;
         let selected = self.ids[best];
         self.len -= 1;
         for index in best..self.len {

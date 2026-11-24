@@ -5,10 +5,26 @@ use core::arch::{asm, global_asm};
 use core::panic::PanicInfo;
 use core::ptr;
 
+#[cfg(feature = "rr-bench")]
+mod aperiodic_policy;
+#[cfg(feature = "sched-bench")]
+mod dispatch_policy;
+#[cfg(feature = "rr-bench")]
+mod domain_policy;
+#[cfg(feature = "rr-bench")]
+mod fair_policy;
+#[cfg(feature = "rr-bench")]
+mod feedback_policy;
+#[cfg(feature = "rr-bench")]
+mod group_policy;
 #[cfg(feature = "sched-bench")]
 mod ready_queue;
 #[cfg(feature = "sched-bench")]
 mod sched;
+#[cfg(feature = "rr-bench")]
+mod service_policy;
+#[cfg(feature = "rr-bench")]
+mod temporal_policy;
 
 static mut BSS_PROBE: u64 = 0;
 
@@ -29,6 +45,26 @@ extern "C" fn kernel_main() -> ! {
 
     uart_init();
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
+    #[cfg(feature = "rr-bench")]
+    {
+        if !dispatch_policy::bench_checks() {
+            uart_write(b"POLICY RANK FAIL\n");
+            park();
+        }
+        uart_write(b"POLICY RANK PASS\n");
+        if !(service_policy::bench_checks()
+            && temporal_policy::bench_checks()
+            && fair_policy::bench_checks()
+            && feedback_policy::bench_checks()
+            && aperiodic_policy::bench_checks()
+            && domain_policy::bench_checks()
+            && group_policy::bench_checks())
+        {
+            uart_write(b"POLICY SERVICE FAIL\n");
+            park();
+        }
+        uart_write(b"POLICY SERVICE PASS\n");
+    }
     #[cfg(feature = "sched-bench")]
     sched::run();
     #[cfg(not(feature = "sched-bench"))]

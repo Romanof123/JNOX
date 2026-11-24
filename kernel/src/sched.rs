@@ -5,6 +5,7 @@ use core::mem::{offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, Ordering};
 
+use super::dispatch_policy::{DispatchJob, DispatchPolicy};
 use super::{park, ready_queue::ReadyQueue, uart_write};
 
 const LOW: usize = 0;
@@ -45,18 +46,28 @@ static mut HIGH_STACK: Stack = Stack([0; STACK_BYTES]);
 static mut B_STACK: Stack = Stack([0; STACK_BYTES]);
 // The SVC handler publishes completion to the assembly loop's aligned LDAR.
 static HIGH_DONE: AtomicU64 = AtomicU64::new(0);
+// Published by the IRQ handler and observed by the peers' LDAR work loops.
+static RR_ROTATIONS: AtomicU64 = AtomicU64::new(0);
 
 unsafe extern "C" {
     static sched_vectors: u8;
     static sched_work_begin: u8;
     static sched_work_end: u8;
     static sched_high_return: u8;
-    #[cfg(feature = "fifo-bench")]
+    #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
     static sched_high_resume: u8;
-    #[cfg(feature = "fifo-bench")]
+    #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
     static sched_b_resume: u8;
     #[cfg(feature = "fifo-bench")]
     static sched_b_return: u8;
+    #[cfg(feature = "rr-bench")]
+    static sched_rr_a_begin: u8;
+    #[cfg(feature = "rr-bench")]
+    static sched_rr_a_end: u8;
+    #[cfg(feature = "rr-bench")]
+    static sched_rr_b_begin: u8;
+    #[cfg(feature = "rr-bench")]
+    static sched_rr_b_end: u8;
     fn sched_low_entry();
     fn sched_high_entry();
     #[cfg(feature = "fifo-bench")]
@@ -73,6 +84,8 @@ global_asm!(
     tpidr_el0 = const offset_of!(Frame, tpidr_el0),
     simd = const offset_of!(Frame, simd),
     fifo = const cfg!(feature = "fifo-bench") as usize,
+    rr = const cfg!(feature = "rr-bench") as usize,
+    rotations = sym RR_ROTATIONS,
     high_id = const HIGH,
     b_id = const PEER_B,
     done = sym HIGH_DONE,
@@ -129,14 +142,29 @@ impl Scheduler {
     }
 
     fn dispatch(&mut self) -> *mut Frame {
-        let Some(id) = self.ready.pop_highest(|id| self.tasks[id].priority) else {
+        let tasks = &self.tasks;
+        let Some(id) = DispatchPolicy::FixedPriority.pop_ready(&mut self.ready, 0, |id| {
+            Some(DispatchJob::fixed_priority(tasks[id].priority))
+        }) else {
             fail()
         };
         let selected = &mut self.tasks[id];
         require(selected.state == State::Ready && !selected.frame.is_null());
         selected.state = State::Running;
         self.current = Some(id);
+        #[cfg(feature = "rr-bench")]
+        if id != LOW && RR_ROTATIONS.load(Ordering::Acquire) < 3 {
+            arm_rr_quantum();
+        }
         core::mem::replace(&mut selected.frame, ptr::null_mut())
+    }
+
+    #[cfg(feature = "fifo-bench")]
+    fn rotate(&mut self, id: usize, frame: *mut Frame) -> *mut Frame {
+        self.tasks[id].frame = frame;
+        self.tasks[id].state = State::Ready;
+        require(self.ready.push_back(id));
+        self.dispatch()
     }
 }
 
@@ -229,10 +257,16 @@ pub(super) fn run() -> ! {
 
     let frame = with_scheduler(|sched| {
         sched.tasks[LOW].frame = initial_frame(LOW, sched_low_entry, 0x3c5); // EL1h, DAIF masked
-        sched.tasks[HIGH].frame = initial_frame(HIGH, sched_high_entry, 0x345); // EL1h, IRQ enabled
+        // RR peers enable IRQs at their work loop once their witnesses are live.
+        let peer_pstate = if cfg!(feature = "rr-bench") {
+            0x3c5
+        } else {
+            0x345
+        };
+        sched.tasks[HIGH].frame = initial_frame(HIGH, sched_high_entry, peer_pstate);
         #[cfg(feature = "fifo-bench")]
         {
-            sched.tasks[PEER_B].frame = initial_frame(PEER_B, sched_b_entry, 0x345);
+            sched.tasks[PEER_B].frame = initial_frame(PEER_B, sched_b_entry, peer_pstate);
         }
         sched.wake(LOW);
         let frame = sched.dispatch();
@@ -255,19 +289,75 @@ extern "C" fn low_start(sp: usize) {
     uart_write(b"SCHED LOW RUN\n");
 }
 
+#[cfg(feature = "rr-bench")]
+fn arm_rr_quantum() {
+    let frequency: u64;
+    // Charge 1/100 s of the guest physical counter from dispatch, including
+    // restore and marker time. IMASK holds delivery until the peer's work
+    // window. Clearing IMASK later leaves this deadline intact.
+    unsafe { asm!("mrs {}, cntfrq_el0", out(reg) frequency, options(nostack, preserves_flags)) };
+    let ticks = frequency / 100;
+    require(ticks > 0 && ticks <= i32::MAX as u64);
+    unsafe {
+        asm!("msr cntp_tval_el0, {ticks}", "msr cntp_ctl_el0, {masked}", "isb",
+            ticks = in(reg) ticks, masked = in(reg) 3u64, options(nostack, preserves_flags))
+    };
+}
+
+#[cfg(feature = "rr-bench")]
+fn expire_rr_slice(sched: &mut Scheduler, id: usize, frame: *mut Frame) -> *mut Frame {
+    let turns = RR_ROTATIONS.load(Ordering::Acquire);
+    let (expected, peer, threshold) = match turns {
+        0 => (HIGH, PEER_B, 2),
+        1 => (PEER_B, HIGH, 3),
+        2 => (HIGH, PEER_B, 3),
+        _ => fail(),
+    };
+    require(id == expected && sched.tasks[peer].state == State::Ready);
+    require(sched.tasks[id].priority == sched.tasks[peer].priority);
+    require(sched.tasks[LOW].state == State::Ready);
+    let (begin, end, witness) = if id == HIGH {
+        (
+            &raw const sched_rr_a_begin,
+            &raw const sched_rr_a_end,
+            0xa19,
+        )
+    } else {
+        (
+            &raw const sched_rr_b_begin,
+            &raw const sched_rr_b_end,
+            0xb19,
+        )
+    };
+    // SAFETY: IRQ entry verified the frame address on this running peer's stack.
+    let saved = unsafe { &*frame };
+    require((begin.addr()..end.addr()).contains(&(saved.elr as usize)));
+    require(saved.gpr[19] == witness && saved.tpidr_el1 == witness);
+    require(saved.simd[31] == [witness; 2]);
+    require(saved.gpr[11] == threshold && saved.gpr[14] == 1);
+    let count = saved.gpr[9];
+    require(count >> 32 == witness && count as u32 != 0);
+    // The task reserves two stack words: its private witness and a snapshot
+    // of the interrupted counter. It checks the restored counter on resumption.
+    unsafe {
+        let words = stack_top(id).sub(16).cast::<u64>();
+        require(ptr::read_volatile(words) == witness && ptr::read_volatile(words.add(1)) == 0);
+        ptr::write_volatile(words.add(1), count);
+    }
+    // No task runs until exception return. Dispatch arms the incoming slice
+    // using the new rotation count and leaves CNTP disabled after the third.
+    RR_ROTATIONS.store(turns + 1, Ordering::Release);
+    let next = sched.rotate(id, frame);
+    require(sched.current == Some(peer));
+    next
+}
+
 extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
     let iar = gic_read(GICC + 0x0c);
     let control: u64;
     // SAFETY: IRQ entry saved all task registers. CNTP is owned by this bench.
     unsafe { asm!("mrs {}, cntp_ctl_el0", out(reg) control, options(nostack, preserves_flags)) };
     require(iar & 0x3ff == TIMER_IRQ && control & 7 == 5); // asserted, enabled, unmasked
-    require(frame.addr() == stack_top(LOW).addr() - 16 - size_of::<Frame>());
-    let begin = (&raw const sched_work_begin).addr();
-    let end = (&raw const sched_work_end).addr();
-    // SAFETY: The vector supplied the fixed-size frame on the verified stack.
-    let saved = unsafe { &*frame };
-    require((begin..end).contains(&(saved.elr as usize)));
-    require(saved.spsr & 0x8f == 5 && saved.gpr[9] != 0);
     require(HIGH_DONE.load(Ordering::Acquire) == 0);
 
     // Deassert the level source before EOI. Write back the complete IAR token.
@@ -281,8 +371,21 @@ extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
     };
     gic_write(GICC + 0x10, iar);
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
-    let next = with_scheduler(|sched| {
-        require(sched.current == Some(LOW) && sched.tasks[LOW].state == State::Running);
+    with_scheduler(|sched| {
+        let Some(id) = sched.current else { fail() };
+        require(sched.tasks[id].state == State::Running);
+        require(frame.addr() == stack_top(id).addr() - 16 - size_of::<Frame>());
+        // SAFETY: The vector supplied the fixed-size frame on the verified stack.
+        let saved = unsafe { &*frame };
+        require(saved.spsr & 0x8f == 5 && saved.gpr[9] != 0);
+        #[cfg(feature = "rr-bench")]
+        if id != LOW {
+            return expire_rr_slice(sched, id, frame);
+        }
+        require(id == LOW);
+        let begin = (&raw const sched_work_begin).addr();
+        let end = (&raw const sched_work_end).addr();
+        require((begin..end).contains(&(saved.elr as usize)));
         sched.tasks[LOW].frame = frame;
         sched.tasks[LOW].state = State::Ready;
         require(sched.ready.push_front(LOW)); // Interrupted LOW keeps its turn.
@@ -291,29 +394,34 @@ extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
         sched.wake(PEER_B);
         let next = sched.dispatch();
         require(sched.current == Some(HIGH) && sched.tasks[LOW].state == State::Ready);
+        uart_write(b"SCHED TIMER IRQ\n");
         next
-    });
-    uart_write(b"SCHED TIMER IRQ\n");
-    next
+    })
 }
 
-// Called by the task body on its own stack. The entry's literal ID and the
-// post-yield call site select the marker, independently of dispatch.
+// Each task body reports from its own entry or resumption call site.
 extern "C" fn high_start(sp: usize, id: usize, resumed: usize) {
-    // SAFETY: These tasks run with IRQ enabled. Serialize their marker
-    // and scheduler access, then return to that same IRQ state.
+    // SAFETY: Serialize the marker and scheduler access on this single CPU.
     unsafe { asm!("msr daifset, #2", options(nostack, preserves_flags)) };
     let line: &[u8] = match (id, resumed) {
         #[cfg(not(feature = "fifo-bench"))]
         (HIGH, 0) => b"SCHED HIGH RUN\n",
-        #[cfg(feature = "fifo-bench")]
+        #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
         (HIGH, 0) => b"FIFO A FIRST\n",
-        #[cfg(feature = "fifo-bench")]
+        #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
         (PEER_B, 0) => b"FIFO B FIRST\n",
-        #[cfg(feature = "fifo-bench")]
+        #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
         (HIGH, 1) => b"FIFO A RESUMED\n",
-        #[cfg(feature = "fifo-bench")]
+        #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
         (PEER_B, 1) => b"FIFO B RESUMED\n",
+        #[cfg(feature = "rr-bench")]
+        (HIGH, 0) => b"RR A FIRST\n",
+        #[cfg(feature = "rr-bench")]
+        (PEER_B, 0) => b"RR B FIRST\n",
+        #[cfg(feature = "rr-bench")]
+        (HIGH, 1) => b"RR A RESUMED\n",
+        #[cfg(feature = "rr-bench")]
+        (PEER_B, 1) => b"RR B RESUMED\n",
         _ => fail(),
     };
     require(sp == stack_top(id).addr() - resumed * 16);
@@ -321,8 +429,16 @@ extern "C" fn high_start(sp: usize, id: usize, resumed: usize) {
         require(sched.current == Some(id) && sched.tasks[id].state == State::Running);
         require(sched.tasks[LOW].state == State::Ready);
     });
+    #[cfg(feature = "rr-bench")]
+    {
+        let turns = RR_ROTATIONS.load(Ordering::Acquire);
+        require(turns == (2 * resumed + usize::from(id == PEER_B)) as u64);
+    }
     uart_write(line);
-    unsafe { asm!("msr daifclr, #2", options(nostack, preserves_flags)) };
+    #[cfg(not(feature = "rr-bench"))]
+    unsafe {
+        asm!("msr daifclr, #2", options(nostack, preserves_flags))
+    };
 }
 
 extern "C" fn service_call(frame: *mut Frame) -> *mut Frame {
@@ -341,36 +457,43 @@ extern "C" fn service_call(frame: *mut Frame) -> *mut Frame {
         require(saved.spsr & 0x8f == 5); // IRQ-enabled EL1h
         let elr = saved.elr as usize;
 
-        #[cfg(feature = "fifo-bench")]
-        let (peer, resume_pc, finish_pc) = if id == HIGH {
-            (
-                PEER_B,
-                &raw const sched_high_resume,
-                &raw const sched_high_return,
-            )
-        } else {
-            (HIGH, &raw const sched_b_resume, &raw const sched_b_return)
-        };
-        #[cfg(feature = "fifo-bench")]
+        #[cfg(all(feature = "fifo-bench", not(feature = "rr-bench")))]
         if immediate == 2 {
+            let (peer, resume_pc) = if id == HIGH {
+                (PEER_B, &raw const sched_high_resume)
+            } else {
+                (HIGH, &raw const sched_b_resume)
+            };
             require(elr == resume_pc.addr() && sched.tasks[peer].state == State::Ready);
-            sched.tasks[id].frame = frame;
-            sched.tasks[id].state = State::Ready;
-            require(sched.ready.push_back(id)); // Voluntary yield gives up this FIFO turn.
-            let next = sched.dispatch();
+            let next = sched.rotate(id, frame);
             require(sched.current == Some(peer));
             return next;
         }
 
+        #[cfg(feature = "fifo-bench")]
+        let finish_pc = if id == HIGH {
+            &raw const sched_high_return
+        } else {
+            &raw const sched_b_return
+        };
         #[cfg(not(feature = "fifo-bench"))]
         let finish_pc = &raw const sched_high_return;
         require(immediate == 1 && elr == finish_pc.addr());
+        #[cfg(feature = "rr-bench")]
+        require(RR_ROTATIONS.load(Ordering::Acquire) == 3);
         sched.tasks[id].state = State::Finished;
         let next = sched.dispatch();
         #[cfg(feature = "fifo-bench")]
-        if id == HIGH {
-            require(sched.current == Some(PEER_B));
-            return next;
+        {
+            let (first, last) = if cfg!(feature = "rr-bench") {
+                (PEER_B, HIGH)
+            } else {
+                (HIGH, PEER_B)
+            };
+            if id == first {
+                require(sched.current == Some(last));
+                return next;
+            }
         }
         require(sched.current == Some(LOW) && sched.peers_finished());
         HIGH_DONE.store(1, Ordering::Release); // Let LOW exit only after the final peer.
