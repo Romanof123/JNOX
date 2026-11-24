@@ -80,3 +80,5 @@ Extract the [saved REST records, primary mapping, checker transcript and replay 
 [Independent review of all 49 original items / 원래 49개 항목의 독립 검토](pm-scheduling-inventory-review.en-ko.md). The 04:47:50 archive retains normalized REST records. Its original HTTP headers were not retained.
 
 At 04:54:01 KST a [separate follow-up collection](pm-open-tracking-pagination-follow-up.zip) saved the response body, request URL, HTTP 200, Date, ETag, GitHub request ID and final page headers. That one page had 32 issues and 18 PRs, including the newly opened #245. The Link header was absent. All 18 primary pairs and team labels passed. ZIP SHA-256 `54047c1d8cc797b859186e8cf0ecbc8c9a8bfdd3fd4192a973929a05949e7e7e`. 한국 시간 04시 54분의 별도 수집에서 다음 페이지가 없었고 추가된 PR은 이 감사 기록을 게시하는 #245 한 건이었다.
+
+[Final independent verification of both inventories and the two README links](pm-scheduling-inventory-final.en-ko.md).
