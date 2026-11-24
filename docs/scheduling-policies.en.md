@@ -104,4 +104,4 @@ POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under D
 
 POL-010 · Forced first-grant rejection and two passing controls. [EVD-035](evidence/evd-035.en.md)
 
-POL-004 / IMP-042. The v1 verdict is partial: four deterministic handoffs and nine scripts passed. Eight default-clock cases inhibited before enable, and two exact-boundary cases missed their targets. [EVD-042](evidence/evd-042.en.md)
+POL-004 / IMP-042. v2 is partial. Fourteen primary cases qualified, including the worst-phase case. Eight default-clock cases inhibited early; same-tick ingress remains unqualified. The ten diagnostic cases are recorded separately. [EVD-042](evidence/evd-042.en.md)

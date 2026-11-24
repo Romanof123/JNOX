@@ -22,12 +22,22 @@
       "evidence": "evd-042-v1.json",
       "evidence_sha256": "4a1ebc573b69f9111997e0d6d05a859301ca79edafccb8ce9ad48b82deecbd7f",
       "reviewer_manifest_sha256": "f2b3b666fb4d5d876b605307d56dd0a59ba02d690f7ec1190ba58f21cd04f8b4"
+    },
+    {
+      "version": 2,
+      "verdict": "PARTIAL",
+      "source": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
+      "primary_cases": 23,
+      "diagnostic_cases": 10,
+      "qualified_complete_primary_cases": 14,
+      "first_incomplete_guest": "booted-primary-rm-handoff-healthy",
+      "english": "evd-042-v2.en.md",
+      "korean": "evd-042-v2.md",
+      "evidence": "evd-042-v2.json",
+      "independent_report_sha256": "cf29a8018c15b4a4ed30de95003ef6128dbea1e58da638acce6c8b7e722d0c7e",
+      "evidence_sha256": "51d6c27d4cfd3017dbb610db6675fa1bebc0dc4f57e5689acf789c9311bf7cc8"
     }
   ],
-  "pending_candidate": {
-    "source": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
-    "status": "Awaiting independent runtime verdict"
-  },
   "limits": [
     "External board and electrical signal",
     "Safety IPC transport",
