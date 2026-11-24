@@ -26,3 +26,24 @@ For resource tests pin the manifest limits for processes, threads, descriptors, 
 - **Prebuilt Linux ELF · VER-021.** Use the verification plan's pinned Debian arm64 static BusyBox unchanged, with the Linux guest disabled. Compare `wc -l sample.txt` output, stderr and status against reference Linux for success and access denial. Exercise raw Linux `-ENOSYS` and reject an incompatible ISA or interpreter before entry. [Exact fixtures, digests and comparison rules](verification-plan.en.md)
 
 Process-shared synchronization, robust mutexes, real-time queued signals, `fork`, dynamic linking and full shell/utility coverage are deferred for separate profile decisions. Publish omitted options and unsupported flags in the SDK. A header, exported symbol or linked executable alone leaves target verification pending. [Requirements](requirements.en.md) · [User services and ABI design](architecture.en.md)
+
+## CHG-085 · native static executable layout
+
+The first native AArch64 image contract accepts little-endian ELF64 ET_EXEC, version 1, machine 183, System V identification with ABI version zero and AArch64 flags zero. The SDK supplies native startup code and syscall conventions. ELF identification alone cannot establish the application ABI. The planner accepts immutable file bytes and a caller-provided page-aligned, half-open user VA window. The reference SDK window is [0x00400000,0x00800000), with 4096-byte pages. Use an explicit linker PHDRS table, for example RX code at 0x00400000 and any writable data on a separate page.
+
+Accept 1–8 nonempty PT_LOADs in ascending VA order and at most 16 program headers. Accept R, RX or RW only. Require aligned virtual/file starts, power-of-two alignment at least one page, ELF offset/address congruence, file size ≤ memory size, bounded file data, checked VA arithmetic, rounded mapped pages wholly inside the window and disjoint page ranges. Require a 4-byte-aligned entry and a complete first instruction in file-backed RX bytes. Only PT_NULL and an optional single empty non-executable PT_GNU_STACK are additional supported headers. Reject all others, including interpreter, dynamic and TLS. The plan ignores section headers, symbols and physical addresses. Copy each declared file interval, zero its memory tail and any exposed page padding before mapping with final permissions. A failed parse returns no partial plan.
+
+The host inspector and future kernel mapper use the same allocation-free Rust parser. Validate an SDK-built C image against its link map and record bounded format/range controls. Actual mapping, stack, EL0 entry, syscall handling and application results require separate implementation and evidence. [REQ-008/014](requirements.en.md) · [DES-004/005](architecture.en.md) · [VER-008/014](verification-plan.en.md)
+
+Before launch the loader must independently authenticate the executable and its native ABI identity, for example with a trusted package manifest binding the image digest and ABI version. A hosted comparison image passing these layout checks gains no native execution authorization.
+
+### Inspect an SDK image
+
+From the repository root with Rust installed, compile the inspector once and supply the ELF produced by the SDK linker. The report gives the entry, permissions, copy and BSS lengths, and page ends. Compare those fields with the SDK link map. The SDK v1 startup convention, allocated JNOX note and syscall ABI are separate package checks. The inspector neither validates the note nor launches the application.
+
+```sh
+rustc --edition=2024 tools/native_elf_plan.rs -o native_elf_plan
+./native_elf_plan path/to/application.elf
+rustc --edition=2024 --test kernel/native/lib.rs -o native_elf_tests
+./native_elf_tests
+```
