@@ -50,3 +50,5 @@
 [요구사항](requirements.md) · [안전·보안 개념](safety-security-concept.md) · [추적 링크](../trace/links.csv)
 
 두 CPU QEMU 구성에서 고정 배치, 전역 이동, 단일 CPU 클러스터 제한을 검증한다. [두 CPU 스케줄링](m3-smp.md)
+
+뮤텍스 구성은 실제 차단·타이머 만료·소유권 양도 때 유효 우선순위를 대조한다. [뮤텍스 합격 기준](m1-mutex.md)

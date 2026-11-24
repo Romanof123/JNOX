@@ -6,6 +6,10 @@ mod ready_queue;
 mod smp_policy;
 #[path = "smp_tests.rs"]
 mod smp_tests;
+#[path = "../kernel/src/mutex_policy.rs"]
+mod mutex_policy;
+#[path = "mutex_tests.rs"]
+mod mutex_tests;
 
 // Import each backend and register its guest check as a separate host test.
 macro_rules! policy_tests {

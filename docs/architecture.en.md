@@ -110,3 +110,5 @@ The kernel owns endpoint authority, wait and wake transitions, and bounded cross
 [Requirements](requirements.en.md) · [Verification plan](verification-plan.en.md) · [Development lifecycle](lifecycle.en.md)
 
 The two-CPU QEMU configuration exercises fixed homes, global migration and singleton cluster enforcement. [Two-CPU scheduling](m3-smp.en.md)
+
+The mutex configuration checks effective priority on real block, timer timeout and ownership handoff. [Mutex release cases](m1-mutex.en.md)

@@ -50,3 +50,5 @@ Each verification result records its `EVD` ID, baseline, `VER` and `REQ` IDs, wh
 [Requirements](requirements.en.md) · [Safety and security concept](safety-security-concept.en.md) · [Trace links](../trace/links.csv)
 
 The two-CPU QEMU configuration exercises fixed homes, global migration and singleton cluster enforcement. [Two-CPU scheduling](m3-smp.en.md)
+
+The mutex configuration checks effective priority on real block, timer timeout and ownership handoff. [Mutex release cases](m1-mutex.en.md)
