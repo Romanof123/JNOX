@@ -225,13 +225,17 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("weighted"));
         println!("cargo::rustc-cfg=jnox_weighted_trace");
     }
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_stage, values("eoi", "frames"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_stage, values("eoi", "frames", "frame-window"))"#);
     if let Some(site) = selector("JNOX_RESERVATION_STAGE") {
-        assert!(matches!(site.as_str(), "eoi" | "frames"), "unknown reservation stage");
+        let supported = match site.as_str() {
+            "eoi" | "frames" => matches!(app.as_deref(), Some("aligned-wake" | "cbs-saturated")),
+            "frame-window" => app.as_deref() == Some("aligned-saturated"),
+            _ => false,
+        };
         assert!(board == "virt" && bench == "boot" && profile.as_deref() == Some("reservation")
-            && matches!(app.as_deref(), Some("aligned-wake" | "cbs-saturated"))
+            && supported
             && scenario.is_none() && env::var("OPT_LEVEL").as_deref() == Ok("s"),
-            "reservation stage requires the size-optimized ordinary virt W/S study configuration");
+            "reservation stage requires its selected size-optimized ordinary virt application");
         println!(r#"cargo::rustc-cfg=jnox_reservation_stage="{site}""#);
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_reservation)");
