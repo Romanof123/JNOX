@@ -1,0 +1,320 @@
+{
+ "version": 1,
+ "verdict": "PARTIAL evidence; both timing cases FAILED",
+ "source": "a57a0cb8563c28403f9afc2efa3bd9ba482f8398",
+ "reviewer_manifest_sha256": "d471625eb17dfdec3e92dfb49fbde83a913d1c24677f8db38606ee61262b3e28",
+ "independent_verdict": {
+  "verdict": "FAIL both first normal-clock ordinary boots; separate assembly regression failed",
+  "cases": {
+   "P": {
+    "edges": 10,
+    "over": 9,
+    "max_ticks": 369103,
+    "max_ms": 5.905648,
+    "first_failure": {
+     "n": 1,
+     "nominal": 6835696,
+     "entry": 6978098,
+     "live": 6985288,
+     "ret": 6988312,
+     "x": 7010107,
+     "ticks": 174411,
+     "within": false,
+     "task": 2
+    },
+    "skipped": [],
+    "first_actual_b_selection": 19674180,
+    "release": 9960696,
+    "totals": {
+     "kernel": 41148,
+     "uncertain": 1565234,
+     "0": 24582355,
+     "2": 11927746,
+     "1": 5757883
+    },
+    "uncertainty_note": "last-to-entry and return-to-x are conservative transition brackets; displacement inside them cannot be charged to workers",
+    "all_readbacks_equal_nominal": true,
+    "exception_elr_eret_matches": true,
+    "stack_resume_and_checksum_verified": true
+   },
+   "Q": {
+    "edges": 12,
+    "over": 11,
+    "max_ticks": 3575899,
+    "max_ms": 57.214384,
+    "first_failure": {
+     "n": 1,
+     "nominal": 4601418,
+     "entry": 4743182,
+     "live": 4748790,
+     "ret": 4751155,
+     "x": 4771039,
+     "ticks": 169621,
+     "within": false,
+     "task": 2
+    },
+    "skipped": [
+     "Q tick 5 to 6, eligible B, at generation 4"
+    ],
+    "first_actual_b_selection": 14092803,
+    "release": 4601418,
+    "totals": {
+     "kernel": 40838,
+     "uncertain": 4979138,
+     "2": 11726180,
+     "0": 18390671,
+     "1": 14985622
+    },
+    "uncertainty_note": "last-to-entry and return-to-x are conservative transition brackets; displacement inside them cannot be charged to workers",
+    "all_readbacks_equal_nominal": true,
+    "exception_elr_eret_matches": true,
+    "stack_resume_and_checksum_verified": true
+   }
+  },
+  "fixture": "PART FAIL after A FIRST, first IRQ ELR 0x40201278 at part_a_begin, no second eret. Timeout after park. Unchanged partition.rs since a547ff1d. First trace lacks the counter samples and predicate ID necessary to diagnose timing versus other guards. No proof of source regression or configuration error.",
+  "host": "Both original UARTs rejected correctly for unplanned late dispatch. All six synthetic cases and all four documented unit tests passed. Host accepted synthetic corrupted OBS.value and initial return PC 1; it does not authenticate checksum or ELF/trace. Negative originals short-circuit without accounting output. b_release_first_selection reports selection of idle at release, not first actual B dispatch; e.g. synthetic P release 103000, selection 103002, first B 106002. No unexpected false rejection in executed controls.",
+  "scope": "No live injected masked/delayed cases or physical protection evidence. Q skipped runnable window at the first wrap; separate later same-owner returns verified. Synthetic long does not establish live recovery."
+ },
+ "build_index": {
+  "source": "a57a0cb8563c28403f9afc2efa3bd9ba482f8398",
+  "tree": "90a77e67b720bf8a8dbbbfaccac5a83804b4b9a8",
+  "compiler": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+  "cwd": "D:\\codex\\.jnox-work\\next-fixed\\partition-qa-src\\kernel",
+  "environment": {
+   "JNOX_BOARD": "virt",
+   "CARGO_BUILD_JOBS": "1",
+   "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-builds\\target",
+   "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-builds",
+   "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-builds"
+  },
+  "images": {
+   "ordinary-partition-p": {
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--release",
+     "--locked",
+     "-j1",
+     "--features",
+     "ordinary-partition-p"
+    ],
+    "exit": 0,
+    "build_log": "ordinary-partition-p/build.log",
+    "log_sha256": "56510521675123f9b8befb65c89df95f744dc6a901548831a8355bab183922d5",
+    "path": "ordinary-partition-p/kernel.elf",
+    "sha256": "ac357264972eef19dc01578633d2540fbf3fd97667b4fe74962aa2db1e788c0d",
+    "size": 98208
+   },
+   "ordinary-partition-q": {
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--release",
+     "--locked",
+     "-j1",
+     "--features",
+     "ordinary-partition-q"
+    ],
+    "exit": 0,
+    "build_log": "ordinary-partition-q/build.log",
+    "log_sha256": "eef59467ea2e7f81e9f80e460d4c1071709007cf3240218347efa6e9f5ac2e53",
+    "path": "ordinary-partition-q/kernel.elf",
+    "sha256": "45c4b2eba9074ec17cba84eb7dfa2bafbfbca266a8775234cf4b0b1b3b9f24a5",
+    "size": 98208
+   },
+   "partition-bench": {
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--release",
+     "--locked",
+     "-j1",
+     "--features",
+     "partition-bench"
+    ],
+    "exit": 0,
+    "build_log": "partition-bench/build.log",
+    "log_sha256": "bb962bb062b646b9d68c8b81c33485e5c69fcc1a93cd70afa63f8441d43837e9",
+    "path": "partition-bench/kernel.elf",
+    "sha256": "9a4e32ce9acf1f3f0c8bc9b513f9f5392a2488ad4d0cb135054da2a7751ef978",
+    "size": 89856
+   }
+  }
+ },
+ "archive": {
+  "parts": [
+   "evd-044-v1-raw-01.json",
+   "evd-044-v1-raw-02.json",
+   "evd-044-v1-raw-03.json"
+  ],
+  "sha256": "46c4a8ffe2344f6c37cbbe58284a6a83d82ebf2e0ad2deef8eb9e735b92dfb07",
+  "entry_sha256": {
+   "partition-builds/build.py": "f9799efc4ba1834798765104cbc7d40500f3d42b686660b21d9c6c6297b56191",
+   "partition-builds/index.json": "c2ed1475cbc3061030473bc240b9ff95fd6462ee304f472fc25e6954d5088c49",
+   "partition-builds/index.sha256": "d365b02a7fcc872be872a6840c40b0a162f3417db974b008f58cef81f905a521",
+   "partition-fresh/audit.py": "cd2b00cfc78b41131320227d6ac9fb39e0500082825f60bf083d5c7fd60649f5",
+   "partition-fresh/capture.py": "b2187e1c7a71557c8e5d955fb662f3dc12a27f1b65bb2b616614559a0978bc12",
+   "partition-fresh/host/codes.json": "a6202b7cecbb80b68e1ac2c8867b12fdb6039e5bd57218d746fee5e8bb7e4036",
+   "partition-fresh/host/corrupt-value.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/corrupt-value.stdout": "0b04f7861883ed55dd24f7870a466443ef2929372fdeeb1ba7602d864762f1f6",
+   "partition-fresh/host/corrupt-value.uart": "58be78b68af70efe48e4316fe394cc029bd395ead5ac1d5d400f4830ab0b1385",
+   "partition-fresh/host/false-first-PC.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/false-first-PC.stdout": "0b04f7861883ed55dd24f7870a466443ef2929372fdeeb1ba7602d864762f1f6",
+   "partition-fresh/host/false-first-PC.uart": "8b974601328b3d9def9cbab8e63bceffa5693e06f9b0576f3efff4288f7c4c54",
+   "partition-fresh/host/P-guest.stderr": "d70cd3054ec8784e2dcf4e66a08a98f8e8de47721accd83d4b92a2b3ca5698e0",
+   "partition-fresh/host/P-guest.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/P-healthy-emit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/P-healthy-emit.stdout": "ff3fe1576932303c6f16390779143fedc43b8726d50d4920b7c9b07a71609b58",
+   "partition-fresh/host/P-healthy.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/P-healthy.stdout": "0b04f7861883ed55dd24f7870a466443ef2929372fdeeb1ba7602d864762f1f6",
+   "partition-fresh/host/P-long-emit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/P-long-emit.stdout": "054aff9bc6e785c885a2910f2ffa3c47e575b31c127b44a06f4bc3cea8894e88",
+   "partition-fresh/host/P-long.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/P-long.stdout": "64820b30f8a9a34e89df339204caf66264ac987fc1627cc4b6ae6a55eb30baf9",
+   "partition-fresh/host/P-near-emit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/P-near-emit.stdout": "a2bc09ffe4415650fea37265572c8fd845700763e807e87380faea3e1ccee65f",
+   "partition-fresh/host/P-near.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/P-near.stdout": "9d2c84e506f2ce42d934696142e39fcea2a43a96ef91fbbbb587e28e319dea61",
+   "partition-fresh/host/Q-guest.stderr": "d70cd3054ec8784e2dcf4e66a08a98f8e8de47721accd83d4b92a2b3ca5698e0",
+   "partition-fresh/host/Q-guest.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/Q-healthy-emit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/Q-healthy-emit.stdout": "a53bb5c318e2c3b8dc3d8a8dcf28c303fd7d8b4bc774881e62fbedf00bb237a4",
+   "partition-fresh/host/Q-healthy.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/Q-healthy.stdout": "eadd1678a2ef851110a7a0c8d676c304e083973cbb3858f698ecc5d467dff73e",
+   "partition-fresh/host/Q-long-emit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/Q-long-emit.stdout": "fd354e67b6d9af0080d34295a26a1c3bfc85aa4f929e684157825b3dd6553978",
+   "partition-fresh/host/Q-long.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/Q-long.stdout": "081956034f7fc3f202a28f8701ef92f5a95a3ab1f384f56c6c72db0e3bc5c77f",
+   "partition-fresh/host/Q-near-emit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/Q-near-emit.stdout": "9c56834ff7c20a0ab06fcfb8dd70a12a0abf2261abc35c0b5a4082d767b943eb",
+   "partition-fresh/host/Q-near.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/host/Q-near.stdout": "3ab7f48d0dc7e1d2effe3f801404e88ba693d0ce964c4c83d2b38b851b3eea4b",
+   "partition-fresh/host/suite.stderr": "69e31d2fcb99798613f20dd2369f9b0348843ae4cca6ce174a245c71df8f18ea",
+   "partition-fresh/host/suite.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/manifest.sha256": "d471625eb17dfdec3e92dfb49fbde83a913d1c24677f8db38606ee61262b3e28",
+   "partition-fresh/ordinary-partition-p/disassembly": "5dd73244202fe116ad5bc27839a006287d6a7ffbdccb849020f25ef97704ca01",
+   "partition-fresh/ordinary-partition-p/exceptions.log": "59fad046655f651cb0fe1c48d868f994b50a56f5cf0b4a914509e0e73ad03106",
+   "partition-fresh/ordinary-partition-p/execution.json": "a08da24883621888f9f62084134b93a8abf565f68331b4466496fcbf6832f566",
+   "partition-fresh/ordinary-partition-p/stderr": "84ec66011b95c4129d20982b882799390b956391739d2242b50b4d6613a54ed2",
+   "partition-fresh/ordinary-partition-p/stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/ordinary-partition-p/uart": "ed46cbe391768e70632e0acb4d6f249afbd1a7a116b748a3b6687b6c7072e4bb",
+   "partition-fresh/ordinary-partition-q/disassembly": "2b80f554786d333c1ed50048f52f972fbc2b3e5e68db43c42b62e11307746a7b",
+   "partition-fresh/ordinary-partition-q/exceptions.log": "a8580baf7d315a48c1397e6e432dd716c47b255e90b82e247978c15d49cb0f44",
+   "partition-fresh/ordinary-partition-q/execution.json": "04299dc4d958801928ba7906b7f5a609ecae6fbf2d0607a05e86537bf00044e4",
+   "partition-fresh/ordinary-partition-q/stderr": "84ec66011b95c4129d20982b882799390b956391739d2242b50b4d6613a54ed2",
+   "partition-fresh/ordinary-partition-q/stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/ordinary-partition-q/uart": "5fc89b427a11fc2cf948121d5e4ea7c2914558d13f4262d344a1ea676e3ab3db",
+   "partition-fresh/P-audit.json": "72b6433fb7b0ec90aee52fb0a7f57cd39cd284337936272c364ad3bd94b564eb",
+   "partition-fresh/partition-bench/disassembly": "c58611a24e6d21a7a73a8f7f8d83b5453087e149c28b38843d1eb06dbbcc6fa9",
+   "partition-fresh/partition-bench/exceptions.log": "dec3500d89d67ea29d73de0562769b900d427bb81f9fa17881462311977f3f74",
+   "partition-fresh/partition-bench/execution.json": "2d3e34e17c1afa0039d5e2b6eb767fed4b3df7401c27fbffbb604880a475ecce",
+   "partition-fresh/partition-bench/stderr": "84ec66011b95c4129d20982b882799390b956391739d2242b50b4d6613a54ed2",
+   "partition-fresh/partition-bench/stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "partition-fresh/partition-bench/uart": "f054c07451010252cc8b80ec91606c88752fb85cfa25f4bdb010f9dc31d743fb",
+   "partition-fresh/Q-audit.json": "2ec52d7ae5becafe319bd98d5f598680e79850827fb552ed37ca3351102d42e8",
+   "partition-fresh/revision": "048db01ea089bd884b0f9a71d2374df8a26f2179c4802fdfaeaf013a5723b84a",
+   "partition-fresh/summary.json": "06438ddff14b0e62f14bf05af26d6615c244214c4037afee58633e88b5002da5",
+   "partition-fresh/summary.py": "9470c07b7a9e4448c8e37c867fd90811f8c09af0ff77a56212d1de47fcc3971b"
+  },
+  "encoding": "Ordered base64 chunks of gzip tar",
+  "restore_python": "from pathlib import Path\nimport hashlib,base64,json,tarfile,io\na=json.loads(Path('evd-044-v1.json').read_bytes())['archive']; parts=[]\nfor n in a['parts']:\n    r=json.loads(Path(n).read_bytes()); b=base64.b64decode(r['data'],validate=True); assert hashlib.sha256(b).hexdigest()==r['sha256']; parts.append(b)\nb=b''.join(parts); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for n,digest in a['entry_sha256'].items():\n        p=Path('v1')/n; assert p.resolve().is_relative_to(Path('v1').resolve()); b=t.extractfile(n).read(); assert hashlib.sha256(b).hexdigest()==digest; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b)",
+  "replay": "Run restore_python beside the chunk JSON files with Python 3.9+. In a disposable extraction place a checkout of the frozen source at v1/partition-qa-src. Run python -B v1/partition-fresh/audit.py then python -B v1/partition-fresh/summary.py. These offline scripts use the archived disassembly and captured rows and regenerate the host controls and outputs; they do not boot guests."
+ },
+ "supplemental_builder_record": {
+  "sha256": "eb5b6bfb47febc02a5584b1ec1769ffdbb05561274613418c61fb04f2f923cbc",
+  "source_file": "partition-parent-builds/index.json",
+  "record": {
+   "source": "6fccd8aa5b4cd542bcfdc0dd09d5ce53ce7e64e2",
+   "tree": "1dca35e74fd6cd60d4b371cae8a03a1fc8707bea",
+   "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+   "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+   "cwd": "D:\\codex\\.jnox-work\\next-fixed\\partition-parent-src\\kernel",
+   "images": {
+    "partition-bench": {
+     "environment": {
+      "JNOX_BOARD": "virt",
+      "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\partition-parent-builds\\target",
+      "CARGO_BUILD_JOBS": "1",
+      "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-parent-builds",
+      "TMP": "D:\\codex\\.jnox-work\\next-fixed\\partition-parent-builds"
+     },
+     "command": [
+      "cargo",
+      "+1.95.0",
+      "build",
+      "--locked",
+      "--release",
+      "-j1",
+      "--features",
+      "partition-bench"
+     ],
+     "exit": 0,
+     "build_log": "partition-bench/build.log",
+     "log_sha256": "c3e2357196b0d2d71a26ae0353d19c87965cb4cde060518278656353663c06df",
+     "path": "partition-bench/kernel.elf",
+     "size": 89856,
+     "sha256": "9a4e32ce9acf1f3f0c8bc9b513f9f5392a2488ad4d0cb135054da2a7751ef978",
+     "comparison": {
+      "reference": "D:\\codex\\.jnox-work\\next-fixed\\partition-builds\\partition-bench\\kernel.elf",
+      "segments": [
+       {
+        "old_layout": [
+         1075838976,
+         1075838976,
+         12705,
+         5,
+         65536
+        ],
+        "new_layout": [
+         1075838976,
+         1075838976,
+         12705,
+         5,
+         65536
+        ],
+        "old_size": 12705,
+        "new_size": 12705,
+        "old_sha": "cfe451670e5f819afe5e0c233189625e62fca8731203a2166f12f95677b2f4e3",
+        "new_sha": "cfe451670e5f819afe5e0c233189625e62fca8731203a2166f12f95677b2f4e3",
+        "different_overlapping_bytes": 0,
+        "differences": []
+       },
+       {
+        "old_layout": [
+         1075855360,
+         1075855360,
+         65760,
+         6,
+         65536
+        ],
+        "new_layout": [
+         1075855360,
+         1075855360,
+         65760,
+         6,
+         65536
+        ],
+        "old_size": 208,
+        "new_size": 208,
+        "old_sha": "17ba5ab1dcc738df74a9989b1807c2bd78f11e42e6e3c3563aa3e2fe1ae5dbb2",
+        "new_sha": "17ba5ab1dcc738df74a9989b1807c2bd78f11e42e6e3c3563aa3e2fe1ae5dbb2",
+        "different_overlapping_bytes": 0,
+        "differences": []
+       }
+      ],
+      "identical": true,
+      "text_identical": true,
+      "old_text_bytes": 12068,
+      "new_text_bytes": 12068,
+      "old_text_sha": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+      "new_text_sha": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15"
+     }
+    }
+   }
+  }
+ }
+}

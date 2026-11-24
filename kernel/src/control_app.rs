@@ -60,7 +60,7 @@ static mut APP: App = App {
     faulted: false,
     can_rearm: true,
     enabled: false,
-    gate: true,
+    gate: !cfg!(jnox_control_cold),
     observed: false,
     command: None,
     first_issue: None,
@@ -71,6 +71,18 @@ static mut APP: App = App {
 fn app() -> &'static mut App {
     unsafe { &mut *(&raw mut APP) }
 }
+#[cfg(jnox_control_cold)]
+pub(super) fn begin_operational() -> bool {
+    let a = app();
+    if a.gate || a.enabled || a.faulted || a.queued.is_some() || a.last.is_some()
+        || a.previous.is_some() || a.command.is_some() || a.first_issue.is_some()
+        || read_output() {
+        return false;
+    }
+    a.gate = true;
+    true
+}
+
 pub(super) fn init() {
     write_output(false);
     unsafe { ptr::write_volatile(DIR, ptr::read_volatile(DIR) | 1) };

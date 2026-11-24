@@ -1,0 +1,2789 @@
+{
+  "evidence_id": "EVD-049",
+  "implementation": "IMP-049",
+  "change": "CHG-052",
+  "source": "621c089c7d17f91ed229109a0ed25deb0150dfc1",
+  "tree": "9cb72fd1dae19a879923f6c8dd4483efcfdf3dda",
+  "index_sha256": "eeade5f45ea08419c29ef9380823d80ac4522d60933c72249c976d0a3ccc020e",
+  "manifest_sha256": "b008ada47d007c715a476ae385b35cdb2c7b4aac457571492e146961e49f06b0",
+  "report_sha256": "211ac0782382077e49c875924415b3f233e0aebc23e70b42cb650e9d5491de3b",
+  "independent_tools_sha256": {
+    "collect.py": "53d42b7155cf4439919394203056dc340298f716982ac8c7631836df9f7aafd9",
+    "verify.py": "437c4c30f946785011f6649c77448f3a4dbba877e9fd8e59d5d37b84d1736f3c",
+    "report.py": "c8b4270e0f774d58afa39f18acc1009e7fedd1c69522b37d80a578f412962620",
+    "controls.rs": "c6d21757b09c8973ad19f9b51a1ebb6ff07268f4d1a399d65eaef991a6dabca5"
+  },
+  "images_sha256": {
+    "weighted-share": "645e25dd581594e297fd8afa43b2662c71923c990d7f1ecdf0b2d838d6f9fd10",
+    "weighted-share-trace": "d824b15ccc8dafdea6898f94258dc7471fd72815b1de6de581f02dae8c5b9c31",
+    "weighted-wake": "83bc3fde72f01f201baa5f420b05d755b79c307f0dafc115a27d0b49f5077ef6",
+    "weighted-wake-trace": "697f804967f766fef7389b1e98a59a7ff0b9f3f5b25ed28ef7847a01fde899cf"
+  },
+  "independent_results": [
+    {
+      "case": "default-weighted-share",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 644126,
+          "gap": 0,
+          "select": 11811,
+          "restore": null
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 632440,
+          "gap": 54661,
+          "select": 179,
+          "restore": null
+        },
+        {
+          "seq": 3,
+          "owner": 1,
+          "elapsed": 632871,
+          "gap": 4780,
+          "select": 32,
+          "restore": null
+        },
+        {
+          "seq": 4,
+          "owner": 1,
+          "elapsed": 633662,
+          "gap": 2855,
+          "select": 22,
+          "restore": null
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 632601,
+          "gap": 1783,
+          "select": 26,
+          "restore": null
+        },
+        {
+          "seq": 6,
+          "owner": 1,
+          "elapsed": 631168,
+          "gap": 1211,
+          "select": 46,
+          "restore": null
+        },
+        {
+          "seq": 7,
+          "owner": 1,
+          "elapsed": 631135,
+          "gap": 986,
+          "select": 24,
+          "restore": null
+        },
+        {
+          "seq": 8,
+          "owner": 0,
+          "elapsed": 632369,
+          "gap": 1669,
+          "select": 21,
+          "restore": null
+        },
+        {
+          "seq": 9,
+          "owner": 1,
+          "elapsed": 631364,
+          "gap": 1006,
+          "select": 30,
+          "restore": null
+        },
+        {
+          "seq": 10,
+          "owner": 1,
+          "elapsed": 630665,
+          "gap": 1490,
+          "select": 34,
+          "restore": null
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 631367,
+          "gap": 1277,
+          "select": 17,
+          "restore": null
+        },
+        {
+          "seq": 12,
+          "owner": 1,
+          "elapsed": 633123,
+          "gap": 1275,
+          "select": 29,
+          "restore": null
+        },
+        {
+          "seq": 13,
+          "owner": 1,
+          "elapsed": 633103,
+          "gap": 1003,
+          "select": 24,
+          "restore": null
+        },
+        {
+          "seq": 14,
+          "owner": 0,
+          "elapsed": 632318,
+          "gap": 1714,
+          "select": 30,
+          "restore": null
+        },
+        {
+          "seq": 15,
+          "owner": 1,
+          "elapsed": 636640,
+          "gap": 1494,
+          "select": 29,
+          "restore": null
+        },
+        {
+          "seq": 16,
+          "owner": 1,
+          "elapsed": 630287,
+          "gap": 1012,
+          "select": 30,
+          "restore": null
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 631266,
+          "gap": 1423,
+          "select": 20,
+          "restore": null
+        },
+        {
+          "seq": 18,
+          "owner": 1,
+          "elapsed": 631732,
+          "gap": 965,
+          "select": 19,
+          "restore": null
+        },
+        {
+          "seq": 19,
+          "owner": 1,
+          "elapsed": 631241,
+          "gap": 2318,
+          "select": 36,
+          "restore": null
+        },
+        {
+          "seq": 20,
+          "owner": 0,
+          "elapsed": 631494,
+          "gap": 2700,
+          "select": 46,
+          "restore": null
+        },
+        {
+          "seq": 21,
+          "owner": 1,
+          "elapsed": 633160,
+          "gap": 1211,
+          "select": 27,
+          "restore": null
+        },
+        {
+          "seq": 22,
+          "owner": 1,
+          "elapsed": 629857,
+          "gap": 1190,
+          "select": 22,
+          "restore": null
+        },
+        {
+          "seq": 23,
+          "owner": 0,
+          "elapsed": 629708,
+          "gap": 2472,
+          "select": 13,
+          "restore": null
+        },
+        {
+          "seq": 24,
+          "owner": 1,
+          "elapsed": 631679,
+          "gap": 2231,
+          "select": 56,
+          "restore": null
+        },
+        {
+          "seq": 25,
+          "owner": 1,
+          "elapsed": 635448,
+          "gap": 953,
+          "select": 24,
+          "restore": null
+        },
+        {
+          "seq": 26,
+          "owner": 0,
+          "elapsed": 629081,
+          "gap": 898,
+          "select": 16,
+          "restore": null
+        },
+        {
+          "seq": 27,
+          "owner": 1,
+          "elapsed": 631064,
+          "gap": 550,
+          "select": 15,
+          "restore": null
+        },
+        {
+          "seq": 28,
+          "owner": 1,
+          "elapsed": 629144,
+          "gap": 940,
+          "select": 34,
+          "restore": null
+        },
+        {
+          "seq": 29,
+          "owner": 0,
+          "elapsed": 630791,
+          "gap": 781,
+          "select": 11,
+          "restore": null
+        },
+        {
+          "seq": 30,
+          "owner": 1,
+          "elapsed": 630334,
+          "gap": 1630,
+          "select": 18,
+          "restore": null
+        },
+        {
+          "seq": 31,
+          "owner": 1,
+          "elapsed": 631143,
+          "gap": 901,
+          "select": 30,
+          "restore": null
+        },
+        {
+          "seq": 32,
+          "owner": 0,
+          "elapsed": 629797,
+          "gap": 697,
+          "select": 15,
+          "restore": null
+        },
+        {
+          "seq": 33,
+          "owner": 1,
+          "elapsed": 630007,
+          "gap": 1190,
+          "select": 15,
+          "restore": null
+        },
+        {
+          "seq": 34,
+          "owner": 1,
+          "elapsed": 630421,
+          "gap": 1728,
+          "select": 11,
+          "restore": null
+        },
+        {
+          "seq": 35,
+          "owner": 0,
+          "elapsed": 631046,
+          "gap": 875,
+          "select": 18,
+          "restore": null
+        },
+        {
+          "seq": 36,
+          "owner": 1,
+          "elapsed": 630123,
+          "gap": 1216,
+          "select": 21,
+          "restore": null
+        },
+        {
+          "seq": 37,
+          "owner": 1,
+          "elapsed": 13932,
+          "gap": 6451,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 38,
+          "owner": 0,
+          "elapsed": 2636,
+          "gap": 3909,
+          "select": 25,
+          "restore": null
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          1898973,
+          1262303,
+          1262029,
+          1266226,
+          1266927,
+          1262973,
+          1263017,
+          1267127,
+          1260208,
+          1261477,
+          1260428,
+          644055
+        ],
+        [
+          644126,
+          0,
+          0,
+          632601,
+          0,
+          632369,
+          0,
+          631367,
+          0,
+          632318,
+          0,
+          631266,
+          0,
+          631494,
+          0,
+          629708,
+          0,
+          629081,
+          0,
+          630791,
+          0,
+          629797,
+          0,
+          631046,
+          0
+        ]
+      ],
+      "cycles": [],
+      "horizon": {
+        "service": [
+          7585964,
+          15161811
+        ],
+        "progress": [
+          24263528,
+          47185909
+        ],
+        "D": 10117,
+        "A_fraction": 0.3334815822646391,
+        "B_fraction": 0.6665184177353609,
+        "prefix_D": [
+          1288252,
+          655812,
+          22941,
+          -610721,
+          654481,
+          23313,
+          -607822,
+          656916,
+          25552,
+          -605113,
+          657621,
+          24498,
+          -608605,
+          656031,
+          19391,
+          -610896,
+          651636,
+          19904,
+          -611337,
+          651651,
+          18491,
+          -611366,
+          648050,
+          16371,
+          -619077,
+          639085,
+          8021,
+          -621123,
+          640459,
+          10125,
+          -621018,
+          638576,
+          8569,
+          -621852,
+          640240,
+          10117
+        ]
+      },
+      "final_progress": [
+        24263529,
+        47185910
+      ]
+    },
+    {
+      "case": "default-weighted-share-trace",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 656851,
+          "gap": 0,
+          "select": 4396,
+          "restore": 8686
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 629248,
+          "gap": 33247,
+          "select": 26,
+          "restore": 9606
+        },
+        {
+          "seq": 3,
+          "owner": 1,
+          "elapsed": 632169,
+          "gap": 1512,
+          "select": 15,
+          "restore": 768
+        },
+        {
+          "seq": 4,
+          "owner": 1,
+          "elapsed": 629623,
+          "gap": 964,
+          "select": 14,
+          "restore": 1020
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 630726,
+          "gap": 2044,
+          "select": 48,
+          "restore": 818
+        },
+        {
+          "seq": 6,
+          "owner": 1,
+          "elapsed": 630027,
+          "gap": 695,
+          "select": 12,
+          "restore": 985
+        },
+        {
+          "seq": 7,
+          "owner": 1,
+          "elapsed": 629812,
+          "gap": 2349,
+          "select": 12,
+          "restore": 924
+        },
+        {
+          "seq": 8,
+          "owner": 0,
+          "elapsed": 632258,
+          "gap": 493,
+          "select": 11,
+          "restore": 707
+        },
+        {
+          "seq": 9,
+          "owner": 1,
+          "elapsed": 630159,
+          "gap": 1344,
+          "select": 22,
+          "restore": 1140
+        },
+        {
+          "seq": 10,
+          "owner": 1,
+          "elapsed": 630320,
+          "gap": 1656,
+          "select": 15,
+          "restore": 972
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 631065,
+          "gap": 1008,
+          "select": 23,
+          "restore": 1318
+        },
+        {
+          "seq": 12,
+          "owner": 1,
+          "elapsed": 631446,
+          "gap": 1926,
+          "select": 27,
+          "restore": 1206
+        },
+        {
+          "seq": 13,
+          "owner": 1,
+          "elapsed": 630458,
+          "gap": 1267,
+          "select": 39,
+          "restore": 1300
+        },
+        {
+          "seq": 14,
+          "owner": 0,
+          "elapsed": 630316,
+          "gap": 670,
+          "select": 10,
+          "restore": 924
+        },
+        {
+          "seq": 15,
+          "owner": 1,
+          "elapsed": 631886,
+          "gap": 1157,
+          "select": 24,
+          "restore": 1150
+        },
+        {
+          "seq": 16,
+          "owner": 1,
+          "elapsed": 632371,
+          "gap": 2188,
+          "select": 22,
+          "restore": 1143
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 629845,
+          "gap": 1565,
+          "select": 32,
+          "restore": 1305
+        },
+        {
+          "seq": 18,
+          "owner": 1,
+          "elapsed": 629948,
+          "gap": 693,
+          "select": 15,
+          "restore": 1040
+        },
+        {
+          "seq": 19,
+          "owner": 1,
+          "elapsed": 630139,
+          "gap": 1297,
+          "select": 17,
+          "restore": 758
+        },
+        {
+          "seq": 20,
+          "owner": 0,
+          "elapsed": 630042,
+          "gap": 573,
+          "select": 12,
+          "restore": 961
+        },
+        {
+          "seq": 21,
+          "owner": 1,
+          "elapsed": 631193,
+          "gap": 1324,
+          "select": 20,
+          "restore": 703
+        },
+        {
+          "seq": 22,
+          "owner": 1,
+          "elapsed": 629776,
+          "gap": 526,
+          "select": 14,
+          "restore": 1033
+        },
+        {
+          "seq": 23,
+          "owner": 0,
+          "elapsed": 629371,
+          "gap": 359,
+          "select": 9,
+          "restore": 878
+        },
+        {
+          "seq": 24,
+          "owner": 1,
+          "elapsed": 629549,
+          "gap": 504,
+          "select": 10,
+          "restore": 270
+        },
+        {
+          "seq": 25,
+          "owner": 1,
+          "elapsed": 630179,
+          "gap": 330,
+          "select": 10,
+          "restore": 743
+        },
+        {
+          "seq": 26,
+          "owner": 0,
+          "elapsed": 629699,
+          "gap": 583,
+          "select": 11,
+          "restore": 962
+        },
+        {
+          "seq": 27,
+          "owner": 1,
+          "elapsed": 629715,
+          "gap": 1188,
+          "select": 37,
+          "restore": 723
+        },
+        {
+          "seq": 28,
+          "owner": 1,
+          "elapsed": 631405,
+          "gap": 457,
+          "select": 10,
+          "restore": 821
+        },
+        {
+          "seq": 29,
+          "owner": 0,
+          "elapsed": 629979,
+          "gap": 694,
+          "select": 13,
+          "restore": 999
+        },
+        {
+          "seq": 30,
+          "owner": 1,
+          "elapsed": 629206,
+          "gap": 2077,
+          "select": 11,
+          "restore": 793
+        },
+        {
+          "seq": 31,
+          "owner": 1,
+          "elapsed": 631439,
+          "gap": 410,
+          "select": 10,
+          "restore": 859
+        },
+        {
+          "seq": 32,
+          "owner": 0,
+          "elapsed": 629667,
+          "gap": 755,
+          "select": 15,
+          "restore": 943
+        },
+        {
+          "seq": 33,
+          "owner": 1,
+          "elapsed": 629354,
+          "gap": 2320,
+          "select": 48,
+          "restore": 829
+        },
+        {
+          "seq": 34,
+          "owner": 1,
+          "elapsed": 630578,
+          "gap": 503,
+          "select": 14,
+          "restore": 1031
+        },
+        {
+          "seq": 35,
+          "owner": 0,
+          "elapsed": 630285,
+          "gap": 699,
+          "select": 14,
+          "restore": 1062
+        },
+        {
+          "seq": 36,
+          "owner": 1,
+          "elapsed": 629757,
+          "gap": 561,
+          "select": 11,
+          "restore": 868
+        },
+        {
+          "seq": 37,
+          "owner": 1,
+          "elapsed": 9722,
+          "gap": 5076,
+          "select": 17,
+          "restore": 950
+        },
+        {
+          "seq": 38,
+          "owner": 0,
+          "elapsed": 2601,
+          "gap": 3550,
+          "select": 10,
+          "restore": 1048
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          1891040,
+          1259839,
+          1260479,
+          1261904,
+          1264257,
+          1260087,
+          1260969,
+          1259728,
+          1261120,
+          1260645,
+          1259932,
+          639479
+        ],
+        [
+          656851,
+          0,
+          0,
+          630726,
+          0,
+          632258,
+          0,
+          631065,
+          0,
+          630316,
+          0,
+          629845,
+          0,
+          630042,
+          0,
+          629371,
+          0,
+          629699,
+          0,
+          629979,
+          0,
+          629667,
+          0,
+          630285,
+          0
+        ]
+      ],
+      "cycles": [],
+      "horizon": {
+        "service": [
+          7590104,
+          15129757
+        ],
+        "progress": [
+          26553347,
+          52770433
+        ],
+        "D": 50451,
+        "A_fraction": 0.33407352272093566,
+        "B_fraction": 0.6659264772790643,
+        "prefix_D": [
+          1313702,
+          684454,
+          52285,
+          -577338,
+          684114,
+          54087,
+          -575725,
+          688791,
+          58632,
+          -571688,
+          690442,
+          58996,
+          -571462,
+          689170,
+          57284,
+          -575087,
+          684603,
+          54655,
+          -575484,
+          684600,
+          53407,
+          -576369,
+          682373,
+          52824,
+          -577355,
+          682043,
+          52328,
+          -579077,
+          680881,
+          51675,
+          -579764,
+          679570,
+          50216,
+          -580362,
+          680208,
+          50451
+        ]
+      },
+      "final_progress": [
+        26553348,
+        52770434
+      ]
+    },
+    {
+      "case": "default-weighted-wake",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 640962,
+          "gap": 0,
+          "select": 4463,
+          "restore": null
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 9776,
+          "gap": 34167,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 3,
+          "owner": 0,
+          "elapsed": 630448,
+          "gap": 5616,
+          "select": 12,
+          "restore": null
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 630218,
+          "gap": 2762,
+          "select": 19,
+          "restore": null
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 629615,
+          "gap": 918,
+          "select": 19,
+          "restore": null
+        },
+        {
+          "seq": 6,
+          "owner": 0,
+          "elapsed": 2635,
+          "gap": 587,
+          "select": 17,
+          "restore": null
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 629502,
+          "gap": 12322,
+          "select": 11,
+          "restore": null
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 5644,
+          "gap": 2424,
+          "select": 36,
+          "restore": null
+        },
+        {
+          "seq": 9,
+          "owner": 0,
+          "elapsed": 629776,
+          "gap": 941,
+          "select": 17,
+          "restore": null
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 629774,
+          "gap": 1304,
+          "select": 42,
+          "restore": null
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 629725,
+          "gap": 1470,
+          "select": 19,
+          "restore": null
+        },
+        {
+          "seq": 12,
+          "owner": 0,
+          "elapsed": 1590,
+          "gap": 1100,
+          "select": 37,
+          "restore": null
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 629969,
+          "gap": 1589,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 3197,
+          "gap": 2456,
+          "select": 113,
+          "restore": null
+        },
+        {
+          "seq": 15,
+          "owner": 0,
+          "elapsed": 630204,
+          "gap": 341,
+          "select": 17,
+          "restore": null
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 630087,
+          "gap": 897,
+          "select": 20,
+          "restore": null
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 629510,
+          "gap": 747,
+          "select": 31,
+          "restore": null
+        },
+        {
+          "seq": 18,
+          "owner": 0,
+          "elapsed": 1506,
+          "gap": 491,
+          "select": 15,
+          "restore": null
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 629573,
+          "gap": 228,
+          "select": 5,
+          "restore": null
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 3813,
+          "gap": 807,
+          "select": 19,
+          "restore": null
+        },
+        {
+          "seq": 21,
+          "owner": 0,
+          "elapsed": 2627,
+          "gap": 2693,
+          "select": 10,
+          "restore": null
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          9776,
+          0,
+          0,
+          0,
+          0,
+          5644,
+          0,
+          0,
+          0,
+          0,
+          3197,
+          0,
+          0,
+          0,
+          0,
+          3813
+        ],
+        [
+          640962,
+          629502,
+          629969,
+          629573
+        ]
+      ],
+      "cycles": [
+        {
+          "block": 2,
+          "base": [
+            640962,
+            9776
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1272148,
+          "solo": 3,
+          "sleep_service": 1892916,
+          "wake": 6,
+          "pre_lag": 5057980,
+          "post_lag": 0,
+          "wake_to_dispatch": 634380,
+          "wake_to_work": 638038,
+          "dispatch_to_work": 3658,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 8,
+          "base": [
+            3163380,
+            15420
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1253360,
+          "solo": 3,
+          "sleep_service": 1890865,
+          "wake": 12,
+          "pre_lag": 5035090,
+          "post_lag": 0,
+          "wake_to_dispatch": 632556,
+          "wake_to_work": 635148,
+          "dispatch_to_work": 2592,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 14,
+          "base": [
+            5684214,
+            18617
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1256741,
+          "solo": 3,
+          "sleep_service": 1891307,
+          "wake": 18,
+          "pre_lag": 5039355,
+          "post_lag": 0,
+          "wake_to_dispatch": 630447,
+          "wake_to_work": 631869,
+          "dispatch_to_work": 1422,
+          "first_resumed_charge_lag": 0
+        }
+      ],
+      "horizon": null,
+      "final_progress": [
+        17569566,
+        6
+      ]
+    },
+    {
+      "case": "default-weighted-wake-trace",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 636918,
+          "gap": 0,
+          "select": 4359,
+          "restore": 10633
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 8771,
+          "gap": 25405,
+          "select": 24,
+          "restore": 2136
+        },
+        {
+          "seq": 3,
+          "owner": 0,
+          "elapsed": 631517,
+          "gap": 5068,
+          "select": 30,
+          "restore": 1294
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 629167,
+          "gap": 2220,
+          "select": 15,
+          "restore": 981
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 630261,
+          "gap": 579,
+          "select": 12,
+          "restore": 841
+        },
+        {
+          "seq": 6,
+          "owner": 0,
+          "elapsed": 3154,
+          "gap": 1574,
+          "select": 23,
+          "restore": 1084
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 636591,
+          "gap": 18086,
+          "select": 33,
+          "restore": 897
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 5131,
+          "gap": 1665,
+          "select": 15,
+          "restore": 2212
+        },
+        {
+          "seq": 9,
+          "owner": 0,
+          "elapsed": 630727,
+          "gap": 895,
+          "select": 11,
+          "restore": 747
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 631363,
+          "gap": 2336,
+          "select": 12,
+          "restore": 1154
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 629546,
+          "gap": 1730,
+          "select": 26,
+          "restore": 873
+        },
+        {
+          "seq": 12,
+          "owner": 0,
+          "elapsed": 2196,
+          "gap": 1943,
+          "select": 114,
+          "restore": 827
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 629565,
+          "gap": 310,
+          "select": 10,
+          "restore": 1302
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 1928,
+          "gap": 425,
+          "select": 11,
+          "restore": 828
+        },
+        {
+          "seq": 15,
+          "owner": 0,
+          "elapsed": 630231,
+          "gap": 208,
+          "select": 10,
+          "restore": 100
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 630884,
+          "gap": 1569,
+          "select": 48,
+          "restore": 1006
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 631167,
+          "gap": 1923,
+          "select": 28,
+          "restore": 1280
+        },
+        {
+          "seq": 18,
+          "owner": 0,
+          "elapsed": 1710,
+          "gap": 1054,
+          "select": 31,
+          "restore": 835
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 630203,
+          "gap": 2117,
+          "select": 47,
+          "restore": 1017
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 3351,
+          "gap": 1423,
+          "select": 48,
+          "restore": 802
+        },
+        {
+          "seq": 21,
+          "owner": 0,
+          "elapsed": 3682,
+          "gap": 2525,
+          "select": 19,
+          "restore": 808
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          8771,
+          0,
+          0,
+          0,
+          0,
+          5131,
+          0,
+          0,
+          0,
+          0,
+          1928,
+          0,
+          0,
+          0,
+          0,
+          3351
+        ],
+        [
+          636918,
+          636591,
+          629565,
+          630203
+        ]
+      ],
+      "cycles": [
+        {
+          "block": 2,
+          "base": [
+            636918,
+            8771
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1265065,
+          "solo": 3,
+          "sleep_service": 1894099,
+          "wake": 6,
+          "pre_lag": 5053263,
+          "post_lag": 0,
+          "wake_to_dispatch": 642419,
+          "wake_to_work": 645668,
+          "dispatch_to_work": 3249,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 8,
+          "base": [
+            3167608,
+            13902
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1268051,
+          "solo": 3,
+          "sleep_service": 1893832,
+          "wake": 12,
+          "pre_lag": 5055715,
+          "post_lag": 0,
+          "wake_to_dispatch": 630087,
+          "wake_to_work": 631078,
+          "dispatch_to_work": 991,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 14,
+          "base": [
+            5691005,
+            15830
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1257202,
+          "solo": 3,
+          "sleep_service": 1893992,
+          "wake": 18,
+          "pre_lag": 5045186,
+          "post_lag": 0,
+          "wake_to_dispatch": 631869,
+          "wake_to_work": 632909,
+          "dispatch_to_work": 1040,
+          "first_resumed_charge_lag": 0
+        }
+      ],
+      "horizon": null,
+      "final_progress": [
+        17665884,
+        6
+      ]
+    },
+    {
+      "case": "icount3-weighted-share",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 0,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 3,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 5,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 6,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 9,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 11,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 12,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 15,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 17,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 18,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 21,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 22,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 23,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 24,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 25,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 26,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 27,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 28,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 29,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 30,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 31,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 32,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 33,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 34,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 35,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 36,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 37,
+          "owner": 0,
+          "elapsed": 67,
+          "gap": 442,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 38,
+          "owner": 1,
+          "elapsed": 68,
+          "gap": 427,
+          "select": 21,
+          "restore": null
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054
+        ],
+        [
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          67
+        ]
+      ],
+      "cycles": [],
+      "horizon": {
+        "service": [
+          7500324,
+          15000648
+        ],
+        "progress": [
+          1499913,
+          2999819
+        ],
+        "D": 0,
+        "A_fraction": 0.3333333333333333,
+        "B_fraction": 0.6666666666666666,
+        "prefix_D": [
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0
+        ]
+      },
+      "final_progress": [
+        1499914,
+        2999820
+      ]
+    },
+    {
+      "case": "icount3-weighted-share-trace",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 0,
+          "select": 33,
+          "restore": 25
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 3,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 5,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 6,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 9,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 11,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 12,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 15,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 17,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 18,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 21,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 22,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 23,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 24,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 25,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 26,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 27,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 28,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 29,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 30,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 31,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 32,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 33,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 34,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 427,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 35,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 421,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 36,
+          "owner": 1,
+          "elapsed": 625027,
+          "gap": 418,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 37,
+          "owner": 0,
+          "elapsed": 68,
+          "gap": 442,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 38,
+          "owner": 1,
+          "elapsed": 68,
+          "gap": 427,
+          "select": 21,
+          "restore": 29
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054,
+          1250054
+        ],
+        [
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          625027,
+          0,
+          68
+        ]
+      ],
+      "cycles": [],
+      "horizon": {
+        "service": [
+          7500324,
+          15000648
+        ],
+        "progress": [
+          1499908,
+          2999810
+        ],
+        "D": 0,
+        "A_fraction": 0.3333333333333333,
+        "B_fraction": 0.6666666666666666,
+        "prefix_D": [
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0,
+          1250054,
+          625027,
+          0
+        ]
+      },
+      "final_progress": [
+        1499909,
+        2999810
+      ]
+    },
+    {
+      "case": "icount3-weighted-wake",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 0,
+          "select": 32,
+          "restore": null
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 72,
+          "gap": 416,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 3,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 442,
+          "select": 24,
+          "restore": null
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 6,
+          "owner": 0,
+          "elapsed": 71,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 546,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 80,
+          "gap": 417,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 9,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 444,
+          "select": 24,
+          "restore": null
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 12,
+          "owner": 0,
+          "elapsed": 68,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 545,
+          "select": 32,
+          "restore": null
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 80,
+          "gap": 417,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 15,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 444,
+          "select": 24,
+          "restore": null
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 18,
+          "owner": 0,
+          "elapsed": 68,
+          "gap": 410,
+          "select": 23,
+          "restore": null
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 546,
+          "select": 33,
+          "restore": null
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 76,
+          "gap": 417,
+          "select": 28,
+          "restore": null
+        },
+        {
+          "seq": 21,
+          "owner": 0,
+          "elapsed": 68,
+          "gap": 439,
+          "select": 24,
+          "restore": null
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          72,
+          0,
+          0,
+          0,
+          0,
+          80,
+          0,
+          0,
+          0,
+          0,
+          80,
+          0,
+          0,
+          0,
+          0,
+          76
+        ],
+        [
+          625027,
+          625027,
+          625027,
+          625027
+        ]
+      ],
+      "cycles": [
+        {
+          "block": 2,
+          "base": [
+            625027,
+            72
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1249982,
+          "solo": 3,
+          "sleep_service": 1875152,
+          "wake": 6,
+          "pre_lag": 5000286,
+          "post_lag": 0,
+          "wake_to_dispatch": 625706,
+          "wake_to_work": 625750,
+          "dispatch_to_work": 44,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 8,
+          "base": [
+            3125206,
+            152
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1249974,
+          "solo": 3,
+          "sleep_service": 1875149,
+          "wake": 12,
+          "pre_lag": 5000272,
+          "post_lag": 0,
+          "wake_to_dispatch": 625706,
+          "wake_to_work": 625750,
+          "dispatch_to_work": 44,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 14,
+          "base": [
+            5625382,
+            232
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1249974,
+          "solo": 3,
+          "sleep_service": 1875149,
+          "wake": 18,
+          "pre_lag": 5000272,
+          "post_lag": 0,
+          "wake_to_dispatch": 625706,
+          "wake_to_work": 625750,
+          "dispatch_to_work": 44,
+          "first_resumed_charge_lag": 0
+        }
+      ],
+      "horizon": null,
+      "final_progress": [
+        1087679,
+        6
+      ]
+    },
+    {
+      "case": "icount3-weighted-wake-trace",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 0,
+          "select": 32,
+          "restore": 26
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 74,
+          "gap": 416,
+          "select": 28,
+          "restore": 29
+        },
+        {
+          "seq": 3,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 442,
+          "select": 24,
+          "restore": 27
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 6,
+          "owner": 0,
+          "elapsed": 73,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 546,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 82,
+          "gap": 417,
+          "select": 28,
+          "restore": 35
+        },
+        {
+          "seq": 9,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 444,
+          "select": 24,
+          "restore": 27
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 12,
+          "owner": 0,
+          "elapsed": 71,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 546,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 82,
+          "gap": 417,
+          "select": 28,
+          "restore": 35
+        },
+        {
+          "seq": 15,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 444,
+          "select": 24,
+          "restore": 27
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 18,
+          "owner": 0,
+          "elapsed": 71,
+          "gap": 410,
+          "select": 23,
+          "restore": 28
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 625027,
+          "gap": 546,
+          "select": 33,
+          "restore": 27
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 78,
+          "gap": 417,
+          "select": 28,
+          "restore": 35
+        },
+        {
+          "seq": 21,
+          "owner": 0,
+          "elapsed": 72,
+          "gap": 439,
+          "select": 24,
+          "restore": 27
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          74,
+          0,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          82,
+          0,
+          0,
+          0,
+          0,
+          78
+        ],
+        [
+          625027,
+          625027,
+          625027,
+          625027
+        ]
+      ],
+      "cycles": [
+        {
+          "block": 2,
+          "base": [
+            625027,
+            74
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1249980,
+          "solo": 3,
+          "sleep_service": 1875154,
+          "wake": 6,
+          "pre_lag": 5000288,
+          "post_lag": 0,
+          "wake_to_dispatch": 625706,
+          "wake_to_work": 625752,
+          "dispatch_to_work": 46,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 8,
+          "base": [
+            3125208,
+            156
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1249972,
+          "solo": 3,
+          "sleep_service": 1875152,
+          "wake": 12,
+          "pre_lag": 5000276,
+          "post_lag": 0,
+          "wake_to_dispatch": 625706,
+          "wake_to_work": 625752,
+          "dispatch_to_work": 46,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 14,
+          "base": [
+            5625387,
+            238
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1249972,
+          "solo": 3,
+          "sleep_service": 1875152,
+          "wake": 18,
+          "pre_lag": 5000276,
+          "post_lag": 0,
+          "wake_to_dispatch": 625706,
+          "wake_to_work": 625752,
+          "dispatch_to_work": 46,
+          "first_resumed_charge_lag": 0
+        }
+      ],
+      "horizon": null,
+      "final_progress": [
+        1087676,
+        6
+      ]
+    }
+  ],
+  "archive": {
+    "format": "xz-compressed tar in ordered base64 chunks",
+    "sha256": "3d5c36563b290b33b441bcb6966394c2a357ccc26e8f3c102c2b1919143dd446",
+    "parts": [
+      "evd-049-raw-01.json",
+      "evd-049-raw-02.json"
+    ],
+    "files": 88,
+    "restore_python_from_repository_root": [
+      "from pathlib import Path",
+      "import json, base64, hashlib, tarfile, io",
+      "d=Path('docs/evidence'); j=json.loads((d/'evd-049.json').read_bytes()); a=j['archive']",
+      "b=b''.join(base64.b64decode(json.loads((d/p).read_bytes())['base64']) for p in a['parts'])",
+      "assert hashlib.sha256(b).hexdigest()==a['sha256']",
+      "with tarfile.open(fileobj=io.BytesIO(b),mode='r:xz') as t: t.extractall('vr49-restored',filter='data')",
+      "p=Path('vr49-restored/vr49-fresh'); m=(p/'MANIFEST.sha256').read_bytes(); assert hashlib.sha256(m).hexdigest()==j['manifest_sha256']",
+      "for line in m.decode().splitlines():",
+      "    h,n=line.split('  ',1); assert hashlib.sha256((p/n).read_bytes()).hexdigest()==h"
+    ],
+    "offline_replay": "In a disposable restored copy run python -B verify.py from the restored vr49-fresh directory. For controls.rs place the frozen checkout at ../vr49-src and use rustc +1.95.0 --edition 2024 --test -Awarnings controls.rs, then execute controls. Offline replay uses stored symbols and disassembly."
+  }
+}

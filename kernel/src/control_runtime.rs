@@ -11,6 +11,10 @@ use super::{
     uart_write,
 };
 
+#[cfg(jnox_control_cold)]
+#[path = "control_cold.rs"]
+mod cold;
+
 const IDLE: usize = 2;
 const LAST: u64 = 25; // 0..=25: thirteen complete jobs, horizon phase 24
 const CAPACITY: usize = 1024;
@@ -141,8 +145,12 @@ fn arm(target: u64, index: u64) {
 }
 
 fn fresh(id: usize) -> *mut Frame {
-    #[cfg(not(jnox_control_markers))]
+    #[cfg(not(any(jnox_control_descriptor, jnox_control_markers)))]
     let entries: [extern "C" fn() -> !; 3] = [control, sender, idle];
+    // Only the descriptor arm changes the control entry ABI; the CPU enters
+    // through ERET, so this table holds code addresses, never a mismatched call.
+    #[cfg(jnox_control_descriptor)]
+    let entries = [control as *const (), sender as *const (), idle as *const ()];
     #[cfg(jnox_control_markers)]
     let entries: [unsafe extern "C" fn() -> !; 3] = [markers::control_marker_entry, sender, idle];
     unsafe {
@@ -184,6 +192,27 @@ impl Runtime {
             ..DispatchJob::fixed_priority(0)
         });
         self.frames[id] = fresh(id);
+        #[cfg(jnox_control_descriptor)]
+        if id == 0 && self.missed.is_none() {
+            // IRQ has advanced next from the release's measured phase index.
+            // The overlap guard above ensures the previous private frame is dead.
+            let second = self.next;
+            let first = second.checked_sub(1).unwrap_or_else(|| fail());
+            if first % 2 != 0 || second > LAST {
+                fail()
+            }
+            let second_target = at.checked_add(self.step).unwrap_or_else(|| fail());
+            // AAPCS64 x0..x4. Initialize once, before making this job runnable.
+            unsafe {
+                (&mut (*self.frames[id]).gpr)[..5].copy_from_slice(&[
+                    first,
+                    at,
+                    second,
+                    second_target,
+                    self.step,
+                ]);
+            }
+        }
         self.service[id] = 0;
         log(4, now(), id as u64, at);
         self.enqueue(id);
@@ -226,7 +255,13 @@ extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
     // Preserve an event across the idle work check -> WFE race. No task
     // other than idle executes WFE while this workload is active.
     unsafe { asm!("sev", options(nostack, preserves_flags)) };
+    #[cfg(jnox_control_cold)]
+    let handler = now();
     let iar = gic_read(GICC + 0x0c);
+    #[cfg(jnox_control_cold)]
+    if cold::on_irq(frame, entry, handler, iar) {
+        return frame;
+    }
     if iar & 0x3ff != TIMER_IRQ {
         fail()
     }
@@ -350,11 +385,25 @@ extern "C" fn final_check() -> ! {
     unsafe { asm!("svc #2", options(noreturn)) }
 }
 
-extern "C" fn control() -> ! {
+extern "C" fn control(
+    #[cfg(jnox_control_descriptor)] first_index: u64,
+    #[cfg(jnox_control_descriptor)] first_target: u64,
+    #[cfg(jnox_control_descriptor)] second_index: u64,
+    #[cfg(jnox_control_descriptor)] second_target: u64,
+    #[cfg(jnox_control_descriptor)] descriptor_step: u64,
+) -> ! {
+    #[cfg(jnox_control_descriptor)]
+    let phases = [(first_index, first_target), (second_index, second_target)];
     for phase in 0..2 {
         if control_locked(|| state().missed.is_some()) {
             final_check()
         }
+        #[cfg(jnox_control_descriptor)]
+        let (index, target, step) = {
+            let (index, target) = phases[phase];
+            (index, target, descriptor_step)
+        };
+        #[cfg(not(jnox_control_descriptor))]
         let (index, target, step) = control_locked(|| {
             let s = state();
             let r = s.jobs[0].unwrap().release;
@@ -426,6 +475,9 @@ fn requested_mask(frame: *mut Frame) -> u64 {
 extern "C" fn idle() -> ! {
     // Start the one immutable epoch after idle's frame is restored. No
     // worker/IRQ path is warmed, and every scored release remains visible.
+    #[cfg(jnox_control_cold)]
+    cold::idle_start();
+    #[cfg(not(jnox_control_cold))]
     locked(|| {
         let s = state();
         log(43, now(), s.frequency, s.step);
@@ -480,15 +532,20 @@ pub(super) fn run() -> ! {
     init_timer_irq();
     let frequency: u64;
     unsafe { asm!("mrs {},cntfrq_el0",out(reg)frequency,options(nostack)) };
+    #[cfg(not(jnox_control_cold))]
     if frequency == 0 || frequency % 400 != 0 {
         fail()
     }
+    #[cfg(jnox_control_cold)]
+    cold::boot(frequency);
     let mut case_hash = 0u64;
     for byte in env!("JNOX_BUILT_CONTROL_CASE").bytes() {
         case_hash = case_hash.wrapping_mul(31).wrapping_add(byte as u64)
     }
     log(32, now(), cfg!(jnox_control_dm) as u64, case_hash);
     app::init();
+    #[cfg(jnox_control_cold)]
+    cold::initial_off();
     if app::SCRIPTED {
         app::script(frequency);
         dump()
