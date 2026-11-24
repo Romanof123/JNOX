@@ -5,7 +5,7 @@ use core::sync::atomic::{AtomicPtr, AtomicU64, AtomicUsize, Ordering};
 
 use super::context::*;
 use super::reservation_jobs::{
-    Action, Clock, Error, FirstTransition, Jobs, Manifest, Policy, admission, charge,
+    admission, charge, Action, Clock, Decision, Error, Jobs, Manifest, Policy,
 };
 use super::{park, uart_write};
 
@@ -13,6 +13,10 @@ const IDLE: usize = 2;
 const NA: u64 = u64::MAX;
 const SEED: [u64; 2] = [0xa19, 0xb19];
 const MAX_ROWS: usize = 1024;
+const COMPACT: bool = cfg!(any(
+    jnox_reservation_case = "wake",
+    jnox_reservation_case = "saturated"
+));
 const LATE: bool = cfg!(jnox_reservation_case = "late");
 
 global_asm!(".set JNOX_AP,1",include_str!("context.S"),frame_size=const size_of::<Frame>(),
@@ -93,13 +97,20 @@ fn finish(status: u64, why: u64, slot: u64, id: usize, a: u64, b: u64) -> ! {
         }
         TERMINAL = true;
     }
+    if COMPACT {
+        compact_dump()
+    }
     for i in 0..return_count().min(64) {
         let [frame, pc, t] = returned(i);
         let [s, owner] = unsafe { PLANS[i] };
         event(12, t, s, owner as usize, [frame, pc, i as u64, 0]);
     }
     event(13, now(), slot, id, [status, why, a, b]);
-    uart_write(b"RSRV RAW 1\n");
+    uart_write(if COMPACT {
+        b"RSRV RAW 3\n"
+    } else {
+        b"RSRV RAW 1\n"
+    });
     for i in 0..unsafe { USED } {
         let row = unsafe { (&raw const TRACE).cast::<[u64; 8]>().add(i).read() };
         for n in row {
@@ -151,7 +162,17 @@ extern "C" fn idle() -> ! {
         // The first opening timer is already armed. If setup crosses E,
         // retain that epoch and report the missed preparation explicitly.
         unsafe { asm!("msr daifset,#2", "isb", options(nostack)) };
+        let masked = now();
         state().prepare_first();
+        let ready = now();
+        unsafe {
+            RECEIPT.masked = masked;
+            RECEIPT.ready = ready;
+        }
+        let epoch = state().clock.epoch;
+        if ready >= epoch {
+            finish(2, 11, 0, IDLE, ready, epoch)
+        }
         unsafe { asm!("msr daifclr,#2", "isb", options(nostack)) };
     }
     loop {
@@ -288,19 +309,222 @@ struct Grant {
     acc: u64,
     deadline: u64,
 }
+struct FirstFrame {
+    address: usize,
+    pc: u64,
+    mode: u64,
+    register: u64,
+    thread: u64,
+    updates: u64,
+    accumulator: u64,
+}
 struct Prepared {
     setup_start: u64,
-    transition: FirstTransition,
+    decision: Decision,
+    descriptor: u64,
     epoch: u64,
     end: u64,
     cutoff: u64,
     goal: u64,
-    frames: [usize; 2],
+    frames: [FirstFrame; 2],
+}
+
+// One serialized writer and no mutable reference to the witness after idle
+// preparation. Word 0 is generation zero/bank zero; word 3 is generation
+// one/bank one. The publication itself consumes the only proposal token.
+static AUTHORITY: AtomicU64 = AtomicU64::new(0);
+static mut WITNESS: Option<Prepared> = None;
+fn witness() -> Option<&'static Prepared> {
+    unsafe { (*(&raw const WITNESS)).as_ref() }
+}
+#[derive(Clone, Copy, Default)]
+struct Receipt {
+    masked: u64,
+    ready: u64,
+    valid: u64,
+    entry: u64,
+    source_end: u64,
+    iar: u64,
+    ctl: u64,
+    compare: u64,
+    timer_target: u64,
+    before: u64,
+    committed: u64,
+    word: u64,
+    owner: u64,
+    armed: u64,
+    cutoff: u64,
+    readback: u64,
+    arm_ctl: u64,
+    planned: u64,
+    frame: u64,
+    pc: u64,
+    x19: u64,
+    tpidr: u64,
+    order: u64,
+}
+static mut RECEIPT: Receipt = Receipt {
+    masked: 0,
+    ready: 0,
+    valid: 0,
+    entry: 0,
+    source_end: 0,
+    iar: 0,
+    ctl: 0,
+    compare: 0,
+    timer_target: 0,
+    before: 0,
+    committed: 0,
+    word: 0,
+    owner: 0,
+    armed: 0,
+    cutoff: 0,
+    readback: 0,
+    arm_ctl: 0,
+    planned: 0,
+    frame: 0,
+    pc: 0,
+    x19: 0,
+    tpidr: 0,
+    order: 0,
+};
+
+fn compact_dump() {
+    let r = unsafe { RECEIPT };
+    let t = now();
+    let p = witness();
+    if r.ready != 0 {
+        event(
+            36,
+            r.ready,
+            0,
+            IDLE,
+            [r.masked, r.ready, p.map_or(NA, |p| p.epoch), 0],
+        )
+    }
+    let desc = p.map_or(NA, |p| p.descriptor);
+    let owner = p.and_then(|p| p.decision.owner).unwrap_or(IDLE);
+    event(
+        24,
+        t,
+        0,
+        owner,
+        [
+            desc,
+            r.valid,
+            AUTHORITY.load(Ordering::Acquire),
+            if r.valid & 4 != 0 { r.owner } else { NA },
+        ],
+    );
+    if r.valid & 1 != 0 {
+        event(
+            25,
+            r.entry,
+            0,
+            IDLE,
+            [r.iar, r.ctl, r.compare, r.timer_target],
+        );
+        event(
+            37,
+            r.source_end,
+            0,
+            IDLE,
+            [r.entry, r.source_end, r.compare, r.iar],
+        )
+    }
+    if r.valid & 2 != 0 {
+        event(
+            26,
+            r.before,
+            0,
+            IDLE,
+            [desc, 0, p.map_or(NA, |p| p.epoch), 0],
+        )
+    }
+    if r.valid & 4 != 0 {
+        event(
+            27,
+            r.committed,
+            0,
+            owner,
+            [r.word, r.word & 1, r.word >> 1, r.owner],
+        )
+    }
+    if r.valid & 8 != 0 {
+        event(28, r.armed, 0, owner, [r.cutoff, r.arm_ctl, r.readback, 1])
+    }
+    if r.valid & 16 != 0 {
+        event(29, r.planned, 0, owner, [r.frame, r.pc, r.x19, r.tpidr]);
+        event(
+            30,
+            r.planned,
+            0,
+            owner,
+            [
+                r.order,
+                p.map_or(NA, |p| p.epoch),
+                p.map_or(NA, |p| p.end),
+                desc,
+            ],
+        );
+    }
+    if let Some(p) = p {
+        for id in 0..2 {
+            let f = &p.frames[id];
+            event(34, t, 0, id, [f.address as u64, f.pc, f.mode, f.thread]);
+            event(35, t, 0, id, [f.register, f.updates, f.accumulator, p.goal]);
+            let d = &p.decision;
+            event(
+                31,
+                t,
+                0,
+                id,
+                [d.before[id].q, d.before[id].d, d.after[id].q, d.after[id].d],
+            );
+            event(
+                32,
+                t,
+                0,
+                id,
+                [
+                    d.releases[id] as u64,
+                    d.demand[id] as u64,
+                    d.states[id] as u64,
+                    if d.owner == Some(id) {
+                        d.action.map_or(0, |a| 1 + a as u64)
+                    } else {
+                        0
+                    },
+                ],
+            );
+        }
+    }
+    event(
+        33,
+        t,
+        0,
+        IDLE,
+        [
+            size_of::<Jobs>() as u64,
+            size_of::<Option<Jobs>>() as u64,
+            size_of::<Option<Prepared>>() as u64,
+            size_of::<Receipt>() as u64,
+        ],
+    );
+}
+fn program_timer(target: u64) -> (u64, u64) {
+    let (compare, ctl): (u64, u64);
+    unsafe {
+        asm!("msr cntp_cval_el0,{target}","msr cntp_ctl_el0,{one}","isb",
+        "mrs {compare},cntp_cval_el0","mrs {ctl},cntp_ctl_el0",
+        target=in(reg)target,one=in(reg)1u64,compare=out(reg)compare,ctl=out(reg)ctl,options(nostack))
+    };
+    (compare, ctl)
 }
 
 struct Runtime {
     jobs: Jobs,
-    prepared: Option<Prepared>,
+    destination: Option<Jobs>,
     clock: Clock,
     horizon: u64,
     opened: u64,
@@ -317,43 +541,39 @@ struct Runtime {
 }
 
 impl Runtime {
-    fn first_frames(&self) -> [usize; 2] {
-        core::array::from_fn(|id| {
-            let frame = self.frames[id];
-            if frame.addr() != top(id) - size_of::<Frame>()
-                || !within(id, frame.addr(), size_of::<Frame>())
-            {
-                unexpected()
-            }
-            let f = unsafe { &*frame };
-            let pc = [
-                reservation_worker_a as *const (),
-                reservation_worker_b as *const (),
-            ][id];
-            if f.elr != pc as usize as u64
-                || f.spsr != 0x345
-                || f.gpr[19] != 0
-                || f.tpidr_el1 != SEED[id]
-                || GENERATION[id].load(Ordering::Acquire) != NA
-                || ACTION[id].load(Ordering::Acquire) != 0
-                || GOAL[id].load(Ordering::Acquire) != NA
-                || FIRST[id].load(Ordering::Acquire) != 0
-                || !POINTER[id].load(Ordering::Acquire).is_null()
-                || self.last_count[id] != 0
-                || self.last_acc[id] != SEED[id]
-                || self.allocation_deadline[id] != NA
-                || self.allocation_service[id] != 0
-            {
-                unexpected()
-            }
-            frame.addr()
-        })
+    #[inline(always)]
+    fn validate_first_frame(&self, id: usize, expected: &FirstFrame) {
+        let frame = self.frames[id];
+        if frame.addr() != expected.address
+            || frame.addr() != top(id) - size_of::<Frame>()
+            || !within(id, frame.addr(), size_of::<Frame>())
+        {
+            unexpected()
+        }
+        let f = unsafe { &*frame };
+        if f.elr != expected.pc
+            || f.spsr != expected.mode
+            || f.gpr[19] != expected.register
+            || f.tpidr_el1 != expected.thread
+            || GENERATION[id].load(Ordering::Acquire) != NA
+            || ACTION[id].load(Ordering::Acquire) != 0
+            || GOAL[id].load(Ordering::Acquire) != NA
+            || FIRST[id].load(Ordering::Acquire) != 0
+            || !POINTER[id].load(Ordering::Acquire).is_null()
+            || self.last_count[id] != expected.updates
+            || self.last_acc[id] != expected.accumulator
+            || self.allocation_deadline[id] != NA
+            || self.allocation_service[id] != 0
+        {
+            unexpected()
+        }
     }
 
     fn prepare_first(&mut self) {
         let begin = now();
         let epoch = self.clock.epoch;
-        if self.prepared.is_some()
+        if witness().is_some()
+            || AUTHORITY.load(Ordering::Acquire) != 0
             || self.opened != NA
             || self.current != IDLE
             || self.grant.is_some()
@@ -363,8 +583,14 @@ impl Runtime {
         {
             unexpected()
         }
-        let transition = checked(self.jobs.prepare_first());
-        let decision = transition.decision;
+        if !self.jobs.pristine() || self.destination.is_some() {
+            unexpected()
+        }
+        let bank = self.destination.insert(self.jobs.clone());
+        let decision = checked(bank.prepare_destination());
+        if !bank.matches_first_decision(&decision) {
+            unexpected()
+        }
         let id = decision.owner.unwrap_or_else(|| unexpected());
         let action = decision.action.unwrap_or_else(|| unexpected());
         let goal = if action == Action::Long {
@@ -376,14 +602,33 @@ impl Runtime {
         };
         let p = Prepared {
             setup_start: begin,
-            transition,
+            decision,
+            descriptor: 1
+                + (u64::from(cfg!(jnox_reservation_policy = "cbs")) << 1)
+                + u64::from(cfg!(jnox_reservation_case = "saturated")),
             epoch,
             goal,
             end: checked(self.clock.boundary(1)),
             cutoff: checked(self.clock.cutoff(0)),
-            frames: self.first_frames(),
+            frames: core::array::from_fn(|id| {
+                let pc = [
+                    reservation_worker_a as *const (),
+                    reservation_worker_b as *const (),
+                ][id];
+                let expected = FirstFrame {
+                    address: top(id) - size_of::<Frame>(),
+                    pc: pc as usize as u64,
+                    mode: 0x345,
+                    register: 0,
+                    thread: SEED[id],
+                    updates: 0,
+                    accumulator: SEED[id],
+                };
+                self.validate_first_frame(id, &expected);
+                expected
+            }),
         };
-        self.prepared = Some(p);
+        unsafe { (&raw mut WITNESS).write(Some(p)) };
         let done = now();
         event(
             22,
@@ -400,12 +645,7 @@ impl Runtime {
     fn arm(&mut self, slot: u64, kind: u64, target: u64) {
         self.target = target;
         self.kind = kind;
-        let (compare, ctl): (u64, u64);
-        unsafe {
-            asm!("msr cntp_cval_el0,{target}","msr cntp_ctl_el0,{one}","isb",
-            "mrs {compare},cntp_cval_el0","mrs {ctl},cntp_ctl_el0",
-            target=in(reg)target,one=in(reg)1u64,compare=out(reg)compare,ctl=out(reg)ctl,options(nostack))
-        };
+        let (compare, ctl) = program_timer(target);
         event(3, now(), slot, self.current, [target, ctl, compare, kind]);
         if compare != target || ctl & 3 != 1 {
             unexpected()
@@ -437,7 +677,134 @@ impl Runtime {
         self.current = id;
         frame
     }
+    fn compact_open(&mut self, entry: u64) -> *mut Frame {
+        let p = witness().unwrap_or_else(|| unexpected());
+        if self.current != IDLE
+            || self.opened != NA
+            || self.grant.is_some()
+            || self.kind != 0
+            || self.target != p.epoch
+            || self.clock.epoch != p.epoch
+            || return_count() != 1
+            || AUTHORITY.load(Ordering::Acquire) != 0
+            || !self.jobs.pristine()
+        {
+            unexpected()
+        }
+        let [idle_frame, idle_pc, idle_stamp] = returned(0);
+        if idle_frame != (top(IDLE) - size_of::<Frame>()) as u64
+            || idle_pc != idle as *const () as usize as u64
+            || idle_stamp > p.setup_start
+        {
+            unexpected()
+        }
+        for id in 0..2 {
+            self.validate_first_frame(id, &p.frames[id]);
+        }
+        let bank = self.destination.as_ref().unwrap_or_else(|| unexpected());
+        let (id, action) = bank.pending_grant().unwrap_or_else(|| unexpected());
+        if !self.jobs.same_configuration(bank)
+            || p.decision.owner != Some(id)
+            || p.decision.action != Some(action)
+        {
+            unexpected()
+        }
+        let before = now();
+        unsafe {
+            RECEIPT.before = before;
+            RECEIPT.valid |= 2;
+        }
+        if before < entry || !self.clock.within_opening(before) {
+            finish(2, 5, 0, IDLE, before, p.epoch)
+        }
+        AUTHORITY.store(3, Ordering::Release);
+        let word = AUTHORITY.load(Ordering::Acquire);
+        // Resolve through the read-back authority before accepting the debit.
+        let observed = self
+            .ledger()
+            .pending_grant()
+            .map_or(NA, |(id, _)| id as u64);
+        let post = now();
+        unsafe {
+            RECEIPT.committed = post;
+            RECEIPT.word = word;
+            RECEIPT.owner = observed;
+            RECEIPT.valid |= 4;
+        }
+        if word != 3 || observed != id as u64 {
+            unexpected()
+        }
+        if post < before || !self.clock.within_opening(post) {
+            finish(2, 5, 0, IDLE, post, p.epoch)
+        }
+        self.opened = 0;
+        let deadline = p.decision.after[id].d;
+        self.allocation_deadline[id] = deadline;
+        self.grant = Some(Grant {
+            id,
+            action,
+            slot: 0,
+            ret: 1,
+            count: self.last_count[id],
+            acc: self.last_acc[id],
+            deadline,
+        });
+        GOAL[id].store(p.goal, Ordering::Release);
+        ACTION[id].store(1 + action as u64, Ordering::Relaxed);
+        FIRST[id].store(0, Ordering::Relaxed);
+        GENERATION[id].store(0, Ordering::Release);
+        self.kind = 1;
+        self.target = p.cutoff;
+        let (compare, ctl) = program_timer(p.cutoff);
+        let armed = now();
+        unsafe {
+            RECEIPT.cutoff = p.cutoff;
+            RECEIPT.readback = compare;
+            RECEIPT.arm_ctl = ctl;
+            RECEIPT.armed = armed;
+            RECEIPT.valid |= 8;
+        }
+        if compare != p.cutoff || ctl & 3 != 1 {
+            unexpected()
+        }
+        let planned = now();
+        if armed < post || planned < armed || !self.clock.within_opening(planned) {
+            finish(2, 5, 0, IDLE, planned, p.epoch)
+        }
+        let frame = self.frames[id];
+        let saved = unsafe { &*frame };
+        let selection = now();
+        if !self.clock.within_opening(selection) {
+            finish(2, 5, 0, IDLE, selection, p.epoch)
+        }
+        self.frames[id] = ptr::null_mut();
+        self.current = id;
+        unsafe {
+            PLANS[1] = [0, id as u64];
+            RECEIPT.frame = frame.addr() as u64;
+            RECEIPT.pc = saved.elr;
+            RECEIPT.x19 = saved.gpr[19];
+            RECEIPT.tpidr = saved.tpidr_el1;
+            RECEIPT.order = 1;
+            RECEIPT.planned = selection;
+            RECEIPT.valid |= 16;
+        }
+        frame
+    }
+    fn ledger(&mut self) -> &mut Jobs {
+        if LATE {
+            return &mut self.jobs;
+        }
+        match AUTHORITY.load(Ordering::Acquire) {
+            0 => &mut self.jobs,
+            3 => self.destination.as_mut().unwrap_or_else(|| unexpected()),
+            _ => unexpected(),
+        }
+    }
     fn open(&mut self, slot: u64, entry: u64) -> *mut Frame {
+        if slot == 0 && !LATE {
+            return self.compact_open(entry);
+        }
         // After an early retirement or cutoff only idle may have run. Verify
         // both clients at the boundary, including final idle and exited clients.
         for id in 0..IDLE {
@@ -452,52 +819,9 @@ impl Runtime {
         if slot == self.horizon {
             finish(0, 0, slot, IDLE, 0, 0)
         }
-        let (d, start, end, prepared_grant) = if slot == 0 && !LATE {
-            let p = self.prepared.take().unwrap_or_else(|| unexpected());
-            let ret = (return_count() == 1).then(|| returned(0));
-            let idle_entry = idle as *const () as usize as u64;
-            if self.opened != NA
-                || self.current != IDLE
-                || self.grant.is_some()
-                || self.kind != 0
-                || self.target != p.epoch
-                || self.clock.epoch != p.epoch
-                || !super::reservation_jobs::first_return_matches(
-                    ret,
-                    (top(IDLE) - size_of::<Frame>()) as u64,
-                    idle_entry,
-                    p.setup_start,
-                    p.frames,
-                    self.first_frames(),
-                )
-            {
-                unexpected()
-            }
-            let before = now();
-            if before < entry || !self.clock.within_opening(before) {
-                finish(2, 5, 0, IDLE, before, p.epoch)
-            }
-            let decision = checked(self.jobs.commit_first(p.transition));
-            let committed = now();
-            event(
-                23,
-                committed,
-                0,
-                decision.owner.unwrap_or(IDLE),
-                [entry, before, p.epoch, 1],
-            );
-            if committed < before || !self.clock.within_opening(committed) {
-                finish(2, 5, 0, IDLE, committed, p.epoch)
-            }
-            (decision, p.epoch, p.end, Some((p.goal, p.cutoff)))
-        } else {
-            (
-                checked(self.jobs.open(slot)),
-                checked(self.clock.boundary(slot)),
-                checked(self.clock.boundary(slot + 1)),
-                None,
-            )
-        };
+        let d = checked(self.ledger().open(slot));
+        let start = checked(self.clock.boundary(slot));
+        let end = checked(self.clock.boundary(slot + 1));
         self.opened = slot;
         for id in 0..2 {
             event(
@@ -542,9 +866,7 @@ impl Runtime {
                 deadline: d.after[id].d,
             });
             GOAL[id].store(
-                if let Some((goal, _)) = prepared_grant {
-                    goal
-                } else if action == Action::Long {
+                if action == Action::Long {
                     NA
                 } else {
                     count.checked_add(256).unwrap_or_else(|| unexpected())
@@ -554,8 +876,7 @@ impl Runtime {
             ACTION[id].store(1 + action as u64, Ordering::Relaxed);
             FIRST[id].store(0, Ordering::Relaxed);
             GENERATION[id].store(slot, Ordering::Release);
-            let cutoff = prepared_grant
-                .map_or_else(|| checked(self.clock.cutoff(slot)), |(_, cutoff)| cutoff);
+            let cutoff = checked(self.clock.cutoff(slot));
             if LATE && slot == 0 {
                 MASK_FROM.store(cutoff - self.clock.millisecond, Ordering::Relaxed);
                 NOMINAL_END.store(end, Ordering::Relaxed);
@@ -681,7 +1002,7 @@ impl Runtime {
         }
         self.last_count[id] = count;
         self.last_acc[id] = acc;
-        checked(self.jobs.trap(id, action));
+        checked(self.ledger().trap(id, action));
         if action != Action::Exit {
             self.frames[id] = frame;
         }
@@ -703,19 +1024,29 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
     } else {
         s.opened + 1
     };
-    event(
-        4,
-        entry,
-        slot,
-        s.current,
-        [s.target, s.kind, iar as u64, ctl],
-    );
-    if slot == 0 && s.kind == 0 && !LATE {
+    if slot == 0 && s.kind == 0 && COMPACT {
         let compare: u64;
-        unsafe { asm!("mrs {},cntp_cval_el0",out(reg)compare,options(nostack)) };
+        unsafe {
+            asm!("mrs {},cntp_cval_el0",out(reg)compare,options(nostack));
+            RECEIPT.source_end = now();
+            RECEIPT.entry = entry;
+            RECEIPT.iar = iar as u64;
+            RECEIPT.ctl = ctl;
+            RECEIPT.compare = compare;
+            RECEIPT.timer_target = s.target;
+            RECEIPT.valid |= 1;
+        }
         if compare != s.target || compare != s.clock.epoch {
             unexpected()
         }
+    } else {
+        event(
+            4,
+            entry,
+            slot,
+            s.current,
+            [s.target, s.kind, iar as u64, ctl],
+        );
     }
     if iar & 0x3ff != TIMER_IRQ || ctl & 7 != 5 || entry < s.target {
         finish(3, 4, slot, s.current, iar as u64, ctl)
@@ -836,7 +1167,7 @@ pub(super) fn run() -> ! {
     unsafe {
         RUNTIME = Some(Runtime {
             jobs,
-            prepared: None,
+            destination: None,
             clock,
             horizon,
             opened: NA,

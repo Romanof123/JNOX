@@ -35,3 +35,25 @@ Across all eight v2 runs the inner idle preparation was 47,137–62,699 ticks wi
 4. 실제 경로는 단계별 유효 비트·결정 ID·실제 세대·타이머·프레임·ELR·전후 시각·복귀 순서를 유한 RAM에 기록한다. 첫 트랩 또는 실패 정지 뒤 불변 기록과 실측 커밋을 결합해 기술 필드를 전개한다. 준비값과 실측값을 구분하고 나중 출력으로 이전 시각의 5/6행을 만들어내지 않는다. 도달하지 않은 단계는 미관측이다. 버전별 판정기와 원래 예외 복귀 기록, 실패 경로·되읽기 비용을 유지한다.
 5. 정상 W/S 슬롯 0만 변경한다. 이후에는 활성 원장의 기존 스케줄러·차단·재개·종료·컷오프를 그대로 사용한다. R은 준비 전 거부한다. 기존 v1 지연 사례는 별도이고 제때 열린 뒤의 지연 진단은 미완료다. 지연 분기를 수정하면 별도 진단을 동결한다.
 6. 51567ba와 새 후보 각각 정상 W/S 일반·추적 8회 및 R 2회, 기본 시계·Linux 저장소에서 순서를 교차해 새 최초 실행 총 20회를 고정한다. 회당 15초, 재시도 치환 없음. 부팅~첫 표식 및 이후 양 작업의 실행·원장·프레임·독립 ERET를 비교한다. W 34슬롯 이웃 서비스, S 각 4회와 종료·10슬롯, 정상 8/8 원 기준을 유지한다. 오래된/재사용 토큰, 원장·프레임·진행 불일치, 한계/1틱 초과, 커밋 전후 실패·되읽기 누락은 별도 대조한다. 현재 실행·보드·제품 승인은 미확정이다.
+
+## Implemented UART schema / 구현 UART 형식
+
+Use the existing virt reservation selectors with aligned-wake, aligned-saturated, cbs-wake or cbs-saturated. The kernel emits RSRV RAW 3 for these W/S images. Refused and late images retain RSRV RAW 1. Decode a saved UART file with `python tools/reservation_handoff.py path/to/uart.log`. The report preserves the guest terminal result. Decoder success describes structural consistency only. Pair each capture with its build hash, cold launch command and external exception trace as prescribed above.
+
+기존 virt reservation 선택자와 위 네 W/S 앱을 사용한다. 거부 및 지연 앱의 UART 버전은 1이다. 위 명령은 저장한 UART에서 실제 종료 결과를 보존하며, 형식 검사 성공만으로 전체 일정 충족을 판정할 수 없다. 각 파일에 해당 빌드 해시, 최초 부팅 명령과 외부 예외 기록을 연결한다.
+
+| Tag | Time and four payload fields / 시각 및 네 필드 |
+|---|---|
+|24|Terminal decode time / 종료 시각. Descriptor ID, stage bits (IRQ 1, precommit 2, commit 4, cutoff readback 8, selected 16), terminal authority word, observed owner.|
+|25, 37|Vector entry and end of real source reads / 벡터 진입 및 실제 읽기 종료. 25 gives IAR, CTL, CVAL, original target. 37 gives entry, read end, CVAL, IAR.|
+|26, 27|Actual publication brackets / 게시 전후 표본. 26 gives descriptor, origin word, epoch, zero. 27 gives authority readback, bank, generation, owner read through that bank.|
+|28|After cutoff programming / 컷오프 설정 후. Requested compare, CTL, readback compare, timer kind.|
+|29, 30|Selection sample before exception return / 예외 복귀 전 선택 시각. Frame, ELR, x19, TPIDR; return index, epoch, slot end, descriptor. Actual assembly return and Rust marker remain tags 12 and 10.|
+|31, 32|Terminal decode of each sealed decision / 봉인된 결정의 종료 시 해석. Before q,d and after q,d; released units, remaining demand, state, selected action plus one (zero for unselected).|
+|33|Terminal storage sizes in bytes / 저장 크기(바이트). Jobs, optional destination bank, optional sealed witness, fixed receipt.|
+|34, 35|Terminal decode of each initial frame witness / 초기 프레임 봉인값. Address, PC, SPSR, TPIDR; x19, update count, accumulator, common selected goal.|
+|36|Idle preparation ready sample / 유휴 준비 완료 시각. Mask start, ready, original epoch, zero. IRQ unmask follows the sample.|
+
+Descriptor IDs 1–4 identify aligned W/S then CBS W/S. The sole writer switches the authority word from 0 to 3. Bits encode bank in bit 0 and generation above it. Tags 31–35 carry the terminal decode timestamp. Tags 31/32 describe a debit only when actual publication/readback identifies the committed bank. An absent selection or return stays unobserved. Counter brackets include instrumentation and the ready sample precedes the final unmask. Whole-path time and independent ERET still require fresh captures.
+
+결정 ID 1~4는 aligned W/S, CBS W/S 순서다. 단일 작성자가 권한 단어를 0에서 3으로 게시한다. 하위 1비트는 뱅크, 상위 비트는 세대다. 31~35행은 종료 시각에 해석한다. 31/32행의 차감은 실제 게시 및 되읽기로 뱅크가 확인된 경우에만 성립한다. 선택·복귀 기록이 없으면 미관측으로 둔다. 계측 비용을 포함하며 36행은 인터럽트 마스크 해제 직전의 표본이다. 전체 경로와 독립 ERET 확인은 신규 실행에 남는다.
