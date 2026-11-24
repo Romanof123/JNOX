@@ -4,6 +4,19 @@
 
 CHG-032 / IMP-030은 이슈 #69의 런타임 프로파일을 정의한다. EVD-030은 검증 결과를 기록할 대상이다. 아래 항목은 인수 기준이다.
 
+## QEMU에서 빌드하고 실행하기
+
+Linux 또는 WSL에서 저장소 루트를 기준으로 실행한다. 고정된 Rust 툴체인, AArch64 베어메탈 타깃과 `qemu-system-aarch64`가 필요하다. 아래 명령은 선택한 앱별로 릴리스 경로를 나눈다.
+
+```sh
+app=fixed-fifo
+out="$PWD/out/$app"
+(cd kernel && JNOX_BOARD=virt JNOX_PROFILE=fixed JNOX_APP="$app" CARGO_TARGET_DIR="$out" cargo +1.95.0 build --release --locked -j1)
+python3 tools/qemu_boot.py --profile "$app" --runs 1 --kernel "$out/aarch64-unknown-none/release/jnox-kernel"
+```
+
+라운드로빈으로 실행하려면 `app=fixed-rr`을 사용한다. 빈 작업 테이블은 `fixed-empty`, 지연 시작 테이블은 `fixed-delayed`다. [링크할 작업 테이블](../kernel/src/fixed_apps.rs) · [스케줄러 인터페이스](../kernel/src/fixed_runtime.rs)
+
 ## 빌드와 애플리케이션 인터페이스
 
 벤치마크 기능을 켜지 않고 `JNOX_PROFILE=fixed`를 지정한다. `JNOX_APP=fixed-fifo` 또는 `JNOX_APP=fixed-rr`로 링크할 테이블을 고른다. 추가 설정은 `fixed-empty`와 `fixed-delayed`다. 프로파일 미지정 시 기존 기본 진입점과 Cargo `--all-features` 동작을 유지한다. 명시적으로 지정한 설정이 충돌하면 빌드 설정 단계에서 거부한다. 엔트리, 순서, 우선순위, 초기 지연 또는 동순위 정책을 바꾸면 그 설정을 담은 이미지가 만들어진다. 스케줄러는 특정 태스크 이름, 부팅 순서, 출력 횟수 또는 종료 시간을 전제하지 않는다.
@@ -67,3 +80,5 @@ FIFO 테이블의 슬롯 순서는 A, B, HIGH이고 RR은 A, HIGH, B다. 두 설
 시간순으로 i행에서 선택된 소유자가 i+1행 표본까지 실행된다. 이 소유자가 다음 행의 직전 소유자와 같은지 확인하고 앱 슬롯별로 표본 차이를 누적해 18번 워드의 유효한 값과 비교한다. ELF와 ELR/SP를 대조해 최초 진입, 중단, 재개 및 유휴 상태를 식별한다.
 
 빈 구성의 작업 관측값 여덟 개는 모두 0이다. 지연 시작 구성은 슬롯 0의 정렬된 스택 포인터를 첫 번째 값에 기록하며 나머지 일곱 개는 0이다.
+
+일반 이미지와 계측 이미지의 최초 독립 검증 결과 및 범위는 다음 기록에 수록했다. [EVD-030](evidence/evd-030.md)

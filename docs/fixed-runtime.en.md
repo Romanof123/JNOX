@@ -4,6 +4,19 @@
 
 CHG-032 / IMP-030 defines the profile for issue #69. EVD-030 is the target evidence record. The cases below are acceptance criteria.
 
+## Build and run on QEMU
+
+From the repository root on Linux or WSL, use the pinned Rust toolchain, the AArch64 bare-metal target and `qemu-system-aarch64`. These commands use a separate release directory for the selected application.
+
+```sh
+app=fixed-fifo
+out="$PWD/out/$app"
+(cd kernel && JNOX_BOARD=virt JNOX_PROFILE=fixed JNOX_APP="$app" CARGO_TARGET_DIR="$out" cargo +1.95.0 build --release --locked -j1)
+python3 tools/qemu_boot.py --profile "$app" --runs 1 --kernel "$out/aarch64-unknown-none/release/jnox-kernel"
+```
+
+Set `app=fixed-rr` for round robin. The other tables are `fixed-empty` and `fixed-delayed`. [Linked task tables](../kernel/src/fixed_apps.rs) · [Scheduler interface](../kernel/src/fixed_runtime.rs)
+
 ## Build and application interface
 
 Select `JNOX_PROFILE=fixed` with no benchmark features and select the linked table using `JNOX_APP=fixed-fifo` or `JNOX_APP=fixed-rr`. Two additional configurations are `fixed-empty` and `fixed-delayed`. An unset selector retains the historical default entry and the existing Cargo `--all-features` behavior. Reject conflicting explicit selectors during configuration. The fixed kernel links an application configuration at build time. Changing its task entries, order, priorities, initial delays or peer policy changes the resulting image. The scheduler never expects particular task names, boot order, marker counts or shutdown times.
@@ -67,3 +80,5 @@ The exported `fixed_runtime_trace` has C layout, entirely little-endian u64 word
 For chronological rows i and i+1, row i's selected owner runs during the counter interval ending at row i+1. Check that this owner is the next row's previous owner, accumulate sample deltas per app slot and compare against word 18 when available. Use ELR/SP and the corresponding ELF to distinguish entry, interrupted code, resumption and idle.
 
 The empty application keeps its eight observation words at zero. The delayed application records slot 0’s nonzero aligned stack pointer in the first word and leaves the other seven words zero.
+
+First independent results for ordinary and instrumented images and their scope are recorded in [EVD-030](evidence/evd-030.en.md)
