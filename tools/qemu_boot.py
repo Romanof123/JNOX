@@ -57,6 +57,19 @@ CBS_TRANSCRIPT = BOOT_TRANSCRIPT + (
     b"CBS TIMER STOP\n"
     b"CBS PASS\n"
 )
+PERIODIC_TRANSCRIPT = BOOT_TRANSCRIPT + (
+    b"RM 0 A\n"
+    b"RM 0 B\n"
+    b"RM 2 A\n"
+    b"RM 3 B\n"
+    b"RM 4 A\n"
+    b"DM 0 B\n"
+    b"DM 0 A\n"
+    b"DM 2 A\n"
+    b"DM 3 B\n"
+    b"DM 4 A\n"
+    b"PERIODIC PASS\n"
+)
 TRANSCRIPTS = {
     "boot": BOOT_TRANSCRIPT,
     "scheduler": SCHEDULER_TRANSCRIPT,
@@ -64,6 +77,7 @@ TRANSCRIPTS = {
     "fifo": FIFO_TRANSCRIPT,
     "rr": RR_TRANSCRIPT,
     "cbs": CBS_TRANSCRIPT,
+    "periodic": PERIODIC_TRANSCRIPT,
 }
 QUIET_SECONDS = 0.1
 
