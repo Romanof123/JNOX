@@ -153,3 +153,5 @@ CHG-067 · [일반 Rust 뮤텍스 작업의 배치·소유권 기준](ordinary-m
 CHG-061 · [OFF 전용 비교 수집기와 합성 대조](permit-observer-cost-plan.md) · VER-002/003/005/023
 
 [CHG-069 · OFF 전용 실행 16건과 여덟 쌍 비교](evidence/permit-observer-cost-v3.md)
+
+IMP-056 / VER-002/005/008/023. 콜드 부팅 2회에서 각각 CPU0→CPU1 지정 SGI 2회, 수신 작업 완료, 선점된 고정 백그라운드 작업 복귀를 기록했다. [EVD-056](evidence/evd-056.md)

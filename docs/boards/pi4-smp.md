@@ -2,7 +2,9 @@
 
 [English](pi4-smp.en.md) · [보드 #34](https://github.com/Romanof123/JNOX/issues/34) · [POL-013 #47](https://github.com/Romanof123/JNOX/issues/47)
 
-CHG-070은 별도 선택 Pi 4 원시 이미지 계획이다. 기존 Pi 4 직렬 부팅·타이머·고정 FIFO/RR은 코어 0을 사용한다. EVD-017은 이미 QEMU virt 두 CPU의 배치·경합 이동을 다뤘다. 이번 범위는 보드별 보조 코어 기동과 실제 고정 작업 중 지정 코어 깨우기다. 기존 선택자·기능 우선순위·기준 이미지 바이트를 유지한다. 구현·근거 수집은 대기 중이다. [보드](pi4-p1.md) · [기존 SMP](../m3-smp.md) · [고정 작업](pi4-fixed-runtime.md)
+CHG-070은 별도 선택 Pi 4 원시 이미지 계획이다. 기존 Pi 4 직렬 부팅·타이머·고정 FIFO/RR은 코어 0을 사용한다. EVD-017은 이미 QEMU virt 두 CPU의 배치·경합 이동을 다뤘다. 이번 범위는 보드별 보조 코어 기동과 실제 고정 작업 중 지정 코어 깨우기다. 기존 선택자·기능 우선순위·기준 이미지 바이트를 유지한다. 두 차례 콜드 모델 부팅 결과는 아래 증거에 기록했다. [보드](pi4-p1.md) · [기존 SMP](../m3-smp.md) · [고정 작업](pi4-fixed-runtime.md)
+
+`JNOX_BOARD=pi4 JNOX_PROFILE=smp JNOX_APP=directed-wake`는 보조 코어 기동과 인터럽트 전달에 `pi4_smp_boot.S`와 `pi4_smp_bsp.rs`를, 고정 작업과 종료 시 UART 기록에 `pi4_smp_workload.rs`를 선택한다. 모델 콜드 부팅 2회의 결과는 아래에 기록했다. 실물 보드 검증은 대기 중이다. [BSP](pi4-smp-bsp.md) · [작업 및 UART 형식](pi4-smp-workload.md)
 
 ## 진입과 예약 영역
 
@@ -18,3 +20,5 @@ EVD-011 실행 파일 해시, 4코어·2 GiB raspi4b TCG와 -kernel kernel8.img�
 4. 첫 캡처 전 소스·실행 파일·ELF/역어셈블·원시 이미지·패키지·설정·관찰자 해시를 고정한다. 4코어 중 2개가 참여하는 모델의 첫 두 독립 부팅 모두에서 두 세대와 코어 식별 QEMU IRQ/SVC/ERET·링크 PC를 대조한다. 로그에 CPU가 없으면 독립 CPU 식별 캡처가 필요하다. 정지 후 CPU0만 출력한다. 호스트 30초 제한·종료 후 1초 정숙은 관찰 규칙이다. 모든 실패를 보존하고 호스트 재생은 CPU/송신자/세대 교환과 IRQ 누락을 거부해야 한다. 실물은 동일 보드·카드에서 입회 완전 전원 재인가 2회, 원시 직렬·소프트웨어 기록, 보드 리비전·EEPROM·펌웨어·설정·카드 재읽기 해시를 요구한다. 물리 명령 이력에는 외부 추적이 필요하다. 물리 시간·이동·공유 캐시 간섭·에너지·WCET·제품 할당은 미확정이다. [REQ-002/005/008/023](../requirements.md) · [DES-003/004/012](../architecture.md) · [VER-002/005/008/023](../verification-plan.md)
 
 로컬 보드 소스 SHA-256(raspi.c / boot.c / bcm2838.c 순서): 35eb8dea9fdd5fa36d9e75c4a13f3a47906939d5759ed448dc1c09a2a03af6bc / 3ee33e386c78e816410d7f897d616a1f2c44203e7a609671184a95153412311f / a81db2b2fda5403e7a71daeb4760c3f2f003237cfadba3540d5e7ad375c58299. 캡처 때 실제 실행 파일 해시를 따로 기록한다.
+
+첫 두 차례 콜드 부팅과 CPU별 예외·복귀 기록은 [독립 모델 검증 결과](../evidence/pi4-smp-first.md)에 있다.

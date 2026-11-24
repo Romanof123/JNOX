@@ -153,3 +153,5 @@ CHG-067 · [Ordinary Rust mutex workload and batch ownership criteria](ordinary-
 CHG-061 · [OFF-only comparison collector and synthetic controls](permit-observer-cost-plan.md) · VER-002/003/005/023
 
 [CHG-069 · 16 OFF-only launches and eight paired comparisons](evidence/permit-observer-cost-v3.en.md)
+
+IMP-056 / VER-002/005/008/023. Two cold boots each recorded two CPU0→CPU1 SGIs, receiver completion, and return to interrupted pinned background work. [EVD-056](evidence/evd-056.en.md)

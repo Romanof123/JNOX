@@ -2,7 +2,9 @@
 
 [한국어](pi4-smp.md) · [Board #34](https://github.com/Romanof123/JNOX/issues/34) · [POL-013 #47](https://github.com/Romanof123/JNOX/issues/47)
 
-CHG-070 plans a dedicated opt-in Pi 4 raw image. Existing Pi 4 serial boot, timer and fixed FIFO/RR use core zero. EVD-017 already covers placement and contended migration on two QEMU virt CPUs. This milestone adds board-specific secondary startup and a directed cross-core ready transition during useful pinned work. Keep existing image selectors, feature precedence and baseline bytes. Implementation and evidence are pending. [Board](pi4-p1.en.md) · [Existing SMP](../m3-smp.en.md) · [Fixed tasks](pi4-fixed-runtime.en.md)
+CHG-070 plans a dedicated opt-in Pi 4 raw image. Existing Pi 4 serial boot, timer and fixed FIFO/RR use core zero. EVD-017 already covers placement and contended migration on two QEMU virt CPUs. This milestone adds board-specific secondary startup and a directed cross-core ready transition during useful pinned work. Keep existing image selectors, feature precedence and baseline bytes. The two cold model boots are documented below. [Board](pi4-p1.en.md) · [Existing SMP](../m3-smp.en.md) · [Fixed tasks](pi4-fixed-runtime.en.md)
+
+`JNOX_BOARD=pi4 JNOX_PROFILE=smp JNOX_APP=directed-wake` selects `pi4_smp_boot.S` and `pi4_smp_bsp.rs` for secondary startup and interrupt delivery, and `pi4_smp_workload.rs` for pinned tasks and terminal UART records. The two model boots are recorded below. Physical verification remains pending. [BSP](pi4-smp-bsp.en.md) · [Workload and UART format](pi4-smp-workload.en.md)
 
 ## Entry and reserved memory
 
@@ -18,3 +20,5 @@ Physical Pi 4 Model B 1 GB uses the pinned firmware, low peripherals and default
 4. Freeze hashes of source, executable, ELF/disassembly, raw/package/config and observer before first capture. Run two first cold model launches of this image, all four CPUs present, two participating. Require both generations in both runs with CPU-indexed QEMU IRQ/SVC/ERET and linked PCs corroborating on-target events; if log lacks CPU attribution require an independent CPU-tagged capture. Export bounded rows after quiescence from CPU0 only; 30 s host capture ceiling and 1 s terminal quiet are observation rules. Retain all failures. Host replay must reject swapped CPU/source, generation, or missing IRQ. For actual hardware require two separately witnessed full power cycles on the same recorded board/card, raw serial and software records, board revision, EEPROM/firmware/config hashes and SD readback. Physical instruction history needs an external trace facility. Physical timing, migration, shared-cache interference, energy, WCET and product allocation remain open. [REQ-002/005/008/023](../requirements.en.md) · [DES-003/004/012](../architecture.en.md) · [VER-002/005/008/023](../verification-plan.en.md)
 
 Local board-source SHA-256, in raspi.c / boot.c / bcm2838.c order: 35eb8dea9fdd5fa36d9e75c4a13f3a47906939d5759ed448dc1c09a2a03af6bc / 3ee33e386c78e816410d7f897d616a1f2c44203e7a609671184a95153412311f / a81db2b2fda5403e7a71daeb4760c3f2f003237cfadba3540d5e7ad375c58299. Record the actual binary digest independently at capture.
+
+The first two cold model boots and their CPU-tagged records are available in the [independent model evidence](../evidence/pi4-smp-first.en.md).

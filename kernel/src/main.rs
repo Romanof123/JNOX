@@ -45,7 +45,7 @@ mod control_app;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_pi4_smp, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -165,6 +165,11 @@ mod weighted;
 #[cfg(any(jnox_weighted, jnox_bench = "vruntime"))]
 mod vruntime_policy;
 
+#[cfg(jnox_pi4_smp)]
+mod pi4_smp_bsp;
+#[cfg(jnox_pi4_smp)]
+mod pi4_smp_workload;
+
 static mut BSS_PROBE: u64 = 0;
 
 #[cfg(target_arch = "aarch64")]
@@ -183,6 +188,8 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
     #[cfg(not(jnox_pi4))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
+    #[cfg(jnox_pi4_smp)]
+    pi4_smp_bsp::primary();
     #[cfg(jnox_fixed)]
     fixed_apps::run();
     #[cfg(jnox_batch)]
@@ -201,11 +208,11 @@ extern "C" fn kernel_main() -> ! {
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+    #[cfg(not(any(jnox_pi4_smp, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+#[cfg(not(any(jnox_pi4_smp, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();
