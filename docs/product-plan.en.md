@@ -44,6 +44,8 @@ The BSP contract accounts for differences between Arm A/R/M profiles and across 
 
 ## Milestone deliverables and approval criteria
 
+CHG-007 sets the implementation order across these milestones. Develop scheduling first. The PM links the completed per-profile scheduling cases and applicable board evidence in #21 before opening IPC development in #24. The IPC-dependent parts of M1, M2 and M4 follow this dependency. [Scheduling tracker](https://github.com/Romanof123/JNOX/issues/21) · [IPC workstream](https://github.com/Romanof123/JNOX/issues/24)
+
 | Milestone | Deliverables | Completion criteria |
 | --- | --- | --- |
 | M0 Planning | Product plan, safety and security concept, requirements, draft design, verification plan, and trace links | Review the relationships between documents. Record the first bench scenario and open decisions. |
