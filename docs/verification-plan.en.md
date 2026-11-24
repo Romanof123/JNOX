@@ -142,7 +142,7 @@ IMP-054 · VER-002/003/005. Operational qualification was 0/20. Four determinist
 
 CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
 
-IMP-055 · VER-002/005/023. Three first boots replayed both seeds and C’s stride join. Two diagnostic cases remain unexecuted. [EVD-055](evidence/evd-055.en.md)
+IMP-055 · VER-002/005/023. Three first boots replayed both seeds and C’s stride join. [EVD-055](evidence/evd-055.en.md) [#200](https://github.com/Romanof123/JNOX/blob/3a08323b8e526b24a5f708d9ccac0fd0da082774/docs/evidence/ordinary-stride-late-first.en-ko.md) closed [#54](https://github.com/Romanof123/JNOX/issues/54) for five specified QEMU cases. Lottery-miss rejected 2 against 1 and delayed stride charged A three whole units with 4,142 counts left over. Product draw source, load and service window still need target verification. Historical failure operands remain unavailable in [#79](https://github.com/Romanof123/JNOX/issues/79).
 
 CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
 
