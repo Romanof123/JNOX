@@ -28,7 +28,7 @@ def replay(profile, path, plain=False):
     events = []
     for line in text.splitlines():
         fields = line.split()
-        if not fields or fields[0] not in {'SUPPLY', 'CONFIG', 'JOB', 'D', 'J', 'RESULT'}:
+        if not fields or fields[0] not in {'SUPPLY', 'CONFIG', 'JOB', 'D', 'J', 'A_STOP', 'A_PROGRESS', 'RESULT'}:
             continue
         tag, values = fields[0], list(map(int, fields[1:]))
         records.setdefault(tag, []).append(values)
@@ -43,12 +43,15 @@ def replay(profile, path, plain=False):
     require('ORDINARY DEADLINE FAIL' not in text, 'guest failure')
     if tight:
         require(refused == (9 if llf else 8) and 'ORDINARY DEADLINE REFUSED BEFORE LAUNCH' in text
-                and not any(t in records for t in ('D', 'J', 'JOB', 'RESULT'))
+                and not any(t in records for t in ('D', 'J', 'JOB', 'A_STOP', 'A_PROGRESS', 'RESULT'))
                 and 'ORDINARY DEADLINE FINISHED' not in text, 'early refusal')
         return {'refusal': refused, 'full_supply_admitted': True}
     require(not refused and 'ORDINARY DEADLINE FINISHED' in text, 'normal termination')
     jobs = records['JOB']
     require([j[:5] for j in jobs] == [[0,0,5,2,250],[1,1,7,2,30]], 'linked table')
+    (stop,), = records['A_STOP']
+    (before,resumed,finished), = records['A_PROGRESS']
+    require(stop == epoch + hz*250//1000 and before == resumed and finished > before > 0, 'absolute stop and progress')
     if plain:
         require(not events, 'expected plain image')
         (checksum,sp,a,b),=records['RESULT']
@@ -88,6 +91,7 @@ def replay(profile, path, plain=False):
     require(cj[0][1]==rj[0][1]==1 and cj[0][5]==rj[0][5]>0 and cj[1][1]==rj[1][1]==2, 'withheld remaining and progress')
     (checksum,sp,a,b),=records['RESULT']
     last=events[-1][1]
+    require((before,resumed,finished)==(cj[0][5],rj[0][5],last[0][5]), 'plain and trace progress agree')
     require(top-stack<sp<=top and checksum==89440 and last[0][5]>rj[0][5] and last[1][5]>0, 'service product and worker progress')
     require([a,b]==[product(i+1,last[i][5]) for i in range(2)], 'worker products')
     return {'service_counts':resume[7]-resume[6], 'grid_counts':q,'worker_counts':counts[:2],

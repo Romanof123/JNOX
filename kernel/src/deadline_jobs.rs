@@ -24,6 +24,11 @@ fn work(id: usize, duration: u64) {
     let end = super::ordinary_deadline::counter()
         .checked_add(duration)
         .unwrap();
+    work_until(id, end);
+}
+
+#[inline(always)]
+fn work_until(id: usize, end: u64) {
     let mut value = id as u64 + 1;
     while super::ordinary_deadline::counter() < end {
         for _ in 0..64 {
@@ -64,7 +69,18 @@ const fn job(id: usize, release: u64, deadline: u64, cost: u64, milliseconds: u6
         milliseconds,
     }
 }
-pub static SUPPLIED: [Job; 2] = [job(0, 0, 5, 2, 250), job(1, 1, 7, 2, 30)];
+#[unsafe(no_mangle)]
+pub extern "C" fn deadline_worker_a_until(stop: u64) {
+    work_until(0, stop);
+}
+
+pub static SUPPLIED: [Job; 2] = [
+    Job {
+        entry: Some(deadline_worker_a_until),
+        ..job(0, 0, 5, 2, 250)
+    },
+    job(1, 1, 7, 2, 30),
+];
 pub static TIGHT: [Job; 1] = [job(0, 0, 2, 2, 250)];
 pub const RESERVED: u64 = 1 << 1;
 

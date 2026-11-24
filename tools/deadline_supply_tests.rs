@@ -48,6 +48,11 @@ fn endpoints_and_overflow() {
     overloaded[1].release = 0;
     assert_eq!(
         admit_with_supply(DeadlinePolicy::Edf, &overloaded, 1000, 0, RESERVED),
+        Err(Refusal::Demand)
+    );
+    overloaded[1].deadline = overloaded[0].deadline;
+    assert_eq!(
+        admit_with_supply(DeadlinePolicy::Edf, &overloaded, 1000, 0, RESERVED),
         Err(Refusal::Overflow)
     );
 }

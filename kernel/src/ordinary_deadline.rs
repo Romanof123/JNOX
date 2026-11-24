@@ -298,6 +298,25 @@ impl Runtime {
                 self.log();
             }
             if SUPPLY_PROFILE {
+                let rows = unsafe { &*(&raw const ordinary_deadline_rows) };
+                let progress_at = |out, owner| {
+                    rows[..self.len]
+                        .iter()
+                        .find(|row| {
+                            row.event[0] == 1 && row.event[9] == out && row.event[10] == owner
+                        })
+                        .map(|row| row.job[0][5])
+                };
+                let before = progress_at(0, SERVICE as u64);
+                let resumed = progress_at(SERVICE as u64, 0);
+                let finished = jobs::PROGRESS[0].load(Ordering::Relaxed) as i128;
+                line(
+                    b"A_PROGRESS",
+                    &[before.unwrap_or(-1), resumed.unwrap_or(-1), finished],
+                );
+                if before.is_none_or(|n| n <= 0 || resumed != Some(n) || finished <= n) {
+                    fail()
+                }
                 line(
                     b"RESULT",
                     &[
@@ -450,7 +469,15 @@ pub fn run() -> ! {
     frames[IDLE] = initial(IDLE, idle as *const () as usize, 0);
     for j in jobs {
         let pc = j.entry.unwrap() as usize;
-        frames[j.id] = initial(j.id, pc, hz * j.milliseconds / 1000);
+        let duration = hz.checked_mul(j.milliseconds).unwrap() / 1000;
+        let arg = if SUPPLY_PROFILE && j.id == 0 {
+            let stop = jobs::absolute(s, 1, duration).unwrap();
+            line(b"A_STOP", &[stop as i128]);
+            stop
+        } else {
+            duration
+        };
+        frames[j.id] = initial(j.id, pc, arg);
         line(
             b"JOB",
             &[
