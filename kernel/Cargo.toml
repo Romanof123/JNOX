@@ -6,7 +6,8 @@ publish = false
 
 [features]
 sched-bench = []
-# Live CBS takes precedence over all other bench features when combined.
+# Live partition windows take precedence over CBS and all older benches.
+partition-bench = []
 cbs-bench = []
 periodic-bench = ["sched-bench"]
 periodic-preempt-bench = ["periodic-bench"]

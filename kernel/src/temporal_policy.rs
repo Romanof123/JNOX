@@ -9,6 +9,13 @@ struct Window {
     end: u64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WindowDecision {
+    pub(crate) owner: Option<usize>,
+    pub(crate) runnable: Option<usize>,
+    pub(crate) end_tick: u64,
+}
+
 /// A repeating table of half-open partition windows, anchored at tick zero.
 pub(crate) struct CyclicExecutive<const N: usize> {
     frame_ticks: u64,
@@ -47,13 +54,30 @@ impl<const N: usize> CyclicExecutive<N> {
     /// A blocked partition leaves its window idle. No other partition may
     /// borrow that window. Partition-local thread selection is up to the caller.
     pub(crate) fn dispatch(&self, tick: u64, ready: impl FnOnce(usize) -> bool) -> Option<usize> {
+        let (window, _) = self.window_at(tick)?;
+        window.partition.filter(|&id| ready(id))
+    }
+
+    /// Return the active slot and its absolute exclusive end. A slot whose
+    /// boundary exceeds the clock range cannot produce a timed decision.
+    pub(crate) fn decision(
+        &self,
+        tick: u64,
+        ready: impl FnOnce(usize) -> bool,
+    ) -> Option<WindowDecision> {
+        let (window, phase) = self.window_at(tick)?;
+        let end_tick = tick.checked_add(window.end - phase)?;
+        Some(WindowDecision {
+            owner: window.partition,
+            runnable: window.partition.filter(|&id| ready(id)),
+            end_tick,
+        })
+    }
+
+    fn window_at(&self, tick: u64) -> Option<(&Window, u64)> {
         let phase = tick % self.frame_ticks;
-        let partition = self
-            .windows
-            .iter()
-            .find(|window| phase < window.end)?
-            .partition?;
-        ready(partition).then_some(partition)
+        let window = self.windows.iter().find(|window| phase < window.end)?;
+        Some((window, phase))
     }
 }
 

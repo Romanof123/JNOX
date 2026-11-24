@@ -229,3 +229,53 @@ fn cbs_admission_and_service_match_demand_over_common_frame() {
         }
     }
 }
+
+#[test]
+fn cyclic_decisions_match_expanded_slots() {
+    use temporal_policy::{CyclicExecutive, WindowDecision};
+
+    let choices: Vec<_> = [None, Some(0), Some(1)].into_iter()
+        .flat_map(|owner| (1..=3).map(move |ticks| (owner, ticks)))
+        .collect();
+    for &a in &choices {
+        for &b in &choices {
+            for &c in &choices {
+                let slots = [a, b, c];
+                let frame = a.1 + b.1 + c.1;
+                let table = CyclicExecutive::new(2, frame, slots).unwrap();
+                let mut start = 0;
+                for (owner, duration) in slots.into_iter().cycle().take(9) {
+                    let end_tick = start + duration;
+                    for tick in start..end_tick {
+                        for mask in 0..4 {
+                            let mut queried = None;
+                            let decision = table.decision(tick, |id| {
+                                queried = Some(id);
+                                mask & (1 << id) != 0
+                            });
+                            let runnable = owner.filter(|&id| mask & (1 << id) != 0);
+                            assert_eq!(queried, owner);
+                            assert_eq!(decision, Some(WindowDecision { owner, runnable, end_tick }),
+                                "slots={slots:?} tick={tick} mask={mask}");
+                        }
+                    }
+                    start = end_tick;
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn cyclic_window_end_at_clock_limit() {
+    use temporal_policy::CyclicExecutive;
+
+    let table = CyclicExecutive::new(1, u64::MAX, [(Some(0), u64::MAX)]).unwrap();
+    assert_eq!(table.decision(u64::MAX - 1, |_| true).unwrap().end_tick, u64::MAX);
+    assert_eq!(table.decision(u64::MAX, |_| true), None);
+    assert_eq!(table.dispatch(u64::MAX, |_| true), Some(0));
+
+    let table = CyclicExecutive::new(1, 4, [(Some(0), 4)]).unwrap();
+    assert_eq!(table.decision(u64::MAX - 3, |_| true), None);
+    assert_eq!(table.dispatch(u64::MAX - 3, |_| true), Some(0));
+}

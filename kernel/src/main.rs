@@ -7,55 +7,100 @@ use core::ptr;
 
 #[cfg(all(
     feature = "rr-bench",
-    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    not(any(
+        feature = "cbs-bench",
+        feature = "periodic-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod aperiodic_policy;
-#[cfg(feature = "cbs-bench")]
+#[cfg(all(feature = "cbs-bench", not(feature = "partition-bench")))]
 mod cbs;
-#[cfg(any(feature = "sched-bench", feature = "cbs-bench"))]
+#[cfg(any(
+    feature = "sched-bench",
+    feature = "cbs-bench",
+    feature = "partition-bench"
+))]
 mod context;
-#[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "sched-bench",
+    not(any(feature = "cbs-bench", feature = "partition-bench"))
+))]
 mod dispatch_policy;
 #[cfg(all(
     feature = "rr-bench",
-    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    not(any(
+        feature = "cbs-bench",
+        feature = "periodic-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod domain_policy;
 #[cfg(all(
     feature = "rr-bench",
-    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    not(any(
+        feature = "cbs-bench",
+        feature = "periodic-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod fair_policy;
 #[cfg(all(
     feature = "rr-bench",
-    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    not(any(
+        feature = "cbs-bench",
+        feature = "periodic-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod feedback_policy;
 #[cfg(all(
     feature = "rr-bench",
-    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    not(any(
+        feature = "cbs-bench",
+        feature = "periodic-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod group_policy;
-#[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "sched-bench",
+    not(any(feature = "cbs-bench", feature = "partition-bench"))
+))]
 mod ready_queue;
 #[cfg(all(
     feature = "sched-bench",
-    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    not(any(
+        feature = "cbs-bench",
+        feature = "periodic-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod sched;
 #[cfg(all(
     feature = "rr-bench",
-    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    not(any(
+        feature = "cbs-bench",
+        feature = "periodic-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod service_policy;
 #[cfg(any(
+    feature = "partition-bench",
     feature = "cbs-bench",
     all(feature = "rr-bench", not(feature = "periodic-bench"))
 ))]
 mod temporal_policy;
 
-#[cfg(all(feature = "periodic-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "periodic-bench",
+    not(any(feature = "cbs-bench", feature = "partition-bench"))
+))]
 mod periodic;
+
+#[cfg(feature = "partition-bench")]
+mod partition;
 
 static mut BSS_PROBE: u64 = 0;
 
@@ -78,7 +123,11 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(all(
         feature = "rr-bench",
-        not(any(feature = "cbs-bench", feature = "periodic-bench"))
+        not(any(
+            feature = "cbs-bench",
+            feature = "periodic-bench",
+            feature = "partition-bench"
+        ))
     ))]
     {
         if !dispatch_policy::bench_checks() {
@@ -99,14 +148,26 @@ extern "C" fn kernel_main() -> ! {
         }
         uart_write(b"POLICY SERVICE PASS\n");
     }
-    #[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
+    #[cfg(all(
+        feature = "sched-bench",
+        not(any(feature = "cbs-bench", feature = "partition-bench"))
+    ))]
     #[cfg(not(feature = "periodic-bench"))]
     sched::run();
-    #[cfg(all(feature = "periodic-bench", not(feature = "cbs-bench")))]
+    #[cfg(all(
+        feature = "periodic-bench",
+        not(any(feature = "cbs-bench", feature = "partition-bench"))
+    ))]
     periodic::run();
-    #[cfg(feature = "cbs-bench")]
+    #[cfg(all(feature = "cbs-bench", not(feature = "partition-bench")))]
     cbs::run();
-    #[cfg(not(any(feature = "sched-bench", feature = "cbs-bench")))]
+    #[cfg(feature = "partition-bench")]
+    partition::run();
+    #[cfg(not(any(
+        feature = "sched-bench",
+        feature = "cbs-bench",
+        feature = "partition-bench"
+    )))]
     park()
 }
 
