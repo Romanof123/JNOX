@@ -329,3 +329,242 @@ fn zero_capacity_returns_owned_event() {
     assert_eq!(events.enqueue(String::from("pending")).unwrap_err(), "pending");
     assert!(!events.dispatch_one(|_, _| unreachable!()));
 }
+
+#[path = "../kernel/src/batch_policy.rs"]
+mod batch_policy;
+
+mod batch_tests {
+    use super::batch_policy::{BatchError, BatchPolicy, BatchScheduler};
+
+    #[derive(Clone, Copy, Debug)]
+    enum Rule {
+        Sjf,
+        Srtf,
+        Hrrn,
+    }
+
+    const RULES: [Rule; 3] = [Rule::Sjf, Rule::Srtf, Rule::Hrrn];
+
+    impl Rule {
+        fn scheduler<const N: usize>(self, start: u64) -> BatchScheduler<N> {
+            let policy = match self {
+                Rule::Sjf => BatchPolicy::Sjf,
+                Rule::Srtf => BatchPolicy::Srtf,
+                Rule::Hrrn => BatchPolicy::Hrrn,
+            };
+            BatchScheduler::new(policy, start)
+        }
+    }
+
+    // Account one observed tick at a time. Jobs here are identified by arrival
+    // position. Only the backend sees their (independently permuted) public IDs.
+    fn check_schedule(
+        rule: Rule,
+        ids: [usize; 3],
+        arrival: [u64; 3],
+        estimate: [u64; 3],
+        actual: [u64; 3],
+    ) {
+        let mut scheduler = rule.scheduler::<3>(0);
+        let mut ready = Vec::new();
+        let mut runner: Option<usize> = None;
+        let mut served = [0u64; 3];
+        let end = arrival[2] + actual.iter().sum::<u64>();
+        for now in 0..=end {
+            if let Some(i) = runner {
+                served[i] += 1;
+                if served[i] == actual[i] {
+                    assert!(scheduler.complete(now, ids[i]).is_ok());
+                    runner = None;
+                }
+            }
+            for i in 0..3 {
+                if arrival[i] == now {
+                    assert!(scheduler.release(now, ids[i], estimate[i]).is_ok());
+                    ready.push(i);
+                }
+            }
+            // Put the incumbent first in stable order when reconsidering SRTF.
+            if matches!(rule, Rule::Srtf) {
+                if let Some(i) = runner.take() {
+                    ready.insert(0, i);
+                }
+            }
+            let remaining = |i: usize| estimate[i].saturating_sub(served[i]).max(1);
+            if runner.is_none() {
+                let best = (0..ready.len()).min_by_key(|&position| {
+                    let i = ready[position];
+                    match rule {
+                        Rule::Sjf => estimate[i] as i64,
+                        Rule::Srtf => remaining(i) as i64,
+                        // Estimates 1, 2, 3 divide six. An HRRN waiter has
+                        // never run because its incumbent is nonpreemptible.
+                        Rule::Hrrn => -(((now - arrival[i]) * 6 / estimate[i]) as i64),
+                    }
+                });
+                runner = best.map(|position| ready.remove(position));
+            }
+            let observed = scheduler.decide(now).expect("valid monotonic decision");
+            assert_eq!(
+                observed,
+                runner.map(|i| ids[i]),
+                "{rule:?} tick {now}, IDs {ids:?}, arrivals {arrival:?}, estimates {estimate:?}, actual {actual:?}"
+            );
+            assert_eq!(scheduler.now(), now);
+            for i in 0..3 {
+                let live = arrival[i] <= now && served[i] < actual[i];
+                assert_eq!(
+                    scheduler.remaining(ids[i]),
+                    live.then(|| remaining(i)),
+                    "{rule:?} tick {now}, job {i}, arrivals {arrival:?}, estimates {estimate:?}, actual {actual:?}"
+                );
+            }
+        }
+        assert_eq!(served, actual);
+    }
+
+    #[test]
+    fn all_small_arrivals_estimates_and_id_orders_match_a_tick_calendar() {
+        const ORDERS: [[usize; 3]; 6] = [
+            [0, 1, 2],
+            [0, 2, 1],
+            [1, 0, 2],
+            [1, 2, 0],
+            [2, 0, 1],
+            [2, 1, 0],
+        ];
+        for rule in RULES {
+            for second in 0..=3 {
+                for third in second..=3 {
+                    for code in 0..27 {
+                        let estimate = [1 + code / 9, 1 + (code / 3) % 3, 1 + code % 3];
+                        for ids in ORDERS {
+                            for actual in [estimate, [estimate[0] + 2, 1, estimate[2] + 1]] {
+                                check_schedule(rule, ids, [0, second, third], estimate, actual);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn release_and_completion_charge_elapsed_time_without_dispatch() {
+        for rule in RULES {
+            let mut scheduler = rule.scheduler::<3>(4);
+            scheduler.release(5, 2, 10).unwrap();
+            scheduler.release(8, 1, 20).unwrap();
+            assert_eq!(scheduler.remaining(2), Some(10));
+            assert_eq!(scheduler.decide(8).unwrap(), Some(2));
+            scheduler.release(12, 0, 1).unwrap();
+            assert_eq!(scheduler.remaining(2), Some(6));
+            scheduler.complete(14, 2).unwrap();
+            for waiting in [0, 1] {
+                assert!(matches!(
+                    scheduler.complete(16, waiting),
+                    Err(BatchError::NotRunning)
+                ));
+            }
+            scheduler.release(18, 2, 3).unwrap();
+            assert_eq!(scheduler.remaining(0), Some(1));
+            assert_eq!(scheduler.remaining(1), Some(20));
+            assert_eq!(scheduler.remaining(2), Some(3));
+            assert_eq!(scheduler.decide(25).unwrap(), Some(0));
+            scheduler.complete(30, 0).unwrap();
+            assert_eq!(scheduler.remaining(1), Some(20));
+            assert_eq!(scheduler.remaining(2), Some(3));
+        }
+    }
+
+    #[test]
+    fn failed_operations_preserve_clock_budgets_runner_and_fifo_order() {
+        use BatchError::*;
+        for rule in RULES {
+            let mut scheduler = rule.scheduler::<4>(5);
+            scheduler.release(5, 3, 3).unwrap();
+            assert_eq!(scheduler.decide(5).unwrap(), Some(3));
+            scheduler.release(6, 2, 6).unwrap();
+            scheduler.release(6, 0, 6).unwrap();
+
+            assert!(matches!(
+                scheduler.release(99, usize::MAX, 1),
+                Err(InvalidId)
+            ));
+            assert!(matches!(scheduler.complete(99, 4), Err(InvalidId)));
+            assert!(matches!(scheduler.release(99, 1, 0), Err(ZeroEstimate)));
+            assert!(matches!(scheduler.release(99, 3, 1), Err(Duplicate)));
+            assert!(matches!(scheduler.release(99, 2, 1), Err(Duplicate)));
+            assert!(matches!(scheduler.complete(99, 0), Err(NotRunning)));
+            assert!(matches!(scheduler.complete(99, 1), Err(NotRunning)));
+            assert!(matches!(scheduler.complete(5, 3), Err(TimeRegression)));
+            assert!(matches!(scheduler.release(5, 1, 1), Err(TimeRegression)));
+            assert!(matches!(scheduler.decide(5), Err(TimeRegression)));
+
+            assert_eq!(scheduler.now(), 6);
+            assert_eq!(
+                [0, 1, 2, 3, usize::MAX].map(|i| scheduler.remaining(i)),
+                [Some(6), None, Some(6), Some(2), None]
+            );
+            assert_eq!(scheduler.decide(7).unwrap(), Some(3));
+            scheduler.complete(8, 3).unwrap();
+            scheduler.release(8, 3, 6).unwrap();
+            for id in [2, 0, 3] {
+                assert_eq!(scheduler.decide(9).unwrap(), Some(id));
+                scheduler.complete(9, id).unwrap();
+            }
+            assert_eq!(scheduler.decide(10).unwrap(), None);
+        }
+    }
+
+    #[test]
+    fn empty_capacity_remains_idle_through_clock_limit() {
+        for rule in RULES {
+            let mut scheduler = rule.scheduler::<0>(8);
+            assert!(matches!(
+                scheduler.release(9, 0, 1),
+                Err(BatchError::InvalidId)
+            ));
+            assert!(matches!(
+                scheduler.complete(9, 0),
+                Err(BatchError::InvalidId)
+            ));
+            assert_eq!(scheduler.remaining(0), None);
+            assert_eq!(scheduler.now(), 8);
+            assert_eq!(scheduler.decide(u64::MAX).unwrap(), None);
+            assert!(matches!(
+                scheduler.decide(u64::MAX - 1),
+                Err(BatchError::TimeRegression)
+            ));
+            assert_eq!(scheduler.now(), u64::MAX);
+        }
+    }
+
+    #[test]
+    fn hrrn_resolves_a_unit_difference_between_full_width_products() {
+        let end = u64::MAX;
+        let mut scheduler = Rule::Hrrn.scheduler::<2>(0);
+        scheduler.release(1, 1, end - 2).unwrap();
+        scheduler.release(2, 0, end - 3).unwrap();
+        // At MAX, wait = estimate + 1 for each. The smaller estimate's
+        // response ratio 2 + 1/estimate wins despite its later arrival.
+        assert_eq!(scheduler.decide(end).unwrap(), Some(0));
+        scheduler.complete(end, 0).unwrap();
+        assert_eq!(scheduler.decide(end).unwrap(), Some(1));
+    }
+
+    #[test]
+    fn clock_sized_charge_preserves_one_tick_until_explicit_completion() {
+        for rule in RULES {
+            let mut scheduler = rule.scheduler::<2>(0);
+            scheduler.release(0, 1, u64::MAX).unwrap();
+            assert_eq!(scheduler.decide(0).unwrap(), Some(1));
+            scheduler.release(u64::MAX - 1, 0, 1).unwrap();
+            assert_eq!(scheduler.remaining(1), Some(1));
+            assert_eq!(scheduler.decide(u64::MAX).unwrap(), Some(1));
+            assert_eq!(scheduler.remaining(1), Some(1));
+            scheduler.complete(u64::MAX, 1).unwrap();
+            assert_eq!(scheduler.decide(u64::MAX).unwrap(), Some(0));
+        }
+    }
+}

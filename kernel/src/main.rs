@@ -5,128 +5,53 @@ use core::arch::{asm, global_asm};
 use core::panic::PanicInfo;
 use core::ptr;
 
-#[cfg(all(
-    feature = "rr-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "periodic-bench",
-        feature = "partition-bench"
-    ))
-))]
+#[cfg(jnox_bench = "rr")]
 mod aperiodic_policy;
-#[cfg(all(
-    feature = "cbs-bench",
-    not(any(feature = "partition-bench", feature = "coop-bench"))
-))]
+#[cfg(jnox_bench = "batch")]
+mod batch;
+#[cfg(jnox_bench = "batch")]
+mod batch_policy;
+#[cfg(jnox_bench = "cbs")]
 mod cbs;
-#[cfg(any(
-    feature = "sched-bench",
-    feature = "cbs-bench",
-    feature = "partition-bench"
-))]
+#[cfg(not(jnox_bench = "boot"))]
 mod context;
-#[cfg(feature = "coop-bench")]
+#[cfg(jnox_bench = "coop")]
 mod coop;
-#[cfg(all(
-    feature = "sched-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "partition-bench"
-    ))
+#[cfg(any(
+    jnox_bench = "scheduler",
+    jnox_bench = "rr",
+    jnox_bench = "periodic",
+    jnox_bench = "batch"
 ))]
 mod dispatch_policy;
-#[cfg(all(
-    feature = "rr-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "periodic-bench",
-        feature = "partition-bench"
-    ))
-))]
+#[cfg(jnox_bench = "rr")]
 mod domain_policy;
-#[cfg(feature = "coop-bench")]
+#[cfg(jnox_bench = "coop")]
 mod event_loop;
-#[cfg(all(
-    feature = "rr-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "periodic-bench",
-        feature = "partition-bench"
-    ))
-))]
+#[cfg(jnox_bench = "rr")]
 mod fair_policy;
-#[cfg(all(
-    feature = "rr-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "periodic-bench",
-        feature = "partition-bench"
-    ))
-))]
+#[cfg(jnox_bench = "rr")]
 mod feedback_policy;
-#[cfg(all(
-    feature = "rr-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "periodic-bench",
-        feature = "partition-bench"
-    ))
-))]
+#[cfg(jnox_bench = "rr")]
 mod group_policy;
+#[cfg(jnox_bench = "partition")]
+mod partition;
+#[cfg(jnox_bench = "periodic")]
+mod periodic;
 #[cfg(any(
-    feature = "coop-bench",
-    all(
-        feature = "sched-bench",
-        not(any(feature = "cbs-bench", feature = "partition-bench"))
-    )
+    jnox_bench = "scheduler",
+    jnox_bench = "rr",
+    jnox_bench = "periodic",
+    jnox_bench = "batch",
+    jnox_bench = "coop"
 ))]
 mod ready_queue;
-#[cfg(all(
-    feature = "sched-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "periodic-bench",
-        feature = "partition-bench"
-    ))
-))]
+#[cfg(any(jnox_bench = "scheduler", jnox_bench = "rr"))]
 mod sched;
-#[cfg(all(
-    feature = "rr-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "periodic-bench",
-        feature = "partition-bench"
-    ))
-))]
+#[cfg(jnox_bench = "rr")]
 mod service_policy;
-#[cfg(not(feature = "coop-bench"))]
-#[cfg(any(
-    feature = "partition-bench",
-    feature = "cbs-bench",
-    all(feature = "rr-bench", not(feature = "periodic-bench"))
-))]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "partition"))]
 mod temporal_policy;
-
-#[cfg(all(
-    feature = "periodic-bench",
-    not(any(
-        feature = "coop-bench",
-        feature = "cbs-bench",
-        feature = "partition-bench"
-    ))
-))]
-mod periodic;
-
-#[cfg(all(feature = "partition-bench", not(feature = "coop-bench")))]
-mod partition;
 
 static mut BSS_PROBE: u64 = 0;
 
@@ -151,22 +76,11 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
     #[cfg(not(jnox_pi4))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
-    #[cfg(feature = "coop-bench")]
-    coop::run();
-    #[cfg(not(feature = "coop-bench"))]
     run_bench()
 }
 
-#[cfg(not(feature = "coop-bench"))]
 fn run_bench() -> ! {
-    #[cfg(all(
-        feature = "rr-bench",
-        not(any(
-            feature = "cbs-bench",
-            feature = "periodic-bench",
-            feature = "partition-bench"
-        ))
-    ))]
+    #[cfg(jnox_bench = "rr")]
     {
         if !dispatch_policy::bench_checks() {
             uart_write(b"POLICY RANK FAIL\n");
@@ -186,26 +100,19 @@ fn run_bench() -> ! {
         }
         uart_write(b"POLICY SERVICE PASS\n");
     }
-    #[cfg(all(
-        feature = "sched-bench",
-        not(any(feature = "cbs-bench", feature = "partition-bench"))
-    ))]
-    #[cfg(not(feature = "periodic-bench"))]
+    #[cfg(any(jnox_bench = "scheduler", jnox_bench = "rr"))]
     sched::run();
-    #[cfg(all(
-        feature = "periodic-bench",
-        not(any(feature = "cbs-bench", feature = "partition-bench"))
-    ))]
+    #[cfg(jnox_bench = "periodic")]
     periodic::run();
-    #[cfg(all(feature = "cbs-bench", not(feature = "partition-bench")))]
+    #[cfg(jnox_bench = "cbs")]
     cbs::run();
-    #[cfg(feature = "partition-bench")]
+    #[cfg(jnox_bench = "partition")]
     partition::run();
-    #[cfg(not(any(
-        feature = "sched-bench",
-        feature = "cbs-bench",
-        feature = "partition-bench"
-    )))]
+    #[cfg(jnox_bench = "batch")]
+    batch::run();
+    #[cfg(jnox_bench = "coop")]
+    coop::run();
+    #[cfg(jnox_bench = "boot")]
     park()
 }
 
