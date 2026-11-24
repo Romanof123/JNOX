@@ -123,6 +123,7 @@ EDF·LLF 시간 격자 구성은 실행 중인 작업에 경과 시간을 차감
 
 - POL-002 · CHG-029 · IMP-027 · [고정 우선순위, 대기열 순서와 남은 실행량](m1-priority-resume.md)
 - POL-004 · CHG-030 · IMP-028 · [주기 기한 초과와 중첩 릴리스](m1-periodic-overrun.md)
+- POL-004 · CHG-035 · IMP-033 · [정확한 주기 작업 쌍](pol-004-exact-periodic.md#한국어)
 - POL-008 · CHG-031 · IMP-029 · [하드 CBS 깨우기와 기한 갱신](m2-cbs-wake.md)
 
 ## Rust 작업 테이블 구성
