@@ -31,6 +31,12 @@ ext_\name\()_work:
     mrs x11, cntpct_el0
     stlr x11, [x12]
     mov x21, x10
+    .if {normal}
+    mov x0, x19
+    mov x1, x21
+    bl normal_job_tick
+    dup v31.2d, x19
+    .endif
 1:
     .if \idle
     wfi
