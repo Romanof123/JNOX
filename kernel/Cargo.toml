@@ -9,6 +9,7 @@ sched-bench = []
 # Live CBS takes precedence over all other bench features when combined.
 cbs-bench = []
 periodic-bench = ["sched-bench"]
+periodic-preempt-bench = ["periodic-bench"]
 # FIFO and RR take precedence when combined with EDF.
 edf-bench = ["sched-bench"]
 fifo-bench = ["sched-bench"]
