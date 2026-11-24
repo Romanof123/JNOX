@@ -58,3 +58,11 @@ The mutex configuration checks effective priority on real block, timer timeout a
 [Lottery and stride](m4-proportional.en.md) · [Weighted virtual runtime](m4-vruntime.en.md)
 
 [EEVDF](m4-eevdf.en.md) · [Hierarchical groups](m4-hierarchy.en.md) · [Energy-aware placement](m3-power-placement.en.md) · [Bounded policy extension](m4-bounded-extension.en.md)
+
+## Deferred dispatch, job overlap and server wakeup
+
+For each frozen image, independently capture one guest and compare its task progress, exception returns, counters and state transitions with the contract.
+
+- POL-002 · CHG-029 · IMP-027 · [Fixed priority, queue order and remaining service](m1-priority-resume.en.md)
+- POL-004 · CHG-030 · IMP-028 · [Periodic deadline misses and overlapping releases](m1-periodic-overrun.en.md)
+- POL-008 · CHG-031 · IMP-029 · [Hard-CBS wakeup and deadline renewal](m2-cbs-wake.en.md)

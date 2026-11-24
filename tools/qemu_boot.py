@@ -209,6 +209,9 @@ class DynamicTranscript(Enum):
 
 
 TRANSCRIPTS = {
+    "priority-resume": BOOT_TRANSCRIPT + b"PRIORITY RESUME BEGIN\nPRIORITY RESUME PASS\n",
+    "periodic-overrun": BOOT_TRANSCRIPT + b"OVERRUN RM DONE\nOVERRUN DM DONE\nPERIODIC OVERRUN PASS\n",
+    "cbs-wake": BOOT_TRANSCRIPT + b"CBS WAKE TIMER STOP\nCBS WAKE PASS\n",
     "amc": None,  # Counter values vary per boot. Freeze the validated UART before quiet.
     "vruntime": DynamicTranscript.VRUNTIME,
     "proportional": BOOT_TRANSCRIPT + (
@@ -427,7 +430,8 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kernel", type=Path, required=True, help="AArch64 kernel ELF (pi4: raw kernel image)")
-    parser.add_argument("--qemu", default="qemu-system-aarch64", help="QEMU executable (default: %(default)s)")
+    parser.add_argument("--qemu", default="qemu-system-aarch64",
+                        help="QEMU executable or a local Python capture script (default: %(default)s)")
     parser.add_argument("--profile", choices=TRANSCRIPTS, default="boot",
                         help="expected UART transcript (default: %(default)s)")
     parser.add_argument("--runs", type=int, help="fresh sequential QEMU boots (default: boot 2, other profiles 1)")
@@ -448,8 +452,13 @@ def main():
         expected_hash = kernel_sha256(kernel, raw=pi4)
         expected = TRANSCRIPTS[args.profile]
         image_type = "raw image" if pi4 else "ELF"
+        capture_script = Path(args.qemu)
+        if capture_script.suffix == ".py" and capture_script.is_file():
+            launcher = [sys.executable, "-B", str(capture_script.resolve())]
+        else:
+            launcher = [args.qemu]
         if pi4:
-            command = [args.qemu, "-machine", "raspi4b", "-accel", "tcg"]
+            command = [*launcher, "-machine", "raspi4b", "-accel", "tcg"]
         else:
             machine = "virt" if boot else "virt,gic-version=2"
             smp = args.profile in ("smp", "smp-single", "power")
@@ -458,7 +467,7 @@ def main():
                 accelerator = "tcg,thread=single" if args.profile == "smp-single" else "tcg,thread=multi"
                 machine += ",secure=off,virtualization=off"
             command = [
-                args.qemu, "-machine", machine, "-cpu", "cortex-a72", "-smp", "2" if smp else "1",
+                *launcher, "-machine", machine, "-cpu", "cortex-a72", "-smp", "2" if smp else "1",
                 "-accel", accelerator, "-m", "128M", "-nodefaults",
             ]
         command.extend(["-display", "none", "-monitor", "none", "-serial", "stdio", "-kernel", str(kernel)])

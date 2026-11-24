@@ -24,6 +24,9 @@ extension-bench = []
 # Live partition windows take precedence over CBS and older benches.
 partition-bench = []
 cbs-bench = []
+priority-resume-bench = []
+periodic-overrun-bench = []
+cbs-wake-bench = []
 periodic-bench = ["sched-bench"]
 periodic-preempt-bench = ["periodic-bench"]
 # FIFO and RR take precedence when combined with EDF.

@@ -162,6 +162,11 @@ impl<const N: usize> HardCbs<N> {
         self.now
     }
 
+    #[cfg(jnox_bench = "cbs_wake")]
+    pub(crate) fn allocation(&self, id: usize) -> Option<(u32, u64)> {
+        self.servers.get(id).map(|s| (s.remaining, s.deadline))
+    }
+
     /// Wake an idle server. Retain its old allocation when the residual demand
     /// density fits the reservation. Reset both quota and deadline when that
     /// density would exceed Q/P, or when the old deadline has passed. Waking a
