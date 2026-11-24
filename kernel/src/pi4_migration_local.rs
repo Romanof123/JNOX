@@ -81,8 +81,8 @@ pub(super) fn initialize_tls() {
     }
 }
 
-fn checked_tls(a: usize) -> (&'static AtomicU64, u64, u64) {
-    let (tls, expected_token) = activation(a);
+#[inline(always)]
+fn checked_registers(tls: &'static LocalWord, expected_token: u64) -> (u64, u64) {
     let (ptr, token): (u64, u64);
     unsafe {
         asm!("mrs {}, tpidr_el0", "mrs {}, tpidrro_el0",
@@ -91,22 +91,29 @@ fn checked_tls(a: usize) -> (&'static AtomicU64, u64, u64) {
     if ptr != tls as *const LocalWord as u64 || token != expected_token {
         bsp::fail(0x34)
     }
-    (&tls.0, ptr, token)
+    (ptr, token)
+}
+
+fn checked_word(a: usize) -> &'static AtomicU64 {
+    let (tls, expected_token) = activation(a);
+    checked_registers(tls, expected_token);
+    &tls.0
 }
 
 // One executing lease writes the digest. Frame publication orders handoffs.
 pub(super) fn update_digest(a: usize, index: u64, sum: u64) {
-    let (word, _, _) = checked_tls(a);
+    let word = checked_word(a);
     let next = (word.load(Relaxed).rotate_left(7) ^ index).wrapping_add(sum);
     word.store(next, Relaxed);
 }
 
 // Sample the restored task registers on the CPU emitting the sparse row.
 pub(super) fn observe_tls(a: usize) -> (u64, u64, u64) {
-    let (word, ptr, token) = checked_tls(a);
-    (ptr, token, word.load(Relaxed))
+    let (tls, expected_token) = activation(a);
+    let (ptr, token) = checked_registers(tls, expected_token);
+    (ptr, token, tls.0.load(Relaxed))
 }
 
 pub(super) fn digest(a: usize) -> u64 {
-    checked_tls(a).0.load(Relaxed)
+    checked_word(a).load(Relaxed)
 }
