@@ -378,3 +378,9 @@ IPC-010,related-requirement,REQ-019
 IPC-007,related-requirement,REQ-020
 IPC-006,related-requirement,REQ-006
 IPC-001,depends-on-policy,POL-014
+IMP-005,tested-in,EVD-005
+POL-005,has-switch-evidence,EVD-005
+CAP-001,has-partial-evidence,EVD-005
+VER-023,has-partial-evidence,EVD-005
+VER-002,has-partial-evidence,EVD-005
+VER-005,has-partial-evidence,EVD-005

@@ -2,6 +2,8 @@
 
 [한국어](m1-edf.md) · English
 
+[EVD-005 independent execution record](evidence/evd-005.en.md)
+
 `CHG-006` defines the acceptance contract for `IMP-005`. LOW enters the ready queue first, has higher fixed priority and starts running. A timer releases URGENT with an earlier absolute deadline on the same guest monotonic clock. LOW remains runnable. Fixed priority and FIFO would both keep LOW running.
 
 | Requirement / design / verification | Acceptance condition |
