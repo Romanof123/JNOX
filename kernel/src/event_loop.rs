@@ -30,18 +30,32 @@ impl<E, const N: usize> EventLoop<E, N> {
         Ok(())
     }
 
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &E> {
+        let mut index = self.read;
+        (0..self.len).map(move |_| {
+            let value = self.slots[index].as_ref().expect("occupied FIFO slot");
+            index = Self::advance(index);
+            value
+        })
+    }
+
+    pub(crate) fn pop(&mut self) -> Option<E> {
+        if self.len == 0 {
+            return None;
+        }
+        let event = self.slots[self.read].take().expect("occupied FIFO slot");
+        self.read = Self::advance(self.read);
+        self.len -= 1;
+        Some(event)
+    }
+
     /// Release the oldest event's slot before entering the handler. The
     /// callback receives only the enqueue operation for this loop.
     pub(crate) fn dispatch_one(
         &mut self,
         handler: impl FnOnce(E, &mut dyn FnMut(E) -> Result<(), E>),
     ) -> bool {
-        if self.len == 0 {
-            return false;
-        }
-        let event = self.slots[self.read].take().expect("occupied FIFO slot");
-        self.read = Self::advance(self.read);
-        self.len -= 1;
+        let Some(event) = self.pop() else { return false };
         handler(event, &mut |next| self.enqueue(next));
         true
     }

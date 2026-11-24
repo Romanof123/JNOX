@@ -46,7 +46,12 @@ mod cbs_wake;
 #[cfg(jnox_fixed)]
 #[cfg_attr(any(jnox_app = "fixed-ties", jnox_app = "fixed-late"), path = "fixed_edge_apps.rs")]
 #[cfg_attr(any(jnox_app = "coop-events", jnox_app = "coop-single"), path = "coop_app.rs")]
+#[cfg_attr(jnox_app = "coop-bounded", path = "coop_bounded_app.rs")]
 mod fixed_apps;
+#[cfg(jnox_app = "coop-bounded")]
+mod coop_bounded;
+#[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single", jnox_app = "coop-bounded"))]
+mod coop_peers;
 #[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single"))]
 mod coop_service;
 #[cfg(jnox_control)]
@@ -90,7 +95,7 @@ mod eevdf_app;
 mod eevdf_app_tasks;
 #[cfg(any(jnox_eevdf_app, jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
 mod eevdf_policy;
-#[cfg(any(jnox_bench = "coop", jnox_app = "coop-events", jnox_app = "coop-single"))]
+#[cfg(any(jnox_bench = "coop", jnox_app = "coop-events", jnox_app = "coop-single", jnox_app = "coop-bounded"))]
 mod event_loop;
 #[cfg(jnox_bench = "extension")]
 mod extension;
