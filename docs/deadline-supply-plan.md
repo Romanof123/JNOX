@@ -14,3 +14,5 @@ Freeze independent first cold launches in order EDF refused, LLF refused, EDF no
 [Ten pre-change deadline and cooperative build identities](evidence/deadline-cooperative-legacy-loads.en-ko.md).
 
 [Independent first assessment / 독립 최초 결과](evidence/deadline-supply-first.en-ko.md) · [Corrective action / 시정 이슈 #254](https://github.com/Romanof123/JNOX/issues/254).
+
+[EVD-095 English](evidence/evd-095.en.md) · [한국어](evidence/evd-095.md).
