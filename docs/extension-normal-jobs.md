@@ -28,3 +28,5 @@ python3 tools/extension_normal_replay.py "$EXTENSION_CAPTURE_DIR" "$elf"
 Both boots must match the same strict UART transcript. The captured boot additionally retains the kernel schedule journal and a separate worker-written result per epoch. With temperature inputs 18, 23, 21 the consumer must produce 18, 41, 62. The independently reserved voltage accumulator must produce 3300, 6596, 9900. At the last reservation neither delegate has remaining work. No extra delegated slot is released. The interrupt PC is sampled in the service loop after each finite Rust update. Later dispatches of that job must restore that sampled PC and frame. The capture does not count Rust instructions or measure physical hardware.
 
 일반 실행과 캡처 실행 모두 같은 UART 기록과 일치해야 한다. 캡처는 온도 누적합, 독립 전압 누적합, 작업별 프레임과 재개 PC, 각 슬롯의 카운터 및 승인량을 비교한다. 마지막 예약 시 두 위임 작업은 모두 완료 상태다.
+
+[First independent verification and original captures / 최초 독립 검증과 원본](evidence/ordinary-extension-jobs-first.en-ko.md).
