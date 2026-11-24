@@ -63,3 +63,14 @@ PM은 GitHub `team:*` 라벨로 다음 조치를 맡은 역할을 표시하고 �
 
 * **예약 스케줄링.** 상위 출시 이슈에서 일반 예약 작업과 통합 PR로 이어졌다. 최초 QEMU 실행 8건 중 2건이 관측 종료점에 도달했고 6건은 기존 1 ms 한계에서 정지했다. 보관된 후보 `259aaebb`의 호환성 실행은 네 번째 IRQ 뒤 B 재개 전에 멈췄다. 원래 대조군은 IRQ 다섯 번을 완료했고 별도 깨우기 작업은 기준과 일치했다. 후속 이슈에서 진단·독립 재검증을 배정했다. 공통 실패 표지만으로는 원인을 특정할 수 없다. 일반 작업과 호환성 실행의 분모를 따로 유지한다. [상위 #21](https://github.com/Romanof123/JNOX/issues/21) → [작업 #123](https://github.com/Romanof123/JNOX/issues/123) → [통합 #172](https://github.com/Romanof123/JNOX/pull/172) → [발견 사항 #176](https://github.com/Romanof123/JNOX/issues/176) · [보관 커밋 430df8bf](https://github.com/Romanof123/JNOX/commit/430df8bf)
 * **가중 스케줄링과 IPC.** 이전 가중 태스크 이슈는 해당 범위에서 종결했다. EL0 프로세스 두 개를 쓰는 새 이슈는 실서비스·주소 공간 격리·깨우기 한계의 담당과 기획 PR을 연결한다. 독립 실행 결과는 새 이슈에 귀속한다. IPC 기획은 진행할 수 있으며 IPC 계열 구현은 상위 스케줄링 이슈에 완료 판정과 근거가 연결된 뒤 시작한다. [태스크 #55](https://github.com/Romanof123/JNOX/issues/55) → [네이티브 작업 #177](https://github.com/Romanof123/JNOX/issues/177) → [기획 #178](https://github.com/Romanof123/JNOX/pull/178) · [IPC 선행 조건 #24](https://github.com/Romanof123/JNOX/issues/24)
+
+### 열린 이슈 및 PR 목록 (#6, REQ-012, REQ-013)
+
+PM은 PR을 포함한 열린 이슈 전체를 REST API로 수집한다. GitHub CLI가 설치된 POSIX 셸에서 아래 명령으로 마지막 페이지까지 저장한 뒤 오프라인 검사를 실행한다.
+
+```sh
+gh api --paginate --slurp 'repos/Romanof123/JNOX/issues?state=open&per_page=100&sort=created&direction=asc' > open-pages.json &&
+python tools/open_tracking.py open-pages.json
+```
+
+검사기는 페이지별 배열 또는 단일 REST 목록을 받는다. 각 항목의 현재 담당 팀 라벨을 확인하고 PR과 본문에서 서로 참조하는 열린 이슈를 모두 출력한다. 연결된 이슈가 없는 PR은 실패한다. 본문에는 #번호, 소유자/저장소#번호 또는 github.com의 정식 이슈·PR URL을 쓴다. 코드 예시와 HTML 주석은 인계 근거에서 제외한다. 종료 코드 0은 입력 범위 내 충족, 1은 발견 사항, 2는 잘못된 입력을 뜻한다. 저장소와 접근 권한 및 마지막 페이지까지의 수집 여부는 수집자가 확인한다. 수집 중 목록이 변하면 재수집한다. PM은 주 담당 및 추적 의도를 확인하고 승인 결정을 별도로 기록한다.

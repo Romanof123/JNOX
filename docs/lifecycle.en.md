@@ -63,3 +63,14 @@ Classify each verdict by subject and environment (host model, virtual workload, 
 
 * **Reservations.** The release parent led to the ordinary reservation case and integration PR. Two of eight first QEMU runs reached their horizons; six stopped under the original 1 ms guard. The archived compatibility run on candidate `259aaebb` stopped after IRQ four before B resumed. The original control completed five IRQs, and the separate wake workload matched its reference. The follow-up assigns diagnosis and independent re-verification; the shared failure marker leaves the cause open. Keep the ordinary and compatibility denominators separate. [Release #21](https://github.com/Romanof123/JNOX/issues/21) → [case #123](https://github.com/Romanof123/JNOX/issues/123) → [integration #172](https://github.com/Romanof123/JNOX/pull/172) → [finding #176](https://github.com/Romanof123/JNOX/issues/176) · [archive commit 430df8bf](https://github.com/Romanof123/JNOX/commit/430df8bf)
 * **Weighted scheduling and IPC.** The earlier weighted task case closed within its scope. The two-process EL0 case established a new owner and planning PR for measured service, isolated address spaces and wake bounds. Its independent results belong to the new issue. IPC planning can proceed; IPC family implementation starts after the scheduling parent records completion and links the evidence. [Task case #55](https://github.com/Romanof123/JNOX/issues/55) → [native case #177](https://github.com/Romanof123/JNOX/issues/177) → [plan #178](https://github.com/Romanof123/JNOX/pull/178) · [IPC gate #24](https://github.com/Romanof123/JNOX/issues/24)
+
+### Open issue and PR inventory (#6, REQ-012, REQ-013)
+
+The PM will save the unfiltered REST issues list (which includes PRs) and run the offline command below. In a POSIX shell with GitHub CLI, capture all pages in one successful request sequence:
+
+```sh
+gh api --paginate --slurp 'repos/Romanof123/JNOX/issues?state=open&per_page=100&sort=created&direction=asc' > open-pages.json &&
+python tools/open_tracking.py open-pages.json
+```
+
+The checker accepts the saved page arrays or a single REST list. It checks each supplied item's current team label and prints every open issue whose body and PR body reference each other. A PR with no such issue fails. Use plain #number, owner/repo#number or a canonical github.com issue/PR URL in body prose. Code examples and HTML comments do not establish a handoff. Exit 0 means the supplied records satisfy these checks, 1 means findings, and 2 means invalid input. Only the collector can confirm it followed every next-page link and used the intended repository and access permissions. Concurrent changes during pagination may require a new capture. The PM confirms primary ownership and tracking intent and records approvals separately.
