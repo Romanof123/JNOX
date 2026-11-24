@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 
+from permit_cost_retention import fingerprint, publish, request_stop, sync_dir, termination_output
 from permit_cost_guard import ContainmentError, DEVICE, FORMATS, Guard, Lines, REDUCED
 
 QEMU = "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
@@ -55,8 +56,9 @@ def cohort():
 
 
 def mount(root):
-    if sys.platform != "linux" or Path("/tmp") not in root.parents:
-        raise ValueError("use a new capture directory below native Linux /tmp")
+    if (sys.platform != "linux" or Path("/home") not in root.parents
+            or root.parent.stat().st_uid != os.getuid()):
+        raise ValueError("use an owned persistent staging parent below /home")
     kind = subprocess.check_output(["findmnt", "-n", "-o", "FSTYPE", "-T", str(root.parent)], text=True).strip()
     if kind != "ext4":
         raise ValueError("EVD-054 comparison requires native ext4")
@@ -73,11 +75,24 @@ def freeze(args):
     names = [l for l in catalog.read_text().splitlines() if l.startswith("pl061_")]
     if {s.split("(")[0] for s in names} != {"pl061_" + n for n in FORMATS}:
         raise ValueError("installed PL061 event dictionary differs")
+    replica = args.replica.resolve()
+    if (replica == root or root in replica.parents or replica in root.parents
+            or replica.parent.stat().st_dev == root.parent.stat().st_dev
+            or Path("/tmp") in replica.parents or Path("/run") in replica.parents):
+        raise ValueError("select a separate durable mounted destination")
+    replica_kind = subprocess.check_output(["findmnt","-n","-o","FSTYPE","-T",str(replica.parent)],text=True).strip()
+    if replica_kind in ("tmpfs","ramfs","overlay"):
+        raise ValueError("replica must survive host session cleanup")
+    replica.mkdir()
+    sync_dir(replica.parent)
     root.mkdir()
+    sync_dir(root.parent)
     (root / "images").mkdir()
     for key, sha in IMAGES.items():
         target = root / "images" / key
-        shutil.copyfile(args.archive / key / "kernel.elf", target)
+        original = args.archive / key / "kernel.elf"
+        check(original, sha)
+        shutil.copyfile(original, target)
         check(target, sha)
     shutil.copyfile(catalog, root / "trace-events-all")
     if shutil.disk_usage(root).free < len(cohort()) * len(STREAMS) * LIMIT:
@@ -89,16 +104,18 @@ def freeze(args):
         argv = [str(q), *OPTIONS, "-serial", "file:" + str(folder / "uart"), "-d", flags,
                 "-D", str(folder / "mechanism"), "-kernel", str(root / "images" / key)]
         positions.append(dict(name=name, key=key, arm=arm, pair=pair, argv=argv))
-    save(root / "freeze.json", dict(positions=positions, qemu=QEMU, catalog=CATALOG, events=names,
+    save(root / "freeze.json", dict(cohort_version=2, replica=str(replica), positions=positions, qemu=QEMU, catalog=CATALOG, events=names,
          device=DEVICE, images=IMAGES, filesystem=filesystem, affinity=sorted(os.sched_getaffinity(0)),
          timeout_s=10, bytes_per_stream=LIMIT, uname=list(os.uname()), scripts=script_hashes()))
+    inputs = ["freeze.json","trace-events-all"] + ["images/" + k for k in IMAGES]
+    publish(root, replica/"frozen-inputs", inputs, inputs)
     print(digest(root / "freeze.json"))
 
 
 def script_hashes():
     here = Path(__file__).resolve().parent
     return {p: digest(here / p) for p in ("permit_observer_cost.py", "permit_cost_guard.py",
-                                          "permit_phase_observations.py")}
+                                          "permit_phase_observations.py", "permit_cost_retention.py")}
 
 
 def file_limit():
@@ -156,14 +173,17 @@ def run_one(root, pos, interrupted):
             if path.exists() and path.stat().st_size >= LIMIT:
                 raise ValueError("stream capacity reached: " + name)
         return moved
-    def stop():
-        if proc and proc.poll() is None:
-            proc.terminate()
-            try:
-                proc.wait(1)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait()
+    def stop(reason):
+        if proc is None or proc.poll() is not None:
+            return
+        record = request_stop(proc, reason, pos["argv"][0])
+        result["termination"] = record
+        try:
+            proc.wait(1)
+        except subprocess.TimeoutExpired:
+            record["escalated"] = True
+            proc.kill()
+            proc.wait()
     try:
         with (folder/"stdout").open("xb") as out, (folder/"stderr").open("xb") as err:
             proc = subprocess.Popen(pos["argv"], stdin=subprocess.DEVNULL, stdout=out, stderr=err,
@@ -181,13 +201,19 @@ def run_one(root, pos, interrupted):
                     raise TimeoutError("10 s host ceiling")
                 if not moved:
                     time.sleep(0.001)
-            stop()
+            if (folder/"stderr").stat().st_size or (folder/"stdout").stat().st_size:
+                raise ValueError("unexpected emulator output before collector termination")
+            stop("guest-terminal")
             while drain():
                 pass
             for parser in parsers.values():
                 parser.finish()
-            if (folder/"stderr").stat().st_size:
-                raise ValueError("unexpected emulator stderr")
+            if interrupted:
+                raise InterruptedError(str(interrupted[0]))
+            result["termination_output"] = termination_output(
+                (folder/"stdout").read_bytes(), (folder/"stderr").read_bytes(),
+                result.get("termination"), proc.returncode)
+
             result["observation"] = guard.join(folder/"uart", pos["key"])
             verify_executable_pcs(root/"images"/pos["key"], guard)
             result["disposition"] = "observed-off-only"
@@ -196,7 +222,15 @@ def run_one(root, pos, interrupted):
                       alarm_ns=time.monotonic_ns(),
                       disposition="containment" if isinstance(error, ContainmentError) else "incomplete")
     finally:
-        stop()
+        try:
+            stop(result.get("first_failure", "cleanup"))
+        except (OSError, ValueError) as err:
+            result["cleanup_error"] = str(err)
+            result.setdefault("first_failure", str(err))
+            result["disposition"] = "incomplete"
+            if proc and proc.poll() is None:
+                proc.kill()
+                proc.wait()
         result.update(stop_ns=time.monotonic_ns(), host_status=proc.returncode if proc else None,
                       consumed=offsets, files={p.name:dict(bytes=p.stat().st_size, sha256=digest(p))
                                               for p in folder.iterdir() if p.is_file()})
@@ -229,6 +263,14 @@ def collect(args):
     if data["scripts"] != script_hashes() or data["affinity"] != sorted(os.sched_getaffinity(0)):
         raise ValueError("monitor code or host CPU affinity changed")
     check(root/"trace-events-all", CATALOG)
+    replica = Path(data["replica"])
+    if data.get("cohort_version") != 2 or replica.stat().st_dev == root.stat().st_dev:
+        raise ValueError("wrong cohort version or replica mount")
+    frozen = replica/"frozen-inputs"
+    inputs = ["freeze.json","trace-events-all"] + ["images/" + k for k in IMAGES]
+    copied = json.loads((frozen/"retained-manifest.json").read_bytes())
+    if set(copied) != set(inputs) or any(fingerprint(frozen/n) != copied[n] or fingerprint(root/n) != copied[n] for n in inputs):
+        raise ValueError("frozen inputs no longer recoverable")
     expected = cohort()
     if [(p["name"],p["key"],p["arm"],p["pair"]) for p in data["positions"]] != expected:
         raise ValueError("unexpected cohort")
@@ -237,6 +279,7 @@ def collect(args):
         signal.signal(sig, lambda num, frame: interrupted.append(num))
     (root/"started").touch(exist_ok=False)
     results = []
+    receipts = []
     for p in data["positions"]:
         q = Path(p["argv"][0])
         check(q, QEMU)
@@ -252,11 +295,27 @@ def collect(args):
             raise ValueError("insufficient reserved position headroom")
         r = run_one(root,p,interrupted)
         results.append(r)
-        if r["disposition"] != "observed-off-only":
+        names = [path.name for path in folder.iterdir() if path.is_file()]
+        receipt = dict(position=p["name"], local=str(folder), replica=str(replica/p["name"]),
+                       present=names, missing=[n for n in STREAMS if n not in names],
+                       transfer_start_ns=time.monotonic_ns(), replica_verified=False)
+        try:
+            receipt["files"] = publish(folder, replica/p["name"], names, ["result.json"])
+            receipt["replica_verified"] = True
+        except (OSError, ValueError) as err:
+            receipt["retention_error"] = str(err)
+        receipt["transfer_end_ns"] = time.monotonic_ns()
+        receipts.append(receipt)
+        save(root/(p["name"] + "-retention.json"), receipt)
+        fingerprint(root/(p["name"] + "-retention.json"))
+        sync_dir(root)
+        if not receipt["replica_verified"] or r["disposition"] != "observed-off-only":
             break
-    save(root/"cohort.json", dict(intended=16, observed=results,
+    save(root/"cohort.json", dict(version=2, intended=16, observed=results, recoverability=receipts,
          pairs=paired_deltas(data["positions"], results), unlaunched=[p["name"] for p in data["positions"][len(results):]], operational_credit=False))
-    return 0 if len(results)==16 and all(r["disposition"]=="observed-off-only" for r in results) else 1
+    final = ["cohort.json"] + [r["position"]+"-retention.json" for r in receipts]
+    publish(root, replica/"cohort-close", final, final)
+    return 0 if all(r["replica_verified"] for r in receipts) and len(results)==16 and all(r["disposition"]=="observed-off-only" for r in results) else 1
 
 
 if __name__ == "__main__":
@@ -265,6 +324,7 @@ if __name__ == "__main__":
     f = sub.add_parser("freeze")
     f.add_argument("archive", type=Path, help="EVD-054 extracted build directory")
     f.add_argument("root", type=Path)
+    f.add_argument("replica", type=Path, help="new session on a separate persistent filesystem")
     f.add_argument("--qemu", type=Path, default=Path("/usr/bin/qemu-system-aarch64"))
     f.add_argument("--catalog", type=Path, default=Path("/usr/share/qemu/trace-events-all"))
     r = sub.add_parser("collect")

@@ -39,8 +39,9 @@ Extract the four original `{rm,dm}-off-{1,2}/kernel.elf` members of the EVD-054 
 
 ~~~sh
 python3 tools/permit_cost_guard_vectors.py
-python3 tools/permit_observer_cost.py freeze /path/to/extracted /tmp/permit061-first
-python3 tools/permit_observer_cost.py collect /tmp/permit061-first FROZEN_SHA256
+python3 tools/permit_cost_retention_vectors.py
+python3 tools/permit_observer_cost.py freeze /path/to/extracted /home/USER/studies/permit061-v2 /mnt/PERSISTENT/studies/permit061-v2
+python3 tools/permit_observer_cost.py collect /home/USER/studies/permit061-v2 FROZEN_SHA256
 ~~~
 
 Replace the final placeholder with the actual hexadecimal digest. Each frozen case reuses verified image bytes and captures the original mechanism and UART files, including unread bytes after termination. A signaling interruption, timeout, coverage failure, malformed/oversized record or containment alarm stops the cohort; retain remaining positions as unlaunched. External ON immediately terminates the emulator upon live host detection; native logging and host polling have unbounded real-time latency. It cannot establish a guest tick for that edge. An OFF-only result is evidence for the captured interval under this model. Use per-position first service/phase/IRQ and pairwise R−F deltas; missing intervals are null. There is no positive operational credit. The approved source trace is CHG-061 → REQ-002/003/005/023 → DES-003/006/012 → VER-002/003/005/023. The observation configuration and synthetic controls await independent execution and review; no new evidence ID is assigned.
@@ -62,3 +63,7 @@ Use user-owned persistent native Linux ext4 staging (/home) and a separately mou
 최초 집단은 RM A1/F 한 건만 게스트 종료 표식을 관측했다. 수집기가 직접 보낸 SIGTERM의 보고된 응답을 예기치 않은 stderr로 처리해 결합 판정 전 실패했다. 1/16 실행, 15건 미실행, 완성 쌍 0이다. /tmp 삭제 전에 원본 복제를 완료하지 못했다. [공개된 부분 기록](evidence/permit-observer-first-partial.md)에는 해시가 일치하는 69바이트 stderr와 마지막 LF가 보존됐다. 매니페스트에 남은 다른 조각도 구별하며 재실행으로 누락 바이트를 복구할 수 없다. 잔존 부분 기록을 그대로 보존한다.
 
 v2는 별도 16자리다. 호스트 종료·복제·매니페스트 대조를 독립 통과한 뒤에만 실행한다. 정상 종료 표식 후 실제 수집기 PID/이름이 올바른 자식에게 SIGTERM을 보냈고, 완전한 확인 한 줄·빈 stdout·정상 종료·배출과 원래 결합 검증을 만족해야 한다. 임의 종료·신호·시간초과·차단 경보·추가/잘린 출력은 실패다. /home의 지속성 ext4 원본과 별도 지속성 마운트 복제본을 사용한다. 매 실행 종료 후 원시 부분 바이트·메타데이터·파일별 해시를 복제하고 검증 및 영구 저장 확인 뒤 다음 자리를 허용한다. 복제 경과는 게스트 계측 밖에 기록한다. 복제 실패 시 중단하고 양쪽 회수 가능 상태를 명시한다.
+
+For v2 replace USER and PERSISTENT with an owned ext4 staging parent and an operator-verified, separately mounted persistent destination supporting fsync and atomic directory rename. Precreate the parent directories only. Preserve any authenticated v1 partial archive independently of the new paths. The collector validates extracted ELF digests, publishes frozen inputs before launch and fails closed on a missing artifact, bad digest, changed manifest or failed destination verification. Transfer may affect subsequent host caches even though it occurs after guest stop.
+
+v2 실행 시 USER·PERSISTENT를 실제 소유자 및 지속성 마운트로 바꾸고 상위 디렉터리만 준비한다. 디렉터리 fsync·원자적 이름 변경을 지원해야 한다. 복제는 게스트 정지 이후이며 다음 호스트 캐시에 미칠 영향도 남는다. 인증된 v1 부분 기록은 새 경로와 독립 보존한다.
