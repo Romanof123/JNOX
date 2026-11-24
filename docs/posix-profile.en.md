@@ -21,6 +21,8 @@ For resource tests pin the manifest limits for processes, threads, descriptors, 
 
 ## Application acceptance and scope
 
+[First EL0 C startup and exit case](native-el0-startup.en.md)
+
 - **Native C · VER-020.** Build external static `cat` and `wc` with the SDK. In the target shell run `cat sample.txt | wc -l` for bytes `61 0a 62 0a`. Require count 2, empty stderr, EOF and status 0 for each child. Missing input must produce a producer diagnostic and nonzero status while the consumer still receives EOF and exits.
 - **Native Rust · VER-022.** A separate Cargo project builds a static `core` application. Use the public safe SDK to copy the named file to stdout and return status 0. Verify byte equality, empty stderr, and denial with nonzero status and no contents disclosed for a forbidden file. Publish `alloc` and `std` status separately.
 - **Prebuilt Linux ELF · VER-021.** Use the verification plan's pinned Debian arm64 static BusyBox unchanged, with the Linux guest disabled. Compare `wc -l sample.txt` output, stderr and status against reference Linux for success and access denial. Exercise raw Linux `-ENOSYS` and reject an incompatible ISA or interpreter before entry. [Exact fixtures, digests and comparison rules](verification-plan.en.md)

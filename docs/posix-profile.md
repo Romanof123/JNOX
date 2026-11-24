@@ -21,6 +21,8 @@
 
 ## 애플리케이션 인수와 적용 범위
 
+[최초 EL0 C 진입·종료 사례](native-el0-startup.md)
+
 - **네이티브 C · VER-020.** 외부 정적 프로그램 `cat`, `wc`를 SDK로 각각 빌드한다. 타깃 셸에서 `61 0a 62 0a` 바이트에 `cat sample.txt | wc -l`을 실행해 줄 수 2, 빈 stderr, EOF, 자식 각각의 종료 상태 0을 확인한다. 파일이 없으면 생산자는 진단과 0이 아닌 상태를 내고 소비자는 EOF를 받아 종료해야 한다.
 - **네이티브 Rust · VER-022.** 별도 Cargo 프로젝트에서 `core` 기반 정적 앱을 빌드한다. 공개 안전 SDK로 인자에 지정한 파일을 stdout에 복사해 상태 0으로 종료한다. 바이트 일치, 빈 stderr와 함께 비인가 파일의 거부, 0이 아닌 상태, 내용 미노출을 확인한다. `alloc`과 `std`는 별도 지원 상태를 공개한다.
 - **기존 Linux ELF · VER-021.** 검증 계획에 고정한 Debian arm64 정적 BusyBox를 변경 없이 쓰며 Linux 게스트를 끈다. 정상 파일과 접근 거부 파일로 `wc -l sample.txt`의 출력·stderr·상태를 기준 Linux와 비교한다. 원시 Linux `-ENOSYS`와 잘못된 ISA 또는 인터프리터의 진입 전 거부도 시험한다. [정확한 표본·해시·판정 규칙](verification-plan.md)
