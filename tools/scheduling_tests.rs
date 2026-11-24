@@ -641,3 +641,25 @@ fn late_batch_release_charges_incumbent_and_preserves_contractual_wait() {
     batch.complete(20, 0).unwrap();
     assert_eq!(batch.decide(20), Ok(Some(2)));
 }
+
+#[path = "../kernel/src/ordinary_mutex_manifest.rs"]
+mod ordinary_mutex_manifest;
+
+#[test]
+fn ordinary_mutex_manifests_transfer_the_protected_resource_and_restore_priority() {
+    use mutex_policy::Acquire::{Blocked,Held};
+    for ceiling in [false,true] {
+        let mut locks=ordinary_mutex_manifest::locks(ceiling).unwrap();
+        assert_eq!(locks.acquire(0,0),Some(Held));
+        let resource=usize::from(ceiling);
+        if ceiling { assert_eq!(locks.effective(0),Some(5)); assert_eq!(locks.acquire(0,1),Some(Held)); }
+        assert_eq!(locks.effective(0),Some(if ceiling {9}else{2}));
+        assert_eq!(locks.acquire(2,resource),Some(Blocked));
+        assert_eq!(locks.effective(0),Some(9));
+        assert_eq!(locks.release(0,resource),Some(Some(2)));
+        assert_eq!(locks.owner(resource),Some(2));
+        assert_eq!(locks.effective(0),Some(if ceiling {5}else{2}));
+        if ceiling {assert_eq!(locks.release(0,0),Some(None));}
+        assert_eq!(locks.effective(0),Some(2));
+    }
+}

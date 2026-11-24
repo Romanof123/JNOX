@@ -201,7 +201,19 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
     match profile.as_deref() {
+        Some("mutex") => {
+            assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),
+                "ordinary mutex requires virt, no benchmark, trace or control case");
+            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling")),
+                "ordinary mutex requires ordinary-pi or ordinary-ceiling");
+            println!("cargo::rustc-cfg=jnox_ordinary_mutex");
+            if app.as_deref() == Some("ordinary-ceiling") {
+                println!("cargo::rustc-cfg=jnox_mutex_ceiling");
+            }
+        }
         Some("proportional") => {
             assert!(scenario.is_none(), "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional");
             assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");
