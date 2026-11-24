@@ -185,3 +185,5 @@ POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQ
 CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
 
 CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
+
+[DES-004 kernel architecture selection](../arch/README.md)

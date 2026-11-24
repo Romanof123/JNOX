@@ -10,6 +10,7 @@ fn selector(key: &str) -> Option<String> {
 }
 
 fn main() {
+    validate_architecture();
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
     println!("cargo::rustc-check-cfg=cfg(jnox_batch_trace)");
@@ -329,4 +330,16 @@ fn main() {
         "cargo::rustc-link-arg=-T{}/{script}",
         env!("CARGO_MANIFEST_DIR")
     );
+}
+
+fn validate_architecture() {
+    const TARGET: &str = include_str!("../arch/aarch64/target");
+    if let Some(arch) = selector("JNOX_ARCH") {
+        assert!(arch == "aarch64", "unsupported JNOX_ARCH {arch:?}; expected aarch64");
+    }
+    // Cargo always supplies TARGET. Standalone selector checks can omit it.
+    if let Some(target) = selector("TARGET") {
+        let expected = TARGET.trim_end();
+        assert!(target == expected, "aarch64 requires TARGET={expected}, got {target:?}");
+    }
 }
