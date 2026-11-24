@@ -803,3 +803,17 @@ VER-023,has-partial-evidence,EVD-032
 CAP-001,has-partial-evidence,EVD-032
 CHG-039,affects,POL-003
 POL-003,partially-implemented-by,IMP-037
+CHG-039,affects,REQ-002
+CHG-039,affects,REQ-005
+CHG-039,affects,REQ-023
+DES-003,implemented-by,IMP-037
+DES-012,implemented-by,IMP-037
+IMP-037,partially-verified-by,VER-002
+IMP-037,partially-verified-by,VER-005
+IMP-037,partially-verified-by,VER-023
+IMP-037,tested-in,EVD-037
+POL-003,has-switch-evidence,EVD-037
+VER-002,has-partial-evidence,EVD-037
+VER-005,has-partial-evidence,EVD-037
+VER-023,has-partial-evidence,EVD-037
+CAP-001,has-partial-evidence,EVD-037

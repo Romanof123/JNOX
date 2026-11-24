@@ -81,4 +81,6 @@ CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry 
 
 ## CHG-039 ordinary batch release gate
 
-Planned EVD-037 must identify the source and exact selector, record raw task-side output from all three linked images, and check the interrupted caller resumes with its local result intact. Compare equal arrivals, estimate rejection, capacity, stale handles, overflow and underestimated service against independent host expectations. Preserve previous selectors and report physical timing and product capacity separately.
+The acceptance contract requires the evidence to identify the source and exact selector, record raw task-side output from all three linked images, and check the interrupted caller resumes with its local result intact. Compare equal arrivals, estimate rejection, capacity, stale handles, overflow and underestimated service against independent host expectations. Preserve previous selectors and report physical timing and product capacity separately.
+
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
