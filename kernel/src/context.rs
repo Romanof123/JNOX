@@ -41,12 +41,13 @@ unsafe extern "C" {
 }
 
 pub(super) fn gic_read(address: usize) -> u32 {
-    // SAFETY: Callers use aligned readable GICv2 MMIO registers with MMU off.
+    // SAFETY: Callers use aligned readable GICv2 MMIO via the physical or
+    // identity-mapped Device address for this board.
     unsafe { ptr::read_volatile(address as *const u32) }
 }
 
 pub(super) fn gic_write(address: usize, value: u32) {
-    // SAFETY: Callers use aligned writable GICv2 MMIO registers, single CPU.
+    // SAFETY: The boot CPU owns setup and the enabled timer interrupt here.
     unsafe { ptr::write_volatile(address as *mut u32, value) }
 }
 

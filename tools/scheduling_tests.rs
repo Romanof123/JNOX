@@ -2,6 +2,10 @@
 
 #[path = "../kernel/src/ready_queue.rs"]
 mod ready_queue;
+#[path = "../kernel/src/smp_policy.rs"]
+mod smp_policy;
+#[path = "smp_tests.rs"]
+mod smp_tests;
 
 // Import each backend and register its guest check as a separate host test.
 macro_rules! policy_tests {

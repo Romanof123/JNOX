@@ -19,6 +19,12 @@ impl<const N: usize> AffinityDomain<N> {
         Some(Self { allowed })
     }
 
+    #[cfg(any(test, jnox_bench = "smp"))]
+    pub(crate) fn allows(&self, cpu: u8, task: u8) -> bool {
+        cpu < MAX_CPUS as u8
+            && self.allowed.get(usize::from(task)).is_some_and(|mask| mask & (1 << cpu) != 0)
+    }
+
     /// Maps online CPUs to distinct ready tasks for one simultaneous slot.
     /// Within that slot the augmenting paths maximize occupancy, preserving
     /// the inclusion of earlier-ranked tasks at the expense of later ones.

@@ -108,3 +108,5 @@ An aperiodic grant reserves a slot. Only a matching completion retires request w
 The kernel owns endpoint authority, wait and wake transitions, and bounded cross-domain transfer. User services own socket transports, publish/subscribe delivery and protocol-specific queues. The safety receiver checks protected data and controls expiry under DES-010. Each profile binds pool sizes, resource accounting, timeouts and restart generations before implementation. [IPC design and acceptance](ipc-mechanisms.en.md)
 
 [Requirements](requirements.en.md) · [Verification plan](verification-plan.en.md) · [Development lifecycle](lifecycle.en.md)
+
+The two-CPU QEMU configuration exercises fixed homes, global migration and singleton cluster enforcement. [Two-CPU scheduling](m3-smp.en.md)

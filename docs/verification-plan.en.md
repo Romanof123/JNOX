@@ -48,3 +48,5 @@ Record the verification level as document or design review, host unit testing, Q
 Each verification result records its `EVD` ID, baseline, `VER` and `REQ` IDs, who performed the test and when, source commit and image SHA-256, board, firmware, instrument and tool versions, procedure, inputs, expected results, raw log paths, verdict, and exceptions. Track the status as `Planned`, `Passed`, `Failed`, `Blocked`, or `Reverification required`. This document specifies planned tests. Product evidence receives an `EVD` record through the approved verification procedure.
 
 [Requirements](requirements.en.md) · [Safety and security concept](safety-security-concept.en.md) · [Trace links](../trace/links.csv)
+
+The two-CPU QEMU configuration exercises fixed homes, global migration and singleton cluster enforcement. [Two-CPU scheduling](m3-smp.en.md)

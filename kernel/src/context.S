@@ -84,6 +84,17 @@ sched_vectors:
     stp x9, x10, [sp, #{tpidr_el0}]
     str xzr, [sp, #({simd} - 8)]
     mov x0, sp
+    .ifdef JNOX_SMP
+    // Rust must leave the outgoing task's stack before publishing its frame.
+    mrs x9, mpidr_el1
+    and x9, x9, #0xff
+    cmp x9, #1
+    b.hi .Lunexpected
+    adrp x10, smp_handler_tops
+    add x10, x10, :lo12:smp_handler_tops
+    ldr x10, [x10, x9, lsl #3]
+    mov sp, x10
+    .endif
     bl \callback
     b sched_start_frame
 .endm

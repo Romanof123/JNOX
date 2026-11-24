@@ -11,6 +11,7 @@ coop-bench = ["sched-bench"]
 batch-bench = []
 deadline-bench = []
 aperiodic-bench = []
+smp-bench = []
 # Live partition windows take precedence over CBS and older benches.
 partition-bench = []
 cbs-bench = []

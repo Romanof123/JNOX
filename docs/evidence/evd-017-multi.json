@@ -1,0 +1,287 @@
+{
+  "start": "2026-11-24T06:24:37.622211+00:00",
+  "end": "2026-11-24T06:24:38.199946+00:00",
+  "command": [
+    "python3",
+    "tools/qemu_boot.py",
+    "--profile",
+    "smp",
+    "--runs",
+    "1",
+    "--qemu",
+    "/tmp/jnox-final-independent-wrapper",
+    "--kernel",
+    "/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel"
+  ],
+  "exit": 0,
+  "stdout": "Run 1/1  ELF SHA-256 = 921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51\n  argv = [\"/tmp/jnox-final-independent-wrapper\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 489\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 489 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "stderr": "",
+  "verdict": "PASS",
+  "commit": "76f48d59bd3997c213e6dd63909fe41044ff0afd",
+  "tree": "a32a417443dc1bb8612716117d65c54d507626ca",
+  "raw_base64": {
+    "audit.bin": "AQAAAAAAAAADAAAAAAAAAAsAAAAAAAAAAAAAgAAAAAABAACAAAAAAAEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAABBMgQAAAAAAEEyBAAAAAAABBIkAAAAAAAEEiQAAAAAAQUQAAAAAAANohBgAQUQAA2yEGABBRAAAQUQAAAAAAABBRAAAAAAAAEFEAAAAAAADIvwQAAAAAACxYAgAAAAAAz8QEAAAAAABQLwgAAAAAALBKBAAAAAAAZasCAAAAAAD7rwYAAAAAANP0AQAAAAAA0HMCAAAAAAABAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAFjZAwAAAAAAIJkIAAAAAADIvwQAAAAAAAAAAIAAAAAAAAAAAAAAAAACAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAAJ1wMAAAAAANibCAAAAAAAz8QEAAAAAAABAACAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAc/cIAAAAAACfTwsAAAAAACxYAgAAAAAAAAAAgAAAAAABAAAAAAAAAAIAAAAAAAAAAQAAAAAAAAABAAAAAAAAAG5uDAAAAAAA0xkPAAAAAABlqwIAAAAAAAEAAIAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAlbwwAAAAAACYeEgAAAAAAAa8FAAAAAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAMAAAAAAAAAraESAAAAAAD8IRUAAAAAAE+AAgAAAAAAAQAAgAAAAAABAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAOWiEgAAAAAAle0WAAAAAACwSgQAAAAAAAAAAIAAAAAAAgAAAAAAAAACAAAAAAAAAAEAAAAAAAAAAQAAAAAAAACPQxcAAAAAAF+3GQAAAAAA0HMCAAAAAAABAACAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAA60MXAAAAAABbVxsAAAAAAHATBAAAAAAAAAAAgAAAAAACAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAADAAAAAAAAAOJ+GwAAAAAAtXMdAAAAAADT9AEAAAAAAAAAAIAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAB9wh0AAAAAAAhfIAAAAAAAi5wCAAAAAAAAAACAAAAAAKCsuQMAAAAAJh4SAAAAAACQGhMAAAAAAA==",
+    "exit.json": "eyJxZW11X3N0YXR1cyI6IDB9",
+    "int.trace": "VGFraW5nIGV4Y2VwdGlvbiAxMSBbSHlwZXJ2aXNvciBDYWxsXQouLi5mcm9tIEVMMSB0byBFTDIKLi4ud2l0aCBFU1IgMHgxNi8weDVhMDAwMDAwCi4uLmhhbmRsZWQgYXMgUFNDSSBjYWxsCkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjCkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1ClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjCkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1ClRha2luZyBleGNlcHRpb24gNSBbSVJRXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzMDQKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMzA0CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1ClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjCkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1ClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEyYzAKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMmMwClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODQKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1Cg==",
+    "launch.json": "eyJhcmd2IjogWyIvdXNyL2Jpbi9xZW11LXN5c3RlbS1hYXJjaDY0IiwgIi1xbXAiLCAidW5peDovdG1wL3RtcHJzNW5xX2c1L3FtcCxzZXJ2ZXI9b24sd2FpdD1vZmYiLCAiLWQiLCAiaW50IiwgIi1EIiwgIi9tbnQvZC9jb2RleC8uam5veC13b3JrL3NtcC1lNGJjZDBhZWFlL3YyLW11bHRpLXJhdy9pbnQudHJhY2UiLCAiLW1hY2hpbmUiLCAidmlydCxnaWMtdmVyc2lvbj0yLHNlY3VyZT1vZmYsdmlydHVhbGl6YXRpb249b2ZmIiwgIi1jcHUiLCAiY29ydGV4LWE3MiIsICItc21wIiwgIjIiLCAiLWFjY2VsIiwgInRjZyx0aHJlYWQ9bXVsdGkiLCAiLW0iLCAiMTI4TSIsICItbm9kZWZhdWx0cyIsICItZGlzcGxheSIsICJub25lIiwgIi1tb25pdG9yIiwgIm5vbmUiLCAiLXNlcmlhbCIsICJzdGRpbyIsICIta2VybmVsIiwgIi9tbnQvZC9jb2RleC8uam5veC13b3JrL3NtcC1lNGJjZDBhZWFlL3RhcmdldDIvYWFyY2g2NC11bmtub3duLW5vbmUvcmVsZWFzZS9qbm94LWtlcm5lbCJdLCAicGlkIjogNDkxLCAiYXVkaXRfYWRkcmVzcyI6IDEwNzYwNjg2MjQsICJhdWRpdF9zaXplIjogMTEyMH0=",
+    "qmp.json": "eyJzdGF0dXMiOiB7InN0YXR1cyI6ICJydW5uaW5nIiwgInNpbmdsZXN0ZXAiOiBmYWxzZSwgInJ1bm5pbmciOiB0cnVlfSwgImNwdXMiOiBbeyJ0aHJlYWQtaWQiOiA0OTUsICJwcm9wcyI6IHsidGhyZWFkLWlkIjogMH0sICJxb20tcGF0aCI6ICIvbWFjaGluZS91bmF0dGFjaGVkL2RldmljZVswXSIsICJjcHUtaW5kZXgiOiAwLCAidGFyZ2V0IjogImFhcmNoNjQifSwgeyJ0aHJlYWQtaWQiOiA0OTYsICJwcm9wcyI6IHsidGhyZWFkLWlkIjogMX0sICJxb20tcGF0aCI6ICIvbWFjaGluZS91bmF0dGFjaGVkL2RldmljZVsxXSIsICJjcHUtaW5kZXgiOiAxLCAidGFyZ2V0IjogImFhcmNoNjQifV19",
+    "uart.bin": "Sk5PWCBNMSBCT09UCkpOT1ggTTEgUkVBRFkKU01QIEJPVEggT05MSU5FClNNUCBQQVJUSVRJT04gUEFTUwpTTVAgR0xPQkFMIENPTlRFTkRFRApTTVAgR0xPQkFMIElSUQpTTVAgR0xPQkFMIE1JR1JBVEVEClNNUCBDTFVTVEVSIFJFSkVDVEVEClNNUCBDTFVTVEVSIFBBU1MKU01QIFBBU1MK"
+  },
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nSMP BOTH ONLINE\nSMP PARTITION PASS\nSMP GLOBAL CONTENDED\nSMP GLOBAL IRQ\nSMP GLOBAL MIGRATED\nSMP CLUSTER REJECTED\nSMP CLUSTER PASS\nSMP PASS\n",
+  "qmp": {
+    "status": {
+      "status": "running",
+      "singlestep": false,
+      "running": true
+    },
+    "cpus": [
+      {
+        "thread-id": 495,
+        "props": {
+          "thread-id": 0
+        },
+        "qom-path": "/machine/unattached/device[0]",
+        "cpu-index": 0,
+        "target": "aarch64"
+      },
+      {
+        "thread-id": 496,
+        "props": {
+          "thread-id": 1
+        },
+        "qom-path": "/machine/unattached/device[1]",
+        "cpu-index": 1,
+        "target": "aarch64"
+      }
+    ]
+  },
+  "exceptions": [
+    "Hypervisor Call",
+    "SVC",
+    "SVC",
+    "SVC",
+    "SVC",
+    "IRQ",
+    "SVC",
+    "SVC",
+    "SVC",
+    "SVC",
+    "SVC",
+    "SVC"
+  ],
+  "exception_trace": "Taking exception 11 [Hypervisor Call]\n...from EL1 to EL2\n...with ESR 0x16/0x5a000000\n...handled as PSCI call\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201304\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201304\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x402012c0\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020128c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012c0\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201384\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\n",
+  "irq_and_return_pc": "0x40201304",
+  "rejected_claims": [
+    [
+      1,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    [
+      2,
+      1,
+      0,
+      1,
+      0,
+      1,
+      1
+    ]
+  ],
+  "migration": {
+    "source": 0,
+    "destination": 1,
+    "saved_pc": 1075843844,
+    "selected_pc": 1075843844,
+    "expected_sp": 1075986688,
+    "live_sp": 1075986688,
+    "witness": 20752,
+    "saved_progress": 89129161728474,
+    "live_progress": 89129161728475,
+    "saved_tls": 20752,
+    "saved_v31_low": 20752,
+    "saved_v31_high": 20752
+  },
+  "rows": {
+    "fields": [
+      "epoch",
+      "task",
+      "cpu",
+      "lease",
+      "start",
+      "end",
+      "duration",
+      "raw_affinity"
+    ],
+    "values": [
+      [
+        0,
+        0,
+        0,
+        2,
+        252248,
+        563488,
+        311240,
+        2147483648
+      ],
+      [
+        0,
+        2,
+        1,
+        1,
+        251657,
+        564184,
+        312527,
+        2147483649
+      ],
+      [
+        0,
+        1,
+        0,
+        3,
+        587635,
+        741279,
+        153644,
+        2147483648
+      ],
+      [
+        1,
+        2,
+        1,
+        1,
+        814702,
+        989651,
+        174949,
+        2147483649
+      ],
+      [
+        1,
+        0,
+        0,
+        2,
+        814885,
+        1187366,
+        372481,
+        2147483648
+      ],
+      [
+        1,
+        0,
+        1,
+        3,
+        1221037,
+        1384956,
+        163919,
+        2147483649
+      ],
+      [
+        1,
+        1,
+        0,
+        4,
+        1221349,
+        1502613,
+        281264,
+        2147483648
+      ],
+      [
+        2,
+        2,
+        1,
+        1,
+        1524623,
+        1685343,
+        160720,
+        2147483649
+      ],
+      [
+        2,
+        0,
+        0,
+        2,
+        1524715,
+        1791835,
+        267120,
+        2147483648
+      ],
+      [
+        2,
+        1,
+        0,
+        3,
+        1801954,
+        1930165,
+        128211,
+        2147483648
+      ],
+      [
+        2,
+        0,
+        0,
+        4,
+        1950333,
+        2121480,
+        171147,
+        2147483648
+      ]
+    ]
+  },
+  "service": [
+    311240,
+    153644,
+    312527,
+    536400,
+    281264,
+    174949,
+    438267,
+    128211,
+    160720
+  ],
+  "cpu_masks": [
+    1,
+    1,
+    2,
+    3,
+    1,
+    2,
+    1,
+    1,
+    2
+  ],
+  "overlap_epoch_task_task_ticks": [
+    [
+      0,
+      0,
+      2,
+      311240
+    ],
+    [
+      1,
+      2,
+      0,
+      174766
+    ],
+    [
+      1,
+      0,
+      1,
+      163607
+    ],
+    [
+      2,
+      2,
+      0,
+      160628
+    ]
+  ],
+  "counter_hz": 62500000,
+  "irq_entry": 1187366,
+  "destination_claim": 1221037,
+  "destination_callback": 1251984,
+  "irq_to_claim_us": 538.736,
+  "irq_to_callback_us": 1033.888,
+  "verification": "11 distinct epoch/lease pairs, positive exact deltas, no simultaneous ownership of one task or CPU, per-task totals and masks reconstructed. IRQ ELR equals selected ELR and QEMU exception return. Guest journal associates source and destination CPUs; QEMU int trace has no CPU labels."
+}
