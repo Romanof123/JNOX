@@ -128,3 +128,5 @@ The three single-CPU profiles below exercise queue order, periodic job generatio
 ## Linked Rust task configuration
 
 CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at build time. The same kernel interface accepts FIFO and RR applications with different priorities and initial releases. EVD-030 calls for the first guest captures, task exception and stack checks, and terminal idle for each application configuration. [Fixed-priority runtime](fixed-runtime.en.md)
+
+The opt-in POL-012 workload repeatedly blocks and wakes a linked worker through SVC and timer IRQ scheduling on one EEVDF instance. [Repeated-wake design](m4-eevdf-wake-design.md)
