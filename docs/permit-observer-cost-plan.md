@@ -30,3 +30,56 @@ The frozen installed /usr/share/qemu/trace-events-all declares those six names p
 - 양쪽 모두 부팅 전부터 같은 실시간 증분 감시를 사용해 분할된 줄을 조립한다. bit0을 대상으로 한 마스킹 데이터 별칭에 ON 쓰기, 실제 “setting output 0 to 1”, 출력이 활성인 high 갱신, F의 high 읽기, 게스트 차단 경보 중 하나라도 관측하면 즉시 QEMU를 멈추고 나머지 실행을 중단한다. 첫 원본 줄·장치·시각과 사용 가능한 게스트 독립 OFF 처리 구간을 남긴다. 종료한 에뮬레이터의 사후 읽기를 추정하지 않는다. 부팅/마지막 OFF만으로 중간 ON을 지우지 않는다. 감시 손실·리셋/방향 누락·장치 귀속 불명은 미입증이다. ON 실제 주입 없이 합성/보관 스트림으로 분할 줄·별칭 ON·단순 방향 쓰기·리셋/순서·ERET/종료 누락과 R 읽기 생략을 대조한다.
 - 실제 예외 순서·ELF PC·작업·프레임을 게스트 기록에 연결하고 IRQ 지연은 위상 인덱스 대신 이전 행 2 절대 비교와 행 3 진입을 쓴다. 게스트 쓰기 순번·전후 readback·시작/끝·가상 행 84를 장치 쓰기/단자 사건과 대조한다. QEMU 로그에는 게스트 카운터 시각이 없으므로 실제 전이 틱·전기적 연속 OFF·교차 스트림 지연은 미입증이다. R은 외부 읽기 값을 검증할 수 없다.
 - 첫 비교→IRQ→선택/복귀→판정→과금 및 첫 차단, 이후 도달한 단계와 미실행 기회를 따로 기록한다. 발행·수면·깨움·전달·명령을 실제로 관측한 경우만 짝별 R−F 차이를 산출한다. 제어 250 µs·송신 750 µs, 0.5/1/5/10 ms 및 진단 가드 250/25/50/15/50/25 µs를 유지한다. 62.5 MHz에서 625000/937500틱의 실제 단일 시각 증거를 요구한다. 이 시험은 OFF 전용이며 수용·재무장·제품 성능 판정이 없다. 두 팔이 같은 지점에서 실패하면 가장 큰 실측 콜드 구간을 별도 소스 변경 대상으로 삼는다. 결과 차이가 나더라도 호스트 부하와 저장소 효과를 통제하기 전에는 로그량·동일 스케줄·호스트 경과만으로 인과를 결론내리지 않는다.
+
+## Host collector source / 호스트 수집기 소스
+
+[Collector](../tools/permit_observer_cost.py) · [stream guard and clock join](../tools/permit_cost_guard.py) · [synthetic vectors](../tools/permit_cost_guard_vectors.py) · [change #140](https://github.com/Romanof123/JNOX/pull/140)
+
+Extract the four original `{rm,dm}-off-{1,2}/kernel.elf` members of the EVD-054 nested first-verification.tar.gz to a read-only input directory. Freeze and collect in separate commands on the original native Linux ext4 host. Preserve the printed SHA-256 independently before launching. The offline parser vectors require Python only and never launch QEMU.
+
+~~~sh
+python3 tools/permit_cost_guard_vectors.py
+python3 tools/permit_cost_retention_vectors.py
+python3 tools/permit_observer_cost.py freeze /path/to/extracted /home/USER/studies/permit061-v2 /mnt/PERSISTENT/studies/permit061-v2
+python3 tools/permit_observer_cost.py collect /home/USER/studies/permit061-v2 FROZEN_SHA256
+~~~
+
+Replace the final placeholder with the actual hexadecimal digest. Each frozen case reuses verified image bytes and captures the original mechanism and UART files, including unread bytes after termination. A signaling interruption, timeout, coverage failure, malformed/oversized record or containment alarm stops the cohort; retain remaining positions as unlaunched. External ON immediately terminates the emulator upon live host detection; native logging and host polling have unbounded real-time latency. It cannot establish a guest tick for that edge. An OFF-only result is evidence for the captured interval under this model. Use per-position first service/phase/IRQ and pairwise R−F deltas; missing intervals are null. There is no positive operational credit. The approved source trace is CHG-061 → REQ-002/003/005/023 → DES-003/006/012 → VER-002/003/005/023. The observation configuration and synthetic controls await independent execution and review; no new evidence ID is assigned.
+
+EVD-054의 중첩 first-verification.tar.gz에서 OFF ELF 네 개를 원래 디렉터리명으로 추출한다. 기존 호스트의 Linux ext4에서 위 freeze 명령을 실행해 출력 해시를 독립 보존한 뒤 collect에 실제 해시를 전달한다. 합성 대조는 QEMU를 실행하지 않는다. 수집기는 최초 경보·누락·시간초과·신호 중단에서 종료해 남은 자리를 미실행으로 보존한다. 실제 출력 ON 감지 후 에뮬레이터를 중지해도 호스트 폴링 지연과 로그 출력 지연은 게스트 시각 증거가 아니다. R에는 모델 읽기 기록이 없고, 짝 중 도달하지 않은 구간의 차이는 null이다. 이전 EVD-054 판정을 유지하며 독립 실행 전 새 증거 ID나 운영 자격을 부여하지 않는다.
+
+One of 16 frozen positions launched. The other 15 never ran. No pair among eight produced an R−F difference. [OFF observer cost · Aborted first cohort](evidence/permit-observer-first-partial.en.md)
+
+고정 순서 16건 중 1건만 시작했고 나머지 15건은 실행되지 않았다. 8쌍 모두 R−F 차이를 산출할 수 없다. [OFF 관찰 비용 · 중단된 최초 집단](evidence/permit-observer-first-partial.md)
+
+## Cohort v2 · terminal acknowledgement and retention / 종료 확인 및 보존
+
+The first cohort reached guest terminal in RM A1/F. Its collector classified its own reported signal acknowledgement as unexpected stderr before joining observations. Count one launched of 16, 15 unlaunched, zero completed pairs and no OFF verdict from that join. The reported text was “qemu-system-aarch64: terminating on signal 15 from pid 641 (python3)”. Original /tmp was purged before independent raw retention. The [published partial archive](evidence/permit-observer-first-partial.en.md) retains the hash-matched 69-byte stderr ending in LF. Its other surviving fragments are identified in the manifest; absent bytes cannot be recovered from a new run. Preserve every surviving partial record unchanged; neither a synthetic fixture nor a subsequent boot recovers missing bytes.
+
+Before a separately frozen v2 cohort, independently exercise host-only termination and copy/manifest controls. Only after a fully parsed terminal, a live child and the collector's actual successful SIGTERM directed to that child may one matching complete acknowledgement on stderr be accepted. Require actual sender PID/name, child executable/PID, signal, proper exit, empty stdout, full drain and successful containment/clock join. Unexpected exit, forced kill, operator signal, timeout, alarm, stray bytes, extra lines or incomplete coverage stay failures. Record raw bytes and exact stop provenance on failures too.
+
+Use user-owned persistent native Linux ext4 staging (/home) and a separately mounted persistent destination. Freeze and durably copy inputs before launch. After the guest stops, close/drain, fingerprint and publish exact raw bytes, capture metadata and manifests for **each** position, including failures, to a new destination. Verify hashes and durable publication before allowing another position. Record local/replica paths, file availability, trustworthy byte counts, digests, retention status and failure details, with transfer timestamps outside the guest observation interval. Leave both sessions separate. The revised 16 slots require a fresh freeze and new controls; they provide no operational credit. A failure of either retention path has no retrospective interpretation as a passing study.
+
+최초 집단은 RM A1/F 한 건만 게스트 종료 표식을 관측했다. 수집기가 직접 보낸 SIGTERM의 보고된 응답을 예기치 않은 stderr로 처리해 결합 판정 전 실패했다. 1/16 실행, 15건 미실행, 완성 쌍 0이다. /tmp 삭제 전에 원본 복제를 완료하지 못했다. [공개된 부분 기록](evidence/permit-observer-first-partial.md)에는 해시가 일치하는 69바이트 stderr와 마지막 LF가 보존됐다. 매니페스트에 남은 다른 조각도 구별하며 재실행으로 누락 바이트를 복구할 수 없다. 잔존 부분 기록을 그대로 보존한다.
+
+v2는 별도 16자리다. 호스트 종료·복제·매니페스트 대조를 독립 통과한 뒤에만 실행한다. 정상 종료 표식 후 실제 수집기 PID/이름이 올바른 자식에게 SIGTERM을 보냈고, 완전한 확인 한 줄·빈 stdout·정상 종료·배출과 원래 결합 검증을 만족해야 한다. 임의 종료·신호·시간초과·차단 경보·추가/잘린 출력은 실패다. /home의 지속성 ext4 원본과 별도 지속성 마운트 복제본을 사용한다. 매 실행 종료 후 원시 부분 바이트·메타데이터·파일별 해시를 복제하고 검증 및 영구 저장 확인 뒤 다음 자리를 허용한다. 복제 경과는 게스트 계측 밖에 기록한다. 복제 실패 시 중단하고 양쪽 회수 가능 상태를 명시한다.
+
+For v2 replace USER and PERSISTENT with an owned ext4 staging parent and an operator-verified, separately mounted persistent destination supporting fsync and atomic directory rename. Precreate the parent directories only. Preserve any authenticated v1 partial archive independently of the new paths. The collector validates extracted ELF digests, publishes frozen inputs before launch and fails closed on a missing artifact, bad digest, changed manifest or failed destination verification. Transfer may affect subsequent host caches even though it occurs after guest stop.
+
+v2 실행 시 USER·PERSISTENT를 실제 소유자 및 지속성 마운트로 바꾸고 상위 디렉터리만 준비한다. 디렉터리 fsync·원자적 이름 변경을 지원해야 한다. 복제는 게스트 정지 이후이며 다음 호스트 캐시에 미칠 영향도 남는다. 인증된 v1 부분 기록은 새 경로와 독립 보존한다.
+
+## CHG-069 · exact archive verification / 보존 파일 집합 검증
+
+[#144](https://github.com/Romanof123/JNOX/issues/144) · [v2 raw outcome](evidence/permit-observer-v2-preflight/extra-control-result.json) · [frozen source and input digests](evidence/permit-observer-v2-preflight/control-freeze) · [accepted manifest](evidence/permit-observer-v2-preflight/extra-control/retained-manifest.json) · [v1 partial](evidence/permit-observer-first-partial.en.md)
+
+Independent preflight at ff9f459 passed six guard and five termination/retention controls, including host-child SIGTERM. Both persistent filesystems passed file/directory fsync, rename and readback. The separate extra-entry control expected rejection. The publisher accepted raw plus extra-unmanifested while its receipt listed only raw. The original outcome (SHA-256 efacd6aa5474e88ea6847bc0f56bbe8359dfd92cbd759311d14144a844ce4c4a) and the three published files are retained together. v2 stopped before QEMU, 0/16 launches, 0/8 pairs. v1 remains 1/16 launches and 0/8 pairs with only the documented surviving fragments. Neither cohort establishes observer cost or OFF containment.
+
+For a fresh v3 preflight, freeze relative names from intended artifacts. The input bundle contains freeze.json, trace-events-all and the four manifest ELFs under images/. A complete position contains uart, mechanism, stdout, stderr and result.json. An incomplete position declares each missing stream and retains every available intended stream under its failure identity. The isolated cohort-close/ bundle contains cohort.json and exactly one position-specific retention JSON per attempt. Check native ext4, D: staging and final replica recursively against the same expected names, regular-file types, necessary directories, sizes and SHA-256 values. Only the replica adds retained-manifest.json, with exactly those payload entries. Unexpected files, links, special entries, empty directories, missing items or differences stop advancement. Preserve rejected native, staging or final contents with position/bundle identity. Recheck source and final receipt before allowing the next position. Transfers follow guest stop. Independent host controls precede any separately frozen cohort.
+
+ff9f459의 독립 사전 점검에서 가드 6개와 실제 자식 SIGTERM을 포함한 종료·보존 대조 5개가 통과했다. 두 지속성 파일시스템에서 파일·디렉터리 fsync, 이름 변경, 재읽기도 통과했다. 별도 추가 항목 대조는 거부를 예상했으나 raw만 기재한 매니페스트와 함께 extra-unmanifested까지 발행했다. 위 원본 결과와 발행 파일 3개를 보존했다. v2는 QEMU 시작 전 중단되어 0/16 실행, 0/8 쌍이다. v1은 1/16 실행, 0/8 쌍이며 문서화된 일부만 남았다. 양쪽 모두 관찰 비용과 OFF 유지 판단은 미측정이다. [v1 부분 기록](evidence/permit-observer-first-partial.md)
+
+새 v3 사전 점검은 의도한 상대 이름을 먼저 고정한다. 입력은 freeze.json, trace-events-all, images/ 아래 ELF 4개다. 완전한 자리는 uart, mechanism, stdout, stderr, result.json을 요구한다. 실패 자리는 빠진 스트림을 명시하고 확보한 의도된 스트림을 실패 식별자로 보존한다. 독립 cohort-close/에는 cohort.json과 각 시도별 보존 JSON 하나만 둔다. ext4 원본, D: 임시·최종 복제본의 전체 상대 이름, 일반 파일 유형, 필요한 디렉터리, 바이트 수 및 SHA-256을 같은 기준으로 대조한다. 복제본에만 정확한 페이로드 목록의 retained-manifest.json을 허용한다. 추가 파일·링크·특수 항목·빈 디렉터리·누락·불일치는 진행을 중단한다. 거부된 원본·임시·최종 상태를 자리/묶음 식별자로 보존한다. 게스트 종료 후 전송하고 다음 자리 전 원본과 최종 복제본을 재확인한다. 별도 고정 코호트에 앞서 독립 호스트 대조를 수행한다.
+
+All 16 first launches completed the recorded OFF-only observation, yielding eight adjacent pairs. Suppressing external PL061 read logging gave mixed changes in first-service, phase and IRQ timing. [OFF-only observer cost · Third cohort](evidence/permit-observer-cost-v3.en.md)
+
+첫 실행 16건에서 OFF 전용 관찰을 완료해 인접한 8쌍을 얻었다. PL061 읽기 로그를 제외한 경우 첫 서비스·위상·IRQ 시간 차이의 방향은 일정하지 않았다. [OFF 전용 관찰 비용 · 세 번째 집단](evidence/permit-observer-cost-v3.md)

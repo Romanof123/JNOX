@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use core::arch::{asm, global_asm};
+use core::arch::asm;
 use core::panic::PanicInfo;
 use core::ptr;
 
@@ -167,16 +167,9 @@ mod vruntime_policy;
 
 static mut BSS_PROBE: u64 = 0;
 
-// SAFETY: The ELF loader enters _start with the platform state described in
-// start.S. The assembly establishes the Rust ABI before calling kernel_main.
-global_asm!(
-    include_str!("start.S"),
-    cold = const cfg!(jnox_control_cold) as usize,
-    pi4 = const cfg!(jnox_pi4) as usize,
-    pi4_scheduler = const cfg!(all(jnox_pi4, any(jnox_bench = "scheduler", jnox_fixed))) as usize,
-    bss_probe = sym BSS_PROBE,
-    rust_entry = sym kernel_main,
-);
+#[cfg(target_arch = "aarch64")]
+#[path = "../../arch/aarch64/mod.rs"]
+mod arch;
 
 extern "C" fn kernel_main() -> ! {
     // SAFETY: The boot CPU has finished clearing this aligned static in RAM.

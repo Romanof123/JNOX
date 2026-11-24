@@ -149,3 +149,7 @@ CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 물리 UART 프로파
 CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
 
 CHG-067 · [일반 Rust 뮤텍스 작업의 배치·소유권 기준](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
+
+CHG-061 · [OFF 전용 비교 수집기와 합성 대조](permit-observer-cost-plan.md) · VER-002/003/005/023
+
+[CHG-069 · OFF 전용 실행 16건과 여덟 쌍 비교](evidence/permit-observer-cost-v3.md)
