@@ -1,5 +1,5 @@
 use core::arch::{asm, global_asm};
-use core::mem::{offset_of, size_of};
+use core::mem::{align_of, offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicPtr, AtomicU64, AtomicUsize, Ordering};
 
@@ -38,6 +38,14 @@ static mut jnox_ap_returns: Returns = Returns {
 static mut PLANS: [[u64; 2]; 64] = [[NA; 2]; 64];
 static mut TRACE: [[u64; 8]; MAX_ROWS] = [[0; 8]; MAX_ROWS];
 static mut USED: usize = 0;
+// An initial frame at top(id) - size_of::<Frame>() is wholly inside that
+// fixed stack and naturally aligned. Resumed frames still need within().
+const _: () = {
+    assert!(size_of::<Stack>() == STACK_BYTES);
+    assert!(size_of::<Frame>() <= STACK_BYTES);
+    assert!(align_of::<Stack>() >= align_of::<Frame>());
+    assert!(STACK_BYTES % align_of::<Frame>() == 0);
+};
 static mut STACKS: [Stack; 3] = [const { Stack([0; STACK_BYTES]) }; 3];
 static mut RUNTIME: Option<Runtime> = None;
 static mut TERMINAL: bool = false;
@@ -546,7 +554,6 @@ impl Runtime {
         let frame = self.frames[id];
         if frame.addr() != expected.address
             || frame.addr() != top(id) - size_of::<Frame>()
-            || !within(id, frame.addr(), size_of::<Frame>())
         {
             unexpected()
         }
@@ -851,7 +858,10 @@ impl Runtime {
         }
         if let Some(id) = d.owner {
             let action = d.action.unwrap_or_else(|| unexpected());
-            let (count, acc, _) = snapshot(id);
+            // Both live progress records matched the retirement ledger above.
+            // IRQ is masked and no worker can run before exception return.
+            let count = self.last_count[id];
+            let acc = self.last_acc[id];
             if self.allocation_deadline[id] != d.after[id].d {
                 self.allocation_deadline[id] = d.after[id].d;
                 self.allocation_service[id] = 0;
