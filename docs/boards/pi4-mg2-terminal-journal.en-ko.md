@@ -9,3 +9,4 @@ Independent verification should check the rebuilt SVC through the journal call(s
 클러스터형 링크 결과에서 같은 SVC가 종료 요약(태그 13)과 종료 커밋(태그 9)을 연속으로 기록하는 동안 DAIF 저장·IRQ 마스크·CPU 식별·DAIF 복원을 두 번 실행한다. 이 두 행만 하나의 지역 기록 구간 안에 두고 각 행의 CPU·봉인·용량 검사, 손실 집계, 원자적 데이터 저장, 독립 release 공개 및 순서를 유지한다. 실제 retire와 방향 지정 SGIR 쓰기의 순서, 작업 입력, 제한 대기, 최초 마일스톤은 보존한다.
 
 독립 빌드에서 두 행의 공개와 한 번의 마스크 처리를 확인하고 빈 슬롯이 0·1·2개일 때의 결과를 검사한다. global·partitioned·clustered 배치별 두 자리씩 여섯 최초 시도를 그대로 보존하여 판정한다. 실제 하드웨어, 반복성, 이주 성공 및 릴리스는 별도 증거가 필요하다.
+[Independent results and raw artifacts / 독립 검증 및 원자료](../evidence/pi4-mg2-terminal-journal-first.en-ko.md). Six first migration positions captured, zero qualified. Eighteen linked journal controls passed. 여섯 마이그레이션 위치 모두 미충족이며 저널 자체의 18개 대조는 통과했다.
