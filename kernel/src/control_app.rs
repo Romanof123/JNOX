@@ -325,6 +325,8 @@ pub(super) fn check(index: u64, step: u64) {
     }
     let done = now();
     let a = app();
+    #[cfg(jnox_control_markers)]
+    super::control_runtime::markers::record(8, decision, done, index);
     log(21, done, index, decision);
     if !SCRIPTED
         && a.previous_check

@@ -131,6 +131,13 @@ sched_start_frame:
     // The Rust callback has returned: its temporary borrows and stack
     // frame are gone. Change SP under the hardware exception masks.
     mov sp, x0
+    .ifdef JNOX_CONTROL_MARKERS
+    isb
+    mrs x10, cntpct_el0
+    adrp x9, control_restore_samples
+    add x9, x9, :lo12:control_restore_samples
+    str x10, [x9]
+    .endif
     ldp x9, x10, [sp, #{elr}]
     msr elr_el1, x9
     msr spsr_el1, x10
@@ -160,6 +167,15 @@ sched_start_frame:
     isb
     mrs x10, cntpct_el0
     str x10, [x9, #16]
+    .endif
+    .ifdef JNOX_CONTROL_MARKERS
+    adrp x9, control_restore_samples
+    add x9, x9, :lo12:control_restore_samples
+    mrs x10, elr_el1
+    str x10, [x9, #16]
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, #8]
     .endif
     integer_pairs ldp
     ldr x30, [sp, #240]

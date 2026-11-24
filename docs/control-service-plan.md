@@ -25,3 +25,30 @@ EVD-050 v2의 기본 시계 128회 모두 62.5 MHz에서 제어 서비스 상한
 2. 일반 소스 변경은 릴리스 때 작업별 불변 인덱스·절대 목표·step을 길이가 제한된 전용 기술자에 저장해 작업 내 반복 계산·나눗셈을 대체하는 한 가지로 제한한다. 세대·작업 경계 초기화, 기존 동기화와 누락 검사, 마스킹 길이, 실제 시각, 만료 우선, 즉시 래치·출력 및 독립 읽기를 유지한다. 릴리스로 이동한 비용도 전체 시간과 마감에 반영한다. 이 변경은 s에서 비교하고, 별도로 변경 없는 동일 소스를 s와 3으로 비교한다. 도구 명령·ELF·코드·크기를 보존한다. 필수 사건의 기록은 유지하며 부수적인 출력 정리는 후속 별도 실험으로만 검토한다.
 3. 기본 시계와 원 QEMU 설정·시간제한을 고정하고 모든 실행 경로를 Linux /tmp에 둔다. 계측·기술자·컴파일러 세 비교마다 RM/DM 각각 순서를 교차한 콜드 두 쌍, 총 24회를 우선 수행한다. 쌍별 로깅은 같게 하고 필요하면 별도 쌍으로 외부 예외 추적을 수집한다. 최초 실패·누락·메타데이터를 보존한다. IRQ 0.5 ms, 위상 1 ms, 과금 250 µs, 실제 판정 간격·작업 종료 각 5 ms, 고장 25/5/30 ms를 유지한다. 지연·과수요 실패 대조와 최악 위상·동시 만료 별도 시험을 유지한다. 소표본 개선으로 정상 출력이나 전체 검증을 승인하지 않는다.
 4. 발행 간격은 독립 요건이다. 별도 구성에서 승인된 정확 시점 주입기로 실제 발행·전달·게시를 관측한 뒤 일반 송신자에 세대·순번을 단독 인계한다. 일반 송신자의 발행 증거도 별도로 평가한다. 정확한 10 ms에는 이 카운터에서 실측 625000틱과 충분한 해상도·출처가 필요하다. 목표값·사후 저장 시각·반올림은 사용할 수 없다. 불확실하면 미입증으로 남기고 허용 오차나 계약 변경은 기능안전 결정에 맡긴다. EVD-042/050 원본과 판정을 유지하며 제품 승인·구현·독립 검증은 미완료다.
+
+## IMP-052 marker capture / 계측 기록
+
+[#121](https://github.com/Romanof123/JNOX/issues/121) · CHG-053 · REQ-002/003/005/023 · DES-003/012. Source candidate for the first comparison. Independent build, image identity, first observations and timing verdict remain pending. / 첫 번째 비교용 선택 계측 소스다. 독립 빌드, ELF 동일성, 최초 관측과 시간 판정은 미결이다.
+
+From kernel/ in the native Linux workspace, save each resulting ELF, hash, disassembly and Cargo invocation before the next build. For DM replace control-rm with control-dm in both commands. Pair against the independently established archived stock hash, versioning any different baseline before pairing. / Linux 로컬 작업공간의 kernel/에서 다음 빌드 전에 각 ELF·해시·역어셈블리·명령을 보존한다. DM은 두 명령 모두 control-dm으로 바꾼다. 기존 기준 ELF 해시와 다르면 별도 기준판으로 기록한다.
+
+```sh
+env -u JNOX_CONTROL_MARKERS JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy cargo build --release
+JNOX_CONTROL_MARKERS=1 JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy cargo build --release
+```
+
+Preserve stock UART and external IRQ/ERET trace per cold boot. After CONTROL END, stop QEMU via QMP. Read control_marker_journal address and extent from the matched ELF with nm -S, then use QMP pmemsave. Keep the binary, symbol output, ELF hash and launch arguments. From repository root run `python tools/control_service_markers.py journal.bin uart > markers.json`. The 57,368-byte little-endian journal has three u64 header words (number reserved, overflow, sealed), then 1,024 rows of seven u64 words (kind, t, a, b, write-start, write-end, reservation+1). The decoder rejects unsealed, incomplete or overflowed captures. Overflow sets a flag while ordinary safety processing continues. / 콜드 부팅마다 기존 UART와 외부 IRQ/ERET 기록을 보관한다. CONTROL END 뒤 QMP stop 후 해당 ELF에서 nm -S로 찾은 심볼 주소와 크기로 pmemsave한다. 위 명령으로 해독한다. 헤더는 예약 수·초과·봉인, 1,024행은 종류·t·a·b·쓰기 시작·쓰기 종료·예약 번호+1이다. 미봉인·누락·초과는 판정할 수 없다. 초과하면 표시를 남기고 기존 안전 처리를 계속한다.
+
+| Kind | t, a, b (physical counter ticks / 원시 카운터 틱) |
+| --- | --- |
+| 1 | Original slice_start, selected task, selected ELR / 과금 시작·태스크·선택 ELR |
+| 2 / 3 | Stock IRQ / SVC vector stamp, interrupted ELR, handler sample / 기존 벡터 표본·중단 ELR·핸들러 표본 |
+| 4 | Restore-start, late restore sample, return ELR / 복귀 시작·복귀 후반 표본·복귀 ELR |
+| 5 / 10 | Fresh entry / post-SVC continuation sample, zero or preceding phase index, zero / 신규 진입 또는 SVC 후 재개 표본·이전 위상 또는 0·0 |
+| 6 / 7 | Before and after DAIF set / restore, prior DAIF / 마스크 설정 또는 복원 전후 표본·기존 DAIF |
+| 8 | Actual decision, actual completion, phase index (stock row 21) / 실제 판정 시작·종료·위상 |
+| 9 | Pre-SVC marker sample, SVC immediate, phase index for wait / SVC 표지 쓰기 전·SVC 번호·대기 위상 |
+
+The vector sample follows the vector branch, frame allocation, scratch save and ISB. The first restore sample follows the callback return and SP switch. The late restore sample precedes its own store, GPR/LR restores, SP adjustment, CLREX and ERET. Fresh worker entry starts with ISB then MRS; neither that sample nor the continuation's ISB/MRS timestamps ERET. An arbitrary IRQ resume returns directly to the interrupted PC and may lack an immediate worker sample. Match individual ELR/ERET events against disassembly. Kind 2/3's handler sample includes copying the preceding restore marker. Release targets/entries remain in rows 2/3/4; check completion and SVC entry are distinct. / 벡터 표본 전에는 분기·프레임 확보·레지스터 저장·ISB가 있다. 복귀 시작은 콜백 반환·SP 전환 뒤이고, 후반 표본 뒤에는 저장·레지스터 복원·SP 조정·CLREX·ERET가 있다. 신규 진입과 SVC 후 ISB 다음 MRS가 표본을 얻는다. 임의 IRQ 재개에는 즉시 작업 표본이 없을 수 있다. 실제 ELR/ERET와 역어셈블리를 대조한다. 2/3행의 핸들러 표본에는 이전 복귀 마커 저장이 포함된다. 절대 목표·진입은 기존 2/3/4행에 남으며 판정 종료와 SVC 진입은 구분한다.
+
+The decoder reconciles each charged slice and debit against stock rows 6/8, including splits at preemption. Actual phase indices identify phase zero, later first-of-job and same-job continuation. Disjoint ticks isolate measured in-slice journal writes, restoration, restore-tail to worker sample, check and remaining charged time. Control-mask brackets overlap those totals. The before-set and after-restore samples can include preemption; inside-to-restore gives the definite masked interval. Write-start/end exclude argument setup and final timestamp/commit stores. Writes interrupted across slices remain in the raw rows and cannot be assigned wholly to either slice. The remainder includes these uncertainties, real work and instructions outside the brackets. Preserve it in the comparison. / 선점으로 나뉜 모든 과금과 누적 차감을 기존 6/8행에서 대조하고 실제 위상으로 최초·후속 작업 최초·동일 작업 재개를 구분한다. 측정된 쓰기·복귀·복귀 꼬리부터 작업 표본·판정·잔여 시간의 합은 원래 과금과 일치해야 한다. 제어 작업의 마스킹은 중복 가능한 별도 측정이다. 설정 전·복원 후에는 선점이 섞일 수 있고 내부부터 복원 직전까지는 확정 마스킹이다. 쓰기 표본은 인수 준비와 마지막 시각·커밋 저장을 제외한다. 여러 슬라이스에 걸친 쓰기와 그 밖의 비용은 잔여 시간과 원시 행에 남는다.
