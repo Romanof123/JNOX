@@ -1,10 +1,18 @@
-//! Shared AArch64 exception frame and QEMU virt timer interrupt setup.
+//! Shared AArch64 exception frame and GICv2 physical timer interrupt setup.
 use core::{arch::asm, ptr};
 
 pub(super) const STACK_BYTES: usize = 16 * 1024;
 pub(super) const TIMER_IRQ: u32 = 30; // Nonsecure EL1 physical timer PPI
+#[cfg(not(jnox_pi4))]
 pub(super) const GICD: usize = 0x0800_0000;
+#[cfg(not(jnox_pi4))]
 pub(super) const GICC: usize = 0x0801_0000;
+
+// BCM2711 low-peripheral mode (Raspberry Pi armstubs/armstub8.S).
+#[cfg(jnox_pi4)]
+pub(super) const GICD: usize = 0xff84_1000;
+#[cfg(jnox_pi4)]
+pub(super) const GICC: usize = 0xff84_2000;
 
 #[repr(C, align(16))]
 pub(super) struct Stack(pub(super) [u8; STACK_BYTES]);
@@ -48,6 +56,12 @@ pub(super) fn init_timer_irq() {
         asm!("msr vbar_el1, {}", "msr cntp_ctl_el0, xzr", "isb",
             in(reg) &raw const sched_vectors, options(nostack, preserves_flags));
     }
+    configure_timer_ppi();
+    unsafe { asm!("dsb sy", "isb", options(nostack, preserves_flags)) };
+}
+
+#[cfg(not(jnox_pi4))]
+fn configure_timer_ppi() {
     // With secure=off the GIC exposes both groups. Use Group 0 as IRQ (FIQEn
     // clear), with priority 0x80 allowed by PMR. PPIs are banked per CPU.
     gic_write(GICD, 0);
@@ -59,5 +73,41 @@ pub(super) fn init_timer_irq() {
     gic_write(GICC + 4, 0xff); // PMR
     gic_write(GICD, 1);
     gic_write(GICC, 1);
-    unsafe { asm!("dsb sy", "isb", options(nostack, preserves_flags)) };
+}
+
+#[cfg(jnox_pi4)]
+fn configure_timer_ppi() {
+    let ppi = 1 << TIMER_IRQ;
+    // CPU0 owns this banked PPI. CNTP is deasserted and DAIF masked; leave
+    // every other enable, pending bit, target and priority unchanged.
+    gic_write(GICD + 0x180, ppi); // ICENABLER0, write-one-to-clear
+    unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+
+    let security_extensions = gic_read(GICD + 4) & (1 << 10) != 0;
+    let (dist_enable, cpu_enable) = if security_extensions {
+        // Physical GIC-400: the secure firmware stub assigns PPI30 to
+        // Group 1. IGROUPR is unavailable to our nonsecure EL1; bit 0 of
+        // each NS CTLR aliases EnableGrp1. Use ordinary IAR and EOIR.
+        (1, 1)
+    } else {
+        // raspi4b models a GICv2 with two groups and no Security Extensions.
+        // Both groups are visible here. Select Group 1 for PPI30, enable
+        // Group 1 at bit 1, and permit ordinary IAR to acknowledge it.
+        gic_write(GICD + 0x80, gic_read(GICD + 0x80) | ppi);
+        (2, 2 | 4)
+    };
+    // The stub uses combined EOI/deactivation. Preserve the interface mode
+    // and reject a foreign split-EOI handoff before unmasking interrupts.
+    if gic_read(GICC) & (1 << 9) != 0 {
+        super::sched::fail();
+    }
+    unsafe { ptr::write_volatile((GICD + 0x400 + TIMER_IRQ as usize) as *mut u8, 0x80) };
+    gic_write(GICD + 0x280, ppi); // ICPENDR0
+    gic_write(GICD + 0x100, ppi); // ISENABLER0
+    if gic_read(GICD + 0x100) & ppi == 0 {
+        super::sched::fail(); // The secure stub must delegate this PPI.
+    }
+    gic_write(GICC + 4, 0xff); // PMR permits the timer's priority
+    gic_write(GICD, gic_read(GICD) | dist_enable);
+    gic_write(GICC, gic_read(GICC) | cpu_enable);
 }

@@ -1,4 +1,4 @@
-//! One-core EL1h scheduler bench for QEMU virt, GICv2, secure=off.
+//! One-core EL1h scheduler bench for GICv2 and the EL1 physical timer.
 
 use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
@@ -222,7 +222,7 @@ fn require(ok: bool) {
     }
 }
 
-extern "C" fn fail() -> ! {
+pub(super) extern "C" fn fail() -> ! {
     // SAFETY: Terminal diagnostic on the single CPU. No handler can interleave
     // further UART writes after DAIF is masked.
     unsafe { asm!("msr daifset, #0xf", options(nostack, preserves_flags)) };

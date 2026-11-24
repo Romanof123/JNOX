@@ -29,7 +29,15 @@ fn main() {
     let script = match board.as_str() {
         "virt" => "link.ld",
         "pi4" => {
-            assert_eq!(bench, "boot", "JNOX_BOARD=pi4 supports serial boot only");
+            // EDF and FIFO also select the scheduler backend. Check the Cargo
+            // feature set itself to keep the Pi profile strictly fixed-priority.
+            assert!(
+                env::vars_os()
+                    .filter_map(|(key, _)| key.into_string().ok())
+                    .filter(|key| key.starts_with("CARGO_FEATURE_"))
+                    .all(|key| key == "CARGO_FEATURE_SCHED_BENCH"),
+                "JNOX_BOARD=pi4 supports serial boot or sched-bench only"
+            );
             println!("cargo::rustc-cfg=jnox_pi4");
             "pi4.ld"
         }

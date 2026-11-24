@@ -56,3 +56,5 @@ python3 tools/qemu_boot.py --profile pi4 --kernel kernel8.img
 | Product timing and safety | Allocate board-specific timing limits, analyze interference and measure the intended product configuration under load. Functional safety and integration review the bounds, assumptions and approval scope. P2 Cortex-R52 has its own port and evidence. [Verification plan](../verification-plan.en.md) |
 
 [EVD-011](../evidence/evd-011.en.md)
+
+[Timer preemption profile](pi4-timer.en.md)

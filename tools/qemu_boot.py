@@ -13,16 +13,19 @@ import tempfile
 import time
 
 
+PI4_BOOT_TRANSCRIPT = b"JNOX PI4 BOOT\nJNOX PI4 READY\n"
 BOOT_TRANSCRIPT = b"JNOX M1 BOOT\nJNOX M1 READY\n"
-SCHEDULER_START = BOOT_TRANSCRIPT + (
+SCHEDULER_LINES = (
     b"SCHED LOW RUN\n"
     b"SCHED TIMER IRQ\n"
 )
-SCHEDULER_TRANSCRIPT = SCHEDULER_START + (
+SCHEDULER_START = BOOT_TRANSCRIPT + SCHEDULER_LINES
+FIXED_PRIORITY_LINES = (
     b"SCHED HIGH RUN\n"
     b"SCHED LOW RESUMED\n"
     b"SCHED PASS\n"
 )
+SCHEDULER_TRANSCRIPT = SCHEDULER_START + FIXED_PRIORITY_LINES
 EDF_TRANSCRIPT = SCHEDULER_START + (
     b"EDF URGENT RUN\n"
     b"SCHED LOW RESUMED\n"
@@ -122,7 +125,8 @@ TRANSCRIPTS = {
     "batch": BATCH_TRANSCRIPT,
     "coop": COOP_TRANSCRIPT,
     "boot": BOOT_TRANSCRIPT,
-    "pi4": b"JNOX PI4 BOOT\nJNOX PI4 READY\n",
+    "pi4": PI4_BOOT_TRANSCRIPT,
+    "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
     "partition": PARTITION_TRANSCRIPT,
     "scheduler": SCHEDULER_TRANSCRIPT,
     "edf": EDF_TRANSCRIPT,
@@ -240,7 +244,7 @@ def main():
                         help="UART deadline per boot (pi4: 30s plus 1s quiet, others: 5s plus 0.1s quiet)")
     args = parser.parse_args()
     boot = args.profile == "boot"
-    pi4 = args.profile == "pi4"
+    pi4 = args.profile in ("pi4", "pi4-scheduler")
     timeout = args.timeout if args.timeout is not None else (30 if pi4 else 5)
     runs = args.runs if args.runs is not None else (2 if boot else 1)
     if runs < 1:

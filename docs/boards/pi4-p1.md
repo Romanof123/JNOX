@@ -56,3 +56,5 @@ python3 tools/qemu_boot.py --profile pi4 --kernel kernel8.img
 | 제품 시간 한계·안전성 | 보드별 시간 한계를 배정하고 의도한 제품 구성에서 간섭을 분석하며 부하 중 시간을 측정한다. 기능안전팀과 통합팀이 상한, 가정, 승인 범위를 검토한다. P2 Cortex-R52는 별도 포트와 근거로 관리한다. [검증계획](../verification-plan.md) |
 
 [EVD-011](../evidence/evd-011.md)
+
+[타이머 선점 검증 구성](pi4-timer.md)
