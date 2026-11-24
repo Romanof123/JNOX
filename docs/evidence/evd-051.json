@@ -1,0 +1,81 @@
+{
+  "evidence_id": "EVD-051",
+  "change": "CHG-053",
+  "implementation": "IMP-051",
+  "reviewer_manifest_sha256": "30ea8ab9d40eea494ec012bcc77785522c8bee67d95ac021710f86bb44afa533",
+  "build_index_sha256": "1765483d7bd8fc33c8f2a0853fe7a668ff5f3fedf50b5592243f56a7b0e69479",
+  "sources": {
+    "baseline": {
+      "commit": "3c2c788ebb6b1a5ea95c20ad1b62a59a70e5bd96",
+      "tree": "f3efebb4bb884883704d9e2b093477be0be82933",
+      "archive_sha256": "7f87e40f9ed112f757338ff4a37fcedbb64e5a7b1a415954c6b96d44ef10e967"
+    },
+    "marker": {
+      "commit": "188faa91e5e0655f56cf6aca97001a4e61fa75c4",
+      "tree": "c203b4a58565d4a4f1e8e1bd32ef40a558ffd2d4",
+      "archive_sha256": "8a8e219198be190e4a4fe11c6ce179fc6093c06593b39c9061e0c0272047c775"
+    },
+    "descriptor": {
+      "commit": "1f45010cd277ba1f1bffb90aa6e240e0848eb782",
+      "tree": "c928aa37639c89054ce7066a4cd4addb3be3610e",
+      "archive_sha256": "712ee4aa322d797650ff55be94114181d892611504f2f9bcca8c2ec06d60d5a2"
+    }
+  },
+  "images_sha256": {
+    "rm-baseline": "97ccbc80a0be470505b55abb093a1e73f1c0c7db9985b94b05135077ec6529cb",
+    "rm-marker": "d3f20bee7c257ac5fcdbe9bfb5bdd8b712b54ba8a1feae63317320675ebfb7d5",
+    "rm-descriptor": "ddef5357cc9017f06b802b742a8fc4c8a3f195bee7e83341d3200c8fb23ee378",
+    "rm-optimization3": "ada14924f603a2dfc4553c4e2c3938f57b62df61eff0f913c879ffe7ce638122",
+    "dm-baseline": "7b99481b4bfb4bf130776e71f44b0d788dfc04fe805de041511404708e664481",
+    "dm-marker": "a6d51fd0d476a6dc939718ba38d398fc040f515b2c9720690ab628c85fef9296",
+    "dm-descriptor": "9aedbd0d52668451671daa2f877f90378b03fa2152844c97488fc3e966652d41",
+    "dm-optimization3": "3d48860ebeac923de95005d65092a16a4bf48a5a0c0d5d26320ef4c02e0136b5"
+  },
+  "runs": 24,
+  "pairs": 12,
+  "healthy_sequences": 0,
+  "fault_latched_all_seven_rejected": 22,
+  "descriptor_dm_all_seven_accepted_stayed_off": 2,
+  "archive": {
+    "file": "evd-051-study.zip",
+    "sha256": "67cf465da8ec5eb3f5170b782998dba485577d344c4e0c668e57fbc49c1082a0",
+    "bytes": 904861,
+    "entries": 162,
+    "file_manifest": "FILES.sha256",
+    "file_manifest_sha256": "38c6d4df5ad65d0285bc2e7dc76c63c9a9d88023d6812854d5eaa32d659461b0",
+    "restore_and_verify_python_from_repository_root": [
+      "import hashlib, json, zipfile",
+      "from pathlib import Path",
+      "d=Path('docs/evidence'); a=json.loads((d/'evd-051.json').read_bytes())['archive']; p=d/a['file']",
+      "assert hashlib.sha256(p.read_bytes()).hexdigest()==a['sha256']",
+      "with zipfile.ZipFile(p) as z: z.extractall('service-study')",
+      "r=Path('service-study'); ledger=(r/'FILES.sha256').read_bytes(); assert hashlib.sha256(ledger).hexdigest()==a['file_manifest_sha256']",
+      "for line in ledger.decode().splitlines():",
+      "    h,n=line.split('  ',1); assert hashlib.sha256((r/n).read_bytes()).hexdigest()==h"
+    ],
+    "offline_replay": "In a disposable restored directory run python service53-fresh/verify.py. It rehashes capture archives and their individual members and writes observations.json. Compare parsed observations to the preserved original. REPORT.md and SHA256SUMS preserve the independent verdict."
+  },
+  "reviewer_report_sha256": "bc44c97b6cb35257de32b03b0f1dac6cd109223e4f72d987ac1835e8676cda70",
+  "reviewer_addendum_sha256": "ccc143b211729d70bd2de61ce69416fe8184729c0979200ccfc86c51d2c1fd6b",
+  "decoder_erratum": {
+    "applies_to": "Historical REPORT.md decoder statements only",
+    "frozen_decoder": "https://github.com/Romanof123/JNOX/blob/188faa91e5e0655f56cf6aca97001a4e61fa75c4/tools/control_service_markers.py#L98-L103",
+    "mapping": "actual_check=(t,a); phase=b",
+    "boot": 2,
+    "marker_n": 9,
+    "kind": 8,
+    "t": 273778,
+    "a": 275568,
+    "b": 0,
+    "uart": [
+      21,
+      275568,
+      0,
+      273778
+    ],
+    "duration_ticks": 1790,
+    "actual_journal_disagreement_demonstrated": false,
+    "withdrawn_claim": "Incorrect phase labels or cost attribution on four genuine journals",
+    "remaining_gap": "Reversed endpoints mirrored in UART may evade the original slice checks. This is a hypothetical malformed input."
+  }
+}

@@ -1032,3 +1032,13 @@ CHG-053,affects,REQ-023
 REQ-002,partially-implemented-by,IMP-051
 REQ-005,partially-implemented-by,IMP-051
 POL-004,partially-implemented-by,IMP-051
+DES-003,implemented-by,IMP-051
+DES-012,implemented-by,IMP-051
+IMP-051,tested-in,EVD-051
+POL-004,has-analysis-evidence,EVD-051
+IMP-051,partially-verified-by,VER-002
+VER-002,has-partial-evidence,EVD-051
+IMP-051,partially-verified-by,VER-005
+VER-005,has-partial-evidence,EVD-051
+IMP-051,partially-verified-by,VER-023
+VER-023,has-partial-evidence,EVD-051
