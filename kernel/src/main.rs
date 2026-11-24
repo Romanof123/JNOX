@@ -110,6 +110,7 @@ mod multilevel_service;
 #[cfg(jnox_multilevel)]
 mod multilevel_apps;
 #[cfg(jnox_bench = "partition")]
+#[cfg_attr(jnox_ordinary_partition, path = "ordinary_partition.rs")]
 mod partition;
 #[cfg(jnox_bench = "periodic")]
 mod periodic;

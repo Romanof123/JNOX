@@ -1,6 +1,6 @@
 # POL-006 ordinary Rust partition workload
 
-[한국어](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99) · CHG-046 · intended IMP-044 · planned EVD-044
+[한국어](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99) · CHG-046 · IMP-044 · EVD-044
 
 ## Frozen virtual configuration
 
@@ -37,3 +37,5 @@ CHG-046 under #99 adds controlled timer programming to the frozen #100 cases. De
 Offsets in the table are relative to E. At IRQ entry and again before return derive the live slot from the original E. Attribute measured user execution after d to outgoing A, including service taken from idle, until its actual interruption. Charge IRQ, dispatcher, switch uncertainty, idle and actual worker intervals separately. Use observed PC, private state, context return and actual work to identify the executing task. Record a scheduled readiness time separately from the actual processing of a deferred release. Retain every crossed boundary and each affected nominal owner even when adjacent owners match. Arm the next strictly future original boundary and retain the original three-frame horizon and first dispatch of frame four. An additional unexpected boundary crossing fails the specified recovery case.
 
 A separate short case for each table programs c=d+F/1000+1 tick. Require a measured failure of the original envelope, no fully skipped slot, and correct recovery to the live window (P's blocked B selects idle, Q's eligible B runs). Keep the synthetic exact-limit/one-tick-over arithmetic separate. Preserve first cold-boot raw observations and independent return trace for each selector. The controlled compare tests validate recovery after delayed timer notice. Actual live mask duration and recovery under masked worker execution remain separate, unfulfilled cases until independently observed. Physical latency, fault isolation and memory protection remain open.
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. All four delayed virtual timer notifications exceeded the original 1 ms envelope at injection and recovered to the specified window. No unrelated edge exceeded the limit. Live worker masking remains unverified. [EVD-044 · delayed notice](evidence/evd-044-notice.en.md) [EVD-044 v2](evidence/evd-044-v2.en.md)

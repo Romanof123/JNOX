@@ -175,3 +175,9 @@ CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 �
 POL-011 · CHG-052 · IMP-049. 두 일반 Rust 진입점이 예외 복귀 ABI와 가중 가상시간 스케줄러를 공유한다. [승인된 작업 계획](ordinary-vruntime-plan.md)과 [빌드·캡처·재생 방법](ordinary-weighted.md)을 참조한다. VER-002/005/023 · [EVD-049](evidence/evd-049.md).
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+CHG-046 / IMP-044는 DES-003/012에 따라 virt 단일 CPU에서 일반 Rust A/B 작업과 전용 유휴 스택을 구현한다. POL-006과 REQ-002/005/023은 부분 구현 상태이며  [기록 형식 및 빌드](ordinary-partition-capture.md)
+
+POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에서 1 ms를 충족했다. v1은 P 9/10, Q 11/12 경계가 초과했고 Q가 준비된 B 구간을 건너뛰었다. 가상 타이머 통지를 지연한 네 콜드 실행은 주입 경계에서 원래 1 ms 기준에 실패하고 지정된 창으로 복구했다. 그 밖의 지연 초과는 없었다. 실제 작업 마스킹은 미검증이다. [EVD-044 · 통지 지연](evidence/evd-044-notice.md) [EVD-044 v2](evidence/evd-044-v2.md)
+
+POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 번의 콜드 부팅에서 IRQ 6회 후 PASS에 도달했다. 의도적 음성 대조군은 첫 A 마커에서 조건 99, 실제값 0, 기대값 1을 기록했다. 기존 PART FAIL의 원인은 미확정이다. [EVD-047](evidence/evd-047.md)
