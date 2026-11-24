@@ -13,13 +13,15 @@ impl<E, const N: usize> EventLoop<E, N> {
         Self { slots: [const { None }; N], read: 0, write: 0, len: 0 }
     }
 
+    pub(crate) fn depth(&self) -> usize { self.len }
+
     fn advance(index: usize) -> usize {
         if index + 1 == N { 0 } else { index + 1 }
     }
 
     /// On overflow return the original event to the sender.
     pub(crate) fn enqueue(&mut self, event: E) -> Result<(), E> {
-        if self.len == N {
+        if self.depth() == N {
             return Err(event);
         }
         self.slots[self.write] = Some(event);

@@ -78,3 +78,5 @@ CHG-033과 IMP-031은 P1 BCM2711에서 일반 FIFO·RR 작업 테이블을 선�
 CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 지연 깨움을 시험한다. 일반 실행과 선택형 계측을 이용해 실제 실행 시간을 대조한다. [동시·지연 타이머 사건](fixed-runtime-edges.md)
 
 [EVD-032](evidence/evd-032.md)
+
+[#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / EVD-036 (planned).

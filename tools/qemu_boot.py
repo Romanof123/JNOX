@@ -218,7 +218,15 @@ def fixed_edge_transcript(prefix):
     return BOOT_TRANSCRIPT + b"".join(prefix + b" " + marker + b"\n" for marker in markers)
 
 
+def coop_transcript(selector):
+    markers = (selector + b" START", b"OWNER START", b"OWNER YIELD", b"PEER 2", b"PEER 0",
+               b"OWNER RESUME", b"OWNER OVERRUN", b"OWNER OVERRUN", b"DONE")
+    return BOOT_TRANSCRIPT + b"".join(b"COOP " + marker + b"\n" for marker in markers)
+
+
 TRANSCRIPTS = {
+    "coop-events": coop_transcript(b"EVENTS"),
+    "coop-single": coop_transcript(b"SINGLE"),
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
     "fixed-delayed": BOOT_TRANSCRIPT + b"FIXED DELAYED START\nFIXED DELAYED TASK\n",
     "fixed-ties": fixed_edge_transcript(b"FIXED TIES"),

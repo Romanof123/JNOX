@@ -33,3 +33,5 @@
 2. **POL-012 반복 깨움 응답.** `kernel/src/eevdf.S`의 차단 SVC #1과 `kernel/src/eevdf.rs`의 스케줄러에서 수면·깨움과 가중치·슬라이스 변경을 반복한다. 부하·측정 창·오차 한계를 사전 정의하고 각 깨움부터 실제 첫 작업까지의 구간과 누적 서비스 오차를 독립 재구성한다. EVD-023의 두 표본은 기준점이다.
 
 별도 진행 중인 [#71](https://github.com/Romanof123/JNOX/issues/71)과 [#72](https://github.com/Romanof123/JNOX/issues/72)는 고정 우선순위 Rust 런타임을 대상으로 한다. 해당 ABI에서 SVC #1은 종료다. 위 두 전용 프로파일의 SVC 의미는 각 프로파일을 따른다.
+
+[#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / EVD-036 (planned).

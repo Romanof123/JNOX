@@ -801,3 +801,9 @@ VER-002,has-partial-evidence,EVD-032
 VER-005,has-partial-evidence,EVD-032
 VER-023,has-partial-evidence,EVD-032
 CAP-001,has-partial-evidence,EVD-032
+CHG-038,affects,REQ-002
+CHG-038,affects,REQ-005
+CHG-038,affects,REQ-023
+DES-003,implemented-by,IMP-036
+DES-012,implemented-by,IMP-036
+POL-001,partially-implemented-by,IMP-036

@@ -33,3 +33,5 @@ Baseline `19d2154`. Each row allocates the existing release criteria to recorded
 2. **POL-012 repeated wake response.** Exercise the blocking SVC #1 in `kernel/src/eevdf.S` and scheduling path in `kernel/src/eevdf.rs` across repeated sleep/wake, weight and slice changes. Declare the workload, measurement window and error criterion before capture. Independently reconstruct cumulative service error and the distribution from wake to first work. EVD-023 supplies two baseline samples.
 
 Ongoing [#71](https://github.com/Romanof123/JNOX/issues/71) and [#72](https://github.com/Romanof123/JNOX/issues/72) concern the fixed-priority Rust runtime. Its SVC #1 means exit. Each dedicated profile above defines its own SVC semantics.
+
+[Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / EVD-036 (planned).
