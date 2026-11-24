@@ -98,12 +98,30 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
 
-[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 최초 런타임 검증은 부분 통과다.
 
 CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md) · [EVD-040](evidence/evd-040.md)
 
 [EVD-041](evidence/evd-041.md)은 VER-002/005/009/023 중 FIFO/RR 부분을 대상으로 한다. 이미지별 정적 크기와 반복 실행에서 관측한 핸들러 시간을 비교한다. VER-016의 진단 선택자, unsafe 접근 및 고정 빌드 입력 검토는 별도이며 실기 시간 적격성은 미확정이다. [판정 및 수집 절차](fixed-cost.md)
 
+[호스트 위상별 수용 분석](fs-m3-admission.md) · POL-004 #94의 CHG-045 / IMP-043. 조건부 호스트 산술과 CLI는 독립 재현을 통과했다. 런타임 추적 및 실측 예산 근거는 미확보다. [EVD-043](evidence/evd-043.md)
+
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
-POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)
+CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+CHG-046의 P/Q 비교 타이머 지연은 VER-002/005/023의 별도 계획 사례이다. 실제 비교값 되읽기, IRQ 진입, 예외 복귀, 작업·유휴 관측과 경과 시간 귀속을 보존한다. 작업 자체 마스킹 사례에는 독립 근거가 필요하다. [시간 기준](pol-006-rust-partition-plan.md#가상-타이머-통지-지연-추가-사례)
+
+POL-004 / IMP-042. v3는 부분 통과다. 결정론적 정확 경계 두 건이 적격이었다. 기본 구성 23개 중 최초 14개, 콜드 재시도 한 건 포함 15개가 적격이었다. 기본 클록 일반 8개와 별도 기본 클록 인계 진단 4개는 미충족이었다. [EVD-042](evidence/evd-042.md)
+
+POL-009 / IMP-046. 유한 작업 6종을 일반·진단 이미지에서 통과했다. [EVD-046](evidence/evd-046.md)
+
+POL-007 / IMP-045. 단독 기본 클록은 10/10건이 중재 전에 정지했다. 같은 ELF의 통합 기본 클록과 명령 계수에서는 각각 정상 8/8건과 지연 대조 2/2건을 확인했다. 타이밍 차이 원인은 미확정이다. [EVD-045](evidence/evd-045.md)
+
+CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 초기화되지 않았다. 입력 수정 후 시작 검사 96건이 모두 통과했으며 수정 구성의 운영 적격 결과는 0/128이었다. [EVD-050](evidence/evd-050.md)
+
+VER-002/005/023의 단일 코어 가상 실행 근거. [EVD-048](evidence/evd-048.md)
+
+VER-002/005/023의 유한 가중 작업 및 깨움 실행 근거. [EVD-049](evidence/evd-049.md)
+
+POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에서 1 ms를 충족했다. v1은 P 9/10, Q 11/12 경계가 초과했고 Q가 준비된 B 구간을 건너뛰었다. 실제 지연 주입과 IRQ 마스킹은 미검증이다. [EVD-044 v2](evidence/evd-044-v2.md)

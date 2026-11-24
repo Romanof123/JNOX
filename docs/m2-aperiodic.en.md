@@ -22,3 +22,7 @@ From kernel/ build `cargo build --release --locked --features aperiodic-bench -j
 A separate host model varies arrivals and CPU availability and checks accounting before and after completion. Include full capacity, invalid submissions, same-ID reuse, stale/foreign receipts, clock/work overflow and credit coalescing. Hardware interference, product deadlines, general service overload handling and physical memory isolation remain separate work.
 
 [EVD-016](evidence/evd-016.en.md)
+
+CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)

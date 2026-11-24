@@ -1,0 +1,63 @@
+{
+  "evidence_id": "EVD-050",
+  "version": 2,
+  "sources": {
+    "control-v2-builds": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
+    "cold-input-builds": "b9db1043588fcb78cb44aae00fdd028199754538"
+  },
+  "images": {
+    "(0, 'rm')": [
+      "/tmp/jnox-cold-yzc0do4r/0rm.elf",
+      null,
+      "1417423e7117f903fe45a697a6f2d6b98fab3c01e7a0d6fa6124ce5e94b79e45"
+    ],
+    "(0, 'dm')": [
+      "/tmp/jnox-cold-yzc0do4r/0dm.elf",
+      null,
+      "4332939737baa59156fc1abad9dc95d3470e7c8917876f9646f398cc4ba6ce6b"
+    ],
+    "(1, 'rm')": [
+      "/tmp/jnox-cold-yzc0do4r/1rm.elf",
+      null,
+      "b9fa5f1d5a78f056943612630983813a616358ddb4388398d40945e51feca0e9"
+    ],
+    "(1, 'dm')": [
+      "/tmp/jnox-cold-yzc0do4r/1dm.elf",
+      null,
+      "eb6043aa5a44f20ae0aede600b94f85a8f5e3714d5148585d1d4f6e5dd360c5a"
+    ]
+  },
+  "reviewer_manifest_sha256": "3a4de3a89b8839b30bcadd5047d6990d7af7e2dc5541a55dc21d7627157fc0eb",
+  "primary_boots": 128,
+  "supplementary_controls": 2,
+  "intended_inputs_matched": 96,
+  "diagnostic_startups_passed": 96,
+  "operational_passes": 0,
+  "archive": {
+    "format": "xz-compressed POSIX tar, ordered base64 chunks",
+    "sha256": "94ba3ae56d2ad6c1589733d94d84e5acb63c5b52260a69cabd16066d72cfba04",
+    "files": 826,
+    "parts": [
+      "evd-050-v2-raw-01.json",
+      "evd-050-v2-raw-02.json",
+      "evd-050-v2-raw-03.json",
+      "evd-050-v2-raw-04.json",
+      "evd-050-v2-raw-05.json",
+      "evd-050-v2-raw-06.json",
+      "evd-050-v2-raw-07.json",
+      "evd-050-v2-raw-08.json"
+    ],
+    "restore_python_from_repo_root": [
+      "from pathlib import Path",
+      "import json, base64, hashlib, tarfile, io",
+      "d=Path('docs/evidence'); a=json.loads((d/'evd-050-v2.json').read_bytes())['archive']",
+      "b=b''.join(base64.b64decode(json.loads((d/p).read_bytes())['base64']) for p in a['parts'])",
+      "assert hashlib.sha256(b).hexdigest()==a['sha256']",
+      "with tarfile.open(fileobj=io.BytesIO(b),mode='r:xz') as t: t.extractall('cold-restored',filter='data')",
+      "p=Path('cold-restored/cold-input-fresh'); m=(p/'manifest.json').read_bytes()",
+      "assert hashlib.sha256(m).hexdigest()==json.loads((d/'evd-050-v2.json').read_bytes())['reviewer_manifest_sha256']",
+      "assert all(hashlib.sha256((p/n).read_bytes()).hexdigest()==h for n,h in json.loads(m).items())"
+    ],
+    "offline_scoring": "In a disposable copy of the restored directory, run python cold-input-fresh/score.py. Original scores, captures and report are archived."
+  }
+}

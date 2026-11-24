@@ -43,4 +43,4 @@ PART PASS
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
-POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)
+POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에서 1 ms를 충족했다. v1은 P 9/10, Q 11/12 경계가 초과했고 Q가 준비된 B 구간을 건너뛰었다. 실제 지연 주입과 IRQ 마스킹은 미검증이다. [EVD-044 v2](evidence/evd-044-v2.md)

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import Optional
 
 LAYOUT = {"P": ((0, 2), (1, 1), (2, 1)), "Q": ((1, 1), (2, 1), (0, 2), (1, 1))}
 NAMES = ("A", "B", "idle")
@@ -57,9 +58,9 @@ STEPS = (17, 31, 1)
 class Identity:
     functions: tuple
     stack_base: int
-    digest: str | None
-    irq_vector: int | None = None
-    notice: tuple | None = None
+    digest: Optional[str]
+    irq_vector: Optional[int] = None
+    notice: Optional[tuple] = None
 
 
 def elf_identity(path, expected_hash, controlled=False):

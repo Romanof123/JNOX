@@ -1,0 +1,195 @@
+{
+  "source": "696a9fbd6ff222f0c071a5c98548c9b49651d971",
+  "tree": "003f450e50404174a2ae8d2b92546844f9ccab85",
+  "index_sha256": "43879d5bf05d3f3f7506a8258d291faa71063ac7992f4dad129ae05e3b81a8c8",
+  "audit": {
+    "policy_count": 18,
+    "findings": [],
+    "sha256": "0b34f64d2e7af8e8c92c2d8d9e8e51e84988ca8f0ca44f86e5bdd5144a636f8f"
+  },
+  "local_document_links": {
+    "docs/control-cold-runtime.md -> evidence/evd-050-v1.en.md": true,
+    "docs/control-cold-runtime.md -> evidence/evd-050-v1.md": true,
+    "docs/control-cold-runtime.md -> evidence/evd-050-v2.en.md": true,
+    "docs/control-cold-runtime.md -> evidence/evd-050-v2.md": true,
+    "docs/control-cold-runtime.md -> evidence/evd-050-storage.en.md": true,
+    "docs/control-cold-runtime.md -> evidence/evd-050-storage.md": true,
+    "docs/pol-004-m3-runtime.en.md -> pol-004-m3-runtime.md": true,
+    "docs/pol-004-m3-runtime.en.md -> pol-004-m3-runtime.json": true,
+    "docs/pol-004-m3-runtime.en.md -> evidence/evd-042-v1.en.md": true,
+    "docs/pol-004-m3-runtime.en.md -> evidence/evd-042-v1.md": true,
+    "docs/pol-004-m3-runtime.en.md -> evidence/evd-042-v3.en.md": true,
+    "docs/evidence/evd-042.en.md -> evd-042.md": true,
+    "docs/evidence/evd-042.en.md -> evd-042.json": true,
+    "docs/evidence/evd-042.en.md -> evd-042-v3.en.md": true,
+    "docs/evidence/evd-042.en.md -> evd-042-v2.en.md": true,
+    "docs/evidence/evd-042.en.md -> evd-042-v1.en.md": true,
+    "docs/evidence/evd-042.en.md -> evd-042-regressions.json": true
+  },
+  "host": {
+    "scheduling": 129,
+    "python": 45,
+    "scorer": 3
+  },
+  "builds": {
+    "rm-healthy": {
+      "elf_sha256": "7dce1d1ca53f32af17ae00c172e63c1d6c491bb1cc3f23608be7023e1408b364",
+      "reference_elf_sha256": "ba2017faa4e2178cf3993dc62ca62890ab2cbb5c1963eee2be9ea9c22fdfc40d",
+      "text_identical": true,
+      "load_identical": false
+    },
+    "rm-healthy-diagnostic": {
+      "elf_sha256": "06f2fee099c9d35134994695d13c516fa5f8abcd97a0c918b3e2c65395f33ffc",
+      "reference_elf_sha256": "b9fa5f1d5a78f056943612630983813a616358ddb4388398d40945e51feca0e9",
+      "text_identical": true,
+      "load_identical": false
+    },
+    "dm-healthy": {
+      "elf_sha256": "bf9bd538bdcbc3ff8e7522d27a58a0a3aa4901bb667fa1f222aeda450ce6d275",
+      "reference_elf_sha256": "e98e58a79ef816d46a18ec30bfb2cd9144de32abb4e588f1057e0eadfa9a2586",
+      "text_identical": true,
+      "load_identical": false
+    },
+    "dm-healthy-diagnostic": {
+      "elf_sha256": "1fb204bab6b9d6f61edeb3ba4b99a482a3e9f61000eb88854dbc4e14348cace5",
+      "reference_elf_sha256": "eb6043aa5a44f20ae0aede600b94f85a8f5e3714d5148585d1d4f6e5dd360c5a",
+      "text_identical": true,
+      "load_identical": false
+    },
+    "mlq": {
+      "elf_sha256": "696b1dc96a6ea7691e496f9a92c74910145717c3c4bf111d0f83e2f0500fd5bb",
+      "reference_elf_sha256": "696b1dc96a6ea7691e496f9a92c74910145717c3c4bf111d0f83e2f0500fd5bb",
+      "text_identical": true,
+      "load_identical": true
+    },
+    "a-ps": {
+      "elf_sha256": "ee8d6f39fcb899fa21fef8f31b8b321795640f71101d82ce7893d28c9fbc870b",
+      "reference_elf_sha256": "ee8d6f39fcb899fa21fef8f31b8b321795640f71101d82ce7893d28c9fbc870b",
+      "text_identical": true,
+      "load_identical": true
+    }
+  },
+  "cold_changes": "Exactly three bytes per control image differed, all src/ready_queue.rs panic source line numbers shifted +3. All other loaded bytes and all machine code identical.",
+  "cold": [
+    {
+      "name": "m0-rm-1-off",
+      "terminal": true,
+      "mode": [],
+      "startup_pass": null,
+      "operational_pass": false,
+      "criteria": {
+        "irq": true,
+        "decision": false,
+        "program": true,
+        "jobs": true,
+        "spacing": true,
+        "actual_issue": true,
+        "rearm_issue": false,
+        "actual_receive": false,
+        "command": false,
+        "device": false,
+        "unlatched": false
+      },
+      "first_irq_ms": 0.309952
+    },
+    {
+      "name": "m2-dm-1-off",
+      "terminal": true,
+      "mode": [
+        [
+          26663,
+          62500000,
+          2
+        ]
+      ],
+      "startup_pass": true,
+      "operational_pass": false,
+      "criteria": {
+        "irq": true,
+        "decision": false,
+        "program": true,
+        "jobs": true,
+        "spacing": true,
+        "actual_issue": true,
+        "rearm_issue": false,
+        "actual_receive": false,
+        "command": false,
+        "device": false,
+        "unlatched": false
+      },
+      "first_irq_ms": 0.280384
+    }
+  ],
+  "mlq_guest": "accepted; raw capture and exceptions preserved",
+  "ap_ledger": {
+    "end": 0,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 23288,
+    "preparation_return_max_ticks": 67112,
+    "periodic_release_to_finish_ticks": [
+      [
+        2,
+        28830
+      ],
+      [
+        6,
+        15809
+      ],
+      [
+        10,
+        13899
+      ],
+      [
+        14,
+        18359
+      ]
+    ],
+    "server_submit_to_finish_ticks": [
+      [
+        4,
+        1,
+        0,
+        9374540
+      ],
+      [
+        5,
+        2,
+        0,
+        6248262
+      ],
+      [
+        8,
+        2,
+        1,
+        15619678
+      ],
+      [
+        9,
+        3,
+        0,
+        15627210
+      ]
+    ],
+    "charged": 4,
+    "retired": 4,
+    "pending": 0,
+    "last_irq": [
+      1,
+      16,
+      53209887,
+      53200098,
+      0,
+      1075956256,
+      1075844548,
+      0,
+      4,
+      0
+    ],
+    "mask": [
+      0,
+      0
+    ],
+    "step_count": 2048
+  },
+  "scope": "Fresh integration smokes only. Prior independent cold study retains its own verdict. Diagnostic startup and operational health scored separately."
+}

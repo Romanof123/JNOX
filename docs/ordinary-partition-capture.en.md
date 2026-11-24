@@ -25,7 +25,7 @@ All counters are decimal physical counter ticks. 0/1/2 denote A/B/idle, 3 is the
 
 Between consecutive edges, charge the bracket from the worker sample x to its last sample to that task (including measured spill), entry to pre-eret to the dispatcher, and the gaps last-to-entry and pre-eret-to-x to transition uncertainty. Split at every nominal boundary, retain idle separately, and include the boot interval from epoch to first pre-eret. Compare the complete deadline-to-x interval against F/1000; raw entry is sampled after the vector branch and a stack push. Treat ambiguous edge order, missing progress, any skipped runnable window, trace loss and over-limit uncertainty as failed or inconclusive according to the frozen plan. A terminal line alone confers no verdict.
 
-The initial pure-counter probes exercise same-slot and skipped-slot decisions at synthetic counter offsets. The live finite masked case and live just-over-limit case remain open. These probes provide no evidence of measured masking, spilled execution or live recovery. No execution evidence is attached.
+The initial pure-counter probes exercise same-slot and skipped-slot decisions at synthetic counter offsets. The live finite masked case and live just-over-limit case remain open. These probes provide no evidence of measured masking, spilled execution or live recovery.
 
 ## Passive compare evidence and offline accounting
 
@@ -50,6 +50,10 @@ python tools/test_ordinary_partition_account.py
 For guest inputs, supply the original ELF, its expected SHA-256 from the independent boot record, and the raw QEMU exception log. The tool requires llvm-nm or aarch64-linux-gnu-nm. It checks initial PC and SP against the ELF, interrupted PCs against each worker’s symbol extent, private stack ranges, and ordered exception returns and IRQ ELRs. Unknown symbol layouts and missing evidence yield no verdict. Each observed accumulator is independently recomputed from its worker seed using the measured iteration count, with a cumulative limit of 64 million iterations. Synthetic traces use a fixed fictitious symbol map and carry no ELF or exception verification.
 
 The three B fields use raw counter ticks. b_release_nominal is the eligibility boundary. b_first_selection is the dispatcher observation that actually selects B. b_first_worker_observation is the subsequent observation made by B itself. Completed healthy traces retain over-limit edges and skipped slots in JSON and return status 2 on timing failure. Status 1 indicates an invalid or incomplete input. These offline checks preserve the first P and Q measurements and do not improve latency.
+
+Generate current synthetic controls with the commands above. The six original emitted streams in v1 are expected rejections under this checker.
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
 
 The controlled-case changes below await independent verification.
 
