@@ -70,3 +70,7 @@ For each frozen image, independently capture one guest and compare its task prog
 ## Linked Rust task configuration
 
 CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at build time. The same kernel interface accepts FIFO and RR applications with different priorities and initial releases. EVD-030 calls for the first guest captures, task exception and stack checks, and terminal idle for each application configuration. [Fixed-priority runtime](fixed-runtime.en.md)
+
+CHG-033 and IMP-031 select the ordinary FIFO/RR task tables on the P1 BCM2711 profile. Verification tracks the raw payload, model boot and physical observation separately. [Pi 4 linked-task runtime](boards/pi4-fixed-runtime.en.md)
+
+[EVD-031](evidence/evd-031.en.md)

@@ -37,3 +37,5 @@ Physical operation requires the boot firmware to enable the GIC path and delegat
 [EVD-014](../evidence/evd-014.en.md)
 
 [Capture UART across two witnessed power cycles](pi4-serial-capture.en.md)
+
+[Pi 4 linked-task runtime](pi4-fixed-runtime.en.md) · [#71](https://github.com/Romanof123/JNOX/issues/71)

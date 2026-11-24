@@ -37,3 +37,5 @@ SCHED PASS
 [EVD-014](../evidence/evd-014.md)
 
 [실물 전원 인가 두 번의 UART 수집 절차](pi4-serial-capture.md)
+
+[Pi 4 Rust 작업 런타임](pi4-fixed-runtime.md) · [#71](https://github.com/Romanof123/JNOX/issues/71)
