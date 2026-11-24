@@ -36,3 +36,14 @@
 호스트 검사기와 향후 커널 매퍼는 같은 무할당 Rust 파서를 사용한다. SDK로 빌드한 C 이미지 계획을 링크 맵과 대조하고 형식·범위 대조 결과를 기록한다. 실제 매핑·스택·EL0 진입·시스템 호출·응용 결과는 별도 구현과 근거가 필요하다. [REQ-008/014](requirements.md) · [DES-004/005](architecture.md) · [VER-008/014](verification-plan.md)
 
 실행 전에는 이미지 해시와 ABI 버전을 연결한 신뢰 패키지 매니페스트 등으로 실행 파일 및 네이티브 ABI 식별을 별도 인증해야 한다. 호스트 비교 이미지가 배치 검사를 통과해도 네이티브 실행 권한은 부여되지 않는다.
+
+### SDK 이미지 확인
+
+Rust가 설치된 환경에서 저장소 루트에서 검사기를 한 번 컴파일하고 SDK 링커가 만든 ELF 경로를 전달한다. 출력의 진입점, 권한, 복사·BSS 길이 및 페이지 끝을 SDK 링크 맵과 대조한다. SDK v1 기동 규약·적재 JNOX 노트·시스템 호출 ABI는 별도 패키지 검증 대상이다. 검사기는 노트를 검증하거나 응용을 실행하지 않는다.
+
+```sh
+rustc --edition=2024 tools/native_elf_plan.rs -o native_elf_plan
+./native_elf_plan path/to/application.elf
+rustc --edition=2024 --test kernel/native/lib.rs -o native_elf_tests
+./native_elf_tests
+```

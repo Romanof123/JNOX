@@ -36,3 +36,14 @@ Accept 1–8 nonempty PT_LOADs in ascending VA order and at most 16 program head
 The host inspector and future kernel mapper use the same allocation-free Rust parser. Validate an SDK-built C image against its link map and record bounded format/range controls. Actual mapping, stack, EL0 entry, syscall handling and application results require separate implementation and evidence. [REQ-008/014](requirements.en.md) · [DES-004/005](architecture.en.md) · [VER-008/014](verification-plan.en.md)
 
 Before launch the loader must independently authenticate the executable and its native ABI identity, for example with a trusted package manifest binding the image digest and ABI version. A hosted comparison image passing these layout checks gains no native execution authorization.
+
+### Inspect an SDK image
+
+From the repository root with Rust installed, compile the inspector once and supply the ELF produced by the SDK linker. The report gives the entry, permissions, copy and BSS lengths, and page ends. Compare those fields with the SDK link map. The SDK v1 startup convention, allocated JNOX note and syscall ABI are separate package checks. The inspector neither validates the note nor launches the application.
+
+```sh
+rustc --edition=2024 tools/native_elf_plan.rs -o native_elf_plan
+./native_elf_plan path/to/application.elf
+rustc --edition=2024 --test kernel/native/lib.rs -o native_elf_tests
+./native_elf_tests
+```
