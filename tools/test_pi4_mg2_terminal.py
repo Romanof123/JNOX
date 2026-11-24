@@ -155,6 +155,24 @@ class HostControls(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "invalid committed row"):
                     mg.rows_and_frames(raw, scope)
 
+    def test_raw_bootstrap_fields_by_layout(self):
+        with ZipFile(mg.ARCHIVE) as archive:
+            scope = mg.symbols_and_window(archive.read("clustered/kernel.elf"))
+        symbols = scope["symbols"]
+        raw = bytearray(scope["bytes"])
+        raw[symbols["PEER_READY"][0] - scope["pa"]] = 1
+        ticks_offset = symbols[mg.LEGACY_TICKS][0] - scope["pa"]
+        struct.pack_into("<2Q", raw, ticks_offset, 11, 23)
+        legacy = mg.rows_and_frames(raw, scope)
+        self.assertEqual(legacy["flags"]["PEER_READY"], 1)
+        self.assertEqual(legacy["last_pre_eret_per_cpu"], (11, 23))
+
+        del symbols["PEER_READY"]
+        symbols[mg.PUBLISHED_TICKS] = symbols.pop(mg.LEGACY_TICKS)
+        published = mg.rows_and_frames(raw, scope)
+        self.assertNotIn("PEER_READY", published["flags"])
+        self.assertEqual(published["last_pre_eret_per_cpu"], (11, 23))
+
 
 if __name__ == "__main__":
     unittest.main()

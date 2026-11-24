@@ -249,11 +249,13 @@ sched_start_frame:
     .ifdef JNOX_PI4_MIG
     mrs x9, mpidr_el1
     and x9, x9, #1
-    adrp x10, pi4_migration_return_ticks
-    add x10, x10, :lo12:pi4_migration_return_ticks
+    adrp x10, pi4_migration_published_return_ticks
+    add x10, x10, :lo12:pi4_migration_published_return_ticks
+    add x10, x10, x9, lsl #3
     isb
     mrs x11, cntpct_el0
-    str x11, [x10, x9, lsl #3]
+    // Publish the prepared frame and the start tick before restoring scratch GPRs.
+    stlr x11, [x10]
     .endif
     integer_pairs ldp
     ldr x30, [sp, #240]

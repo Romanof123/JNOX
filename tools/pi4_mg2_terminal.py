@@ -20,6 +20,9 @@ from zipfile import ZipFile
 from pi4_migration_capture import CASES, FILES, FLAGS, acquire, save, sha
 from qemu_capture import request
 
+LEGACY_TICKS = "pi4_migration_return_ticks"
+PUBLISHED_TICKS = "pi4_migration_published_return_ticks"
+
 ARCHIVE = (
     Path(__file__).resolve().parents[1] / "docs/evidence/pi4-migration-mg2-first.zip"
 )
@@ -71,6 +74,9 @@ def symbols_and_window(elf):
         "unbounded writable segment",
     )
     entries = list(e.get_section_by_name(".symtab").iter_symbols())
+    clock_names = {entry.name for entry in entries if entry.name in (LEGACY_TICKS, PUBLISHED_TICKS)}
+    need(len(clock_names) == 1, "ambiguous or missing return sample layout")
+    tick_name = clock_names.pop()
     wanted = {
         "LOG": 2 * JOURNAL_BYTES,
         "STACKS": 7 * 16384,
@@ -81,14 +87,15 @@ def symbols_and_window(elf):
         "MILESTONE": 1,
         "FAILED": 1,
         "INITIAL": 1,
-        "PEER_READY": 1,
         "DONE": 2,
         "HZ": 8,
         "SEALED": 1,
         "INVALID": 1,
         "smp_handler_tops": 16,
-        "pi4_migration_return_ticks": 16,
+        tick_name: 16,
     }
+    if tick_name == LEGACY_TICKS:
+        wanted["PEER_READY"] = 1
     symbols = {}
     for name, expected in wanted.items():
         module = (
@@ -102,6 +109,8 @@ def symbols_and_window(elf):
         )
         address = hits[0]["st_value"]
         need(base <= address <= base + size - expected, "out-of-range " + name)
+        if name == tick_name:
+            need(address % 8 == 0, "unaligned return sample pair")
         symbols[name] = [address, expected]
     top = [t for t in entries if t.name == "__stack_top"]
     need(
@@ -345,26 +354,19 @@ def rows_and_frames(raw, scope):
                 "svc_x0_to_x4": words[:5],
             }
         )
+    flags = {name: value(name) for name in ("LOCK", "INITIAL", "MILESTONE", "FAILED", "SEALED", "INVALID")}
+    if "PEER_READY" in sym:
+        flags["PEER_READY"] = value("PEER_READY")
+    tick_name = PUBLISHED_TICKS if PUBLISHED_TICKS in sym else LEGACY_TICKS
     return {
         "journals": journals,
         "m_opening_svc_frames": frames,
         "frequency": value("HZ"),
-        "flags": {
-            k: value(k)
-            for k in (
-                "LOCK",
-                "INITIAL",
-                "MILESTONE",
-                "FAILED",
-                "PEER_READY",
-                "SEALED",
-                "INVALID",
-            )
-        },
+        "flags": flags,
         "task_lease": struct.unpack("<3Q", grab(*sym["TASK_LEASE"])),
         "live_cpu_lease": struct.unpack("<2Q", grab(*sym["LIVE"])),
         "last_pre_eret_per_cpu": struct.unpack(
-            "<2Q", grab(*sym["pi4_migration_return_ticks"])
+            "<2Q", grab(*sym[tick_name])
         ),
     }
 

@@ -71,7 +71,8 @@ static mut STACKS: [Stack; 7] = [const { Stack([0; STACK_BYTES]) }; 7];
 #[unsafe(no_mangle)]
 static mut smp_handler_tops: [usize; 2] = [0; 2];
 #[unsafe(no_mangle)]
-static mut pi4_migration_return_ticks: [u64; 2] = [0; 2];
+static pi4_migration_published_return_ticks: [AtomicU64; 2] =
+    [const { AtomicU64::new(0) }; 2];
 fn bounds(role: usize) -> (usize, usize) {
     let base = (&raw mut STACKS).cast::<Stack>().wrapping_add(role) as usize;
     (base + 16, base + STACK_BYTES - 16)
@@ -176,9 +177,7 @@ impl State {
         if l.task as usize != id || LIVE[c].swap(0, Acquire) != l.sequence {
             abort(8)
         }
-        let start = unsafe {
-            ptr::read_volatile((&raw const pi4_migration_return_ticks).cast::<u64>().add(c))
-        };
+        let start = pi4_migration_published_return_ticks[c].load(Relaxed);
         let span = stop
             .checked_sub(start)
             .filter(|n| *n != 0 && start != 0)
@@ -361,7 +360,6 @@ extern "C" fn idle() -> ! {
 }
 static SEALED: AtomicBool = AtomicBool::new(false);
 static HZ: AtomicU64 = AtomicU64::new(0);
-static PEER_READY: AtomicBool = AtomicBool::new(false);
 pub(super) fn start(c: usize) -> ! {
     let identity = bsp::identity();
     let gic = bsp::gic_state(c);
@@ -415,11 +413,10 @@ pub(super) fn start(c: usize) -> ! {
         abort(19)
     }
     let f = transaction(|s| s.dispatch(c));
-    if c == 1 {
-        PEER_READY.store(true, Release);
-    } else {
+    if c == 0 {
         let start = bsp::ticks();
-        while !PEER_READY.load(Acquire) {
+        // CPU1 publishes from its first frame restore, before P1 can run.
+        while pi4_migration_published_return_ticks[1].load(Acquire) == 0 {
             if FAILED.load(Acquire)
                 || bsp::ticks().wrapping_sub(start) > bsp::frequency().saturating_mul(4)
             {
