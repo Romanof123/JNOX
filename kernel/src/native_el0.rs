@@ -48,6 +48,29 @@ fn head(index: usize, value: u64) {
     unsafe { ptr::write_volatile((&raw mut jnox_native_el0_journal.header).cast::<u64>().add(index), value) };
 }
 
+// Initialized once on this masked boot path, before the first EL0 entry.
+static mut CLOCK_DOMAIN: (u64, u64) = (0, 0);
+
+fn counter() -> u64 {
+    let ticks: u64;
+    unsafe { asm!("isb", "mrs {}, cntpct_el0", out(reg) ticks, options(nostack, preserves_flags)) };
+    ticks
+}
+
+fn clock_gettime(clock_id: u64, address: usize) -> i64 {
+    if clock_id != 1 {
+        return -22;
+    }
+    let (epoch, frequency) = unsafe { CLOCK_DOMAIN };
+    let Some(elapsed) = counter().checked_sub(epoch) else { return -75 };
+    let ns = u128::from(elapsed) * 1_000_000_000 / u128::from(frequency);
+    let Ok(seconds) = i64::try_from(ns / 1_000_000_000) else { return -75 };
+    let mut bytes = [0; 16];
+    bytes[..8].copy_from_slice(&seconds.to_le_bytes());
+    bytes[8..].copy_from_slice(&((ns % 1_000_000_000) as i64).to_le_bytes());
+    if native_el0_mmu::copy_to_user(address, &bytes) { 0 } else { -14 }
+}
+
 fn decimal(value: i64) {
     if value < 0 {
         uart_write(b"-");
@@ -93,7 +116,7 @@ extern "C" fn native_el0_sync(frame: *const NativeFrame, vector: u64) -> i64 {
             out(reg) vbar, out(reg) ttbr, out(reg) far, options(nostack, preserves_flags));
     }
     let count = unsafe { ptr::read_volatile(&raw const jnox_native_el0_journal.header[8]) as usize };
-    if count >= 8 || vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64
+    if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64
         || f.current_el != 4 || f.spsr & 0x1f != 0 || f.esr >> 26 != 0x15
         || f.esr & 0xffff != 0x4a01 || !native_el0_mmu::user_range(f.elr as usize, 4, false)
         || !(STACK_BOTTOM as u64..=STACK_TOP as u64).contains(&f.sp_el0) || f.sp_el0 % 16 != 0
@@ -106,15 +129,21 @@ extern "C" fn native_el0_sync(frame: *const NativeFrame, vector: u64) -> i64 {
     }
     // Unsupported services do not dereference a user pointer, acquire
     // descriptors, emit output or claim to have completed a transfer.
-    let result = if exit { 0i64 } else { -38 };
-    let row = [count as u64, vector, f.current_el, f.esr, f.spsr, f.elr, f.sp_el0,
+    let result = match f.x[8] {
+        1 => 0,
+        6 => clock_gettime(f.x[0], f.x[1] as usize),
+        _ => -38,
+    };
+    // Keep the first seven calls and the most recent call once the journal fills.
+    let index = count.min(7);
+    let row = [index as u64, vector, f.current_el, f.esr, f.spsr, f.elr, f.sp_el0,
         f.x[8], f.x[0], f.x[1], f.x[2], result as u64, if exit { 2 } else { 1 }, vbar, ttbr, far];
     unsafe {
-        let out = (&raw mut jnox_native_el0_journal.rows).cast::<[u64; 16]>().add(count);
+        let out = (&raw mut jnox_native_el0_journal.rows).cast::<[u64; 16]>().add(index);
         ptr::write_volatile(out, row);
         asm!("dmb ishst", options(nostack, preserves_flags));
     }
-    head(8, count as u64 + 1);
+    head(8, index as u64 + 1);
     if exit {
         head(9, f.x[0]);
         head(10, 1);
@@ -130,13 +159,17 @@ extern "C" fn native_el0_sync(frame: *const NativeFrame, vector: u64) -> i64 {
 
 // The bootstrap source is fixed. The ordinary argument strings and pointers
 // are copied to private physical backing before the user mapping is enabled.
+#[cfg(jnox_native_process)]
+const ARGS: &[&[u8]] = &[b"/bin/app\0"];
+#[cfg(not(jnox_native_process))]
+const ARGS: &[&[u8]] = &[b"/bin/native_startup_probe\0", b"8\0", b"13\0"];
+
 fn initial_stack() -> [u8; 80] {
-    let args: [&[u8]; 3] = [b"/bin/native_startup_probe\0", b"8\0", b"13\0"];
     let mut tail = [0u8; 80];
     let sp = STACK_TOP - tail.len();
-    tail[..8].copy_from_slice(&3u64.to_le_bytes());
+    tail[..8].copy_from_slice(&(ARGS.len() as u64).to_le_bytes());
     let mut offset = 48;
-    for (i, arg) in args.iter().enumerate() {
+    for (i, arg) in ARGS.iter().enumerate() {
         let pointer = ((sp + offset) as u64).to_le_bytes();
         tail[8 * (i + 1)..8 * (i + 2)].copy_from_slice(&pointer);
         tail[offset..offset + arg.len()].copy_from_slice(arg);
@@ -203,6 +236,14 @@ fn native_v1_note(image: &[u8], plan: &LoadPlan<'_>) -> Option<()> {
 }
 
 pub(super) fn run() -> ! {
+    let frequency: u64;
+    unsafe {
+        asm!("mrs {}, cntfrq_el0", out(reg) frequency, options(nostack, preserves_flags));
+        if frequency == 0 {
+            fail(8);
+        }
+        CLOCK_DOMAIN = (counter(), frequency);
+    }
     head(0, 1);
     head(1, 1);
     head(3, jnox_native_el0_image.len() as u64);
@@ -246,7 +287,7 @@ pub(super) fn run() -> ! {
     head(12, current);
     head(13, sctlr);
     head(14, ttbr);
-    head(15, 3);
+    head(15, ARGS.len() as u64);
     head(1, 2);
     unsafe { native_el0_enter(plan.entry, sp as u64) }
 }

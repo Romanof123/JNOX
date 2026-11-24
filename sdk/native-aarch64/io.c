@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <jnox/native_abi.h>
 #include <unistd.h>
+#include <time.h>
 
 _Static_assert(sizeof(void *) == 8 && sizeof(long) == 8 && sizeof(int) == 4,
                "native ABI v1 requires AArch64 LP64");
@@ -52,4 +53,13 @@ ssize_t write(int fd, const void *buffer, size_t count)
 int close(int fd)
 {
     return (int)service(JNOX_CALL_CLOSE, fd, 0, 0);
+}
+
+_Static_assert(sizeof(struct timespec) == 16 &&
+               __builtin_offsetof(struct timespec, tv_nsec) == 8,
+               "native timespec requires two signed LP64 fields");
+
+int clock_gettime(clockid_t clock, struct timespec *result)
+{
+    return (int)service(JNOX_CALL_CLOCK_GETTIME, clock, (long)result, 0);
 }
