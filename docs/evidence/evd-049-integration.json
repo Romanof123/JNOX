@@ -1,0 +1,3259 @@
+{
+  "head": "d08429a73e616a0caa164de224ceb5a299bce395",
+  "physical_tree": "6fac3074341e9407d57ce72d6ebff167fb12e576",
+  "policies": 18,
+  "findings": [],
+  "audit_sha256": "0172878c6fffebe7147f34ea457f9e52bfa793b7251c23bc4d83a46d197adede",
+  "documents": [
+    "docs\\ordinary-deadline-plan.md",
+    "docs\\ordinary-weighted.md"
+  ],
+  "file_links": [
+    [
+      "docs\\ordinary-deadline-plan.md",
+      "evidence/evd-048.en.md"
+    ],
+    [
+      "docs\\ordinary-deadline-plan.md",
+      "evidence/evd-048.md"
+    ],
+    [
+      "docs\\ordinary-deadline-plan.md",
+      "evidence/evd-005.en.md"
+    ],
+    [
+      "docs\\ordinary-deadline-plan.md",
+      "evidence/evd-015.en.md"
+    ],
+    [
+      "docs\\ordinary-deadline-plan.md",
+      "scheduling-release-cases.en.md"
+    ],
+    [
+      "docs\\ordinary-weighted.md",
+      "ordinary-vruntime-plan.md"
+    ],
+    [
+      "docs\\ordinary-weighted.md",
+      "evidence/evd-049.en.md"
+    ],
+    [
+      "docs\\ordinary-weighted.md",
+      "evidence/evd-049.md"
+    ],
+    [
+      "docs\\ordinary-weighted.md",
+      "architecture.en.md"
+    ],
+    [
+      "docs\\ordinary-weighted.md",
+      "architecture.md"
+    ]
+  ],
+  "missing": [],
+  "index_sha256": "efbccf5625e729b87472a6f159a5335594d4eb78fcac0bd1c4319a50f553c02b",
+  "image_comparisons": {
+    "ordinary-edf": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "9231885d204c5a609fe07ae359a16963394a37d6ed5988f7aca505d97ddb0a7f"
+    },
+    "ordinary-edf-trace": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "fef8efa336a9c7531137f7a739aed868c26482a283991b72bcbbe5dc465a9271"
+    },
+    "ordinary-llf": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "ce41d1a899a40a906aec887d3716717379d20372672267e9d6f09d36d068d9fc"
+    },
+    "ordinary-llf-trace": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "9e0bb6c69250c00bea107d414bc42addb6a6b98482a51bf8980376b1f6f7535d"
+    },
+    "ordinary-llf-overload": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "4f4dc00afb66f277c778e20050280267af1b345e80aca78570d1e668d6cc6157"
+    },
+    "ordinary-llf-overload-trace": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "20a67cbdc1b23f912f9dc693594c42ce68cf2e4bb0e531f03928632ab82daa22"
+    },
+    "ordinary-edf-overrun": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "b47798fd7b3292d2b1c05e2a06f22388d2998e8810486e1491f98d45e9145dfb"
+    },
+    "ordinary-edf-overrun-trace": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "632a13777f131e4f039e63ca1de9cb88c5fee87508e5621b60f7bec630317827"
+    },
+    "weighted-share": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "16539f920a596103b707473fca680ebc6afc240fa1d988855ef2e3f4527c59aa"
+    },
+    "weighted-share-trace": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "eaa6b66d6549f97a049c2fd26b6e11017718629de6ae5be8ec00f5c4f679538c"
+    },
+    "weighted-wake": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "19addc032b2ee3646c2023a0e96687a3b6d058388af2d365c4635081b4ad90d1"
+    },
+    "weighted-wake-trace": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "fed1f72a92b8d9b84afa20d6cd6762062261f6da998bcbaed4134d76d37d9ec7"
+    },
+    "rm-healthy": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "eb84dd03ad77660a65cdbc105b8b502df49db8422b142989b77f23150ab3253d"
+    },
+    "mlq": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "696b1dc96a6ea7691e496f9a92c74910145717c3c4bf111d0f83e2f0500fd5bb"
+    },
+    "a-ps": {
+      "loaded_identical": true,
+      "text_identical": true,
+      "elf_sha256": "8df919fcb54d70ee498d4fa3fa505fa75725e68b1f63fa4e8cc9e3c9a8a07106"
+    }
+  },
+  "host": {
+    "rust-all.log": [
+      "test mutex_tests::transitive_priorities_match_reachable_donors_across_mixed_protocol_chains ... ok",
+      "",
+      "test result: ok. 129 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s"
+    ],
+    "vruntime.log": [
+      "test vruntime_tests::wake_rounds_to_own_grid_and_preserves_ahead_service_when_the_floor_is_unchanged ... ok",
+      "",
+      "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 123 filtered out; finished in 0.00s"
+    ],
+    "python.log": [
+      "Ran 45 tests in 1.115s",
+      "",
+      "OK"
+    ]
+  },
+  "deadline": [
+    {
+      "case": "ordinary-edf",
+      "rows": 6,
+      "hz": 62500000,
+      "S": 6278835,
+      "Q": 6250000,
+      "release": {
+        "0": 6300244,
+        "1": 6300244,
+        "2": 12540426
+      },
+      "completion": {
+        "2": 13804726,
+        "0": 17272119,
+        "1": 23526770
+      },
+      "deadline": {
+        "0": 56278835,
+        "1": 81278835,
+        "2": 31278835
+      },
+      "switch": [
+        [
+          1,
+          12540426,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 21409,
+      "save_range": [
+        54,
+        1877
+      ],
+      "gap_range": [
+        1015,
+        30813
+      ],
+      "service": [
+        9670664,
+        6252103,
+        1259298
+      ],
+      "progress": [
+        948142,
+        613850,
+        120381
+      ],
+      "exhaustion_subsequent_service": {},
+      "terminal_pc": "0x402022e0"
+    },
+    {
+      "case": "ordinary-edf-overrun",
+      "rows": 8,
+      "hz": 62500000,
+      "S": 6294605,
+      "Q": 6250000,
+      "release": {
+        "0": 6325958,
+        "1": 6325958,
+        "2": 12557556
+      },
+      "completion": {
+        "2": 13826496,
+        "0": 29490659,
+        "1": 35746811
+      },
+      "deadline": {
+        "0": 56294605,
+        "1": 81294605,
+        "2": 31294605
+      },
+      "switch": [
+        [
+          1,
+          12557556,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 31353,
+      "save_range": [
+        49,
+        2112
+      ],
+      "gap_range": [
+        1201,
+        34591
+      ],
+      "service": [
+        21847226,
+        6253068,
+        1261526
+      ],
+      "progress": [
+        2098906,
+        608412,
+        123993
+      ],
+      "exhaustion_subsequent_service": {
+        "0": 10679054
+      },
+      "terminal_pc": "0x402022e0"
+    },
+    {
+      "case": "ordinary-edf-overrun-trace",
+      "rows": 8,
+      "hz": 62500000,
+      "S": 6278758,
+      "Q": 6250000,
+      "release": {
+        "0": 6301636,
+        "1": 6301636,
+        "2": 12541323
+      },
+      "completion": {
+        "2": 13806748,
+        "0": 29461640,
+        "1": 35717791
+      },
+      "deadline": {
+        "0": 56278758,
+        "1": 81278758,
+        "2": 31278758
+      },
+      "switch": [
+        [
+          1,
+          12541323,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 22878,
+      "save_range": [
+        80,
+        1880
+      ],
+      "gap_range": [
+        969,
+        30535
+      ],
+      "service": [
+        21851147,
+        6252821,
+        1259733
+      ],
+      "progress": [
+        2133004,
+        615942,
+        118764
+      ],
+      "exhaustion_subsequent_service": {
+        "0": 10664138
+      },
+      "terminal_pc": "0x402022e4"
+    },
+    {
+      "case": "ordinary-edf-trace",
+      "rows": 6,
+      "hz": 62500000,
+      "S": 6278994,
+      "Q": 6250000,
+      "release": {
+        "0": 6305075,
+        "1": 6305075,
+        "2": 12542052
+      },
+      "completion": {
+        "2": 13807949,
+        "0": 17272877,
+        "1": 23529233
+      },
+      "deadline": {
+        "0": 56278994,
+        "1": 81278994,
+        "2": 31278994
+      },
+      "switch": [
+        [
+          1,
+          12542052,
+          0,
+          2
+        ]
+      ],
+      "dwell": [],
+      "late_max": 26081,
+      "save_range": [
+        84,
+        1583
+      ],
+      "gap_range": [
+        1876,
+        25176
+      ],
+      "service": [
+        9670231,
+        6252034,
+        1260973
+      ],
+      "progress": [
+        947161,
+        612182,
+        123035
+      ],
+      "exhaustion_subsequent_service": {},
+      "terminal_pc": "0x402022e4"
+    },
+    {
+      "case": "ordinary-llf",
+      "rows": 11,
+      "hz": 62500000,
+      "S": 6275076,
+      "Q": 6250000,
+      "release": {
+        "0": 6297357,
+        "1": 6297357
+      },
+      "completion": {
+        "0": 45363301,
+        "1": 59458961
+      },
+      "deadline": {
+        "0": 56275076,
+        "1": 68775076
+      },
+      "switch": [
+        [
+          6,
+          43787757,
+          1,
+          0
+        ]
+      ],
+      "dwell": [],
+      "late_max": 22281,
+      "save_range": [
+        75,
+        1936
+      ],
+      "gap_range": [
+        1825,
+        31330
+      ],
+      "service": [
+        1573519,
+        51527805,
+        0
+      ],
+      "progress": [
+        152267,
+        5050188,
+        0
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3165278
+      },
+      "terminal_pc": "0x40202228"
+    },
+    {
+      "case": "ordinary-llf-overload",
+      "rows": 12,
+      "hz": 62500000,
+      "S": 6281264,
+      "Q": 6250000,
+      "release": {
+        "0": 6302047,
+        "1": 6302047,
+        "2": 50043045
+      },
+      "completion": {
+        "0": 45369157,
+        "2": 51612286,
+        "1": 59457867
+      },
+      "deadline": {
+        "0": 56281264,
+        "1": 68781264,
+        "2": 56281264
+      },
+      "switch": [
+        [
+          6,
+          43793889,
+          1,
+          0
+        ],
+        [
+          7,
+          50043045,
+          1,
+          2
+        ]
+      ],
+      "dwell": [
+        6249156
+      ],
+      "late_max": 20783,
+      "save_range": [
+        65,
+        1624
+      ],
+      "gap_range": [
+        1117,
+        27225
+      ],
+      "service": [
+        1573348,
+        49958587,
+        1567259
+      ],
+      "progress": [
+        151526,
+        4912382,
+        152284
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3160599
+      },
+      "terminal_pc": "0x40202228"
+    },
+    {
+      "case": "ordinary-llf-overload-trace",
+      "rows": 12,
+      "hz": 62500000,
+      "S": 6296789,
+      "Q": 6250000,
+      "release": {
+        "0": 6331703,
+        "1": 6331703,
+        "2": 50063629
+      },
+      "completion": {
+        "0": 45414274,
+        "2": 51636079,
+        "1": 59497996
+      },
+      "deadline": {
+        "0": 56296789,
+        "1": 68796789,
+        "2": 56296789
+      },
+      "switch": [
+        [
+          6,
+          43818211,
+          1,
+          0
+        ],
+        [
+          7,
+          50063629,
+          1,
+          2
+        ]
+      ],
+      "dwell": [
+        6245418
+      ],
+      "late_max": 34914,
+      "save_range": [
+        73,
+        3133
+      ],
+      "gap_range": [
+        1347,
+        34140
+      ],
+      "service": [
+        1588553,
+        49920387,
+        1569488
+      ],
+      "progress": [
+        150701,
+        4643838,
+        152175
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3177550
+      },
+      "terminal_pc": "0x4020222c"
+    },
+    {
+      "case": "ordinary-llf-trace",
+      "rows": 11,
+      "hz": 62500000,
+      "S": 6285133,
+      "Q": 6250000,
+      "release": {
+        "0": 6310667,
+        "1": 6310667
+      },
+      "completion": {
+        "0": 45372273,
+        "1": 59468422
+      },
+      "deadline": {
+        "0": 56285133,
+        "1": 68785133
+      },
+      "switch": [
+        [
+          6,
+          43797297,
+          1,
+          0
+        ]
+      ],
+      "dwell": [],
+      "late_max": 25534,
+      "save_range": [
+        48,
+        1729
+      ],
+      "gap_range": [
+        1677,
+        27997
+      ],
+      "service": [
+        1572834,
+        51524153,
+        0
+      ],
+      "progress": [
+        154621,
+        4351424,
+        0
+      ],
+      "exhaustion_subsequent_service": {
+        "1": 3164283
+      },
+      "terminal_pc": "0x4020222c"
+    }
+  ],
+  "rm_control": {
+    "name": "m0-rm-1-off",
+    "policy": "rm",
+    "mode": 0,
+    "pair": 1,
+    "arm": "off",
+    "host_elapsed_ns": {
+      "first_uart": 27895646,
+      "terminal": 104406950,
+      "exit_time": 107664043
+    },
+    "timeout": false,
+    "host_exit": 0,
+    "hashes": {
+      "stderr.txt": "f076bc95ab1a3c8a39bfe9e5f717b9a111e934b06dcb580bd07f05b531d80c74",
+      "execution.json": "c84eecd6a58247c9ad96b3bfadc6baf610f5f1b203a255f29d6a1937a1a9ad30",
+      "stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uart.txt": "fb04d616e4ab8c2798898c44ef5a179bfa99febd4d154480ebad40f71bb5451b"
+    },
+    "raw_mode": [],
+    "boot_failure": [],
+    "boot_off": [
+      [
+        29596,
+        0,
+        0
+      ]
+    ],
+    "issues": [
+      [
+        275544,
+        1,
+        1
+      ],
+      [
+        856530,
+        2,
+        1
+      ],
+      [
+        1481531,
+        3,
+        1
+      ],
+      [
+        2106530,
+        4,
+        1
+      ],
+      [
+        2731531,
+        5,
+        1
+      ],
+      [
+        3356531,
+        6,
+        1
+      ],
+      [
+        3981530,
+        7,
+        1
+      ]
+    ],
+    "receive": [],
+    "commands": [],
+    "device_edges": [],
+    "device_reads": [],
+    "terminal_device": [
+      [
+        4113594,
+        0,
+        1
+      ]
+    ],
+    "timing_faults": [
+      [
+        256368,
+        3,
+        1
+      ]
+    ],
+    "latches": [
+      [
+        257780,
+        3,
+        0
+      ]
+    ],
+    "phase": [
+      {
+        "i": 0,
+        "target": 200280,
+        "irq": [
+          [
+            209450,
+            0,
+            0
+          ]
+        ],
+        "decision": [
+          [
+            242842,
+            0,
+            241840
+          ]
+        ],
+        "returned": [
+          [
+            244095,
+            0,
+            200280
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 1,
+        "target": 356530,
+        "irq": [
+          [
+            359254,
+            1,
+            1
+          ]
+        ],
+        "decision": [
+          [
+            366913,
+            1,
+            366905
+          ]
+        ],
+        "returned": [
+          [
+            368515,
+            1,
+            356530
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 2,
+        "target": 512780,
+        "irq": [
+          [
+            515396,
+            2,
+            2
+          ]
+        ],
+        "decision": [
+          [
+            516743,
+            2,
+            516737
+          ]
+        ],
+        "returned": [
+          [
+            516759,
+            2,
+            512780
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 3,
+        "target": 669030,
+        "irq": [
+          [
+            673994,
+            3,
+            3
+          ]
+        ],
+        "decision": [
+          [
+            675203,
+            3,
+            675196
+          ]
+        ],
+        "returned": [
+          [
+            675217,
+            3,
+            669030
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 4,
+        "target": 825280,
+        "irq": [
+          [
+            829439,
+            4,
+            4
+          ]
+        ],
+        "decision": [
+          [
+            831332,
+            4,
+            831325
+          ]
+        ],
+        "returned": [
+          [
+            831349,
+            4,
+            825280
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 5,
+        "target": 981530,
+        "irq": [
+          [
+            983752,
+            5,
+            5
+          ]
+        ],
+        "decision": [
+          [
+            984813,
+            5,
+            984807
+          ]
+        ],
+        "returned": [
+          [
+            984826,
+            5,
+            981530
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 6,
+        "target": 1137780,
+        "irq": [
+          [
+            1143229,
+            6,
+            6
+          ]
+        ],
+        "decision": [
+          [
+            1144592,
+            6,
+            1144586
+          ]
+        ],
+        "returned": [
+          [
+            1144609,
+            6,
+            1137780
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 7,
+        "target": 1294030,
+        "irq": [
+          [
+            1297174,
+            7,
+            7
+          ]
+        ],
+        "decision": [
+          [
+            1298293,
+            7,
+            1298285
+          ]
+        ],
+        "returned": [
+          [
+            1298305,
+            7,
+            1294030
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 8,
+        "target": 1450280,
+        "irq": [
+          [
+            1453932,
+            8,
+            8
+          ]
+        ],
+        "decision": [
+          [
+            1455628,
+            8,
+            1455619
+          ]
+        ],
+        "returned": [
+          [
+            1455651,
+            8,
+            1450280
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 9,
+        "target": 1606530,
+        "irq": [
+          [
+            1608947,
+            9,
+            9
+          ]
+        ],
+        "decision": [
+          [
+            1610447,
+            9,
+            1610441
+          ]
+        ],
+        "returned": [
+          [
+            1610482,
+            9,
+            1606530
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 10,
+        "target": 1762780,
+        "irq": [
+          [
+            1767801,
+            10,
+            10
+          ]
+        ],
+        "decision": [
+          [
+            1769225,
+            10,
+            1769219
+          ]
+        ],
+        "returned": [
+          [
+            1769240,
+            10,
+            1762780
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 11,
+        "target": 1919030,
+        "irq": [
+          [
+            1923228,
+            11,
+            11
+          ]
+        ],
+        "decision": [
+          [
+            1924493,
+            11,
+            1924488
+          ]
+        ],
+        "returned": [
+          [
+            1924508,
+            11,
+            1919030
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 12,
+        "target": 2075280,
+        "irq": [
+          [
+            2078766,
+            12,
+            12
+          ]
+        ],
+        "decision": [
+          [
+            2080599,
+            12,
+            2080592
+          ]
+        ],
+        "returned": [
+          [
+            2080619,
+            12,
+            2075280
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 13,
+        "target": 2231530,
+        "irq": [
+          [
+            2235401,
+            13,
+            13
+          ]
+        ],
+        "decision": [
+          [
+            2236702,
+            13,
+            2236694
+          ]
+        ],
+        "returned": [
+          [
+            2236719,
+            13,
+            2231530
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 14,
+        "target": 2387780,
+        "irq": [
+          [
+            2391117,
+            14,
+            14
+          ]
+        ],
+        "decision": [
+          [
+            2392514,
+            14,
+            2392508
+          ]
+        ],
+        "returned": [
+          [
+            2392535,
+            14,
+            2387780
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 15,
+        "target": 2544030,
+        "irq": [
+          [
+            2548162,
+            15,
+            15
+          ]
+        ],
+        "decision": [
+          [
+            2549584,
+            15,
+            2549578
+          ]
+        ],
+        "returned": [
+          [
+            2549598,
+            15,
+            2544030
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 16,
+        "target": 2700280,
+        "irq": [
+          [
+            2704658,
+            16,
+            16
+          ]
+        ],
+        "decision": [
+          [
+            2706056,
+            16,
+            2706050
+          ]
+        ],
+        "returned": [
+          [
+            2706073,
+            16,
+            2700280
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 17,
+        "target": 2856530,
+        "irq": [
+          [
+            2860117,
+            17,
+            17
+          ]
+        ],
+        "decision": [
+          [
+            2862947,
+            17,
+            2862938
+          ]
+        ],
+        "returned": [
+          [
+            2862972,
+            17,
+            2856530
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 18,
+        "target": 3012780,
+        "irq": [
+          [
+            3016218,
+            18,
+            18
+          ]
+        ],
+        "decision": [
+          [
+            3017671,
+            18,
+            3017666
+          ]
+        ],
+        "returned": [
+          [
+            3017687,
+            18,
+            3012780
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 19,
+        "target": 3169030,
+        "irq": [
+          [
+            3173635,
+            19,
+            19
+          ]
+        ],
+        "decision": [
+          [
+            3174959,
+            19,
+            3174952
+          ]
+        ],
+        "returned": [
+          [
+            3174978,
+            19,
+            3169030
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 20,
+        "target": 3325280,
+        "irq": [
+          [
+            3329612,
+            20,
+            20
+          ]
+        ],
+        "decision": [
+          [
+            3330894,
+            20,
+            3330888
+          ]
+        ],
+        "returned": [
+          [
+            3330911,
+            20,
+            3325280
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 21,
+        "target": 3481530,
+        "irq": [
+          [
+            3484847,
+            21,
+            21
+          ]
+        ],
+        "decision": [
+          [
+            3486245,
+            21,
+            3486239
+          ]
+        ],
+        "returned": [
+          [
+            3486266,
+            21,
+            3481530
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 22,
+        "target": 3637780,
+        "irq": [
+          [
+            3641341,
+            22,
+            22
+          ]
+        ],
+        "decision": [
+          [
+            3643048,
+            22,
+            3643043
+          ]
+        ],
+        "returned": [
+          [
+            3643068,
+            22,
+            3637780
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 23,
+        "target": 3794030,
+        "irq": [
+          [
+            3797848,
+            23,
+            23
+          ]
+        ],
+        "decision": [
+          [
+            3799009,
+            23,
+            3799003
+          ]
+        ],
+        "returned": [
+          [
+            3799022,
+            23,
+            3794030
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      },
+      {
+        "i": 24,
+        "target": 3950280,
+        "irq": [
+          [
+            3953572,
+            24,
+            24
+          ]
+        ],
+        "decision": [
+          [
+            3954717,
+            24,
+            3954710
+          ]
+        ],
+        "returned": [
+          [
+            3954730,
+            24,
+            3950280
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": true
+      },
+      {
+        "i": 25,
+        "target": 4106530,
+        "irq": [
+          [
+            4110034,
+            25,
+            25
+          ]
+        ],
+        "decision": [
+          [
+            4110558,
+            25,
+            4110552
+          ]
+        ],
+        "returned": [
+          [
+            4110577,
+            25,
+            4106530
+          ]
+        ],
+        "irq_ok": true,
+        "decision_ok": true,
+        "program_ok": true,
+        "job_ok": null
+      }
+    ],
+    "first_irq_ms": 0.14672,
+    "epoch": 200280,
+    "hz": 62500000,
+    "criteria": {
+      "irq": true,
+      "decision": true,
+      "program": true,
+      "jobs": true,
+      "spacing": true,
+      "actual_issue": true,
+      "rearm_issue": false,
+      "actual_receive": false,
+      "command": false,
+      "device": false,
+      "unlatched": false
+    },
+    "operational_pass": false,
+    "classification": "healthy assessed",
+    "pre_issue": [],
+    "pre_receive": [],
+    "pre_reject": [],
+    "last_issue_at_latch": 0,
+    "last_issue_matches": true,
+    "pre_pairs_match": true,
+    "post_issue": [
+      [
+        275544,
+        1,
+        1
+      ],
+      [
+        856530,
+        2,
+        1
+      ],
+      [
+        1481531,
+        3,
+        1
+      ],
+      [
+        2106530,
+        4,
+        1
+      ],
+      [
+        2731531,
+        5,
+        1
+      ],
+      [
+        3356531,
+        6,
+        1
+      ],
+      [
+        3981530,
+        7,
+        1
+      ]
+    ],
+    "post_reject": [
+      [
+        279317,
+        1,
+        0
+      ],
+      [
+        856550,
+        2,
+        0
+      ],
+      [
+        1481559,
+        3,
+        0
+      ],
+      [
+        2106567,
+        4,
+        0
+      ],
+      [
+        2731559,
+        5,
+        0
+      ],
+      [
+        3356561,
+        6,
+        0
+      ],
+      [
+        3981558,
+        7,
+        0
+      ]
+    ],
+    "post_pairs_match": true,
+    "post_state_changes": [],
+    "issue_gaps_ticks": [
+      580986,
+      625001,
+      624999,
+      625001,
+      625000,
+      624999
+    ],
+    "check_gaps_ticks": [
+      124071,
+      149830,
+      158460,
+      156129,
+      153481,
+      159779,
+      153701,
+      157335,
+      154819,
+      158778,
+      155268,
+      156106,
+      156103,
+      155812,
+      157070,
+      156472,
+      156891,
+      154724,
+      157288,
+      155935,
+      155351,
+      156803,
+      155961,
+      155708,
+      155841
+    ],
+    "over_budget": [
+      [
+        251029,
+        0,
+        16349
+      ]
+    ],
+    "startup": {
+      "48": [],
+      "49": [],
+      "50": [],
+      "51": [],
+      "52": [],
+      "53": [],
+      "54": [],
+      "55": [],
+      "56": [],
+      "57": [],
+      "58": [],
+      "59": [],
+      "60": [],
+      "61": [],
+      "62": [],
+      "63": [],
+      "64": []
+    }
+  },
+  "aperiodic": {
+    "end": 0,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 19808,
+    "preparation_return_max_ticks": 50001,
+    "periodic_release_to_finish_ticks": [
+      [
+        2,
+        17332
+      ],
+      [
+        6,
+        13888
+      ],
+      [
+        10,
+        12613
+      ],
+      [
+        14,
+        12370
+      ]
+    ],
+    "server_submit_to_finish_ticks": [
+      [
+        4,
+        1,
+        0,
+        9385585
+      ],
+      [
+        5,
+        2,
+        0,
+        6257965
+      ],
+      [
+        8,
+        2,
+        1,
+        15623151
+      ],
+      [
+        9,
+        3,
+        0,
+        15626329
+      ]
+    ],
+    "charged": 4,
+    "retired": 4,
+    "pending": 0,
+    "last_irq": [
+      1,
+      16,
+      53161820,
+      53151009,
+      0,
+      1075956256,
+      1075844548,
+      0,
+      4,
+      0
+    ],
+    "mask": [
+      0,
+      0
+    ],
+    "step_count": 2048
+  },
+  "mlq": "PASS: 1 cold boot(s)",
+  "commands": [
+    "python -B run.py",
+    "wsl -d Ubuntu -- python3 -B guest.py",
+    "wsl -d Ubuntu -- python3 -B prior.py"
+  ],
+  "initial_harness_failure": "First build precondition rejected generated Python bytecode after unit tests on #115. Archived generated cache and disabled child Python bytecode. No compiler or guest had started.",
+  "guest_elapsed_seconds": {
+    "ordinary-edf": 0.39933426500000024,
+    "ordinary-edf-overrun": 0.6138013470000026,
+    "ordinary-edf-overrun-trace": 0.5978048920000028,
+    "ordinary-edf-trace": 0.40085012299999967,
+    "ordinary-llf": 0.9749648860000004,
+    "ordinary-llf-overload": 0.9733375510000002,
+    "ordinary-llf-overload-trace": 0.9813426429999978,
+    "ordinary-llf-trace": 0.9753737979999997,
+    "default-weighted-share": 0.40310767300000094,
+    "default-weighted-share-trace": 0.3996717140000001,
+    "default-weighted-wake": 0.16062176499999836,
+    "default-weighted-wake-trace": 0.16068297999999714
+  },
+  "weighted": [
+    {
+      "case": "default-weighted-share",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 644990,
+          "gap": 0,
+          "select": 4509,
+          "restore": null
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 632547,
+          "gap": 29511,
+          "select": 30,
+          "restore": null
+        },
+        {
+          "seq": 3,
+          "owner": 1,
+          "elapsed": 629285,
+          "gap": 4625,
+          "select": 15,
+          "restore": null
+        },
+        {
+          "seq": 4,
+          "owner": 1,
+          "elapsed": 629901,
+          "gap": 1903,
+          "select": 46,
+          "restore": null
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 631976,
+          "gap": 2704,
+          "select": 22,
+          "restore": null
+        },
+        {
+          "seq": 6,
+          "owner": 1,
+          "elapsed": 629206,
+          "gap": 2101,
+          "select": 21,
+          "restore": null
+        },
+        {
+          "seq": 7,
+          "owner": 1,
+          "elapsed": 630210,
+          "gap": 540,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 8,
+          "owner": 0,
+          "elapsed": 629594,
+          "gap": 2732,
+          "select": 13,
+          "restore": null
+        },
+        {
+          "seq": 9,
+          "owner": 1,
+          "elapsed": 629242,
+          "gap": 1771,
+          "select": 549,
+          "restore": null
+        },
+        {
+          "seq": 10,
+          "owner": 1,
+          "elapsed": 628727,
+          "gap": 297,
+          "select": 9,
+          "restore": null
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 628528,
+          "gap": 313,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 12,
+          "owner": 1,
+          "elapsed": 629910,
+          "gap": 288,
+          "select": 9,
+          "restore": null
+        },
+        {
+          "seq": 13,
+          "owner": 1,
+          "elapsed": 630521,
+          "gap": 290,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 14,
+          "owner": 0,
+          "elapsed": 631984,
+          "gap": 361,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 15,
+          "owner": 1,
+          "elapsed": 631847,
+          "gap": 381,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 16,
+          "owner": 1,
+          "elapsed": 633308,
+          "gap": 1420,
+          "select": 25,
+          "restore": null
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 634212,
+          "gap": 2484,
+          "select": 25,
+          "restore": null
+        },
+        {
+          "seq": 18,
+          "owner": 1,
+          "elapsed": 631059,
+          "gap": 1964,
+          "select": 27,
+          "restore": null
+        },
+        {
+          "seq": 19,
+          "owner": 1,
+          "elapsed": 630853,
+          "gap": 1553,
+          "select": 22,
+          "restore": null
+        },
+        {
+          "seq": 20,
+          "owner": 0,
+          "elapsed": 630726,
+          "gap": 963,
+          "select": 18,
+          "restore": null
+        },
+        {
+          "seq": 21,
+          "owner": 1,
+          "elapsed": 631393,
+          "gap": 594,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 22,
+          "owner": 1,
+          "elapsed": 631923,
+          "gap": 694,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 23,
+          "owner": 0,
+          "elapsed": 629094,
+          "gap": 588,
+          "select": 13,
+          "restore": null
+        },
+        {
+          "seq": 24,
+          "owner": 1,
+          "elapsed": 631201,
+          "gap": 355,
+          "select": 9,
+          "restore": null
+        },
+        {
+          "seq": 25,
+          "owner": 1,
+          "elapsed": 630167,
+          "gap": 1760,
+          "select": 27,
+          "restore": null
+        },
+        {
+          "seq": 26,
+          "owner": 0,
+          "elapsed": 631318,
+          "gap": 1474,
+          "select": 21,
+          "restore": null
+        },
+        {
+          "seq": 27,
+          "owner": 1,
+          "elapsed": 631385,
+          "gap": 726,
+          "select": 14,
+          "restore": null
+        },
+        {
+          "seq": 28,
+          "owner": 1,
+          "elapsed": 629791,
+          "gap": 795,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 29,
+          "owner": 0,
+          "elapsed": 629455,
+          "gap": 1290,
+          "select": 13,
+          "restore": null
+        },
+        {
+          "seq": 30,
+          "owner": 1,
+          "elapsed": 630424,
+          "gap": 374,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 31,
+          "owner": 1,
+          "elapsed": 631144,
+          "gap": 604,
+          "select": 11,
+          "restore": null
+        },
+        {
+          "seq": 32,
+          "owner": 0,
+          "elapsed": 629946,
+          "gap": 1837,
+          "select": 51,
+          "restore": null
+        },
+        {
+          "seq": 33,
+          "owner": 1,
+          "elapsed": 630739,
+          "gap": 411,
+          "select": 15,
+          "restore": null
+        },
+        {
+          "seq": 34,
+          "owner": 1,
+          "elapsed": 628530,
+          "gap": 494,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 35,
+          "owner": 0,
+          "elapsed": 629349,
+          "gap": 302,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 36,
+          "owner": 1,
+          "elapsed": 629627,
+          "gap": 514,
+          "select": 9,
+          "restore": null
+        },
+        {
+          "seq": 37,
+          "owner": 1,
+          "elapsed": 7226,
+          "gap": 4325,
+          "select": 11,
+          "restore": null
+        },
+        {
+          "seq": 38,
+          "owner": 0,
+          "elapsed": 1982,
+          "gap": 3254,
+          "select": 17,
+          "restore": null
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          1891733,
+          1259416,
+          1257969,
+          1260431,
+          1265155,
+          1261912,
+          1263316,
+          1261368,
+          1261176,
+          1261568,
+          1259269,
+          636853
+        ],
+        [
+          644990,
+          0,
+          0,
+          631976,
+          0,
+          629594,
+          0,
+          628528,
+          0,
+          631984,
+          0,
+          634212,
+          0,
+          630726,
+          0,
+          629094,
+          0,
+          631318,
+          0,
+          629455,
+          0,
+          629946,
+          0,
+          629349,
+          0
+        ]
+      ],
+      "cycles": [],
+      "horizon": {
+        "service": [
+          7581172,
+          15132940
+        ],
+        "progress": [
+          28333302,
+          56028898
+        ],
+        "D": 29404,
+        "A_fraction": 0.33376484187451394,
+        "B_fraction": 0.6662351581254861,
+        "prefix_D": [
+          1289980,
+          657433,
+          28148,
+          -601753,
+          662199,
+          32993,
+          -597217,
+          661971,
+          32729,
+          -595998,
+          661058,
+          31148,
+          -599373,
+          664595,
+          32748,
+          -600560,
+          667864,
+          36805,
+          -594048,
+          667404,
+          36011,
+          -595912,
+          662276,
+          31075,
+          -599092,
+          663544,
+          32159,
+          -597632,
+          661278,
+          30854,
+          -600290,
+          659602,
+          28863,
+          -599667,
+          659031,
+          29404
+        ]
+      },
+      "final_progress": [
+        28333303,
+        56028899
+      ]
+    },
+    {
+      "case": "default-weighted-share-trace",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 636746,
+          "gap": 0,
+          "select": 4350,
+          "restore": 8345
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 629077,
+          "gap": 24943,
+          "select": 20,
+          "restore": 2261
+        },
+        {
+          "seq": 3,
+          "owner": 1,
+          "elapsed": 628920,
+          "gap": 1498,
+          "select": 16,
+          "restore": 804
+        },
+        {
+          "seq": 4,
+          "owner": 1,
+          "elapsed": 629762,
+          "gap": 436,
+          "select": 12,
+          "restore": 683
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 632165,
+          "gap": 371,
+          "select": 10,
+          "restore": 806
+        },
+        {
+          "seq": 6,
+          "owner": 1,
+          "elapsed": 629656,
+          "gap": 4472,
+          "select": 49,
+          "restore": 731
+        },
+        {
+          "seq": 7,
+          "owner": 1,
+          "elapsed": 629914,
+          "gap": 474,
+          "select": 10,
+          "restore": 1030
+        },
+        {
+          "seq": 8,
+          "owner": 0,
+          "elapsed": 629013,
+          "gap": 360,
+          "select": 9,
+          "restore": 813
+        },
+        {
+          "seq": 9,
+          "owner": 1,
+          "elapsed": 629840,
+          "gap": 422,
+          "select": 11,
+          "restore": 188
+        },
+        {
+          "seq": 10,
+          "owner": 1,
+          "elapsed": 628405,
+          "gap": 406,
+          "select": 8,
+          "restore": 727
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 628938,
+          "gap": 259,
+          "select": 8,
+          "restore": 754
+        },
+        {
+          "seq": 12,
+          "owner": 1,
+          "elapsed": 628852,
+          "gap": 346,
+          "select": 9,
+          "restore": 877
+        },
+        {
+          "seq": 13,
+          "owner": 1,
+          "elapsed": 628839,
+          "gap": 278,
+          "select": 9,
+          "restore": 807
+        },
+        {
+          "seq": 14,
+          "owner": 0,
+          "elapsed": 628884,
+          "gap": 312,
+          "select": 11,
+          "restore": 838
+        },
+        {
+          "seq": 15,
+          "owner": 1,
+          "elapsed": 629700,
+          "gap": 308,
+          "select": 10,
+          "restore": 814
+        },
+        {
+          "seq": 16,
+          "owner": 1,
+          "elapsed": 628742,
+          "gap": 290,
+          "select": 9,
+          "restore": 785
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 629604,
+          "gap": 332,
+          "select": 9,
+          "restore": 843
+        },
+        {
+          "seq": 18,
+          "owner": 1,
+          "elapsed": 629816,
+          "gap": 1092,
+          "select": 12,
+          "restore": 752
+        },
+        {
+          "seq": 19,
+          "owner": 1,
+          "elapsed": 630426,
+          "gap": 462,
+          "select": 8,
+          "restore": 943
+        },
+        {
+          "seq": 20,
+          "owner": 0,
+          "elapsed": 629626,
+          "gap": 504,
+          "select": 11,
+          "restore": 896
+        },
+        {
+          "seq": 21,
+          "owner": 1,
+          "elapsed": 629929,
+          "gap": 385,
+          "select": 10,
+          "restore": 860
+        },
+        {
+          "seq": 22,
+          "owner": 1,
+          "elapsed": 630556,
+          "gap": 344,
+          "select": 9,
+          "restore": 853
+        },
+        {
+          "seq": 23,
+          "owner": 0,
+          "elapsed": 629875,
+          "gap": 761,
+          "select": 19,
+          "restore": 947
+        },
+        {
+          "seq": 24,
+          "owner": 1,
+          "elapsed": 630307,
+          "gap": 829,
+          "select": 17,
+          "restore": 1072
+        },
+        {
+          "seq": 25,
+          "owner": 1,
+          "elapsed": 629681,
+          "gap": 1231,
+          "select": 20,
+          "restore": 1210
+        },
+        {
+          "seq": 26,
+          "owner": 0,
+          "elapsed": 629528,
+          "gap": 482,
+          "select": 9,
+          "restore": 900
+        },
+        {
+          "seq": 27,
+          "owner": 1,
+          "elapsed": 629969,
+          "gap": 642,
+          "select": 14,
+          "restore": 1203
+        },
+        {
+          "seq": 28,
+          "owner": 1,
+          "elapsed": 630071,
+          "gap": 421,
+          "select": 10,
+          "restore": 885
+        },
+        {
+          "seq": 29,
+          "owner": 0,
+          "elapsed": 629601,
+          "gap": 352,
+          "select": 9,
+          "restore": 833
+        },
+        {
+          "seq": 30,
+          "owner": 1,
+          "elapsed": 629271,
+          "gap": 309,
+          "select": 10,
+          "restore": 822
+        },
+        {
+          "seq": 31,
+          "owner": 1,
+          "elapsed": 629043,
+          "gap": 414,
+          "select": 11,
+          "restore": 264
+        },
+        {
+          "seq": 32,
+          "owner": 0,
+          "elapsed": 628757,
+          "gap": 304,
+          "select": 8,
+          "restore": 1002
+        },
+        {
+          "seq": 33,
+          "owner": 1,
+          "elapsed": 628999,
+          "gap": 285,
+          "select": 10,
+          "restore": 779
+        },
+        {
+          "seq": 34,
+          "owner": 1,
+          "elapsed": 629957,
+          "gap": 987,
+          "select": 32,
+          "restore": 690
+        },
+        {
+          "seq": 35,
+          "owner": 0,
+          "elapsed": 629555,
+          "gap": 392,
+          "select": 9,
+          "restore": 959
+        },
+        {
+          "seq": 36,
+          "owner": 1,
+          "elapsed": 630025,
+          "gap": 290,
+          "select": 9,
+          "restore": 787
+        },
+        {
+          "seq": 37,
+          "owner": 1,
+          "elapsed": 7809,
+          "gap": 6253,
+          "select": 12,
+          "restore": 948
+        },
+        {
+          "seq": 38,
+          "owner": 0,
+          "elapsed": 2537,
+          "gap": 3410,
+          "select": 10,
+          "restore": 1069
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          1887759,
+          1259570,
+          1258245,
+          1257691,
+          1258442,
+          1260242,
+          1260485,
+          1259988,
+          1260040,
+          1258314,
+          1258956,
+          637834
+        ],
+        [
+          636746,
+          0,
+          0,
+          632165,
+          0,
+          629013,
+          0,
+          628938,
+          0,
+          628884,
+          0,
+          629604,
+          0,
+          629626,
+          0,
+          629875,
+          0,
+          629528,
+          0,
+          629601,
+          0,
+          628757,
+          0,
+          629555,
+          0
+        ]
+      ],
+      "cycles": [],
+      "horizon": {
+        "service": [
+          7562292,
+          15109757
+        ],
+        "progress": [
+          28297577,
+          56963664
+        ],
+        "D": 14827,
+        "A_fraction": 0.3335513256874136,
+        "B_fraction": 0.6664486743125864,
+        "prefix_D": [
+          1273492,
+          644415,
+          15495,
+          -614267,
+          650063,
+          20407,
+          -609507,
+          648519,
+          18679,
+          -609726,
+          648150,
+          19298,
+          -609541,
+          648227,
+          18527,
+          -610215,
+          648993,
+          19177,
+          -611249,
+          648003,
+          18074,
+          -612482,
+          647268,
+          16961,
+          -612720,
+          646336,
+          16367,
+          -613704,
+          645498,
+          16227,
+          -612816,
+          644698,
+          15699,
+          -614258,
+          644852,
+          14827
+        ]
+      },
+      "final_progress": [
+        28297578,
+        56963665
+      ]
+    },
+    {
+      "case": "default-weighted-wake",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 635385,
+          "gap": 0,
+          "select": 4297,
+          "restore": null
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 9195,
+          "gap": 24529,
+          "select": 16,
+          "restore": null
+        },
+        {
+          "seq": 3,
+          "owner": 0,
+          "elapsed": 630629,
+          "gap": 5565,
+          "select": 11,
+          "restore": null
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 629602,
+          "gap": 1690,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 629113,
+          "gap": 360,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 6,
+          "owner": 0,
+          "elapsed": 1861,
+          "gap": 922,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 629379,
+          "gap": 13004,
+          "select": 11,
+          "restore": null
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 5593,
+          "gap": 5584,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 9,
+          "owner": 0,
+          "elapsed": 630553,
+          "gap": 939,
+          "select": 17,
+          "restore": null
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 629599,
+          "gap": 422,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 628800,
+          "gap": 2013,
+          "select": 62,
+          "restore": null
+        },
+        {
+          "seq": 12,
+          "owner": 0,
+          "elapsed": 1830,
+          "gap": 322,
+          "select": 9,
+          "restore": null
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 629604,
+          "gap": 201,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 1709,
+          "gap": 419,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 15,
+          "owner": 0,
+          "elapsed": 629942,
+          "gap": 178,
+          "select": 7,
+          "restore": null
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 629371,
+          "gap": 464,
+          "select": 8,
+          "restore": null
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 628400,
+          "gap": 346,
+          "select": 9,
+          "restore": null
+        },
+        {
+          "seq": 18,
+          "owner": 0,
+          "elapsed": 1879,
+          "gap": 457,
+          "select": 10,
+          "restore": null
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 629411,
+          "gap": 792,
+          "select": 29,
+          "restore": null
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 3091,
+          "gap": 358,
+          "select": 9,
+          "restore": null
+        },
+        {
+          "seq": 21,
+          "owner": 0,
+          "elapsed": 1720,
+          "gap": 2746,
+          "select": 8,
+          "restore": null
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          9195,
+          0,
+          0,
+          0,
+          0,
+          5593,
+          0,
+          0,
+          0,
+          0,
+          1709,
+          0,
+          0,
+          0,
+          0,
+          3091
+        ],
+        [
+          635385,
+          629379,
+          629604,
+          629411
+        ]
+      ],
+      "cycles": [
+        {
+          "block": 2,
+          "base": [
+            635385,
+            9195
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1261575,
+          "solo": 3,
+          "sleep_service": 1891205,
+          "wake": 6,
+          "pre_lag": 5043985,
+          "post_lag": 0,
+          "wake_to_dispatch": 637383,
+          "wake_to_work": 640441,
+          "dispatch_to_work": 3058,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 8,
+          "base": [
+            3155969,
+            14788
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1253165,
+          "solo": 3,
+          "sleep_service": 1890782,
+          "wake": 12,
+          "pre_lag": 5034729,
+          "post_lag": 0,
+          "wake_to_dispatch": 630091,
+          "wake_to_work": 630912,
+          "dispatch_to_work": 821,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 14,
+          "base": [
+            5676355,
+            16497
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1257499,
+          "solo": 3,
+          "sleep_service": 1889592,
+          "wake": 18,
+          "pre_lag": 5036683,
+          "post_lag": 0,
+          "wake_to_dispatch": 630363,
+          "wake_to_work": 631355,
+          "dispatch_to_work": 992,
+          "first_resumed_charge_lag": 0
+        }
+      ],
+      "horizon": null,
+      "final_progress": [
+        17816598,
+        6
+      ]
+    },
+    {
+      "case": "default-weighted-wake-trace",
+      "weights": [
+        1,
+        2
+      ],
+      "Q": 625000,
+      "H": 781250,
+      "G": 156250,
+      "frequency": 62500000,
+      "intervals": [
+        {
+          "seq": 1,
+          "owner": 0,
+          "elapsed": 637207,
+          "gap": 0,
+          "select": 4439,
+          "restore": 8375
+        },
+        {
+          "seq": 2,
+          "owner": 1,
+          "elapsed": 8786,
+          "gap": 24276,
+          "select": 16,
+          "restore": 2191
+        },
+        {
+          "seq": 3,
+          "owner": 0,
+          "elapsed": 630953,
+          "gap": 5987,
+          "select": 16,
+          "restore": 2505
+        },
+        {
+          "seq": 4,
+          "owner": 0,
+          "elapsed": 629142,
+          "gap": 2134,
+          "select": 12,
+          "restore": 971
+        },
+        {
+          "seq": 5,
+          "owner": 0,
+          "elapsed": 629151,
+          "gap": 340,
+          "select": 10,
+          "restore": 767
+        },
+        {
+          "seq": 6,
+          "owner": 0,
+          "elapsed": 1942,
+          "gap": 1028,
+          "select": 16,
+          "restore": 730
+        },
+        {
+          "seq": 7,
+          "owner": 0,
+          "elapsed": 665353,
+          "gap": 11408,
+          "select": 13,
+          "restore": 901
+        },
+        {
+          "seq": 8,
+          "owner": 1,
+          "elapsed": 6650,
+          "gap": 1957,
+          "select": 16,
+          "restore": 2811
+        },
+        {
+          "seq": 9,
+          "owner": 0,
+          "elapsed": 629794,
+          "gap": 1105,
+          "select": 14,
+          "restore": 1001
+        },
+        {
+          "seq": 10,
+          "owner": 0,
+          "elapsed": 630331,
+          "gap": 2054,
+          "select": 78,
+          "restore": 991
+        },
+        {
+          "seq": 11,
+          "owner": 0,
+          "elapsed": 631121,
+          "gap": 2019,
+          "select": 14,
+          "restore": 770
+        },
+        {
+          "seq": 12,
+          "owner": 0,
+          "elapsed": 1369,
+          "gap": 310,
+          "select": 10,
+          "restore": 786
+        },
+        {
+          "seq": 13,
+          "owner": 0,
+          "elapsed": 630467,
+          "gap": 1919,
+          "select": 15,
+          "restore": 704
+        },
+        {
+          "seq": 14,
+          "owner": 1,
+          "elapsed": 1223,
+          "gap": 396,
+          "select": 11,
+          "restore": 580
+        },
+        {
+          "seq": 15,
+          "owner": 0,
+          "elapsed": 628941,
+          "gap": 162,
+          "select": 8,
+          "restore": 94
+        },
+        {
+          "seq": 16,
+          "owner": 0,
+          "elapsed": 628610,
+          "gap": 386,
+          "select": 13,
+          "restore": 809
+        },
+        {
+          "seq": 17,
+          "owner": 0,
+          "elapsed": 629599,
+          "gap": 280,
+          "select": 10,
+          "restore": 735
+        },
+        {
+          "seq": 18,
+          "owner": 0,
+          "elapsed": 1891,
+          "gap": 1873,
+          "select": 52,
+          "restore": 731
+        },
+        {
+          "seq": 19,
+          "owner": 0,
+          "elapsed": 629375,
+          "gap": 255,
+          "select": 11,
+          "restore": 102
+        },
+        {
+          "seq": 20,
+          "owner": 1,
+          "elapsed": 2748,
+          "gap": 1979,
+          "select": 59,
+          "restore": 782
+        },
+        {
+          "seq": 21,
+          "owner": 0,
+          "elapsed": 1678,
+          "gap": 2507,
+          "select": 20,
+          "restore": 803
+        }
+      ],
+      "eligible_competitor_service_waits": [
+        [
+          0,
+          8786,
+          0,
+          0,
+          0,
+          0,
+          6650,
+          0,
+          0,
+          0,
+          0,
+          1223,
+          0,
+          0,
+          0,
+          0,
+          2748
+        ],
+        [
+          637207,
+          665353,
+          630467,
+          629375
+        ]
+      ],
+      "cycles": [
+        {
+          "block": 2,
+          "base": [
+            637207,
+            8786
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1265628,
+          "solo": 3,
+          "sleep_service": 1891188,
+          "wake": 6,
+          "pre_lag": 5048004,
+          "post_lag": 0,
+          "wake_to_dispatch": 669702,
+          "wake_to_work": 673780,
+          "dispatch_to_work": 4078,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 8,
+          "base": [
+            3193748,
+            15436
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1324056,
+          "solo": 3,
+          "sleep_service": 1892615,
+          "wake": 12,
+          "pre_lag": 5109286,
+          "post_lag": 0,
+          "wake_to_dispatch": 630982,
+          "wake_to_work": 631804,
+          "dispatch_to_work": 822,
+          "first_resumed_charge_lag": 0
+        },
+        {
+          "block": 14,
+          "base": [
+            5716830,
+            16659
+          ],
+          "block_lag": 0,
+          "block_post_lag": 1259711,
+          "solo": 3,
+          "sleep_service": 1889041,
+          "wake": 18,
+          "pre_lag": 5037793,
+          "post_lag": 0,
+          "wake_to_dispatch": 631436,
+          "wake_to_work": 632429,
+          "dispatch_to_work": 993,
+          "first_resumed_charge_lag": 0
+        }
+      ],
+      "horizon": null,
+      "final_progress": [
+        18138293,
+        6
+      ]
+    }
+  ],
+  "weighted_host_command_documented": true,
+  "evidence_digests": {
+    "audit.json": "0172878c6fffebe7147f34ea457f9e52bfa793b7251c23bc4d83a46d197adede",
+    "index.json": "efbccf5625e729b87472a6f159a5335594d4eb78fcac0bd1c4319a50f553c02b",
+    "index.sha256": "513dacf46e9b9bfdec2f239e7a9033bb7c54d3d600f542ee875434afe2852103",
+    "python.log": "89b551ecb54ee5b36a048efa8ec91132c7d9718b57db981d9c032d8a77f31bfb",
+    "rust-all.log": "9928c41527fc42773a6e8e1150fc78811bfd1f054af9c7564574940a9d8f80dc",
+    "rust-build.log": "d2bc0bb48c9ab6dbf4c55b7c85399d9018c87b7102d6173ac690c16281caf5eb",
+    "sched.exe": "d6922dbfe5dfb04ec55ae4eb61572910c46eca0343e94a5e36343fad8e4b081b",
+    "sched.pdb": "41ccc98ed746f1cb66a70adf20b1d4c55af117004246f48e5653cc1b065ed616",
+    "vruntime.log": "d180359f6d05e762c17abf0072e4176d4fdee7b8709e0d258cb25f2050923e49",
+    "a-ps\\build.log": "a3b7a0d81a83ceaa3bb16e3931f0f1730f31b8a5308203feb1ac4af159b21e40",
+    "a-ps\\kernel.elf": "8df919fcb54d70ee498d4fa3fa505fa75725e68b1f63fa4e8cc9e3c9a8a07106",
+    "deadline-captures\\collect.log": "6e9244666240a25ff72d927fd3dd65876520554d4ea57f1482137fbded13ae48",
+    "deadline-captures\\collect.py": "4a78fd63312f7f9bf29eb2b23a5ea47996087addf5bd0fc1465392b71bc92eb9",
+    "deadline-captures\\cross.py": "b40326a43e9b625540534481481b67850f2218a408eaba11b7a3130e1becbdeb",
+    "deadline-captures\\results.json": "947807ca44930c4549ee0ca9d2df35095ae7f52b31368be3612aec6b7408c7aa",
+    "deadline-captures\\verify.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "deadline-captures\\verify.py": "d5fcde95c5104ea291967301f098752578f361c0fcf9182e1a142531432ea339",
+    "deadline-captures\\ordinary-edf\\asm": "2da2ec790f51bbc5dba93dc8d773a08757c87df81ffec147a76ca637bea4a1f9",
+    "deadline-captures\\ordinary-edf\\exceptions": "cfcc8c209d48c5b91fb07d3ab710b88c1342239b185ecd38f329a0113ef8382b",
+    "deadline-captures\\ordinary-edf\\launch.json": "68f878c9385d188706712bb38f0f76c4c10749c98d3765600dfde2321f14ef42",
+    "deadline-captures\\ordinary-edf\\ordinary_deadline_rows": "96cc71cefc1ea99ccba51e221bb4323973c9c656ab0d63587a0ad111833beef6",
+    "deadline-captures\\ordinary-edf\\ordinary_deadline_row_count": "23d7f42b1cdc1f0d492ebd756ed0fe8003995dda554d99418d47a81813650207",
+    "deadline-captures\\ordinary-edf\\registers": "61465ce30f9e0c9f77a8cf2eafc4753e2d4f72a27b0a7ea12b881657191db7ba",
+    "deadline-captures\\ordinary-edf\\rows.json": "ee6fca0a8891f8b05814511aee833eec8a54cda7cde4dd692a3e8136d88b671f",
+    "deadline-captures\\ordinary-edf\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-edf\\symbols": "5d4bc72c600edfe0892f51fd8cd927cc3f92af3750c6f1f263c7c4774d554da4",
+    "deadline-captures\\ordinary-edf\\uart": "f91b5f50b04e058ccc5315ae69346b3c2f39cdfff208a5e28e8200121821fd7f",
+    "deadline-captures\\ordinary-edf-overrun\\asm": "d6e8478596523dce063d8c3ada4d2650b4242b79b0c9a0ea617f4a6a0450454a",
+    "deadline-captures\\ordinary-edf-overrun\\exceptions": "909a3a92b810a25d8615512b39acf669f209ef17cf9c7a1cc42960936c8d5e6b",
+    "deadline-captures\\ordinary-edf-overrun\\launch.json": "e5f87f68b1d1a2dff8e7388a0a3e9ff61ed2af28cdf8c9666efee720aa286071",
+    "deadline-captures\\ordinary-edf-overrun\\ordinary_deadline_rows": "282363de23812bd22ca2fde9a4f72b805d76c849703c38b18d355828ac42c30e",
+    "deadline-captures\\ordinary-edf-overrun\\ordinary_deadline_row_count": "6cc16abd70eefb90dc0ba0d14fb088630873b2c6ad943f7442356735984c35a3",
+    "deadline-captures\\ordinary-edf-overrun\\registers": "6ee6d50209a2632f065333ba3d90d9e767c82fc22c8959491364002055ca3814",
+    "deadline-captures\\ordinary-edf-overrun\\rows.json": "eec3ea60cf9c16d69345a38b66376609212df089d4a47d7ad73b2351269eeade",
+    "deadline-captures\\ordinary-edf-overrun\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-edf-overrun\\symbols": "5d4bc72c600edfe0892f51fd8cd927cc3f92af3750c6f1f263c7c4774d554da4",
+    "deadline-captures\\ordinary-edf-overrun\\uart": "73914acc319a9d74bd1d51a9112d68b6a6c388719193b4ab89c1e117487cef70",
+    "deadline-captures\\ordinary-edf-overrun-trace\\asm": "904f3240eea972b9af0c6a090697ee3e7b0c0e303f2bbd65c7879d98a52edf6d",
+    "deadline-captures\\ordinary-edf-overrun-trace\\exceptions": "7fd283365ae9439678d3f420d05cb76da82b80b2949b370198707fd82ee09b93",
+    "deadline-captures\\ordinary-edf-overrun-trace\\launch.json": "6c07603fd193410764adb4480cde19fa16c7077b6c59179e569152f455a06be3",
+    "deadline-captures\\ordinary-edf-overrun-trace\\ordinary_deadline_rows": "57095a75414467309c88615ab52d122f8784ff133b7fa8900ed9cf06543dd43d",
+    "deadline-captures\\ordinary-edf-overrun-trace\\ordinary_deadline_row_count": "6cc16abd70eefb90dc0ba0d14fb088630873b2c6ad943f7442356735984c35a3",
+    "deadline-captures\\ordinary-edf-overrun-trace\\registers": "7632cef624195dfdc5bba2a7854ad75fa15ac513d4732c874121426ca13ecb35",
+    "deadline-captures\\ordinary-edf-overrun-trace\\rows.json": "c213544a830a10397af0061f88e2886c28d896bf3ef61a5524cec5a9ef49bb5b",
+    "deadline-captures\\ordinary-edf-overrun-trace\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-edf-overrun-trace\\symbols": "860620952210b97285968252ada292fab052aa97e183379172502ec100e8d9ec",
+    "deadline-captures\\ordinary-edf-overrun-trace\\uart": "c68c589b4bf16eef7c27dfb95d5a084336a2a99e110d427f7534795faff96d01",
+    "deadline-captures\\ordinary-edf-trace\\asm": "9fb2675209200804be53584e00410bc278215aa420f883da230f38603eaf1ceb",
+    "deadline-captures\\ordinary-edf-trace\\exceptions": "a2d38433ba4a0d80f15ad711c5501a53c174ca31051d98750bdc560cd4e8bb08",
+    "deadline-captures\\ordinary-edf-trace\\launch.json": "4e490ee5ce7055485f11e6424c9ff76572e257814a2dac585b50bf9954fcf394",
+    "deadline-captures\\ordinary-edf-trace\\ordinary_deadline_rows": "dcf1f15ddcad44b9fe73a14b2e3194239d2b46f64c2d5ab04021025406bd9cd6",
+    "deadline-captures\\ordinary-edf-trace\\ordinary_deadline_row_count": "23d7f42b1cdc1f0d492ebd756ed0fe8003995dda554d99418d47a81813650207",
+    "deadline-captures\\ordinary-edf-trace\\registers": "1dde26d1a8fd96b41f187ad9ce5d1dd98bce9c16c8489366443d015ec0f66334",
+    "deadline-captures\\ordinary-edf-trace\\rows.json": "f8752393e594c24d9df892a6de6a49a4ea2dfdb724857201e56a8b6f629fa707",
+    "deadline-captures\\ordinary-edf-trace\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-edf-trace\\symbols": "860620952210b97285968252ada292fab052aa97e183379172502ec100e8d9ec",
+    "deadline-captures\\ordinary-edf-trace\\uart": "2aea2cf2c0917a7ac2b15fc838f668d58ef5a03da62bb0905c9120eace8a8a30",
+    "deadline-captures\\ordinary-llf\\asm": "ecedf8ecf33aaf2d3f13a93355558ab31d2f7c5a5abbd4090846712e7ad6ba89",
+    "deadline-captures\\ordinary-llf\\exceptions": "14efa9f85f087946872133fcdd4a984f9ffa797c09e6e66d70376a03df6c39e7",
+    "deadline-captures\\ordinary-llf\\launch.json": "1e65873c5ea250028a217509e039c58109fc0ebf639b5f539c60fcca695859b3",
+    "deadline-captures\\ordinary-llf\\ordinary_deadline_rows": "7d70d4628182af4d95fdb3f76a4b3bccfaa1d9448a54f7db5d48e89848d6f290",
+    "deadline-captures\\ordinary-llf\\ordinary_deadline_row_count": "5fd1b79ebdef9619a57916a3bfc264b54d37a792659b3693f8ab36ec3ebce448",
+    "deadline-captures\\ordinary-llf\\registers": "59c474b47732bdd0b2ed4bd52c93c44fb25cfce67617cbe6cf8059b5af440bb3",
+    "deadline-captures\\ordinary-llf\\rows.json": "e7342b8583e544f255872fe5a48e63d148f1bc334cdbbe80ae4925d896b5616d",
+    "deadline-captures\\ordinary-llf\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-llf\\symbols": "b77f3875e9dc8fb46626bbc5c39659a35c54475acd0d57c848e32da663cc17be",
+    "deadline-captures\\ordinary-llf\\uart": "998c5fa99e5ffceefea347a374fced493ce7e4b5d912126c219244e9ca8a5973",
+    "deadline-captures\\ordinary-llf-overload\\asm": "c82f0c445c7e9a827e2d5ceca2b7e2e9d130af76cae7d1739f78db1ca06e73a3",
+    "deadline-captures\\ordinary-llf-overload\\exceptions": "ba5ae99b3c1bf6ca74d2713c0e5a7f06e7fe90d4965bc548d05d89293ec085ce",
+    "deadline-captures\\ordinary-llf-overload\\launch.json": "72cd325bafbf6940b0a0000bc330c18d3d3f6d07ba1b776c08a88799bb950f34",
+    "deadline-captures\\ordinary-llf-overload\\ordinary_deadline_rows": "fe0932fd47d3da0b31b30e78be097a5fc8f014372d010c3ec9949438f5f2f652",
+    "deadline-captures\\ordinary-llf-overload\\ordinary_deadline_row_count": "220dde27afee4d537cac96d85d6546f825153b90e828931b74e103807541bc42",
+    "deadline-captures\\ordinary-llf-overload\\registers": "1f1e3ea1da81162043ba1851ceb756aed59fef47fd2b977af40a4589825f9250",
+    "deadline-captures\\ordinary-llf-overload\\rows.json": "bb83204db2c7018679672ed64d77ccfa18953c9a5428d928fab45571d0b9c99b",
+    "deadline-captures\\ordinary-llf-overload\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-llf-overload\\symbols": "b77f3875e9dc8fb46626bbc5c39659a35c54475acd0d57c848e32da663cc17be",
+    "deadline-captures\\ordinary-llf-overload\\uart": "72ead2266e31ccd6e3805a6f76618f4a3f206d6d43cc71128bc6f29f81905cef",
+    "deadline-captures\\ordinary-llf-overload-trace\\asm": "1b7e63398ea5e739da28203e867350068b50769b9965a81c86ce73c28a12bb23",
+    "deadline-captures\\ordinary-llf-overload-trace\\exceptions": "1ce33185438ca90cb525035193bfe512d2cde5978392aa9f36b09296bca8979f",
+    "deadline-captures\\ordinary-llf-overload-trace\\launch.json": "ada988f3875bac1b805b2f95d680383da771dc34c5fcbd93eb55caf4e1d8bc35",
+    "deadline-captures\\ordinary-llf-overload-trace\\ordinary_deadline_rows": "adbb199fecc131d3466b2e8d19955a09e2c705334e07f2ca35a563476231f94e",
+    "deadline-captures\\ordinary-llf-overload-trace\\ordinary_deadline_row_count": "220dde27afee4d537cac96d85d6546f825153b90e828931b74e103807541bc42",
+    "deadline-captures\\ordinary-llf-overload-trace\\registers": "19e0ff5572055b93c94263e3398016e11a91f704e77c3a4c0fdccf9ba57118dc",
+    "deadline-captures\\ordinary-llf-overload-trace\\rows.json": "a36c0c6f8fd2aaab13a700f55d7eeb87171cf10449bd6d7eac8379b44cae9bb0",
+    "deadline-captures\\ordinary-llf-overload-trace\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-llf-overload-trace\\symbols": "fa996282463897a45fdcd06cbaae514f7c5e7dd25f6ecf80aaf11f7c9b7088de",
+    "deadline-captures\\ordinary-llf-overload-trace\\uart": "6cd0cf526e2958f1c77761c34504e204250a8dd6ff02d4dccdaef405e678bcc3",
+    "deadline-captures\\ordinary-llf-trace\\asm": "cd4a33b8bfffc658808e2148bbb20c9f2c4e537b3bee58a0979472881bd3922a",
+    "deadline-captures\\ordinary-llf-trace\\exceptions": "563962c034e7831efb348d762a195e215a5eaeeb335e5cf6a3c29bcc296d1c96",
+    "deadline-captures\\ordinary-llf-trace\\launch.json": "a498d3a5896355be616772739a85d091df5d3d37b3d4277f3fb59c9ea9d0ce68",
+    "deadline-captures\\ordinary-llf-trace\\ordinary_deadline_rows": "13c0e4853f56c7faa57204a45cabdb2c121864402a56026b2d4f0b5c2498d155",
+    "deadline-captures\\ordinary-llf-trace\\ordinary_deadline_row_count": "5fd1b79ebdef9619a57916a3bfc264b54d37a792659b3693f8ab36ec3ebce448",
+    "deadline-captures\\ordinary-llf-trace\\registers": "25ee128a7b3c3c3b27bd4c4a64e3b05c8804ed9e78e2a5166d1bc7459a020c48",
+    "deadline-captures\\ordinary-llf-trace\\rows.json": "dfc671c9a41267b8689df84c36de21caed9f42290c9e360214d173db73751682",
+    "deadline-captures\\ordinary-llf-trace\\stderr": "5b03914e2d61a84546000e792aa56621635080d0532733a4e74dd845017f62d8",
+    "deadline-captures\\ordinary-llf-trace\\symbols": "fa996282463897a45fdcd06cbaae514f7c5e7dd25f6ecf80aaf11f7c9b7088de",
+    "deadline-captures\\ordinary-llf-trace\\uart": "6a08bac30947d3a2e46e790ba116b02be26807bc7bba2ad414a8e839eb64afa1",
+    "mlq\\build.log": "6d7bc6c9faf12e23b543790b8faa76b1066f48aaa91fdad260ac8979c17ebd6f",
+    "mlq\\kernel.elf": "696b1dc96a6ea7691e496f9a92c74910145717c3c4bf111d0f83e2f0500fd5bb",
+    "ordinary-edf\\build.log": "3b4d6cb97ac08b6208726b497ec19b98957954c918fadff128885310c6a3d0d4",
+    "ordinary-edf\\kernel.elf": "9231885d204c5a609fe07ae359a16963394a37d6ed5988f7aca505d97ddb0a7f",
+    "ordinary-edf-overrun\\build.log": "f1fb61f6a94dd5156a5ba25bd24391bbf51e6afee253e217846e4e203ac74fb4",
+    "ordinary-edf-overrun\\kernel.elf": "b47798fd7b3292d2b1c05e2a06f22388d2998e8810486e1491f98d45e9145dfb",
+    "ordinary-edf-overrun-trace\\build.log": "a91ab258e96fcbacd721a8883df80aeedaf2cc6f4cb400c7e65409de6bda561d",
+    "ordinary-edf-overrun-trace\\kernel.elf": "632a13777f131e4f039e63ca1de9cb88c5fee87508e5621b60f7bec630317827",
+    "ordinary-edf-trace\\build.log": "a91ab258e96fcbacd721a8883df80aeedaf2cc6f4cb400c7e65409de6bda561d",
+    "ordinary-edf-trace\\kernel.elf": "fef8efa336a9c7531137f7a739aed868c26482a283991b72bcbbe5dc465a9271",
+    "ordinary-llf\\build.log": "a91ab258e96fcbacd721a8883df80aeedaf2cc6f4cb400c7e65409de6bda561d",
+    "ordinary-llf\\kernel.elf": "ce41d1a899a40a906aec887d3716717379d20372672267e9d6f09d36d068d9fc",
+    "ordinary-llf-overload\\build.log": "25ea53adc993bbbdbc840ff54eb3a38ada11c0372aa0bd9393e8bc2586e1538e",
+    "ordinary-llf-overload\\kernel.elf": "4f4dc00afb66f277c778e20050280267af1b345e80aca78570d1e668d6cc6157",
+    "ordinary-llf-overload-trace\\build.log": "a91ab258e96fcbacd721a8883df80aeedaf2cc6f4cb400c7e65409de6bda561d",
+    "ordinary-llf-overload-trace\\kernel.elf": "20a67cbdc1b23f912f9dc693594c42ce68cf2e4bb0e531f03928632ab82daa22",
+    "ordinary-llf-trace\\build.log": "a91ab258e96fcbacd721a8883df80aeedaf2cc6f4cb400c7e65409de6bda561d",
+    "ordinary-llf-trace\\kernel.elf": "9e0bb6c69250c00bea107d414bc42addb6a6b98482a51bf8980376b1f6f7535d",
+    "prior-captures\\ap-score.json": "7faebd0ad8306784477ba6574ac7c96dceaf4b762ee38ba19160f016bd20f78f",
+    "prior-captures\\ap.py": "db73b955c08d2905ec2cf7b9d84212c467e487ce7bd1d546c9589c871b65f0e2",
+    "prior-captures\\aper.log": "125efbc0d1ef7c09eb343a718fced8b67be9b501faf72efa35b9aa2d76093ce8",
+    "prior-captures\\cold.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "prior-captures\\cold.py": "bae37bcb0fcb46587129772b5aa3bd55e0aa14d54b1ac40920d4ffa054756c24",
+    "prior-captures\\cross.log": "043c2f8219e3cb66dccbc2aaee2963fe5af21d837ba7db951a9b615ed4963599",
+    "prior-captures\\host.json": "30877e00ce73feaa5790f06bb08a25f6fa417f01342cab76dd05e80e32b7816f",
+    "prior-captures\\index.json": "efbccf5625e729b87472a6f159a5335594d4eb78fcac0bd1c4319a50f553c02b",
+    "prior-captures\\individual.json": "fded7770bdf99df718bf7cb7ccd1a8d155b1d1e1f1a82c65fb5c7a0ee194fce3",
+    "prior-captures\\mlq.log": "e080fa4c73c3964552c5fc78f50e181530aa77e7862176571f5b6259904bfc74",
+    "prior-captures\\order.txt": "81c037bbfa72550530e8eb964778fa59dc58b4b05d182051c2825d18067bb826",
+    "prior-captures\\score.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "prior-captures\\score.py": "4236fe3ba87bc6a5bf263eba6ec292195b14f652d225cf23ccb811811d8b8827",
+    "prior-captures\\a-ps\\build.log": "a3b7a0d81a83ceaa3bb16e3931f0f1730f31b8a5308203feb1ac4af159b21e40",
+    "prior-captures\\a-ps\\kernel.elf": "8df919fcb54d70ee498d4fa3fa505fa75725e68b1f63fa4e8cc9e3c9a8a07106",
+    "prior-captures\\default\\a-ps\\int": "c70953b365272d4643aff473076b89845e0e0ececbf972842bfa290407fbf663",
+    "prior-captures\\default\\a-ps\\meta.json": "8707950acdeab3a713518b95109fd2a55b4fdc810d851e188fa40ba875fc0ca9",
+    "prior-captures\\default\\a-ps\\stderr": "631114d75bac4c7bbc7fec24163d93b96e469bf569192fecdd5f2e6605ef9723",
+    "prior-captures\\default\\a-ps\\uart": "4c43451794571246e13f7569754f7d6515df4f7d62683e13443073d9f0f63c0d",
+    "prior-captures\\m0-rm-1-off\\execution.json": "c84eecd6a58247c9ad96b3bfadc6baf610f5f1b203a255f29d6a1937a1a9ad30",
+    "prior-captures\\m0-rm-1-off\\score.json": "9c1cc943b3daec947cec3b2375f5ca0aa7715d3226912db7e6d6cd534b32d503",
+    "prior-captures\\m0-rm-1-off\\stderr.txt": "f076bc95ab1a3c8a39bfe9e5f717b9a111e934b06dcb580bd07f05b531d80c74",
+    "prior-captures\\m0-rm-1-off\\stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "prior-captures\\m0-rm-1-off\\uart.txt": "fb04d616e4ab8c2798898c44ef5a179bfa99febd4d154480ebad40f71bb5451b",
+    "prior-captures\\mlq\\build.log": "6d7bc6c9faf12e23b543790b8faa76b1066f48aaa91fdad260ac8979c17ebd6f",
+    "prior-captures\\mlq\\kernel.elf": "696b1dc96a6ea7691e496f9a92c74910145717c3c4bf111d0f83e2f0500fd5bb",
+    "prior-captures\\mlq\\capture\\run-1\\exceptions.log": "43fa85e1451b34154e020158b6f23adea02e0eaf01d52cbd205d8d1e4a7fae43",
+    "prior-captures\\mlq\\capture\\run-1\\stderr": "a135f16d0c587f5d9b9ac0bef233ec33dcebfe346707ebc0d7e6e705d315af89",
+    "prior-captures\\mlq\\capture\\run-1\\uart": "5577f1a2e02d3beed9b2bd7330f7bea7bb7cbfcb973b6bfeb3225a83937e0cc5",
+    "prior-captures\\rm-healthy\\build.log": "159783147d0f5592f9bd974fa1b1d6721ddaab691564f3c57aebe8758ab88b43",
+    "prior-captures\\rm-healthy\\kernel.elf": "eb84dd03ad77660a65cdbc105b8b502df49db8422b142989b77f23150ab3253d",
+    "rm-healthy\\build.log": "159783147d0f5592f9bd974fa1b1d6721ddaab691564f3c57aebe8758ab88b43",
+    "rm-healthy\\kernel.elf": "eb84dd03ad77660a65cdbc105b8b502df49db8422b142989b77f23150ab3253d",
+    "weighted-captures\\collect.log": "7703e82011cb5f382e5278eef17556daf1eaf52e813de7b100dde74a7c788149",
+    "weighted-captures\\collect.py": "85d1a150096371b1e1cce590e47fb34da7cdf24b0ac2014b31b74e0abcb138d9",
+    "weighted-captures\\qemu-version": "8ff08b5c9c6a45e338a199846bbce04c4bb630b176c96f545ee51a03130565a3",
+    "weighted-captures\\results.json": "319805819e1a1dfd79e3f982a9e10ee89571fa6e7091edef8b2046e0bc799385",
+    "weighted-captures\\verify.log": "0b4474e5ff6edfa14efb50e2bea9c42207df24723a978fdbe55bb2f5588aa1e8",
+    "weighted-captures\\verify.py": "437c4c30f946785011f6649c77448f3a4dbba877e9fd8e59d5d37b84d1736f3c",
+    "weighted-captures\\default-weighted-share\\asm": "857997639f2b0d814eaac678a65eff6c851c20b305a650a0b7b5960b23ec5772",
+    "weighted-captures\\default-weighted-share\\exceptions": "7b4165ddd772f79a556335d59f2c4b81c15bd201f6a4678015dd7744f572f5a0",
+    "weighted-captures\\default-weighted-share\\launch.json": "8bc503570c5df91a9aeb7f3d408f552d7c2fb73d3dee9648d0c60892c0eaf1ce",
+    "weighted-captures\\default-weighted-share\\registers": "f37f6d95aff61d81ae0ca8e9addd9392d82289e2d8f77f646303abfee34b989e",
+    "weighted-captures\\default-weighted-share\\stderr": "0b10f6a16088fe3a41265d3edf0f1b7ee30452226be3382befb299e0ccb5f85b",
+    "weighted-captures\\default-weighted-share\\symbols": "bba7dbe42358f7077c6659b86dfb6d8133defe27cf7923bc79d44a56df9808ec",
+    "weighted-captures\\default-weighted-share\\uart": "aba7f7f08746a9eea9d8b59bb328ceae09b73ba52bca19ddc8d987630569427a",
+    "weighted-captures\\default-weighted-share\\weighted_rows": "640bbafd1b757f905dd0b93f69068369440e0d123f4523b77bf896cae8a0c0b0",
+    "weighted-captures\\default-weighted-share-trace\\asm": "f26c4bdbcf352b6cabd548ad192df93c1732444e295da882f9683488864ddac6",
+    "weighted-captures\\default-weighted-share-trace\\exceptions": "730cb48488fb27c2b11490d6c280e4f5aa1be5a32e05c49580630724a15ce8c3",
+    "weighted-captures\\default-weighted-share-trace\\launch.json": "17f9b9edf5c8ded4d1f39cc84687e12a326a5a8aa91aeb190abb9abf4b18c393",
+    "weighted-captures\\default-weighted-share-trace\\registers": "0cb8c73b2de836d63d581ba72d5b3a747f8751f223f8babbd19bc8c78590f3d1",
+    "weighted-captures\\default-weighted-share-trace\\stderr": "0b10f6a16088fe3a41265d3edf0f1b7ee30452226be3382befb299e0ccb5f85b",
+    "weighted-captures\\default-weighted-share-trace\\symbols": "283f032a33fb9c5b44c96fbe0e0d8a9d96beea77fb5a53f9a9aeb4ae9b7aa263",
+    "weighted-captures\\default-weighted-share-trace\\uart": "e8f27d2cd73335000fb4c99d485e8bc34c21a325b069b6bd2cefe20bc67252f2",
+    "weighted-captures\\default-weighted-share-trace\\weighted_rows": "5365975ee88d25e822d1e8ae817074428ca6910e3f0752bd2df3998df1b41bcb",
+    "weighted-captures\\default-weighted-wake\\asm": "2e470f2af927910ad5c809e1c015db80b23e8fdfb94e92ebf2dbab2b4b3acf61",
+    "weighted-captures\\default-weighted-wake\\exceptions": "2a16374504305fecce9d6fb3eaeb124a55695a040294bb06161b7b8ac45a102e",
+    "weighted-captures\\default-weighted-wake\\launch.json": "28c51a3f9efd293a586e538d7fe4b25c03be03ca044337448427e902ba6f8454",
+    "weighted-captures\\default-weighted-wake\\registers": "2d7c45b4c53f6875f53d932499256526001b1ed2c70b7ef131fff04637f722ae",
+    "weighted-captures\\default-weighted-wake\\stderr": "0b10f6a16088fe3a41265d3edf0f1b7ee30452226be3382befb299e0ccb5f85b",
+    "weighted-captures\\default-weighted-wake\\symbols": "a64ba8c08fbd6a9891f6ba24bb28de15ed38041baa621b57377a58edf6588448",
+    "weighted-captures\\default-weighted-wake\\uart": "4dbd1e93799a79dffaed629e15d2fc35cc8f0d9ff5126c24f565ff538f9399f7",
+    "weighted-captures\\default-weighted-wake\\weighted_rows": "dd86146eda9dc60b394231dfb9df8da5043d645c83ca7297e3bd30aa336e4fa2",
+    "weighted-captures\\default-weighted-wake-trace\\asm": "f46d0d001fbb02f141d8b762929981066adcabd4841887f53b28c5ae282a8bf7",
+    "weighted-captures\\default-weighted-wake-trace\\exceptions": "90027ebd1c36022dc5b6570b05c3c26741135cc3c42e89ad6bfd216bc3bbb40a",
+    "weighted-captures\\default-weighted-wake-trace\\launch.json": "033243cec4c86a7131df2cfa21d80fe5ccf66dd9b3f16c212e2eb591a238d4bb",
+    "weighted-captures\\default-weighted-wake-trace\\registers": "4117035b0f635b5b7170204e70ff1e92dd514158ebcb1d5467dd7a0641ffe7ed",
+    "weighted-captures\\default-weighted-wake-trace\\stderr": "0b10f6a16088fe3a41265d3edf0f1b7ee30452226be3382befb299e0ccb5f85b",
+    "weighted-captures\\default-weighted-wake-trace\\symbols": "f30bab5bd922b1ede2138075b8a01ec1011cfdf8a5ca7bd29667742a9507cc28",
+    "weighted-captures\\default-weighted-wake-trace\\uart": "96946eb5d9b25bc0e31a9bfe8c24eeb7ceebf6efdd91824541e04522de541cba",
+    "weighted-captures\\default-weighted-wake-trace\\weighted_rows": "74090d84d254875fffaa29df5fc7ba98a07df506115cad649210cb5e86e28207",
+    "weighted-share\\build.log": "376fbe11f8380f17c029717778641a8e00d40a92c8c4e82535a01cf08612d395",
+    "weighted-share\\kernel.elf": "16539f920a596103b707473fca680ebc6afc240fa1d988855ef2e3f4527c59aa",
+    "weighted-share-trace\\build.log": "d663d370b8732494d86cc8050899171bfbcad5c31927dfbc33890df337b1b9f6",
+    "weighted-share-trace\\kernel.elf": "eaa6b66d6549f97a049c2fd26b6e11017718629de6ae5be8ec00f5c4f679538c",
+    "weighted-wake\\build.log": "3ea8a8c00367072665d133d62cce5a69c00727ef5fed96d9215669c41e69c05f",
+    "weighted-wake\\kernel.elf": "19addc032b2ee3646c2023a0e96687a3b6d058388af2d365c4635081b4ad90d1",
+    "weighted-wake-trace\\build.log": "d663d370b8732494d86cc8050899171bfbcad5c31927dfbc33890df337b1b9f6",
+    "weighted-wake-trace\\kernel.elf": "fed1f72a92b8d9b84afa20d6cd6762062261f6da998bcbaed4134d76d37d9ec7"
+  }
+}

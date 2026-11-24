@@ -63,3 +63,5 @@ The host analysis and CLI passed independent replay. Runtime and budget provenan
 In v3, 14/23 primary cases qualified on the first attempt and 15/23 including one cold retry after a host read error. The deterministic worst-phase and same-tick cases qualified. All eight default-clock ordinary cases remained unqualified. The ten diagnostics were scored separately. [EVD-042 v3](evidence/evd-042-v3.en.md) · [#109](control-cold-plan.md)
 
 v3 주 시험은 첫 시도에서 23건 중 14건이 적격이었고 호스트 읽기 오류 후 콜드 재시도 1회를 포함하면 15건이었다. 결정론적 최악 위상과 동일 틱 사례는 적격이었고 기본 클록 일반 사례 8건은 모두 부적격이었다. 진단 10건은 별도 판정했다. [EVD-042 v3](evidence/evd-042-v3.md) · [#109](control-cold-plan.md)
+
+CHG-053 · [Ordinary control service and first dispatch / 일반 제어 서비스와 최초 디스패치](control-service-plan.md)

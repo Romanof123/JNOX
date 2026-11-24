@@ -170,4 +170,8 @@ POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds
 
 POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
 
+CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes initialized. After the input repair all 96 startup checks passed. Operational qualification was 0/128 in the repaired series. [EVD-050](evidence/evd-050.en.md)
+
+POL-011 · CHG-052 · IMP-049. Two ordinary Rust entries share the exception-return ABI and the weighted virtual-runtime scheduler. See the [approved workload plan](ordinary-vruntime-plan.md) and [build, capture and replay instructions](ordinary-weighted.md). VER-002/005/023 · [EVD-049](evidence/evd-049.en.md).
+
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
