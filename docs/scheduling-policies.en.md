@@ -27,6 +27,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Live SMP on two virtual CPUs | IMP-017, POL-013 | CPU0 suspended a running thread on a timer IRQ and CPU1 resumed its saved instruction. Both host threading modes passed. Physical interference remains open. [EVD-017](evidence/evd-017.en.md) |
 | Mutex contention and priority restoration | IMP-018, POL-014 | Four contexts exercised direct handoff, transitive donation, withdrawal on a real timer IRQ and nested immediate ceilings. [EVD-018](evidence/evd-018.en.md) |
 | Multilevel ready queues | IMP-019, POL-009 | Four saturated high-class slots and cumulative feedback demotion, boost and next return were independently traced. [EVD-019](evidence/evd-019.en.md) |
+| Ordinary multilevel tasks | IMP-040, POL-009 | Reconstructed class saturation, block/wake, demotion and boost over 15 MLQ and 42 MLFQ diagnostic decisions. [EVD-040](evidence/evd-040.en.md) |
 | Mixed-criticality budget enforcement | IMP-020, POL-015 | Real IRQs enforced mode change and a HI budget ceiling in a six-slot workload with four occupied slots at carry-in. [EVD-020](evidence/evd-020.en.md) |
 | Ticket lottery and measured stride | IMP-021, POL-010 | Two seeds, late admission, unequal service and a deliberately late IRQ were checked against all 81 grants. [EVD-021](evidence/evd-021.en.md) |
 | Weighted virtual runtime | IMP-022, POL-011 | All 21 dispatches and their service charges matched a separate counter-based replay through sleep and wake. [EVD-022](evidence/evd-022.en.md) |

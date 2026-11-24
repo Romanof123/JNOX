@@ -41,7 +41,7 @@ mod coop_service;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_fixed, jnox_batch, jnox_groups, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -74,8 +74,8 @@ mod extension_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
 #[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
-#[cfg_attr(any(jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
+#[cfg(any(jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
+#[cfg_attr(any(jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
 mod feedback_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "power", jnox_bench = "extension"))]
 #[cfg_attr(any(jnox_bench = "power", jnox_bench = "extension"), allow(dead_code))]
@@ -94,8 +94,12 @@ mod mutex;
 mod mutex_policy;
 #[cfg(jnox_bench = "multilevel")]
 mod multilevel;
-#[cfg(jnox_bench = "multilevel")]
+#[cfg(any(jnox_multilevel, jnox_bench = "multilevel"))]
 mod multilevel_policy;
+#[cfg(jnox_multilevel)]
+mod multilevel_service;
+#[cfg(jnox_multilevel)]
+mod multilevel_apps;
 #[cfg(jnox_bench = "partition")]
 mod partition;
 #[cfg(jnox_bench = "periodic")]
@@ -115,6 +119,7 @@ mod proportional_policy;
     jnox_bench = "batch",
     jnox_batch,
     jnox_fixed,
+    jnox_multilevel,
     jnox_bench = "deadline",
     jnox_bench = "coop",
     jnox_bench = "mutex",
@@ -172,11 +177,13 @@ extern "C" fn kernel_main() -> ! {
     batch_app::run();
     #[cfg(jnox_groups)]
     group_apps::run();
-    #[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups)))]
+    #[cfg(jnox_multilevel)]
+    multilevel_apps::run();
+    #[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups)))]
+#[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

@@ -232,6 +232,8 @@ TRANSCRIPTS = {
     "coop-single": coop_transcript(b"SINGLE"),
     "ordinary-groups-late": BOOT_TRANSCRIPT + b"GROUP LATE\nGROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "ordinary-groups": BOOT_TRANSCRIPT + b"GROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
+    "mlq": BOOT_TRANSCRIPT + b"MLQ START\nMULTILEVEL DONE\n",
+    "mlfq": BOOT_TRANSCRIPT + b"MLFQ START\nMULTILEVEL DONE\n",
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
     "fixed-delayed": BOOT_TRANSCRIPT + b"FIXED DELAYED START\nFIXED DELAYED TASK\n",
     "fixed-ties": fixed_edge_transcript(b"FIXED TIES"),
