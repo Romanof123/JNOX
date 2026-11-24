@@ -40,3 +40,29 @@ PS는 정렬 경계에서 할당을 교체하고 빈 폴링 또는 소진된 요
 REQ-002/005/023 → DES-003/012 → VER-002/005/023. 이 가상 주기 경쟁 작업은 M3 폐루프 제어 작업이 아니다. 제품별 수용·WCET, 실보드 CPU·DMA·IRQ 간섭 및 실제 M3 제어 작업 영향은 별도 근거가 필요하다. [출시 기준](scheduling-release-cases.md) · [#21](https://github.com/Romanof123/JNOX/issues/21)
 
 First runtime verdict: PARTIAL. [EVD-045](evidence/evd-045.en.md) · 최초 런타임 판정은 부분 통과다. [한국어](evidence/evd-045.md)
+
+## Prospective admission gate / 수용 판정 사전 계약
+
+The existing FIFO and live receipt checks start a finite experiment without deciding whether a qualified cost budget exists. Keep that engineering entry point as the default. For any one of the eight normal applications select `JNOX_AP_MODE=admission` on the existing aperiodic profile. Before starting its timer or ledger, require a case-specific externally reviewed cost report. The integrator supplies its file (`JNOX_AP_REPORT`) and independently approved lowercase SHA-256 (`JNOX_AP_REPORT_SHA256`). Approval must cover this exact runtime build, model configuration, case, frequency, instrumentation and interference envelope. The pin identifies the approved bytes. Review and truth of the bounds are external responsibilities. No qualified report ships here. The deliberate late-IRQ arm remains engineering only.
+
+기존 FIFO·실제 완료 검사는 유한 실험을 실행한다. 기본 실험 경로를 유지하고, 같은 비주기 프로필에서 위 8개 정상 앱 중 하나에 수용 모드를 명시한다. 타이머와 원장을 시작하기 전에 해당 앱의 외부 검토 보고서와 별도로 승인된 해시를 요구한다. 검토 범위는 정확한 빌드·가상 환경·앱·주파수·계측·간섭 조건이다. 해시는 보고서 식별자이며 상한의 타당성은 외부 검토 대상이다. 승인된 입력은 제공하지 않는다. 지연 IRQ 주입은 실험 전용이다.
+
+Use UTF-8 report lines `key=value` in the following exact order. The target is `virt-a72-gicv2-tcg-1cpu-128m`, class is `justified-bound`, case is the literal app name and hz is actual CNTFRQ. All remaining fields are decimal nonnegative u64 **counter ticks per worst eligible slot**. Document every component (including any zero), path multiplicity, disjoint accounting, source/build identity and review in a nonempty rationale after the exact line `---`. A report with class `observed-maximum` or `synthetic-control` is ineligible. Reject missing, malformed or surplus header fields and overflowing paths.
+
+보고서는 UTF-8이며 아래 순서의 필드를 사용한다. 단위는 해당 슬롯 최악 경로의 카운터 틱이다. 각 항목의 0값 근거, 반복 횟수, 중복 없는 경로 구분, 출처·빌드 식별·검토 내용을 구분선 다음에 기록한다. 관측 최댓값 및 합성 대조군은 수용 근거가 될 수 없다. 누락·잘못된 필드·산술 넘침은 거절한다.
+
+```
+target case class hz
+irq_latency irq_interference irq_uncertainty
+irq_handler submission arbitration preparation_switch preparation_instrumentation preparation_interference preparation_uncertainty
+server_work periodic_work service_switch receipt service_instrumentation service_interference service_uncertainty
+```
+
+Add each IRQ component and require ≤1 ms. Add the entire IRQ sum and all preparation components and require ≤5 ms. Add max(server_work, periodic_work) and all common service components and require ≤45 ms. Interference terms cover all permitted blocking, preemption and IRQ demand in their respective segments. The switch/receipt terms must cover both ends of execution including actual receipt. Preserve actual IRQ/preparation/receipt deadline verdicts. A budget pass permits this configured trial only.
+
+IRQ 합계 ≤1 ms, IRQ를 포함한 준비 합계 ≤5 ms, 서버와 주기 작업 중 큰 실행량에 공통 전환·실제 완료 접수·계측·간섭·불확실성을 더한 잔여 경로 ≤45 ms를 검사한다. 각 구간의 간섭에는 허용된 차단·선점·IRQ 총량을 포함한다. 수용 시에도 실행 중 실제 50 ms 경계 판정을 유지한다.
+
+Acceptance for the scheduled slot: on host exercise all eight case bindings, exact limits and +1 tick per phase, larger periodic path, each absent component, overflow, wrong frequency/case/class, absent input and digest mismatch. On guest show admission denial before the first workload event with absent input, plus ordinary default behavior. A fabricated arithmetic positive is engineering evidence only. Real acceptance requires independent review of target-matched bounds and actual timely receipts for each applicable case. No board or product approval follows from these controls.
+
+검증 슬롯에서는 호스트로 8개 앱별 결합, 각 경계와 1틱 초과, 더 큰 주기 작업 경로, 개별 필드 누락·넘침·주파수·앱·분류·해시 오류를 확인한다. 게스트에서 입력 부재 시 작업 시작 전 거부와 기존 기본 모드를 확인한다. 합성 양성은 계산 검사에 한한다. 실제 수용에는 대상에 맞는 상한의 독립 검토와 해당 앱별 실제 기한 내 접수가 필요하다.
+[Independent admission controls and raw artifacts / 수용 판정 독립 시험과 원자료](evidence/aperiodic-admission-controls.en-ko.md). Each host passed 102 parser vectors and eight build expectations. Missing input denied the first job. Product budgets and per-case approval remain open in [#101](https://github.com/Romanof123/JNOX/issues/101). 입력 누락 거부를 확인했고 제품별 비용·실행 승인은 열려 있다.

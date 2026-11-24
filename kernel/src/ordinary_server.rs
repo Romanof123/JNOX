@@ -432,9 +432,24 @@ extern "C" fn request(frame: *mut Frame) -> *mut Frame {
     }
 }
 pub(crate) fn run() -> ! {
+    #[cfg(not(jnox_ap_admission))]
     init_timer_irq();
     let frequency: u64;
     unsafe { asm!("mrs {},cntfrq_el0",out(reg)frequency) }
+    #[cfg(jnox_ap_admission)]
+    {
+        let report = include_str!(concat!(env!("OUT_DIR"), "/ap-report.txt"));
+        if let Err(reason) = super::aperiodic_admission::check(report, APP, frequency) {
+            line(b"AP ADMISSION DENIED", &[reason as u64]);
+            park()
+        }
+        uart_write(b"AP ADMISSION BUDGET ");
+        uart_write(APP.as_bytes());
+        uart_write(b" ");
+        uart_write(option_env!("JNOX_AP_APPROVED_SHA256").unwrap().as_bytes());
+        uart_write(b"\n");
+        init_timer_irq();
+    }
     if frequency == 0 || frequency % 1000 != 0 {
         fault()
     }

@@ -9,10 +9,60 @@ fn selector(key: &str) -> Option<String> {
     }
 }
 
+fn verify_ap_report(directory: &std::path::Path, digest: &str) {
+    // build.rs is compiled for the host, independently of the kernel target.
+    #[cfg(windows)]
+    let (tool, args): (&str, &[&str]) = ("certutil.exe", &["-hashfile", "ap-report.txt", "SHA256"]);
+    #[cfg(not(windows))]
+    let (tool, args): (&str, &[&str]) = ("sha256sum", &["ap-report.txt"]);
+    let result = std::process::Command::new(tool).args(args).current_dir(directory)
+        .output().unwrap_or_else(|error| panic!("run {tool}: {error}"));
+    let stdout = String::from_utf8_lossy(&result.stdout);
+    #[cfg(windows)]
+    let matches = stdout.lines().any(|line| line.trim().eq_ignore_ascii_case(digest));
+    #[cfg(not(windows))]
+    let matches = stdout.split_ascii_whitespace().next() == Some(digest);
+    assert!(result.status.success() && matches, "aperiodic report digest mismatch");
+}
+
+// Bind the exact embedded report bytes to the integrator's independently approved pin.
+fn configure_ap_admission(profile: Option<&str>) {
+    println!("cargo::rustc-check-cfg=cfg(jnox_ap_admission)");
+    let mode = selector("JNOX_AP_MODE");
+    let report = selector("JNOX_AP_REPORT");
+    let pin = selector("JNOX_AP_REPORT_SHA256");
+    if mode.as_deref() != Some("admission") {
+        assert!(mode.is_none() || (mode.as_deref() == Some("engineering") && profile == Some("aperiodic")),
+                "invalid JNOX_AP_MODE");
+        assert!(report.is_none() && pin.is_none(), "aperiodic cost inputs require admission mode");
+        return;
+    }
+    assert!(profile == Some("aperiodic") && env::var_os("JNOX_APERIODIC_LATE").is_none(),
+            "admission requires a normal aperiodic workload");
+    let directory = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let output = directory.join("ap-report.txt");
+    match (report, pin) {
+        (None, None) => std::fs::write(&output, b"").unwrap(),
+        (Some(path), Some(digest)) => {
+            assert!(digest.len() == 64 && digest.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f')),
+                    "invalid JNOX_AP_REPORT_SHA256");
+            assert!(!path.is_empty() && !path.contains(['\r', '\n']), "invalid JNOX_AP_REPORT");
+            let source = std::fs::canonicalize(path).expect("resolve aperiodic report");
+            println!("cargo::rerun-if-changed={}", source.display());
+            std::fs::copy(source, &output).expect("copy approved aperiodic report");
+            verify_ap_report(&directory, &digest);
+            println!("cargo::rustc-env=JNOX_AP_APPROVED_SHA256={digest}");
+        }
+        _ => panic!("supply both aperiodic report and independently approved digest"),
+    }
+    println!("cargo::rustc-cfg=jnox_ap_admission");
+}
+
 fn main() {
     validate_architecture();
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
+    configure_ap_admission(profile.as_deref());
     println!("cargo::rustc-check-cfg=cfg(jnox_batch_trace)");
     if let Some(value) = selector("JNOX_BATCH_TRACE") {
         assert!(value == "1" && profile.as_deref() == Some("batch"), "JNOX_BATCH_TRACE=1 requires batch profile");

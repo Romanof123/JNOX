@@ -166,6 +166,8 @@ mod ready_queue;
 mod request_server;
 #[cfg(jnox_ap)]
 mod ordinary_server;
+#[cfg(jnox_ap_admission)]
+mod aperiodic_admission;
 #[cfg(any(jnox_bench = "scheduler", jnox_bench = "rr"))]
 mod sched;
 #[cfg(jnox_bench = "rr")]
