@@ -51,6 +51,8 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
+[네이티브 EL0 P/Q 구성·구현·검증 기준](native-partition-normal.en-ko.md) · [#216](https://github.com/Romanof123/JNOX/issues/216)
+
 CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
 POL-004 / IMP-042. v3는 부분 통과다. 결정론적 정확 경계 두 건이 적격이었다. 기본 구성 23개 중 최초 14개, 콜드 재시도 한 건 포함 15개가 적격이었다. 기본 클록 일반 8개와 별도 기본 클록 인계 진단 4개는 미충족이었다. [EVD-042](evidence/evd-042.md)

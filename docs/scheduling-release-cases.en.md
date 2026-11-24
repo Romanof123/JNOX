@@ -51,6 +51,8 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
+[Native P/Q configuration, implementation and verification criteria](native-partition-normal.en-ko.md) · [#216](https://github.com/Romanof123/JNOX/issues/216)
+
 CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
 POL-004 / IMP-042. v3 remains partial. Both deterministic exact boundaries qualified. Fourteen of 23 primary cases qualified on the first attempt and 15 including one cold retry. Eight default-clock ordinary cases and four separate default-clock handoff diagnostics remained unqualified. [EVD-042](evidence/evd-042.en.md)

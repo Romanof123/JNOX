@@ -1,0 +1,44 @@
+# #216 / #219 first IRQ diagnostic protocol
+
+Parent acceptance / 상위 수용 기준. Preserve the native P/Q user image, normal journal ABI, first cold boot and original 1 ms limit. A phase trace is diagnostic only. Keep #216 open until plain boots independently satisfy ordinary timing. 기존 P/Q 사용자 이미지와 저널 ABI, 첫 콜드 부팅 및 1 ms 기준을 유지한다. 일반 부팅의 독립 검증까지 #216은 열린 상태로 둔다.
+
+Independent first protocol / 독립 첫 실험. Before inspecting timings, allocate five cold plain/phase pairs per P/Q and default/icount3, alternating order AB, BA, AB, BA, AB. Within each pair hold source, user ELF, emulator, host, launch arguments and clock fixed. Retain every initial capture including failures. 각 조건에서 최초 실행 다섯 쌍의 순서를 교차하고 실패도 보존한다.
+
+Validate each capture using the ordinary partition replay. Join phase rows to adjacent ordinary windows by old/new generation and actual old/new PID, including same-PID Q transitions. Require ordered absolute stamps between the previous IRQ sample and the next selection. Compare the first transition with later transitions individually. Report phase minus plain for IRQ-to-selection, selection-to-return, return-to-first-user and opening-to-first-user, plus both margins to 1 ms. No threshold adjustment or subtraction of observer cost. 정상 재생 검증 뒤 실제 세대와 PID로 연결하고 타임스탬프 순서를 확인한다. 각 구간 차이와 양쪽 여유를 보고하며 계측 비용을 차감하지 않는다.
+
+Pass `--partition-phase irq-v1` to `tools/build_native_el0.py` for the diagnostic kernel. Omit this argument for the matched ordinary kernel. Capture both with the existing native_weighted_capture.py. Run `python tools/native_partition_phase.py PLAIN_DIR PLAIN_SESSION_SHA256 PHASE_DIR PHASE_SESSION_SHA256` for each pair. The ordinary decoder and journal remain version 2. The sibling decoder requires the separate v1 ELF symbol only in the instrumented image. A failed first boot stays in the denominator and cannot supply a complete phase report.
+
+Read consecutive raw counter differences as intervals. Observe includes the existing frame save, prior-return read, timer and interrupt handling. Result covers the existing private result copy. Audit includes evidence publication and ordinary checks. Schedule includes generation bookkeeping and decision. MMU includes switch and address-space identity. Publication covers the actual generation write. The gap between audit end and schedule begin includes the first diagnostic record write. The second record write follows selection and is visible in the comparison to the next return. Neither raw nor paired values isolate host translation costs.
+
+기존 캡처 도구로 양쪽 RAM을 보존하고 위 명령으로 비교한다. 이전 프레임과 복귀 관측, 결과 읽기, 기록·검증, 스케줄 결정, MMU 전환 및 세대 게시를 각각 실제 호출 경계에서 잰다. 선택 이후 진단 기록 비용도 복귀까지의 차이에 포함된다.
+
+[First packaging and separate measured IRQ stage series / 최초 패키징 및 별도 정상 단계 계측](evidence/native-partition-irq-phases-first.en-ko.md).
+
+## Public packager correction protocol / 공개 패키징 경로 수정 계획
+
+The public packager strips ambient JNOX_* settings. Preserve the original missing-symbol capture and genuine diagnostic boot separately. Before changing packaging, require an explicit partition-only option, rejection before output creation, no diagnostic variable in the user compiler environment, a recorded diagnostic manifest field and unchanged ordinary manifest keys. Verify the linked symbol in both package outputs and equal user ELF bytes in the executable example. Use mocked package runs for low-resource regression coverage. Preserve the original cold-pair and 1 ms protocol.
+
+공개 패키저가 외부 환경 변수를 제거하므로 P/Q 전용 명령행 옵션을 추가한다. 잘못된 조합은 출력 디렉터리를 만들기 전에 거부한다. 일반 매니페스트 형식과 사용자 ELF를 유지하고 예제에서 두 커널의 심볼을 확인한다. 심볼 누락 증거와 실제 계측 부팅 증거를 따로 보존한다.
+
+Run this POSIX shell example from the repository root with four fresh output directories, Python, the native build toolchain and readelf on PATH. It checks both P/Q pairs before capture.
+
+```sh
+set -eu
+for arm in partition-p partition-q; do
+    plain="$arm-plain"
+    phase="$arm-phase"
+    python tools/build_native_el0.py --app "$arm" --out "$plain"
+    python tools/build_native_el0.py --app "$arm" --partition-phase irq-v1 --out "$phase"
+    cmp "$plain/user.elf" "$phase/user.elf"
+    for dir in "$plain" "$phase"; do
+        expected=0
+        if [ "$dir" = "$phase" ]; then expected=1; fi
+        readelf -Ws "$dir/kernel.elf" > "$dir/kernel-symbols.txt"
+        awk -v expected="$expected" \
+            '$NF == "native_partition_irq_phase_v1" && $7 != "UND" { count++ } END { exit (count+0 != expected) }' \
+            "$dir/kernel-symbols.txt"
+    done
+done
+```
+
+[Corrected public CLI first runs and per-transition reconstruction / 수정된 공개 CLI의 최초 계측과 전환별 재생](evidence/native-partition-packager-corrected-first.en-ko.md).

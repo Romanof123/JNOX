@@ -151,6 +151,10 @@ native_vruntime_start:
     clrex
     isb
     mrs x17,cntpct_el0
+    .if JNOX_CHECK_WINDOW
+    cmp x17,x15                  // A cyclic release must still be current.
+    b.hs .Lvr_unexpected
+    .endif
     str x17,[x16]
     adds x14,x17,x14
     b.cs .Lvr_unexpected
