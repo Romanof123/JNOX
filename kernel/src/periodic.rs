@@ -20,8 +20,16 @@ unsafe extern "C" {
     static periodic_loop_end: u8;
 }
 
+#[cfg(feature = "periodic-preempt-bench")]
+unsafe extern "C" {
+    fn periodic_running_a();
+    static periodic_work: u8;
+    static periodic_work_end: u8;
+}
+
 global_asm!(
     include_str!("context.S"), include_str!("periodic.S"),
+    preempt = const cfg!(feature = "periodic-preempt-bench") as usize,
     frame_size = const size_of::<Frame>(),
     elr = const offset_of!(Frame, elr),
     fpcr = const offset_of!(Frame, fpcr),
@@ -45,6 +53,17 @@ struct Bench {
     interrupts: u8,
     compare: u64,
     quantum: u64,
+    #[cfg(feature = "periodic-preempt-bench")]
+    running: RunningA,
+}
+
+#[cfg(feature = "periodic-preempt-bench")]
+#[derive(Default)]
+struct RunningA {
+    started: bool,
+    frame: *mut Frame,
+    pc: u64,
+    expected_progress: u64,
 }
 
 extern "C" fn fail() -> ! {
@@ -102,11 +121,15 @@ fn with_bench<R>(f: impl FnOnce(&mut Bench) -> R) -> R {
 
 impl Bench {
     fn tick(&self) -> u8 {
+        #[cfg(feature = "periodic-preempt-bench")]
+        if self.interrupts > 12 {
+            return (self.interrupts - 13) % 3;
+        }
         (self.interrupts - 1) % 6
     }
 
     fn dispatch(&mut self) -> *mut Frame {
-        let policy = if self.interrupts <= 6 {
+        let policy = if self.interrupts <= 6 || (13..=15).contains(&self.interrupts) {
             DispatchPolicy::RateMonotonic
         } else {
             DispatchPolicy::DeadlineMonotonic
@@ -115,6 +138,17 @@ impl Bench {
         let jobs = &self.jobs;
         if let Some(id) = policy.pop_ready(&mut self.queue, tick, |id| jobs[id]) {
             self.current = id;
+            #[cfg(feature = "periodic-preempt-bench")]
+            if self.interrupts > 12 && id == 0 {
+                if self.tick() == 0 {
+                    let frame = fresh(id);
+                    unsafe { (*frame).elr = periodic_running_a as *const () as u64 };
+                    return frame;
+                }
+                let frame = core::mem::replace(&mut self.running.frame, ptr::null_mut());
+                require(!frame.is_null() && unsafe { (*frame).elr } == self.running.pc);
+                return frame;
+            }
             fresh(id)
         } else {
             require(self.jobs.iter().all(Option::is_none));
@@ -123,6 +157,39 @@ impl Bench {
             require(!frame.is_null());
             frame
         }
+    }
+
+    fn release(&mut self, id: usize, tick: u64) {
+        require(self.jobs[id].is_none() && self.queue.push_back(id));
+        self.jobs[id] = Some(DispatchJob {
+            release: tick,
+            period: PERIOD[id],
+            relative_deadline: DEADLINE[id],
+            ..DispatchJob::fixed_priority(0)
+        });
+    }
+
+    #[cfg(feature = "periodic-preempt-bench")]
+    fn record_worker(&mut self, frame: *mut Frame) {
+        require(self.current == 0 && self.running.started && self.running.frame.is_null());
+        let sp = unsafe { stack_top(0).sub(16).cast::<u64>() };
+        require(frame.addr() + size_of::<Frame>() == sp.addr());
+        let saved = unsafe { &*frame };
+        let start = (&raw const periodic_work).addr();
+        require((start..(&raw const periodic_work_end).addr()).contains(&(saved.elr as usize)));
+        require(saved.spsr & 0x8f == 5 && saved.gpr[19] == 0xa19 && saved.gpr[20] > 0);
+        unsafe {
+            require(sp.read_volatile() == 0xa19 && sp.add(1).read_volatile() == 0);
+            sp.add(1).write_volatile(1);
+        }
+        // At ADD we still increment once. At LDR the new flag is visible
+        // immediately. At CBZ the old zero forces one more iteration.
+        let offset = saved.elr as usize - start;
+        require(matches!(offset, 0 | 4 | 8) && (offset != 8 || saved.gpr[9] == 0));
+        self.running.expected_progress = saved.gpr[20] + u64::from(offset != 4);
+        self.running.pc = saved.elr;
+        self.running.frame = frame;
+        require(self.queue.push_back(0));
     }
 
     fn record_controller(&mut self, frame: *mut Frame) {
@@ -161,14 +228,49 @@ pub(super) fn run() -> ! {
             interrupts: 0,
             compare,
             quantum,
+            #[cfg(feature = "periodic-preempt-bench")]
+            running: RunningA::default(),
         });
         arm(compare);
         sched_start_frame(frame)
     }
 }
 
-extern "C" fn marker(id: usize, sp: usize) {
+extern "C" fn marker(id: usize, sp: usize, _progress: u64) {
     with_bench(|b| {
+        #[cfg(feature = "periodic-preempt-bench")]
+        if b.interrupts > 12 {
+            let rm = b.interrupts <= 15;
+            let base = if rm { 10 } else { 12 };
+            require(sp == stack_top(b.current).addr() && !b.marked && counter() < b.compare);
+            let line: &[u8] = match id {
+                2 => {
+                    require(b.current == 0 && b.tick() == 0 && !b.running.started);
+                    b.running.started = true;
+                    if rm { b"RM A START\n" } else { b"DM A START\n" }
+                }
+                3 => {
+                    require(b.current == 0 && b.tick() == 1 && b.running.pc != 0);
+                    require(b.running.frame.is_null() && _progress == b.running.expected_progress);
+                    require(b.completed == base + usize::from(!rm));
+                    b.marked = true;
+                    if rm {
+                        b"RM A CONTINUE\n"
+                    } else {
+                        b"DM A CONTINUE\n"
+                    }
+                }
+                1 => {
+                    require(b.current == 1 && b.tick() == 1 && b.running.started);
+                    require(b.completed == base + usize::from(rm));
+                    b.marked = true;
+                    if rm { b"RM B RUN\n" } else { b"DM B RUN\n" }
+                }
+                _ => fail(),
+            };
+            uart_write(line);
+            return;
+        }
         require(id == b.current && sp == stack_top(id).addr() && !b.marked);
         let mut line = *b"RM 0 A\n";
         if b.interrupts > 6 {
@@ -209,25 +311,49 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
     with_bench(|b| {
         let next = b.compare.checked_add(b.quantum).unwrap_or_else(|| fail());
         require((b.compare..next).contains(&counter()));
-        b.record_controller(frame);
         b.interrupts += 1;
+        #[cfg(feature = "periodic-preempt-bench")]
+        if b.interrupts > 12 && b.tick() == 1 {
+            b.record_worker(frame);
+        } else {
+            b.record_controller(frame);
+        }
+        #[cfg(not(feature = "periodic-preempt-bench"))]
+        b.record_controller(frame);
         let tick = u64::from(b.tick());
         if tick == 5 {
             require(b.completed == 5 * usize::from(b.interrupts / 6));
+            #[cfg(not(feature = "periodic-preempt-bench"))]
             if b.interrupts == 12 {
                 uart_write(b"PERIODIC PASS\n");
                 park();
             }
         }
-        for id in [1, 0] {
-            if tick % PERIOD[id] == 0 {
-                require(b.jobs[id].is_none() && b.queue.push_back(id));
-                b.jobs[id] = Some(DispatchJob {
-                    release: tick,
-                    period: PERIOD[id],
-                    relative_deadline: DEADLINE[id],
-                    ..DispatchJob::fixed_priority(0)
-                });
+        if b.interrupts <= 12 {
+            for id in [1, 0] {
+                if tick % PERIOD[id] == 0 {
+                    b.release(id, tick);
+                }
+            }
+        }
+        #[cfg(feature = "periodic-preempt-bench")]
+        if b.interrupts > 12 {
+            match tick {
+                0 => {
+                    b.running = RunningA::default();
+                    b.release(0, tick);
+                }
+                1 => b.release(1, tick),
+                2 => {
+                    require(b.jobs.iter().all(Option::is_none) && b.running.frame.is_null());
+                    require(b.completed == if b.interrupts == 15 { 12 } else { 14 });
+                    if b.interrupts == 18 {
+                        require(counter() < next);
+                        uart_write(b"PREEMPT PASS\n");
+                        park();
+                    }
+                }
+                _ => fail(),
             }
         }
         b.compare = next;
