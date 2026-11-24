@@ -1,0 +1,72 @@
+{
+  "record": "CHG-062 host qualification",
+  "source": "ed611730a657b9cc7dda300626bcc8473faa52c9",
+  "archive": "pi4-physical-fixed-host-qualification.zip",
+  "sha256": "76709b865808c9d42c0cd99ad1204aa52e18b4731475ada4547e4fad8648a674",
+  "bytes": 103341,
+  "members": 200,
+  "report": "REPORT.md",
+  "report_sha256": "aa21e0458ed5b8b40a495d7ff1c460b2960b0ae0373d8f0ac48882ace45d67e5",
+  "timed_collector_cases": 566,
+  "observer_api_calls": 8,
+  "simulated_port_cases": 4,
+  "upstream_tests": 7,
+  "distribution_archives": {
+    "fifo": {
+      "name": "jnox-pi4-fixed-fifo.zip",
+      "sha256": "cc8bdcb8aac22f2a08b8eff53ef2eeca6d0426f7e4487a8eb339c2836d6841b5",
+      "members": {
+        "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+        "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+        "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+        "config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+        "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+        "kernel8.img": "46abe4230616ff8b27d8c5087de014c8e48083fd47aca363fcbb09cf196f574e",
+        "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+        "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+        "SHA256SUMS": "bc97131903f7f695ab1aa63103de27f815289daae8b61c0226b4573ddf48e3ad"
+      }
+    },
+    "rr": {
+      "name": "jnox-pi4-fixed-rr.zip",
+      "sha256": "61535472bb3dac5203c7f2b5c86346f3e49a9e2a48b40b6e62b48b0bdf9c1dc3",
+      "members": {
+        "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+        "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+        "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+        "config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+        "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+        "kernel8.img": "80ad9177f2e5c613946de557e85d856533559539b5a2be39dbb43058ec9d6d9d",
+        "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+        "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+        "SHA256SUMS": "b2244bb7db982279c5514fd7f3732ac65f41f5527ed8205625968c2a816bcb69"
+      }
+    },
+    "scheduler": {
+      "name": "jnox-pi4-scheduler-boot.zip",
+      "sha256": "07e0c15435ed6fbe8a03fe4ec033e10bf593ee061a0f71095d8fc90c9ea1de2a",
+      "members": {
+        "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+        "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+        "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+        "config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+        "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+        "kernel8.img": "991b31d9ef332251aa9f8a1adc3570e11d5823aeb1c34dcaff22c428e83bf5ea",
+        "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+        "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+        "SHA256SUMS": "793e118b9136e1ab8ae07656b8c5f889ac0a12de043512427cd137da8aacf0e4"
+      }
+    }
+  },
+  "source_records": [
+    "second/integrity.json",
+    "controls-second/distribution-zips.json",
+    "controls-second/git-blobs.json",
+    "controls-second/independent-observations.json",
+    "controls-second/observer-api.json",
+    "controls-second/fake-port-calls.json",
+    "first/harness-interruption.txt",
+    "controls/harness-interruption.txt"
+  ],
+  "physical_sessions": 0
+}
