@@ -98,3 +98,5 @@ exit "$result"
 ```
 
 저장 디렉터리는 기본적으로 홈 아래의 영속 경로다. 매 실행의 ELF·UART·예외 로그와 종료 코드를 보존한다. 한도 4의 두 모드는 D/J 원본으로 기존 공급 검증을 실행하며, 한도 3은 거부 문구와 작업 실행 기록 부재를 확인한다. 모든 이동 구간의 소유자 전환 검증에는 위 계약을 적용한다.
+
+[First independent result / 최초 독립 판정](evidence/deadline-owner-window-first.en-ko.md).
