@@ -12,9 +12,14 @@ use core::{
     sync::atomic::Ordering,
 };
 
+#[cfg(jnox_deadline_recurring)]
+#[path = "deadline_recurring.rs"]
+mod recurring;
+
 const IDLE: usize = N;
 const SERVICE: usize = N + 1;
 const SUPPLY_PROFILE: bool = cfg!(any(
+    jnox_deadline_recurring,
     jnox_app = "ordinary-edf-supply",
     jnox_app = "ordinary-llf-supply",
     jnox_app = "ordinary-edf-supply-refuse",
@@ -62,6 +67,8 @@ pub fn counter() -> u64 {
     n
 }
 fn compare(n: u64) {
+    #[cfg(jnox_deadline_recurring)]
+    recurring::deadline_recurring_launch[1].fetch_add(1, Ordering::Relaxed);
     unsafe {
         asm!("msr cntp_cval_el0, {}","msr cntp_ctl_el0, {}","isb",in(reg)n,in(reg)1u64,options(nostack,preserves_flags))
     }
@@ -90,6 +97,8 @@ fn top(id: usize) -> usize {
     (&raw mut STACKS).addr() + (id + 1) * STACK_BYTES
 }
 fn initial(id: usize, pc: usize, arg: u64) -> *mut Frame {
+    #[cfg(jnox_deadline_recurring)]
+    recurring::deadline_recurring_launch[0].fetch_add(1, Ordering::Relaxed);
     let f = (top(id) - size_of::<Frame>()) as *mut Frame;
     unsafe {
         (*f).elr = pc as u64;
@@ -137,6 +146,8 @@ const EMPTY: Row = Row {
     job: [[0; 6]; N],
 };
 struct Runtime {
+    #[cfg(jnox_deadline_recurring)]
+    reserved: u64,
     jobs: &'static [Job],
     policy: DeadlineScheduler<N>,
     q: u64,
@@ -261,7 +272,13 @@ impl Runtime {
                 entry > self.at(self.jobs.iter().find(|j| j.id == out).unwrap().deadline),
             );
         }
-        let withheld = SUPPLY_PROFILE && k < HORIZON && jobs::RESERVED & (1 << k) != 0;
+        #[cfg(jnox_deadline_recurring)]
+        let mask = self.reserved;
+        #[cfg(not(jnox_deadline_recurring))]
+        let mask = jobs::RESERVED;
+        let withheld = SUPPLY_PROFILE && k < HORIZON && mask & (1 << k) != 0;
+        #[cfg(jnox_deadline_recurring)]
+        recurring::boundary(self, k, kind, out);
         if withheld {
             self.policy.withhold(k).unwrap();
         }
@@ -346,6 +363,9 @@ impl Runtime {
             }
             #[cfg(jnox_deadline_owner_cap)]
             self.score_owner_windows();
+            #[cfg(jnox_deadline_recurring)]
+            recurring::finish(self);
+            #[cfg(not(jnox_deadline_recurring))]
             if SUPPLY_PROFILE {
                 let rows = unsafe { &*(&raw const ordinary_deadline_rows) };
                 let progress_at = |out, owner| {
@@ -377,6 +397,9 @@ impl Runtime {
                 );
             }
             uart_write(b"ORDINARY DEADLINE FINISHED\n");
+            #[cfg(jnox_deadline_recurring)]
+            recurring::deadline_recurring_terminal();
+            #[cfg(not(jnox_deadline_recurring))]
             park()
         }
         if kind != 2 {
@@ -432,6 +455,8 @@ pub fn run() -> ! {
     let llf = cfg!(any(
         jnox_app = "ordinary-llf",
         jnox_app = "ordinary-llf-overload",
+        jnox_app = "ordinary-llf-recurring",
+        jnox_app = "ordinary-llf-recurring-refuse",
         jnox_app = "ordinary-llf-supply",
         jnox_app = "ordinary-llf-supply-refuse"
     ));
@@ -442,9 +467,14 @@ pub fn run() -> ! {
         DeadlinePolicy::Edf
     };
     let tight = cfg!(any(
+        jnox_app = "ordinary-edf-recurring-refuse",
+        jnox_app = "ordinary-llf-recurring-refuse",
         jnox_app = "ordinary-edf-supply-refuse",
         jnox_app = "ordinary-llf-supply-refuse"
     ));
+    #[cfg(jnox_deadline_recurring)]
+    let jobs: &[Job] = if tight { &jobs::RECURRING_TIGHT } else { &jobs::RECURRING };
+    #[cfg(not(jnox_deadline_recurring))]
     let jobs: &[Job] = if tight {
         &jobs::TIGHT
     } else if SUPPLY_PROFILE {
@@ -461,19 +491,35 @@ pub fn run() -> ! {
     let full = jobs::admit(policy, jobs, hz, s);
     #[cfg(jnox_deadline_owner_cap)]
     let full_ok = full.is_ok();
+    #[cfg(jnox_deadline_recurring)]
+    let (mask, service_entry) = {
+        let mask = jobs::recurring_mask(recurring::OFFSET, recurring::PERIOD, recurring::WIDTH).unwrap();
+        let single_ok = jobs::admit_with_supply(policy, jobs, hz, s, 1 << recurring::OFFSET).is_ok();
+        line(b"CALENDAR", &[recurring::OFFSET.into(), recurring::PERIOD.into(),
+            recurring::WIDTH.into(), mask.into(), i128::from(single_ok)]);
+        for j in jobs {
+            line(b"RECURRING_JOB", &[j.id as i128, j.release.into(), j.deadline.into(), j.cost.into(),
+                j.milliseconds.into()]);
+        }
+        recurring::prelaunch();
+        if !full_ok || !single_ok { fail() }
+        (mask, recurring::activate as *const () as usize)
+    };
+    #[cfg(not(jnox_deadline_recurring))]
+    let (mask, service_entry) = (jobs::RESERVED, supply_service as *const () as usize);
     let decision = if SUPPLY_PROFILE {
         line(
             b"SUPPLY",
             &[
-                jobs::RESERVED as i128,
+                mask as i128,
                 full.is_ok() as i128,
                 tight as i128,
                 top(SERVICE) as i128,
                 STACK_BYTES as i128,
-                supply_service as *const () as usize as i128,
+                service_entry as i128,
             ],
         );
-        jobs::admit_with_supply(policy, jobs, hz, s, jobs::RESERVED)
+        jobs::admit_with_supply(policy, jobs, hz, s, mask)
     } else {
         full
     };
@@ -504,6 +550,9 @@ pub fn run() -> ! {
             fail()
         }
         uart_write(b"ORDINARY DEADLINE REFUSED BEFORE LAUNCH\n");
+        #[cfg(jnox_deadline_recurring)]
+        recurring::deadline_recurring_terminal();
+        #[cfg(not(jnox_deadline_recurring))]
         park()
     }
     if overload {
@@ -529,10 +578,14 @@ pub fn run() -> ! {
             unsafe { ptr::read_volatile(&raw const ordinary_deadline_row_count) } as i128]);
         if !admitted {
             uart_write(b"ORDINARY OWNER CAP REFUSED BEFORE LAUNCH\n");
+            #[cfg(jnox_deadline_recurring)]
+            recurring::deadline_recurring_terminal();
+            #[cfg(not(jnox_deadline_recurring))]
             park()
         }
     }
     let mut frames = [ptr::null_mut(); CONTEXTS];
+    #[cfg(not(jnox_deadline_recurring))]
     if SUPPLY_PROFILE {
         frames[SERVICE] = initial(SERVICE, supply_service as *const () as usize, 0);
     }
@@ -563,6 +616,8 @@ pub fn run() -> ! {
     }
     unsafe {
         STATE = Some(Runtime {
+            #[cfg(jnox_deadline_recurring)]
+            reserved: mask,
             jobs,
             policy: DeadlineScheduler::new(policy, 0, 1).unwrap(),
             q,
@@ -581,6 +636,8 @@ pub fn run() -> ! {
             fail()
         }
         compare(s);
+        #[cfg(jnox_deadline_recurring)]
+        recurring::deadline_recurring_launch[2].fetch_add(1, Ordering::Relaxed);
         sched_start_frame(frames[IDLE])
     }
 }
