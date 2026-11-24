@@ -150,6 +150,26 @@ sched_start_frame:
     // The Rust callback has returned: its temporary borrows and stack
     // frame are gone. Change SP under the hardware exception masks.
     mov sp, x0
+    .ifdef JNOX_MUTEX_STAGES
+    // Only the designated return of the separate characterization image.
+    adrp x9, jnox_mutex_anchor
+    add x9, x9, :lo12:jnox_mutex_anchor
+    ldr x10, [x9]
+    cmp x10, #3
+    b.ne .Lmutex_entry_done
+    ldr x10, [x9, #144]
+    tbnz x10, #6, .Lmutex_entry_done
+    mov x11, sp
+    ldr x12, [x9, #24]
+    cmp x11, x12
+    b.ne .Lunexpected
+    isb
+    mrs x11, cntpct_el0
+    str x11, [x9, #128]
+    orr x10, x10, #64
+    str x10, [x9, #144]
+.Lmutex_entry_done:
+    .endif
     .ifdef JNOX_CONTROL_MARKERS
     isb
     mrs x10, cntpct_el0
@@ -232,6 +252,9 @@ sched_start_frame:
     clrex
     .ifdef JNOX_ORDINARY_PARTITION
     partition_stamp ordinary_return_stamp
+    .endif
+    .ifdef JNOX_MUTEX_RETURN
+    mutex_final_return
     .endif
     eret
 .size sched_start_frame, . - sched_start_frame

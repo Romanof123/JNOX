@@ -1209,3 +1209,16 @@ CHG-077,affects,REQ-024
 CHG-076,affects,REQ-002
 CHG-076,affects,REQ-005
 CHG-076,affects,REQ-023
+CHG-072,affects,REQ-002
+CHG-072,affects,REQ-005
+CHG-072,affects,REQ-023
+DES-003,implemented-by,IMP-057
+DES-012,implemented-by,IMP-057
+POL-014,partially-implemented-by,IMP-057
+IMP-057,tested-in,EVD-057
+IMP-057,partially-verified-by,VER-002
+IMP-057,partially-verified-by,VER-005
+IMP-057,partially-verified-by,VER-023
+VER-002,has-partial-evidence,EVD-057
+VER-005,has-partial-evidence,EVD-057
+VER-023,has-partial-evidence,EVD-057
