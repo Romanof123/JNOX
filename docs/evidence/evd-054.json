@@ -452,5 +452,10 @@
     "record": "evd-054-integration.json",
     "sha256": "a484a84a44b5b16a60fff1104d626ecc02219e3fbd069c992cdfa098eab2f19f",
     "original_archive_sha256": "e90334533c0e5861682cb30ec79fc6ffd263a0cdeb9f184477ebe9120562cb87"
+  },
+  "targeted_comparison": {
+    "source": "3b5a9f69034ecc2b7a7b093ddb786ee74f820be6",
+    "record": "evd-054-targeted.json",
+    "sha256": "08fa7b90e5fb3a755bfbb9f84d5ebce96ff677f5980076935fce31f7c2bf111e"
   }
 }
