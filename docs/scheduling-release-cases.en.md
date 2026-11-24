@@ -70,3 +70,5 @@ CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proport
 CHG-067 · [Ordinary Rust mutex workload and batch ownership criteria](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
 
 [POL-013 Pi 4 two-core board qualification plan](boards/pi4-smp.en.md)
+
+[POL-013 Pi 4 worker migration and affinity controls](boards/pi4-smp-migration.en.md)

@@ -70,3 +70,5 @@ CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proporti
 CHG-067 · [일반 Rust 뮤텍스 작업의 배치·소유권 기준](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
 
 [POL-013 Pi 4 두 코어 보드 검증 계획](boards/pi4-smp.md)
+
+[POL-013 Pi 4 작업 이동과 고정 대조](boards/pi4-smp-migration.md)
