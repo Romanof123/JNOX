@@ -1,0 +1,43 @@
+{
+  "candidate": "c4a63bebc3b773550c630522ba3f62cd9be1a526",
+  "contract": "74f1d5a7545489069d3677275ab6c6a864b2ec79",
+  "design_pr": 163,
+  "runtime_pr": 165,
+  "scope": "single-core AArch64 QEMU virt",
+  "first_pass_count": 1,
+  "first_case_count": 3,
+  "archive": {
+    "file": "ordinary-amc-first.zip",
+    "original_sha256": "8d458fd07a041d998b70eb279e7d1c37de0453753ae95afca45357d4290ca72b",
+    "public_sha256": "8d458fd07a041d998b70eb279e7d1c37de0453753ae95afca45357d4290ca72b",
+    "rewritten_members": []
+  },
+  "report": {
+    "file": "ordinary-amc-first.en-ko.md",
+    "original_sha256": "d8beaeaba77d7cd23e8e0688af39285c08316aba86601261c004393477f35bc9",
+    "public_sha256": "d60fc60e10a2483aed9be192266498b1e81c6d2519675cb01dc55958b7598536"
+  },
+  "cases": [
+    {
+      "case": "exact-lo",
+      "first_verdict": "passed",
+      "fresh_lo_final_lateness_ticks": null,
+      "elf_sha256": "77c5c74244074098386498ecc1ab9f980254aa3c11c7aa94f118fe7c6c35d1c6",
+      "session_sha256": "8d57ea15321f8ceaa9a21900b98d82148e8a2486e51a9742e9ce803e01a0a914"
+    },
+    {
+      "case": "exact-hi",
+      "first_verdict": "rejected",
+      "fresh_lo_final_lateness_ticks": 10507,
+      "elf_sha256": "d6816f84b2bc0eb77f734d136e6aa50ef063b04120b180ef880a0152fa972016",
+      "session_sha256": "1bff0f4270a2c52ddb84c70d265c0b6405878eb5d936450d086feb960407e9b2"
+    },
+    {
+      "case": "over-hi",
+      "first_verdict": "rejected",
+      "fresh_lo_final_lateness_ticks": 9225,
+      "elf_sha256": "a55c2b43856ed7137b84e4eba9ab5dbd2c2ecc0dd0408173e52402d92e05dfa1",
+      "session_sha256": "3399b79769703ccff1558b6f41b4f059936a08e9bfa20eab866f699fd9d7f6e1"
+    }
+  ]
+}
