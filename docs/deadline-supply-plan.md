@@ -12,3 +12,5 @@ Freeze independent first cold launches in order EDF refused, LLF refused, EDF no
 기존 16슬롯 절대 그리드에서 [1,2)만 서비스에 예약한다. EDF는 릴리스·마감 구간별 가용 공급을 검사하고 두 정책 모두 실제 선언 순서와 추정 잔량으로 재생한다. 중단 시 기존 실행자를 큐 맨 앞에 보존하고 신규 도착을 뒤에 추가한다. 예약 슬롯에서는 작업을 선택하거나 비용을 부과하지 않는다. 다음 경계에서 EDF 마감 또는 LLF 여유가 같은 작업은 기존 순서를 따른다. 위 표의 두 정상 실행에서 A의 진행, 별도 스택 서비스 합계 89440, A의 동일 프레임·PC 복귀와 이후 진행, A/B의 정상 종료와 절대 마감을 검증한다. 두 거부 실행에서는 작업 시작 전에 공급 부족을 판정한다. 첫 실행 순서·실패·원시 기록을 보존하고 기존 네 프로필도 원래 기준으로 검증한다. 실제 카운터 서비스 시간은 논리 예약 및 스케줄러 공백과 구분하며 제품 WCET는 별도 검증한다.
 
 [Ten pre-change deadline and cooperative build identities](evidence/deadline-cooperative-legacy-loads.en-ko.md).
+
+[Independent first assessment / 독립 최초 결과](evidence/deadline-supply-first.en-ko.md) · [Corrective action / 시정 이슈 #254](https://github.com/Romanof123/JNOX/issues/254).
