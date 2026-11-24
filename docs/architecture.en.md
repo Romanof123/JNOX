@@ -135,3 +135,5 @@ CHG-033 and IMP-031 select the ordinary FIFO/RR task tables on the P1 BCM2711 pr
 CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry and overdue wakes after a bounded masked IRQ. Use ordinary execution and the optional diagnostic trace to reconstruct actual charged service. [Simultaneous and late timer events](fixed-runtime-edges.en.md)
 
 The opt-in POL-012 workload repeatedly blocks and wakes a linked worker through SVC and timer IRQ scheduling on one EEVDF instance. [Repeated-wake design](m4-eevdf-wake-design.md) [EVD-034](evidence/evd-034.en.md)
+
+CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
