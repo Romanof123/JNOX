@@ -97,6 +97,8 @@ fn finish(status: u64, why: u64, slot: u64, id: usize, a: u64, b: u64) -> ! {
         }
         TERMINAL = true;
     }
+    #[cfg(any(jnox_reservation_stage = "eoi", jnox_reservation_stage = "frames"))]
+    stage_probe::dump();
     if COMPACT {
         compact_dump()
     }
@@ -106,6 +108,9 @@ fn finish(status: u64, why: u64, slot: u64, id: usize, a: u64, b: u64) -> ! {
         event(12, t, s, owner as usize, [frame, pc, i as u64, 0]);
     }
     event(13, now(), slot, id, [status, why, a, b]);
+    #[cfg(any(jnox_reservation_stage = "eoi", jnox_reservation_stage = "frames"))]
+    uart_write(b"RSRV RAW 4\n");
+    #[cfg(not(any(jnox_reservation_stage = "eoi", jnox_reservation_stage = "frames")))]
     uart_write(if COMPACT {
         b"RSRV RAW 3\n"
     } else {
@@ -701,6 +706,8 @@ impl Runtime {
         for id in 0..2 {
             self.validate_first_frame(id, &p.frames[id]);
         }
+        #[cfg(jnox_reservation_stage = "frames")]
+        stage_probe::sample();
         let bank = self.destination.as_ref().unwrap_or_else(|| unexpected());
         let (id, action) = bank.pending_grant().unwrap_or_else(|| unexpected());
         if !self.jobs.same_configuration(bank)
@@ -1053,6 +1060,14 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
     }
     unsafe { asm!("msr cntp_ctl_el0,xzr", "isb", "dsb sy", options(nostack)) };
     gic_write(GICC + 0x10, iar);
+    #[cfg(jnox_reservation_stage = "eoi")]
+    if slot == 0 && s.kind == 0 {
+        unsafe { asm!("dsb sy", options(nostack)) };
+        stage_probe::sample();
+    } else {
+        unsafe { asm!("dsb sy", options(nostack)) };
+    }
+    #[cfg(not(jnox_reservation_stage = "eoi"))]
     unsafe { asm!("dsb sy", options(nostack)) };
     if s.kind == 1 {
         s.close(frame, entry, Action::Long, 0);
@@ -1192,4 +1207,33 @@ pub(super) fn run() -> ! {
     s.arm(0, 0, epoch);
     let frame = s.select(NA, IDLE);
     unsafe { sched_start_frame(frame) }
+}
+
+#[cfg(any(jnox_reservation_stage = "eoi", jnox_reservation_stage = "frames"))]
+mod stage_probe {
+    use super::{asm, event, IDLE};
+
+    // Single core. IRQ records once, masked terminal reads once.
+    static mut OBSERVATION: Option<(u64, u64)> = None;
+
+    #[inline(always)]
+    pub(super) fn sample() {
+        let tick: u64;
+        let pc: u64;
+        unsafe {
+            asm!(
+                "isb", "2: mrs {tick}, cntpct_el0", "adr {pc}, 2b",
+                tick = out(reg) tick, pc = out(reg) pc, options(nostack, preserves_flags)
+            );
+            (&raw mut OBSERVATION).write_volatile(Some((tick, pc)));
+        }
+    }
+
+    pub(super) fn dump() {
+        let observation = unsafe { (&raw const OBSERVATION).read_volatile() };
+        let (tick, pc) = observation.unwrap_or_default();
+        let site = if cfg!(jnox_reservation_stage = "eoi") { 1 } else { 2 };
+        let selector = if cfg!(jnox_reservation_policy = "aligned") { 1 } else { 4 };
+        event(38, tick, 0, IDLE, [site, selector, u64::from(observation.is_some()), pc]);
+    }
 }
