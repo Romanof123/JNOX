@@ -1,0 +1,172 @@
+{
+ "version": 1,
+ "source": "0bc8f6bf778c75aafb603d4b2cc3684818166f68",
+ "verdict": "Stock healthy 0/32; diagnostic mode initialization 0/96",
+ "reviewer_manifest_sha256": "15945aa4cb22eb22e845afa08d75eb013b7b53ab46a503ac108e0f545c67a423",
+ "stock_image_index_sha256": "ec9051f6e7d100609e45c40b320db0655e3882bb9cab30ffc3be13019b91b43f",
+ "diagnostic_image_index_sha256": "9cde337beed3790fef3e81e1d7b0a3844103e6c4e7b6dc05ce921ea564bb177b",
+ "independent_report": "# Frozen cold matrix\n\nThe main matrix contains 128 terminal captures under the fixed 10 s process-launch timeout. Each policy has eight pairs per configuration, odd pairs OFF then ON, even pairs ON then OFF. All UART and exception log paths during execution were private Linux-native temporary paths. The immutable images were copied into the same filesystem before running. The runner polled UART at 1 ms intervals. Host timestamps record when the observer saw the first bytes and terminal marker. Termination followed the terminal marker. Host elapsed intervals and guest counter values are separate in individual.json. Linux load was recorded on each launch. Windows power scheme and processor settings were captured once. Host load was observed, not experimentally controlled.\n\nStock healthy passed 0/32. IRQ envelopes passed in 832/832 phases and decision/return envelopes in 830/832. All control-job deadlines and decision-spacing checks passed. Every capture contained seven sender issues. The first two issue timestamps were 8.607536\u20139.453680 ms apart against the exact 10 ms requirement. No receiver delivery, rearm command, or device ON transition was recorded. All 32 ended OFF. Row 13 latched reason 3 in 30 runs and reason 7 in two. First IRQ lateness was 0.136176\u20130.267312 ms. Mean ON minus OFF first IRQ difference was +0.015590 ms for RM and +0.006996 ms for DM, with both directions represented. Filesystem placement, WSL state and host conditions limit comparisons with earlier results.\n\nThe 96 diagnostic runs all read the initialized sentinel 4294967295 in row 48, followed by row 60 with reason 1 and OFF. No intended mode successfully initialized. Each attempt remains a failed startup. Reset-to-B is blind. Probe, cutoff, E0, vector, EOI, readback readiness, 26 operational phases, healthy activation, and a warmup versus matched no-probe contrast cannot be inferred for these runs. The separate generic ELF loader diagnostic also returned the sentinel. This establishes failure of the documented mode-input procedure on this executable and setup. The observed sentinel is consistent with the ELF data initialization superseding the loader write. Reset ordering was not directly observed.\n\nStock loss budgets and negative-control cases are outside this healthy workload. They remain unverified here. Per-run phase scores, raw evidence hashes and timestamps are in individual.json, paired deltas in pairs.json, and individual samples, per-arm counts and first-IRQ ranges in summary.json. All raw UART, command lines, stdout/stderr and enabled exception logs are retained.\n",
+ "summary": {
+  "stock": {
+   "rm-off": {
+    "first_irq_ms": [
+     0.231072,
+     0.170208,
+     0.193552,
+     0.136176,
+     0.195344,
+     0.173968,
+     0.146384,
+     0.15552
+    ],
+    "range": [
+     0.136176,
+     0.231072
+    ],
+    "criteria_counts": {
+     "irq": 8,
+     "decision": 7,
+     "program": 8,
+     "jobs": 8,
+     "spacing": 8,
+     "actual_issue": 8,
+     "rearm_issue": 0,
+     "actual_receive": 0,
+     "command": 0,
+     "device": 0,
+     "unlatched": 0
+    },
+    "passed": 0
+   },
+   "rm-on": {
+    "first_irq_ms": [
+     0.24312,
+     0.181184,
+     0.267312,
+     0.20432,
+     0.15704,
+     0.150944,
+     0.162832,
+     0.160192
+    ],
+    "range": [
+     0.150944,
+     0.267312
+    ],
+    "criteria_counts": {
+     "irq": 8,
+     "decision": 7,
+     "program": 8,
+     "jobs": 8,
+     "spacing": 8,
+     "actual_issue": 8,
+     "rearm_issue": 0,
+     "actual_receive": 0,
+     "command": 0,
+     "device": 0,
+     "unlatched": 0
+    },
+    "passed": 0
+   },
+   "dm-off": {
+    "first_irq_ms": [
+     0.140864,
+     0.14664,
+     0.185904,
+     0.15888,
+     0.1548,
+     0.149296,
+     0.136928,
+     0.15328
+    ],
+    "range": [
+     0.136928,
+     0.185904
+    ],
+    "criteria_counts": {
+     "irq": 8,
+     "decision": 8,
+     "program": 8,
+     "jobs": 8,
+     "spacing": 8,
+     "actual_issue": 8,
+     "rearm_issue": 0,
+     "actual_receive": 0,
+     "command": 0,
+     "device": 0,
+     "unlatched": 0
+    },
+    "passed": 0
+   },
+   "dm-on": {
+    "first_irq_ms": [
+     0.156928,
+     0.167392,
+     0.151984,
+     0.150048,
+     0.144032,
+     0.191552,
+     0.154288,
+     0.166336
+    ],
+    "range": [
+     0.144032,
+     0.191552
+    ],
+    "criteria_counts": {
+     "irq": 8,
+     "decision": 8,
+     "program": 8,
+     "jobs": 8,
+     "spacing": 8,
+     "actual_issue": 8,
+     "rearm_issue": 0,
+     "actual_receive": 0,
+     "command": 0,
+     "device": 0,
+     "unlatched": 0
+    },
+    "passed": 0
+   }
+  },
+  "paired_first_irq_ms": {
+   "rm": [
+    0.012048000000000003,
+    0.010976000000000014,
+    0.07375999999999999,
+    0.06814400000000001,
+    -0.03830399999999998,
+    -0.023024000000000017,
+    0.016448000000000018,
+    0.0046720000000000095
+   ],
+   "dm": [
+    0.016064000000000023,
+    0.02075200000000002,
+    -0.033920000000000006,
+    -0.008832000000000007,
+    -0.010768,
+    0.04225599999999999,
+    0.017360000000000014,
+    0.013056000000000012
+   ]
+  },
+  "diagnostic_sentinel": 96,
+  "diagnostic_failure_1_off": 96,
+  "timed_out": 0
+ },
+ "archive": {
+  "encoding": "Ordered base64 chunks of gzip tar",
+  "parts": [
+   "evd-050-v1-raw-01.json",
+   "evd-050-v1-raw-02.json",
+   "evd-050-v1-raw-03.json",
+   "evd-050-v1-raw-04.json",
+   "evd-050-v1-raw-05.json",
+   "evd-050-v1-raw-06.json"
+  ],
+  "sha256": "76d659ac0031c3c1b1cb2a8ba3727892861246ed0c4dcee39f759151a31a040f",
+  "restore_python": "from pathlib import Path\nimport base64,json,hashlib,tarfile,io\na=json.loads(Path('evd-050-v1.json').read_bytes())['archive']; pieces=[]\nfor n in a['parts']:\n    r=json.loads(Path(n).read_bytes()); b=base64.b64decode(r['data'],validate=True); assert hashlib.sha256(b).hexdigest()==r['sha256']; pieces.append(b)\nb=b''.join(pieces); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for n,h in json.load(t.extractfile('archive-file-digests.json')).items():\n        p=Path('evd-050-raw')/n; assert p.resolve().is_relative_to(Path('evd-050-raw').resolve()); b=t.extractfile(n).read(); assert hashlib.sha256(b).hexdigest()==h; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b)",
+  "replay": "Run restore_python with Python 3.9+ beside the archive chunks. In a disposable extraction run python -B evd-050-raw/cold-fresh/score.py to regenerate individual.json, pairs.json and summary.json. No ELF or guest required for offline scoring. The archive includes all original samples, commands, tool and ELF identities, independent scripts, and the separate loader diagnostic."
+ }
+}

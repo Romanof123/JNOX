@@ -152,7 +152,7 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
 
-[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 가상 런타임 구현과 독립 게스트 검증은 미완료다.
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. v3 게스트 판정은 부분 통과다. 조건을 맞춘 콜드 시작 비교 실험은 계획 단계다. [EVD-042](evidence/evd-042.md) · [콜드 시작 실험 계획](control-cold-plan.md)
 
 CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md) · [EVD-040](evidence/evd-040.md)
 
@@ -165,3 +165,9 @@ POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
 CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+POL-009 / IMP-046. 유한 작업 6종을 일반·진단 이미지에서 통과했다. [EVD-046](evidence/evd-046.md)
+
+POL-007 / IMP-045. 단독 기본 클록은 10/10건이 중재 전에 정지했다. 같은 ELF의 통합 기본 클록과 명령 계수에서는 각각 정상 8/8건과 지연 대조 2/2건을 확인했다. 타이밍 차이 원인은 미확정이다. [EVD-045](evidence/evd-045.md)
+
+CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 초기화되지 않았다. 입력 수정 후 시작 검사 96건이 모두 통과했으며 수정 구성의 운영 적격 결과는 0/128이었다. [EVD-050](evidence/evd-050.md)

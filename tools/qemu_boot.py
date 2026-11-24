@@ -233,6 +233,10 @@ TRANSCRIPTS = {
     "ordinary-groups-late": BOOT_TRANSCRIPT + b"GROUP LATE\nGROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "ordinary-groups": BOOT_TRANSCRIPT + b"GROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "mlq": BOOT_TRANSCRIPT + b"MLQ START\nMULTILEVEL DONE\n",
+    "mlq-blocked": BOOT_TRANSCRIPT + b"MLQ-BLOCKED START\nMULTILEVEL STALL\n",
+    "mlq-exited": BOOT_TRANSCRIPT + b"MLQ-EXITED START\nMULTILEVEL DONE\n",
+    "mlq-saturated": BOOT_TRANSCRIPT + b"MLQ-SATURATED START\nMULTILEVEL DONE\n",
+    "mlfq-delayed": BOOT_TRANSCRIPT + b"MLFQ-DELAYED START\nMULTILEVEL DONE\n",
     "mlfq": BOOT_TRANSCRIPT + b"MLFQ START\nMULTILEVEL DONE\n",
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
     "fixed-delayed": BOOT_TRANSCRIPT + b"FIXED DELAYED START\nFIXED DELAYED TASK\n",
@@ -538,7 +542,7 @@ def main():
             print(f"Run {run}/{runs}  {image_type} SHA-256 = {expected_hash}")
             print(f"  argv = {json.dumps(run_command, ensure_ascii=True)}", flush=True)
             run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir, env=launch_env,
-                     quiet_seconds=1 if pi4 else QUIET_SECONDS)
+                     quiet_seconds=1 if pi4 or args.profile in ("mlq-blocked", "mlq-exited", "mlq-saturated", "mlfq-delayed") else QUIET_SECONDS)
             if kernel_sha256(kernel, raw=pi4) != expected_hash:
                 raise ValueError(f"kernel {image_type} changed during testing")
             print("  PASS (host stopped QEMU after the quiet window)", flush=True)

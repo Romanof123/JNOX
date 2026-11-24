@@ -98,7 +98,7 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
 
-[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 가상 런타임 구현과 독립 게스트 검증은 미완료다.
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 최초 런타임 검증은 부분 통과다.
 
 CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md) · [EVD-040](evidence/evd-040.md)
 
@@ -111,5 +111,13 @@ CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-00
 CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
 CHG-046의 P/Q 비교 타이머 지연은 VER-002/005/023의 별도 계획 사례이다. 실제 비교값 되읽기, IRQ 진입, 예외 복귀, 작업·유휴 관측과 경과 시간 귀속을 보존한다. 작업 자체 마스킹 사례에는 독립 근거가 필요하다. [시간 기준](pol-006-rust-partition-plan.md#가상-타이머-통지-지연-추가-사례)
+
+POL-004 / IMP-042. v3는 부분 통과다. 결정론적 정확 경계 두 건이 적격이었다. 기본 구성 23개 중 최초 14개, 콜드 재시도 한 건 포함 15개가 적격이었다. 기본 클록 일반 8개와 별도 기본 클록 인계 진단 4개는 미충족이었다. [EVD-042](evidence/evd-042.md)
+
+POL-009 / IMP-046. 유한 작업 6종을 일반·진단 이미지에서 통과했다. [EVD-046](evidence/evd-046.md)
+
+POL-007 / IMP-045. 단독 기본 클록은 10/10건이 중재 전에 정지했다. 같은 ELF의 통합 기본 클록과 명령 계수에서는 각각 정상 8/8건과 지연 대조 2/2건을 확인했다. 타이밍 차이 원인은 미확정이다. [EVD-045](evidence/evd-045.md)
+
+CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 초기화되지 않았다. 입력 수정 후 시작 검사 96건이 모두 통과했으며 수정 구성의 운영 적격 결과는 0/128이었다. [EVD-050](evidence/evd-050.md)
 
 VER-002/005/023의 단일 코어 가상 실행 근거. [EVD-048](evidence/evd-048.md)
