@@ -22,3 +22,5 @@ From kernel/ build `cargo build --release --locked --features aperiodic-bench -j
 A separate host model varies arrivals and CPU availability and checks accounting before and after completion. Include full capacity, invalid submissions, same-ID reuse, stale/foreign receipts, clock/work overflow and credit coalescing. Hardware interference, product deadlines, general service overload handling and physical memory isolation remain separate work.
 
 [EVD-016](evidence/evd-016.en.md)
+
+CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)

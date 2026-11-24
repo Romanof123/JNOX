@@ -35,7 +35,7 @@ def request(stream, command, **arguments):
         return answer["return"]
 
 
-def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None):
+def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, extra=()):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.8)
         sock.connect(str(sock_path))
@@ -57,13 +57,15 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None):
                 if not match or not start <= int(match[1], 16) < start + length:
                     raise ValueError("terminal PC outside fixed_runtime_idle")
             request(stream, "pmemsave", val=address, size=size, filename=str(out / "audit.bin"))
+            for name, (base, length) in extra:
+                request(stream, "pmemsave", val=base, size=length, filename=str(out / (name + ".bin")))
             if trace_range is not None:
                 trace_address, trace_size = trace_range
                 request(stream, "pmemsave", val=trace_address, size=trace_size,
                         filename=str(out / "trace.bin"))
 
 
-def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False):
+def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False, extra_symbols=()):
     out = Path(os.environ[directory_variable]).resolve()
     out.mkdir(parents=True, exist_ok=False)
     args = sys.argv[1:]
@@ -71,6 +73,9 @@ def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, req
     address, size = journal_location(kernel, symbol)
     idle_range = journal_location(kernel, idle_symbol) if idle_symbol else None
     trace_range = journal_location(kernel, trace_symbol, optional=not require_trace) if trace_symbol else None
+    extra = [(name, journal_location(kernel, name)) for name in extra_symbols]
+    if extra and idle_range is None:
+        raise ValueError("extra memory snapshots require a stopped idle guest")
     stop_requested = False
 
     def stop(signum, frame):
@@ -85,6 +90,8 @@ def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, req
                    "-d", "int", "-D", str(out / "int.trace"), *args]
         with subprocess.Popen(command, stdout=subprocess.PIPE) as guest:
             launch = {"argv": command, "pid": guest.pid, "audit_address": address, "audit_size": size}
+            if extra:
+                launch["extra_symbols"] = dict(extra)
             if trace_range is not None:
                 launch.update(trace_symbol=trace_symbol, trace_address=trace_range[0], trace_size=trace_range[1])
             (out / "launch.json").write_text(json.dumps(launch))
@@ -106,7 +113,7 @@ def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, req
                     if guest.poll() is not None:
                         raise RuntimeError(f"guest exited early: {guest.returncode}")
                     time.sleep(0.004)
-                snapshot(sock_path, out, address, size, idle_range, trace_range)
+                snapshot(sock_path, out, address, size, idle_range, trace_range, extra)
             finally:
                 if guest.poll() is None:
                     guest.terminate()

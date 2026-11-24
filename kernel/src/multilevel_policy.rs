@@ -126,6 +126,21 @@ impl<const N: usize> Multilevel<N> {
         true
     }
 
+    #[cfg(jnox_multilevel)]
+    pub(crate) fn close_interval(&mut self, id: usize, elapsed: u64, blocked: bool) -> bool {
+        if self.running != Some(id) { return false; }
+        if let Ranking::Feedback(tasks) = &mut self.ranking {
+            tasks[id].charge_interval(elapsed);
+        }
+        if blocked { self.asleep[id] = true; }
+        else { assert!(self.ready.push_back(id)); }
+        self.running = None;
+        true
+    }
+
+    #[cfg(jnox_multilevel_trace)]
+    pub(crate) fn queued(&self) -> &[usize] { self.ready.entries() }
+
     /// At a caller-selected scheduling boundary, reset every feedback task
     /// (including sleepers). Existing ready order breaks the newly formed ties.
     pub(crate) fn boost(&mut self) -> bool {

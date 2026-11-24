@@ -9,4 +9,6 @@ from qemu_capture import main
 if __name__ == "__main__":
     sys.exit(main("fixed_app_observations", "FIXED_RUNTIME_CAPTURE_DIR",
                   idle_symbol="fixed_runtime_idle", trace_symbol="fixed_runtime_trace",
-                  require_trace=os.environ.get("JNOX_FIXED_TRACE") == "1"))
+                  require_trace=os.environ.get("JNOX_FIXED_TRACE") == "1",
+                  extra_symbols=("fixed_cost_records", "fixed_cost_stacks")
+                  if os.environ.get("JNOX_FIXED_COST") == "1" else ()))
