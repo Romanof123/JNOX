@@ -45,7 +45,8 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_control_cold");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_control_descriptor)");
-    let descriptor=selector("JNOX_CONTROL_DESCRIPTOR");
+    let descriptor = selector("JNOX_CONTROL_DESCRIPTOR");
+    let markers = selector("JNOX_CONTROL_MARKERS");
     println!("cargo::rustc-check-cfg=cfg(jnox_permit_phase)");
     println!("cargo::rustc-check-cfg=cfg(jnox_permit_anchor)");
     println!("cargo::rustc-check-cfg=cfg(jnox_permit_off)");
@@ -60,14 +61,24 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_permit_phase");
         if arm=="anchor" {println!("cargo::rustc-cfg=jnox_permit_anchor")}
     }
-    if let Some(value) = descriptor {
+    if let Some(value) = descriptor.as_deref() {
         assert!(value == "1" && profile.as_deref() == Some("periodic")
             && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
             && scenario.as_deref() == Some("healthy"),
             "JNOX_CONTROL_DESCRIPTOR=1 requires ordinary periodic healthy RM or DM");
-        assert!(cold.is_none() && selector("JNOX_CONTROL_MARKERS").is_none(),
+        assert!(cold.is_none() && markers.is_none(),
             "control descriptor, cold and marker comparison arms must be built separately");
         println!("cargo::rustc-cfg=jnox_control_descriptor");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_control_markers)");
+    if let Some(value) = markers.as_deref() {
+        assert!(descriptor.is_none() && cold.is_none(),
+            "control marker, descriptor and cold comparison arms must be built separately");
+        assert!(value == "1" && profile.as_deref() == Some("periodic")
+            && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
+            && scenario.as_deref() == Some("healthy"),
+            "JNOX_CONTROL_MARKERS=1 requires ordinary healthy periodic control-rm or control-dm");
+        println!("cargo::rustc-cfg=jnox_control_markers");
     }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
@@ -136,6 +147,28 @@ fn main() {
     } else {
         legacy_bench
     };
+    // The winning backend owns its selector validation. A shadowed partition
+    // feature cannot select diagnostic code or reject a higher-ranked bench.
+    if bench == "partition" && env::var_os("CARGO_FEATURE_PARTITION_LEGACY_DIAG").is_some() {
+        let allowed = ["CARGO_FEATURE_PARTITION_BENCH", "CARGO_FEATURE_PARTITION_LEGACY_DIAG",
+                       "CARGO_FEATURE_PARTITION_LEGACY_DIAG_NEGATIVE"];
+        assert!(board == "virt" && profile.is_none() && app.is_none()
+            && env::vars_os().filter_map(|(key, _)| key.into_string().ok())
+                .filter(|key| key.starts_with("CARGO_FEATURE_")).all(|key| allowed.contains(&key.as_str())),
+            "legacy partition diagnostic requires standalone virt assembly partition fixture");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice_long)");
+    if let Some(mode) = selector("JNOX_PARTITION_NOTICE") {
+        assert!(legacy_bench == "boot" && bench == "partition" && table_p != table_q,
+            "JNOX_PARTITION_NOTICE requires an effective ordinary partition P or Q on virt");
+        assert!(matches!(mode.as_str(), "short" | "long"),
+            "JNOX_PARTITION_NOTICE must be short or long");
+        println!("cargo::rustc-cfg=jnox_partition_notice");
+        if mode == "long" {
+            println!("cargo::rustc-cfg=jnox_partition_notice_long");
+        }
+    }
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");

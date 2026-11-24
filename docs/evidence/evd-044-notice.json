@@ -1,0 +1,245 @@
+{
+  "evidence_id": "EVD-044",
+  "study": "Controlled notice at the first A closure",
+  "source": "9ffd653d906b26fcb30e272295c0b43b9acf4839",
+  "manifest_sha256": "19059896390245fefcb084fdfff8e19735f515bbaeee60eb4c2bfdfed5a6f2ce",
+  "build_index_sha256": "cca2363fbf5a94cf60f091560923a3aebe637e8e46c77d3a85b897b0c374ac64",
+  "controlled_first_boots": 4,
+  "specified_recoveries": 4,
+  "original_envelope_failures_at_injection": 4,
+  "unrelated_late_edges": 0,
+  "cases": {
+    "P-short": {
+      "controlled_generation": 1,
+      "compare_delay": 62501,
+      "entry_after_compare": 29604,
+      "observation_after_entry": 11720,
+      "original_latency": 103825,
+      "prior_a": 6412459,
+      "last_a": 6414861,
+      "recovered_task": 2,
+      "lost_windows": [
+        {
+          "start": 6339672,
+          "end": 6414861,
+          "owner": 1,
+          "displaced": 2,
+          "ticks": 75189
+        }
+      ],
+      "protected": [
+        {
+          "n": 2,
+          "nominal": 9464672,
+          "entry": 9475594,
+          "live": 9480899,
+          "ret": 9482471,
+          "x": 9482804,
+          "ticks": 18132,
+          "within": true,
+          "task": 2
+        },
+        {
+          "n": 3,
+          "nominal": 12589672,
+          "entry": 12602347,
+          "live": 12603427,
+          "ret": 12605218,
+          "x": 12605610,
+          "ticks": 15938,
+          "within": true,
+          "task": 0
+        }
+      ],
+      "release": {
+        "n": 2,
+        "due": 9464672,
+        "before": 9480398,
+        "after": 9480743
+      },
+      "unrelated_late": []
+    },
+    "P-long": {
+      "controlled_generation": 1,
+      "compare_delay": 3906250,
+      "entry_after_compare": 36231,
+      "observation_after_entry": 13683,
+      "original_latency": 3956164,
+      "prior_a": 10238961,
+      "last_a": 10241148,
+      "recovered_task": 2,
+      "lost_windows": [
+        {
+          "start": 6317691,
+          "end": 9442691,
+          "owner": 1,
+          "displaced": 2,
+          "ticks": 3125000
+        },
+        {
+          "start": 9442691,
+          "end": 10241148,
+          "owner": 2,
+          "displaced": 2,
+          "ticks": 798457
+        }
+      ],
+      "protected": [
+        {
+          "n": 2,
+          "nominal": 12567691,
+          "entry": 12577889,
+          "live": 12579841,
+          "ret": 12581090,
+          "x": 12581362,
+          "ticks": 13671,
+          "within": true,
+          "task": 0
+        },
+        {
+          "n": 3,
+          "nominal": 18817691,
+          "entry": 18832167,
+          "live": 18832878,
+          "ret": 18834401,
+          "x": 18837402,
+          "ticks": 19711,
+          "within": true,
+          "task": 1
+        }
+      ],
+      "release": {
+        "n": 1,
+        "due": 9442691,
+        "before": 10266597,
+        "after": 10267032
+      },
+      "unrelated_late": []
+    },
+    "Q-short": {
+      "controlled_generation": 3,
+      "compare_delay": 62501,
+      "entry_after_compare": 15046,
+      "observation_after_entry": 4929,
+      "original_latency": 82476,
+      "prior_a": 12652314,
+      "last_a": 12654518,
+      "recovered_task": 1,
+      "lost_windows": [
+        {
+          "start": 12579532,
+          "end": 12654518,
+          "owner": 1,
+          "displaced": 1,
+          "ticks": 74986
+        }
+      ],
+      "protected": [
+        {
+          "n": 4,
+          "nominal": 15704532,
+          "entry": 15712981,
+          "live": 15713521,
+          "ret": 15714559,
+          "x": 15714757,
+          "ticks": 10225,
+          "within": true,
+          "task": 1
+        },
+        {
+          "n": 5,
+          "nominal": 18829532,
+          "entry": 18840840,
+          "live": 18841353,
+          "ret": 18842412,
+          "x": 18842642,
+          "ticks": 13110,
+          "within": true,
+          "task": 2
+        }
+      ],
+      "release": {
+        "n": 1,
+        "due": 3204532,
+        "before": 3235650,
+        "after": 3235898
+      },
+      "unrelated_late": []
+    },
+    "Q-long": {
+      "controlled_generation": 3,
+      "compare_delay": 3906250,
+      "entry_after_compare": 17552,
+      "observation_after_entry": 6383,
+      "original_latency": 3930185,
+      "prior_a": 16495374,
+      "last_a": 16497512,
+      "recovered_task": 1,
+      "lost_windows": [
+        {
+          "start": 12576143,
+          "end": 15701143,
+          "owner": 1,
+          "displaced": 1,
+          "ticks": 3125000
+        },
+        {
+          "start": 15701143,
+          "end": 16497512,
+          "owner": 1,
+          "displaced": 1,
+          "ticks": 796369
+        }
+      ],
+      "protected": [
+        {
+          "n": 4,
+          "nominal": 18826143,
+          "entry": 18836539,
+          "live": 18837404,
+          "ret": 18838692,
+          "x": 18840359,
+          "ticks": 14216,
+          "within": true,
+          "task": 2
+        },
+        {
+          "n": 5,
+          "nominal": 21951143,
+          "entry": 21964896,
+          "live": 21965805,
+          "ret": 21967347,
+          "x": 21969375,
+          "ticks": 18232,
+          "within": true,
+          "task": 0
+        }
+      ],
+      "release": {
+        "n": 1,
+        "due": 3201143,
+        "before": 3232509,
+        "after": 3232748
+      },
+      "unrelated_late": []
+    }
+  },
+  "archive": {
+    "file": "evd-044-notice.zip",
+    "sha256": "d3ad40a274927aaf087749e76751d16d7151a880ce655a7129401d75057c4cb0",
+    "bytes": 482671,
+    "entries": 123,
+    "restore_python_from_repo_root": [
+      "from pathlib import Path",
+      "import json,hashlib,zipfile",
+      "d=Path('docs/evidence'); j=json.loads((d/'evd-044-notice.json').read_bytes()); a=j['archive']; p=d/a['file']",
+      "assert hashlib.sha256(p.read_bytes()).hexdigest()==a['sha256']",
+      "with zipfile.ZipFile(p) as z: z.extractall('notice-study')",
+      "r=Path('notice-study'); ledger=(r/'FILES.sha256').read_text()",
+      "for line in ledger.splitlines():",
+      "    h,n=line.split('  ',1); assert hashlib.sha256((r/n).read_bytes()).hexdigest()==h",
+      "assert hashlib.sha256((r/'partition-notice-fresh/sha256sums').read_bytes()).hexdigest()==j['manifest_sha256']"
+    ],
+    "offline_replay": "Use a disposable restored copy on Linux with python3 and AArch64 GNU binutils. Run python3 notice-study/partition-notice-fresh/independent.py. Compare per-case independent.json to the preserved originals."
+  }
+}

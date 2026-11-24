@@ -43,4 +43,4 @@ REQ-023/002/005 → DES-012/003 → IMP-010 → VER-023/002/005. Host tests comp
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
-POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. All four delayed virtual timer notifications exceeded the original 1 ms envelope at injection and recovered to the specified window. No unrelated edge exceeded the limit. Live worker masking remains unverified. [EVD-044 · delayed notice](evidence/evd-044-notice.en.md) [EVD-044 v2](evidence/evd-044-v2.en.md)

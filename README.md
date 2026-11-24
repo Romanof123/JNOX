@@ -20,6 +20,7 @@ On the single-core QEMU `virt` model, linked Rust jobs also run under earliest-d
 | [First bench decision by the functional safety team](docs/safety-parameters.en.md) | Safe state and timing budget for a virtual output, and the evidence needed to set product values |
 | [System requirements](docs/requirements.en.md) | Requirements, trace IDs and acceptance criteria |
 | [System architecture](docs/architecture.en.md) | Kernel, Linux driver domain, scheduling, ports and user services |
+| [Application tracing contract](docs/application-tracing.en.md) | Proposed events, request timelines, capture limits and verification stages |
 | [First boot of the M1 Rust kernel](docs/m1-boot.en.md) | Scope and UART acceptance criteria for the minimal AArch64 QEMU kernel |
 | [Pi 4 physical bench](docs/boards/pi4-p1.en.md) | SD boot files, serial wiring and independent model and hardware acceptance |
 | [M1 timer preemption](docs/m1-scheduler.en.md) | Criteria for observing the timer interrupt, higher-priority dispatch and interrupted thread resumption in one boot |

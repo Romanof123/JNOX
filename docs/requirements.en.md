@@ -40,3 +40,5 @@ The footprint targets in `REQ-009` exclude boot firmware, user services, and the
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
 
 CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
+CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
