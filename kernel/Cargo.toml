@@ -6,6 +6,8 @@ publish = false
 
 [features]
 sched-bench = []
+# Live CBS takes precedence over all other bench features when combined.
+cbs-bench = []
 # FIFO and RR take precedence when combined with EDF.
 edf-bench = ["sched-bench"]
 fifo-bench = ["sched-bench"]

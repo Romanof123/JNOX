@@ -384,3 +384,12 @@ CAP-001,has-partial-evidence,EVD-005
 VER-023,has-partial-evidence,EVD-005
 VER-002,has-partial-evidence,EVD-005
 VER-005,has-partial-evidence,EVD-005
+CHG-008,affects,REQ-023
+CHG-008,affects,REQ-002
+CHG-008,affects,REQ-005
+DES-012,implemented-by,IMP-006
+DES-003,implemented-by,IMP-006
+POL-008,partially-implemented-by,IMP-006
+IMP-006,partially-verified-by,VER-023
+IMP-006,partially-verified-by,VER-002
+IMP-006,partially-verified-by,VER-005
