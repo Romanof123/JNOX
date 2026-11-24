@@ -215,3 +215,69 @@ impl<const N: usize> Proportional<N> {
         true
     }
 }
+
+/// Finite occupancy contract for three continuously ready streams.
+#[cfg(any(test, jnox_ordinary_prop))]
+#[derive(Clone, Copy)]
+pub(crate) struct WindowInput {
+    pub(crate) seed: u64,
+    pub(crate) weights: [u8; 3],
+    pub(crate) ready: u32,
+    pub(crate) horizon: usize,
+    pub(crate) width: usize,
+    pub(crate) floors: [u8; 3],
+}
+
+#[cfg(any(test, jnox_ordinary_prop))]
+#[derive(Debug, PartialEq)]
+pub(crate) struct WindowReport {
+    pub(crate) minimum: [u8; 3],
+    pub(crate) first_short: Option<(usize, usize, u8)>,
+}
+
+#[cfg(any(test, jnox_ordinary_prop))]
+impl WindowInput {
+    const CAPACITY: usize = 64;
+
+    /// Scratch policy is intentionally distinct from the live policy. Only
+    /// aggregates and the first failing predicate can cross this boundary.
+    pub(crate) fn analyze(self) -> Option<WindowReport> {
+        if !(1..=Self::CAPACITY).contains(&self.horizon)
+            || !(1..=self.horizon).contains(&self.width)
+            || self.ready != 7
+            || self.floors.iter().any(|&f| f == 0 || usize::from(f) > self.width)
+            || self.floors.iter().map(|&f| usize::from(f)).sum::<usize>() > self.width
+        {
+            return None;
+        }
+        let mut scratch = Proportional::lottery(self.weights, self.seed)?;
+        if !scratch.set_ready_mask(self.ready) {
+            return None;
+        }
+        let mut ring = [0usize; Self::CAPACITY];
+        let mut occupancy = [0u8; 3];
+        let mut report = WindowReport { minimum: [u8::MAX; 3], first_short: None };
+        for slot in 0..self.horizon {
+            let index = slot % self.width;
+            if slot >= self.width {
+                let previous = ring[index];
+                occupancy[previous] = occupancy[previous].checked_sub(1)?;
+            }
+            let winner = scratch.dispatch()?;
+            if !scratch.stop(winner, 0) {
+                return None;
+            }
+            ring[index] = winner;
+            occupancy[winner] = occupancy[winner].checked_add(1)?;
+            if let Some(start) = (slot + 1).checked_sub(self.width) {
+                for (id, &count) in occupancy.iter().enumerate() {
+                    report.minimum[id] = report.minimum[id].min(count);
+                    if count < self.floors[id] && report.first_short.is_none() {
+                        report.first_short = Some((start, id, count));
+                    }
+                }
+            }
+        }
+        Some(report)
+    }
+}
