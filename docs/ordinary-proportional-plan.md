@@ -61,3 +61,14 @@ The boot dispatches a real idle frame while the eligible set is empty and checks
 | 13 / 14 | current slot, raw GIC acknowledge, timer control, three zeros / slot, task, selection=0 or stop=1, frame, PC, register fingerprint |
 
 The lottery-miss image programs two ticks on its first grant and still applies the one-tick predicate. The stride-delay selector gives A a two-tick IRQ grant and charges its actual observed residency. Its three-tick predicate can succeed only on an observed late interrupt. This image contains no controlled IRQ delay; deliberately producing that late observation remains open. Preserve short/early failures and the measured charge. / lottery-miss는 첫 두 틱 부여에서 원래 한 틱 조건을 검사한다. stride-delay는 A에 두 틱 비교값을 적용하고 실제 경과 전체를 차감한다. 세 틱 이상이 실제 관측된 경우에만 해당 조건을 충족한다. 제어된 IRQ 지연 실험은 미결이며 최초 실패 및 차감 기록을 보존한다.
+
+## Controlled first stride grant / 첫 스트라이드 부여의 지연 검증
+
+On one virt CPU with the default clock, freeze cold-boot positions 1–5 as lottery1, lottery2, stride, lottery-miss, stride-delay. Retain each first UART and exception trace even on failure. Positions 1–3 must finish their existing windows, position 4 must report the existing slot-zero two-versus-one rejection, and position 5 must end successfully after A's first grant. The old diagnostic saw 5,011,037 counts at 2,500,000 per unit. The timer expired on schedule while A was interruptible. Extra iterations alone cannot assure late delivery.
+
+기본 클록 단일 virt CPU에서 위 순서로 각각 최초 콜드 부팅을 보존한다. 앞 세 건은 기존 구간을 완료하고 네 번째는 첫 슬롯 2 대 1 거부, 다섯 번째는 A의 첫 부여에서 성공해야 한다. 기존 진단에서는 두 단위가 지난 직후 인터럽트가 전달되었다.
+
+Only in position 5, A enters a bounded local IRQ critical section and continues publishing its ordinary Rust count/checksum/counter tuples. After publishing the first tuple at or beyond start + three units, A unmasks IRQs. The timer compare stays at start + two units. Independent replay must recover at least three whole units from vector stop minus start, match the remainder and weight-one pass increment, locate the final A sample at or beyond the release boundary and at or before vector stop, find unchanged B/C tuples, and corroborate the idle and A IRQ/ERET pairs and timer PPI. Preserve early failure if A never enters its section in time. This measures controlled guest IRQ deferral.
+
+다섯 번째 구성에서만 A가 로컬 IRQ를 잠시 마스킹하고 실제 Rust 작업과 스택 표본 발행을 계속한다. 시작 후 세 단위에 도달한 표본을 발행하면 IRQ를 허용한다. 비교값은 두 단위다. 독립 검증은 벡터 중단값과 시작값으로 전체 단위·나머지·패스 증가를 복원하고 A 표본의 시각, B/C 불변, 유휴 및 A의 IRQ/ERET와 타이머 PPI를 대조한다. 조기 실패도 보존한다.
+[Five first positions, linked IRQ return and full charge / 최초 5개 실행·실제 IRQ 복귀 및 전체 부과](evidence/ordinary-stride-late-first.en-ko.md).
