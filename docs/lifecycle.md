@@ -83,3 +83,5 @@ python tools/open_tracking.py open-pages.json
 
 독립된 HTTP(S) URL은 마크다운 대괄호를 해석하기 전에 하나의 토큰으로 처리한다. IPv6 주소의 대괄호는 URL에 속하며 같은 줄에 공백으로 분리한 본문 참조는 검사할 수 있다. 한 토큰 안에 URL과 마크다운이 모호하게 섞이면 PM이 확인한다.
 [최초 판정](evidence/open-tracking-first.en-ko.md) · [2차](evidence/open-tracking-second.en-ko.md) · [3차](evidence/open-tracking-third.en-ko.md) · [4차](evidence/open-tracking-fourth.en-ko.md) · [수정본 및 실제 목록](evidence/open-tracking-fifth.en-ko.md) · [입력 23건을 사전 고정한 독립 판정](evidence/open-tracking-blind.en-ko.md). 자동 대조 후 PM이 실제 주관 이슈를 확인한다.
+
+[11월 25일(KST) 미종결 이슈와 PR 주 담당의 전체 점검 기록](evidence/pm-open-tracking-20261124T180640Z.en-ko.md).
