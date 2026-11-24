@@ -30,3 +30,5 @@ python3 tools/ordinary_mutex_host_capture.py /tmp/mutex246-first
 python3 /tmp/mutex246-first/control_replay.py /tmp/mutex246-first
 python3 tools/ordinary_mutex_host_report.py /tmp/mutex246-first
 ~~~
+
+[Independent first captures, clock bounds and replay / 독립 최초 측정과 재생](evidence/ordinary-mutex-host-thread-first.en-ko.md).
