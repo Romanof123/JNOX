@@ -216,17 +216,17 @@ impl Runtime {
             stop(2)
         }
     }
-    fn choose(&mut self) -> *mut Frame {
-        let locks = &self.locks;
+    fn choose(&mut self) -> (*mut Frame, [u8; 4]) {
+        let priorities = self.locks.priorities().unwrap_or_else(|| stop(3));
         self.current = self
             .ready
-            .pop_highest(|i| locks.effective(i).unwrap_or(0))
+            .pop_highest(|i| priorities[i])
             .unwrap_or_else(|| stop(3));
         let frame = core::mem::replace(&mut self.frames[self.current], ptr::null_mut());
         if !owned_frame(self.current, frame) {
             stop(4)
         }
-        frame
+        (frame, priorities)
     }
     fn save(&mut self, f: *mut Frame) -> usize {
         let id = self.current;
@@ -239,7 +239,7 @@ impl Runtime {
         self.frames[id] = f;
         id
     }
-    fn record(&self, op: u64, arg: usize, id: usize, f: *mut Frame, next: *mut Frame, result: u64) {
+    fn record(&self, op: u64, arg: usize, id: usize, f: *mut Frame, next: *mut Frame, result: u64, effective: &[u8; 4]) {
         let mut q = 1u64 << self.current;
         for &t in self.ready.entries() {
             q |= 1 << t
@@ -250,7 +250,7 @@ impl Runtime {
             if let Some(l) = self.locks.waiting(t) {
                 waits[l] |= 1 << t
             }
-            priorities |= u64::from(self.locks.effective(t).unwrap_or(0)) << (8 * t)
+            priorities |= u64::from(effective[t]) << (8 * t)
         }
         unsafe {
             if USED == ROWS {
@@ -348,8 +348,8 @@ extern "C" fn request(f: *mut Frame) -> *mut Frame {
         }
         _ => stop(10),
     }
-    let next = r.choose();
-    r.record(op, arg, id, f, next, result);
+    let (next, effective) = r.choose();
+    r.record(op, arg, id, f, next, result, &effective);
     if r.done == 7 {
         if !r.released || !r.blocked || !r.handoff {
             stop(15)
@@ -363,7 +363,7 @@ extern "C" fn request(f: *mut Frame) -> *mut Frame {
             || (CEILING && audit != [batch[0], CHUNKS.load(SeqCst)])
             || (0..2).any(|lock| r.locks.owner(lock).is_some())
             || (0..4)
-                .any(|id| r.locks.waiting(id).is_some() || r.locks.effective(id) != Some(PRI[id]))
+                .any(|id| r.locks.waiting(id).is_some() || effective[id] != PRI[id])
         {
             stop(18)
         }
@@ -438,8 +438,8 @@ extern "C" fn interrupt(f: *mut Frame) -> *mut Frame {
     r.enqueue(id, true);
     r.enqueue(HIGH, false);
     r.enqueue(MED, false);
-    let next = r.choose();
-    r.record(IRQ, 0, id, f, next, 0);
+    let (next, effective) = r.choose();
+    r.record(IRQ, 0, id, f, next, 0, &effective);
     if id != LOW
         || IN_WORK.load(SeqCst) != 1
         || unsafe { (*f).reserved } < cval
@@ -558,7 +558,7 @@ pub(super) fn run() -> ! {
     }
     r.enqueue(IDLE, false);
     r.enqueue(LOW, false);
-    let f = r.choose();
+    let (f, _) = r.choose();
     unsafe {
         ptr::write(&raw mut ACTIVE, Some(r));
         sched_start_frame(f)
