@@ -1022,3 +1022,6 @@ IMP-045,partially-verified-by,VER-023
 VER-002,has-partial-evidence,EVD-045
 VER-005,has-partial-evidence,EVD-045
 VER-023,has-partial-evidence,EVD-045
+CHG-052,affects,REQ-002
+CHG-052,affects,REQ-005
+CHG-052,affects,REQ-023
