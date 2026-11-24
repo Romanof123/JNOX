@@ -1,0 +1,33 @@
+{
+ "version": 3,
+ "source": "ddbc13b5587148f36dafc386d5405f61b63942e4",
+ "verdict": "PARTIAL",
+ "primary_configurations": 23,
+ "diagnostic_configurations": 10,
+ "guest_attempts": 34,
+ "first_primary_qualified": 14,
+ "retry_inclusive_primary_qualified": 15,
+ "complete_primary_default_qualified": 0,
+ "diagnostic_qualified": 6,
+ "english": "evd-042-v3.en.md",
+ "korean": "evd-042-v3.md",
+ "evidence": "evd-042-v3.json",
+ "reviewer_manifest_sha256": "0fd9a38e13d0f6db14f36b2da0a43e81f656f091fa060fac3a7a910253643cd1",
+ "independent_review": "# Independent frozen v3 QA\n\nSource ddbc13b5587148f36dafc386d5405f61b63942e4, clean tree 35d72692081e52ed6d694c5ea33ab2b28d778013 before and after. All 23 frozen ELF SHA-256 values matched build-index.json. QEMU 6.2.0, single A72 TCG, GICv2, 128 MiB, no defaults/NIC. Each execution.json records the clock mode, command, image digest and UTC run times. All completed captures reached CONTROL END. One initial DM handoff-loss host read aborted with errno 61; its partial capture and separately labeled fresh retry are preserved. The failed first runner did not persist start/end/process-exit fields. capture.py and the image index reconstruct its exact argv. One prelaunch configuration error (case addressed in the wrong index field) started no guest.\n\n| Profile | Result |\n|---|---|\n| Primary default ordinary RM/DM healthy, loss, late, demand | 0/8 |\n| Primary deterministic ordinary handoff healthy/loss | 3/4 first captures, 4/4 with separate retry |\n| Primary deterministic RM scripted | 11/11 |\n| Diagnostic deterministic healthy | 2/2 |\n| Diagnostic deterministic late/demand | 4/4 |\n| Diagnostic default handoff healthy/loss | 0/4 |\n\nThe default failures retain structured JSON, shortened or mistimed phase histories, and measured device trajectories. Neither policy has full ordinary qualification. No board, worst-case interference guarantee, transport or physical actuator conclusion follows.\n\nIn the RM tie, third permit publication/delivery occurred at guest tick 1408831. At exactly +1250000 ticks (20 ms, 62500000 Hz), the terminal decision, latch bracket, fourth issue and ingress bracket all read 2658831. tie.disasm at 0x40200638 through 0x4020066c confirms the final counter comparison branches directly to the latch store, barriers and completion sample, then a separate issue sample, publishing store, barriers and completion sample. Preparation reserves the slot with issue zero in single-threaded stimulus. The receiver consumes only after the publishing store. The fourth permit was rejected at 2658838, with the last accepted issue still the third. Independent PL061 masked data read observed off at 2658841, final off at 2658844. The readback is an emulated peripheral observation. The RM worst check occurred at age 1249999 ticks and the next decision exactly 312500 ticks later. No tick rounding was used.\n\nhost.json, receiver-host.json and independent.json record the verification. The three upstream regression tests and independent missing/corrupt/truncated captures, original failed reader capture and eight altered real deterministic negative controls behaved as required. All four unaltered negative controls preserved pre-latch acceptance, rejected subsequent issues in order, had one falling readback and ended inhibited.\n",
+ "independent_results_sha256": "9b4dfe04dd7edc97a134faa777e1e3456d07a1506c2da6c4ed5d5d177c9c89f7",
+ "build_index_sha256": "27d0875c14ed32a5fb82ca7623c8cb83466ebc83ca22e9285f4825c781de9233",
+ "clock_hz": 62500000,
+ "archive": {
+  "encoding": "Ordered base64 chunks of gzip tar",
+  "parts": [
+   "evd-042-v3-raw-01.json",
+   "evd-042-v3-raw-02.json",
+   "evd-042-v3-raw-03.json",
+   "evd-042-v3-raw-04.json"
+  ],
+  "sha256": "2b57d7f34820cceccf88a2b0e9731c7d75a0296d7fffe63cbd4ee9ef2c442247",
+  "files": 264,
+  "restore_python": "from pathlib import Path\nimport base64,hashlib,io,tarfile,json\na=json.loads(Path('evd-042-v3.json').read_bytes())['archive']; parts=[]\nfor name in a['parts']:\n    o=json.loads(Path(name).read_bytes()); b=base64.b64decode(o['data'],validate=True); assert hashlib.sha256(b).hexdigest()==o['sha256']; parts.append(b)\nb=b''.join(parts); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for name,digest in json.load(t.extractfile('archive-file-digests.json')).items():\n        p=Path('v3')/name; assert p.resolve().is_relative_to(Path('v3').resolve()); v=t.extractfile(name).read()\n        assert hashlib.sha256(v).hexdigest()==digest; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(v)",
+  "replay": "Execute restore_python beside the JSON with Python 3.9+. The v3/control-v3-fresh directory contains the original verifier, signed report, manifest, raw and structured captures, startup metadata, scorer controls, tie disassembly and build index. In a disposable extraction run python -B v3/control-v3-fresh/audit.py to regenerate independent.json from completed execution records."
+ }
+}

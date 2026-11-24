@@ -95,6 +95,21 @@ class Controls(unittest.TestCase):
             else:
                 self.assertFalse(reconstruct(rows,"P","healthy","synthetic")["timing_envelope_met"])
 
+    def test_irq_observed_before_programmed_compare(self):
+        rows = synthetic("P", "healthy")
+        index = next(i for i, line in enumerate(rows) if line.startswith("OP EDGE n=1 "))
+        # Keep the outgoing worker sample before entry. Only delivery is early.
+        fields = rows[index].split()
+        due = int(next(field[4:] for field in fields if field.startswith("due=")))
+        replacement = {"entry": due - 1, "last": due - 2}
+        for i, field in enumerate(fields):
+            key = field.partition("=")[0]
+            if key in replacement:
+                fields[i] = f"{key}={replacement[key]}"
+        rows[index] = " ".join(fields)
+        with self.assertRaisesRegex(ValueError, "timer delivery contradiction"):
+            reconstruct(rows, "P", "healthy", "synthetic")
+
     def test_release_is_not_service(self):
         for table, release, first_slot in (("P",3,6),("Q",1,4)):
             result = reconstruct(synthetic(table,"healthy"),table,"healthy","synthetic")

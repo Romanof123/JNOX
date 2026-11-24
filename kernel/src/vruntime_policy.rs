@@ -8,7 +8,7 @@ use core::cmp::Ordering;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct Lease {
     pub(crate) task: usize,
-    sequence: u64,
+    pub(crate) sequence: u64,
 }
 
 #[derive(Clone, Copy)]

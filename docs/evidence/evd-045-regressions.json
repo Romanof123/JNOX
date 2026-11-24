@@ -1,0 +1,152 @@
+{
+  "tree": "a097b300e0ffb2803b88e0fe02e5d88f0a2dec2b",
+  "builds": {
+    "ml-intermediate": {
+      "source_commit": "452faf97401fec1351a13224089ff1a416848df8",
+      "tree": "efa1cf88f2375c1fecfd2c20bf6355c9fd249693",
+      "count": 12,
+      "index_sha256": "ee16fb50dbded6e9fd57617627c0c5d58654e53bc03de76367352cb7a953449e",
+      "pt_load_and_text_identical": [
+        "mlq-blocked",
+        "mlq-blocked-trace",
+        "mlq-exited",
+        "mlq-exited-trace",
+        "mlq-saturated",
+        "mlq-saturated-trace",
+        "mlfq-delayed",
+        "mlfq-delayed-trace",
+        "mlq",
+        "mlq-trace",
+        "mlfq",
+        "mlfq-trace"
+      ]
+    },
+    "ml": {
+      "source_commit": null,
+      "tree": "a097b300e0ffb2803b88e0fe02e5d88f0a2dec2b",
+      "count": 12,
+      "index_sha256": "5d40f10e7f908f8f51e361b5246e5f1177eb2ec0e6f58f19685841ccf6bd0412",
+      "pt_load_and_text_identical": [
+        "mlq-blocked",
+        "mlq-blocked-trace",
+        "mlq-exited",
+        "mlq-exited-trace",
+        "mlq-saturated",
+        "mlq-saturated-trace",
+        "mlfq-delayed",
+        "mlfq-delayed-trace",
+        "mlq",
+        "mlq-trace",
+        "mlfq",
+        "mlfq-trace"
+      ]
+    },
+    "aper": {
+      "source_commit": null,
+      "tree": "a097b300e0ffb2803b88e0fe02e5d88f0a2dec2b",
+      "count": 10,
+      "index_sha256": "6ede3b8c6e0a26609f883edfbcce3f96f757e6f247dab4db8309fd357a16c097",
+      "pt_load_and_text_identical": [
+        "a-ps",
+        "a-ds",
+        "a-ss1",
+        "a-ss2",
+        "b-ps",
+        "b-ds",
+        "b-ss1",
+        "b-ss2",
+        "a-ss2-late",
+        "b-ds-late"
+      ]
+    },
+    "control": {
+      "source_commit": null,
+      "tree": "a097b300e0ffb2803b88e0fe02e5d88f0a2dec2b",
+      "count": 2,
+      "index_sha256": "803cdeab56593524ccc1f3d6330a07ecf0ddd9ca75056ace86ac2c720ca1c736",
+      "pt_load_and_text_identical": []
+    },
+    "cold": {
+      "source_commit": "0bc8f6bf778c75aafb603d4b2cc3684818166f68",
+      "tree": "239f1718d1938d4b5d5f8e965a82203762f61daa",
+      "count": 4,
+      "index_sha256": "9cde337beed3790fef3e81e1d7b0a3844103e6c4e7b6dc05ce921ea564bb177b",
+      "pt_load_and_text_identical": []
+    },
+    "legacy-diag": {
+      "source_commit": "d7e27ea3887b7fd56343443caa750d9798758211",
+      "tree": "032fb58fe73b902adb5029397016d59701580492",
+      "count": 3,
+      "index_sha256": "02d670ffe010edb3f0ae3863dba3b0ae47ed691a94741d3176bfde190c6b919e",
+      "pt_load_and_text_identical": []
+    }
+  },
+  "elf_comparison": "Both ML stages exactly match all 12 standalone PT_LOAD layouts/bytes and .text. All 10 AP composite layouts/bytes and .text exactly match standalone. Cold RM/DM normal .text identical to #97 V3, ten differing bytes per image decode as Rust panic source line numbers in control_app.rs/control_runtime.rs; other loaded bytes unchanged. #111 and #112 artifacts are build-only here.",
+  "ap_outcomes_sha256": "17e2f4e796c2cd318fbd569a68647487295a21d7b1fcb21a69a0d80473e9ca5c",
+  "aperiodic": {
+    "standalone_default_path": "../aper45-fresh/default",
+    "integrated_default_path": "ap-capture/default",
+    "integrated_icount_path": "ap-capture/diagnostic",
+    "standalone_default": "10 captured first-IRQ timing inhibits, 0 service charged. Replayed all ten raw files and verified original digests.",
+    "integrated_default": "8 ordinary completions, each 17 IRQs and all expected credit/return/256-operation unit ledgers validated; 2 injected late controls stopped with one charged, zero retired. Observed on these ten runs only.",
+    "integrated_icount": "8 completed ordinary ledgers and 2 injected-late inhibits, one charged and zero retired each.",
+    "provenance": "All default and icount records matched each case full ELF hash, effective profile and QEMU hash/version. Default argv did not contain icount, deterministic argv had shift=0,align=off,sleep=off. Old and new default UART and exception capture storage differ (DrvFs and Linux /tmp respectively); source of timing difference unknown.",
+    "first_checker": "ap-scored.json retains ten failed old-checker default assertions, all predicated on the prior observed outcome. ap-outcome.py replaced the outcome assumption with a branch on raw state and replayed every case. Added independent slot calendars for B workloads. Original raw files and scores were retained."
+  },
+  "ml": {
+    "boots": 12,
+    "images_check": true,
+    "all_trace_ledgers": true,
+    "decisions": {
+      "mlq": 17,
+      "mlfq": 43,
+      "mlq-blocked": 3,
+      "mlq-exited": 3,
+      "mlq-saturated": 28,
+      "mlfq-delayed": 15
+    },
+    "scope": "Blocked/exited distinct two-SVC terminal causes, timer disabled in idle, saturation opening eight high-only IRQs and low service after high exit, delayed boost/coalescing and subsequent boost validated by full state replay."
+  },
+  "control_smoke": {
+    "booted-primary-rm-healthy": "nonqualifying",
+    "booted-primary-rm-tie": "qualifying"
+  },
+  "regression_boots": [
+    "boot-boot",
+    "old-server-boot",
+    "periodic-boot",
+    "fixed-boot",
+    "pi4-boot",
+    "all-correct-boot"
+  ],
+  "rejected_selectors": [
+    "bad-ap-app-build",
+    "ap-pi4-build",
+    "ap-bench-build",
+    "cross-ml-trace-build",
+    "cross-ap-late-build",
+    "bad-ml-app-build",
+    "ml-pi4-build",
+    "ml-bench-build"
+  ],
+  "host": {
+    "scheduling": 129,
+    "hierarchy": 5,
+    "coop_service": 2,
+    "python": 45
+  },
+  "scorer_regression": 3,
+  "policy_audit": [
+    "dangling implementation for POL-007: IMP-045",
+    "dangling implementation for POL-009: IMP-046"
+  ],
+  "first_failures": {
+    "ap_default_original_checker": "10 retained failures; see ap-scored.json",
+    "audit": "Nonzero on frozen source-only candidate with two dangling implementations",
+    "all_feature_invocation": "Harness initially passed --features all, which does not exist. Corrected --all-features build and old coop guest both passed.",
+    "default_control": "Integrated RM healthy nonqualifying: phase envelope; deterministic RM tie qualifying."
+  },
+  "commands_sha256": "eda07079e72fd63d86d397f715103b1f09fd8981d74dbe486971e5b227d15d89",
+  "guest_commands_sha256": "944eac13811a3f8c552bd4ef6d957a0532d7ed1d960c9250d951d8904a61417f",
+  "scope": "Virtual and host only. No bound on future default-clock scheduling or hardware. SHA-256 digests establish content identity."
+}

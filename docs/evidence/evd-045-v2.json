@@ -1,0 +1,81 @@
+{
+ "version": 2,
+ "verdict": "Finite integrated replay passed; overall qualification remains partial",
+ "composite_tree": "a097b300e0ffb2803b88e0fe02e5d88f0a2dec2b",
+ "standalone_source": "86457068e7ba019d3deabb80f63f47d50436c4a6",
+ "kind": "Integration gate for #107 and #108",
+ "english": "evd-045-v2.en.md",
+ "korean": "evd-045-v2.md",
+ "evidence": "evd-045-v2.json",
+ "gate_summary_sha256": "342a6bd81c41d824434a81300bd9dfd8b76167b9e22a1b31f826e06dac40619e",
+ "outcomes_sha256": "17e2f4e796c2cd318fbd569a68647487295a21d7b1fcb21a69a0d80473e9ca5c",
+ "scope": {
+  "standalone_default_path": "../aper45-fresh/default",
+  "integrated_default_path": "ap-capture/default",
+  "integrated_icount_path": "ap-capture/diagnostic",
+  "standalone_default": "10 captured first-IRQ timing inhibits, 0 service charged. Replayed all ten raw files and verified original digests.",
+  "integrated_default": "8 ordinary completions, each 17 IRQs and all expected credit/return/256-operation unit ledgers validated; 2 injected late controls stopped with one charged, zero retired. Observed on these ten runs only.",
+  "integrated_icount": "8 completed ordinary ledgers and 2 injected-late inhibits, one charged and zero retired each.",
+  "provenance": "All default and icount records matched each case full ELF hash, effective profile and QEMU hash/version. Default argv did not contain icount, deterministic argv had shift=0,align=off,sleep=off. Old and new default UART and exception capture storage differ (DrvFs and Linux /tmp respectively); source of timing difference unknown.",
+  "first_checker": "ap-scored.json retains ten failed old-checker default assertions, all predicated on the prior observed outcome. ap-outcome.py replaced the outcome assumption with a branch on raw state and replayed every case. Added independent slot calendars for B workloads. Original raw files and scores were retained."
+ },
+ "images": {
+  "a-ps": {
+   "elf_sha256": "ee8d6f39fcb899fa21fef8f31b8b321795640f71101d82ce7893d28c9fbc870b",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "a-ds": {
+   "elf_sha256": "8f1873495434b5155d3e0bbb3426ec9bff85e82064b2c57e8979e9b8d6270f82",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "a-ss1": {
+   "elf_sha256": "d839f4593bbba083cb3e7eb62be9f6ea41d5ab81801989b2e5e4ab5374a013a8",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "a-ss2": {
+   "elf_sha256": "43db0cc2755d132b6d9fc8f90f27aef6afb2a508ab7964ac48797afcf2207273",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "b-ps": {
+   "elf_sha256": "e854e17dacdc66403eb4553b312037c63fbbabfd87556a3326ff7662805017d2",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "b-ds": {
+   "elf_sha256": "18a8e5a5f3441fd558709edf41436a2bd4349a3b6b9cd2ed70b2650c368a6f34",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "b-ss1": {
+   "elf_sha256": "0f43551bdd87c94dba47a319519ca3531a20f42355334fdea0baca5f010d257d",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "b-ss2": {
+   "elf_sha256": "adf36a8503f5cd08443c882665fa80dae617a5ec0e36baea210e73358b89ebbd",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "a-ss2-late": {
+   "elf_sha256": "9fcaab3dc9c4ff39460fea6dc686ec734158399dda51ed4422f1511d62d381e2",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  },
+  "b-ds-late": {
+   "elf_sha256": "49263d4e04915c30b33a619f283e6077c12be7f9ac5493ff1ac401f7e1c30f32",
+   "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+  }
+ },
+ "archive": {
+  "encoding": "Ordered base64 gzip-tar chunks",
+  "parts": [
+   "evd-045-v2-raw-01.json",
+   "evd-045-v2-raw-02.json",
+   "evd-045-v2-raw-03.json",
+   "evd-045-v2-raw-04.json",
+   "evd-045-v2-raw-05.json",
+   "evd-045-v2-raw-06.json",
+   "evd-045-v2-raw-07.json",
+   "evd-045-v2-raw-08.json",
+   "evd-045-v2-raw-09.json"
+  ],
+  "sha256": "cb919e57fc9b9938fe1e27b5a1ff68b944a840563d6b67622f980b8e28397660",
+  "restore_python": "from pathlib import Path\nimport json,base64,io,tarfile,hashlib\na=json.loads(Path('evd-045-v2.json').read_bytes())['archive']; parts=[]\nfor name in a['parts']:\n    o=json.loads(Path(name).read_bytes()); b=base64.b64decode(o['data'],validate=True); assert hashlib.sha256(b).hexdigest()==o['sha256']; parts.append(b)\nb=b''.join(parts); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for name,h in json.load(t.extractfile('archive-file-digests.json')).items():\n        p=Path('evd-045-raw')/name; assert p.resolve().is_relative_to(Path('evd-045-raw').resolve()); b=t.extractfile(name).read(); assert hashlib.sha256(b).hexdigest()==h; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b)",
+  "replay": "Restore the v1 and v2 archive JSONs in succession to the same evd-045-raw directory. In a disposable extraction run python -B evd-045-raw/queue-server-gates/replay_from_captures.py. This packaging adaptation uses recorded matching ELF hashes and rechecks the binary when present. The original ap-outcome.py requires the matching standalone and integrated ELFs at the paths in the respective indices. All 20 integrated capture commands, original UART/exception/metadata/stderr, comparison records, all 30 replay outcomes and the initially failed scorer outputs are included."
+ }
+}

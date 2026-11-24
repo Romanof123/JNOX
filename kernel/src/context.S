@@ -65,8 +65,30 @@ sched_vectors:
     \op q30, q31, [sp, #({simd} + 480)]
 .endm
 
+    .ifdef JNOX_AP
+    .set JNOX_STAMP_X9, 1
+    .endif
+    .ifdef JNOX_ORDINARY_DEADLINE
+    .set JNOX_STAMP_X9, 1
+    .endif
+
 .macro handle callback
     sub sp, sp, #{frame_size}
+    .ifdef JNOX_CONTROL
+    // Preserve task registers before sampling the physical counter at vector entry.
+    stp x0, x1, [sp]
+    isb
+    mrs x0, cntpct_el0
+    str x0, [sp, #({simd} - 8)]
+    ldp x0, x1, [sp]
+    .endif
+    .ifdef JNOX_STAMP_X9
+    str x9, [sp, #72]
+    isb
+    mrs x9, cntpct_el0
+    str x9, [sp, #({simd} - 8)]
+    ldr x9, [sp, #72]
+    .endif
     integer_pairs stp
     str x30, [sp, #240]
     simd_pairs stp
@@ -82,7 +104,13 @@ sched_vectors:
     mrs x9, tpidr_el0
     mrs x10, tpidrro_el0
     stp x9, x10, [sp, #{tpidr_el0}]
+    .ifdef JNOX_CONTROL
+    ldr x1, [sp, #({simd} - 8)]
+    .else
+    .ifndef JNOX_STAMP_X9
     str xzr, [sp, #({simd} - 8)]
+    .endif
+    .endif
     mov x0, sp
     .ifdef JNOX_SMP
     // Rust must leave the outgoing task's stack before publishing its frame.
@@ -135,6 +163,36 @@ sched_start_frame:
     msr tpidr_el0, x9
     msr tpidrro_el0, x10
     simd_pairs ldp
+    .ifdef JNOX_AP
+    adrp x9, jnox_ap_returns
+    add x9, x9, :lo12:jnox_ap_returns
+    ldr x10, [x9]
+    cmp x10, #64
+    b.hs .Lunexpected
+    add x11, x10, #1
+    str x11, [x9], #8
+    mov x11, #24
+    madd x9, x10, x11, x9
+    mov x10, sp
+    mrs x11, elr_el1
+    stp x10, x11, [x9]
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, #16]
+    .endif
+    .ifdef JNOX_ORDINARY_DEADLINE
+    adrp x9, deadline_restore_count
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, :lo12:deadline_restore_count]
+    .endif
+    .ifdef JNOX_WEIGHTED_TRACE
+    // Sample after SIMD and system restore, before restoring scratch GPRs.
+    isb
+    mrs x9, cntpct_el0
+    adrp x10, weighted_restore_counter
+    str x9, [x10, :lo12:weighted_restore_counter]
+    .endif
     integer_pairs ldp
     ldr x30, [sp, #240]
     add sp, sp, #{frame_size}

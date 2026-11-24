@@ -152,7 +152,7 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
 
-[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. Implementation and independent evidence are pending.
+[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. The v3 guest verdict remains partial. The matched cold-start experiment is planned. [EVD-042](evidence/evd-042.en.md) · [Cold-start plan](control-cold-plan.md)
 
 CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel.en.md) · [EVD-040](evidence/evd-040.en.md)
 
@@ -160,10 +160,22 @@ CHG-043 / IMP-041 instruments the single-core POL-002 runtime on virt. Boot owns
 
 POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
 
+[Host segmented admission method](fs-m3-admission.md) · CHG-045 / IMP-043, POL-004 #94. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
+
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)
+
+POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
+
+CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes initialized. After the input repair all 96 startup checks passed. Operational qualification was 0/128 in the repaired series. [EVD-050](evidence/evd-050.en.md)
+
+POL-011 · CHG-052 · IMP-049. Two ordinary Rust entries share the exception-return ABI and the weighted virtual-runtime scheduler. See the [approved workload plan](ordinary-vruntime-plan.md) and [build, capture and replay instructions](ordinary-weighted.md). VER-002/005/023 · [EVD-049](evidence/evd-049.en.md).
 
 CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage.  [Capture format and build](ordinary-partition-capture.en.md)
 
-POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
 
 POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
