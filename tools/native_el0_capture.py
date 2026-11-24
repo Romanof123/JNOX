@@ -75,6 +75,18 @@ def capture(args):
             probe_sha256=sha(root / "probe.c"),
         ),
     )
+    return observe(
+        root,
+        cmd,
+        base,
+        limit,
+        rb"(?m)^NATIVE EL0 (EXIT -?[0-9]+|FAULT [0-9]+)\r?\n",
+        "EXIT 37",
+    )
+
+
+def observe(root, cmd, base, limit, terminal_pattern, success):
+    """Retain one bounded QEMU process, its UART, exception trace and physical RAM."""
     marker = "unobserved"
     proc = None
     try:
@@ -104,7 +116,7 @@ def capture(args):
                         if uart.stat().st_size > 1 << 20:
                             raise ValueError("oversize UART")
                         terminal = re.search(
-                            rb"(?m)^NATIVE EL0 (EXIT -?[0-9]+|FAULT [0-9]+)\r?\n",
+                            terminal_pattern,
                             uart.read_bytes(),
                         )
                         if terminal:
@@ -142,7 +154,7 @@ def capture(args):
             ),
         )
         print(sha(root / "session.json"))
-    return int(marker != "EXIT 37")
+    return int(marker != success)
 
 
 if __name__ == "__main__":
