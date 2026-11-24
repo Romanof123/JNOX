@@ -61,7 +61,7 @@ def words(tokens,n):
     return values
 
 
-def parse(raw):
+def parse(raw, widths=WIDTH):
     lines=[line.split() for line in raw.splitlines() if line.startswith(b"AMR ")]
     if any(line[1:2]==[b"FAIL"] for line in lines):
         raise ValueError("guest failure: "+" ".join(x.decode() for line in lines if line[1:2]==[b"FAIL"] for x in line))
@@ -71,8 +71,8 @@ def parse(raw):
     result=[]
     for rawrow in lines[1:-1]:
         tag=rawrow[1].decode("ascii")
-        need(tag in WIDTH,"unexpected AMR row "+tag)
-        result.append((tag,words(rawrow[2:],WIDTH[tag])))
+        need(tag in widths,"unexpected AMR row "+tag)
+        result.append((tag,words(rawrow[2:],widths[tag])))
     return header,result
 
 
@@ -189,7 +189,7 @@ def symbols(raw):
 
 
 
-def finite_layout(raw):
+def finite_layout(raw, with_worker_end=False):
     from elftools.elf.elffile import ELFFile
     elf=ELFFile(io.BytesIO(raw))
     table=elf.get_section_by_name(".symtab")
@@ -216,7 +216,8 @@ def finite_layout(raw):
             and s["st_size"]==16384]
     if len(stacks)!=1:raise Incomplete("missing or ambiguous private idle stack")
     lo=stacks[0]["st_value"]
-    return worker,calls[0],idle,idle+4*len(idle_code),lo,lo+16384
+    layout = worker,calls[0],idle,idle+4*len(idle_code),lo,lo+16384
+    return (*layout, worker+4*len(instructions)) if with_worker_end else layout
 
 
 def external(raw):
@@ -237,7 +238,120 @@ def external(raw):
     if pending is not None:raise Incomplete("truncated final IRQ")
     return observed
 
+def assess_stagger(raw, elf, trace):
+    header, events = parse(raw, dict(WIDTH, IDLE=7, WAKE=8))
+    version, case, hz, origin, q = header
+    need((version, case) == (3, 3) and origin > 0 and hz >= 20 and q == hz//20
+         and origin + 9*q <= U64, "stagger clock/header")
+    base, _, loops, (pool, pool_size) = symbols(elf)
+    worker, svc, idle, idle_end, idle_lo, idle_hi, worker_end = finite_layout(elf, True)
+    seen = iter(events)
+    def take(tag):
+        row = next(seen, None)
+        need(row is not None and row[0] == tag, "expected next record " + tag)
+        return row[1]
+    def on_stack(lo, hi, frame, sp):
+        return frame % 16 == 0 and lo <= frame and frame + FRAME == sp <= hi
+    def boundary(slot):
+        return origin + slot*q
+
+    # Explicit independent oracle: release, task, generation, demand and absolute deadline.
+    releases = {0:(0,0,1,4), 2:(0,1,2,6), 3:(3,0,2,8), 4:(1,0,2,8)}
+    owners = [(0,0), None, (0,1), (3,0), (1,0), (1,0), (3,0)]
+    jobs, saved, samples, retired, exceptions = {}, {}, {}, {}, []
+    prev = origin
+    for k,key in enumerate(owners):
+        if key is None:
+            at, stamp, cmp, rb, frame, pc, sp = take("IDLE")
+            stamp_idle = stamp
+            w, iar, ctl, cval, wake, fi, pci, spi = take("WAKE")
+            need(at == w == 1 and prev <= stamp < cmp == rb == cval == boundary(2)
+                 and cmp <= wake < boundary(3) and iar & 1023 == 30 and ctl & 7 == 5,
+                 "idle compare/IRQ interval")
+            need((frame,pc,sp) == (idle_hi-FRAME,idle,idle_hi)
+                 and on_stack(idle_lo,idle_hi,fi,spi) and idle <= pci < idle_end,
+                 "idle stack and linked WFI return")
+            exceptions.extend([("eret",pc), ("irq",pci)])
+            prev = wake
+            continue
+        if k in releases:
+            t,g,demand,deadline = releases[k]
+            at,rt,rg,rd,dd,lo,hi,entry = take("RELEASE")
+            need((at,rt,rg,rd,dd) == (k,t,g,demand,deadline)
+                 and lo == pool + len(jobs)*16384 and hi == lo+16384 <= pool+pool_size
+                 and (hi <= idle_lo or idle_hi <= lo)
+                 and entry == (worker if t == 3 else base), "release or private stack")
+            jobs[t,g] = (at,demand,deadline,lo,hi,entry)
+        if k == 5:
+            need(take("CARRY") == (5,1,1,0,1) and take("DENY") == (5,0,0),
+                 "mode transition remaining service/admission")
+        at,demand,deadline,lo,hi,entry = jobs[key]
+        t,g = key
+        grant = take("GRANT")
+        _,_,_,_,_,commit,f,pc,sp,cmp,rb,x19 = grant
+        need(grant[:5] == (k,t,g,int(k>=5),int(k==5)) and on_stack(lo,hi,f,sp)
+             and prev <= commit < cmp == rb == boundary(k+1), "grant or compare")
+        if key in saved:
+            need((f,pc,sp,x19) == saved[key], "resumed generation context")
+        else:
+            need(pc == entry and f == hi-FRAME, "fresh generation entry")
+        exceptions.append(("eret",pc))
+        if k == 6:
+            c = take("COMPLETE")
+            need(c[:5] == (6,3,0,16,72) and commit <= c[5] <= c[6] < cmp
+                 and on_stack(lo,hi,c[7],c[9]) and c[8] == svc
+                 and c[10:] == (idle_hi-FRAME,idle,idle_hi), "finite completion")
+            exceptions.extend([("svc",svc), ("eret",idle)])
+        irq = take("IRQ")
+        _,_,_,iar,cv,ctl,stamp,fi,pci,spi,xi = irq
+        need(irq[:3] == (k,t,g) and iar & 1023 == 30 and ctl & 7 == 5
+             and cv == cmp <= stamp < cmp+q, "service timer")
+        if k == 6:
+            need(on_stack(idle_lo,idle_hi,fi,spi) and idle <= pci < idle_end
+                 and take("FROZEN") == (6,3,0,16,72,c[5],stamp), "frozen idle")
+        else:
+            need(on_stack(lo,hi,fi,spi), "worker IRQ frame")
+            if t == 3:
+                need(worker <= pci < worker_end, "finite worker execution")
+            else:
+                need(any(a <= pci < b for a,b in loops), "linked ring worker execution")
+        exceptions.append(("irq",pci))
+        saved[key] = (fi,pci,spi,xi)
+        w = take("WORK")
+        _,_,_,first,n1,sum1,last,n2,sum2 = w
+        prior = samples.get(key, (0,0,0))[0]
+        need(w[:3] == (k,t,g) and prior < n1 <= n2 and (prior or n1 == 1)
+             and sum1 == sample_sum(t,g,n1) and sum2 == sample_sum(t,g,n2)
+             and commit <= first <= last <= stamp and last < boundary(deadline),
+             "measured payload/absolute deadline")
+        if t == 3:
+            need((n1,n2) == ((1,8) if k == 3 else (9,16)), "finite ring extent")
+        if k == 6:
+            need(c[5] == last, "completion sample identity")
+        samples[key] = (n2,sum2,last)
+        used = owners[:k+1].count(key)
+        end = take("RETIRE")
+        need(end[:6] == (k+1,t,g,used,demand-used,deadline)
+             and stamp <= end[6] < min(cmp+q,boundary(deadline)), "retirement/deadline")
+        if used == demand:
+            retired[f"{t}/{g}"] = end[6] - boundary(at)
+        if k == 5:
+            switch_ticks = first-boundary(k)
+        prev = end[6]
+    for key in jobs:
+        need(take("FINAL") == (*key,*samples[key]), "final generation payload")
+    need(next(seen,None) is None, "trailing observations")
+    need([(kind,pc) for kind,pc,_,_ in external(trace)] == exceptions, "external exception history")
+    return dict(case="stagger-idle", frequency=hz, epoch=origin, quantum=q,
+                idle_arm_to_irq_ticks=wake-stamp_idle, switch_to_payload_ticks=switch_ticks,
+                finite_release_to_svc_ticks=c[6]-boundary(3), retirement_response_ticks=retired,
+                products={f"{t}/{g}": value for (t,g),value in samples.items()},
+                scope="one cold virt execution; no product response bound")
+
+
 def assess(case,raw,elf,trace):
+    if case == 3:
+        return assess_stagger(raw, elf, trace)
     header,events=parse(raw)
     version,case_id,hz,origin,q=header
     need((version==1 or version==2 and case in (1,2)) and case==case_id and hz>=20 and q==hz//20 and origin>0,"case/frequency/origin")

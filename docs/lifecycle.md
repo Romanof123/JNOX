@@ -85,3 +85,10 @@ python tools/open_tracking.py open-pages.json
 [최초 판정](evidence/open-tracking-first.en-ko.md) · [2차](evidence/open-tracking-second.en-ko.md) · [3차](evidence/open-tracking-third.en-ko.md) · [4차](evidence/open-tracking-fourth.en-ko.md) · [수정본 및 실제 목록](evidence/open-tracking-fifth.en-ko.md) · [입력 23건을 사전 고정한 독립 판정](evidence/open-tracking-blind.en-ko.md). 자동 대조 후 PM이 실제 주관 이슈를 확인한다.
 
 [11월 25일(KST) 미종결 이슈와 PR 주 담당의 전체 점검 기록](evidence/pm-open-tracking-20261124T180640Z.en-ko.md).
+
+[11월 25일 04시 47분 KST 열린 이슈·PR와 주 담당 전수 기록](evidence/pm-open-tracking-20261124T194750Z.en-ko.md).
+
+[05:32 KST open-work and document audit / 주 이슈·담당·문서 전수 점검](evidence/pm-tracking-20261124T203216Z.en-ko.md).
+
+[Historical PR and issue cross-index through #265 / #265까지 과거 PR·이슈 교차 색인](evidence/historical-pr-index-265.en-ko.md).
+[#274까지의 이슈·PR 색인](evidence/historical-pr-index-274.en-ko.md)에서 요구사항 또는 이슈를 시작으로 최초 실패, 설계 수정, 독립 재검증과 출시 판단까지 따라갈 수 있다. 수집 시점에 열린 항목별 다음 담당 팀과 각 PR의 주 이슈도 함께 확인할 수 있다.

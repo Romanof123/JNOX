@@ -37,6 +37,7 @@ On the single-core QEMU `virt` model, linked Rust jobs also run under earliest-d
 | [IPC profiles](docs/ipc-mechanisms.en.md) | Ten IPC families, their resource limits and acceptance cases after scheduling qualification |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
 | [Development lifecycle and change control](docs/lifecycle.en.md) | Traceability from planning through implementation and verification, including redesign and reapproval after a change |
+| [Current work and team handoffs](https://github.com/Romanof123/JNOX/issues/6) | Active tickets, next owners, independent verification and held releases |
 | [Trace links](trace/links.csv) | Machine-readable relationships shared by both language editions |
 
 Project templates cover [change requests](.github/ISSUE_TEMPLATE/change-request.md), [pull request handoffs](.github/pull_request_template.md), and [verification evidence](docs/templates/verification-evidence.en.md).

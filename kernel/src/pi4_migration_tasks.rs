@@ -1,13 +1,10 @@
 //! Ordinary EL1 inputs for the Pi 4 frame migration case. Only the running
 //! task accesses its stack-local state. The dispatcher owns lease publication,
 //! the bounded checkpoint journal, the one terminal commit and the SGIs.
-use crate::pi4_migration as runtime;
+use crate::pi4_migration::{self as runtime, Activation};
 use crate::pi4_smp_bsp as bsp;
 use core::{arch::asm, hint, ptr};
 
-const M: usize = 0;
-const P0: usize = 1;
-const P1: usize = 2;
 #[cfg(not(feature = "pi4-stream-v1"))]
 pub(crate) const END: u64 = 65_536;
 #[cfg(not(feature = "pi4-stream-v1"))]
@@ -97,41 +94,41 @@ pub(crate) extern "C" fn pi4_migration_m() -> ! {
     let mut state = Progress { index: 0, sum: 0 };
     let mut checkpoints = runtime::Checkpoints::default();
     while state.index < END {
-        let before = runtime::generation(M);
+        let before = runtime::generation(Activation::M);
         let limit = state.index + BLOCK;
         #[cfg(feature = "pi4-stream-v1")]
         pi4_stream_crc32_loop_v1(&mut state, limit);
         #[cfg(not(feature = "pi4-stream-v1"))]
         pi4_migration_input_loop(&mut state, limit);
-        runtime::checkpoint(&mut checkpoints, before, M, state.index, state.sum, (&raw const state).addr());
+        runtime::checkpoint(&mut checkpoints, before, Activation::M, state.index, state.sum, (&raw const state).addr());
     }
-    runtime::finish(M, state.sum, checkpoints)
+    runtime::finish(Activation::M, state.sum, checkpoints)
 }
 
-fn pinned(task: usize, previous: u64, end: u64) -> (u64, runtime::Checkpoints) {
+fn pinned(activation: Activation, previous: u64, end: u64) -> (u64, runtime::Checkpoints) {
     let mut checkpoints = runtime::Checkpoints::default();
     let mut state = Progress { index: previous, sum: 0 };
     while state.index < end {
-        let before = runtime::generation(task);
+        let before = runtime::generation(activation);
         let limit = state.index + STRIDE;
         while state.index < limit {
             state.index += 1;
             state.sum += hint::black_box(state.index);
         }
-        runtime::checkpoint(&mut checkpoints, before, task, state.index, state.sum, (&raw const state).addr());
+        runtime::checkpoint(&mut checkpoints, before, activation, state.index, state.sum, (&raw const state).addr());
     }
     (state.sum, checkpoints)
 }
 
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn pi4_migration_p0() -> ! {
-    let (sum, checkpoints) = pinned(P0, 0, 32);
-    runtime::finish(P0, sum, checkpoints)
+    let (sum, checkpoints) = pinned(Activation::P0, 0, 32);
+    runtime::finish(Activation::P0, sum, checkpoints)
 }
 
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn pi4_migration_p1_open() -> ! {
-    let (sum, checkpoints) = pinned(P1, 0, 16);
+    let (sum, checkpoints) = pinned(Activation::P1Open, 0, 16);
     // Use the same four-local-seconds bound as the directed-wake bootstrap.
     // Only the opening peer waits; M never polls for an interrupt or peer.
     let hz = bsp::frequency();
@@ -143,11 +140,11 @@ pub(crate) extern "C" fn pi4_migration_p1_open() -> ! {
         }
         hint::spin_loop();
     }
-    runtime::finish(P1, sum, checkpoints)
+    runtime::finish(Activation::P1Open, sum, checkpoints)
 }
 
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn pi4_migration_p1() -> ! {
-    let (sum, checkpoints) = pinned(P1, 16, 32);
-    runtime::finish(P1, sum, checkpoints)
+    let (sum, checkpoints) = pinned(Activation::P1, 16, 32);
+    runtime::finish(Activation::P1, sum, checkpoints)
 }

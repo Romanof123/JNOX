@@ -96,10 +96,12 @@ fn main() {
                 "JNOX_GROUP_TRACE requires 1 and JNOX_PROFILE=groups");
         println!("cargo::rustc-cfg=jnox_group_trace");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_mlfq_wake)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mlq_admission)");
     println!("cargo::rustc-check-cfg=cfg(jnox_multilevel_limits)");
     println!("cargo::rustc-check-cfg=cfg(jnox_multilevel)");
     println!("cargo::rustc-check-cfg=cfg(jnox_multilevel_trace)");
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("mlq", "mlfq", "mlq-blocked", "mlq-exited", "mlq-saturated", "mlfq-delayed"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("mlq", "mlfq", "mlq-blocked", "mlq-exited", "mlq-saturated", "mlfq-delayed", "mlq-admit", "mlq-refuse", "mlfq-wake", "mlfq-wake-refuse"))"#);
     if let Some(value) = selector("JNOX_MULTILEVEL_TRACE") {
         assert!(value == "1" && profile.as_deref() == Some("multilevel"),
                 "JNOX_MULTILEVEL_TRACE=1 requires multilevel profile");
@@ -165,7 +167,7 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_batch)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_fixed)"#);
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed", "fixed-ties", "fixed-late", "coop-events", "coop-single", "batch-sjf", "batch-srtf", "batch-hrrn"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed", "fixed-ties", "fixed-late", "coop-events", "coop-single", "coop-bounded", "batch-sjf", "batch-srtf", "batch-hrrn"))"#);
     println!("cargo::rerun-if-env-changed=JNOX_BOARD");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
@@ -207,6 +209,17 @@ fn main() {
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
+    println!("cargo::rustc-check-cfg=cfg(jnox_sched_app_trace)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_sched_app_trace_mode, values("disabled", "active", "saturate"))"#);
+    if let Some(mode) = selector("JNOX_SCHED_APP_TRACE") {
+        assert!(matches!(mode.as_str(), "disabled" | "active" | "saturate"),
+                "invalid JNOX_SCHED_APP_TRACE");
+        assert!(board == "virt" && legacy_bench == "boot" && profile.as_deref() == Some("multilevel")
+                && app.as_deref() == Some("mlfq-wake"),
+                "JNOX_SCHED_APP_TRACE requires ordinary virt/multilevel/mlfq-wake");
+        println!("cargo::rustc-cfg=jnox_sched_app_trace");
+        println!(r#"cargo::rustc-cfg=jnox_sched_app_trace_mode="{mode}""#);
+    }
     let table_p = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_P").is_some();
     let table_q = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_Q").is_some();
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_partition)");
@@ -288,11 +301,28 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_deadline)");
     println!("cargo::rustc-check-cfg=cfg(jnox_deadline_trace)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_deadline_owner_cap)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_deadline_recurring)");
+    let recurring = matches!(app.as_deref(), Some("ordinary-edf-recurring" | "ordinary-edf-recurring-refuse" | "ordinary-llf-recurring" | "ordinary-llf-recurring-refuse"));
+    if recurring {
+        println!("cargo::rustc-cfg=jnox_deadline_recurring");
+    }
+    let owner_cap = selector("JNOX_DEADLINE_OWNER_CAP");
+    if let Some(value) = owner_cap.as_deref().or(if recurring { Some("4") } else { None }) {
+        assert!(profile.as_deref() == Some("deadline")
+            && (recurring || matches!(app.as_deref(), Some("ordinary-edf-supply" | "ordinary-llf-supply"))),
+            "JNOX_DEADLINE_OWNER_CAP requires an ordinary finite supply profile");
+        assert!(!value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()),
+            "owner cap must be an unsigned decimal integer");
+        let ceiling: u64 = value.parse().expect("owner cap exceeds u64");
+        println!("cargo::rustc-env=JNOX_OWNER_CEILING={ceiling}");
+        println!("cargo::rustc-cfg=jnox_deadline_owner_cap");
+    }
     if let Some(value) = selector("JNOX_DEADLINE_TRACE") {
         assert!(value == "1" && profile.as_deref() == Some("deadline"), "JNOX_DEADLINE_TRACE=1 requires ordinary deadline profile");
         println!("cargo::rustc-cfg=jnox_deadline_trace");
     }
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun", "ordinary-edf-supply", "ordinary-llf-supply", "ordinary-edf-supply-refuse", "ordinary-llf-supply-refuse", "ordinary-edf-recurring", "ordinary-edf-recurring-refuse", "ordinary-llf-recurring", "ordinary-llf-recurring-refuse"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted)");
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted_wake)");
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted_trace)");
@@ -301,9 +331,10 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_weighted_trace");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss","lottery-window1","lottery-window2","lottery-window-tight"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_fifo)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_chain)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_anchor)");
@@ -363,8 +394,8 @@ fn main() {
             let name = app.as_deref().unwrap_or("");
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none()
                 && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_"))
-                && matches!(name, "exact-lo" | "exact-hi" | "over-hi"),
-                "ordinary AMC requires virt, exact-lo/exact-hi/over-hi and no benchmark features");
+                && matches!(name, "exact-lo" | "exact-hi" | "over-hi" | "stagger-idle"),
+                "ordinary AMC requires virt, exact-lo/exact-hi/over-hi/stagger-idle and no benchmark features");
             println!("cargo::rustc-cfg=jnox_rust_amc");
             println!("cargo::rustc-env=JNOX_AMC_APP={name}");
         }
@@ -384,11 +415,14 @@ fn main() {
         Some("mutex") => {
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),
                 "ordinary mutex requires virt, no benchmark, trace or control case");
-            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling" | "ordinary-chain")),
-                "invalid ordinary mutex application");
-            if app.as_deref() == Some("ordinary-chain") { println!("cargo::rustc-cfg=jnox_mutex_chain"); }
+            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling" | "ordinary-fifo" | "ordinary-chain")),
+                "ordinary mutex requires ordinary-pi, ordinary-ceiling, ordinary-fifo or ordinary-chain");
             println!("cargo::rustc-cfg=jnox_ordinary_mutex");
-            if app.as_deref() == Some("ordinary-ceiling") {
+            if app.as_deref() == Some("ordinary-fifo") {
+                println!("cargo::rustc-cfg=jnox_mutex_fifo");
+            } else if app.as_deref() == Some("ordinary-chain") {
+                println!("cargo::rustc-cfg=jnox_mutex_chain");
+            } else if app.as_deref() == Some("ordinary-ceiling") {
                 println!("cargo::rustc-cfg=jnox_mutex_ceiling");
             }
         }
@@ -396,7 +430,7 @@ fn main() {
             assert!(scenario.is_none(), "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional");
             assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");
             let case = app.as_deref().unwrap_or("");
-            assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"),
+            assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"|"lottery-window1"|"lottery-window2"|"lottery-window-tight"),
                     "ordinary proportional requires an explicit lottery, stride or diagnostic app");
             println!("cargo::rustc-cfg=jnox_ordinary_prop");
             println!("cargo::rustc-cfg=jnox_prop_case=\"{case}\"");
@@ -411,7 +445,7 @@ fn main() {
         Some("deadline") => {
             assert!(bench == "boot" && board == "virt", "ordinary deadline requires virt without benchmark features");
             match app.as_deref() {
-                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun")) => {
+                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun" | "ordinary-edf-supply" | "ordinary-llf-supply" | "ordinary-edf-supply-refuse" | "ordinary-llf-supply-refuse" | "ordinary-edf-recurring" | "ordinary-edf-recurring-refuse" | "ordinary-llf-recurring" | "ordinary-llf-recurring-refuse")) => {
                     println!("cargo::rustc-cfg=jnox_ordinary_deadline");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
@@ -437,7 +471,9 @@ fn main() {
         Some("multilevel") => {
             assert!(bench == "boot" && board == "virt", "multilevel requires virt without bench features");
             match app.as_deref() {
-                Some(name @ ("mlq" | "mlfq" | "mlq-blocked" | "mlq-exited" | "mlq-saturated" | "mlfq-delayed")) => {
+                Some(name @ ("mlq" | "mlfq" | "mlq-blocked" | "mlq-exited" | "mlq-saturated" | "mlfq-delayed" | "mlq-admit" | "mlq-refuse" | "mlfq-wake" | "mlfq-wake-refuse")) => {
+                    if name.starts_with("mlfq-wake") { println!("cargo::rustc-cfg=jnox_mlfq_wake"); }
+                    if matches!(name, "mlq-admit" | "mlq-refuse") { println!("cargo::rustc-cfg=jnox_mlq_admission"); }
                     if name.contains('-') { println!("cargo::rustc-cfg=jnox_multilevel_limits"); }
                     println!("cargo::rustc-cfg=jnox_multilevel");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
@@ -455,14 +491,14 @@ fn main() {
                 assert!(trace.is_none(), "Pi 4 fixed runtime requires JNOX_FIXED_TRACE unset");
             }
             match app.as_deref() {
-                Some(name @ ("fixed-fifo" | "fixed-rr" | "fixed-empty" | "fixed-delayed" | "fixed-ties" | "fixed-late" | "coop-events" | "coop-single")) => {
+                Some(name @ ("fixed-fifo" | "fixed-rr" | "fixed-empty" | "fixed-delayed" | "fixed-ties" | "fixed-late" | "coop-events" | "coop-single" | "coop-bounded")) => {
                     if name.starts_with("coop-") {
                         assert!(trace.is_none(), "ordinary cooperative service requires JNOX_FIXED_TRACE unset");
                     }
                     println!("cargo::rustc-cfg=jnox_fixed");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
-                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, fixed-delayed, fixed-ties, fixed-late, coop-events, or coop-single"),
+                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, fixed-delayed, fixed-ties, fixed-late, coop-events, coop-single, or coop-bounded"),
             }
         }
         Some("batch") => {

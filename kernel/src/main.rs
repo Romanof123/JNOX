@@ -46,7 +46,12 @@ mod cbs_wake;
 #[cfg(jnox_fixed)]
 #[cfg_attr(any(jnox_app = "fixed-ties", jnox_app = "fixed-late"), path = "fixed_edge_apps.rs")]
 #[cfg_attr(any(jnox_app = "coop-events", jnox_app = "coop-single"), path = "coop_app.rs")]
+#[cfg_attr(jnox_app = "coop-bounded", path = "coop_bounded_app.rs")]
 mod fixed_apps;
+#[cfg(jnox_app = "coop-bounded")]
+mod coop_bounded;
+#[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single", jnox_app = "coop-bounded"))]
+mod coop_peers;
 #[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single"))]
 mod coop_service;
 #[cfg(jnox_control)]
@@ -90,7 +95,7 @@ mod eevdf_app;
 mod eevdf_app_tasks;
 #[cfg(any(jnox_eevdf_app, jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
 mod eevdf_policy;
-#[cfg(any(jnox_bench = "coop", jnox_app = "coop-events", jnox_app = "coop-single"))]
+#[cfg(any(jnox_bench = "coop", jnox_app = "coop-events", jnox_app = "coop-single", jnox_app = "coop-bounded"))]
 mod event_loop;
 #[cfg(jnox_bench = "extension")]
 mod extension;
@@ -120,9 +125,11 @@ mod mutex_policy;
 #[cfg(jnox_mutex_chain)]
 #[path = "ordinary_mutex_chain.rs"]
 mod ordinary_mutex;
-#[cfg(all(jnox_ordinary_mutex, not(jnox_mutex_chain)))]
+#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo))))]
 mod ordinary_mutex;
-#[cfg(jnox_ordinary_mutex)]
+#[cfg(jnox_mutex_fifo)]
+mod ordinary_mutex_fifo;
+#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo))))]
 mod ordinary_mutex_manifest;
 #[cfg(jnox_bench = "multilevel")]
 mod multilevel;
@@ -130,6 +137,16 @@ mod multilevel;
 mod multilevel_policy;
 #[cfg(jnox_multilevel)]
 mod multilevel_service;
+#[cfg(jnox_mlq_admission)]
+mod mlq_admission;
+#[cfg(jnox_mlq_admission)]
+mod mlq_bound;
+#[cfg(jnox_mlfq_wake)]
+mod mlfq_wake;
+#[cfg(jnox_sched_app_trace)]
+mod sched_app_trace;
+#[cfg(jnox_mlfq_wake)]
+mod wake_bound;
 #[cfg(jnox_multilevel)]
 mod multilevel_apps;
 #[cfg(jnox_bench = "partition")]
@@ -198,6 +215,8 @@ mod pi4_smp_workload;
 #[cfg(jnox_pi4_migration)]
 mod pi4_migration;
 #[cfg(jnox_pi4_migration)]
+mod pi4_migration_local;
+#[cfg(jnox_pi4_migration)]
 mod pi4_migration_tasks;
 #[cfg(jnox_pi4_migration)]
 mod pi4_migration_log;
@@ -234,8 +253,10 @@ extern "C" fn kernel_main() -> ! {
     ordinary_deadline::run();
     #[cfg(jnox_ordinary_prop)]
     ordinary_proportional::run();
-    #[cfg(jnox_ordinary_mutex)]
+    #[cfg(all(jnox_ordinary_mutex, not(jnox_mutex_fifo)))]
     ordinary_mutex::run();
+    #[cfg(jnox_mutex_fifo)]
+    ordinary_mutex_fifo::run();
     #[cfg(jnox_eevdf_app)]
     eevdf_app::run();
     #[cfg(jnox_rust_amc)]

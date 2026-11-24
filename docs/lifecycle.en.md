@@ -85,3 +85,10 @@ A standalone raw HTTP(S) URL will be treated as one token before Markdown bracke
 [First assessment](evidence/open-tracking-first.en-ko.md) · [second](evidence/open-tracking-second.en-ko.md) · [third](evidence/open-tracking-third.en-ko.md) · [fourth](evidence/open-tracking-fourth.en-ko.md) · [corrected live and archived inventory audit](evidence/open-tracking-fifth.en-ko.md) · [23 independently frozen inputs](evidence/open-tracking-blind.en-ko.md). PM confirms the primary tracking issue after the automated link check.
 
 [PM snapshot of all open issues and primary PR owners, November 25 KST](evidence/pm-open-tracking-20261124T180640Z.en-ko.md).
+
+[Open issues, pull requests and primary owners, November 25 at 04:47 KST](evidence/pm-open-tracking-20261124T194750Z.en-ko.md).
+
+[05:32 KST open-work and document audit / 주 이슈·담당·문서 전수 점검](evidence/pm-tracking-20261124T203216Z.en-ko.md).
+
+[Historical PR and issue cross-index through #265 / #265까지 과거 PR·이슈 교차 색인](evidence/historical-pr-index-265.en-ko.md).
+[Register through #274](evidence/historical-pr-index-274.en-ko.md) · Follow an issue or requirement through the original rejection, corrective design, independent rerun and scheduling release decision. The dated register lists all open teams and primary PR links at this cutoff.

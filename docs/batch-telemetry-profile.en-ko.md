@@ -26,3 +26,5 @@ The coordinator has an estimate of one tick. It submits all three immediate jobs
 
 기존 배치 프로필에서 위의 세 정책과 텔레메트리 선택자를 사용한다. 알 수 없는 요청과 16바이트 한도를 넘은 17바이트 검증 프레임은 제출 전에 거부한다. 제출자는 1틱 순위를 갖고 세 작업을 기존 SVC로 접수한다. 네 슬롯이 모두 사용 중일 때 재요청한 정상 작업은 실제 스케줄러 용량 오류를 받아야 한다. 각 작업은 처리 전후의 실제 카운터와 계산 또는 오류 결과를 출력한다. 세 정책 일반 실행과 같은 순서의 저널 실행 등 총 여섯 최초 부팅에서 표의 출력, 횟수와 시간 표본을 확인한다. 추적 시에는 수용·거절·실제 완료와 최종 유휴 복귀, 전체 과금 및 HRRN 선택을 검산한다. 기존 일반 이미지가 변경되면 해당 EVD-037 경로도 검증한다. 재시도·부분 자료·실보드 및 승인 상태는 각 범위로 기록한다.
 [Independent first cohort / 독립 최초 실행](evidence/admitted-telemetry-batch-first.en-ko.md). All six normal/trace positions passed, the three legacy loaded images matched, and three additional legacy replays passed. 이 참조 작업 구성의 수용과 결과를 검증했으며 제품 용량과 WCET 승인은 #1·#21에서 추적한다.
+
+2026-11-25 · Retrospective trace / 사후 추적 · [#211](https://github.com/Romanof123/JNOX/issues/211) · [#214](https://github.com/Romanof123/JNOX/pull/214) · [EVD-091 (EN)](evidence/evd-091.en.md) · [EVD-091 (한국어)](evidence/evd-091.md) · [#239](finite-scheduling-index.en-ko.md)

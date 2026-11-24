@@ -1,3 +1,7 @@
+#[cfg(jnox_mlq_admission)]
+pub use super::mlq_admission::run;
+#[cfg(jnox_mlfq_wake)]
+pub use super::mlfq_wake::run;
 use super::multilevel_service::{self as svc, Mode, Task};
 
 fn unit() -> u64 {

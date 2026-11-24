@@ -65,6 +65,16 @@ impl<const N: usize> AmcRuntime<N> {
         self.now
     }
 
+    /// Account elapsed idle slots after the caller observes their boundary.
+    pub(crate) fn advance_idle(&mut self, slots: u64) -> bool {
+        if slots == 0 || self.running.is_some() || self.jobs.iter().any(Option::is_some) {
+            return false;
+        }
+        let Some(end) = self.now.checked_add(slots) else { return false };
+        self.now = end;
+        true
+    }
+
     pub(crate) fn mode(&self) -> CriticalityMode {
         self.domain.mode()
     }

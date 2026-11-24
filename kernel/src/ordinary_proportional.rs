@@ -1,5 +1,6 @@
 //! Ordinary proportional scheduling on one virt CPU.
 use super::{context::*, park, proportional_policy::Proportional, uart_write};
+use super::proportional_policy::WindowInput;
 use core::arch::{asm, global_asm};
 use core::fmt::{self, Write};
 use core::mem::{offset_of, size_of};
@@ -15,12 +16,17 @@ const STRIDE: bool = cfg!(any(
 ));
 const DELAY: bool = cfg!(jnox_prop_case = "stride-delay");
 const MISS: bool = cfg!(jnox_prop_case = "lottery-miss");
-const SEED: u64 = if cfg!(jnox_prop_case = "lottery2") {
+const TIGHT: bool = cfg!(jnox_prop_case = "lottery-window-tight");
+const WINDOW: bool = cfg!(any(jnox_prop_case = "lottery-window1",
+    jnox_prop_case = "lottery-window2", jnox_prop_case = "lottery-window-tight"));
+const HORIZON: usize = 48;
+const WIDTH: usize = 24;
+const SEED: u64 = if cfg!(any(jnox_prop_case = "lottery2", jnox_prop_case = "lottery-window2")) {
     2
 } else {
     1
 };
-const MODE: u64 = if DELAY {
+const MODE: u64 = if TIGHT { 7 } else if WINDOW { 4 + SEED } else if DELAY {
     4
 } else if MISS {
     3
@@ -31,7 +37,7 @@ const MODE: u64 = if DELAY {
 };
 const WEIGHTS: [u8; 3] = [1, 2, 4];
 const IDLE: usize = 3;
-const LIMIT: usize = 512;
+const LIMIT: usize = if WINDOW { 640 } else { 512 };
 
 global_asm!(".set JNOX_AP,1",include_str!("context.S"),frame_size=const size_of::<Frame>(),
     elr=const offset_of!(Frame,elr),fpcr=const offset_of!(Frame,fpcr),
@@ -142,6 +148,39 @@ struct Local {
     active: AtomicUsize,
 }
 static PTR: [AtomicPtr<Local>; 3] = [const { AtomicPtr::new(ptr::null_mut()) }; 3];
+static RECEIPT_SLOT: [AtomicU64; 3] = [const { AtomicU64::new(u64::MAX) }; 3];
+
+fn packet_work<const ID: usize>(local: &Local) -> ! {
+    let mut ordinal = 0u64;
+    let mut previous = u64::MAX;
+    loop {
+        let slot = SLOT.load(Acquire);
+        if slot == previous {
+            core::hint::spin_loop();
+            continue;
+        }
+        let packet: [u8; 16] = core::array::from_fn(|j| {
+            (37 * ID as u64 + 11 * ordinal + j as u64) as u8
+        });
+        let mut result = 0u64;
+        for byte in core::hint::black_box(packet) {
+            let byte = u64::from(byte);
+            match ID {
+                0 => result += byte,
+                1 => result += u64::from(byte & 3 == 0),
+                _ => result = result.max(byte),
+            }
+        }
+        let bank = ordinal as usize % 2;
+        ordinal += 1;
+        local.cells[bank][0].store(ordinal, Relaxed);
+        local.cells[bank][1].store(result, Relaxed);
+        local.cells[bank][2].store(counter(), Relaxed);
+        local.active.store(bank, Release);
+        RECEIPT_SLOT[ID].store(slot, Release);
+        previous = slot;
+    }
+}
 #[inline(always)]
 fn work<const ID: usize>() -> ! {
     let mut deferring_irq = DELAY && ID == 0;
@@ -160,6 +199,7 @@ fn work<const ID: usize>() -> ! {
         active: AtomicUsize::new(0),
     };
     PTR[ID].store((&raw const local).cast_mut(), Release);
+    if WINDOW { packet_work::<ID>(&local) }
     let (mut x, mut count, mut bank) = (ID as u64 + 1, 0u64, 0usize);
     loop {
         for _ in 0..16 {
@@ -429,7 +469,15 @@ impl Run {
             let old = self.samples[j];
             if j == id {
                 need!(count > old[0] && t >= ret && t <= stop);
-                same!(advance(old[1], count - old[0]), x);
+                if WINDOW {
+                    let slot = RECEIPT_SLOT[j].load(Acquire);
+                    same!(slot, n);
+                    same!(count, self.counts[j]);
+                    same!(count - old[0], 1);
+                    row(19, [slot, j as u64, count - 1, x, t, p]);
+                } else {
+                    same!(advance(old[1], count - old[0]), x);
+                }
             } else {
                 need!(next == old)
             }
@@ -440,7 +488,9 @@ impl Run {
         if irq {
             need!(stop >= self.target)
         }
-        if DELAY {
+        if WINDOW {
+            need!(whole >= 1)
+        } else if DELAY {
             need!(whole >= 3)
         } else {
             same!(whole, if STRIDE && id != 0 { 2 } else { 1 })
@@ -460,7 +510,9 @@ impl Run {
         }
         self.slot += 1;
         if self.slot
-            == if DELAY {
+            == if WINDOW {
+                HORIZON
+            } else if DELAY {
                 1
             } else if STRIDE {
                 16
@@ -469,7 +521,12 @@ impl Run {
             }
         {
             if !STRIDE {
-                let expected = if SEED == 1 { [10, 8, 14] } else { [5, 11, 16] };
+                let expected = match (WINDOW, SEED) {
+                    (true, 1) => [11, 14, 23],
+                    (true, _) => [8, 17, 23],
+                    (false, 1) => [10, 8, 14],
+                    _ => [5, 11, 16],
+                };
                 for i in 0..3 {
                     same!(self.counts[i], expected[i]);
                 }
@@ -503,7 +560,7 @@ extern "C" fn svc(f: *mut Frame) -> *mut Frame {
     state().close(f, false)
 }
 pub(super) fn run() -> ! {
-    init_timer_irq();
+    if !WINDOW { init_timer_irq(); }
     let freq: u64;
     unsafe { asm!("mrs {},cntfrq_el0",out(reg)freq,options(nostack)) };
     need!(freq > 0 && freq % 100 == 0);
@@ -515,6 +572,26 @@ pub(super) fn run() -> ! {
     .unwrap_or_else(|| invalid());
     let initial = policy.lottery_state();
     need!(policy.dispatch().is_none() && initial == policy.lottery_state());
+    if WINDOW {
+        let floors = if TIGHT { [6, 3, 11] } else if SEED == 1 { [5, 3, 11] } else { [1, 7, 10] };
+        let input = WindowInput { seed: SEED, weights: WEIGHTS, ready: 7,
+            horizon: HORIZON, width: WIDTH, floors };
+        row(15, [MODE, SEED, HORIZON as u64, WIDTH as u64, input.ready.into(), 0x040201]);
+        let report = input.analyze().unwrap_or_else(|| invalid());
+        let after = policy.lottery_state().unwrap_or_else(|| invalid());
+        let before = initial.unwrap_or_else(|| invalid());
+        same!(before, SEED);
+        same!(after, before);
+        let [a,b,c] = floors.map(u64::from);
+        row(16, [a,b,c,before,after,report.first_short.is_none() as u64]);
+        let [a,b,c] = report.minimum.map(u64::from);
+        row(17, [a,b,c,0,0,0]);
+        if let Some((start,id,count)) = report.first_short {
+            row(18, [start as u64,(start + WIDTH) as u64,id as u64,count.into(),floors[id].into(),0]);
+            dump()
+        }
+        init_timer_irq();
+    }
     let entries = [
         prop_rust_a as extern "C" fn() -> !,
         prop_rust_b,

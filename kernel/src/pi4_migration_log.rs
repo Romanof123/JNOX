@@ -163,7 +163,7 @@ pub(crate) fn export(case: u64, frequency: u64, totals: [u64; 3]) -> ! {
     let mut uart = Serial;
     let mut valid = case <= 2 && frequency != 0 && !INVALID.load(Ordering::Acquire);
     let mut total_rows = 0;
-    let _ = writeln!(uart, "MG 2 BEGIN {case} 3");
+    let _ = writeln!(uart, "MG 3 BEGIN {case} 3");
     for (cpu, journal) in LOG.iter().enumerate() {
         let used = journal.committed.load(Ordering::Acquire);
         let lost = journal.lost.load(Ordering::Relaxed);

@@ -6,7 +6,7 @@ REQ-002/005/023 → DES-003/012 → VER-002/005/023. Single CPU virt, explicit o
 
 독립 QA는 같은 ELF로 일반 및 외부 추적 최초 콜드 실행을 각각 보존한다. 원본 UART, ELF 해시와 역어셈블리, QEMU 인수 및 종료 사유를 보존하고 IRQ·SVC·ERET, 프레임과 복귀 PC를 대조한다. 준비 큐와 잠금 대기 순서, 두 소유자의 상속 및 하향 복원, HIGH 시간 초과와 LOW 소유권 이전, MEDIUM 실행, 보호된 합계와 부분 진행을 독립 재현한다. 최초 실패 또는 불완전 관측도 보존한다. 실제 보드 시간 상한은 별도 검증 대상이다.
 
-QA must retain first plain and externally traced cold boots, independently replay ready/wait order, both priority changes, PPI comparator and useful progress, match saved and resumed PCs/results to linked code and inspect actual reads and publication. Historical selectors and their acceptance thresholds continue to use their original implementation. First evidence and independent verdict are pending.
+QA must retain first plain and externally traced cold boots, independently replay ready/wait order, both priority changes, PPI comparator and useful progress, match saved and resumed PCs/results to linked code and inspect actual reads and publication. Historical selectors and their acceptance thresholds continue to use their original implementation. The first evidence and independent verdict are recorded below.
 
 ## Reproduction · 재현
 

@@ -2,7 +2,7 @@
 //! masked boot/dispatcher stacks. A worker never holds the scheduler lock.
 use crate::{
     context::{Frame, STACK_BYTES, Stack, sched_start_frame},
-    pi4_migration_log as log, pi4_migration_tasks as jobs, pi4_smp_bsp as bsp,
+    pi4_migration_local as local_state, pi4_migration_log as log, pi4_migration_tasks as jobs, pi4_smp_bsp as bsp,
     smp_policy::{Disposition, Lease, Ownership},
 };
 use core::{
@@ -64,7 +64,6 @@ pub(crate) fn abort(code: u64) -> ! {
 static FAILED: AtomicBool = AtomicBool::new(false);
 static INITIAL: AtomicBool = AtomicBool::new(false);
 static DONE: [AtomicBool; 2] = [const { AtomicBool::new(false) }; 2];
-static LIVE: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
 static MILESTONE: AtomicBool = AtomicBool::new(false);
 static TASK_LEASE: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
 static mut STACKS: [Stack; 7] = [const { Stack([0; STACK_BYTES]) }; 7];
@@ -89,12 +88,35 @@ fn frame_check(role: usize, f: *mut Frame) {
         abort(2)
     }
 }
-fn fresh(role: usize, entry: extern "C" fn() -> !) -> usize {
+#[derive(Clone, Copy)]
+pub(crate) enum Activation {
+    M = 0,
+    P0 = 1,
+    P1Open = 2,
+    P1 = 3,
+}
+impl Activation {
+    fn role(self) -> usize {
+        match self { Self::M => 0, Self::P0 => 1, Self::P1Open | Self::P1 => 2 }
+    }
+    fn fresh(self) -> usize {
+        let entry = match self {
+            Self::M => jobs::pi4_migration_m,
+            Self::P0 => jobs::pi4_migration_p0,
+            Self::P1Open => jobs::pi4_migration_p1_open,
+            Self::P1 => jobs::pi4_migration_p1,
+        };
+        fresh(self.role(), entry, local_state::activation_pair(self as usize))
+    }
+}
+fn fresh(role: usize, entry: extern "C" fn() -> !, tls: (u64, u64)) -> usize {
     let f = (bounds(role).1 - size_of::<Frame>()) as *mut Frame;
     unsafe {
         f.write_bytes(0, 1);
         (*f).elr = entry as usize as u64;
         (*f).spsr = 0x345;
+        (*f).tpidr_el0 = tls.0;
+        (*f).tpidrro_el0 = tls.1;
     }
     f.addr()
 }
@@ -154,7 +176,7 @@ impl State {
         frame_check(id, f);
         let frame = unsafe { &*f };
         TASK_LEASE[id].store(l.sequence, Release);
-        LIVE[c].store(l.sequence, Release);
+        local_state::local_lease(c).1.store(l.sequence, Release);
         log::event(
             c,
             11,
@@ -173,7 +195,7 @@ impl State {
     }
     fn retire(&mut self, c: usize, id: usize, stop: u64, ready: bool) {
         let l = self.running[c].take().unwrap_or_else(|| abort(7));
-        if l.task as usize != id || LIVE[c].swap(0, Acquire) != l.sequence {
+        if l.task as usize != id || local_state::local_lease(c).1.swap(0, Acquire) != l.sequence {
             abort(8)
         }
         let start = unsafe {
@@ -232,8 +254,8 @@ impl State {
         }
     }
 }
-pub(crate) fn generation(task: usize) -> u64 {
-    TASK_LEASE[task].load(Acquire)
+pub(crate) fn generation(activation: Activation) -> u64 {
+    TASK_LEASE[activation.role()].load(Acquire)
 }
 pub(crate) fn first_milestone() -> bool {
     MILESTONE.load(Acquire)
@@ -246,20 +268,20 @@ pub(crate) struct Checkpoints {
     last_lease: u64,
     rows_on_lease: u64,
     count: u64,
-    digest: u64,
     last_index: u64,
 }
 
-pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, task: usize,
+pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, activation: Activation,
                          index: u64, sum: u64, local: usize) {
+    let task = activation.role();
     #[cfg(not(feature = "pi4-stream-v1"))]
     if task == 0 && sum != index * (index + 1) / 2 {
         abort(12)
     }
     retained.count += 1;
-    retained.digest = (retained.digest.rotate_left(7) ^ index).wrapping_add(sum);
+    local_state::update_digest(activation as usize, index, sum);
     retained.last_index = index;
-    let after = generation(task);
+    let after = generation(activation);
     if task != 0 || retained.last_lease != after || retained.rows_on_lease < 2
         || index == jobs::END || before != after
     {
@@ -267,8 +289,9 @@ pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, task: usize,
         let daif: u64;
         unsafe { asm!("mrs {},daif","msr daifset,#2",out(reg)daif,options(nostack)) };
         let actual = cpu();
-        let final_lease = LIVE[actual].load(Acquire);
-        if final_lease == 0 || final_lease != generation(task) {
+        let (base, live) = local_state::local_lease(actual);
+        let final_lease = live.load(Acquire);
+        if final_lease == 0 || final_lease != generation(activation) {
             abort(12)
         }
         if retained.last_lease != final_lease {
@@ -293,19 +316,27 @@ pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, task: usize,
                 stack,
             ],
         );
+        if retained.rows_on_lease == 1 {
+            let (pointer, token, digest) = local_state::observe_tls(activation as usize);
+            let expected_token = local_state::activation_pair(activation as usize).1;
+            log::event(actual, 15, [task as u64, expected_token, final_lease, base,
+                                    pointer, token, index, digest]);
+        }
         unsafe { asm!("msr daif,{}",in(reg)daif,options(nostack)) };
     }
     if task == 0 && index == jobs::BLOCK {
         MILESTONE.store(true, Release)
     }
 }
-pub(crate) fn finish(task: usize, value: u64, retained: Checkpoints) -> ! {
+pub(crate) fn finish(activation: Activation, value: u64, retained: Checkpoints) -> ! {
+    let task = activation.role();
+    let digest = local_state::digest(activation as usize);
     unsafe { asm!("svc #1",in("x0")task,in("x1")value,in("x2")retained.count,
-                  in("x3")retained.digest,in("x4")retained.last_index,options(noreturn)) }
+                  in("x3")digest,in("x4")retained.last_index,options(noreturn)) }
 }
 
 fn idle_frame(c: usize, epoch: u64) -> *mut Frame {
-    let f = fresh(3 + c, idle) as *mut Frame;
+    let f = fresh(3 + c, idle, (0, 0)) as *mut Frame;
     log::event(
         c,
         11,
@@ -391,13 +422,14 @@ pub(super) fn start(c: usize) -> ! {
             log::event(c, 1, [role as u64, lo as u64, hi as u64, 0, 0, 0, 0, 0]);
         }
         unsafe { smp_handler_tops = [bounds(5).1, bounds(6).1] };
+        local_state::initialize_tls();
         let mut s = State {
             policy: Ownership::new(masks()).unwrap_or_else(|| abort(16)),
             running: [None; 2],
             frame: [
-                fresh(0, jobs::pi4_migration_m),
-                fresh(1, jobs::pi4_migration_p0),
-                fresh(2, jobs::pi4_migration_p1_open),
+                Activation::M.fresh(),
+                Activation::P0.fresh(),
+                Activation::P1Open.fresh(),
             ],
             epoch: 0,
             done: 0,
@@ -438,6 +470,24 @@ fn trap(s: &State, c: usize, role: usize, f: *mut Frame, kind: u64) {
     if !canary(5 + c) || !(lo..hi).contains(&(stack as usize)) {
         abort(20)
     }
+    let saved = if role == IDLE {
+        None
+    } else {
+        let lease = s.running[c].unwrap_or_else(|| abort(30));
+        let (base, live) = local_state::local_lease(c);
+        let sequence = live.load(Acquire);
+        if lease.task as usize != role || lease.cpu as usize != c || sequence == 0 || sequence != lease.sequence {
+            abort(30)
+        }
+        let activation = match (role, s.epoch) {
+            (0, _) => Activation::M,
+            (1, 1) => Activation::P0,
+            (2, 0) => Activation::P1Open,
+            (2, 1) => Activation::P1,
+            _ => abort(30),
+        };
+        Some((local_state::activation_pair(activation as usize), lease.sequence, base, sequence))
+    };
     let fr = unsafe { &*f };
     log::event(
         c,
@@ -453,12 +503,21 @@ fn trap(s: &State, c: usize, role: usize, f: *mut Frame, kind: u64) {
             stack,
         ],
     );
+    if let Some(((pointer, token), lease, base, sequence)) = saved {
+        if (fr.tpidr_el0, fr.tpidrro_el0) != (pointer, token) || fr.tpidr_el1 != 0 {
+            abort(31)
+        }
+        log::event(c, 14, [role as u64, token, lease, f.addr() as u64,
+                           fr.tpidr_el0, fr.tpidrro_el0, base, sequence]);
+    } else if (fr.tpidr_el0, fr.tpidrro_el0) != (0, 0) {
+        abort(31)
+    }
 }
 pub(super) fn irq(c: usize, f: *mut Frame, iar: u32) -> *mut Frame {
     transaction(|s| {
         if c == 1 {
             trap(s, c, IDLE, f, iar as u64);
-            if s.epoch != 1 || LIVE[c].load(Acquire) != 0 {
+            if s.epoch != 1 || local_state::local_lease(c).1.load(Acquire) != 0 {
                 abort(21)
             }
             return s.dispatch(c);
@@ -470,7 +529,7 @@ pub(super) fn irq(c: usize, f: *mut Frame, iar: u32) -> *mut Frame {
         s.retire(c, 0, unsafe { (*f).reserved }, true);
         s.frame[0] = f.addr();
         s.epoch = 1;
-        s.frame[2] = fresh(2, jobs::pi4_migration_p1);
+        s.frame[2] = Activation::P1.fresh();
         if !s.policy.release(6) {
             abort(23)
         }

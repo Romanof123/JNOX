@@ -1,28 +1,8 @@
 //! Example application and external observation ABI for the linked event service.
 use crate::coop_service::{Event, Handler, Post, Reject, Service, Stats};
-use crate::fixed_runtime::{self as rt, Mode, Task};
+use crate::fixed_runtime::{self as rt, Mode};
 use crate::uart_write;
-use core::arch::asm;
-use core::sync::atomic::{AtomicU64, Ordering};
-
-const RELEASE: u64 = 12_500_000;
-static TABLE: [Task; 3] = [
-    Task {
-        entry: delayed_peer,
-        priority: 1,
-        delay: RELEASE,
-    },
-    Task {
-        entry: owner,
-        priority: 1,
-        delay: 0,
-    },
-    Task {
-        entry: ready_peer,
-        priority: 1,
-        delay: 0,
-    },
-];
+use crate::coop_peers::{peers, TABLE};
 
 #[repr(C)]
 struct Observations {
@@ -45,28 +25,6 @@ static mut coop_app_observations: Observations = Observations {
     handlers: [[0; 4]; 2],
     elapsed: [0; 4],
 };
-
-static PEERS: AtomicU64 = AtomicU64::new(0);
-
-fn ready_peer() {
-    PEERS.store(2, Ordering::Release);
-    uart_write(b"COOP PEER 2\n");
-}
-
-fn delayed_peer() {
-    PEERS
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |v| Some(10 * v))
-        .unwrap();
-    uart_write(b"COOP PEER 0\n");
-}
-
-fn timer_enabled() -> bool {
-    let ctl: u64;
-    unsafe {
-        asm!("isb", "mrs {}, cntp_ctl_el0", out(reg) ctl, options(nostack, preserves_flags));
-    }
-    ctl & 1 != 0
-}
 
 struct Work {
     order: [u64; 4],
@@ -169,7 +127,7 @@ fn sample<const N: usize, const H: usize>(handlers: [Handler<Work>; H], follow: 
             order: work.order,
             reactions,
             timer_disabled: 1,
-            peers: PEERS.load(Ordering::Acquire),
+            peers: peers(),
             handlers: rows,
             elapsed,
         });
@@ -177,24 +135,8 @@ fn sample<const N: usize, const H: usize>(handlers: [Handler<Work>; H], follow: 
     uart_write(b"COOP DONE\n");
 }
 
-fn owner() {
-    uart_write(b"COOP OWNER START\n");
-    let start = rt::counter();
-    if !timer_enabled() {
-        rt::fail();
-    }
-    while timer_enabled() {
-        if rt::counter().wrapping_sub(start) > RELEASE * 10 {
-            rt::fail();
-        }
-        core::hint::spin_loop();
-    }
-    if PEERS.load(Ordering::Acquire) != 0 {
-        rt::fail();
-    }
-    uart_write(b"COOP OWNER YIELD\n");
-    rt::yield_now();
-    uart_write(b"COOP OWNER RESUME\n");
+pub(crate) fn owner() {
+    crate::coop_peers::yield_to_peers();
     let handler = Handler {
         call: follow_up,
         budget: 1,
