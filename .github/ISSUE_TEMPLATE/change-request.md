@@ -22,3 +22,9 @@ title: '[CHG] '
 - 다시 실행할 시험과 재검증이 필요한 증거 / Tests to rerun (`VER`) and evidence requiring reverification (`EVD`)
 - 비영향 항목의 판단 근거 / Rationale for items assessed as unaffected
 - 시스템 결정과 승인 기록, 관련 PR / System decision, approval record and related pull request
+
+기존 기록은 링크하고 해당 없는 항목에는 짧은 사유를 적습니다. / Link existing records and briefly explain inapplicable fields.
+
+- 담당자·역할, 상위 이슈, 독립 검증자와 판정 기록 / Owners and roles, parent issue, independent verifier and verdict record
+- 시험 전 고정한 기준과 대상 버전, 첫 결과(실패 포함), 남은 차단 이슈 / Frozen acceptance criteria and candidate version, first outcomes including failures, remaining blocking issues
+- 관련 PR·증거에서 이 변경 요청으로 돌아오는 링크 및 종결·보류·게이트 결정 / Backlinks from related PR and evidence to this change request, closure or deferral and gate disposition

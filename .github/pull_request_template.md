@@ -19,3 +19,11 @@
 검증팀의 독립 판정과 출시 여부는 각각의 기록에서 관리합니다.
 
 Keep the verification team’s independent verdict and the release decision in their respective records.
+
+## 담당자와 종결 / Ownership and disposition
+
+기존 기록은 링크하고 해당 없는 항목에는 짧은 사유를 적습니다. / Link existing records and briefly explain inapplicable fields.
+
+- 구현·통합 담당자와 역할, 독립 검증 담당자 및 판정 링크 / Implementation and integration owners and roles, independent verifier and verdict link
+- 실행 전 고정한 기준의 버전, 최초 시도 결과(실패·미관측 포함), 남은 차단 이슈 / Version of acceptance criteria frozen before execution, first outcomes including failures or missing observations, remaining blocking issues
+- 상위 이슈에서 이 PR과 증거를 역참조한 위치, 이슈 종결·보류 결정 및 출시 게이트 기록 / Parent issue backlink to this PR and evidence, issue closure or deferral decision and release gate record
