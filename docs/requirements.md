@@ -34,3 +34,5 @@
 `REQ-009`의 용량 목표에는 부트 펌웨어, 사용자 서비스와 Linux 이미지가 포함되지 않는다. 커널 RAM에는 설정 프로파일에 포함된 커널 객체, 페이지 테이블, 스택, 예비 풀이 포함된다. 빌드 시 이미지의 크기 산정 기준과 링크 맵을 기록한다.
 
 [제품 기획](product-plan.md) · [안전·보안 개념](safety-security-concept.md) · [추적 링크](../trace/links.csv)
+
+[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / 계획 EVD-039 (#85).

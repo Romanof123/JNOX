@@ -34,3 +34,5 @@
 3. 유한 배치 제출 경로에서 SJF·SRTF·HRRN 디스패치를 실행한다. [#81](https://github.com/Romanof123/JNOX/issues/81)
 
 고정 우선순위 Rust 런타임 작업 [#71](https://github.com/Romanof123/JNOX/issues/71)과 [#72](https://github.com/Romanof123/JNOX/issues/72)는 병합됐다. 이 런타임의 SVC #1은 작업을 종료한다. 주기 프로파일은 같은 번호로 작업 인스턴스 완료를, EEVDF는 차단을 요청한다.
+
+[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / 계획 EVD-039 (#85).

@@ -10,9 +10,23 @@ use core::mem::{offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-const DISTRIBUTION: bool = cfg!(jnox_bench = "eevdf_wake");
-const ROWS: usize = if DISTRIBUTION { 128 } else { 12 };
-const WAKES: usize = if DISTRIBUTION { 16 } else { 2 };
+const DYNAMIC: bool = cfg!(jnox_bench = "eevdf_dynamic");
+const DISTRIBUTION: bool = DYNAMIC || cfg!(jnox_bench = "eevdf_wake");
+const SCALE: u64 = if DYNAMIC { 60 } else { 20 };
+const ROWS: usize = if DYNAMIC {
+    256
+} else if DISTRIBUTION {
+    128
+} else {
+    12
+};
+const WAKES: usize = if DYNAMIC {
+    20
+} else if DISTRIBUTION {
+    16
+} else {
+    2
+};
 const C: usize = 2;
 const OWNERS: [usize; 12] = [0, 1, 2, 1, 0, 0, 2, 1, 1, 0, 1, 2];
 const GRANTS: [u64; 12] = [1, 1, 1, 3, 2, 2, 1, 1, 1, 2, 2, 1];
@@ -33,6 +47,8 @@ unsafe extern "C" {
     static ee_c_work: u8;
     static ee_c_svc: u8;
     static ee_c_wake: u8;
+    #[cfg(jnox_bench = "eevdf_dynamic")]
+    static ee_c_config_return: u8;
 }
 
 global_asm!(
@@ -41,7 +57,7 @@ global_asm!(
     fpcr = const offset_of!(Frame, fpcr), tpidr_el1 = const offset_of!(Frame, tpidr_el1),
     tpidr_el0 = const offset_of!(Frame, tpidr_el0), simd = const offset_of!(Frame, simd),
     irq = sym timer_irq, svc = sym sleep_call, fail = sym fail,
-    command = sym COMMAND, observation = sym OBSERVED,
+    dynamic = const DYNAMIC as usize, command = sym COMMAND, observation = sym OBSERVED,
 );
 
 // Each task tuple is runtime numerator, deadline numerator, weight and
@@ -63,7 +79,7 @@ struct Row {
     restore: u64,
     progress: u64,
     after: Tasks,
-    error20: [i64; 3],
+    error_scaled: [i64; 3],
 }
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
@@ -94,7 +110,20 @@ const _: () = assert!(
 #[unsafe(no_mangle)]
 static mut eevdf_witness: Witness = unsafe { core::mem::zeroed() };
 
+#[cfg(jnox_bench = "eevdf_dynamic")]
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct Update {
+    meta: [u64; 13],
+    before: Tasks,
+    after: Tasks,
+}
+#[cfg(jnox_bench = "eevdf_dynamic")]
+#[unsafe(no_mangle)]
+static mut eevdf_updates: [Update; 4] = unsafe { core::mem::zeroed() };
+
 struct Bench {
+    updates: usize,
     policy: Eevdf<3>,
     frequency: u64,
     quantum: u64,
@@ -104,7 +133,7 @@ struct Bench {
     frames: [*mut Frame; 3],
     progress: [u64; 3],
     snapshot: Row,
-    error20: [i64; 3],
+    error_scaled: [i64; 3],
     peak: u64,
     wakes: [Wake; WAKES],
     sleeps: usize,
@@ -167,6 +196,7 @@ impl Bench {
         }
         require(frequency >= 100);
         Self {
+            updates: 0,
             policy,
             frequency,
             quantum: frequency / 100,
@@ -176,7 +206,7 @@ impl Bench {
             frames,
             progress: [0; 3],
             snapshot: Row::default(),
-            error20: [0; 3],
+            error_scaled: [0; 3],
             peak: 0,
             wakes: [Wake::default(); WAKES],
             sleeps: 0,
@@ -327,21 +357,21 @@ impl Bench {
         self.snapshot.progress = saved.gpr[20];
         self.snapshot.after = self.tasks();
         // GPS comparison uses the runnable weights of this grant. The only
-        // active weight sums are 4 and 5, so twentieths are exact throughout.
+        // scale is divisible by every active weight sum in this fixture.
         let weight_sum = self.snapshot.reference[1];
-        require(weight_sum == 4 || weight_sum == 5);
+        require(weight_sum > 0 && SCALE % weight_sum == 0);
         for task in 0..3 {
             if self.ready & (1 << task) != 0 {
-                let ideal = 20 * units * self.snapshot.before[task][2] / weight_sum;
-                self.error20[task] -= ideal as i64;
+                let ideal = SCALE * units * self.snapshot.before[task][2] / weight_sum;
+                self.error_scaled[task] -= ideal as i64;
             }
         }
-        self.error20[id] += (20 * units) as i64;
-        self.snapshot.error20 = self.error20;
-        for e in self.error20 {
+        self.error_scaled[id] += (SCALE * units) as i64;
+        self.snapshot.error_scaled = self.error_scaled;
+        for e in self.error_scaled {
             self.peak = self.peak.max(e.unsigned_abs());
         }
-        require(self.peak <= if DISTRIBUTION { 400 } else { 25 });
+        require(self.peak <= if DISTRIBUTION { 20 * SCALE } else { 25 });
         // The QMP observer reads the symbol only after the terminal marker.
         unsafe { ptr::write_volatile(&raw mut eevdf_witness.rows[self.row], self.snapshot) };
         if self.is_response(id) {
@@ -360,7 +390,8 @@ impl Bench {
             };
             wake.wait_units = self.total - wake_tick;
             if DISTRIBUTION {
-                require(wake.wait_units <= 6 && ran - wake.wake_at <= 8 * self.quantum);
+                let (grants, quanta) = if DYNAMIC { (8, 10) } else { (6, 8) };
+                require(wake.wait_units <= grants && ran - wake.wake_at <= quanta * self.quantum);
             } else {
                 require(wake.wait_units == [4, 5][index]);
             }
@@ -382,9 +413,9 @@ impl Bench {
         }
         if self.row == ROWS {
             if DISTRIBUTION {
-                require(self.total == ROWS as u64);
+                require(self.total == ROWS as u64 && (!DYNAMIC || self.updates == 4));
             } else {
-                require(self.total == 18 && self.peak == 25 && self.error20 == [-3, 2, 1]);
+                require(self.total == 18 && self.peak == 25 && self.error_scaled == [-3, 2, 1]);
             }
             require(
                 self.sleeps == WAKES
@@ -406,7 +437,9 @@ impl Bench {
                 ptr::write_volatile(&raw mut eevdf_witness.header, header);
                 asm!("dsb sy", options(nostack, preserves_flags));
             }
-            if DISTRIBUTION {
+            if DYNAMIC {
+                uart_write(b"EEVDF DYNAMIC STOP\nEEVDF DYNAMIC PASS\n");
+            } else if DISTRIBUTION {
                 uart_write(b"EEVDF WAKE STOP\nEEVDF WAKE PASS\n");
             } else {
                 uart_write(b"EEVDF TWO WAKES\nEEVDF STOP\nEEVDF PASS\n");
@@ -414,6 +447,63 @@ impl Bench {
             park()
         }
         self.dispatch()
+    }
+
+    #[cfg(jnox_bench = "eevdf_dynamic")]
+    fn update(&mut self, frame: *mut Frame, now: u64) -> *mut Frame {
+        self.check_frame(C, frame);
+        let saved = unsafe { &*frame };
+        let sleep = self.sleeps + 1;
+        let requests = [
+            (5, 2, 3, true),
+            (9, 0, 3, false),
+            (13, 3, 3, true),
+            (17, 3, 0, false),
+        ];
+        require(self.updates < requests.len());
+        let (expected_sleep, weight, slice, expected) = requests[self.updates];
+        require(self.row > 0 && self.snapshot.owner == C as u64 && sleep == expected_sleep);
+        require(saved.elr == (&raw const ee_c_config_return).addr() as u64);
+        require(saved.gpr[..3] == [0, weight, slice] && saved.gpr[26] == sleep as u64);
+        require(COMMAND[C].load(Ordering::Acquire) == 1);
+        let before = self.tasks();
+        let (n, d) = self.policy.reference().unwrap_or_else(|| fail());
+        let accepted = self.policy.configure(
+            saved.gpr[0] as usize,
+            saved.gpr[1] as u32,
+            saved.gpr[2] as u32,
+        );
+        let after = self.tasks();
+        let (nn, dd) = self.policy.reference().unwrap_or_else(|| fail());
+        require(accepted == expected && after[1..] == before[1..]);
+        if accepted {
+            let start = (before[0][0] * d + (weight - before[0][2]) * n).div_ceil(d);
+            require(after[0] == [start, start + slice, weight, slice]);
+        } else {
+            require(before == after && (n, d) == (nn, dd));
+        }
+        let record = Update {
+            meta: [
+                sleep as u64,
+                self.row as u64,
+                now,
+                saved.elr,
+                frame.addr() as u64,
+                0,
+                weight,
+                slice,
+                accepted as u64,
+                n,
+                d,
+                nn,
+                dd,
+            ],
+            before,
+            after,
+        };
+        unsafe { ptr::write_volatile(&raw mut eevdf_updates[self.updates], record) };
+        self.updates += 1;
+        frame
     }
 
     fn block_c(&mut self, frame: *mut Frame, now: u64) -> *mut Frame {
@@ -479,6 +569,11 @@ extern "C" fn sleep_call(frame: *mut Frame) -> *mut Frame {
     unsafe {
         asm!("mrs {}, esr_el1","mrs {}, cntp_ctl_el0",out(reg) esr,out(reg) ctl,options(nostack,preserves_flags))
     };
-    require(esr >> 26 == 0x15 && esr & 0xffff == 1 && ctl & 1 == 0);
+    require(esr >> 26 == 0x15 && ctl & 1 == 0);
+    #[cfg(jnox_bench = "eevdf_dynamic")]
+    if esr & 0xffff == 2 {
+        return with_bench(|b| b.update(frame, now));
+    }
+    require(esr & 0xffff == 1);
     with_bench(|b| b.block_c(frame, now))
 }
