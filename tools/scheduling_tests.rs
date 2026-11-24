@@ -18,6 +18,14 @@ mod amc_tests;
 mod multilevel_policy;
 #[path = "multilevel_oracle.rs"]
 mod multilevel_oracle;
+#[path = "../kernel/src/proportional_policy.rs"]
+mod proportional_policy;
+#[path = "proportional_tests.rs"]
+mod proportional_tests;
+#[path = "../kernel/src/vruntime_policy.rs"]
+mod vruntime_policy;
+#[path = "vruntime_tests.rs"]
+mod vruntime_tests;
 
 // Import each backend and register its guest check as a separate host test.
 macro_rules! policy_tests {

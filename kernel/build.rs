@@ -14,6 +14,8 @@ fn main() {
         ("MUTEX", "mutex"),
         ("MULTILEVEL", "multilevel"),
         ("AMC", "amc"),
+        ("PROPORTIONAL", "proportional"),
+        ("VRUNTIME", "vruntime"),
         ("PARTITION", "partition"),
         ("CBS", "cbs"),
         ("PERIODIC", "periodic"),
@@ -24,7 +26,7 @@ fn main() {
     .find(|(feature, _)| env::var_os(format!("CARGO_FEATURE_{feature}_BENCH")).is_some())
     .map_or("boot", |(_, profile)| *profile);
     println!(
-        r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "aperiodic", "deadline", "batch", "coop"))"#
+        r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "proportional", "vruntime", "aperiodic", "deadline", "batch", "coop"))"#
     );
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     let board = match env::var("JNOX_BOARD") {

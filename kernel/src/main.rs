@@ -39,10 +39,11 @@ mod dispatch_policy;
 mod domain_policy;
 #[cfg(jnox_bench = "coop")]
 mod event_loop;
-#[cfg(jnox_bench = "rr")]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime"))]
+#[cfg_attr(jnox_bench = "vruntime", allow(dead_code))]
 mod fair_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "multilevel"))]
-#[cfg_attr(jnox_bench = "multilevel", allow(dead_code))]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
+#[cfg_attr(any(jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
 mod feedback_policy;
 #[cfg(jnox_bench = "rr")]
 mod group_policy;
@@ -58,6 +59,10 @@ mod multilevel_policy;
 mod partition;
 #[cfg(jnox_bench = "periodic")]
 mod periodic;
+#[cfg(jnox_bench = "proportional")]
+mod proportional;
+#[cfg(jnox_bench = "proportional")]
+mod proportional_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
     jnox_bench = "rr",
@@ -83,6 +88,10 @@ mod smp_boot;
 mod smp_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "partition"))]
 mod temporal_policy;
+#[cfg(jnox_bench = "vruntime")]
+mod vruntime;
+#[cfg(jnox_bench = "vruntime")]
+mod vruntime_policy;
 
 static mut BSS_PROBE: u64 = 0;
 
@@ -112,6 +121,10 @@ extern "C" fn kernel_main() -> ! {
 }
 
 fn run_bench() -> ! {
+    #[cfg(jnox_bench = "proportional")]
+    proportional::run();
+    #[cfg(jnox_bench = "vruntime")]
+    vruntime::run();
     #[cfg(jnox_bench = "amc")]
     amc::run();
     #[cfg(jnox_bench = "multilevel")]

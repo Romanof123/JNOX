@@ -54,3 +54,5 @@
 뮤텍스 구성은 실제 차단·타이머 만료·소유권 양도 때 유효 우선순위를 대조한다. [뮤텍스 합격 기준](m1-mutex.md)
 
 [다단계 큐](m4-multilevel.md) · [혼합 임계도](m3-mixed-criticality.md)
+
+[복권·스트라이드](m4-proportional.md) · [가중 가상 실행시간](m4-vruntime.md)

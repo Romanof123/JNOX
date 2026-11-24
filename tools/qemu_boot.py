@@ -1,7 +1,9 @@
 """Check an AArch64 UART transcript in fresh full-system QEMU guests."""
 
 import argparse
+from enum import Enum
 import hashlib
+from importlib import import_module
 import json
 import math
 import os
@@ -189,8 +191,29 @@ APERIODIC_TRANSCRIPT = BOOT_TRANSCRIPT + (
     b"APER STOP\n"
     b"APER PASS\n"
 )
+
+
+class DynamicTranscript(Enum):
+    AMC = ("AMC", "amc_observer")
+    VRUNTIME = ("VR", "vruntime_observer")
+
+    def __init__(self, label, module):
+        self.label = label
+        self.prefix = label.encode("ascii")
+        self.module = module
+
+    def observer(self):
+        if __package__:
+            return import_module("." + self.module, __package__)
+        return import_module(self.module)
+
+
 TRANSCRIPTS = {
     "amc": None,  # Counter values vary per boot. Freeze the validated UART before quiet.
+    "vruntime": DynamicTranscript.VRUNTIME,
+    "proportional": BOOT_TRANSCRIPT + (
+        b"LOTTERY SEED A\nLOTTERY SEED B\nSTRIDE SERVICE JOIN\nPROPORTIONAL PASS\n"
+    ),
     "multilevel": BOOT_TRANSCRIPT + (
         b"MLQ STRICT FOUR\nMLFQ YIELDS DEMOTED\nMLFQ BOOST ORDER\nMULTILEVEL PASS\n"
     ),
@@ -238,24 +261,29 @@ def kernel_sha256(path, *, raw=False):
 
 
 def amc_contract():
-    if __package__:
-        from . import amc_observer
-    else:
-        import amc_observer
-    return amc_observer
+    return DynamicTranscript.AMC.observer()
+
+
+def dynamic_profile(expected):
+    if expected is None:  # Existing callers use None for the AMC observer.
+        return DynamicTranscript.AMC
+    return expected if isinstance(expected, DynamicTranscript) else None
 
 
 def read_uart(serial, expected):
     # All lines may use CRLF. One extra byte exposes any trailing output.
     serial.seek(0)
-    if expected is None:
-        return serial.read(amc_contract().MAX_BYTES + 1)
+    profile = dynamic_profile(expected)
+    if profile is not None:
+        return serial.read(profile.observer().MAX_BYTES + 1)
     return serial.read(len(expected) + expected.count(b"\n") + 1)
 
 
 def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
-    if expected is None:
-        problem, _ = observe_amc(process, serial, timeout, allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
+    profile = dynamic_profile(expected)
+    if profile is not None:
+        problem, _ = observe_dynamic(process, serial, timeout, profile, allow_crlf=allow_crlf,
+                                     quiet_seconds=quiet_seconds)
         return problem
     deadline = time.monotonic() + timeout
     quiet_until = None
@@ -281,30 +309,39 @@ def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=Tr
 
 
 def observe_amc(process, serial, timeout, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
-    contract = amc_contract()
+    return observe_dynamic(process, serial, timeout, DynamicTranscript.AMC,
+                           allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
+
+
+def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+    contract = profile.observer()
+    passed = profile.prefix + b" PASS\n"
+    failed = profile.prefix + b" FAIL\n"
+    stop_line = b"\n" + profile.prefix + b" STOP\n"
     deadline = time.monotonic() + timeout
     quiet_until = None
     accepted = None
     while True:
         if process.poll() is not None:
             return f"QEMU exited before host stop (status {process.returncode})", None
-        raw = read_uart(serial, None)
+        serial.seek(0)
+        raw = serial.read(contract.MAX_BYTES + 1)
         now = time.monotonic()
         if len(raw) > contract.MAX_BYTES:
-            return "AMC UART exceeds byte limit", None
+            return f"{profile.label} UART exceeds byte limit", None
         if accepted is not None:
             if raw != accepted:
-                return "unexpected AMC UART bytes during quiet window", None
+                return f"unexpected {profile.label} UART bytes during quiet window", None
             if now >= quiet_until:
                 return None, accepted
         else:
             data = raw.replace(b"\r\n", b"\n") if allow_crlf else raw
             # A complete terminal line also exposes extra bytes in the same read.
             # If STOP is followed by another complete line, judge it immediately.
-            after_stop = data.partition(b"\nAMC STOP\n")[2]
-            if b"AMC PASS\n" in data or b"AMC FAIL\n" in data or b"\n" in after_stop:
-                if not data.endswith(b"\nAMC PASS\n") or not contract.validate(data):
-                    return "unexpected AMC UART transcript", None
+            after_stop = data.partition(stop_line)[2]
+            if passed in data or failed in data or b"\n" in after_stop:
+                if not data.endswith(b"\n" + passed) or not contract.validate(data):
+                    return f"unexpected {profile.label} UART transcript", None
                 accepted = raw
                 quiet_until = now + quiet_seconds
             if now >= deadline:
@@ -331,6 +368,7 @@ def stop(process):
 
 
 def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+    profile = dynamic_profile(expected)
     with tempfile.TemporaryDirectory(prefix="jnox-qemu-") as folder:
         uart_path = Path(folder) / "uart"
         stderr_path = Path(folder) / "stderr"
@@ -341,9 +379,9 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
             try:
                 print(f"  QEMU PID = {process.pid}", flush=True)
                 with uart_path.open("rb") as serial:
-                    if expected is None:
-                        problem, accepted = observe_amc(process, serial, timeout,
-                                                        allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
+                    if profile is not None:
+                        problem, accepted = observe_dynamic(process, serial, timeout, profile,
+                                                            allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
                     else:
                         problem = observe(process, serial, timeout, expected,
                                           allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
@@ -360,9 +398,9 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
         print(f"  QEMU stderr = {stderr!r}{stderr_suffix}", flush=True)
         if problem or shutdown_problem:
             raise ValueError(problem or shutdown_problem)
-        if expected is None:
+        if profile is not None:
             if uart != accepted:
-                raise ValueError("unexpected AMC UART bytes during shutdown")
+                raise ValueError(f"unexpected {profile.label} UART bytes during shutdown")
             return
         if allow_crlf:
             uart = uart.replace(b"\r\n", b"\n")
