@@ -49,3 +49,5 @@ FIXED RR B DONE
 ```
 
 소스 리비전, ELF와 원시 이미지 해시, 에뮬레이터 버전, 패키지 이미지에서 수집한 UART 원본과 예외 추적을 보존한다. 같은 ELF로 IRQ와 SVC 진입 및 ERET 복귀 주소를 대조한다. 일반 Rust 함수의 정상 반환 후 종료 트램펄린 진입, 상위 우선순위 선점과 RR 동순위 교대를 확인한다. raspi4b에서 CNTFRQ_EL0를 읽어 틱을 시간으로 변환한다. 12,500,000틱은 virt의 62.5 MHz에서 200 ms이다. 호스트 경과 시간은 독립적으로 측정한다. 모델의 직접 로딩은 EEPROM과 VideoCore 펌웨어를 우회한다. 실기기 전원 재인가 2회, 실제 IRQ 위임, 보드 지연 측정, 시스템 안전 승인은 [#34](https://github.com/Romanof123/JNOX/issues/34)와 [#21](https://github.com/Romanof123/JNOX/issues/21)에서 별도로 추적한다.
+
+Pi 4 모델에서 FIFO와 RR을 각각 두 번 부팅해 상위 우선순위 선점과 RR 동순위 교대를 확인했다. 별도 레지스터 관측에서 카운터 주파수는 62.5 MHz였다. 실보드 부팅 및 시간 검증은 남아 있다. [EVD-031](../evidence/evd-031.md)
