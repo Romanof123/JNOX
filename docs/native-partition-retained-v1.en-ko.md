@@ -23,3 +23,5 @@ The first independent packaging attempt for v1 reported E0658 on the conditional
 Use a fresh evidence directory and record the corrected revision and stable toolchain. Gate launches on successful packaging of all four variants for both tables and the original package identity controls. Repeat the frozen five rounds ABCD, DCBA, BADC, CDAB, ABCD separately for each P/Q and default/icount3 cell (80 first cold starts). Preserve each outcome and use the original comparisons and acceptance criteria. The earlier compiler failure remains attributable to its original revision.
 
 첫 독립 패키징에서 22번 행 배열 원소의 조건부 속성 때문에 안정판 Rust가 E0658을 보고했다. 최초 결과와 컴파일러 정보, 로그는 보존한다. 수정 대상은 행 길이를 컴파일 시점에 고르는 문법이다. A/C의 12개 값과 B/D의 실제 예외 프레임 주소를 포함한 13개 값, 독립된 104워드 대조, 복원 주소, 전체 슬롯 및 종료 구간, 원래 시각과 1ms 기준을 유지한다. 새 경로에 수정 커밋과 안정판 도구 버전을 기록한다. 양쪽 표의 네 패키지와 동일성 조건을 확인한 뒤 표와 클록 조합마다 위 순서로 다섯 라운드, 총 80회 최초 냉간 실행 결과를 보존한다.
+
+[Original packaging failure](evidence/native-partition-retained-first-build.en-ko.md) and [stable first 80 captures with independent 104-word replay / 안정판 최초 원본](evidence/native-partition-retained-stable-first.en-ko.md).
