@@ -154,6 +154,21 @@ impl<const Q: usize, const R: usize> RequestServer<Q, R> {
         Ok(())
     }
 
+    /// Apply application admission bounds before mutating the shared ledger.
+    #[cfg(jnox_ap)]
+    pub(crate) fn submit_bounded(&mut self, id: u32, work: u32) -> Result<(), RequestError> {
+        if work > 4
+            || self
+                .queued_work()
+                .checked_add(work)
+                .filter(|n| *n <= 6)
+                .is_none()
+        {
+            return Err(RequestError::WorkOverflow);
+        }
+        self.submit(id, work)
+    }
+
     /// Reserve at most one service unit and advance one clock tick. Outstanding
     /// completion and clock errors leave the clock, budget and FIFO intact.
     pub(crate) fn grant(&mut self, cpu_available: bool) -> Result<Option<Receipt>, RequestError> {

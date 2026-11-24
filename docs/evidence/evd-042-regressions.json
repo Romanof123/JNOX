@@ -1,0 +1,158 @@
+{
+  "tree": "4f6a71d27dd2e644eb5dc9dcb0d8e29e178ba905",
+  "kernel_tree": "4574620df9d5c7ceb2392e22da6ea2844b196f8b",
+  "tools_tree": "635f986c7ae4693914b70894f2fadee7cbcddef7",
+  "reference": "ddbc13b5587148f36dafc386d5405f61b63942e4",
+  "control_images": 23,
+  "identical_text": 23,
+  "identical_whole_loadable": 0,
+  "loadable_differences": "Exactly three .rodata bytes in every image. All 69 decode as panic locations for ready_queue.rs: source lines 59 to 62 (col 37), 68 to 71 (col 24), 25 to 28 (col 9). The three-line trace-only accessor in the integrated source shifts these locations. All machine code, segment layouts, and every remaining loaded byte are identical.",
+  "build_index_sha256": "a16f1a2ecf05190638742130f14f61eeaf6dbf7eba4d4e1e8545a24772853bfe",
+  "commands_sha256": "182542b89a939a6da513a93f350b1aba80ca72f3df6ea358845e22c2f73da4c8",
+  "host": {
+    "scheduling": 129,
+    "hierarchy": 5,
+    "coop_service": 2,
+    "python_discovery": 45,
+    "scorer_synthetic_regression": 3,
+    "policy_audit_exit": 0,
+    "verdict_boundaries_exit": 0
+  },
+  "regression_boots": [
+    "boot-boot",
+    "periodic-boot",
+    "fixed-boot",
+    "mlq-boot",
+    "pi4-boot"
+  ],
+  "expected_rejections": [
+    "pi4-control-build",
+    "bench-control-build",
+    "invalid-app-build",
+    "invalid-case-build"
+  ],
+  "control_guests": {
+    "booted-diagnostic-rm-demand": {
+      "icount": true,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 0,
+      "verdict": "qualifying",
+      "failures": [],
+      "image_sha256": "001048216161fd5835630afdc809dabc691d3141b41c77326297e40027786938",
+      "uart_sha256": "d6338aad7232e33269e7c65a636221e27e6cdb362c6182696162f4ffbbae4859",
+      "score_sha256": "329f6af325faad8b56b833b69b162ce092792c0fe20b108c76b60a53e0730d98"
+    },
+    "booted-diagnostic-rm-late": {
+      "icount": true,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 0,
+      "verdict": "qualifying",
+      "failures": [],
+      "image_sha256": "cc444a1ddf4f0de4044767c79111dbd5dafdf23b5c9dcdcb315a575bbdf3ea4b",
+      "uart_sha256": "560a8423ac24a3f28de31f2fb6b5b6dca1f17817be55e066878ea8783bf223e5",
+      "score_sha256": "f67c5241aae6739ff10041bca89b4359d22a7f02cf99f0381ca0f877c59a7c9c"
+    },
+    "booted-primary-dm-handoff-loss": {
+      "icount": true,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 0,
+      "verdict": "qualifying",
+      "failures": [],
+      "image_sha256": "a875edac868a4a18aa048585168673d2fab5f2202fa29eda77c59d3b1fb0c8c3",
+      "uart_sha256": "047f64bfa05482823dafdc2000ecbed77ffd6fac02b22699bbbdfc52f2874685",
+      "score_sha256": "9cbcf6dc98d1d850b4967258c33a89bd61bc97f95c8d18bf3df951d245a3cdeb"
+    },
+    "booted-primary-rm-handoff-loss": {
+      "icount": true,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 0,
+      "verdict": "qualifying",
+      "failures": [],
+      "image_sha256": "47fcd043383b5c75c4919cb2acdbae7969f90d922dff215d21ac0e66c7804bb8",
+      "uart_sha256": "2d0c66ca01d01aebca819d85a05a84c062b652b5aae6b76b3fe7160905b63bdc",
+      "score_sha256": "6b49e048f4fa5b0f466f2b3c7dd33c6172494fdefa19276dd79f88b77b5467c2"
+    },
+    "booted-primary-rm-healthy": {
+      "icount": false,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 1,
+      "verdict": "nonqualifying",
+      "failures": [
+        "programmed targets"
+      ],
+      "image_sha256": "10ca38a9064965cc6982ef6bde872384eae62e3ff4770b7eee921facf731d8dd",
+      "uart_sha256": "a895ff85b00fa0460975af54c171327b87921bb4c38aac307891667e2215a0c1",
+      "score_sha256": "b4401cbe8c342883b0416291d79456f6f221a62f5c998cd52ba94431a4a98bb2"
+    },
+    "booted-primary-rm-invalid": {
+      "icount": true,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 0,
+      "verdict": "qualifying",
+      "failures": [],
+      "image_sha256": "759910c260bc4abedf00441cd46868ad93fb2535645c90d95baecf1884c961ca",
+      "uart_sha256": "818cde29ea7003caedb810d3915d2f09d0b7f2bc5ec7a7e1931fd7f1891c5df5",
+      "score_sha256": "7ce4307b95bc115d7f84e1e7dc7fcea74f756e032e939fafe59719727e47349c"
+    },
+    "booted-primary-rm-tie": {
+      "icount": true,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 0,
+      "verdict": "qualifying",
+      "failures": [],
+      "image_sha256": "8f80a0a68356275ff6e46fb0fe8ce0fc01311952216e48d721368331e2dbe752",
+      "uart_sha256": "a5e9c7df080886862da9e80048a7ab654a74e87e1d8234bed1a65a071abc5b2b",
+      "score_sha256": "5ce63f1b0016174871201dadc667bc586e05658bd80201351c1a25679c68c0b4"
+    },
+    "booted-primary-rm-worst": {
+      "status": "infrastructure-interrupted",
+      "terminal": false,
+      "uart_sha256": "8ad8a18f3e64ee0d8e5bf66745e5c885aeb543a671d4bbfb6f1b693e6f8433e1",
+      "reason": "DrvFs read returned ENODATA while UART writer active; QEMU then received SIGHUP. Original incomplete UART preserved."
+    },
+    "booted-primary-rm-worst-retry": {
+      "icount": true,
+      "guest_exit": 0,
+      "terminal": true,
+      "score_exit": 0,
+      "verdict": "qualifying",
+      "failures": [],
+      "image_sha256": "2fffd4640e7cf74f9ce6088d478cad42699bd9194970a9ca44f5b0b7098a9759",
+      "uart_sha256": "53d08ca3d818b32da09b4b5ea5c12a19dc00f62df60abe9fc1fd8401be122a8e",
+      "score_sha256": "1895e4c8e86dcaa28bef618be294d688b0e6e4f78d5f205715457ea5f3a7d96d"
+    }
+  },
+  "infrastructure_failures": [
+    "First capture harness file was missing after setup failed before launching any QEMU.",
+    "Second capture harness interrupted polling the first deterministic worst UART on DrvFs. Its first bytes and signal termination were preserved. Fresh native Linux temporary capture for worst and all remaining cases completed."
+  ],
+  "static_pt_load_bytes": {
+    "minimal-boot": {
+      "load_file": 275,
+      "load_memory": 16667,
+      "zero_fill": 16392,
+      "linked_stack": 16384
+    },
+    "ordinary-rm-healthy": {
+      "load_file": 18364,
+      "load_memory": 116724,
+      "zero_fill": 98360,
+      "linked_stack": 16384
+    },
+    "scripted-rm-tie": {
+      "load_file": 20520,
+      "load_memory": 118880,
+      "zero_fill": 98360,
+      "linked_stack": 16384
+    }
+  },
+  "footprint_scope": "Static linked file-backed and memory mappings only; neither runtime high-water nor WCET measured.",
+  "scope": "Integrated smoke, with deterministic and default-counter verdicts recorded separately. No hardware testing."
+}
