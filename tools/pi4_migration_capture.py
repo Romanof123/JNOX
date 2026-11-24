@@ -63,7 +63,8 @@ def acquire(args, terminal_observer=None):
         raise ValueError("missing retained first position")
     dest = root / f"first-{args.ordinal}"
     dest.mkdir()
-    cmd = [record["qemu"], *FLAGS, "-kernel", str(root / "kernel8.img"), "-d", "int,tid",
+    log_items = getattr(terminal_observer, "log_items", "int,tid")
+    cmd = [record["qemu"], *FLAGS, "-kernel", str(root / "kernel8.img"), "-d", log_items,
            "-D", str(dest / "observer-%d.log")]
     if terminal_observer is not None:
         cmd[1+len(FLAGS):1+len(FLAGS)] = terminal_observer.argv()

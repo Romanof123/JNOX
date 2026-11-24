@@ -1,0 +1,251 @@
+{
+  "scope": "Integration build identity only; no machine, guest or plugin executed for this attestation",
+  "issue": 198,
+  "qemu_release": "11.1.3",
+  "archive_sha256": "5a8289c7940dc77d3873c81a6c29ba3afe1446fc9d36e77fa1658cdbecb84b22",
+  "historical_model": {
+    "sha256": "3ae2c079d4491362fece2abb641f0ff17d88e9008c9fcd13600f249b9bd1c862",
+    "bytes": 34424352,
+    "build_id": "01d47c7221d14fdfe82890c76e1056d4cbfe1ee8"
+  },
+  "plugin_capable_model": {
+    "sha256": "2e465436514c0dc203eb2e9c3440187252cb84ebcdcc3fee6de76c9fa1c95fe6",
+    "bytes": 120714952,
+    "build_id": "ef73da8a108e97b7d11566630ac676893c2f3ef8"
+  },
+  "preserved_stock_unstripped": {
+    "sha256": "320d62fc668c02dff69cfa77082288ad5adf7eebf2e1e712261392a6901f4e20",
+    "bytes": 120356904,
+    "build_id": "01d47c7221d14fdfe82890c76e1056d4cbfe1ee8"
+  },
+  "stock_allocated_sections_match": 29,
+  "configured_targets": [
+    "arm-softmmu",
+    "aarch64-softmmu"
+  ],
+  "built_target": "qemu-system-aarch64",
+  "ninja_final_action": [
+    2207,
+    2207
+  ],
+  "ninja_job_limit": 1,
+  "compiler_warning_lines": 0,
+  "host_cpu_for_build": 0,
+  "nice_adjustment": 15,
+  "source_manifest_sha256": "0c17eb979eb82cb0cfe87f86e52eba44ddb968426bec44d4882259e5d42580d5",
+  "historical_source_outputs": {
+    "accel/tcg/cpu-exec.c": "df4ec2413558ba967d4a8d68df707e5c7718ced50a980e7d962085fb34dfac25",
+    "accel/tcg/translate-all.c": "b35368799305eda3f36f742e638101eded656abe766a43f569172f79836a9060",
+    "include/accel/tcg/cpu-ops.h": "3933534cb4995a4716dc15492a6273fe3badd2e436561061ebcd08eec00f4940",
+    "include/exec/translation-block.h": "88537599ab4b28aee10680a687d10e99d743c03c9088dc43dfb234c33f685a34",
+    "meson.build": "c1188fa6f517cd9e0fc9cc761d3021060dfc4866f614836734e72098464168f1",
+    "target/arm/arm-speed.c": "37b9e78441c56240d59391e779a9b6c7999abc2a6208f017dfa58d0f40698a2a",
+    "target/arm/arm-speed.h": "e6ba60ce2fd04a0823cca5d726b2f26568412e8dc27fafc16db0e46542f646da",
+    "target/arm/cpu.c": "a80ce2cbecb4dffe84d09dbe7c0877c486cac1fbd7bb3ab9cfa682f4e68f29a1",
+    "target/arm/meson.build": "af9a4482de68cc67da7b28e1d0977b51d0f49c8e12668d1a84a5818d9d508351",
+    "target/arm/native_jit.cpp": "1ddb08ca37d7d5bfda89510ef8a41fabc0737e77f3ebb8654d9da1bd6e6984b7",
+    "target/arm/native_jit.h": "7c963e2b0ed6b0c4c2d625dd55a8945740c9515eb95552ff5289b8fd579ad69d"
+  },
+  "prepare_source_sha256": "a70bcdac661a35a675d52351a55bb8a3c36bda4342fd874447f2c075352d8fb2",
+  "release_zip_sha256": "54f515ce0673f500f79b5084c9e11a1474474aa3aac57ef83bd0af679eb7133d",
+  "actual_inputs": {
+    "vendor/qemu-11.1.3.tar.xz": "5a8289c7940dc77d3873c81a6c29ba3afe1446fc9d36e77fa1658cdbecb84b22",
+    "system/prepare_source.py": "a70bcdac661a35a675d52351a55bb8a3c36bda4342fd874447f2c075352d8fb2",
+    "system/build.sh": "ff4855294f9e11d40198fb6f043aab2cac7a9d32ab90ed76ed89b427e8edb728",
+    "src/main.cpp": "f06329971d4b7d98ad74f377afaa12c84eea5a0689ea23b0cfe15e83ecbb4139",
+    "system/native_backend.inc": "fd9720fe5fd44c31905010d876932987d7a77716b549b7d0bfe848159dcf811e",
+    "system/native_jit.h": "7c963e2b0ed6b0c4c2d625dd55a8945740c9515eb95552ff5289b8fd579ad69d",
+    "system/arm-speed.h": "e6ba60ce2fd04a0823cca5d726b2f26568412e8dc27fafc16db0e46542f646da",
+    "system/arm-speed.c": "37b9e78441c56240d59391e779a9b6c7999abc2a6208f017dfa58d0f40698a2a",
+    "build/system/qemu-system-aarch64": "3ae2c079d4491362fece2abb641f0ff17d88e9008c9fcd13600f249b9bd1c862"
+  },
+  "input_reconciliation": "The fresh patcher's accel/tcg/cpu-exec.c had one extra blank line; the historical exact file was restored before configure.",
+  "configure_option_difference": [
+    [
+      "--disable-plugins",
+      "--enable-plugins"
+    ]
+  ],
+  "config_header_difference": {
+    "removed": [
+      "#undef CONFIG_PLUGIN"
+    ],
+    "added": [
+      "#define CONFIG_PLUGIN"
+    ]
+  },
+  "host_compilers_equal": true,
+  "new_config_status_sha256": "5a9987ba559c92c73991e5cf26de1933d8087dd35615945f33c0ff9f511c1f33",
+  "new_config_host_sha256": "90ca6dc6987ee3ea85852849b44194aedf817d7ba13c8f3a2c4842f00930d8ff",
+  "compiler": {
+    "c": "cc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+    "cpp": "c++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0"
+  },
+  "toolchain": [
+    "Linux 6.18.58.1-microsoft-standard-WSL2 x86_64",
+    "gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+    "g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+    "GNU ld (GNU Binutils for Ubuntu) 2.38",
+    "1.10.1",
+    "Python 3.10.12",
+    "1.12.1",
+    "2.72.4"
+  ],
+  "public_plugin_header_sha256": "335d4e472067e914add598b60d1f7cf0dc029cd48f62f66656d6a88c54d8d9f9",
+  "plugin_api_export_count": 65,
+  "stock_plugin_api_export_count": 0,
+  "required_exports": [
+    "qemu_plugin_register_vcpu_tb_trans_cb",
+    "qemu_plugin_register_vcpu_insn_exec_cb",
+    "qemu_plugin_register_vcpu_mem_cb",
+    "qemu_plugin_get_hwaddr",
+    "qemu_plugin_mem_get_value",
+    "qemu_plugin_read_register",
+    "qemu_plugin_get_registers"
+  ],
+  "all_exported_plugin_symbols": [
+    "qemu_plugin_bool_parse",
+    "qemu_plugin_end_code",
+    "qemu_plugin_entry_code",
+    "qemu_plugin_get_hwaddr",
+    "qemu_plugin_get_registers",
+    "qemu_plugin_hwaddr_device_name",
+    "qemu_plugin_hwaddr_is_io",
+    "qemu_plugin_hwaddr_phys_addr",
+    "qemu_plugin_insn_data",
+    "qemu_plugin_insn_disas",
+    "qemu_plugin_insn_haddr",
+    "qemu_plugin_insn_size",
+    "qemu_plugin_insn_symbol",
+    "qemu_plugin_insn_vaddr",
+    "qemu_plugin_mem_get_value",
+    "qemu_plugin_mem_is_big_endian",
+    "qemu_plugin_mem_is_sign_extended",
+    "qemu_plugin_mem_is_store",
+    "qemu_plugin_mem_size_shift",
+    "qemu_plugin_num_vcpus",
+    "qemu_plugin_outs",
+    "qemu_plugin_path_to_binary",
+    "qemu_plugin_read_memory_hwaddr",
+    "qemu_plugin_read_memory_vaddr",
+    "qemu_plugin_read_register",
+    "qemu_plugin_register_atexit_cb",
+    "qemu_plugin_register_flush_cb",
+    "qemu_plugin_register_vcpu_discon_cb",
+    "qemu_plugin_register_vcpu_exit_cb",
+    "qemu_plugin_register_vcpu_idle_cb",
+    "qemu_plugin_register_vcpu_init_cb",
+    "qemu_plugin_register_vcpu_insn_exec_cb",
+    "qemu_plugin_register_vcpu_insn_exec_cond_cb",
+    "qemu_plugin_register_vcpu_insn_exec_inline_per_vcpu",
+    "qemu_plugin_register_vcpu_mem_cb",
+    "qemu_plugin_register_vcpu_mem_inline_per_vcpu",
+    "qemu_plugin_register_vcpu_resume_cb",
+    "qemu_plugin_register_vcpu_syscall_cb",
+    "qemu_plugin_register_vcpu_syscall_filter_cb",
+    "qemu_plugin_register_vcpu_syscall_ret_cb",
+    "qemu_plugin_register_vcpu_tb_exec_cb",
+    "qemu_plugin_register_vcpu_tb_exec_cond_cb",
+    "qemu_plugin_register_vcpu_tb_exec_inline_per_vcpu",
+    "qemu_plugin_register_vcpu_tb_trans_cb",
+    "qemu_plugin_request_time_control",
+    "qemu_plugin_reset",
+    "qemu_plugin_scoreboard_find",
+    "qemu_plugin_scoreboard_free",
+    "qemu_plugin_scoreboard_new",
+    "qemu_plugin_set_pc",
+    "qemu_plugin_start_code",
+    "qemu_plugin_tb_get_insn",
+    "qemu_plugin_tb_n_insns",
+    "qemu_plugin_tb_vaddr",
+    "qemu_plugin_translate_vaddr",
+    "qemu_plugin_u64_add",
+    "qemu_plugin_u64_get",
+    "qemu_plugin_u64_set",
+    "qemu_plugin_u64_sum",
+    "qemu_plugin_uninstall",
+    "qemu_plugin_update_ns",
+    "qemu_plugin_vcpu_for_each",
+    "qemu_plugin_write_memory_hwaddr",
+    "qemu_plugin_write_memory_vaddr",
+    "qemu_plugin_write_register"
+  ],
+  "commands": [
+    "nice -n 15 taskset -c 0 $BUILD_ROOT/qemu-11.1.3/configure --python=$HISTORICAL_VENV/bin/python --target-list=arm-softmmu\\,aarch64-softmmu --enable-plugins --disable-docs --disable-tools --disable-werror --disable-gtk --disable-sdl --disable-vnc --disable-curses --disable-opengl --disable-virglrenderer --disable-slirp ",
+    "nice -n 15 taskset -c 0 /usr/bin/ninja -j1 qemu-system-aarch64 "
+  ],
+  "local_raw_evidence": {
+    "inputs.sha256": {
+      "sha256": "657717d8730838f2e12c7db1c27a652dbca8543a8cf6a1482e567d3d8f35005c",
+      "bytes": 791
+    },
+    "stock-verified.txt": {
+      "sha256": "89ffa7db391e843ac039ae0361f14301ef4936e4b4137359b3a6c1f577a60a93",
+      "bytes": 1079
+    },
+    "source-verified.txt": {
+      "sha256": "aa9d719d4b149da7c612f3333d48d0d673df0726fabcc8b1f577d46fb575a401",
+      "bytes": 370
+    },
+    "commands.txt": {
+      "sha256": "535f103a60bc3fb125e0695e77887e7819bfd69fbf6004546b0f551a454fbdb6",
+      "bytes": 425
+    },
+    "configure.log": {
+      "sha256": "0bfaadd510e9eee6c7313af51e405ccd8e40f94b0988d7429ad8fd71c8a7a114",
+      "bytes": 31626
+    },
+    "build.log": {
+      "sha256": "220737530aa565a05915f1e9c5bdc3de5dd4b2c96e21d83c1e5d3c00aee0b3ea",
+      "bytes": 163769
+    },
+    "built-config.txt": {
+      "sha256": "5529b5cf51c885986335049252a29a4699f653fb3a45bf1e4aec91857135a9fa",
+      "bytes": 420
+    },
+    "progress.log": {
+      "sha256": "41cf83d270b2c308cbffaacc34fc93ad7b04adf25a904e9951dd56d3b3fb6f2d",
+      "bytes": 321
+    },
+    "toolchain.txt": {
+      "sha256": "01c6ad1f864015eed50dbf5aeda4788f26fa987538d3bc15948e268abf2f5f60",
+      "bytes": 292
+    },
+    "plugin-exports.txt": {
+      "sha256": "9c6d496c28c74b2e0e4be6ad9a408e48c8a590ad6c44f3dcad2c4f5371678495",
+      "bytes": 1882
+    },
+    "patched-files.sha256": {
+      "sha256": "0c17eb979eb82cb0cfe87f86e52eba44ddb968426bec44d4882259e5d42580d5",
+      "bytes": 982
+    },
+    "stock-compilers.json": {
+      "sha256": "355dff667660d2df2bc045391d7e99cdacf172ff149b45b86a756a7daa7da496",
+      "bytes": 1360
+    },
+    "new-compilers.json": {
+      "sha256": "355dff667660d2df2bc045391d7e99cdacf172ff149b45b86a756a7daa7da496",
+      "bytes": 1360
+    },
+    "cpu-exec-identity-before-restore.txt": {
+      "sha256": "7a6daa83efe797f8b250fc4b2fab828a99421859268fd5484a8000922ad226bb",
+      "bytes": 264
+    }
+  },
+  "utc_progress": [
+    "2026-11-24T16:07:17Z PREFLIGHT BEGIN",
+    "2026-11-24T16:07:31Z ALL 11 SOURCE DIGESTS MATCH",
+    "2026-11-24T16:07:31Z CONFIGURE BEGIN",
+    "2026-11-24T16:08:02Z CONFIGURE PASSED; BUILD BEGIN (CPU 0, -j1, AARCH64 ONLY)",
+    "2026-11-24T16:14:38Z NINJA PASSED",
+    "2026-11-24T16:14:39Z REQUIRED EXPORTED APIS PRESENT; DONE",
+    "2026-11-24T16:14:39Z EXIT 0"
+  ],
+  "release_context": "The known model uses the stock guest and is identifiable by its SHA; future matched instrumentation uses the separate new model digest.",
+  "pending": [
+    "independent build-identity review",
+    "plugin-off/on guest comparison on this exact new binary",
+    "positive checkpoint/SGIR ordering",
+    "physical hardware evaluation"
+  ]
+}
