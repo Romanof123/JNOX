@@ -38,3 +38,28 @@ B는 환경 변수를 설정하지 않는다. E/F는 빌드 시 각각 eoi/frame
 The aligned-wake baseline failed the required load-image identity check. Zero of the twelve planned guests launched. [First reservation stage preflight](evidence/reservation-stage-first.en.md)
 
 정렬 깨움 기준 이미지가 필수 로드 이미지 동일성 검사를 통과하지 못했다. 예정된 게스트 12건 중 실행은 0건이다. [첫 예약 단계 사전 검사](evidence/reservation-stage-first.md)
+
+## First preflight and correction / 최초 사전 비교 및 수정
+
+[First preflight evidence](evidence/reservation-stage-first.en.md) · [최초 사전 검사 증거](evidence/reservation-stage-first.md)
+
+The first aligned-W B load-image comparison stopped before any guest launch. The historical and freshly built parent ELF both hash to 7cfa99d34389ee71a8e55bc65e1e89dfd75f2e4abcdea017ffef51132e89fbb4. Candidate B hashes to f6ae56af318136323ef5d7d8356719bed5d5d34c959533f2b8e3cd2597876a4e. Both executable sections contain 23,864 identical bytes at 0x40200000. The writable load segments also match. The read-only load segment differs at ten bytes. The original baseline.txt, loads.txt, maps, disassemblies, ELFs and SHA256SUMS belong to the rejected first preflight. Preserve them separately from subsequent comparisons.
+
+The retained section tables contain no DWARF. Decoding the 24-byte little-endian filename-pointer, filename-length, line and column records at each mismatch identifies Rust source locations. All ten filename slices equal src\ordinary_reservations.rs, and all ten columns match. For example, the parent disassembly at 0x40202674 addresses the record at 0x40205e00, whose line word begins at 0x40205e10.
+
+| Address of changed byte | Parent → candidate line | Column |
+|---|---|---:|
+| 0x40205e10 | 146 → 151 | 17 |
+| 0x40205e40 | 741 → 748 | 24 |
+| 0x40205e58 | 599 → 604 | 13 |
+| 0x40205e70 | 855 → 862 | 16 |
+| 0x40205e88 | 909 → 916 | 21 |
+| 0x40205eb8 | 286 → 291 | 13 |
+| 0x40205ed0 | 296 → 301 | 9 |
+| 0x40205ee8 | 238 → 243 | 19 |
+| 0x40205f00 | 259 → 264 | 9 |
+| 0x40205ff8 | 614 → 619 | 26 |
+
+Keep the original module filename and line layout. Wrap four existing expressions in compile-time macros whose baseline expansions reproduce the original expressions. Keep the E/F-only code in a separate file. Record the hook source and each actual ELF. Repeat the complete frozen baseline and instruction checks for both selectors in a new evidence directory before any guest. A missing or changed load byte stops the study.
+
+첫 aligned-W B 준비에서 실행 코드와 주소는 일치했으나 읽기 전용 적재 영역 10바이트가 달라 게스트 실행 전에 중단했다. 보존 ELF에는 DWARF가 없으며, 위 주소에서 파일명·길이·행·열을 해독해 같은 파일의 행 번호만 달라진 것을 확인했다. 최초 거부 ELF, 해시, 맵 및 비교 로그는 원본으로 보존한다. 원래 소스 파일 경로와 행 배치를 복원한다. 기존 표현식 네 곳을 매크로로 감싸고 B에서는 원래 표현식으로 확장한다. E/F 전용 코드는 별도 파일에 둔다. 두 선택자의 전체 적재 바이트와 실제 명령 검증을 새 디렉터리에서 다시 수행한다. 최초 시도와 수정 결과는 별도 기록한다.
