@@ -1,4 +1,4 @@
-"""Check the AArch64 boot or scheduler UART transcript in fresh full-system QEMU guests."""
+"""Check an AArch64 UART transcript in fresh full-system QEMU guests."""
 
 import argparse
 import hashlib
@@ -14,13 +14,24 @@ import time
 
 
 BOOT_TRANSCRIPT = b"JNOX M1 BOOT\nJNOX M1 READY\n"
-SCHEDULER_TRANSCRIPT = BOOT_TRANSCRIPT + (
+SCHEDULER_START = BOOT_TRANSCRIPT + (
     b"SCHED LOW RUN\n"
     b"SCHED TIMER IRQ\n"
+)
+SCHEDULER_TRANSCRIPT = SCHEDULER_START + (
     b"SCHED HIGH RUN\n"
     b"SCHED LOW RESUMED\n"
     b"SCHED PASS\n"
 )
+FIFO_TRANSCRIPT = SCHEDULER_START + (
+    b"FIFO A FIRST\n"
+    b"FIFO B FIRST\n"
+    b"FIFO A RESUMED\n"
+    b"FIFO B RESUMED\n"
+    b"SCHED LOW RESUMED\n"
+    b"SCHED PASS\n"
+)
+TRANSCRIPTS = {"boot": BOOT_TRANSCRIPT, "scheduler": SCHEDULER_TRANSCRIPT, "fifo": FIFO_TRANSCRIPT}
 QUIET_SECONDS = 0.1
 
 
@@ -114,14 +125,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kernel", type=Path, required=True, help="AArch64 kernel ELF")
     parser.add_argument("--qemu", default="qemu-system-aarch64", help="QEMU executable (default: %(default)s)")
-    parser.add_argument("--profile", choices=("boot", "scheduler"), default="boot",
-                        help="check M1 boot markers or the GICv2 scheduler sequence (default: %(default)s)")
-    parser.add_argument("--runs", type=int, help="fresh sequential QEMU boots (default: boot 2, scheduler 1)")
+    parser.add_argument("--profile", choices=TRANSCRIPTS, default="boot",
+                        help="expected UART transcript (default: %(default)s)")
+    parser.add_argument("--runs", type=int, help="fresh sequential QEMU boots (default: boot 2, scheduler/fifo 1)")
     parser.add_argument("--timeout", type=float, default=5, metavar="SECONDS",
                         help="UART deadline per boot, followed by a 0.1s quiet window (default: %(default)s)")
     args = parser.parse_args()
-    scheduler = args.profile == "scheduler"
-    runs = args.runs if args.runs is not None else (1 if scheduler else 2)
+    boot = args.profile == "boot"
+    runs = args.runs if args.runs is not None else (2 if boot else 1)
     if runs < 1:
         parser.error("--runs must be positive")
     if not math.isfinite(args.timeout) or args.timeout <= 0:
@@ -130,8 +141,8 @@ def main():
     try:
         kernel = args.kernel.resolve(strict=True)
         expected_hash = kernel_sha256(kernel)
-        machine = "virt,gic-version=2" if scheduler else "virt"
-        expected = SCHEDULER_TRANSCRIPT if scheduler else BOOT_TRANSCRIPT
+        machine = "virt" if boot else "virt,gic-version=2"
+        expected = TRANSCRIPTS[args.profile]
         command = [
             args.qemu, "-machine", machine, "-cpu", "cortex-a72", "-smp", "1",
             "-accel", "tcg", "-m", "128M", "-nodefaults", "-display", "none",

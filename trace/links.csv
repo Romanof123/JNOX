@@ -164,3 +164,10 @@ IMP-002,partially-verified-by,VER-005
 IMP-002,tested-in,EVD-002
 VER-002,has-partial-evidence,EVD-002
 VER-005,has-partial-evidence,EVD-002
+CHG-003,affects,REQ-002
+CHG-003,affects,REQ-005
+DES-003,implemented-by,IMP-003
+REQ-002,partially-implemented-by,IMP-003
+REQ-005,partially-implemented-by,IMP-003
+IMP-003,partially-verified-by,VER-002
+IMP-003,partially-verified-by,VER-005

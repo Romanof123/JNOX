@@ -6,6 +6,8 @@ use core::panic::PanicInfo;
 use core::ptr;
 
 #[cfg(feature = "sched-bench")]
+mod ready_queue;
+#[cfg(feature = "sched-bench")]
 mod sched;
 
 static mut BSS_PROBE: u64 = 0;
