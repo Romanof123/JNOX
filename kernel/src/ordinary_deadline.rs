@@ -164,6 +164,48 @@ impl Runtime {
             }
         }
     }
+    #[cfg(jnox_deadline_owner_cap)]
+    fn score_owner_windows(&self) {
+        let rows = unsafe { &*(&raw const ordinary_deadline_rows) };
+        let rows = &rows[..self.len];
+        let mut peak_events = 0;
+        let mut peak_changes = 0;
+        let mut total_changes = 0;
+        let mut first = 0;
+        let mut changes = 0;
+        for (i, row) in rows.iter().enumerate() {
+            let e = &row.event;
+            let returns = i + 1 < rows.len();
+            let changed = returns && e[9] != e[10];
+            if returns {
+                let following = &rows[i + 1].event;
+                if following[9] != e[10] || following[6] < e[8] || following[6] > following[7] {
+                    self.stop()
+                }
+            }
+            changes += usize::from(changed);
+            total_changes += usize::from(changed);
+            // Any set of entries with last-first < Q fits in a full window
+            // inside the observed domain, including at either domain edge.
+            while e[7] - rows[first].event[7] >= self.q {
+                let old = &rows[first].event;
+                changes -= usize::from(old[9] != old[10]);
+                first += 1;
+            }
+            let events = i + 1 - first;
+            peak_events = peak_events.max(events);
+            peak_changes = peak_changes.max(changes);
+            line(b"OWNER_EVENT", &[i as i128, e[0] as i128, e[7] as i128,
+                e[9] as i128, e[10] as i128, returns as i128, changed as i128,
+                events as i128, changes as i128]);
+        }
+        let bound = jobs::owner_window_bound(self.q, HORIZON + 1, self.q, self.jobs.len() as u64).unwrap();
+        line(b"OWNER_PEAK", &[rows.len() as i128, total_changes as i128, peak_events as i128,
+            peak_changes as i128, bound as i128]);
+        if peak_events as u64 > bound || peak_changes as u64 > bound {
+            fail()
+        }
+    }
     fn stop(&self) -> ! {
         self.log();
         fail()
@@ -292,11 +334,18 @@ impl Runtime {
         {
             self.stop()
         }
+        #[cfg(jnox_deadline_owner_cap)]
+        if missed != 0 || handler < entry
+            || self.jobs.iter().any(|j| !self.done[j.id] && entry >= self.at(j.deadline)) {
+            self.stop()
+        }
         if self.jobs.iter().all(|j| self.done[j.id]) {
             disable();
-            if cfg!(jnox_deadline_trace) {
+            if cfg!(any(jnox_deadline_trace, jnox_deadline_owner_cap)) {
                 self.log();
             }
+            #[cfg(jnox_deadline_owner_cap)]
+            self.score_owner_windows();
             if SUPPLY_PROFILE {
                 let rows = unsafe { &*(&raw const ordinary_deadline_rows) };
                 let progress_at = |out, owner| {
@@ -410,6 +459,8 @@ pub fn run() -> ! {
     let q = hz / 10;
     let s = counter().checked_add(q).unwrap();
     let full = jobs::admit(policy, jobs, hz, s);
+    #[cfg(jnox_deadline_owner_cap)]
+    let full_ok = full.is_ok();
     let decision = if SUPPLY_PROFILE {
         line(
             b"SUPPLY",
@@ -461,6 +512,25 @@ pub fn run() -> ! {
         }
     } else if refused != 0 {
         fail()
+    }
+    #[cfg(jnox_deadline_owner_cap)]
+    {
+        let ceiling: u64 = env!("JNOX_OWNER_CEILING").parse().unwrap();
+        if !full_ok {
+            fail()
+        }
+        let bound = jobs::owner_window_bound(q, HORIZON + 1, q, jobs.len() as u64).unwrap();
+        let admitted = ceiling >= bound;
+        line(b"OWNER_CAP", &[s as i128, jobs::absolute(s, q, HORIZON + 1).unwrap() as i128,
+            q as i128, jobs.len() as i128, bound as i128, ceiling as i128, admitted as i128]);
+        line(b"OWNER_PRELAUNCH", &[jobs::PROGRESS[0].load(Ordering::Relaxed) as i128,
+            jobs::PROGRESS[1].load(Ordering::Relaxed) as i128,
+            SERVICE_SUM.load(Ordering::Relaxed) as i128,
+            unsafe { ptr::read_volatile(&raw const ordinary_deadline_row_count) } as i128]);
+        if !admitted {
+            uart_write(b"ORDINARY OWNER CAP REFUSED BEFORE LAUNCH\n");
+            park()
+        }
     }
     let mut frames = [ptr::null_mut(); CONTEXTS];
     if SUPPLY_PROFILE {
