@@ -47,3 +47,5 @@ COOP PASS
 ```
 
 Require all thirteen lines, LF or CRLF, followed by 0.1 seconds of silence and successful host stop. Retain the ELF hash, arguments, PID, UART and exception log from the same launch. Map the IRQ and five SVCs to the retained ELF. Inspect the interrupted and resumed PCs, task frames, wake target, queue operations and handler return path. UART alone cannot establish these transitions. Host-only observer controls should reject missing, reordered and trailing output. EVD-012 covers functional behavior in this guest. Physical board execution and timing bounds require separate evidence.
+
+[EVD-012](evidence/evd-012.en.md)

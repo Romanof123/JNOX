@@ -476,3 +476,9 @@ POL-001,partially-implemented-by,IMP-012
 IMP-012,partially-verified-by,VER-023
 IMP-012,partially-verified-by,VER-002
 IMP-012,partially-verified-by,VER-005
+IMP-012,tested-in,EVD-012
+POL-001,has-switch-evidence,EVD-012
+VER-023,has-partial-evidence,EVD-012
+VER-002,has-partial-evidence,EVD-012
+VER-005,has-partial-evidence,EVD-012
+CAP-001,has-partial-evidence,EVD-012
