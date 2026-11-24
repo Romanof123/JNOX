@@ -390,3 +390,28 @@ fn nine_timer_boundaries_preserve_each_reserved_slot_through_distinct_failure_mo
         );
     }
 }
+
+#[test]
+fn normal_mailbox_yield_and_completed_delegates_preserve_the_reserved_window() {
+    let reservation = Reservation { task: 0, period: 3, offset: 2, ticks: 1 };
+    let mut ext = Extension::new(reservation, 0, 0, 2).unwrap();
+    let producer = Proposal { task: 2, generation: 17, cpu: 0, ticks: 1 };
+    let program = [Op::IfReady { task: 2, yes: 1, no: 2 }, Op::Propose(producer), Op::Yield];
+    let mut jobs = [7, 11, 17].map(|generation| DelegatedTask {
+        generation, ready: true, allowed_cpus: 1, grant_limit: 1,
+    });
+    let mut progress = 0;
+    for slot in 0..9 {
+        let phase = slot % 3;
+        jobs[1].ready = phase == 1;
+        jobs[2].ready = phase != 1 && slot < 8;
+        progress += u64::from(phase != 2);
+        let choice = ext.decide(slot, progress, &jobs, 1, 1, &program, 5);
+        let (reason, id, steps) = [(Reason::Accepted, 2, 2), (Reason::Yielded, 1, 2),
+                                   (Reason::Reserved, 0, 0)][phase as usize];
+        assert_eq!(choice.reason, reason);
+        assert_eq!(choice.steps, steps);
+        let grant = choice.selected.unwrap();
+        assert_eq!((grant.task, grant.generation, grant.cpu, grant.ticks), (id, jobs[id].generation, 0, 1));
+    }
+}

@@ -28,6 +28,7 @@ const VALID: Proposal = Proposal {
     cpu: 0,
     ticks: 1,
 };
+#[cfg(not(feature = "extension-normal-jobs"))]
 const LIVE: [Op; 2] = [
     Op::IfReady {
         task: 2,
@@ -36,13 +37,26 @@ const LIVE: [Op; 2] = [
     },
     Op::Propose(VALID),
 ];
+#[cfg(not(feature = "extension-normal-jobs"))]
 const OUTSIDE: [Op; 1] = [Op::Propose(Proposal { cpu: 1, ..VALID })];
+#[cfg(not(feature = "extension-normal-jobs"))]
 const STALE: [Op; 1] = [Op::Propose(Proposal {
     generation: 16,
     ..VALID
 })];
+#[cfg(not(feature = "extension-normal-jobs"))]
 const EXCESS: [Op; 1] = [Op::Jump(0)];
 
+#[cfg(feature = "extension-normal-jobs")]
+#[path = "extension_normal_jobs.rs"]
+mod jobs;
+
+#[cfg(feature = "extension-normal-jobs")]
+fn program(_: usize) -> &'static [Op] {
+    &[Op::IfReady { task: 2, yes: 1, no: 2 }, Op::Propose(VALID), Op::Yield]
+}
+
+#[cfg(not(feature = "extension-normal-jobs"))]
 fn program(slot: usize) -> &'static [Op] {
     match slot {
         0 => &LIVE,
@@ -53,6 +67,15 @@ fn program(slot: usize) -> &'static [Op] {
     }
 }
 
+#[cfg(feature = "extension-normal-jobs")]
+fn tasks(_: usize) -> [DelegatedTask; 3] {
+    let occupied = jobs::occupied();
+    [(7, true), (11, occupied), (17, jobs::producer_ready())].map(|(generation, ready)| DelegatedTask {
+        generation, ready, allowed_cpus: 1, grant_limit: 1,
+    })
+}
+
+#[cfg(not(feature = "extension-normal-jobs"))]
 fn tasks(slot: usize) -> [DelegatedTask; 3] {
     [7, 11, 17].map(|generation| DelegatedTask {
         generation,
@@ -89,6 +112,7 @@ global_asm!(
     fpcr = const offset_of!(Frame, fpcr), tpidr_el1 = const offset_of!(Frame, tpidr_el1),
     tpidr_el0 = const offset_of!(Frame, tpidr_el0), simd = const offset_of!(Frame, simd),
     irq = sym timer_irq, svc = sym fail, fail = sym fail, evaluate = sym evaluate,
+    normal = const cfg!(feature = "extension-normal-jobs") as usize,
     epoch = sym EPOCH, observed = sym FIRST_WORK,
 );
 
@@ -304,6 +328,9 @@ impl Bench {
                 None
             }
         });
+        // Normal proposals are emitted only on the ready producer branch.
+        #[cfg(feature = "extension-normal-jobs")]
+        let p = p.filter(|_| snapshot[2].ready && self.slot as u64 % RESERVATION.period != RESERVATION.offset);
         self.row = Sample {
             slot: self.slot as u64,
             ready_mask: snapshot
@@ -321,7 +348,7 @@ impl Bench {
             return self.run_service(decision);
         }
         self.current = EVALUATOR;
-        let entry = if self.slot >= 6 {
+        let entry = if !cfg!(feature = "extension-normal-jobs") && self.slot >= 6 {
             ext_eval_stopped
         } else {
             ext_eval_live
@@ -359,7 +386,7 @@ impl Bench {
     fn finish_eval(&mut self, frame: *mut Frame, compare: u64, irq: u64, ppi: u64) -> *mut Frame {
         require(compare == self.row.eval_cval && compare <= irq);
         let reply = unsafe { ptr::read_volatile(&raw const REPLY) };
-        let stopped = self.slot >= 6;
+        let stopped = !cfg!(feature = "extension-normal-jobs") && self.slot >= 6;
         // The watchdog fixture is a real non-returning branch. A complete
         // reply waits in an interruptible loop. An incomplete VM has no
         // committable state, even if the timer caught a Rust stack frame.
@@ -456,6 +483,7 @@ impl Bench {
 }
 
 // Print once all timed windows have retired so PL011 cannot alter their timing.
+#[cfg(not(feature = "extension-normal-jobs"))]
 fn report() {
     let mut reserved = 0;
     for i in 0..SLOTS {
@@ -484,6 +512,20 @@ fn report() {
     uart_write(b"EXTENSION RESERVED THREE\nEXTENSION PASS\n");
 }
 
+#[cfg(feature = "extension-normal-jobs")]
+fn report() {
+    require(jobs::complete());
+    uart_write(b"EXTENSION MAILBOX THREE\nEXTENSION RESERVED THREE\nEXTENSION NORMAL PASS\n");
+}
+
+#[cfg(feature = "extension-normal-jobs")]
+const EXPECTED: [(Reason, u64, u64); SLOTS] = [
+    (Reason::Accepted, 2, 2), (Reason::Yielded, 1, 2), (Reason::Reserved, 0, 0),
+    (Reason::Accepted, 2, 2), (Reason::Yielded, 1, 2), (Reason::Reserved, 0, 0),
+    (Reason::Accepted, 2, 2), (Reason::Yielded, 1, 2), (Reason::Reserved, 0, 0),
+];
+
+#[cfg(not(feature = "extension-normal-jobs"))]
 const EXPECTED: [(Reason, u64, u64); SLOTS] = [
     (Reason::Accepted, 2, 2),
     (Reason::Rejected, 1, 1),

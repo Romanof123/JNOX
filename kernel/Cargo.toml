@@ -25,6 +25,7 @@ eevdf-dynamic-bench = []
 hierarchy-bench = []
 power-bench = []
 extension-bench = []
+extension-normal-jobs = ["extension-bench"]
 # Live partition windows take precedence over CBS and older benches.
 partition-bench = []
 partition-legacy-diag = ["partition-bench"]
