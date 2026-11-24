@@ -101,4 +101,4 @@ CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at 
 
 POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under DM, then repeated A at tick 10 and B at tick 12 in both epochs. [EVD-033](evidence/evd-033.en.md)
 
-[POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / planned EVD-039 (#85).
+[POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).

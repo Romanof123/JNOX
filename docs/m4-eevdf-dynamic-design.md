@@ -1,6 +1,6 @@
 # POL-012 live configuration / 실행 중 설정 변경
 
-CHG-041 · IMP-039 · planned EVD-039 · #85
+CHG-041 · IMP-039 · [EVD-039 (English)](evidence/evd-039.en.md) · [EVD-039 (한국어)](evidence/evd-039.md) · #85
 
 One vCPU executes 256 consecutive one-unit physical timer grants (CNTFRQ/100 ticks, integer division). A/B stay runnable. A/B/C initially have weights 2/2/1 and slices 1/1/1. After each of its first 20 grants C executes SVC #1. After 1,2,3,4 intervening grants cyclically the scheduler wakes C. One policy and one cumulative service account span every transition.
 

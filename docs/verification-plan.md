@@ -84,4 +84,4 @@ POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택�
 
 [EVD-034](evidence/evd-034.md) 에서 고정 가중치·슬라이스의 할당 128회와 기상 지연 16회를 독립 재구성했다. [반복 기상 설계](m4-eevdf-wake-design.md)
 
-[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / 계획 EVD-039 (#85).
+[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).

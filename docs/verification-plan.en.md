@@ -84,4 +84,4 @@ POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under D
 
 [EVD-034](evidence/evd-034.en.md) reconstructs service error across 128 grants and 16 wake delays at fixed weights and slices. [Repeated-wake design](m4-eevdf-wake-design.md)
 
-[POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / planned EVD-039 (#85).
+[POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).

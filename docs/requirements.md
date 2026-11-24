@@ -35,4 +35,4 @@
 
 [제품 기획](product-plan.md) · [안전·보안 개념](safety-security-concept.md) · [추적 링크](../trace/links.csv)
 
-[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / 계획 EVD-039 (#85).
+[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).

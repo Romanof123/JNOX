@@ -136,4 +136,4 @@ CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 �
 
 POL-012의 선택형 단일 코어 워크로드는 하나의 EEVDF 정책 인스턴스에서 타이머 IRQ와 SVC로 반복 기상을 수행한다. [반복 기상 설계](m4-eevdf-wake-design.md) [EVD-034](evidence/evd-034.md)
 
-[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / 계획 EVD-039 (#85).
+[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
