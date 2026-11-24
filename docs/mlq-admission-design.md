@@ -62,3 +62,5 @@ QEMU uses virt,gic-version=2, Cortex-A72, -smp 1, TCG, 128M, -nodefaults, no dis
 바이너리는 리틀엔디언 u64 30개(240바이트)이다. 위 표의 0..26번 필드에 이어 27은 실패 단계, 28은 대상의 결과 수령값, 29는 수령 후 완료한 블록 번호이다. 승인 성공은 상태 4, UART 완료 및 유휴 PC를 함께 확인한다. 정상 거부는 상태 2와 작업 시작 전의 0 필드, 거부 UART로 구분한다. 상태 0·1·3은 미완료이며 상태 5는 전제 위반이다. 실패 시 audit.bin, registers.txt, uart.bin, result.json과 진단 빌드의 trace.bin을 함께 확인한다. 캡처 도구 자체가 시작하지 못한 경우 파일 일부가 없을 수 있다.
 
 [Original first assessment / 최초 판정](evidence/strict-class-first-service-first.en-ko.md) · [Corrected witness and real timer result / 수정 후 최초 관측](evidence/strict-class-first-service-corrected.en-ko.md).
+
+[EVD-099 English](evidence/evd-099.en.md) · [한국어](evidence/evd-099.md).
