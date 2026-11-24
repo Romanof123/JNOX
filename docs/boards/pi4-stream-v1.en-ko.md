@@ -17,3 +17,9 @@ Use `python3 tools/pi4_migration_capture.py freeze CASE DIR ELF IMG DISASM QEMU 
 기존 Linux 환경에서 세 배치별 ELF와 이미지, 역어셈블리를 먼저 고정한다. 독립 재생은 zlib로 모든 블록 CRC를 다시 계산한다. 기본 빌드와 기존 캡처는 원래 합산 앱으로 재생한다.
 
 [First build and freeze results / 최초 빌드 및 고정 결과](../evidence/pi4-crc-stream-first-builds.en-ko.md).
+
+## #225 selector correction / 빌드 선택 조건 수정
+
+At c2ef996 all three stream builds stopped at the Pi 4 linker allowlist. The three sum controls built and froze. Zero stream positions launched. Accept the sole stream feature for the global, partitioned and clustered Pi 4 SMP applications through both the profile and board checks. Exercise the real Cargo selectors for the valid cases, the corresponding legacy controls, and invalid board, application and mixed-feature requests. Preserve the documented selector-free virt cooperative image for the complete Cargo feature set, where the stream is inactive. The existing stream payload, deadlines, linked loop and replay criteria apply to the new candidate.
+
+c2ef996에서 스트림 빌드 세 건은 보드 링커 선택 단계에서 거부됐다. 기존 합산 앱 세 건은 빌드·고정됐고 스트림 실행은 0건이었다. Pi 4 SMP의 전역·파티션·클러스터 앱에서만 스트림을 선택한다. Cargo의 실제 설정 경로에서 세 앱, 기존 합산 앱, 잘못된 보드·앱·기능 조합을 검사한다. 기존 virt 전체 기능 조합에서는 협력형 앱을 선택한다. 최초 실패 기록과 기존 CRC·PC·시간 제한을 유지한다.
