@@ -480,9 +480,9 @@ extern "C" fn control(
                 core::hint::spin_loop()
             }
         }
-        control_locked(|| {
+        let needs_final_check = control_locked(|| {
             if state().missed.is_some() {
-                final_check()
+                return true;
             }
             app::check(index, step);
             let finish = now();
@@ -490,7 +490,12 @@ extern "C" fn control(
             if finish < target || finish - target > step * 2 / 5 {
                 state().timing_fault(7)
             }
+            false
         });
+        if needs_final_check {
+            // final_check exits via SVC; finish the current guard first.
+            final_check()
+        }
         if phase == 0 {
             #[cfg(not(jnox_control_markers))]
             unsafe { asm!("svc #1", options(nostack)) }
