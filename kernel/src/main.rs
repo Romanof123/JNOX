@@ -15,7 +15,13 @@ mod amc_policy;
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
 mod batch;
-#[cfg(jnox_bench = "batch")]
+#[cfg(jnox_batch)]
+mod batch_runtime;
+#[cfg(jnox_batch)]
+mod batch_app;
+#[cfg(jnox_batch_trace)]
+mod batch_trace;
+#[cfg(any(jnox_batch, jnox_bench = "batch"))]
 mod batch_policy;
 #[cfg(jnox_bench = "cbs")]
 mod cbs;
@@ -35,7 +41,7 @@ mod coop_service;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_fixed, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_fixed, jnox_batch, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -48,6 +54,7 @@ mod deadline_policy;
     jnox_bench = "rr",
     jnox_bench = "periodic",
     jnox_bench = "batch",
+    jnox_batch,
     jnox_bench = "periodic_overrun"
 ))]
 mod dispatch_policy;
@@ -102,6 +109,7 @@ mod proportional_policy;
     jnox_bench = "rr",
     jnox_bench = "periodic",
     jnox_bench = "batch",
+    jnox_batch,
     jnox_fixed,
     jnox_bench = "deadline",
     jnox_bench = "coop",
@@ -156,11 +164,13 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(jnox_fixed)]
     fixed_apps::run();
-    #[cfg(not(jnox_fixed))]
+    #[cfg(jnox_batch)]
+    batch_app::run();
+    #[cfg(not(any(jnox_fixed, jnox_batch)))]
     run_bench()
 }
 
-#[cfg(not(jnox_fixed))]
+#[cfg(not(any(jnox_fixed, jnox_batch)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

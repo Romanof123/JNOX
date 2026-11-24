@@ -103,3 +103,5 @@ CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at 
 POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under DM, then repeated A at tick 10 and B at tick 12 in both epochs. [EVD-033](evidence/evd-033.en.md)
 
 POL-010 · Forced first-grant rejection and two passing controls. [EVD-035](evidence/evd-035.en.md)
+
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)

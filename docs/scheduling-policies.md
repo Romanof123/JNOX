@@ -103,3 +103,5 @@ CHG-032 / IMP-030은 빌드 때 단일 코어 런타임과 정적 Rust 작업 �
 POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택했고 두 구간 모두 10틱에 A, 12틱에 B를 다시 실행했다. [EVD-033](evidence/evd-033.md)
 
 POL-010 · 최초 실행권 강제 거부 및 대조군 두 건 통과. [EVD-035](evidence/evd-035.md)
+
+POL-003 / IMP-037. SJF·SRTF·HRRN에서 일반 부팅 6회와 진단 부팅 3회가 통과했으며 진단 기록의 결정 60개를 독립 재현했다. [EVD-037](evidence/evd-037.md)

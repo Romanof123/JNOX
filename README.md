@@ -19,6 +19,7 @@ English · [한국어](README.ko.md)
 | [M1 timer preemption](docs/m1-scheduler.en.md) | Criteria for observing the timer interrupt, higher-priority dispatch and interrupted thread resumption in one boot |
 | [M1 equal-priority FIFO](docs/m1-fifo.en.md) | Acceptance criteria for ready order, voluntary yield and resumption of equal-priority threads |
 | [Run linked Rust tasks](docs/fixed-runtime.en.md) | Build the AArch64 fixed-priority runtime, select an application table and boot it with FIFO or round robin |
+| [Run ordinary Rust batch jobs](docs/ordinary-batch.en.md) | Submit and release jobs, compare SJF/SRTF/HRRN and recover linked frames from a QEMU capture |
 | [Scheduling policies and round robin](docs/scheduling-policies.en.md) | Selection, budget and isolation contracts, with execution evidence by policy |
 | [IPC profiles](docs/ipc-mechanisms.en.md) | Ten IPC families, their resource limits and acceptance cases after scheduling qualification |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |

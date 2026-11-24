@@ -139,3 +139,11 @@ The opt-in POL-012 workload repeatedly blocks and wakes a linked worker through 
 CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
 
 [Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
+
+## CHG-039 / IMP-037 — ordinary batch submission
+
+On one virt EL1 CPU a trusted Rust task submits a function, argument and estimated service through a synchronous exception. Each admitted job owns one of four private stacks, an opaque generation handle and a slot in the existing batch scheduler. Elapsed CNTPCT ticks charge the incumbent between decision samples, including interrupt and dispatch overhead in that interval. A task supplies its estimate and relative release delay in the same ticks. CNTP_CVAL targets the earliest outstanding release. At service time all due jobs enter in deadline/admission order and waiting age includes time since the contractual deadline. A delayed IRQ can increase charged service and delay the observed release. New arrivals trigger an immediate decision. SRTF can suspend the caller at an immediate submission or timer IRQ during ordinary task work and restore its exception frame after a shorter job completes. SJF and HRRN retain the incumbent. Equal waiting ranks follow admission order. An unfinished job retains at least one remaining unit even after exceeding its estimate. The application reports its own activity independently of selection.
+
+The application profile selects batch-sjf, batch-srtf or batch-hrrn. Admission accepts positive u32-sized service estimates. Full capacity, invalid estimates, stale completion and time overflow must leave live work intact. Four 16 KiB task stacks plus a dedicated 16 KiB idle stack bound this configuration. Physical timing, hardware measurements, WCET and product capacity limits require separate evidence.
+
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)

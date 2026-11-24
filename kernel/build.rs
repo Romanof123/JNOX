@@ -12,6 +12,11 @@ fn selector(key: &str) -> Option<String> {
 fn main() {
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
+    println!("cargo::rustc-check-cfg=cfg(jnox_batch_trace)");
+    if let Some(value) = selector("JNOX_BATCH_TRACE") {
+        assert!(value == "1" && profile.as_deref() == Some("batch"), "JNOX_BATCH_TRACE=1 requires batch profile");
+        println!("cargo::rustc-cfg=jnox_batch_trace");
+    }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
     if let Some(value) = trace.as_deref() {
@@ -22,8 +27,9 @@ fn main() {
         );
         println!("cargo::rustc-cfg=jnox_fixed_trace");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_batch)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_fixed)"#);
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed", "fixed-ties", "fixed-late", "coop-events", "coop-single"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed", "fixed-ties", "fixed-late", "coop-events", "coop-single", "batch-sjf", "batch-srtf", "batch-hrrn"))"#);
     println!("cargo::rerun-if-env-changed=JNOX_BOARD");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
@@ -86,8 +92,18 @@ fn main() {
                 _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, fixed-delayed, fixed-ties, fixed-late, coop-events, or coop-single"),
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed"),
+        Some("batch") => {
+            assert!(board == "virt" && bench == "boot", "ordinary batch requires virt and no bench features");
+            match app.as_deref() {
+                Some(name @ ("batch-sjf" | "batch-srtf" | "batch-hrrn")) => {
+                    println!("cargo::rustc-cfg=jnox_batch");
+                    println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
+                }
+                _ => panic!("batch profile requires batch-sjf, batch-srtf or batch-hrrn"),
+            }
+        }
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed or batch"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed or batch"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",
