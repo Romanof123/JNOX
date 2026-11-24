@@ -13,3 +13,5 @@ Per-CPU exception logs show M’s terminal SVC on CPU0 and the opening P1 SVC on
 The synthetic host control passed. All seven mutations were rejected when changing count, digest, index, sum, lease or reserved field, or removing a summary. The archive includes offline replay instructions and original/public hash provenance.
 
 [MG2 contract](../boards/pi4-smp-migration.en.md) · [MG1](pi4-migration-first.en.md) · [JSON](pi4-migration-mg2-first.json) · [ZIP](pi4-migration-mg2-first.zip)
+
+[Integrated image verification / 통합 이미지 검증](pi4-mg2-integrated.en-ko.md)
