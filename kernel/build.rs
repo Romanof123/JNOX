@@ -36,6 +36,13 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_dm)"#);
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_case, values("handoff-healthy", "handoff-loss", "healthy", "loss", "late", "demand", "worst", "tie", "early-command", "expired-command", "no-command", "missing-permit", "invalid", "silence", "saturation", "recovery", "old-generation"))"#);
     let scenario = selector("JNOX_CONTROL_CASE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_control_cold)");
+    if let Some(mode) = selector("JNOX_CONTROL_COLD") {
+        assert!(mode == "diagnostic" && profile.as_deref() == Some("periodic")
+            && scenario.as_deref() == Some("healthy"),
+            "JNOX_CONTROL_COLD requires diagnostic, periodic and explicit healthy");
+        println!("cargo::rustc-cfg=jnox_control_cold");
+    }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
     if let Some(value) = trace.as_deref() {

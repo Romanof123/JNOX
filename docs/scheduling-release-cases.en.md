@@ -55,4 +55,6 @@ CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-s
 
 POL-004 / IMP-042. v3 remains partial. Both deterministic exact boundaries qualified. Fourteen of 23 primary cases qualified on the first attempt and 15 including one cold retry. Eight default-clock ordinary cases and four separate default-clock handoff diagnostics remained unqualified. [EVD-042](evidence/evd-042.en.md)
 
+CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes initialized. After the input repair all 96 startup checks passed. Operational qualification was 0/128 in the repaired series. [EVD-050](evidence/evd-050.en.md)
+
 CHG-053 · [Ordinary control service and first dispatch / 일반 제어 서비스와 최초 디스패치](control-service-plan.md)
