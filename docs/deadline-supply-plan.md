@@ -26,3 +26,62 @@ The existing EDF admission visits each release/deadline interval in table order.
 [Independent first assessment / 독립 최초 결과](evidence/deadline-supply-first.en-ko.md) · [Corrective action / 시정 이슈 #254](https://github.com/Romanof123/JNOX/issues/254).
 
 [EVD-095 English](evidence/evd-095.en.md) · [한국어](evidence/evd-095.md).
+
+## Build, capture and replay / 빌드·원시 UART 수집·재생
+
+The normal supply interface uses the four JNOX_APP selectors below, raw UART and the supply replay. The separate independent deadline benchmark has its own fixed transcript in `tools/qemu_boot.py --profile deadline` beginning with `DEADLINE EDF A FIRST`.
+
+Run this Bash block from the repository root on Linux with GNU timeout, sha256sum, Python 3, the Rust aarch64-unknown-none target and qemu-system-aarch64 available. Start with the other JNOX selectors unset. Each invocation creates a fresh attempt directory, and each selector builds its plain and diagnostic ELF separately. The plain run uses an unset JNOX_DEADLINE_TRACE; the trace run sets it to 1.
+
+```bash
+(
+set -eu
+root=$(pwd -P)
+run=$(mktemp -d "${TMPDIR:-/tmp}/jnox-deadline-supply.XXXXXXXX")
+printf 'Capture directory: %s\n' "$run"
+git rev-parse HEAD > "$run/source-commit"
+result=0
+for mode in trace plain; do
+  for app in ordinary-edf-supply-refuse ordinary-llf-supply-refuse ordinary-edf-supply ordinary-llf-supply; do
+    out="$run/$app-$mode"
+    mkdir "$out"
+    export JNOX_BOARD=virt JNOX_PROFILE=deadline JNOX_APP="$app"
+    unset JNOX_DEADLINE_TRACE
+    flags=()
+    if [[ $mode == trace ]]; then
+      export JNOX_DEADLINE_TRACE=1
+    else
+      flags=(--plain)
+    fi
+    build_rc=0
+    (cd "$root/kernel" && CARGO_TARGET_DIR="$run/target" cargo build --locked --release -j1) > "$out/build.log" 2>&1 || build_rc=$?
+    echo "$build_rc" > "$out/build.rc"
+    if (( build_rc != 0 )); then result=1; continue; fi
+    cp "$run/target/aarch64-unknown-none/release/jnox-kernel" "$out/kernel.elf"
+    qemu_rc=0
+    timeout 10s qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 \
+      -accel tcg -smp 1 -m 128M -nographic -nic none -monitor none -serial stdio \
+      -d int -D "$out/exceptions.log" -kernel "$out/kernel.elf" \
+      < /dev/null > "$out/uart.raw" 2> "$out/qemu.stderr" || qemu_rc=$?
+    echo "$qemu_rc" > "$out/qemu.rc"
+    replay_rc=0
+    python3 "$root/tools/deadline_supply_replay.py" "$app" "$out/uart.raw" "${flags[@]}" \
+      > "$out/replay.json" 2> "$out/replay.stderr" || replay_rc=$?
+    echo "$replay_rc" > "$out/replay.rc"
+    (cd "$out" && sha256sum kernel.elf uart.raw > SHA256SUMS)
+    if (( qemu_rc != 124 || replay_rc != 0 )); then result=1; fi
+  done
+done
+exit "$result"
+)
+```
+
+A refused guest prints `ORDINARY DEADLINE REFUSED BEFORE LAUNCH`. Replay expects reason 8 for EDF or 9 for LLF. A corrected normal guest emits `A_STOP`, `A_PROGRESS`, `RESULT` and `ORDINARY DEADLINE FINISHED`. Both terminal paths park the CPU. GNU timeout normally returns 124 at the host limit even after successful completion. Read the guest verdict from the retained UART and replay status. Trace replay checks the individual D/J rows. For example, with RUN set to the printed capture directory:
+
+```bash
+python3 tools/deadline_supply_replay.py ordinary-edf-supply-refuse "$RUN/ordinary-edf-supply-refuse-plain/uart.raw" --plain
+python3 tools/deadline_supply_replay.py ordinary-llf-supply "$RUN/ordinary-llf-supply-plain/uart.raw" --plain
+python3 tools/deadline_supply_replay.py ordinary-llf-supply "$RUN/ordinary-llf-supply-trace/uart.raw"
+```
+
+위 명령은 각 시도의 ELF·원시 UART·예외 로그·빌드 및 호스트 종료 코드·재생 결과를 별도 디렉터리에 보존한다. 거부 코드와 정상 작업의 완료 여부는 원시 출력과 재생으로 판정한다. 완료 후에도 게스트가 대기하므로 호스트의 124는 관찰 시간 종료를 뜻한다. 독립 벤치마크의 고정 출력 검사는 `qemu_boot.py --profile deadline`으로 수행한다.
