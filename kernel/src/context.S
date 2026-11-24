@@ -65,6 +65,13 @@ sched_vectors:
     \op q30, q31, [sp, #({simd} + 480)]
 .endm
 
+    .ifdef JNOX_AP
+    .set JNOX_STAMP_X9, 1
+    .endif
+    .ifdef JNOX_ORDINARY_DEADLINE
+    .set JNOX_STAMP_X9, 1
+    .endif
+
 .macro handle callback
     sub sp, sp, #{frame_size}
     .ifdef JNOX_CONTROL
@@ -75,7 +82,7 @@ sched_vectors:
     str x0, [sp, #({simd} - 8)]
     ldp x0, x1, [sp]
     .endif
-    .ifdef JNOX_AP
+    .ifdef JNOX_STAMP_X9
     str x9, [sp, #72]
     isb
     mrs x9, cntpct_el0
@@ -100,7 +107,7 @@ sched_vectors:
     .ifdef JNOX_CONTROL
     ldr x1, [sp, #({simd} - 8)]
     .else
-    .ifndef JNOX_AP
+    .ifndef JNOX_STAMP_X9
     str xzr, [sp, #({simd} - 8)]
     .endif
     .endif
@@ -160,6 +167,19 @@ sched_start_frame:
     isb
     mrs x10, cntpct_el0
     str x10, [x9, #16]
+    .endif
+    .ifdef JNOX_ORDINARY_DEADLINE
+    adrp x9, deadline_restore_count
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, :lo12:deadline_restore_count]
+    .endif
+    .ifdef JNOX_WEIGHTED_TRACE
+    // Sample after SIMD and system restore, before restoring scratch GPRs.
+    isb
+    mrs x9, cntpct_el0
+    adrp x10, weighted_restore_counter
+    str x9, [x10, :lo12:weighted_restore_counter]
     .endif
     integer_pairs ldp
     ldr x30, [sp, #240]
