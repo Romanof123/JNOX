@@ -106,3 +106,5 @@ The first raspi4b FIFO and RR captures from #146 retain their original UART, ELF
 Replay both original captures with a separately identified host revision and retain its verdict beside the first rejection. Pin each input's hash and use the recorded ELF, image and manifest; collect no replacement boot. Require controls distinguishing a selected stack address from an executable target, a different valid executable target from the terminal symbol, and a changed continuation or missing causal progress. Keep the existing generation, phase, task, frame, ELF, footer and progress checks. Record a partial result if the required work was unobserved. Physical UART and independently traced hardware execution remain open. [Original #146 protocol and evidence disposition](https://github.com/Romanof123/JNOX/pull/146) · [Producer revision](https://github.com/Romanof123/JNOX/tree/c388505e576f3019966ae2c74215767097c6fc18) [First model evidence](../evidence/pi4-fixed-witness-first.en.md)
 
 [Integrated first boots, ordinary worker traces and engineering verdicts](../evidence/pi4-fixed-witness-integration.en.md)
+
+[RR completion data handoff after rotation](pi4-rr-handoff.en.md)
