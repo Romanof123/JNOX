@@ -317,6 +317,10 @@ struct Grant {
     acc: u64,
     deadline: u64,
 }
+enum ActiveGrant {
+    First(&'static Grant),
+    Ordinary(Grant),
+}
 struct FirstFrame {
     address: usize,
     pc: u64,
@@ -327,6 +331,7 @@ struct FirstFrame {
     accumulator: u64,
 }
 struct Prepared {
+    grant: Grant,
     setup_start: u64,
     decision: Decision,
     descriptor: u64,
@@ -538,7 +543,7 @@ struct Runtime {
     opened: u64,
     current: usize,
     frames: [*mut Frame; 3],
-    grant: Option<Grant>,
+    grant: Option<ActiveGrant>,
     target: u64,
     kind: u64,
     allocation_deadline: [u64; 2],
@@ -549,7 +554,7 @@ struct Runtime {
 }
 
 impl Runtime {
-    #[inline(always)]
+    #[inline(never)]
     fn validate_first_frame(&self, id: usize, expected: &FirstFrame) {
         let frame = self.frames[id];
         if frame.addr() != expected.address
@@ -608,6 +613,15 @@ impl Runtime {
                 .unwrap_or_else(|| unexpected())
         };
         let p = Prepared {
+            grant: Grant {
+                id,
+                action,
+                slot: 0,
+                ret: 1,
+                count: self.last_count[id],
+                acc: self.last_acc[id],
+                deadline: decision.after[id].d,
+            },
             setup_start: begin,
             decision,
             descriptor: 1
@@ -730,7 +744,7 @@ impl Runtime {
         let word = AUTHORITY.load(Ordering::Acquire);
         // Resolve through the read-back authority before accepting the debit.
         let observed = self
-            .ledger()
+            .ledger_at(word)
             .pending_grant()
             .map_or(NA, |(id, _)| id as u64);
         let post = now();
@@ -747,17 +761,8 @@ impl Runtime {
             finish(2, 5, 0, IDLE, post, p.epoch)
         }
         self.opened = 0;
-        let deadline = p.decision.after[id].d;
-        self.allocation_deadline[id] = deadline;
-        self.grant = Some(Grant {
-            id,
-            action,
-            slot: 0,
-            ret: 1,
-            count: self.last_count[id],
-            acc: self.last_acc[id],
-            deadline,
-        });
+        self.allocation_deadline[id] = p.grant.deadline;
+        self.grant = Some(ActiveGrant::First(&p.grant));
         GOAL[id].store(p.goal, Ordering::Release);
         ACTION[id].store(1 + action as u64, Ordering::Relaxed);
         FIRST[id].store(0, Ordering::Relaxed);
@@ -804,7 +809,10 @@ impl Runtime {
         if LATE {
             return &mut self.jobs;
         }
-        match AUTHORITY.load(Ordering::Acquire) {
+        self.ledger_at(AUTHORITY.load(Ordering::Acquire))
+    }
+    fn ledger_at(&mut self, word: u64) -> &mut Jobs {
+        match word {
             0 => &mut self.jobs,
             3 => self.destination.as_mut().unwrap_or_else(|| unexpected()),
             _ => unexpected(),
@@ -868,7 +876,7 @@ impl Runtime {
                 self.allocation_deadline[id] = d.after[id].d;
                 self.allocation_service[id] = 0;
             }
-            self.grant = Some(Grant {
+            self.grant = Some(ActiveGrant::Ordinary(Grant {
                 id,
                 action,
                 slot,
@@ -876,7 +884,7 @@ impl Runtime {
                 count,
                 acc,
                 deadline: d.after[id].d,
-            });
+            }));
             GOAL[id].store(
                 if action == Action::Long {
                     NA
@@ -910,7 +918,11 @@ impl Runtime {
         frame
     }
     fn close(&mut self, frame: *mut Frame, entry: u64, action: Action, syndrome: u64) {
-        let grant = self.grant.take().unwrap_or_else(|| unexpected());
+        let active = self.grant.take().unwrap_or_else(|| unexpected());
+        let grant = match &active {
+            ActiveGrant::First(sealed) => *sealed,
+            ActiveGrant::Ordinary(owned) => owned,
+        };
         let id = grant.id;
         let slot = grant.slot;
         if self.current != id || !within(id, frame.addr(), size_of::<Frame>()) {
