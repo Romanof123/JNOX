@@ -1,0 +1,25 @@
+# Independent combined verification / 결합 독립 검증
+
+Tested Romanof123/JNOX 7ef9df3176f57d4c693bb4b84859d93517962fba. Finite behavior PASS. Legacy binary identity changed in all ten positions. The indexed successor d389a643483875276016d4dc2627438150f039c4 differs only in seven Markdown documents and trace/links.csv. No source change between the tested and indexed trees. Frozen and indexed graph and bilingual scheduling checks completed. Indexed EVD-095 and EVD-097 each retain English and Korean entries, first bilingual result and digest-verified original ZIP links.
+
+시험 커밋의 유한 동작 검증은 통과했다. 기존 열 구성은 모두 완료했으나 원본과 코드·적재 바이트가 달랐다. 후속 색인 커밋의 변경은 문서 7개와 추적 CSV뿐이며 양 언어 최초 기록과 ZIP 해시를 확인했다.
+
+## Black-box observations / 최초 관측
+
+Only the verdict-free input sheet, CLI help and ELF symbol table were consulted before sealing. SHA-256 of initial.sha256 is b24e03ba686434cf586179fc4c3e2be84ff3078d16766c59b78e6f1aba3284d1. This manifests 19 ELF/guest positions and the separate cooperative RAM boot, acquisition and checker. First traces and plain serial boots used an external two-second timeout (exit 124 after their terminal markers). The monitor capture completed before host teardown. A help probe of the capture wrapper required COOP_BOUNDED_CAPTURE_DIR and exited before guest launch. No guest launch retries. Initial orchestration before any guest launch hit a CRLF terminator error; the corrected runner retained the first build at 01/build. Host compiler invocation errors are retained alongside corrected builds.
+
+- EDF/LLF each refused with reason 8/9 respectively in both modes, without job, dispatch, progress or result rows. Both admitted trace and plain modes completed. At 62,500,000 Hz, the trace service held slot [1,2), returned the independent 1..64 square sum of 89,440, and restored A's exact saved frame and instruction address. EDF A blocks went 608743 → 608743 → 913133. LLF counts and every sampled address are in raw UART. Both traced jobs completed before their table deadlines and their products matched independent modular arithmetic. The separate plain interface reports results, A progress and stop, without per-worker completion timestamps or B's iteration count. Every A stop equaled epoch + 15,625,000 counts.
+- Independent RAM reconstruction checks the 9-word header, five 10-word requests, three 6-word completions and two totals. Peer 0→20. Blocks 1,2,3 returned FIFO. Both refused deadline requests preserved queued depth and reservations with one or more free slots. Nested attempts retained 12,496,345 and 12,495,962 running ticks. The three input blocks reduce to (9,21), (22,53), (21,58), totaling (52,132). All intervals fit their configured costs. ram1/words lists every word, check.py reconstructs decisions and extra.py recomputes raw-input reductions.
+- Ten legacy UARTs reached terminal markers. The four deadline traces had 6 EDF, 8 EDF overrun, 11 LLF, 12 LLF overload rows with zero live miss bits. Both cooperative controls yielded to peer 2 then peer 0 before owner resumption. Compared to a968670a85d3e0770a842c1a64dc67c5aeeaaf59's registered images, four EDF files have equal ELF size and 16 more load bytes, four LLF equal ELF and load lengths, both cooperative have 144 more load bytes, with +96/+104 ELF bytes (events/single). All ten .text and PT_LOAD hashes changed. legacy.json separately lists sizes and hashes, using load segments in program-header order.
+
+EDF·LLF 거부 사유 8·9, 일반·진단의 정상 종료, 진단에서 A 프레임·PC 복원 및 두 마감 준수를 확인했다. 서비스 합은 89,440이고 A 종료 기준은 기준 시각 + 250 ms이다. 독립 79워드 RAM 관측은 동료 값 0→20, FIFO 1·2·3, 빈 슬롯이 있는 상태의 마감 거부 2회, 양의 잔여 예약 및 합 52·132를 보였다. 원래 열 구성의 실행을 별도로 확인했다. EDF의 적재 길이는 +16, LLF는 동일, 협력형은 각각 +144바이트다. 일반 출력의 관측 범위는 원시 UART에 한정된다.
+
+## Host evidence and scope / 호스트 시험과 범위
+
+After sealing, two independent Rust tests exercised refusal high-water, reversal, equal time, nested refusal, callback return below the observed high-water, persistent invalidity, FIFO drain, epoch restart at 0 and EDF Demand versus checked Overflow. All passed (the harness also ran three embedded ready-queue tests). Existing bounded, supply, coop-service and scheduling suites passed 6, 6, 2, and 138 tests respectively. Supply replay passed all eight UART files. The first independent harness compile used a capturing closure for a function pointer; the corrected harness uses a static clock. A first direct compile of the legacy deadline submodule lacked its parent; the actual 138-test scheduling entry point subsequently passed.
+
+최초 봉인 후 독립 호스트 시험에서 거부 시각 이후 역행, 같은 시각, 콜백 복귀 시각 오류, 배출까지 추가 수용 금지, 0부터 새 구간 및 EDF 최초 수요 초과·실제 합산 오버플로를 구분했다. 기존 스위트 6·6·2·138개가 통과했다.
+
+WSL Linux, Rust 1.95.0, aarch64-unknown-none release, target-cpu=cortex-a72, one build job, QEMU 6.2.0 virt/GICv2 one Cortex-A72, default clock, -nic none. Raw UART, RAM, build logs, flags, images, environment and exact commands are archived. No board timing, WCET, physical execution or product release determination. 실기 시간·WCET·제품 출시 판정은 별도다.
+
+[Combined independent raw ELF, UART, RAM, and host evidence](cooperative-deadline-combined.zip) · SHA-256 429144c8690ecb7a3bb3f920f8a1691969b10d90736b189c7411418d29d3d2fb.

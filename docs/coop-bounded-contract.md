@@ -31,3 +31,5 @@ Preserve decision precedence: invalid ID, full queue, zero cost, invalid interva
 사유 우선순위는 잘못된 ID, 큐 포화, 0 비용, 시간 구간 오류, FIFO 순서의 첫 산술 초과 또는 마감 위반이다. 구조적 거부도 시각을 관측한다. 콜백 경계에서의 역행, 실행 예약의 산술 초과나 마감 위반, 예약을 넘긴 반환은 큐가 빌 때까지 수용을 막는다. 실행 예약이 지난 뒤 게시하면 최댓값을 갱신하고 시간 오류로 거부하므로 더 이른 시각으로 이를 되돌릴 수 없다. 기존 일반 구성 두 개와 관측 ABI는 그대로다.
 
 [EVD-097 English](evidence/evd-097.en.md) · [한국어](evidence/evd-097.md).
+
+[Combined independent result / 결합 독립 판정](evidence/cooperative-deadline-combined.en-ko.md).
