@@ -85,3 +85,5 @@ python3 tools/deadline_supply_replay.py ordinary-llf-supply "$RUN/ordinary-llf-s
 ```
 
 위 명령은 각 시도의 ELF·원시 UART·예외 로그·빌드 및 호스트 종료 코드·재생 결과를 별도 디렉터리에 보존한다. 거부 코드와 정상 작업의 완료 여부는 원시 출력과 재생으로 판정한다. 완료 후에도 게스트가 대기하므로 호스트의 124는 관찰 시간 종료를 뜻한다. 독립 벤치마크의 고정 출력 검사는 `qemu_boot.py --profile deadline`으로 수행한다.
+
+[Corrected independent assessment / 수정 후 독립 판정](evidence/deadline-supply-corrected.en-ko.md).
