@@ -957,3 +957,9 @@ CAP-001,has-partial-evidence,EVD-041
 CHG-046,affects,REQ-002
 CHG-046,affects,REQ-005
 CHG-046,affects,REQ-023
+REQ-002,partially-implemented-by,IMP-044
+REQ-005,partially-implemented-by,IMP-044
+REQ-023,partially-implemented-by,IMP-044
+POL-006,partially-implemented-by,IMP-044
+DES-003,implemented-by,IMP-044
+DES-012,implemented-by,IMP-044

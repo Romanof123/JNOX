@@ -161,3 +161,5 @@ CHG-043 / IMP-041은 virt 단일 코어 POL-002 런타임에 계측을 추가한
 POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [EVD-041](evidence/evd-041.md)
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+CHG-046 / IMP-044는 DES-003/012에 따라 virt 단일 CPU에서 일반 Rust A/B 작업과 전용 유휴 스택을 구현한다. POL-006과 REQ-002/005/023은 부분 구현 상태이며 VER-002/005/023 판정과 EVD-044는 미결이다. [기록 형식 및 빌드](ordinary-partition-capture.md)

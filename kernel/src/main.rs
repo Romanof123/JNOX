@@ -100,7 +100,10 @@ mod multilevel_policy;
 mod multilevel_service;
 #[cfg(jnox_multilevel)]
 mod multilevel_apps;
+#[cfg(all(feature = "ordinary-partition-p", feature = "ordinary-partition-q"))]
+compile_error!("select exactly one ordinary partition table");
 #[cfg(jnox_bench = "partition")]
+#[cfg_attr(any(feature = "ordinary-partition-p", feature = "ordinary-partition-q"), path = "ordinary_partition.rs")]
 mod partition;
 #[cfg(jnox_bench = "periodic")]
 mod periodic;

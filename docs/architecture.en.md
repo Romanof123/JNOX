@@ -161,3 +161,5 @@ CHG-043 / IMP-041 instruments the single-core POL-002 runtime on virt. Boot owns
 POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage. VER-002/005/023 and EVD-044 remain pending. [Capture format and build](ordinary-partition-capture.en.md)

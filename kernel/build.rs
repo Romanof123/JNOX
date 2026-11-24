@@ -86,6 +86,16 @@ fn main() {
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
+    let table_p = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_P").is_some();
+    let table_q = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_Q").is_some();
+    if table_p || table_q {
+        let allowed = ["CARGO_FEATURE_PARTITION_BENCH", "CARGO_FEATURE_ORDINARY_PARTITION_P",
+                       "CARGO_FEATURE_ORDINARY_PARTITION_Q"];
+        assert!(table_p != table_q && board == "virt" && profile.is_none() && app.is_none()
+            && env::vars_os().filter_map(|(k, _)| k.into_string().ok())
+                .filter(|k| k.starts_with("CARGO_FEATURE_")).all(|k| allowed.contains(&k.as_str())),
+            "ordinary partition requires virt, exactly one P/Q table, no other bench, profile or app");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_cost)");
