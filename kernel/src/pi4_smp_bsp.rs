@@ -86,7 +86,7 @@ pub(super) fn gic_state(cpu: usize) -> [u64; 8] {
 fn dsb() {
     unsafe { asm!("dsb sy", "isb", options(nostack)) }
 }
-fn fail(code: u32) -> ! {
+pub(super) fn fail(code: u32) -> ! {
     unsafe { asm!("msr daifset,#15", options(nostack)) }
     ERROR.store(code, Ordering::Release);
     if local() == 0 {
@@ -129,6 +129,8 @@ fn init(core: usize) {
     if mpidr & 0xff00ffffff != core as u64 || el != 4 || frequency() == 0 {
         fail(1)
     }
+    #[cfg(jnox_pi4_migration)]
+    super::pi4_migration_local::install(core);
     let vbar = &raw const sched_vectors;
     let (ttbr, tcr, mair, ctl, ectlr): (u64, u64, u64, u64, u64);
     unsafe {

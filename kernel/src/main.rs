@@ -212,6 +212,8 @@ mod pi4_smp_workload;
 #[cfg(jnox_pi4_migration)]
 mod pi4_migration;
 #[cfg(jnox_pi4_migration)]
+mod pi4_migration_local;
+#[cfg(jnox_pi4_migration)]
 mod pi4_migration_tasks;
 #[cfg(jnox_pi4_migration)]
 mod pi4_migration_log;

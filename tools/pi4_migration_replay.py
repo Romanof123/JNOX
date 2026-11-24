@@ -141,7 +141,7 @@ def journal(raw, case, wire=1):
         for seq in range(n):
             need(pos<len(lines) and lines[pos][:2]==[b"MG",b"ROW"],"missing journal row")
             owner,order,kind,*v=numbers(lines[pos][2:],11);pos+=1
-            need((owner,order)==(cpu,seq) and 1<=kind<=(13 if wire==2 else 12),"CPU/sequence/event kind")
+            need((owner,order)==(cpu,seq) and 1<=kind<={1:12, 2:13, 3:15}[wire],"CPU/sequence/event kind")
             sections[cpu].append((kind,tuple(v)))
     need(pos+1==len(lines) and lines[pos][:2]==[b"MG",b"END"],"missing footer or extra records")
     end=numbers(lines[pos][2:],5)
@@ -331,7 +331,7 @@ def score(sections, freq, totals, case, bodies, wire=1, workload=BASELINE):
         need(l in retired and retired[l][0]==c and retired[l][2]==task
              and dispatches[l][1]<n<retired[l][1],"finish lacks owned lease")
     summaries = {}
-    if wire == 2:
+    if wire >= 2:
         for c,n,d in events(13):
             task,ep,lease,count,h,index,value,reserved = d
             key = task,ep
@@ -355,7 +355,7 @@ def score(sections, freq, totals, case, bodies, wire=1, workload=BASELINE):
     return dict(regime=CASES[case],lease_intervals=local_intervals,frequency=freq,
                 local_ticks={str(c):[account[c,t] for t in range(3)] for c in range(2)},
                 cross_core_latency="unobserved",ambiguous_checkpoints=ambiguous,
-                checkpoint_coverage=("ordered summary of all checkpoints; sparse lease rows" if wire==2
+                checkpoint_coverage=("ordered summary of all checkpoints; sparse lease rows" if wire>=2
                                      else "sparse retained rows; intermediate checkpoints not independently replayed"),
                 activation_summaries=list(summaries.values()), qualifying_inner_pc=in_loop,
                 loop_ranges=bodies, saved_x21=source_x21,
@@ -390,9 +390,26 @@ def replay(root, ordinal, trusted):
     workload = frozen.get("workload", BASELINE)
     need(workload in (BASELINE, STREAM), "unknown migration workload")
     need(workload != STREAM or (sess["platform"] == "raspi4b-tcg" and
-         frozen["qemu_sha256"] == STOCK_SHA and frozen.get("wire_version") == 2), "stream model contract")
-    if workload == STREAM:
+         frozen["qemu_sha256"] == STOCK_SHA and frozen.get("wire_version") in (2, 3)), "stream model contract")
+    from pi4_mg3_symbols import mg3_symbols
+    wire = frozen.get("wire_version", 1)
+    need(type(wire) is int and wire in (1, 2, 3), "unsupported frozen wire version")
+    symbols = mg3_symbols(elf, image, frozen["case"], workload)
+    need((symbols is not None) == (wire == 3), "wire does not match linked MG3 profile")
+    if workload == STREAM or wire == 3:
         bodies,entries=layout(elf,image,dis,workload)
+    if wire == 3:
+        need(sess["platform"] == "raspi4b-tcg" and frozen["qemu_sha256"] == STOCK_SHA,
+             "MG3 requires frozen stock model")
+        need(json.dumps(symbols, sort_keys=True) == json.dumps(frozen["local_symbols"], sort_keys=True),
+             "MG3 manifest/ELF symbols differ")
+        need(len(bodies) == 1 and json.dumps(frozen["loop_range"]) == json.dumps(bodies[0]),
+             "MG3 manifest/linked loop differs")
+        tools = frozen["tool_sha256"]
+        need(set(tools) == {"pi4_migration_capture.py", "pi4_migration_replay.py",
+                            "pi4_mg3_symbols.py", "pi4_mg3_replay.py", "pi4_smp_replay.py"}
+             and all(re.fullmatch(r"[0-9a-f]{64}", h) for h in tools.values()),
+             "MG3 tool identities incomplete")
     if sess["reason"]!="terminal_quiet" or sess["quiet_ns"]<1_000_000_000:
         raise Unobserved("first attempt ended without terminal quiet: "+sess["reason"])
     need(sess["quiet_ns"]<=sess["elapsed_ns"]<=30_000_000_000,"capture ceiling")
@@ -404,10 +421,8 @@ def replay(root, ordinal, trusted):
         raise Unobserved("M finished before migration IRQ")
     need(not fatal,"guest failure: "+" | ".join(fatal))
     case=CASES.index(frozen["case"])
-    wire=frozen.get("wire_version",1)
-    need(type(wire) is int and wire in (1,2), "unsupported frozen wire version")
     sections,hz,totals=journal(uart,case,wire)
-    if workload == BASELINE:
+    if workload == BASELINE and wire < 3:
         bodies,entries=layout(elf,image,dis,workload)
     for cpu in (0,1):
         for kind,d in sections[cpu]:
@@ -426,6 +441,10 @@ def replay(root, ordinal, trusted):
                 need(0<=off<=len(image)-4 and int.from_bytes(image[off:off+4],"little")&0xffffffe0==0x10000000,
                      "task evidence PC does not identify the linked ADR-self probe")
     result=score(sections,hz,totals,case,bodies,wire,workload)
+    if wire == 3:
+        from pi4_mg3_replay import witnesses
+        result["live_witnesses"] = witnesses(sections, symbols, case, workload == STREAM)
+        result.update(verified_crossing=False, verified_same_core=False)
     if workload == STREAM:
         result["workload"] = workload
     if sess["platform"]=="physical":
@@ -442,6 +461,8 @@ def replay(root, ordinal, trusted):
         return result
     need(all(external[c]==result["expected_external"][c] for c in (0,1)),
          "per-CPU external exception/ERET stream differs from guest PCs")
+    if wire == 3 and result["qualifying_inner_pc"]:
+        result["verified_crossing" if case == 0 else "verified_same_core"] = True
     result.update(position=ordinal,session_sha256=trusted,raw_observer_mapping=mapping,
                   observation=("matched finite model position; two first positions required per case"
                                if result["qualifying_inner_pc"] else
