@@ -83,3 +83,19 @@ v2 사전 검사에서는 두 B 이미지가 기준 적재 바이트와 일치�
 Aligned wake (W, plain) completed 3/6 first boots. Saturated CBS (S, traced) completed 2/6. No baseline boot reached its horizon. The opening guard remained 62,500 ticks (1 ms). [First v3 reservation stage captures](evidence/reservation-stage-v3-first.en.md)
 
 정렬 깨움(W, 일반) 6건 중 3건, 포화 CBS(S, 외부 추적) 6건 중 2건이 완료됐다. 기준 이미지 B는 완료된 부팅이 없었다. 경계 한도는 62,500틱(1 ms)으로 유지했다. [예약 단계 v3 최초 실행](evidence/reservation-stage-v3-first.md)
+
+### CHG-081 · sharing checked work on the decision path
+
+The first v3 cohort completed 3/6 aligned wake and 2/6 saturated CBS boots across B/E/F. Neither baseline reached the horizon; the split observations do not identify the dominant baseline cost. Keep the first results. [First v3 evidence](evidence/reservation-stage-v3-first.en.md)
+
+1. Validate both live initial frames during idle preparation and again during masked slot-zero opening. Compare each actual pointer with its prepared address and canonical top-of-stack minus the complete frame size. Prove at compile time that the frame fits the fixed stack and its alignment. Exact equality with that canonical address then also proves containment. Keep live register, thread, state, progress and allocation checks. Leave the F sample after both successful checks.
+2. At each subsequent masked boundary, read both client progress records once and validate them against the last retired values. A successful comparison permits the selected grant to use its validated baseline count/checksum. No worker, IRQ or asynchronous device writes the cells between verification and dispatch. Keep the independent retirement read, both final observations, and the original first-worker, pre/post authority, cutoff, selection and expiry checks. Both authoritative bank reads and actual ERET/IRQ records remain independently observable.
+3. Freeze matched parent/candidate images and first cold default-clock positions for both original strata, B/E/F in both repeats. Compare linked code size, loads/branches and actual phase intervals before interpreting any change. Include aligned/CBS refusal and late controls, validate the full slot horizon and independent return/progress ledgers. The original 1 ms rule and fail-stop dispositions apply. This is a source refactor with no measured speedup or product allocation. [REQ-002/005/009/023](requirements.en.md) · [VER-002/005/009/023](verification-plan.en.md)
+
+### CHG-081 · 결정 경로에서 검증된 값 재사용
+
+최초 v3 코호트의 B/E/F 전체에서 aligned wake는 3/6, saturated CBS는 2/6 완료했다. 기준 B는 지평선에 도달하지 못했다. 구간 분할 결과로 기준 경로의 지배적 비용을 특정할 수 없다. 최초 판정을 보존한다. [최초 v3 근거](evidence/reservation-stage-v3-first.md)
+
+1. 유휴 준비와 IRQ가 차단된 슬롯 0 개시 때 각각 두 실제 프레임을 검사한다. 실제 포인터를 사전 기록 주소 및 전용 스택 끝에서 전체 프레임 크기를 뺀 주소와 비교한다. 고정 스택에 프레임 크기·정렬이 맞음을 컴파일 시 보장하면 이 주소의 일치가 범위 포함도 증명한다. 실제 레지스터·스레드·상태·진행·할당 검사를 유지한다. F 표본은 두 검사 성공 뒤에 둔다.
+2. 이후 차단된 경계에서는 양쪽 진행값을 한 번씩 읽어 직전 반납값과 확인한다. 일치하면 선택된 작업의 부여에 검증된 개수·체크섬을 재사용한다. 검증과 디스패치 사이에 작업·IRQ·비동기 장치가 해당 셀을 쓰지 않는다. 반납 시 독립 판독, 양쪽 최종 관찰, 최초 작업 표본, 권한 전후 검사, 차단·선택·만료 조건을 유지한다. 두 권한 판독과 실제 ERET·IRQ는 별도 관찰 가능해야 한다.
+3. 부모/후보 이미지와 두 기존 층 각각 B/E/F 두 반복의 기본 클록 최초 콜드 위치를 고정한다. 링크 크기·읽기·분기와 실제 구간을 비교한 뒤 해석한다. aligned/CBS의 거부·지연 대조, 전체 슬롯 지평선, 독립 복귀·진행 기록을 확인한다. 기존 1 ms 기준과 중단 판정을 적용한다. 소스 정리 단계이며 속도 개선·제품 시간 할당은 미측정이다. [REQ-002/005/009/023](requirements.md) · [VER-002/005/009/023](verification-plan.md)
