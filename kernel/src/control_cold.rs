@@ -1,5 +1,5 @@
-//! Single-core, opt-in startup diagnostics. Boot code owns B and the loader
-//! supplies the selector in initialized ELF data before entering the image.
+//! Single-core, opt-in startup diagnostics. Boot code owns B. The diagnostic mode is
+//! a named read-only file in the QEMU 6.2 virt firmware configuration device.
 use super::*;
 use core::sync::atomic::{AtomicBool, Ordering};
 
@@ -7,8 +7,45 @@ static PROBE_DONE: AtomicBool = AtomicBool::new(false);
 
 #[unsafe(no_mangle)]
 static mut jnox_cold_b: u64 = 0;
-#[unsafe(no_mangle)]
-static mut jnox_cold_mode: u32 = 0xffff_ffff;
+// QEMU 6.2 virt maps the fw_cfg data port at base and selector at base+8.
+fn fw_select(key: u16) {
+    unsafe {
+        ptr::write_volatile(0x0902_0008 as *mut u16, key.to_be());
+        asm!("dsb sy", options(nostack, preserves_flags));
+    }
+}
+
+fn fw_bytes<const N: usize>() -> [u8; N] {
+    core::array::from_fn(|_| unsafe { ptr::read_volatile(0x0902_0000 as *const u8) })
+}
+
+fn configured_mode() -> Option<u32> {
+    const NAME: &[u8] = b"opt/jnox/cold-mode\0";
+    fw_select(0);
+    if fw_bytes::<4>() != *b"QEMU" { return None }
+    fw_select(0x19);
+    let entries = u32::from_be_bytes(fw_bytes());
+    if entries > 256 { return None }
+
+    let mut selected = None;
+    for _ in 0..entries {
+        let size = u32::from_be_bytes(fw_bytes());
+        let key = u16::from_be_bytes(fw_bytes());
+        let _reserved = fw_bytes::<2>();
+        let name = fw_bytes::<56>();
+        if name.starts_with(NAME) {
+            if size != 1 || !(0x20..0x4000).contains(&key) || selected.is_some() {
+                return None;
+            }
+            selected = Some(key);
+        }
+    }
+    fw_select(selected?);
+    match fw_bytes::<1>()[0] {
+        value @ b'1'..=b'3' => Some(u32::from(value - b'0')),
+        _ => None,
+    }
+}
 
 #[derive(Clone, Copy, PartialEq)]
 enum Phase { Setup, ProbeArmed, ProbeDone, FirstArmed, Running }
@@ -55,7 +92,7 @@ fn stop(reason: u64) -> ! {
 
 pub(super) fn boot(frequency: u64) {
     let base = unsafe { ptr::read_volatile(&raw const jnox_cold_b) };
-    let mode = unsafe { ptr::read_volatile(&raw const jnox_cold_mode) };
+    let mode = configured_mode().unwrap_or(u32::MAX);
     log(48, base, frequency, mode as u64);
     if !(1..=3).contains(&mode) || frequency == 0 || frequency % 1000 != 0 || frequency % 400 != 0 {
         stop(1)

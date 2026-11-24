@@ -6,17 +6,19 @@ Future opt-in cold experiment on the #97 v3 source. Record diagnostic captures s
 
 Single-core virtual healthy workload. Follow the paired cold matrix in the [frozen plan](https://github.com/Romanof123/JNOX/blob/d78ad8b06782997e130c1c751f6713286eb04c6f/docs/control-cold-plan.md). Retain each original stock failure. The diagnostic ELF uses the same timer, PPI, exception frame and restored idle stack. Its first counter sample B follows an ISB at the entry of the ELF. Reset-to-B is blind. PL061 readback concerns the virtual register.
 
-Use the build command for the ordinary healthy case with JNOX_CONTROL_COLD=diagnostic, separately for control-rm and control-dm. This selector requires JNOX_PROFILE=periodic, explicit JNOX_CONTROL_CASE=healthy and JNOX_BOARD=virt. Use the *same ELF for all three modes per policy*. Locate the initialized four-byte symbol in that exact ELF and use QEMU's loader to set it before entry. Validate row 48 against the selected mode. The default sentinel, zero and unrecognized values fail. Without the build selector, use the ordinary v3 startup path and invocation.
+Use the build command for the ordinary healthy case with JNOX_CONTROL_COLD=diagnostic, separately for control-rm and control-dm. This selector requires JNOX_PROFILE=periodic, explicit JNOX_CONTROL_CASE=healthy and JNOX_BOARD=virt. Use the *same ELF for all three modes per policy*. Supply exactly one byte of ASCII (1, 2 or 3) through the named read-only fw_cfg file. The guest checks the device signature, reads up to 256 directory entries, verifies a unique matching name, file key and size, then reads the selected byte. Missing, ambiguous or malformed input reports 4294967295 in row 48 and fails closed. Match row 48 against the predeclared mode before scoring and archive the actual input bytes, file hash, ELF hash and invocation. Keep the 96 prior sentinel captures and the 32 stock captures in their original cohorts. Reading fw_cfg adds boot work after B, which remains in the measured interval. The interface and address are specific to the frozen virtual machine. [QEMU 6.2 virt map](https://github.com/qemu/qemu/blob/v6.2.0/hw/arm/virt.c) · [fw_cfg specification](https://www.qemu.org/docs/master/specs/fw_cfg.html). Without the build selector, use the ordinary v3 startup path and invocation.
 
 ~~~sh
 export JNOX_BOARD=virt JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy JNOX_CONTROL_COLD=diagnostic
 cd kernel
 cargo build --release --locked
 elf=target/aarch64-unknown-none/release/jnox-kernel
-addr=$(aarch64-linux-gnu-nm --defined-only "$elf" | awk '$3=="jnox_cold_mode"{print "0x"$1}')
-test -n "$addr" || exit 1
-# Add the following pair of arguments to the plan's QEMU command, for mode 1, 2 or 3.
-# -device "loader,addr=$addr,data=$mode,data-len=4,data-be=off"
+# Set run_dir to this attempt's new capture directory, and mode to its declared 1, 2 or 3.
+case "$mode" in 1|2|3) ;; *) exit 1 ;; esac
+printf '%s' "$mode" > "$run_dir/cold-mode.bin"
+sha256sum "$elf" "$run_dir/cold-mode.bin" > "$run_dir/input.sha256"
+# Append this argument pair to the frozen QEMU command for that capture:
+# -fw_cfg "name=opt/jnox/cold-mode,file=$run_dir/cold-mode.bin"
 ~~~
 
 1. Mode 1 instruments stock-style epoch selection on idle (current time plus one half phase). Capture OFF/ON with identical instrumentation. Changes to timing relative to the published v3 image must be reported.
@@ -39,6 +41,6 @@ Bitmap bit 0 denotes pending, bit 1 active. Use rows 51, 52, 55 and 61 for arm/u
 
 ## 한국어
 
-위 동결 계획대로 정책별 같은 계측 ELF에서 OFF/ON 콜드 쌍을 실행한다. 원본 실패와 모든 후속 실패를 분모에 남긴다. 빌드·실행 선택자는 위 명령과 같다. healthy, periodic, virt에서만 diagnostic을 허용한다. 해당 ELF의 심볼 주소에 로더로 모드 값을 지정하고 사건 48에서 되읽은 값과 해시를 확인한다. 모드 1은 idle에서 현재 시각에 반 위상을 더하는 기존 기준을 계측한다. 모드 2와 3은 모두 최초 카운터 B+250 ms를 E0로 고정하고 B+220 ms 전에 초기화 및 위상 0 설정을 끝내야 한다. 모드 2는 B+200 ms까지 시험 IRQ 없이 기다린다. 모드 3은 B+200 ms에 비교기를 한 번 설정하고 실제 운영 PPI/벡터/idle 경로에서 ACK, 타이머 해제, EOI 및 pending·active 해소를 기록한다. 자가시험 지연이 0.5 ms를 넘으면 실제 값을 보존한다. 부팅 실패에도 E0를 옮기지 않으며 재시도하지 않는다.
+위 동결 계획대로 정책별 같은 계측 ELF에서 OFF/ON 콜드 쌍을 실행한다. 원본 실패와 모든 후속 실패를 분모에 남긴다. 빌드·실행 선택자는 위 명령과 같다. healthy, periodic, virt에서만 diagnostic을 허용한다. 실행별 새 기록 디렉터리에서 위의 printf 명령으로 예정 모드를 줄바꿈 없는 한 바이트 ASCII 파일로 만들고 sha256sum으로 ELF와 파일 해시를 보존한다. QEMU 명령에 `-fw_cfg "name=opt/jnox/cold-mode,file=$run_dir/cold-mode.bin"`을 추가한다. 게스트는 장치 서명과 최대 256개 디렉터리 항목에서 해당 이름의 유일성·키·길이·내용을 확인한다. 누락·불일치 입력은 사건 48에 4294967295를 남기고 차단한다. 수용 전에 사건 48의 모드와 계획된 모드의 일치를 확인하고 실제 입력 및 명령행을 기록한다. 기존 sentinel 96건과 stock 32건은 원래 집단에 보존한다. fw_cfg 읽기 비용은 B 이후 경과 시간에 포함한다. 모드 1은 idle에서 현재 시각에 반 위상을 더하는 기존 기준을 계측한다. 모드 2와 3은 모두 최초 카운터 B+250 ms를 E0로 고정하고 B+220 ms 전에 초기화 및 위상 0 설정을 끝내야 한다. 모드 2는 B+200 ms까지 시험 IRQ 없이 기다린다. 모드 3은 B+200 ms에 비교기를 한 번 설정하고 실제 운영 PPI/벡터/idle 경로에서 ACK, 타이머 해제, EOI 및 pending·active 해소를 기록한다. 자가시험 지연이 0.5 ms를 넘으면 실제 값을 보존한다. 부팅 실패에도 E0를 옮기지 않으며 재시도하지 않는다.
 
 게이트는 E0 이후 첫 운영 IRQ까지 닫혀 있고 일반 작업은 실행되지 않는다. 최초 출력 OFF와 초기화·전환 시 실제 OFF를 확인한다. 실패는 타이머를 끄고 출력을 OFF로 요청한 뒤 읽어 사건 60과 누적 기록을 출력한다. 멈춘 게스트는 외부 호스트의 시작 후 10초 제한으로 실패 처리한다. 48~50은 최초 시각·주파수·모드와 E0 계산, 51~52는 비교기 설정·되읽기, 53~54는 idle 진입·마스크·PPI 우선순위와 PMR, 55~56은 벡터·핸들러·ELR·IAR·복원 마스크이다. 57~59는 EOI 뒤 상태·부팅 준비·게이트 개방, 60~61은 실패 원인·실제 출력과 IRQ 허용 뒤 표본, 62~64는 GIC 제어·IRQ 시점 비교값/제어·OFF 읽기 구간이다. 비트 0은 pending, 비트 1은 active이다. 원래 운영 사건과 함께 설정 여유, 벡터−비교값, 핸들러−벡터를 재구성한다. 벡터 진입 코드와 계측 비용을 포함하고 리셋부터 B까지는 미관측이다. 부팅 자가시험은 제어 판정에 포함하지 않는다. 모든 운영 위상과 독립 장치 관측을 고정 E0에 따라 평가한다.
