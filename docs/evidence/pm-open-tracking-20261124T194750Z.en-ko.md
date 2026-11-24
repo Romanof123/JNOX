@@ -76,3 +76,7 @@ At 2026-11-25 04:47:50 KST (19:47:50 UTC on November 24), PM collected the open 
 Extract the [saved REST records, primary mapping, checker transcript and replay script](pm-open-tracking-20261124T194750Z.zip). From the extracted directory run `python -B replay.py PATH_TO_CHECKOUT` against `be9b1cd61a1815422f9c0febdb767a6932e06bf1`. The verifier checks archived body references, all primary pairs and the numbered graph. The collector followed pagination to the end. Later GitHub edits have their own timestamps.
 
 보관된 공개 응답 레코드 SHA-256 `2dedd67bec6aa4ac1350f7c62dd05af5a57170ad8a465ed5bde4643d7fd5c47f` · ZIP SHA-256 `9d96de9fbd6d5d17cbaab8f3b49f18c381dfe2f18f88090b16a8aefde62783c1`. 압축을 풀고 위 리비전에서 재검산할 수 있다. 표는 수집 시점 기준이므로 이 기록을 올리는 PR은 이후 목록에 나타난다.
+
+[Independent review of all 49 original items / 원래 49개 항목의 독립 검토](pm-scheduling-inventory-review.en-ko.md). The 04:47:50 archive retains normalized REST records. Its original HTTP headers were not retained.
+
+At 04:54:01 KST a [separate follow-up collection](pm-open-tracking-pagination-follow-up.zip) saved the response body, request URL, HTTP 200, Date, ETag, GitHub request ID and final page headers. That one page had 32 issues and 18 PRs, including the newly opened #245. The Link header was absent. All 18 primary pairs and team labels passed. ZIP SHA-256 `54047c1d8cc797b859186e8cf0ecbc8c9a8bfdd3fd4192a973929a05949e7e7e`. 한국 시간 04시 54분의 별도 수집에서 다음 페이지가 없었고 추가된 PR은 이 감사 기록을 게시하는 #245 한 건이었다.
