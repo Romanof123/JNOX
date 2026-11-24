@@ -1,0 +1,114 @@
+   Compiling jnox-kernel v0.1.0 (<WORKSPACE>\source\kernel)
+warning: constant `MAX_CPUS` is never used
+ --> src\domain_policy.rs:5:7
+  |
+5 | const MAX_CPUS: usize = u8::BITS as usize;
+  |       ^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `AffinityDomain` is never constructed
+  --> src\domain_policy.rs:10:19
+   |
+10 | pub(crate) struct AffinityDomain<const N: usize> {
+   |                   ^^^^^^^^^^^^^^
+
+warning: associated items `new`, `place`, and `augment` are never used
+  --> src\domain_policy.rs:15:19
+   |
+14 | impl<const N: usize> AffinityDomain<N> {
+   | -------------------------------------- associated items in this implementation
+15 |     pub(crate) fn new(allowed: [u8; N]) -> Option<Self> {
+   |                   ^^^
+...
+32 |     pub(crate) fn place(&self, online: u8, ranked: &[u8]) -> Option<[Option<u8>; MAX_CPUS]> {
+   |                   ^^^^^
+...
+51 |     fn augment(
+   |        ^^^^^^^
+
+warning: enum `ExecutionBudget` is never used
+  --> src\domain_policy.rs:75:17
+   |
+75 | pub(crate) enum ExecutionBudget {
+   |                 ^^^^^^^^^^^^^^^
+
+warning: enum `CriticalityMode` is never used
+  --> src\domain_policy.rs:81:17
+   |
+81 | pub(crate) enum CriticalityMode {
+   |                 ^^^^^^^^^^^^^^^
+
+warning: struct `CriticalityDomain` is never constructed
+  --> src\domain_policy.rs:89:19
+   |
+89 | pub(crate) struct CriticalityDomain<const N: usize> {
+   |                   ^^^^^^^^^^^^^^^^^
+
+warning: associated items `new`, `mode`, `release`, `finish`, `grant`, and `reset` are never used
+   --> src\domain_policy.rs:96:19
+    |
+ 95 | impl<const N: usize> CriticalityDomain<N> {
+    | ----------------------------------------- associated items in this implementation
+ 96 |     pub(crate) fn new(budgets: [ExecutionBudget; N]) -> Option<Self> {
+    |                   ^^^
+...
+112 |     pub(crate) fn mode(&self) -> CriticalityMode {
+    |                   ^^^^
+...
+116 |     pub(crate) fn release(&mut self, id: usize) -> bool {
+    |                   ^^^^^^^
+...
+129 |     pub(crate) fn finish(&mut self, id: usize) -> bool {
+    |                   ^^^^^^
+...
+138 |     pub(crate) fn grant(&mut self, id: usize, requested: u64) -> Option<u64> {
+    |                   ^^^^^
+...
+166 |     pub(crate) fn reset(&mut self, approved: bool) -> bool {
+    |                   ^^^^^
+
+warning: function `placement_checks` is never used
+   --> src\domain_policy.rs:226:4
+    |
+226 | fn placement_checks() -> bool {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `criticality_checks` is never used
+   --> src\domain_policy.rs:251:4
+    |
+251 | fn criticality_checks() -> bool {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `priority_checks` is never used
+   --> src\domain_policy.rs:311:4
+    |
+311 | fn priority_checks() -> bool {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `bench_checks` is never used
+   --> src\domain_policy.rs:362:15
+    |
+362 | pub(crate) fn bench_checks() -> bool {
+    |               ^^^^^^^^^^^^
+
+warning: method `timeout` is never used
+   --> src\mutex_policy.rs:187:19
+    |
+ 45 | impl<const T: usize, const L: usize> LockSet<T, L> {
+    | -------------------------------------------------- method in this implementation
+...
+187 |     pub(crate) fn timeout(&mut self, task: usize) -> bool {
+    |                   ^^^^^^^
+
+warning: method `pop_preferred` is never used
+  --> src\ready_queue.rs:47:19
+   |
+ 8 | impl<const N: usize> ReadyQueue<N> {
+   | ---------------------------------- method in this implementation
+...
+47 |     pub(crate) fn pop_preferred(&mut self, prefer: impl Fn(usize, usize) -> bool) -> Option<usize> {
+   |                   ^^^^^^^^^^^^^
+
+warning: `jnox-kernel` (bin "jnox-kernel") generated 13 warnings
+    Finished `release` profile [optimized] target(s) in 2.24s
