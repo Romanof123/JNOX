@@ -373,6 +373,15 @@ def trace_check(raw, report):
     need(not list(lines), "unexpected transition after process exit")
 
 
+def check_uart(raw, user_digest):
+    expected = (
+        b"JNOX M1 BOOT\nJNOX M1 READY\nNATIVE EL0 ELF "
+        + user_digest.encode("ascii")
+        + b"\nNATIVE EL0 EXIT 37\n"
+    )
+    need(raw == expected, "terminal markers and application stdout")
+
+
 def replay(folder, digest):
     need(sha(folder / "session.json") == digest, "trusted session digest mismatch")
     rec = json.loads(bounded(folder / "session.json", 65536), object_pairs_hook=obj)
@@ -431,14 +440,8 @@ def replay(folder, digest):
         ("probe", "probe.c"),
     ):
         need(run[key + "_sha256"] == hashes[name], "launch asset digest")
-    uart = bounded(folder / "uart.bin", 1 << 20).replace(b"\r\n", b"\n")
-    expected = (
-        "NATIVE EL0 ELF " + hashes["user.elf"] + "\nNATIVE EL0 EXIT 37\n"
-    ).encode()
-    need(
-        rec["marker"] == "EXIT 37" and uart == expected,
-        "terminal markers and application stdout",
-    )
+    need(rec["marker"] == "EXIT 37", "terminal capture marker")
+    check_uart(bounded(folder / "uart.bin", 1 << 20), hashes["user.elf"])
     memory = bounded(folder / "ram.bin", 16 << 20)
     need(len(memory) == run["ram_bytes"], "physical snapshot size")
     report = audit(
