@@ -11,3 +11,5 @@ Select the diagnostic with `JNOX_PARTITION_PHASE=irq-v1` during the kernel build
 Read consecutive raw counter differences as intervals. Observe includes the existing frame save, prior-return read, timer and interrupt handling. Result covers the existing private result copy. Audit includes evidence publication and ordinary checks. Schedule includes generation bookkeeping and decision. MMU includes switch and address-space identity. Publication covers the actual generation write. The gap between audit end and schedule begin includes the first diagnostic record write. The second record write follows selection and is visible in the comparison to the next return. Neither raw nor paired values isolate host translation costs.
 
 기존 캡처 도구로 양쪽 RAM을 보존하고 위 명령으로 비교한다. 이전 프레임과 복귀 관측, 결과 읽기, 기록·검증, 스케줄 결정, MMU 전환 및 세대 게시를 각각 실제 호출 경계에서 잰다. 선택 이후 진단 기록 비용도 복귀까지의 차이에 포함된다.
+
+[First packaging and separate measured IRQ stage series / 최초 패키징 및 별도 정상 단계 계측](evidence/native-partition-irq-phases-first.en-ko.md).
