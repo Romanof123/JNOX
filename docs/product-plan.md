@@ -36,6 +36,7 @@ J-NOX의 첫 제품은 제어 소프트웨어가 예측 가능한 시간 안에 
 | 순서 | 포트 | 실험·지원 범위 |
 | --- | --- | --- |
 | P1 | Arm AArch64 Cortex-A72/A76 · QEMU `virt` | 기준 커널 동작, MMU, EL0/EL1, 선점, IPC. 가상 결과를 실보드 시간 자료에 인용할 때는 환경을 표시한다. |
+| P1 하드웨어 | [Raspberry Pi 4 Model B 1 GB](boards/pi4-p1.md) | BCM2711 기준 실보드 후보. 직렬 부팅부터 확인하고 타이머·IRQ·SMP를 별도 검증한다. |
 | P2 | Arm Cortex-R52 · QEMU MPS3-AN536와 실제 보드 후보 | AArch32·MPU 포트와 주기 제어. R-Car V4M은 A76 Linux와 R52 J-NOX 조합 후보이며, 보드 확보와 리소스 제어 가능성을 먼저 검토한다. |
 | P3 | x86-64 · QEMU 후 실기기 | UEFI/ACPI, APIC, 타이머, SMP, 지원 장치의 IOMMU 검증. Linux 도메인 격리 후보 평가. |
 | P4 | Arm AArch32, 기타 Cortex-R·Cortex-M, IA-32 | 대표 코어·보드를 정해 능력 매트릭스를 확장한다. MPU 부족 또는 보호 장치 제약이 있는 보드는 가능한 기능 구성과 필요한 외부 격리를 명시한다. |

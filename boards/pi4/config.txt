@@ -1,0 +1,10 @@
+[pi4]
+arm_64bit=1
+kernel=kernel8.img
+kernel_address=0x80000
+arm_peri_high=0
+enable_uart=1
+dtoverlay=disable-bt
+init_uart_clock=48000000
+init_uart_baud=115200
+uart_2ndstage=0
