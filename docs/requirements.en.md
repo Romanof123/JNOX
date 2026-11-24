@@ -42,3 +42,7 @@ CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust r
 CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
 
 CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
+
+CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)

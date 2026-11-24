@@ -23,3 +23,24 @@ python3 -m unittest discover -s tools -p "test_pi4_serial_capture.py"
 ```
 
 Nine host tests passed. A file replay using the archived EVD-014 package preserved both byte streams and their independent run IDs. An additional byte and an existing output directory were detected. A physical power cycle and board identity still require independent witnessing. [Host-only review](../evidence/scheduling-tools-host-review.json)
+
+<a id="chg-062"></a>
+
+## CHG-062 · Planned physical capture profiles
+
+The current host tool compares each read with a slice of the single `pi4-scheduler` transcript. Extend its port and two-file replay modes with optional `--profile pi4-scheduler|pi4-fixed-fifo|pi4-fixed-rr`. Omitting the option preserves the existing scheduler invocation, output files, exit behavior and default for direct observer callers. The fixed images are the ordinary uninstrumented Pi builds from #71. Track physical acceptance in [#34](https://github.com/Romanof123/JNOX/issues/34) and [POL-002 / #21](../scheduling-release-cases.en.md).
+
+**Byte contract.** All streams begin with `JNOX PI4 BOOT\nJNOX PI4 READY\n`. Each subsequent event in the table is a separate line with the stated prefix, a space and one LF. Accept each complete sequence exactly as listed.
+
+| Profile | Prefix | Ordered event text |
+|---|---|---|
+| pi4-scheduler | SCHED | LOW RUN → TIMER IRQ → HIGH RUN → LOW RESUMED → PASS |
+| pi4-fixed-fifo | FIXED FIFO | START → A START → B YIELD → A RESUME → HIGH → A DONE → B SLEEP → B DONE |
+| pi4-fixed-rr | FIXED RR | START → A START → HIGH → B START → A DONE → B DONE |
+| pi4-fixed-rr, HIGH first | FIXED RR | START → HIGH → A START → B START → A DONE → B DONE |
+
+Use one bounded byte matcher for the three Pi contracts, shared by the serial/replay collector and the Pi profiles in qemu_boot. Preserve the existing TRANSCRIPTS keys, fixed observer API and other board profiles. Fixed Pi entries are DynamicTranscript values; slicing them as bytes is invalid. The generic RR validator currently allows HIGH → B START → A START under its partial order. Reject that order for Pi fixed capture in both paths. Across arbitrary read fragments keep only viable byte prefixes, detect completion at the final LF, and reject an impossible prefix or trailing byte immediately, including in the read containing the final LF. Preserve the raw failing read and its offset. Physical and file-replay Pi inputs are LF-only. Preserve caller-configured QEMU newline and clock behavior outside that strict byte contract.
+
+**Witness and attribution.** For each selected profile collect two independently witnessed full power removals and starts on the same identified board/card/package; FIFO and RR need separate pairs. Arm while off, then apply power. Final LF must arrive by 30 seconds inclusive from host arm, followed by a full second without another received byte. Retain failures and partial runs under their own IDs; retries use a fresh directory. Retain session/run IDs, declared profile, exact accepted variant (or no match), source mode, raw digest and host read offsets/times. A witness records both power events, board revision/EEPROM, card, adapter and whether the hashed directory was the mounted card or staged copy. Tie the declared build options and revision to the actual ELF, kernel8.img, config, pinned firmware and SHA256SUMS using recorded hashes. A transcript match or matching filename cannot establish a package's origin. Report unverified associations explicitly. Model replay uses the archived package identity, never invented field values.
+
+**Offline acceptance.** Verify the EVD-031 archive digest and member hashes before replaying each original FIFO and RR run-1/run-2 UART against its own package/ELF references. Both archived RR traces have A START first; label a constructed HIGH-first permutation as a host control. Regress EVD-014 scheduler uart_hex with its archived packaging metadata, explicit scheduler and omitted profile. Replaying a scheduler stream twice checks independent run IDs only. Exercise bytewise and split-marker reads, both RR alternatives and mixed alternatives within one pair, wrong profile/board tag, missing final LF, CRLF, reordered/duplicated/missing markers, malformed bytes, appended bytes in the same read and during quiet, short reads, and deadline/quiet boundaries with an injected host clock. Compare chunked/whole verdicts and retained raw bytes. Close the physical UART item only after witnessed hardware runs. USB timestamps and model exception traces do not measure physical IRQ delegation, interrupted PC, board latency or WCET. [EVD-031 archive](../evidence/evd-031-raw.json) · [Package index](../evidence/evd-031.json) · [EVD-014](../evidence/evd-014.json) · [Fixed runtime guide](pi4-fixed-runtime.en.md)
