@@ -38,3 +38,4 @@ The Integration plugin build receipt is a JSON object with model_sha256, model_b
 
 플러그인 빌드 기록의 JSON 필드는 위와 같다. 원본 모델 증명 파일의 해시와 실제 빌드 입력·출력 해시를 기록한다. 링커 맵의 두 함수 범위와 CPU0의 LIVE 및 M의 TASK_LEASE를 확인한다.
 [Matched model build receipt / 일치 모델 빌드 증거](../evidence/pi4-mg2-plugin-model-build.en-ko.md) · #198 · #199.
+[Matched off/on first positions and independent causal assessment / 동일 모델의 비계측·계측 최초 실행 및 독립 판정](../evidence/pi4-mg2-sparse-first.en-ko.md).
