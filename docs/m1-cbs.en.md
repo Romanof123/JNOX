@@ -2,6 +2,8 @@
 
 [한국어](m1-cbs.md) · English
 
+[EVD-006 independent execution record](evidence/evd-006.en.md)
+
 CHG-008 defines the acceptance contract for IMP-006 and the independent execution record EVD-006. POL-008 enforces budget and replenishment. POL-005 orders eligible servers by absolute deadline.
 
 | Trace | Acceptance condition |
