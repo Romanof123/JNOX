@@ -217,6 +217,17 @@ def match_witness(raw, report, mode):
 
 
 
+def check_pre_halt(state):
+    cpus = state["cpus"]
+    check(state["status"]["running"] is True and state["status"]["status"] == "running"
+          and isinstance(cpus, list) and len(cpus) == 1 and isinstance(cpus[0], dict)
+          and type(cpus[0].get("cpu-index")) is int and cpus[0]["cpu-index"] == 0,
+          "CPU0 pre-halt status")
+    if "stop_return" in state:
+        result = state["stop_return"]
+        check(isinstance(result, dict) and not result, "QMP stop result")
+
+
 def decode(out):
     manifest = out / "manifest.json"
     check((out / "manifest.sha256").read_text().strip() == digest(manifest) + "  manifest.json",
@@ -268,10 +279,7 @@ def decode(out):
               extent[1] == (out / (name+".bin")).stat().st_size, name + " extraction")
     check((location(elf, "ordinary_multilevel_witness") is not None) ==
           bool(flags["JNOX_MULTILEVEL_TRACE"]), "ELF full-frame selector")
-    state = load(out / "qmp.json")
-    check(state["status"]["running"] is True and state["status"]["status"] == "running"
-          and len(state["cpus"]) == 1 and
-          state["cpus"][0]["cpu-index"] == 0, "CPU0 pre-halt status")
+    check_pre_halt(load(out / "qmp.json"))
     halted = load(out / "halted.json")
     check(halted["running"] is False and halted["status"] == "paused", "halted extraction status")
     pc = re.search(r"\bPC=([A-Fa-f0-9]+)\b", (out / "registers.txt").read_text())

@@ -135,6 +135,7 @@ class HaltHandoff(unittest.TestCase):
             report = self.drive(out, peer)
             self.assertEqual(report["coverage"], "disabled")
             self.assertEqual(reader.load(out/"qmp.json")["status"], RUNNING)
+            self.assertEqual(reader.load(out/"qmp.json")["stop_return"], {})
             self.assertEqual(reader.load(out/"halted.json"), PAUSED)
             self.assertEqual(peer.commands, ["qmp_capabilities", "query-status", "query-cpus-fast",
                              "stop", "query-status", "human-monitor-command"] + ["pmemsave"]*3)
@@ -162,6 +163,35 @@ class HaltHandoff(unittest.TestCase):
                     self.assertEqual(reader.load(out/"halted.json"), post)
                 else:
                     self.assertFalse((out/"halted.json").exists())
+
+    def test_archived_qmp_types_and_earlier_format(self):
+        old = {"status": RUNNING, "cpus": [{"cpu-index": 0}]}
+        reader.check_pre_halt(old)
+        reader.check_pre_halt(dict(old, stop_return={}))
+        for index in (False, 0.0, "0", None, 1):
+            with self.subTest(index=index), self.assertRaisesRegex(ValueError, "CPU0"):
+                reader.check_pre_halt(dict(old, cpus=[{"cpu-index": index}]))
+        for result in (False, None, [], {"unexpected": 1}):
+            with self.subTest(result=result), self.assertRaisesRegex(ValueError, "stop result"):
+                reader.check_pre_halt(dict(old, stop_return=result))
+
+    def test_collector_typed_input(self):
+        for index, result, stage in [(False, {}, "pre-stop state"),
+                                     (0.0, {}, "pre-stop state"),
+                                     (0, [], "stop"), (0, None, "stop")]:
+            with self.subTest(index=index, result=result), tempfile.TemporaryDirectory() as td:
+                out = Path(td)
+                replies = [RUNNING, [{"cpu-index": index}], result]
+                with mock.patch.object(common, "request", side_effect=replies) as transport:
+                    with self.assertRaises(ValueError):
+                        common.capture_halt(None, out)
+                self.assertEqual(reader.load(out / "halt-error.json")["stage"], stage)
+                commands = [call.args[1] for call in transport.call_args_list]
+                expected = ["query-status", "query-cpus-fast"]
+                if stage == "stop":
+                    expected.append("stop")
+                    self.assertEqual(reader.load(out / "qmp.json")["stop_return"], result)
+                self.assertEqual(commands, expected)
 
     def test_existing_frozen_snapshot(self):
         with tempfile.TemporaryDirectory() as td:

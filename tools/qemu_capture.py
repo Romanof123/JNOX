@@ -49,10 +49,15 @@ def capture_halt(stream, out):
         stage = "pre-stop state"
         if not (isinstance(status, dict) and status.get("running") is True
                 and status.get("status") == "running" and isinstance(cpus, list)
-                and len(cpus) == 1 and isinstance(cpus[0], dict) and cpus[0].get("cpu-index") == 0):
+                and len(cpus) == 1 and isinstance(cpus[0], dict)
+                and type(cpus[0].get("cpu-index")) is int and cpus[0]["cpu-index"] == 0):
             raise ValueError("expected running CPU0")
         stage = "stop"
-        request(stream, "stop")
+        stop_return = request(stream, "stop")
+        observation["stop_return"] = stop_return
+        (out / "qmp.json").write_text(json.dumps(observation))
+        if not isinstance(stop_return, dict) or stop_return:
+            raise ValueError("expected an empty QMP stop result object")
         stage = "post-stop query-status"
         halted = request(stream, "query-status")
         (out / "halted.json").write_text(json.dumps(halted))
