@@ -18,10 +18,14 @@ def compare(plain, plain_sha, phase, phase_sha):
             "qemu_version", "ram_base")
     need(all(meta_a[k] == meta_b[k] for k in keys), "matched launch and user image")
     need(a["frequency"] == b["frequency"], "matched counter frequency")
+    frame_profiles = []
     for folder, expected in ((plain, False), (phase, True)):
         kernel = elf_file(bounded(folder / "kernel.elf", 64 << 20))
         syms = kernel.get_section_by_name(".symtab").get_symbol_by_name(PHASE)
+        frame_profiles.append(bool(kernel.get_section_by_name(".symtab").get_symbol_by_name(
+            "native_partition_traps_v1")))
         need(bool(syms) == expected, "plain/phase symbol identity")
+    need(frame_profiles[0] == frame_profiles[1], "matched frame profile")
     addr, size = symbol(kernel, PHASE)
     need(size == 12 * 17 * 8, "phase v1 extent")
     mem = Snapshot(meta_b["ram_base"], bounded(phase / "ram.bin", 16 << 20))

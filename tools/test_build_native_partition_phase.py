@@ -15,9 +15,11 @@ class PartitionPhasePackaging(unittest.TestCase):
     def test_kernel_selection(self):
         with tempfile.TemporaryDirectory() as tmp:
             for app in ("partition-p", "partition-q"):
-                for option in ([], ["--partition-phase", "irq-v1"]):
+                for option in ([], ["--partition-phase", "irq-v1"],
+                               ["--partition-frames", "retained-v1"],
+                               ["--partition-phase", "irq-v1", "--partition-frames", "retained-v1"]):
                     with self.subTest(app=app, option=option):
-                        out = Path(tmp) / (app + ("-phase" if option else "-plain"))
+                        out = Path(tmp) / ("-".join([app, *option]))
                         environments = []
 
                         def fake_run(command, *, env, **kwargs):
@@ -29,7 +31,8 @@ class PartitionPhasePackaging(unittest.TestCase):
                                 kernel.parent.mkdir(parents=True)
                                 kernel.write_bytes(b"kernel")
 
-                        ambient = {"JNOX_PARTITION_PHASE": "ambient", "JNOX_OTHER": "ambient"}
+                        ambient = {"JNOX_PARTITION_PHASE": "ambient", "JNOX_OTHER": "ambient",
+                                   "JNOX_PARTITION_FRAMES": "ambient"}
                         with patch.dict(os.environ, ambient), patch.object(package, "output", return_value="stub"), \
                                 patch.object(package.subprocess, "run", side_effect=fake_run):
                             package.main(["--out", str(out), "--app", app, *option])
@@ -38,7 +41,13 @@ class PartitionPhasePackaging(unittest.TestCase):
                         self.assertNotIn("JNOX_OTHER", kernel)
                         self.assertEqual(kernel["JNOX_APP"], app)
                         manifest = json.loads((out / "manifest.json").read_text())
-                        if option:
+                        if "--partition-frames" in option:
+                            self.assertEqual(kernel["JNOX_PARTITION_FRAMES"], "retained-v1")
+                            self.assertEqual(manifest["partition_frames"], "retained-v1")
+                        else:
+                            self.assertNotIn("JNOX_PARTITION_FRAMES", kernel)
+                            self.assertNotIn("partition_frames", manifest)
+                        if "--partition-phase" in option:
                             self.assertEqual(kernel["JNOX_PARTITION_PHASE"], "irq-v1")
                             self.assertEqual(manifest["partition_phase"], "irq-v1")
                         else:

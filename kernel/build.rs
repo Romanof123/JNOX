@@ -311,6 +311,13 @@ fn main() {
             "JNOX_PARTITION_PHASE=irq-v1 requires a native P/Q partition");
         println!("cargo::rustc-cfg=jnox_partition_phase");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_retained)");
+    if let Some(value) = selector("JNOX_PARTITION_FRAMES") {
+        assert!(value == "retained-v1" && profile.as_deref() == Some("native")
+            && matches!(app.as_deref(), Some("partition-p" | "partition-q")),
+            "retained-v1 requires a native P/Q partition");
+        println!("cargo::rustc-cfg=jnox_partition_retained");
+    }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
     if profile.as_deref() != Some("native") {
