@@ -410,20 +410,38 @@ fn boundary_check(target: u64, index: u64, step: u64, arrival: bool) {
     let done: u64;
     let issued: u64;
     let received: u64;
-    unsafe {
-        core::arch::asm!(
-            "2:", "isb", "mrs {started},cntpct_el0", "cmp {started},{target}", "b.lo 2b",
-            "cmp {started},{expiry}", "b.lo 3f",
-            "strb {one:w},[{latch}]", "dsb sy",
-            "3:", "isb", "mrs {done},cntpct_el0",
-            "cbnz {slot},5f", "mov {issued},xzr", "mov {received},xzr", "b 4f",
-            "5:", "isb", "mrs {issued},cntpct_el0",
-            "str {issued},[{slot}]", "dsb sy", "isb", "mrs {received},cntpct_el0",
-            "4:",
-            started=out(reg)started, done=out(reg)done, issued=out(reg)issued,
-            received=out(reg)received, target=in(reg)target, expiry=in(reg)(old.issued + 8 * step),
-            latch=in(reg)(&raw mut a.faulted), one=in(reg)1u32, slot=in(reg)slot,
-            options(nostack));
+    if cfg!(jnox_control_case = "tie") && arrival {
+        // For this case the final polling comparison is the expiry decision.
+        // The issue field is the ingress commit and its timestamp is read
+        // independently after the completed latch store.
+        let expiry = old.issued + 8 * step;
+        assert_eq!(target, expiry);
+        unsafe {
+            core::arch::asm!(
+                "2:", "isb", "mrs {started},cntpct_el0", "cmp {started},{expiry}", "b.lo 2b",
+                "strb {one:w},[{latch}]", "dsb sy", "isb", "mrs {done},cntpct_el0",
+                "isb", "mrs {issued},cntpct_el0", "str {issued},[{slot}]",
+                "dsb sy", "isb", "mrs {received},cntpct_el0",
+                started=out(reg)started, done=out(reg)done, issued=out(reg)issued,
+                received=out(reg)received, expiry=in(reg)expiry, latch=in(reg)(&raw mut a.faulted),
+                one=in(reg)1u32, slot=in(reg)slot, options(nostack));
+        }
+    } else {
+        unsafe {
+            core::arch::asm!(
+                "2:", "isb", "mrs {started},cntpct_el0", "cmp {started},{target}", "b.lo 2b",
+                "cmp {started},{expiry}", "b.lo 3f",
+                "strb {one:w},[{latch}]", "dsb sy",
+                "3:", "isb", "mrs {done},cntpct_el0",
+                "cbnz {slot},5f", "mov {issued},xzr", "mov {received},xzr", "b 4f",
+                "5:", "isb", "mrs {issued},cntpct_el0",
+                "str {issued},[{slot}]", "dsb sy", "isb", "mrs {received},cntpct_el0",
+                "4:",
+                started=out(reg)started, done=out(reg)done, issued=out(reg)issued,
+                received=out(reg)received, target=in(reg)target, expiry=in(reg)(old.issued + 8 * step),
+                latch=in(reg)(&raw mut a.faulted), one=in(reg)1u32, slot=in(reg)slot,
+                options(nostack));
+        }
     }
     if a.faulted {
         log(28, started, done, 0);
