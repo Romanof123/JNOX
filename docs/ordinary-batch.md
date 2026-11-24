@@ -2,6 +2,8 @@
 
 [English](ordinary-batch.en.md) · 한국어
 
+`JNOX_BATCH_WORKLOAD=telemetry`를 선택하면 같은 정책에서 유한 메모리 입력의 요약·임계값 집계·형식 검증 작업을 실행한다. [텔레메트리 수용 구성과 관측 기준](batch-telemetry-profile.en-ko.md)
+
 단일 코어 AArch64 virt 구성에서 신뢰된 Rust 함수가 `submit(work, argument, estimate, delay)`로 작업을 제출한다. 각 작업은 세대 핸들을 받으며 함수 반환 시 완료된다. 명시적 완료는 현재 실행 세대에만 성공한다. 최대 네 작업에 16 KiB 스택을 각각 할당하고 유휴 루프에 다섯 번째 스택을 배정한다. 추정량의 범위는 카운터 1~4,294,967,295틱이다. 지연 제출도 즉시 슬롯을 예약한다. 승인된 작업은 한 번 실행된다.
 
 | 입력 및 조건 | 결과 |

@@ -29,6 +29,7 @@ mod batch;
 #[cfg(jnox_batch)]
 mod batch_runtime;
 #[cfg(jnox_batch)]
+#[cfg_attr(jnox_batch_telemetry, path = "batch_telemetry.rs")]
 mod batch_app;
 #[cfg(jnox_batch_trace)]
 mod batch_trace;
