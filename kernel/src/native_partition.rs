@@ -11,6 +11,12 @@ const IDLE: usize = 2;
 const PROCESSES: usize = mmu::PROCESS_COUNT;
 const RESULT_WORDS: usize = 6;
 
+// At most 12 ordinary IRQ-to-window transitions (Q). Each half has
+// one writer. Generation one has no predecessor and drains are excluded.
+#[cfg(jnox_partition_phase)]
+#[unsafe(no_mangle)]
+static mut native_partition_irq_phase_v1: [[u64; 17]; 12] = [[0; 17]; 12];
+
 enum Table {
     P(CyclicExecutive<3>),
     Q(CyclicExecutive<4>),
@@ -92,6 +98,8 @@ fn audit_frame(tag: u64, tick: u64, pid: usize, frame: &UserFrame) {
 
 impl State {
     fn dispatch(&mut self, opening: u64) -> *const UserFrame {
+        #[cfg(jnox_partition_phase)]
+        let schedule_before = ticks();
         self.generation += 1;
         self.opening = opening;
         let (owner, pid, closing) = if self.drain {
@@ -112,12 +120,28 @@ impl State {
         };
         self.pid = pid;
         self.closing = closing;
+        #[cfg(jnox_partition_phase)]
+        let mmu_before = ticks();
         unsafe { mmu::switch(pid) }.unwrap_or_else(|_| fail(55));
         let space = mmu::space_id(pid).unwrap_or_else(|| fail(55));
+        #[cfg(jnox_partition_phase)]
+        let publish_before = ticks();
         mmu::publish_generation(self.generation);
+        #[cfg(jnox_partition_phase)]
+        let publish_after = ticks();
         unsafe { native_vruntime_deadline = closing };
         let f = &self.frames[pid];
         let selected = ticks();
+        #[cfg(jnox_partition_phase)]
+        if self.generation >= 2 && !self.drain {
+            let index = (self.generation - 2) as usize;
+            unsafe {
+                (&raw mut native_partition_irq_phase_v1[index][8]).cast::<[u64; 9]>().write_volatile([
+                    self.generation, pid as u64, schedule_before, mmu_before,
+                    publish_before, publish_after, selected, opening, closing,
+                ]);
+            }
+        }
         if selected >= closing {
             fail(56)
         }
@@ -154,9 +178,15 @@ impl State {
 
     fn trap(&mut self, f: &UserFrame, vector: u64, entry: u64) -> *const UserFrame {
         let p = self.pid;
+        #[cfg(jnox_partition_phase)]
+        let observe_before = ticks();
         let (start, compare, ctl, iar) =
             observe_trap(p, f, vector, entry, self.generation, &mut self.frames[p]);
+        #[cfg(jnox_partition_phase)]
+        let result_before = ticks();
         let [role, seen, first, work, checksum, status] = self.result();
+        #[cfg(jnox_partition_phase)]
+        let audit_before = ticks();
         row(
             22,
             entry,
@@ -231,6 +261,17 @@ impl State {
             self.drain = true;
             header(9, entry);
             return self.dispatch(entry);
+        }
+        #[cfg(jnox_partition_phase)]
+        {
+            let audit_after = ticks();
+            let index = (self.generation - 1) as usize;
+            unsafe {
+                (&raw mut native_partition_irq_phase_v1[index][0]).cast::<[u64; 8]>().write_volatile([
+                    self.generation, p as u64, entry, observe_before, result_before,
+                    audit_before, audit_after, vector,
+                ]);
+            }
         }
         self.dispatch(self.closing)
     }

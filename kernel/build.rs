@@ -304,6 +304,13 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_el0)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_vruntime)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_partition)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_phase)");
+    if let Some(value) = selector("JNOX_PARTITION_PHASE") {
+        assert!(value == "irq-v1" && profile.as_deref() == Some("native")
+            && matches!(app.as_deref(), Some("partition-p" | "partition-q")),
+            "JNOX_PARTITION_PHASE=irq-v1 requires a native P/Q partition");
+        println!("cargo::rustc-cfg=jnox_partition_phase");
+    }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
     if profile.as_deref() != Some("native") {
