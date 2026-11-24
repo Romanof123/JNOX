@@ -29,3 +29,5 @@ Stock tools/native_partition_replay.py consumes each capture directory and recor
 원래 한도는 모든 일반 창에서 62,500틱이다. P 10개와 Q 확장 포함 13개, 각 부팅의 종료 41·42를 검증한다. 2세대부터 직전 IRQ 진입, 현재 선택, 반환 표본, 사용자 최초 관측까지 나누고 첫 세대의 없는 IRQ 값은 비워 둔다. 각 ABI 방식으로 동일 부팅의 소유자별 104워드 전체를 복원 검증한다. 두 클록을 별도로 보고하며, 마감·구조·누락을 구별하고 실제 하드웨어 보장이나 릴리스 전체 판정으로 확대하지 않는다.
 
 [Independent first comparison and raw files / 최초 독립 비교와 원본](evidence/native-window-factorial-first.en-ko.md).
+
+[EVD-098 English](evidence/evd-098.en.md) · [한국어](evidence/evd-098.md).
