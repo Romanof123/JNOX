@@ -82,3 +82,5 @@ FIFO 테이블의 슬롯 순서는 A, B, HIGH이고 RR은 A, HIGH, B다. 두 설
 빈 구성의 작업 관측값 여덟 개는 모두 0이다. 지연 시작 구성은 슬롯 0의 정렬된 스택 포인터를 첫 번째 값에 기록하며 나머지 일곱 개는 0이다.
 
 일반 이미지와 계측 이미지의 최초 독립 검증 결과 및 범위는 다음 기록에 수록했다. [EVD-030](evidence/evd-030.md)
+
+[동시·지연 타이머 사건](fixed-runtime-edges.md) · [#72](https://github.com/Romanof123/JNOX/issues/72)
