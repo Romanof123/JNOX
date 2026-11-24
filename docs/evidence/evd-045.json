@@ -2,7 +2,7 @@
   "evidence_id": "EVD-045",
   "policy": "POL-007",
   "implementation": "IMP-045",
-  "verdict": "PARTIAL: all 10 default-clock guests failed before arbitration",
+  "verdict": "PARTIAL across corpora; integrated default and icount cases reproduced finite expected outcomes",
   "versions": [
     {
       "version": 1,
@@ -12,6 +12,19 @@
       "evidence": "evd-045-v1.json",
       "evidence_sha256": "e19ba71ce51ab5c57bf0a08817cc7a66eb6cdac112554764dd99f7607d694ed2",
       "reviewer_manifest_sha256": "c85166508ad4942eb3a0c350cf65ef8e688de0a94938ebde2af850cb92af2c9a"
+    },
+    {
+      "version": 2,
+      "verdict": "Finite integrated replay passed; overall qualification remains partial",
+      "composite_tree": "a097b300e0ffb2803b88e0fe02e5d88f0a2dec2b",
+      "standalone_source": "86457068e7ba019d3deabb80f63f47d50436c4a6",
+      "kind": "Integration gate for #107 and #108",
+      "english": "evd-045-v2.en.md",
+      "korean": "evd-045-v2.md",
+      "evidence": "evd-045-v2.json",
+      "gate_summary_sha256": "342a6bd81c41d824434a81300bd9dfd8b76167b9e22a1b31f826e06dac40619e",
+      "outcomes_sha256": "17e2f4e796c2cd318fbd569a68647487295a21d7b1fcb21a69a0d80473e9ca5c",
+      "evidence_sha256": "f3b2df12e0877262948d57db7e98382a717e90ee79c81928551d8e19635aaf72"
     }
   ]
 }

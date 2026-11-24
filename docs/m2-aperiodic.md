@@ -25,4 +25,4 @@ kernel 디렉터리에서 `cargo build --release --locked --features aperiodic-b
 
 CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
-POL-007 / IMP-045. 최초 기본 클록 부팅 10건은 중재 전에 실패했다. 결정론적 정상 스케줄 5개와 지연 대조군 2개는 독립 재현했다. [EVD-045](evidence/evd-045.md)
+POL-007 / IMP-045. 단독 기본 클록은 10/10건이 중재 전에 정지했다. 같은 ELF의 통합 기본 클록과 명령 계수에서는 각각 정상 8/8건과 지연 대조 2/2건을 확인했다. 타이밍 차이 원인은 미확정이다. [EVD-045](evidence/evd-045.md)

@@ -166,4 +166,4 @@ CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust ta
 
 CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
-POL-007 / IMP-045. Ten first default-clock boots failed before arbitration. Five deterministic schedules and two delayed controls were independently replayed. [EVD-045](evidence/evd-045.en.md)
+POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)

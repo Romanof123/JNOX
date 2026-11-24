@@ -115,4 +115,4 @@ POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth.
 
 POL-004 / IMP-043. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
 
-POL-007 / IMP-045. Ten first default-clock boots failed before arbitration. Five deterministic schedules and two delayed controls were independently replayed. [EVD-045](evidence/evd-045.en.md)
+POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
