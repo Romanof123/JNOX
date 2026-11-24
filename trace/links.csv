@@ -972,3 +972,6 @@ IMP-044,partially-verified-by,VER-023
 VER-002,has-partial-evidence,EVD-044
 VER-005,has-partial-evidence,EVD-044
 VER-023,has-partial-evidence,EVD-044
+CHG-050,affects,REQ-023
+REQ-023,partially-implemented-by,IMP-047
+POL-006,partially-implemented-by,IMP-047

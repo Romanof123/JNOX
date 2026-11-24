@@ -86,6 +86,14 @@ fn main() {
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
+    if env::var_os("CARGO_FEATURE_PARTITION_LEGACY_DIAG").is_some() {
+        let allowed = ["CARGO_FEATURE_PARTITION_BENCH", "CARGO_FEATURE_PARTITION_LEGACY_DIAG",
+                       "CARGO_FEATURE_PARTITION_LEGACY_DIAG_NEGATIVE"];
+        assert!(board == "virt" && bench == "partition" && profile.is_none() && app.is_none()
+            && env::vars_os().filter_map(|(key, _)| key.into_string().ok())
+                .filter(|key| key.starts_with("CARGO_FEATURE_")).all(|key| allowed.contains(&key.as_str())),
+            "legacy partition diagnostic requires standalone virt assembly partition fixture");
+    }
     let table_p = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_P").is_some();
     let table_q = env::var_os("CARGO_FEATURE_ORDINARY_PARTITION_Q").is_some();
     if table_p || table_q {
