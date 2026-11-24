@@ -4,6 +4,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 pub const N: usize = 3;
 pub const HORIZON: u64 = 16;
+pub static PRODUCT: [AtomicU64; N] = [const { AtomicU64::new(0) }; N];
 pub static PROGRESS: [AtomicU64; N] = [const { AtomicU64::new(0) }; N];
 
 #[derive(Clone, Copy)]
@@ -23,12 +24,23 @@ fn work(id: usize, duration: u64) {
     let end = super::ordinary_deadline::counter()
         .checked_add(duration)
         .unwrap();
+    work_until(id, end);
+}
+
+#[inline(always)]
+fn work_until(id: usize, end: u64) {
     let mut value = id as u64 + 1;
     while super::ordinary_deadline::counter() < end {
         for _ in 0..64 {
             value = core::hint::black_box(value.wrapping_mul(33).wrapping_add(1));
         }
         PROGRESS[id].fetch_add(1, Ordering::Relaxed);
+    }
+    if cfg!(any(
+        jnox_app = "ordinary-edf-supply",
+        jnox_app = "ordinary-llf-supply"
+    )) {
+        PRODUCT[id].store(value, Ordering::Relaxed);
     }
     core::hint::black_box(value);
 }
@@ -57,6 +69,21 @@ const fn job(id: usize, release: u64, deadline: u64, cost: u64, milliseconds: u6
         milliseconds,
     }
 }
+#[unsafe(no_mangle)]
+pub extern "C" fn deadline_worker_a_until(stop: u64) {
+    work_until(0, stop);
+}
+
+pub static SUPPLIED: [Job; 2] = [
+    Job {
+        entry: Some(deadline_worker_a_until),
+        ..job(0, 0, 5, 2, 250)
+    },
+    job(1, 1, 7, 2, 30),
+];
+pub static TIGHT: [Job; 1] = [job(0, 0, 2, 2, 250)];
+pub const RESERVED: u64 = 1 << 1;
+
 pub static EDF: [Job; N] = [
     job(
         0,
@@ -99,6 +126,24 @@ pub fn absolute(origin: u64, q: u64, k: u64) -> Result<u64, Refusal> {
 }
 
 pub fn admit(policy: DeadlinePolicy, jobs: &[Job], hz: u64, origin: u64) -> Result<(), Refusal> {
+    admit_with_supply(policy, jobs, hz, origin, 0)
+}
+
+pub fn available(mask: u64, start: u64, end: u64) -> Result<u64, Refusal> {
+    if mask >> HORIZON != 0 || start > end || end > HORIZON {
+        return Err(Refusal::Grid);
+    }
+    Ok((start..end).filter(|k| mask & (1 << k) == 0).count() as u64)
+}
+
+pub fn admit_with_supply(
+    policy: DeadlinePolicy,
+    jobs: &[Job],
+    hz: u64,
+    origin: u64,
+    mask: u64,
+) -> Result<(), Refusal> {
+    available(mask, 0, HORIZON)?;
     if jobs.is_empty() || jobs.len() > N {
         return Err(Refusal::Table);
     }
@@ -140,7 +185,7 @@ pub fn admit(policy: DeadlinePolicy, jobs: &[Job], hz: u64, origin: u64) -> Resu
                 {
                     demand = demand.checked_add(j.cost).ok_or(Refusal::Overflow)?;
                 }
-                if demand > end.deadline - start.release {
+                if demand > available(mask, start.release, end.deadline)? {
                     return Err(Refusal::Demand);
                 }
             }
@@ -152,9 +197,16 @@ pub fn admit(policy: DeadlinePolicy, jobs: &[Job], hz: u64, origin: u64) -> Resu
         if jobs.iter().any(|j| j.deadline == tick && left[j.id] != 0) {
             return Err(Refusal::Miss);
         }
+        let withheld = mask & (1 << tick) != 0;
+        if withheld {
+            model.withhold(tick).unwrap();
+        }
         for j in jobs.iter().filter(|j| j.release == tick) {
             model.release(tick, j.id, j.cost, j.deadline).unwrap();
             left[j.id] = j.cost;
+        }
+        if withheld {
+            continue;
         }
         if let Some(id) = model.decide(tick).unwrap() {
             left[id] -= 1;
