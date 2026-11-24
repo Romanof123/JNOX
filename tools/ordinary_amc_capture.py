@@ -16,7 +16,7 @@ import sys
 import time
 
 
-CASES = ("exact-lo", "exact-hi", "over-hi")
+CASES = ("exact-lo", "exact-hi", "over-hi", "stagger-idle")
 FLAGS = ["-machine", "virt,gic-version=2", "-cpu", "cortex-a72", "-smp", "1",
          "-accel", "tcg", "-m", "128M", "-nodefaults", "-display", "none",
          "-monitor", "none", "-no-reboot"]
