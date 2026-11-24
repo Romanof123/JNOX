@@ -67,3 +67,15 @@ Keep the original module filename and line layout. Wrap four existing expression
 Both baseline load images matched. Both E images failed the required linked instruction order. Zero of twelve planned guests launched. [Second reservation stage preflight](evidence/reservation-stage-v2-first.en.md)
 
 두 기준 로드 이미지가 일치했지만 E 이미지 둘 모두 링크된 명령 순서 조건에 실패했다. 예정된 게스트 12건의 실행 수는 0이다. [예약 단계 두 번째 사전 검사](evidence/reservation-stage-v2-first.md)
+
+## CHG-071 revision 3 · EOI sample placement / EOI 관측 위치
+
+[Original v2 static preflight](evidence/reservation-stage-v2-first.en.md) · [v2 최초 사전 검사](evidence/reservation-stage-v2-first.md)
+
+Preflight v2 at 45d21d76d924ca3cc1c6248c3f7dbddddecd72e0 matched both B load images to the fresh and historical references. In both E ELFs the final EOI DSB SY at 0x402013e4 precedes a CBNZ at 0x402013e8, ISB at 0x402013ec and MRS CNTPCT_EL0 at 0x402013f0. The intervening decision failed the frozen E-site criterion. All twelve positions retain zero launches and absent UART, terminal and timing evidence. Keep the first load-byte refusal and this second static refusal as distinct original records. Trace: CHG-071 · REQ-002/005/009/023 · DES-003/012 · VER-002/005/023.
+
+For E, decide whether this is the first compact opening before the sampled barrier. On the chosen path issue the required final EOI DSB SY, ISB and MRS CNTPCT_EL0 in that order in one opaque asm block. Recover the MRS address in the same block. On every other E path issue the original completion barrier. Preserve RAW4, its PC witness, validity and actual guard operands. Keep B's source file, line positions, default expression tokens and RAW3 intact.
+
+For each new E ELF, follow the full IAR EOI store and both branch successors in the linked image. Require exactly one completion DSB on either path. The sampled successor must contain adjacent DSB/ISB/MRS instructions and the ADR must point to that MRS. For each F ELF trace both iterations through the live frame checks and each failure edge. The only successful second-frame exit must reach the F ISB/MRS before any destination-bank access. In the retained v2 F images the final loop test at 0x40201858/5c branches directly to 0x40201968, with MRS at 0x4020196c. The preceding linear address 0x40201964 calls the nonreturning failure path. Verify the actual control-flow edges anew for each ELF. Baseline load identity, original endpoints, guards, frozen case order and 1 ms limit remain prerequisites for launch.
+
+v2 사전 검사에서는 두 B 이미지가 기준 적재 바이트와 일치했다. 두 E 이미지 모두 최종 DSB와 ISB 사이에 CBNZ가 있어 중단했고 12회 중 실제 실행은 0회다. 최초 B 불일치 기록과 별개로 보존한다. E에서는 첫 개방 여부를 먼저 결정하고 해당 경로에서만 최종 DSB SY·ISB·CNTPCT 판독을 한 asm 블록으로 묶는다. 다른 경로의 완료 장벽과 RAW4 위치 증거를 유지한다. 새 ELF별로 실제 IAR EOI 쓰기에서 양쪽 경로를 따라 장벽 수와 연속 명령 및 ADR 주소를 확인한다. F는 두 프레임의 모든 실시간 검사와 실패 경로, 성공 분기에서 목적지 원장 접근 전 관측까지를 링크된 제어 흐름에서 검증한다. B 원본 비교, 기존 1 ms 검사 및 동결 순서는 그대로 적용한다.
