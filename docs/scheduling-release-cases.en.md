@@ -68,3 +68,5 @@ POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQ
 CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
 
 CHG-067 · [Ordinary Rust mutex workload and batch ownership criteria](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
+
+[POL-013 Pi 4 two-core board qualification plan](boards/pi4-smp.en.md)
