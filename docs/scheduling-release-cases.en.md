@@ -4,6 +4,8 @@
 
 Baseline `19d2154`. Each row allocates the existing release criteria to recorded subcases and remaining work. Each record identifies its revision, configuration and observations. EVD-004 exercised controlled selection/accounting inputs inside a guest. Task-specific records identify actual context switches on QEMU virtual CPUs. EVD-008 is a host calculation. Physical measurements and product approval apply according to each declared profile. All 18 integrated release decisions remain open.
 
+For the trace audit under [#6](https://github.com/Romanof123/JNOX/issues/6), an explicit EVD-number link in the recorded-subcases cell of a policy row requires a typed policy evidence edge when a directly linked implementation was tested in that record. Shared references, static measurements and pending physical or product work retain their own scope. [#208](https://github.com/Romanof123/JNOX/issues/208)
+
 | Policy | Subcases and existing records | Remaining execution or approval |
 |---|---|---|
 | POL-001 | Oldest higher ID; timer arrival; yield/block/wake/exit; handler enqueues behind older event; depth two and excess rejection. [EVD-004](evidence/evd-004.en.md) · [EVD-012](evidence/evd-012.en.md) The two linked services reached queue peaks of two and one, rejected full queues and invalid handlers, and preserved FIFO order when a handler posted another event. Each owner logged two budget overruns after return and continued. [EVD-036](evidence/evd-036.en.md) · [#80](https://github.com/Romanof123/JNOX/issues/80) | Establish physical handler WCET and approve queue, handler and workload limits for the product. |
