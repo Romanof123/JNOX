@@ -165,3 +165,5 @@ POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth.
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
 CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)

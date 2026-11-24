@@ -23,9 +23,10 @@ fn main() {
                 "JNOX_GROUP_TRACE requires 1 and JNOX_PROFILE=groups");
         println!("cargo::rustc-cfg=jnox_group_trace");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_multilevel_limits)");
     println!("cargo::rustc-check-cfg=cfg(jnox_multilevel)");
     println!("cargo::rustc-check-cfg=cfg(jnox_multilevel_trace)");
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("mlq", "mlfq"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("mlq", "mlfq", "mlq-blocked", "mlq-exited", "mlq-saturated", "mlfq-delayed"))"#);
     if let Some(value) = selector("JNOX_MULTILEVEL_TRACE") {
         assert!(value == "1" && profile.as_deref() == Some("multilevel"),
                 "JNOX_MULTILEVEL_TRACE=1 requires multilevel profile");
@@ -109,11 +110,12 @@ fn main() {
         Some("multilevel") => {
             assert!(bench == "boot" && board == "virt", "multilevel requires virt without bench features");
             match app.as_deref() {
-                Some(name @ ("mlq" | "mlfq")) => {
+                Some(name @ ("mlq" | "mlfq" | "mlq-blocked" | "mlq-exited" | "mlq-saturated" | "mlfq-delayed")) => {
+                    if name.contains('-') { println!("cargo::rustc-cfg=jnox_multilevel_limits"); }
                     println!("cargo::rustc-cfg=jnox_multilevel");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
-                _ => panic!("multilevel requires JNOX_APP=mlq or mlfq"),
+                _ => panic!("multilevel requires a supported MLQ or MLFQ application"),
             }
         }
         Some("fixed") => {
