@@ -13,3 +13,5 @@ Prospective protocol: archive the historical four first runs individually. First
 과거 최초 네 결과를 각각 보존한다. 두 버전의 P/Q 및 기본/결정적 시계 네 조합에서 같은 설정으로 최초 실행하고 위 순서대로 교차 반복한다. 실패도 포함해 세대별 네 구간과 합계, 부팅별 최댓값과 실패 횟수를 보고한다. 기존 재생기와 weighted 호환 사례도 확인한다. 이 변경에는 실행 검증 결과가 없다.
 
 [Independent paired first results and full frame replay / 독립 대조 결과와 전체 프레임 재생](evidence/native-partition-frame-pairs-first.en-ko.md).
+
+[Independent decomposition of the preserved first IRQ intervals / 기존 최초 IRQ 시간의 독립 구간 분석](evidence/native-partition-first-irq-intervals.en-ko.md).
