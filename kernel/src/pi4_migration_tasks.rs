@@ -8,7 +8,18 @@ use core::{arch::asm, hint, ptr};
 const M: usize = 0;
 const P0: usize = 1;
 const P1: usize = 2;
-const END: u64 = 65_536;
+#[cfg(not(feature = "pi4-stream-v1"))]
+pub(crate) const END: u64 = 65_536;
+#[cfg(not(feature = "pi4-stream-v1"))]
+pub(crate) const BLOCK: u64 = 16;
+#[cfg(not(feature = "pi4-stream-v1"))]
+pub(crate) const PRODUCT: u64 = 2_147_516_416;
+#[cfg(feature = "pi4-stream-v1")]
+pub(crate) const END: u64 = 4 * 1024 * 1024;
+#[cfg(feature = "pi4-stream-v1")]
+pub(crate) const BLOCK: u64 = 1024;
+#[cfg(feature = "pi4-stream-v1")]
+pub(crate) const PRODUCT: u64 = 0x78d2_2ad1;
 const STRIDE: u64 = 16;
 
 #[repr(C)]
@@ -19,6 +30,7 @@ struct Progress {
 
 // The observer must locate the arithmetic loop in the actual linked symbol.
 // The function's entry and epilogue are outside the work interval.
+#[cfg(not(feature = "pi4-stream-v1"))]
 #[inline(never)]
 #[unsafe(no_mangle)]
 extern "C" fn pi4_migration_input_loop(state: &mut Progress, limit: u64) {
@@ -42,13 +54,54 @@ fn state_index(cursor: *const Progress) -> u64 {
     unsafe { ptr::read_volatile(&raw const (*cursor).index) }
 }
 
+#[cfg(feature = "pi4-stream-v1")]
+const fn crc_table() -> [u32; 256] {
+    let mut table = [0; 256];
+    let mut i = 0;
+    while i < 256 {
+        let mut crc = i as u32;
+        let mut bit = 0;
+        while bit < 8 {
+            crc = (crc >> 1) ^ (0xedb8_8320 & 0u32.wrapping_sub(crc & 1));
+            bit += 1;
+        }
+        table[i] = crc;
+        i += 1;
+    }
+    table
+}
+
+#[cfg(feature = "pi4-stream-v1")]
+#[inline(never)]
 #[unsafe(no_mangle)]
+extern "C" fn pi4_stream_crc32_loop_v1(state: &mut Progress, limit: u64) {
+    static TABLE: [u32; 256] = crc_table();
+    let mut cursor: *mut Progress = state;
+    while state_index(cursor) < limit {
+        // Keep X21 bound to the state used by the byte update across preemption.
+        unsafe {
+            asm!("", inout("x21") cursor, options(nostack, preserves_flags));
+            let i = ptr::read_volatile(&raw const (*cursor).index);
+            let byte = (i ^ (i >> 8) ^ (i >> 16)) as u8;
+            let crc = !(ptr::read_volatile(&raw const (*cursor).sum) as u32);
+            let next = (crc >> 8) ^ TABLE[((crc as u8) ^ byte) as usize];
+            ptr::write_volatile(&raw mut (*cursor).sum, u64::from(!next));
+            ptr::write_volatile(&raw mut (*cursor).index, i + 1);
+        }
+    }
+}
+
+#[cfg_attr(feature = "pi4-stream-v1", unsafe(export_name = "pi4_stream_crc32_m_v1"))]
+#[cfg_attr(not(feature = "pi4-stream-v1"), unsafe(no_mangle))]
 pub(crate) extern "C" fn pi4_migration_m() -> ! {
     let mut state = Progress { index: 0, sum: 0 };
     let mut checkpoints = runtime::Checkpoints::default();
     while state.index < END {
         let before = runtime::generation(M);
-        let limit = state.index + STRIDE;
+        let limit = state.index + BLOCK;
+        #[cfg(feature = "pi4-stream-v1")]
+        pi4_stream_crc32_loop_v1(&mut state, limit);
+        #[cfg(not(feature = "pi4-stream-v1"))]
         pi4_migration_input_loop(&mut state, limit);
         runtime::checkpoint(&mut checkpoints, before, M, state.index, state.sum, (&raw const state).addr());
     }

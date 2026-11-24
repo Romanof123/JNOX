@@ -12,14 +12,14 @@ def main():
     with tempfile.TemporaryDirectory() as target:
         env["CARGO_TARGET_DIR"] = target
 
-        def cfg(features="", *, board="virt", reject=None):
+        def cfg(features="", *, board="virt", reject=None, **selectors):
             cmd = ["cargo", "rustc", "--release"]
             if features == "all":
                 cmd.append("--all-features")
             elif features:
                 cmd.extend(["--features", features])
             cmd.extend(["--", "--print", "cfg"])
-            run = subprocess.run(cmd, cwd=KERNEL, env=dict(env, JNOX_BOARD=board),
+            run = subprocess.run(cmd, cwd=KERNEL, env=dict(env, JNOX_BOARD=board, **selectors),
                                  text=True, capture_output=True)
             if reject is not None:
                 if run.returncode == 0 or reject not in run.stderr:
@@ -46,6 +46,22 @@ def main():
         coop = selected("coop-bench", "coop")
         if selected("all", "coop") != coop:
             raise AssertionError("all-features changed the legacy cooperative selector")
+
+        # Exercise both the SMP validator and the board/linker allowlist.
+        stream = "pi4-stream-v1"
+        for app in ("migration-global", "migration-partitioned", "migration-clustered"):
+            selectors = dict(board="pi4", JNOX_PROFILE="smp", JNOX_APP=app)
+            for features in ("", stream):
+                effective = cfg(features, **selectors)
+                if not {"jnox_pi4", "jnox_pi4_smp", "jnox_pi4_migration"} <= effective:
+                    raise AssertionError(f"{app} {features!r}: {effective}")
+
+        migration = dict(JNOX_PROFILE="smp", JNOX_APP="migration-global")
+        wrong_app = "pi4-stream-v1 requires a Pi 4 SMP migration application"
+        cfg(stream, board="pi4", JNOX_PROFILE="smp", JNOX_APP="directed-wake", reject=wrong_app)
+        cfg(stream, board="virt", reject=wrong_app, **migration)
+        cfg(stream + ",coop-bench", board="virt", reject=wrong_app)
+        cfg(stream + ",sched-bench", board="pi4", reject="no other benchmark", **migration)
 
 
 if __name__ == "__main__":

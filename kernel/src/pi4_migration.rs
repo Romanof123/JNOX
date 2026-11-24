@@ -251,6 +251,7 @@ pub(crate) struct Checkpoints {
 
 pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, task: usize,
                          index: u64, sum: u64, local: usize) {
+    #[cfg(not(feature = "pi4-stream-v1"))]
     if task == 0 && sum != index * (index + 1) / 2 {
         abort(12)
     }
@@ -259,7 +260,7 @@ pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, task: usize,
     retained.last_index = index;
     let after = generation(task);
     if task != 0 || retained.last_lease != after || retained.rows_on_lease < 2
-        || index == 65536 || before != after
+        || index == jobs::END || before != after
     {
         // Bind the sparse row and its CPU-local journal slot to the same lease.
         let daif: u64;
@@ -293,7 +294,7 @@ pub(crate) fn checkpoint(retained: &mut Checkpoints, before: u64, task: usize,
         );
         unsafe { asm!("msr daif,{}",in(reg)daif,options(nostack)) };
     }
-    if task == 0 && index == 16 {
+    if task == 0 && index == jobs::BLOCK {
         MILESTONE.store(true, Release)
     }
 }
@@ -485,13 +486,13 @@ pub(super) fn svc(c: usize, f: *mut Frame, imm: u16) -> *mut Frame {
         let role = l.task as usize;
         trap(s, c, role, f, 0xffff);
         let fr = unsafe { &*f };
-        if s.epoch == 0 && role == 0 && fr.gpr[0] == 0 && fr.gpr[1] == 2147516416 && imm == 1 {
+        if s.epoch == 0 && role == 0 && fr.gpr[0] == 0 && fr.gpr[1] == jobs::PRODUCT && imm == 1 {
             crate::uart_write(b"PI4 MIG UNOBSERVED M FINISHED BEFORE IRQ\n");
             abort(29)
         }
         let expected = match (s.epoch, role) {
             (0, 2) => 136,
-            (1, 0) => 2147516416,
+            (1, 0) => jobs::PRODUCT,
             (1, 1) => 528,
             (1, 2) => 392,
             _ => abort(25),
@@ -500,7 +501,7 @@ pub(super) fn svc(c: usize, f: *mut Frame, imm: u16) -> *mut Frame {
             abort(26)
         }
         let (count, last_index, bit) = match (s.epoch, role) {
-            (1, 0) => (4096, 65536, 1),
+            (1, 0) => (jobs::END / jobs::BLOCK, jobs::END, 1),
             (1, 1) => (2, 32, 2),
             (0, 2) => (1, 16, 4),
             (1, 2) => (1, 32, 8),

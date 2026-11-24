@@ -58,6 +58,22 @@ fn configure_ap_admission(profile: Option<&str>) {
     println!("cargo::rustc-cfg=jnox_ap_admission");
 }
 
+// Cargo exposes the expanded set, not the --all-features flag. Read the
+// package's own feature keys so a partial set cannot impersonate that legacy
+// invocation when new features are added.
+fn all_package_features_enabled() -> bool {
+    let manifest = include_str!("Cargo.toml");
+    let (_, features) = manifest.split_once("[features]").expect("package feature table");
+    features.lines().map(str::trim)
+        .take_while(|line| !line.starts_with('['))
+        .filter(|line| !line.starts_with('#'))
+        .filter_map(|line| line.split_once('=').map(|(key, _)| key.trim()))
+        .all(|name| {
+            let key = name.replace('-', "_").to_ascii_uppercase();
+            env::var_os(format!("CARGO_FEATURE_{key}")).is_some()
+        })
+}
+
 fn main() {
     validate_architecture();
     let profile = selector("JNOX_PROFILE");
@@ -308,6 +324,16 @@ fn main() {
         assert!(native_image.is_none() && native_hash.is_none(),
             "native ELF packaging variables require JNOX_PROFILE=native");
     }
+    let migration_app = matches!(app.as_deref(),
+        Some("migration-global" | "migration-partitioned" | "migration-clustered"));
+    let stream_feature = env::var_os("CARGO_FEATURE_PI4_STREAM_V1").is_some();
+    let migration_stream = stream_feature && board == "pi4" && profile.as_deref() == Some("smp")
+        && migration_app;
+    if stream_feature && !migration_stream {
+        assert!(board == "virt" && bench == "coop" && profile.is_none() && app.is_none()
+            && all_package_features_enabled(),
+            "pi4-stream-v1 requires a Pi 4 SMP migration application");
+    }
     match profile.as_deref() {
         Some("native") => {
             assert!(board == "virt" && app.as_deref() == Some("startup-probe")
@@ -336,9 +362,10 @@ fn main() {
         }
         Some("smp") => {
             let selected = app.as_deref().unwrap_or("");
-            assert!(board == "pi4" && matches!(selected, "directed-wake" | "migration-global" | "migration-partitioned" | "migration-clustered")
+            assert!(board == "pi4" && (selected == "directed-wake" || migration_app)
                 && bench == "boot" && trace.is_none() && scenario.is_none()
-                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                && env::vars_os().all(|(key, _)| !key.to_string_lossy().starts_with("CARGO_FEATURE_")
+                    || (migration_stream && key == "CARGO_FEATURE_PI4_STREAM_V1")),
                 "directed-wake requires Pi 4, smp profile and no other benchmark or runtime selector");
             println!("cargo::rustc-cfg=jnox_pi4_smp");
             if selected != "directed-wake" {
@@ -462,7 +489,8 @@ fn main() {
                     .filter_map(|(key, _)| key.into_string().ok())
                     .filter(|key| key.starts_with("CARGO_FEATURE_"))
                     .all(|key| matches!(key.as_str(), "CARGO_FEATURE_SCHED_BENCH"
-                        | "CARGO_FEATURE_ORDINARY_PARTITION_P" | "CARGO_FEATURE_ORDINARY_PARTITION_Q")),
+                        | "CARGO_FEATURE_ORDINARY_PARTITION_P" | "CARGO_FEATURE_ORDINARY_PARTITION_Q")
+                        || (migration_stream && key == "CARGO_FEATURE_PI4_STREAM_V1")),
                 "JNOX_BOARD=pi4 supports serial boot, sched-bench, or uninstrumented fixed FIFO/RR"
             );
             println!("cargo::rustc-cfg=jnox_pi4");
