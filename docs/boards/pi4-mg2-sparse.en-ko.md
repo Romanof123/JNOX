@@ -37,3 +37,4 @@ Position-specific filesystem paths distinguish the two sessions. The sole instru
 The Integration plugin build receipt is a JSON object with model_sha256, model_build_id, model_attestation_sha256, header_sha256, plugin_source_sha256, plugin_sha256, compiler_version (text) and compiler_argv (string array). Keep the underlying QEMU build attestation file with the receipt. Obtain digests from the actual source/header/object on the build host. The pinned linker map assigns event to 0x818d8..0x81a0b and signal to 0x838cc..0x8396f. LIVE[0] at 0x8d130 and TASK_LEASE[0] at 0x8d108 must both equal the observed M lease.
 
 플러그인 빌드 기록의 JSON 필드는 위와 같다. 원본 모델 증명 파일의 해시와 실제 빌드 입력·출력 해시를 기록한다. 링커 맵의 두 함수 범위와 CPU0의 LIVE 및 M의 TASK_LEASE를 확인한다.
+[Matched model build receipt / 일치 모델 빌드 증거](../evidence/pi4-mg2-plugin-model-build.en-ko.md) · #198 · #199.
