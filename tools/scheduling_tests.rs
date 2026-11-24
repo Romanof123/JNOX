@@ -665,3 +665,60 @@ fn ordinary_mutex_manifests_transfer_the_protected_resource_and_restore_priority
         assert_eq!(locks.effective(0),Some(2));
     }
 }
+
+#[test]
+fn cyclic_cursor_matches_every_small_table_and_seek() {
+    use temporal_policy::CyclicExecutive;
+
+    let choices: Vec<_> = [None, Some(0), Some(1)].into_iter()
+        .flat_map(|owner| (1..=3).map(move |duration| (owner, duration)))
+        .collect();
+    for &a in &choices {
+        for &b in &choices {
+            for &c in &choices {
+                let slots = [a, b, c];
+                let frame = a.1 + b.1 + c.1;
+                let make = || CyclicExecutive::new(2, frame, slots).unwrap();
+                let pure = make();
+                let mut cursor = make().into_cursor();
+                for seek in (0..2 * frame).rev() {
+                    for mask in 0..4 {
+                        let mut tick = seek;
+                        // Seek to every interior and boundary, then cross a
+                        // whole frame, including a wrap, on adjacent calls.
+                        for _ in 0..4 {
+                            let ready = |id: usize| mask & (1 << id) != 0;
+                            let expected = pure.decision(tick, ready).unwrap();
+                            let mut queried = Vec::new();
+                            let actual = cursor.decision(tick, |id| {
+                                queried.push(id);
+                                ready(id)
+                            });
+                            assert_eq!(actual, Some(expected), "slots={slots:?} tick={tick}");
+                            assert!(queried.into_iter().eq(expected.owner));
+                            tick = expected.end_tick;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn cyclic_cursor_recovers_after_clock_limit() {
+    use temporal_policy::CyclicExecutive;
+
+    let mut cursor = CyclicExecutive::new(1, u64::MAX, [(Some(0), u64::MAX)])
+        .unwrap().into_cursor();
+    assert_eq!(cursor.decision(0, |_| true).unwrap().end_tick, u64::MAX);
+    assert_eq!(cursor.decision(u64::MAX, |_| panic!("overflow queried readiness")), None);
+    let recovered = cursor.decision(u64::MAX - 1, |_| false).unwrap();
+    assert_eq!((recovered.owner, recovered.runnable, recovered.end_tick), (Some(0), None, u64::MAX));
+
+    let mut cursor = CyclicExecutive::new(1, 4, [(None, 1), (Some(0), 3)])
+        .unwrap().into_cursor();
+    assert_eq!(cursor.decision(u64::MAX - 1, |_| panic!("seek overflow queried readiness")), None);
+    assert_eq!(cursor.decision(0, |_| panic!("idle queried readiness")).unwrap().end_tick, 1);
+    assert_eq!(cursor.decision(1, |_| true).unwrap().end_tick, 4);
+}
