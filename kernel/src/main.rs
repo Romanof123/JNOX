@@ -45,7 +45,7 @@ mod control_app;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_ordinary_reservation, jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -136,11 +136,15 @@ mod proportional_policy;
 mod ready_queue;
 #[cfg(any(jnox_ap, jnox_bench = "aperiodic"))]
 mod request_server;
+#[cfg(jnox_ordinary_reservation)]
+mod ordinary_reservations;
+#[cfg(jnox_ordinary_reservation)]
+mod reservation_jobs;
 #[cfg(jnox_ap)]
 mod ordinary_server;
 #[cfg(any(jnox_bench = "scheduler", jnox_bench = "rr"))]
 mod sched;
-#[cfg(jnox_bench = "rr")]
+#[cfg(any(jnox_ordinary_reservation, jnox_bench = "rr"))]
 mod service_policy;
 #[cfg(jnox_bench = "smp")]
 mod smp;
@@ -148,7 +152,7 @@ mod smp;
 mod smp_boot;
 #[cfg(jnox_bench = "smp")]
 mod smp_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "cbs_wake", jnox_bench = "partition"))]
+#[cfg(any(jnox_ordinary_reservation, jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "cbs_wake", jnox_bench = "partition"))]
 mod temporal_policy;
 #[cfg(jnox_bench = "vruntime")]
 mod vruntime;
@@ -183,6 +187,8 @@ extern "C" fn kernel_main() -> ! {
     fixed_apps::run();
     #[cfg(jnox_batch)]
     batch_app::run();
+    #[cfg(jnox_ordinary_reservation)]
+    ordinary_reservations::run();
     #[cfg(jnox_ap)]
     ordinary_server::run();
     #[cfg(jnox_groups)]
@@ -191,11 +197,11 @@ extern "C" fn kernel_main() -> ! {
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+    #[cfg(not(any(jnox_ordinary_reservation, jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+#[cfg(not(any(jnox_ordinary_reservation, jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

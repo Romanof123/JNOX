@@ -106,7 +106,20 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("aperiodic"), "JNOX_APERIODIC_LATE=1 requires aperiodic profile");
         println!("cargo::rustc-cfg=jnox_ap_late");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_reservation)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_policy, values("aligned", "cbs"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_case, values("wake", "saturated", "refused", "late"))"#);
     match profile.as_deref() {
+        Some("reservation") => {
+            assert!(board == "virt" && bench == "boot", "reservation requires virt without benchmark features");
+            let (policy, case) = app.as_deref().and_then(|name| name.split_once('-'))
+                .expect("reservation requires JNOX_APP=<aligned|cbs>-<wake|saturated|refused|late>");
+            assert!(matches!(policy, "aligned" | "cbs"), "invalid reservation policy {policy}");
+            assert!(matches!(case, "wake" | "saturated" | "refused" | "late"), "invalid reservation case {case}");
+            println!("cargo::rustc-cfg=jnox_ordinary_reservation");
+            println!(r#"cargo::rustc-cfg=jnox_reservation_policy="{policy}""#);
+            println!(r#"cargo::rustc-cfg=jnox_reservation_case="{case}""#);
+        }
         Some("aperiodic") => {
             assert!(board == "virt" && bench == "boot", "ordinary aperiodic requires virt without benchmarks");
             let name = app.as_deref().expect("aperiodic profile requires JNOX_APP");
@@ -173,8 +186,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel, periodic or aperiodic"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel, periodic or aperiodic"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel, periodic, aperiodic or reservation"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel, periodic, aperiodic or reservation"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",
