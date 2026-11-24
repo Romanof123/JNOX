@@ -1,0 +1,258 @@
+{
+  "archive_sha256": "287b2893a6ee8bda2a693789e42c02adf44878f5075ef54da00464fcbc0d2005",
+  "checked_files": 82,
+  "regimes": {
+    "global": {
+      "source": "559449c673ac55a0a2bf34f3e8ae680d99e72f09",
+      "freeze_image_hashes": {
+        "kernel.elf": "58b9108d2c70bd70b86baab9b2f3bce36aac080735b32001a835372fcf91c57e",
+        "kernel8.img": "22215bbc60d17ea8a9cc8079586544e82088bc204534afc3cecdfc350be226f0",
+        "disassembly.txt": "2968aea21228106a0c2003e21cea44558fab35ab085b462f1ab4ac62084cecdf"
+      },
+      "strict_loop_half_open": [
+        "0x81f00",
+        "0x81f24"
+      ],
+      "sites": {
+        "m_entry": "0x81f2c",
+        "p1_entry": "0x82008",
+        "m_sparse_checkpoint_log_call": "0x80214",
+        "m_first_milestone_release": "0x80234",
+        "m_svc": "0x81f98",
+        "sgi_mmio_write": "0x83954",
+        "sgi_post_dsb_isb_return": "0x83960",
+        "p1_idle_entry": "0x809a8",
+        "p1_observed_milestone_success_path": "0x82090",
+        "p1_svc": "0x82094"
+      },
+      "firsts": [
+        {
+          "first_position": 1,
+          "uart_sha256": "efce3a779d3239af887d37be3ae17d1c9fdfb4c2cbb422a147afa04878593655",
+          "cpu_traces": [
+            {
+              "cpu": 0,
+              "trace_sha256": "df5c24e0ab94b52370faee4aeb2cf43179346f82b5082818211a34fdf3c194f8",
+              "eret_pcs": [
+                "0x80078",
+                "0x81f2c"
+              ],
+              "svc_elr": "0x81f9c",
+              "interrupted_spsr": "0x60000345",
+              "irq_entries": 0
+            },
+            {
+              "cpu": 1,
+              "trace_sha256": "6e59b3d980f0512f3ab8b53d9c8f8c5975a4a543d23654d670947d7fa5963ce2",
+              "eret_pcs": [
+                "0x82110",
+                "0x82008",
+                "0x809a8"
+              ],
+              "svc_elr": "0x82098",
+              "interrupted_spsr": "0x20000345",
+              "irq_entries": 0
+            }
+          ]
+        },
+        {
+          "first_position": 2,
+          "uart_sha256": "efce3a779d3239af887d37be3ae17d1c9fdfb4c2cbb422a147afa04878593655",
+          "cpu_traces": [
+            {
+              "cpu": 0,
+              "trace_sha256": "df5c24e0ab94b52370faee4aeb2cf43179346f82b5082818211a34fdf3c194f8",
+              "eret_pcs": [
+                "0x80078",
+                "0x81f2c"
+              ],
+              "svc_elr": "0x81f9c",
+              "interrupted_spsr": "0x60000345",
+              "irq_entries": 0
+            },
+            {
+              "cpu": 1,
+              "trace_sha256": "6e59b3d980f0512f3ab8b53d9c8f8c5975a4a543d23654d670947d7fa5963ce2",
+              "eret_pcs": [
+                "0x82110",
+                "0x82008",
+                "0x809a8"
+              ],
+              "svc_elr": "0x82098",
+              "interrupted_spsr": "0x20000345",
+              "irq_entries": 0
+            }
+          ]
+        }
+      ]
+    },
+    "partitioned": {
+      "source": "559449c673ac55a0a2bf34f3e8ae680d99e72f09",
+      "freeze_image_hashes": {
+        "kernel.elf": "d5e0238aef0f4025dc34857c597da0e26f9c47fd91edb35b5c92d3d0423d7424",
+        "kernel8.img": "930505c527c843095923f2e6c01f8109085b2a2f776977ae24bf4284fffb7ffb",
+        "disassembly.txt": "2fc8b41e1da63c038f0421b44528ec2fbbc14ba9778636688a0bc002e7b2508d"
+      },
+      "strict_loop_half_open": [
+        "0x81f04",
+        "0x81f28"
+      ],
+      "sites": {
+        "m_entry": "0x81f30",
+        "p1_entry": "0x8200c",
+        "m_sparse_checkpoint_log_call": "0x80214",
+        "m_first_milestone_release": "0x80234",
+        "m_svc": "0x81f9c",
+        "sgi_mmio_write": "0x83954",
+        "sgi_post_dsb_isb_return": "0x83960",
+        "p1_idle_entry": "0x809ac",
+        "p1_observed_milestone_success_path": "0x82094",
+        "p1_svc": "0x82098"
+      },
+      "firsts": [
+        {
+          "first_position": 1,
+          "uart_sha256": "efce3a779d3239af887d37be3ae17d1c9fdfb4c2cbb422a147afa04878593655",
+          "cpu_traces": [
+            {
+              "cpu": 0,
+              "trace_sha256": "18327d1f748922c0cf8a8bdb4600f6f9d7692bc7a9627509ac02194a103e0e3c",
+              "eret_pcs": [
+                "0x80078",
+                "0x81f30"
+              ],
+              "svc_elr": "0x81fa0",
+              "interrupted_spsr": "0x60000345",
+              "irq_entries": 0
+            },
+            {
+              "cpu": 1,
+              "trace_sha256": "467ec0a6f8a64ad45763b40dab513edeb4a67002b240e155e97ae82c85a69609",
+              "eret_pcs": [
+                "0x82118",
+                "0x8200c",
+                "0x809ac"
+              ],
+              "svc_elr": "0x8209c",
+              "interrupted_spsr": "0x20000345",
+              "irq_entries": 0
+            }
+          ]
+        },
+        {
+          "first_position": 2,
+          "uart_sha256": "efce3a779d3239af887d37be3ae17d1c9fdfb4c2cbb422a147afa04878593655",
+          "cpu_traces": [
+            {
+              "cpu": 0,
+              "trace_sha256": "18327d1f748922c0cf8a8bdb4600f6f9d7692bc7a9627509ac02194a103e0e3c",
+              "eret_pcs": [
+                "0x80078",
+                "0x81f30"
+              ],
+              "svc_elr": "0x81fa0",
+              "interrupted_spsr": "0x60000345",
+              "irq_entries": 0
+            },
+            {
+              "cpu": 1,
+              "trace_sha256": "467ec0a6f8a64ad45763b40dab513edeb4a67002b240e155e97ae82c85a69609",
+              "eret_pcs": [
+                "0x82118",
+                "0x8200c",
+                "0x809ac"
+              ],
+              "svc_elr": "0x8209c",
+              "interrupted_spsr": "0x20000345",
+              "irq_entries": 0
+            }
+          ]
+        }
+      ]
+    },
+    "clustered": {
+      "source": "559449c673ac55a0a2bf34f3e8ae680d99e72f09",
+      "freeze_image_hashes": {
+        "kernel.elf": "8660010cca701e54f23a6af3c1782dd24bfd8da66d345147b5b4daba95f0002f",
+        "kernel8.img": "cc3dbb8ececa7f00c01164b716310596d73bdad1c8eed49753f9f3a5ea60ce79",
+        "disassembly.txt": "aaa48104cf61ea6d1de88b2441929cd2ff0528fa7d2b13f9c42a7ae5f24e683a"
+      },
+      "strict_loop_half_open": [
+        "0x81fb0",
+        "0x81fd4"
+      ],
+      "sites": {
+        "m_entry": "0x81fdc",
+        "p1_entry": "0x820b8",
+        "m_sparse_checkpoint_log_call": "0x80214",
+        "m_first_milestone_release": "0x80234",
+        "m_svc": "0x82048",
+        "sgi_mmio_write": "0x83954",
+        "sgi_post_dsb_isb_return": "0x83960",
+        "p1_idle_entry": "0x809ac",
+        "p1_observed_milestone_success_path": "0x82140",
+        "p1_svc": "0x82144"
+      },
+      "firsts": [
+        {
+          "first_position": 1,
+          "uart_sha256": "efce3a779d3239af887d37be3ae17d1c9fdfb4c2cbb422a147afa04878593655",
+          "cpu_traces": [
+            {
+              "cpu": 0,
+              "trace_sha256": "aff0dc678c6f7e8ce8101e9d04e363b48892b854b4860b41e6affb9b1f6b0114",
+              "eret_pcs": [
+                "0x80078",
+                "0x81fdc"
+              ],
+              "svc_elr": "0x8204c",
+              "interrupted_spsr": "0x60000345",
+              "irq_entries": 0
+            },
+            {
+              "cpu": 1,
+              "trace_sha256": "ab861441a97e13bb6e3949afd64781c306338816d106f32022e56d42dee1d0d8",
+              "eret_pcs": [
+                "0x821c0",
+                "0x820b8",
+                "0x809ac"
+              ],
+              "svc_elr": "0x82148",
+              "interrupted_spsr": "0x20000345",
+              "irq_entries": 0
+            }
+          ]
+        },
+        {
+          "first_position": 2,
+          "uart_sha256": "efce3a779d3239af887d37be3ae17d1c9fdfb4c2cbb422a147afa04878593655",
+          "cpu_traces": [
+            {
+              "cpu": 0,
+              "trace_sha256": "aff0dc678c6f7e8ce8101e9d04e363b48892b854b4860b41e6affb9b1f6b0114",
+              "eret_pcs": [
+                "0x80078",
+                "0x81fdc"
+              ],
+              "svc_elr": "0x8204c",
+              "interrupted_spsr": "0x60000345",
+              "irq_entries": 0
+            },
+            {
+              "cpu": 1,
+              "trace_sha256": "ab861441a97e13bb6e3949afd64781c306338816d106f32022e56d42dee1d0d8",
+              "eret_pcs": [
+                "0x821c0",
+                "0x820b8",
+                "0x809ac"
+              ],
+              "svc_elr": "0x82148",
+              "interrupted_spsr": "0x20000345",
+              "irq_entries": 0
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
