@@ -16,3 +16,5 @@ CHG-022 · POL-015 · REQ-002/005/023 → DES-003/012 → IMP-020 → VER-002/00
 실제 IRQ 여섯 번의 만기 및 진입 시각, 선택한 작업의 실행 루프 주소, 전용 스택, 진행량과 결과를 보존한다. 같은 카운터에서 전환 경계·IRQ 관측·상태 변경·HI 문맥 실행 시각의 순서를 대조한다. 이 시험의 최대 이월 부하에서는 네 슬롯이 모두 차 있어야 한다. 제품 시간 상한·제품 최대 부하·시스템 고장 대응은 별도 근거가 필요하다.
 
 kernel에서 `cargo build --release --locked --features amc-bench -j1`, 저장소 루트에서 `python3 tools/qemu_boot.py --profile amc --kernel kernel/target/aarch64-unknown-none/release/jnox-kernel`를 실행한다. 최초 실행에서는 QEMU의 -d int 출력을 별도 파일로 저장하고 같은 프로세스에서 나온 UART를 보관한다. 마지막 줄은 AMC PASS다. 기록된 ELR을 동결 ELF의 amc_lo_initial·amc_hi·amc_survivor·amc_lo_fresh 시작/끝 심볼 및 실제 예외 복귀 주소와 대조한다. IRQ ≤ 커밋 ≤ 재개된 작업의 첫 관측 < 다음 만기 순서를 확인하고 첫 관측과 두 번째 슬롯 경계의 차이를 보고한다.
+
+[EVD-020](evidence/evd-020.md)

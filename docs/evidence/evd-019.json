@@ -1,0 +1,778 @@
+{
+  "first_verdict": "PASS before raw inspection",
+  "source_commit": "155b5754e286ec42d851cdbee396d3b265b1ff23",
+  "source_tree": "bd23e85d97c8549e60e1c4f846251bf9c1a3a616",
+  "source_clean": true,
+  "elf_sha256": "eb51221183c3c2b90838e4986f2dc4db16ca468f94f39e86935171954e1a9a28",
+  "environment": "WSL Ubuntu; fresh capture directory; single guest run; python3 -B tools/qemu_boot.py --profile multilevel --runs 1 with wrapper invoking python3 -B tools/multilevel_capture.py and original args; observer stdout supplies ELF and wrapper paths; raw launch contains real guest argv.",
+  "observer_exit": 0,
+  "observer_stdout": "Run 1/1  ELF SHA-256 = eb51221183c3c2b90838e4986f2dc4db16ca468f94f39e86935171954e1a9a28\n  argv = [\"/tmp/mlq-observer-YpyvwY\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/extended-5051/target-multilevel/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 484\n  UART (96 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nMLQ STRICT FOUR\\nMLFQ YIELDS DEMOTED\\nMLFQ BOOST ORDER\\nMULTILEVEL PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 484 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "observer_stderr": "",
+  "outer_shell_note": "PowerShell piped trailing CR on outer exit command after observer status 0 was recorded; no second boot.",
+  "tick_counts": 2500000,
+  "rows": [
+    {
+      "index": 0,
+      "phase": 0,
+      "op": "IRQ",
+      "caller": 1,
+      "selected": 2,
+      "eret": "0x4020124c",
+      "elr": "0x40201274",
+      "frame": "0x4020be00",
+      "selected_pc": "0x4020128c",
+      "start": 71034,
+      "stop": 2733656,
+      "deadline": 2571034,
+      "work": 21344632,
+      "grant": 1,
+      "charge": 1,
+      "service": 1,
+      "boost": 0,
+      "awake_mask": 7,
+      "ppi": 30,
+      "pre_rank": [
+        0,
+        2,
+        2
+      ],
+      "pre_left": [
+        1,
+        1,
+        1
+      ],
+      "post_rank": [
+        0,
+        2,
+        2
+      ],
+      "post_left": [
+        1,
+        1,
+        1
+      ],
+      "residency_units": 1.0650488,
+      "handler_to_next_dispatch_counts": 27499
+    },
+    {
+      "index": 1,
+      "phase": 0,
+      "op": "IRQ",
+      "caller": 2,
+      "selected": 1,
+      "eret": "0x4020128c",
+      "elr": "0x402012b4",
+      "frame": "0x4020fe00",
+      "selected_pc": "0x40201274",
+      "start": 2761155,
+      "stop": 5407792,
+      "deadline": 5261155,
+      "work": 20788442,
+      "grant": 1,
+      "charge": 1,
+      "service": 2,
+      "boost": 0,
+      "awake_mask": 7,
+      "ppi": 30,
+      "pre_rank": [
+        0,
+        2,
+        2
+      ],
+      "pre_left": [
+        1,
+        1,
+        1
+      ],
+      "post_rank": [
+        0,
+        2,
+        2
+      ],
+      "post_left": [
+        1,
+        1,
+        1
+      ],
+      "residency_units": 1.0586548,
+      "handler_to_next_dispatch_counts": 3288
+    },
+    {
+      "index": 2,
+      "phase": 0,
+      "op": "IRQ",
+      "caller": 1,
+      "selected": 2,
+      "eret": "0x40201274",
+      "elr": "0x40201274",
+      "frame": "0x4020be00",
+      "selected_pc": "0x402012b4",
+      "start": 5411080,
+      "stop": 8051230,
+      "deadline": 7911080,
+      "work": 42400220,
+      "grant": 1,
+      "charge": 1,
+      "service": 3,
+      "boost": 0,
+      "awake_mask": 7,
+      "ppi": 30,
+      "pre_rank": [
+        0,
+        2,
+        2
+      ],
+      "pre_left": [
+        1,
+        1,
+        1
+      ],
+      "post_rank": [
+        0,
+        2,
+        2
+      ],
+      "post_left": [
+        1,
+        1,
+        1
+      ],
+      "residency_units": 1.05606,
+      "handler_to_next_dispatch_counts": 1321
+    },
+    {
+      "index": 3,
+      "phase": 0,
+      "op": "IRQ",
+      "caller": 2,
+      "selected": 1,
+      "eret": "0x402012b4",
+      "elr": "0x402012b4",
+      "frame": "0x4020fe00",
+      "selected_pc": "0x40201274",
+      "start": 8052551,
+      "stop": 10709200,
+      "deadline": 10552551,
+      "work": 40812660,
+      "grant": 1,
+      "charge": 1,
+      "service": 4,
+      "boost": 0,
+      "awake_mask": 7,
+      "ppi": 30,
+      "pre_rank": [
+        0,
+        2,
+        2
+      ],
+      "pre_left": [
+        1,
+        1,
+        1
+      ],
+      "post_rank": [
+        0,
+        2,
+        2
+      ],
+      "post_left": [
+        1,
+        1,
+        1
+      ],
+      "residency_units": 1.0626596,
+      "handler_to_next_dispatch_counts": 1727
+    },
+    {
+      "index": 4,
+      "phase": 0,
+      "op": "block",
+      "caller": 1,
+      "selected": 2,
+      "eret": "0x40201274",
+      "elr": "0x40201288",
+      "frame": "0x4020be00",
+      "selected_pc": "0x402012b4",
+      "start": 10710927,
+      "stop": 10857296,
+      "deadline": 13210927,
+      "work": 42400221,
+      "grant": 1,
+      "charge": 0,
+      "service": 4,
+      "boost": 0,
+      "awake_mask": 5,
+      "ppi": 255,
+      "pre_rank": [
+        0,
+        2,
+        2
+      ],
+      "pre_left": [
+        1,
+        1,
+        1
+      ],
+      "post_rank": [
+        0,
+        2,
+        2
+      ],
+      "post_left": [
+        1,
+        1,
+        1
+      ],
+      "residency_units": 0.0585476,
+      "handler_to_next_dispatch_counts": 9002
+    },
+    {
+      "index": 5,
+      "phase": 0,
+      "op": "block",
+      "caller": 2,
+      "selected": 0,
+      "eret": "0x402012b4",
+      "elr": "0x402012c8",
+      "frame": "0x4020fe00",
+      "selected_pc": "0x4020130c",
+      "start": 10866298,
+      "stop": 11037886,
+      "deadline": 13366298,
+      "work": 40812661,
+      "grant": 1,
+      "charge": 0,
+      "service": 4,
+      "boost": 0,
+      "awake_mask": 1,
+      "ppi": 255,
+      "pre_rank": [
+        0,
+        2,
+        2
+      ],
+      "pre_left": [
+        1,
+        1,
+        1
+      ],
+      "post_rank": [
+        0,
+        2,
+        2
+      ],
+      "post_left": [
+        1,
+        1,
+        1
+      ],
+      "residency_units": 0.0686352,
+      "handler_to_next_dispatch_counts": 625
+    },
+    {
+      "index": 6,
+      "phase": 0,
+      "op": "block",
+      "caller": 0,
+      "selected": 255,
+      "eret": "0x4020130c",
+      "elr": "0x40201338",
+      "frame": "0x40207e00",
+      "selected_pc": "0x0",
+      "start": 11038511,
+      "stop": 11191649,
+      "deadline": 13538511,
+      "work": 1,
+      "grant": 1,
+      "charge": 0,
+      "service": 4,
+      "boost": 0,
+      "awake_mask": 0,
+      "ppi": 255,
+      "pre_rank": [
+        0,
+        2,
+        2
+      ],
+      "pre_left": [
+        1,
+        1,
+        1
+      ],
+      "post_rank": [
+        0,
+        2,
+        2
+      ],
+      "post_left": [
+        1,
+        1,
+        1
+      ],
+      "residency_units": 0.0612552,
+      "handler_to_next_dispatch_counts": 26859
+    },
+    {
+      "index": 7,
+      "phase": 1,
+      "op": "yield",
+      "caller": 1,
+      "selected": 0,
+      "eret": "0x4020133c",
+      "elr": "0x40201380",
+      "frame": "0x40217e00",
+      "selected_pc": "0x402013cc",
+      "start": 11218508,
+      "stop": 13847238,
+      "deadline": 18718508,
+      "work": 971153,
+      "grant": 3,
+      "charge": 1,
+      "service": 1,
+      "boost": 0,
+      "awake_mask": 7,
+      "ppi": 255,
+      "pre_rank": [
+        2,
+        2,
+        2
+      ],
+      "pre_left": [
+        3,
+        2,
+        3
+      ],
+      "post_rank": [
+        2,
+        2,
+        2
+      ],
+      "post_left": [
+        3,
+        2,
+        3
+      ],
+      "residency_units": 1.051492,
+      "handler_to_next_dispatch_counts": 6360
+    },
+    {
+      "index": 8,
+      "phase": 1,
+      "op": "block",
+      "caller": 0,
+      "selected": 2,
+      "eret": "0x402013cc",
+      "elr": "0x40201410",
+      "frame": "0x40213e00",
+      "selected_pc": "0x402012cc",
+      "start": 13853598,
+      "stop": 16486679,
+      "deadline": 21353598,
+      "work": 1005716,
+      "grant": 3,
+      "charge": 1,
+      "service": 2,
+      "boost": 0,
+      "awake_mask": 6,
+      "ppi": 255,
+      "pre_rank": [
+        2,
+        2,
+        2
+      ],
+      "pre_left": [
+        2,
+        2,
+        3
+      ],
+      "post_rank": [
+        2,
+        2,
+        2
+      ],
+      "post_left": [
+        2,
+        2,
+        3
+      ],
+      "residency_units": 1.0532324,
+      "handler_to_next_dispatch_counts": 1967
+    },
+    {
+      "index": 9,
+      "phase": 1,
+      "op": "IRQ",
+      "caller": 2,
+      "selected": 1,
+      "eret": "0x402012cc",
+      "elr": "0x402012f4",
+      "frame": "0x4021be00",
+      "selected_pc": "0x40201380",
+      "start": 16488646,
+      "stop": 24130067,
+      "deadline": 23988646,
+      "work": 64667007,
+      "grant": 3,
+      "charge": 3,
+      "service": 5,
+      "boost": 0,
+      "awake_mask": 6,
+      "ppi": 30,
+      "pre_rank": [
+        2,
+        2,
+        1
+      ],
+      "pre_left": [
+        2,
+        2,
+        4
+      ],
+      "post_rank": [
+        2,
+        2,
+        1
+      ],
+      "post_left": [
+        2,
+        2,
+        4
+      ],
+      "residency_units": 3.0565684,
+      "handler_to_next_dispatch_counts": 6422
+    },
+    {
+      "index": 10,
+      "phase": 1,
+      "op": "yield",
+      "caller": 1,
+      "selected": 1,
+      "eret": "0x40201380",
+      "elr": "0x4020139c",
+      "frame": "0x40217e00",
+      "selected_pc": "0x4020139c",
+      "start": 24136489,
+      "stop": 26765287,
+      "deadline": 29136489,
+      "work": 2102219,
+      "grant": 2,
+      "charge": 1,
+      "service": 6,
+      "boost": 0,
+      "awake_mask": 6,
+      "ppi": 255,
+      "pre_rank": [
+        2,
+        2,
+        1
+      ],
+      "pre_left": [
+        2,
+        1,
+        4
+      ],
+      "post_rank": [
+        2,
+        2,
+        1
+      ],
+      "post_left": [
+        2,
+        1,
+        4
+      ],
+      "residency_units": 1.0515192,
+      "handler_to_next_dispatch_counts": 2317
+    },
+    {
+      "index": 11,
+      "phase": 1,
+      "op": "IRQ",
+      "caller": 1,
+      "selected": 2,
+      "eret": "0x4020139c",
+      "elr": "0x4020139c",
+      "frame": "0x40217e00",
+      "selected_pc": "0x402012f4",
+      "start": 26767604,
+      "stop": 29404655,
+      "deadline": 29267604,
+      "work": 23050879,
+      "grant": 1,
+      "charge": 1,
+      "service": 7,
+      "boost": 0,
+      "awake_mask": 6,
+      "ppi": 30,
+      "pre_rank": [
+        2,
+        1,
+        1
+      ],
+      "pre_left": [
+        2,
+        4,
+        4
+      ],
+      "post_rank": [
+        2,
+        1,
+        1
+      ],
+      "post_left": [
+        2,
+        4,
+        4
+      ],
+      "residency_units": 1.0548204,
+      "handler_to_next_dispatch_counts": 7883
+    },
+    {
+      "index": 12,
+      "phase": 1,
+      "op": "IRQ",
+      "caller": 2,
+      "selected": 1,
+      "eret": "0x402012f4",
+      "elr": "0x402012f4",
+      "frame": "0x4021be00",
+      "selected_pc": "0x4020139c",
+      "start": 29412538,
+      "stop": 39564569,
+      "deadline": 39412538,
+      "work": 142632586,
+      "grant": 4,
+      "charge": 4,
+      "service": 11,
+      "boost": 0,
+      "awake_mask": 6,
+      "ppi": 30,
+      "pre_rank": [
+        2,
+        1,
+        0
+      ],
+      "pre_left": [
+        2,
+        4,
+        6
+      ],
+      "post_rank": [
+        2,
+        1,
+        0
+      ],
+      "post_left": [
+        2,
+        4,
+        6
+      ],
+      "residency_units": 4.0608124,
+      "handler_to_next_dispatch_counts": 4504
+    },
+    {
+      "index": 13,
+      "phase": 1,
+      "op": "block",
+      "caller": 1,
+      "selected": 2,
+      "eret": "0x4020139c",
+      "elr": "0x402013c8",
+      "frame": "0x40217e00",
+      "selected_pc": "0x402012f4",
+      "start": 39569073,
+      "stop": 42204554,
+      "deadline": 49569073,
+      "work": 24165963,
+      "grant": 4,
+      "charge": 1,
+      "service": 12,
+      "boost": 1,
+      "awake_mask": 5,
+      "ppi": 255,
+      "pre_rank": [
+        2,
+        1,
+        0
+      ],
+      "pre_left": [
+        2,
+        3,
+        6
+      ],
+      "post_rank": [
+        2,
+        2,
+        2
+      ],
+      "post_left": [
+        3,
+        3,
+        3
+      ],
+      "residency_units": 1.0541924,
+      "handler_to_next_dispatch_counts": 12470
+    },
+    {
+      "index": 14,
+      "phase": 1,
+      "op": "IRQ",
+      "caller": 2,
+      "selected": 0,
+      "eret": "0x402012f4",
+      "elr": "0x402012f4",
+      "frame": "0x4021be00",
+      "selected_pc": "0x40201410",
+      "start": 42217024,
+      "stop": 49856029,
+      "deadline": 49717024,
+      "work": 208895957,
+      "grant": 3,
+      "charge": 3,
+      "service": 15,
+      "boost": 0,
+      "awake_mask": 5,
+      "ppi": 30,
+      "pre_rank": [
+        2,
+        2,
+        1
+      ],
+      "pre_left": [
+        3,
+        3,
+        4
+      ],
+      "post_rank": [
+        2,
+        2,
+        1
+      ],
+      "post_left": [
+        3,
+        3,
+        4
+      ],
+      "residency_units": 3.055602,
+      "handler_to_next_dispatch_counts": 3839
+    },
+    {
+      "index": 15,
+      "phase": 1,
+      "op": "block",
+      "caller": 0,
+      "selected": 2,
+      "eret": "0x40201410",
+      "elr": "0x40201418",
+      "frame": "0x40213e00",
+      "selected_pc": "0x402012f4",
+      "start": 49859868,
+      "stop": 49993235,
+      "deadline": 57359868,
+      "work": 1005717,
+      "grant": 3,
+      "charge": 0,
+      "service": 15,
+      "boost": 0,
+      "awake_mask": 4,
+      "ppi": 255,
+      "pre_rank": [
+        2,
+        2,
+        1
+      ],
+      "pre_left": [
+        3,
+        3,
+        4
+      ],
+      "post_rank": [
+        2,
+        2,
+        1
+      ],
+      "post_left": [
+        3,
+        3,
+        4
+      ],
+      "residency_units": 0.0533468,
+      "handler_to_next_dispatch_counts": 356
+    },
+    {
+      "index": 16,
+      "phase": 1,
+      "op": "block",
+      "caller": 2,
+      "selected": 255,
+      "eret": "0x402012f4",
+      "elr": "0x40201308",
+      "frame": "0x4021be00",
+      "selected_pc": "0x0",
+      "start": 49993591,
+      "stop": 50117618,
+      "deadline": 59993591,
+      "work": 208895958,
+      "grant": 4,
+      "charge": 0,
+      "service": 15,
+      "boost": 0,
+      "awake_mask": 0,
+      "ppi": 255,
+      "pre_rank": [
+        2,
+        2,
+        1
+      ],
+      "pre_left": [
+        3,
+        3,
+        4
+      ],
+      "post_rank": [
+        2,
+        2,
+        1
+      ],
+      "post_left": [
+        3,
+        3,
+        4
+      ],
+      "residency_units": 0.0496108,
+      "handler_to_next_dispatch_counts": null
+    }
+  ],
+  "raw": {
+    "audit.bin": {
+      "sha256": "d41864f423dd7b788923b638d843d9fcff498bbb30e6bea45eb9f0500ce484d9",
+      "base64": "EQAAAAAAAACgJSYAAAAAAHQSIEAAAAAAAL4gQAAAAACMEiBAAAAAAHoVAQAAAAAAWLYpAAAAAAAaOycAAAAAAHixRQEAAAAAAAMBAgEBAQAHHgACAgEBAQACAgEBAQAAtBIgQAAAAAAA/iBAAAAAAHQSIEAAAAAAwyEqAAAAAAAwhFIAAAAAAGNHUAAAAAAA2jQ9AQAAAAAAAwIBAQECAAceAAICAQEBAAICAQEBAAB0EiBAAAAAAAC+IEAAAAAAtBIgQAAAAAAIkVIAAAAAAB7aegAAAAAAqLZ4AAAAAADc+YYCAAAAAAADAQIBAQMABx4AAgIBAQEAAgIBAQEAALQSIEAAAAAAAP4gQAAAAAB0EiBAAAAAAEffegAAAAAA0GijAAAAAADnBKEAAAAAAHTAbgIAAAAAAAMCAQEBBAAHHgACAgEBAQACAgEBAQAAiBIgQAAAAAAAviBAAAAAALQSIEAAAAAAj2+jAAAAAABQq6UAAAAAAC+VyQAAAAAA3fmGAgAAAAAAAgECAQAEAAX/AAICAQEBAAICAQEBAADIEiBAAAAAAAD+IEAAAAAADBMgQAAAAAB6zqUAAAAAAL5sqAAAAAAAGvTLAAAAAAB1wG4CAAAAAAACAgABAAQAAf8AAgIBAQEAAgIBAQEAADgTIEAAAAAAAH4gQAAAAAAAAAAAAAAAAC9vqAAAAAAAYcWqAAAAAADPlM4AAAAAAAEAAAAAAAAAAAIA/wEABAAA/wACAgEBAQACAgEBAQAAgBMgQAAAAAAAfiFAAAAAAMwTIEAAAAAATC6rAAAAAADGStMAAAAAACyfHQEAAAAAkdEOAAAAAAABAQEAAwEBAAf/AgICAwIDAgICAwIDAAAQFCBAAAAAAAA+IUAAAAAAzBIgQAAAAACeY9MAAAAAABeR+wAAAAAAftRFAQAAAACUWA8AAAAAAAECAAIDAQIABv8CAgICAgMCAgICAgMAAPQSIEAAAAAAAL4hQAAAAACAEyBAAAAAAMaY+wAAAAAAEzJwAQAAAACmCW4BAAAAAH+92gMAAAAAAQMCAQMDBQAGHgICAQICBAICAQICBAAAnBMgQAAAAAAAfiFAAAAAAJwTIEAAAAAAKUtwAQAAAADnZ5gBAAAAAGmWvAEAAAAAyxMgAAAAAAABAQEBAgEGAAb/AgIBAgEEAgIBAgEEAACcEyBAAAAAAAB+IUAAAAAA9BIgQAAAAAD0cJgBAAAAAO+twAEAAAAAlJa+AQAAAAB/ul8BAAAAAAEDAQIBAQcABh4CAQECBAQCAQECBAQAAPQSIEAAAAAAAL4hQAAAAACcEyBAAAAAALrMwAEAAAAAGbVbAgAAAAA6Y1kCAAAAAIpmgAgAAAAAAQMCAQQECwAGHgIBAAIEBgIBAAIEBgAAyBMgQAAAAAAAfiFAAAAAAPQSIEAAAAAAscZbAgAAAACK/YMCAAAAADFd9AIAAAAAS75wAQAAAAABAgECBAEMAQX/AgEAAgMGAgICAwMDAAD0EiBAAAAAAAC+IUAAAAAAEBQgQAAAAABALoQCAAAAAB2++AIAAAAAIJ/2AgAAAADVf3MMAAAAAAEDAgADAw8ABR4CAgEDAwQCAgEDAwQAABgUIEAAAAAAAD4hQAAAAAD0EiBAAAAAABzN+AIAAAAAE9b6AgAAAAD8PWsDAAAAAJVYDwAAAAAAAQIAAgMADwAE/wICAQMDBAICAQMDBAAACBMgQAAAAAAAviFAAAAAAAAAAAAAAAAAd9f6AgAAAADyu/wCAAAAAPdtkwMAAAAA1n9zDAAAAAABAgL/BAAPAAD/AgIBAwMEAgIBAwMEAAA="
+    },
+    "exit.json": {
+      "sha256": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+      "base64": "eyJxZW11X3N0YXR1cyI6IDB9"
+    },
+    "int.trace": {
+      "sha256": "f5d50a8efa81b1c1003dff8f75a5520dc4569ca9de4525b9734cae0e482d5c3b",
+      "base64": "RXhjZXB0aW9uIHJldHVybiBmcm9tIEFBcmNoNjQgRUwxIHRvIEFBcmNoNjQgRUwxIFBDIDB4NDAyMDEyNGMKVGFraW5nIGV4Y2VwdGlvbiA1IFtJUlFdCi4uLmZyb20gRUwxIHRvIEVMMQouLi53aXRoIEVTUiAweDAvMHgwCi4uLndpdGggRUxSIDB4NDAyMDEyNzQKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjhjClRha2luZyBleGNlcHRpb24gNSBbSVJRXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgwLzB4MAouLi53aXRoIEVMUiAweDQwMjAxMmI0Ci4uLnRvIEVMMSBQQyAweDQwMjAwYTgwIFBTVEFURSAweDNjNQpFeGNlcHRpb24gcmV0dXJuIGZyb20gQUFyY2g2NCBFTDEgdG8gQUFyY2g2NCBFTDEgUEMgMHg0MDIwMTI3NApUYWtpbmcgZXhjZXB0aW9uIDUgW0lSUV0KLi4uZnJvbSBFTDEgdG8gRUwxCi4uLndpdGggRVNSIDB4MC8weDAKLi4ud2l0aCBFTFIgMHg0MDIwMTI3NAouLi50byBFTDEgUEMgMHg0MDIwMGE4MCBQU1RBVEUgMHgzYzUKRXhjZXB0aW9uIHJldHVybiBmcm9tIEFBcmNoNjQgRUwxIHRvIEFBcmNoNjQgRUwxIFBDIDB4NDAyMDEyYjQKVGFraW5nIGV4Y2VwdGlvbiA1IFtJUlFdCi4uLmZyb20gRUwxIHRvIEVMMQouLi53aXRoIEVTUiAweDAvMHgwCi4uLndpdGggRUxSIDB4NDAyMDEyYjQKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMjc0ClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEyODgKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMmI0ClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEyYzgKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMzBjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEzMzgKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMzNjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzODAKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxM2NjClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDE0MTAKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMmNjClRha2luZyBleGNlcHRpb24gNSBbSVJRXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEyZjQKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMzgwClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzOWMKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMzljClRha2luZyBleGNlcHRpb24gNSBbSVJRXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEzOWMKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMmY0ClRha2luZyBleGNlcHRpb24gNSBbSVJRXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAxCi4uLndpdGggRUxSIDB4NDAyMDEyZjQKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMzljClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEzYzgKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMmY0ClRha2luZyBleGNlcHRpb24gNSBbSVJRXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEyZjQKLi4udG8gRUwxIFBDIDB4NDAyMDBhODAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxNDEwClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDE0MTgKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1CkV4Y2VwdGlvbiByZXR1cm4gZnJvbSBBQXJjaDY0IEVMMSB0byBBQXJjaDY0IEVMMSBQQyAweDQwMjAxMmY0ClRha2luZyBleGNlcHRpb24gMiBbU1ZDXQouLi5mcm9tIEVMMSB0byBFTDEKLi4ud2l0aCBFU1IgMHgxNS8weDU2MDAwMDAyCi4uLndpdGggRUxSIDB4NDAyMDEzMDgKLi4udG8gRUwxIFBDIDB4NDAyMDBhMDAgUFNUQVRFIDB4M2M1Cg=="
+    },
+    "launch.json": {
+      "sha256": "c45ce144f11be8103b7df3effd400cfa294f6dcfc95b8d743e13b474184505ab",
+      "base64": "eyJhcmd2IjogWyIvdXNyL2Jpbi9xZW11LXN5c3RlbS1hYXJjaDY0IiwgIi1xbXAiLCAidW5peDovdG1wL3RtcHoydHMweGo3L3FtcCxzZXJ2ZXI9b24sd2FpdD1vZmYiLCAiLWQiLCAiaW50IiwgIi1EIiwgIi9tbnQvZC9jb2RleC8uam5veC13b3JrL2V4dGVuZGVkLTUwNTEvbWxxLWZpcnN0LXJhdy9pbnQudHJhY2UiLCAiLW1hY2hpbmUiLCAidmlydCxnaWMtdmVyc2lvbj0yIiwgIi1jcHUiLCAiY29ydGV4LWE3MiIsICItc21wIiwgIjEiLCAiLWFjY2VsIiwgInRjZyIsICItbSIsICIxMjhNIiwgIi1ub2RlZmF1bHRzIiwgIi1kaXNwbGF5IiwgIm5vbmUiLCAiLW1vbml0b3IiLCAibm9uZSIsICItc2VyaWFsIiwgInN0ZGlvIiwgIi1rZXJuZWwiLCAiL21udC9kL2NvZGV4Ly5qbm94LXdvcmsvZXh0ZW5kZWQtNTA1MS90YXJnZXQtbXVsdGlsZXZlbC9hYXJjaDY0LXVua25vd24tbm9uZS9yZWxlYXNlL2pub3gta2VybmVsIl0sICJwaWQiOiA0ODYsICJhdWRpdF9hZGRyZXNzIjogMTA3NTk1NDAzMiwgImF1ZGl0X3NpemUiOiAxMzc2fQ=="
+    },
+    "qmp.json": {
+      "sha256": "01db4341d4ede961949fccd32afda71a17a5ba6ef06c2a3e6d974a5b2880c3b9",
+      "base64": "eyJzdGF0dXMiOiB7InN0YXR1cyI6ICJydW5uaW5nIiwgInNpbmdsZXN0ZXAiOiBmYWxzZSwgInJ1bm5pbmciOiB0cnVlfSwgImNwdXMiOiBbeyJ0aHJlYWQtaWQiOiA0OTAsICJwcm9wcyI6IHsidGhyZWFkLWlkIjogMH0sICJxb20tcGF0aCI6ICIvbWFjaGluZS91bmF0dGFjaGVkL2RldmljZVswXSIsICJjcHUtaW5kZXgiOiAwLCAidGFyZ2V0IjogImFhcmNoNjQifV19"
+    },
+    "uart.bin": {
+      "sha256": "2a3fa165d640ea8887fac463f6063fed5c964fa5c3c472fe22bc888b147b0aa8",
+      "base64": "Sk5PWCBNMSBCT09UCkpOT1ggTTEgUkVBRFkKTUxRIFNUUklDVCBGT1VSCk1MRlEgWUlFTERTIERFTU9URUQKTUxGUSBCT09TVCBPUkRFUgpNVUxUSUxFVkVMIFBBU1MK"
+    }
+  },
+  "conclusions": [
+    "First four IRQ30 slots alternate high A/B, all masks 7 including ready low; high A and B then block, selecting low. No lower-class guarantee under permanent high saturation.",
+    "Yielding worker consumes one unit twice on early SVCs, leaves 2 then 1; third unit via IRQ demotes to level 1 with 4 units behind waiting CPU. CPU subsequently consumes 4, goes to level 0. At service 12 worker blocks, interactive wakes (mask 6 to 5), boost restores all ranks and budgets, picks previously eligible CPU then interactive resumes its original SVC continuation.",
+    "17 incoming ERETs and ELRs match ELF task entries or private saved continuations; 8 IRQ30s, 9 SVCs; stable distinct frames per phase/task. Final phase row has empty ready set; no dispatch PC.",
+    "Whole counter intervals from dispatch to trap capped by grant, flooring fractions; post-stop to subsequent dispatch excluded; interval can include trap-entry/dispatch overhead. 25 units/second by specification; single emulated run measures event order and counter intervals, no hardware, fairness beyond observed trace, deadline guarantee or target performance certification. Host invalid/repeated-stop cases are outside this single boot."
+  ]
+}

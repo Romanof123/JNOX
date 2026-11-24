@@ -11,3 +11,5 @@ CHG-021 · POL-009 · REQ-002/005/023 → DES-003/012 → IMP-019 → VER-002/00
 가상 시험은 이산 서비스와 실행 순서를 측정한다. 실물 상한, 제품 부하 및 시간 기준 승인은 별도 추적한다.
 
 kernel에서 `cargo build --release --locked --features multilevel-bench -j1`, 저장소 루트에서 `python3 tools/qemu_boot.py --profile multilevel --kernel kernel/target/aarch64-unknown-none/release/jnox-kernel`를 실행한다. 최초 실행에서는 MULTILEVEL_CAPTURE_DIR를 새 경로로 두고 원래 인자를 python3 -B tools/multilevel_capture.py에 전달하는 Linux 실행 래퍼를 사용한다. 부팅 두 줄 이후 표식은 MLQ STRICT FOUR, MLFQ YIELDS DEMOTED, MLFQ BOOST ORDER, MULTILEVEL PASS 순서다. multilevel_witness 심볼은 1,376바이트다. 처음 u64 두 개는 행 수와 틱당 카운터 단위다. MLQ 7행, MLFQ 10행이 이어진다. 각 80바이트 행은 u64 7개(선점 PC·문맥 주소·선택 PC·발급 시각·반환 시각·타이머 만기·진행 카운터), 이어서 24바이트(사례·동작·호출자·선택자·허용량·사용량·누적 서비스·부스트·준비/실행 마스크·PPI·부스트 전후 각각 작업별 등급 3개와 잔량 3개·패딩 2개)다. 동작 1/2/3은 양보·차단·물리 IRQ다. PPI 30과 예외 복귀 주소를 ELF의 실행 루프 심볼에 대조한다. 틱은 카운터 주파수의 1/25이고 디스패치부터 예외까지 경과한 정수 틱을 허용량까지 계상한다.
+
+[EVD-019](evidence/evd-019.md)
