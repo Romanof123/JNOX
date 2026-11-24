@@ -1,0 +1,9 @@
+PASS for PR #202 0e82a75dca989d744103f685ef12554ecbc0b526 against fc8d9b2d2db1508b70e455b22846e3fb06f4af61. A1–A6 frozen before inspecting results. / 문서 변경 범위에서 통과. 실제 장치 및 마이그레이션 판정은 열려 있다.
+
+Both archived ELFs match SHA-256 8660010cca701e54f23a6af3c1782dd24bfd8da66d345147b5b4daba95f0002f. The reviewer decoded CPU1 RAM independently, fetched instructions from the ELF executable segment and compared all 26 words 820f0–82154. Each frame at 98dc0 saved X9=a9154, X10=1, ELR=82148. A zero first LDARB branches by fallthrough to ADR X10,b08d0. Later LDARB writes W11; delayed success preserves that pointer through SVC. Deadline/error branches to abort. Neither path explains these four frames. Guarded addition precedes the probe. Two CPU1-local intervals per boot appear in results.txt. 벽시계·CPU 간 지연을 측정하지 않았다. 태그 3은 예외 진입 시각이며 정책 retire 시각은 미측정이다.
+
+All seven changed files are Markdown. Both policy and verification languages change the lottery/stride entry only. Both release tables change four policy rows. 53 distinct Markdown targets in the added lines were fetched successfully. #201 first cohort 7/8, position 1 68,393 vs 62,500; earlier #172 2/8 and #192 3/8 remain separate from #187 compatibility 3/3. #200 five QEMU cases include actual 2 vs expected 1 and 3 units with 4142 counts remainder; historical two-unit diagnostic and unresolved #79 kept separate. Native #183 completion 4/4, service 3/4, later #186 pair 2/2; #184 open. MG1 same-CPU 1/6, MG2 0/6, #199 instrumented order limited to one observed position. #47 and #34 open. 양쪽 언어에서 QEMU 사례·과거 최초 결과·실기 출시 기준을 구분했다.
+
+Reproduce from a clean directory with Python 3 and requests: python verify.py. Uses read-only pinned archives, compare and documents; issue states are live. No build or new guest.
+
+[Frozen tests and replay / 고정 기준과 독립 재생](scheduling-matrix-opening-peer-audit.zip) · SHA-256 bac111201b92c3ad4e2028ec17823d077ab0b092657f52feab4b0bae96b301d2.

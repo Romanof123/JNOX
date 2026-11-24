@@ -43,3 +43,4 @@ for archive, digest in (
             sample = frame[8] - 4 * row(0)[2]
             print(name, hex(frame[9]), hex(frame[10]), sample - retired[3], retired[4] - sample)
 ```
+[Independent review of four frames, instructions and bilingual release rows / 네 프레임·명령과 한영 출시 항목 독립 검토](scheduling-matrix-opening-peer-audit.en-ko.md).
