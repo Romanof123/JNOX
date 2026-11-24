@@ -274,5 +274,10 @@
     "entries": 35,
     "offline_check": "Verify ZIP SHA-256, extract to a fresh directory, then run sha256sum -c FILES.sha256. From the extraction root run the following for lottery1, lottery2 and stride, replacing CASE with the case name. Compare raw_rows, grants, counts, whole_service, findings and first_guest_record with the archived CASE/score.json. Original paths in the score metadata are historical.",
     "replay": "python3 ordinary-proportional-independent/score.py score CASE ordinary-136-first-three/CASE/uart --elf ordinary-136-first-three/CASE/kernel.elf --exceptions ordinary-136-first-three/CASE/exceptions"
+  },
+  "integration_supplement": {
+    "source": "589e927bdc2e21ed68de1315d030d6231d18bacb",
+    "file": "evd-055-integration.json",
+    "sha256": "30e89948b4bfaf6c3f2a95accf062e430976d2c6e960a63d08ebf2e37028e6a5"
   }
 }
