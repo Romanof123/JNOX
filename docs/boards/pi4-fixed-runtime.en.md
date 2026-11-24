@@ -52,6 +52,8 @@ Retain source revision, raw/ELF hashes, emulator version, raw UART and an except
 
 Two cold boots each of FIFO and RR on the Pi 4 model showed high-priority preemption and RR peer rotation. Separate register captures measured a 62.5 MHz counter. Physical boot and timing remain open. [EVD-031](../evidence/evd-031.en.md)
 
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](pi4-serial-capture.en.md#chg-062)
+
 <a id="chg-063"></a>
 
 ## CHG-063 · Pi 4 engineering witness over UART

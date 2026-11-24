@@ -52,6 +52,8 @@ FIXED RR B DONE
 
 Pi 4 모델에서 FIFO와 RR을 각각 두 번 부팅해 상위 우선순위 선점과 RR 동순위 교대를 확인했다. 별도 레지스터 관측에서 카운터 주파수는 62.5 MHz였다. 실보드 부팅 및 시간 검증은 남아 있다. [EVD-031](../evidence/evd-031.md)
 
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 물리 UART 프로파일 계획](pi4-serial-capture.md#chg-062)
+
 <a id="chg-063"></a>
 
 ## CHG-063 · Pi 4 엔지니어링 이미지의 UART 실행 증거
