@@ -43,6 +43,10 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -m 128M -
 env -u JNOX_PROFILE -u JNOX_APP cargo build --release --features proportional-bench
 ```
 
+Leave `JNOX_CONTROL_CASE` unset for every proportional app. For the first integration gate, build `JNOX_PROFILE=proportional JNOX_APP=lottery1 JNOX_CONTROL_CASE=healthy cargo build --release` from `kernel/` on virt with no benchmark features. Require a nonzero exit and the diagnostic `JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional`.
+
+모든 비례 배분 앱에서 `JNOX_CONTROL_CASE`를 해제한다. 첫 통합 검증에서는 virt에서 벤치마크 기능 없이 `kernel/`에서 위 명령을 실행한다. 종료 코드가 0이 아니고 위 진단 문구가 출력되어야 한다.
+
 The boot dispatches a real idle frame while the eligible set is empty and checks RNG state continuity. The first PPI enables the frozen ready set. Starts are sampled immediately before each compare write. Stops are the counter saved by the shared vector after its scratch save, before the handler. The pre-ERET sample precedes the final GPR restore. Early yield, partial ticks, kernel tail and IRQ entry therefore need the original brackets. Worker observations come from private double-buffered stack tuples (count, checksum, physical counter); all three clients are inspected at every stop. END reports first failed source line, configuration, slot, actual and expected. Line zero denotes a completed run with no guest predicate failure. [First three cold boots](evidence/evd-055.en.md). / 빈 준비 집합에서 실제 유휴 프레임으로 복귀하고 난수 상태를 검사한다. 첫 PPI에서 준비 집합을 설정한다. 시작은 비교값 쓰기 직전, 중단은 벡터에서 레지스터 임시 저장 직후, 복귀 표본은 마지막 범용 레지스터 복원 전이다. 매 중단에서 세 작업의 스택 내 이중 버퍼 반복 수·체크섬·카운터를 확인한다. END는 최초 실패 소스 행·구성·슬롯·실측·기대값이며 0행은 게스트 조건 실패 없이 끝났음을 표시한다. [최초 콜드 실행 3회](evidence/evd-055.md).
 
 | Raw tag / 행 | Six unsigned fields / 여섯 필드 |

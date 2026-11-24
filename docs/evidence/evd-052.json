@@ -1,0 +1,90 @@
+{
+  "evidence_id": "EVD-052",
+  "change": "CHG-053",
+  "implementation": "IMP-052",
+  "source": "ab14de00b4e1b61d0e20eb37ef8eafc8d504d306",
+  "original_decoder_source": "188faa91e5e0655f56cf6aca97001a4e61fa75c4",
+  "report_sha256": "9db779d52a51a34af5854918be1afb55fb40065b231a5b37b02852e80f6054e5",
+  "manifest_sha256": "48832414b58493fb2661333308f982fcd6c37a0e0e41d480bdc83f9cb7747371",
+  "original_audit": {
+    "findings": [
+      "dangling implementation for POL-004: IMP-052"
+    ],
+    "exit": 1,
+    "sha256": "38e356920b2f619814516e15f2c9c123a871f65e44f7c336abdf67bcedec97d4",
+    "head": "ab14de00b4e1b61d0e20eb37ef8eafc8d504d306"
+  },
+  "new_tree_audit": "Pending independent audit",
+  "genuine_journals": 4,
+  "genuine_phases": 104,
+  "operational_qualifications": 0,
+  "boots": {
+    "descriptor-rm-descriptor": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "actual delivery"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": null
+    },
+    "descriptor-dm-descriptor": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "rearm issue spacing"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": null
+    },
+    "markers-rm-marker": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "actual delivery"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": 0
+    },
+    "markers-dm-marker": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "phase envelope"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": 0
+    },
+    "markers-dm-cold": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "unknown event 48 at line 4"
+      ],
+      "cold_fixed_no_probe": true,
+      "external_decoder": null
+    },
+    "descriptor-rm-cold": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "unknown event 48 at line 4"
+      ],
+      "cold_fixed_no_probe": true,
+      "external_decoder": null
+    }
+  },
+  "archive": {
+    "file": "evd-052-marker-replay.zip",
+    "bytes": 440353,
+    "sha256": "35d3535c2af4bd948fd328c22142ac9af77559d11fa7c77f71cf4fdf62c54d97",
+    "entries": 148,
+    "restore": "Check the ZIP SHA-256, extract to a fresh directory, and verify FILES.sha256 with sha256sum -c FILES.sha256.",
+    "offline_replay": "From the extracted directory with Python 3.10+, substitute each replay subdirectory for CASE in the commands below.",
+    "commands": [
+      "python3 original/control_service_markers.py CASE/markers.bin CASE/uart",
+      "python3 repaired/control_service_markers.py CASE/markers.bin CASE/uart --exceptions CASE/exceptions",
+      "python3 repaired/control_service_markers_regression.py CASE/markers.bin CASE/uart CASE/exceptions"
+    ]
+  }
+}

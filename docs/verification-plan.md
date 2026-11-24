@@ -130,6 +130,14 @@ POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에�
 
 POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 번의 콜드 부팅에서 IRQ 6회 후 PASS에 도달했다. 의도적 음성 대조군은 첫 A 마커에서 조건 99, 실제값 0, 기대값 1을 기록했다. 기존 PART FAIL의 원인은 미확정이다. [EVD-047](evidence/evd-047.md)
 
+VER-002/005/023 · 콜드 24회 중 22회가 억제됐고 기술자 DM 2회는 허가 7건을 모두 수락한 뒤에도 OFF였다. 정상 시퀀스 0/24. [EVD-051](evidence/evd-051.md)
+
+CHG-055 · REQ-002/003/005/023 · [일반 허가 게시 및 독립 명령 시각 계획](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
+IMP-052 · VER-002/005/023. 실제 저널 4개의 104개 위상 재생 일치. 통합 제어 실행의 운영 적격 0/6. [EVD-052](evidence/evd-052.md)
+
+CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
+
 CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
 
 IMP-055 · VER-002/005/023. 일반 Rust 최초 부팅 3회에서 두 시드와 C 합류를 재생했다. 두 진단 사례는 미실행이다. [EVD-055](evidence/evd-055.md)

@@ -37,11 +37,34 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_case, values("handoff-healthy", "handoff-loss", "healthy", "loss", "late", "demand", "worst", "tie", "early-command", "expired-command", "no-command", "missing-permit", "invalid", "silence", "saturation", "recovery", "old-generation"))"#);
     let scenario = selector("JNOX_CONTROL_CASE");
     println!("cargo::rustc-check-cfg=cfg(jnox_control_cold)");
-    if let Some(mode) = selector("JNOX_CONTROL_COLD") {
+    let cold = selector("JNOX_CONTROL_COLD");
+    if let Some(mode) = cold.as_deref() {
         assert!(mode == "diagnostic" && profile.as_deref() == Some("periodic")
             && scenario.as_deref() == Some("healthy"),
             "JNOX_CONTROL_COLD requires diagnostic, periodic and explicit healthy");
         println!("cargo::rustc-cfg=jnox_control_cold");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_control_descriptor)");
+    let descriptor = selector("JNOX_CONTROL_DESCRIPTOR");
+    let markers = selector("JNOX_CONTROL_MARKERS");
+    if let Some(value) = descriptor.as_deref() {
+        assert!(value == "1" && profile.as_deref() == Some("periodic")
+            && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
+            && scenario.as_deref() == Some("healthy"),
+            "JNOX_CONTROL_DESCRIPTOR=1 requires ordinary periodic healthy RM or DM");
+        assert!(cold.is_none() && markers.is_none(),
+            "control descriptor, cold and marker comparison arms must be built separately");
+        println!("cargo::rustc-cfg=jnox_control_descriptor");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_control_markers)");
+    if let Some(value) = markers.as_deref() {
+        assert!(descriptor.is_none() && cold.is_none(),
+            "control marker, descriptor and cold comparison arms must be built separately");
+        assert!(value == "1" && profile.as_deref() == Some("periodic")
+            && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
+            && scenario.as_deref() == Some("healthy"),
+            "JNOX_CONTROL_MARKERS=1 requires ordinary healthy periodic control-rm or control-dm");
+        println!("cargo::rustc-cfg=jnox_control_markers");
     }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
@@ -166,6 +189,7 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
     match profile.as_deref() {
         Some("proportional") => {
+            assert!(scenario.is_none(), "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional");
             assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");
             let case = app.as_deref().unwrap_or("");
             assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"),
