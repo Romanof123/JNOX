@@ -134,3 +134,5 @@ CHG-059 · [Compact first-boundary handoff / 첫 경계 인계 비용 축소](re
 Four of eight ordinary candidate boots completed, compared with five of eight paired predecessor boots and one of eight historical predecessor boots. Both overload refusals in each paired cohort succeeded. Full-profile qualification remains on hold. [EVD-053 v3](evidence/evd-053-v3.en.md)
 
 후보 일반 실행 8건 중 4건, 같은 실험의 선행 버전 8건 중 5건, 과거 선행 버전 8건 중 1건이 완료됐다. 후보와 동시 비교군은 각각 과부하 2건을 모두 거절했다. 전체 프로필 적격 판정은 보류한다. [EVD-053 v3](evidence/evd-053-v3.md)
+
+CHG-071 · [First IRQ stage attribution / 첫 IRQ 구간 계측](reservation-stage-attribution-plan.md) · REQ-002/005/009/023 · DES-003/012 · VER-002/005/023
