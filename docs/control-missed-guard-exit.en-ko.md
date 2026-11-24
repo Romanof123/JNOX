@@ -27,3 +27,5 @@ Freeze both ELFs and select the same semantic observation points from each disas
 
 각 정책의 기존 이미지와 적재 바이트를 대조한다. RM 이후 DM에서 A0 기본, A1/A2 운영 거부, A1/A2 결정적 OFF 순서로 최초 실행을 보존하고, 달라진 stock·marker·cold 구성도 실제 유효 입력으로 확인한다. 누락 마스크 4095, 운영 작업 0건, 독립 출력 판독을 확인한다. 정상 A0의 시간, 실제 출력 ON 이후의 25/5/30 ms, 실기 WCET와 FTTI는 원래 기준과 별도 분모로 보고한다. 부팅·빌드·검토는 한 번에 하나만 진행한다.
 
+
+[Independent first passive observations and linked analysis / 최초 수동 관측 및 연결 코드 판정](evidence/control-guard-exit-first.en-ko.md).
