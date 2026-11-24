@@ -11,6 +11,16 @@ Freeze independent first cold launches in order EDF refused, LLF refused, EDF no
 
 기존 16슬롯 절대 그리드에서 [1,2)만 서비스에 예약한다. EDF는 릴리스·마감 구간별 가용 공급을 검사하고 두 정책 모두 실제 선언 순서와 추정 잔량으로 재생한다. 중단 시 기존 실행자를 큐 맨 앞에 보존하고 신규 도착을 뒤에 추가한다. 예약 슬롯에서는 작업을 선택하거나 비용을 부과하지 않는다. 다음 경계에서 EDF 마감 또는 LLF 여유가 같은 작업은 기존 순서를 따른다. 위 표의 두 정상 실행에서 A의 진행, 별도 스택 서비스 합계 89440, A의 동일 프레임·PC 복귀와 이후 진행, A/B의 정상 종료와 절대 마감을 검증한다. 두 거부 실행에서는 작업 시작 전에 공급 부족을 판정한다. 첫 실행 순서·실패·원시 기록을 보존하고 기존 네 프로필도 원래 기준으로 검증한다. 실제 카운터 서비스 시간은 논리 예약 및 스케줄러 공백과 구분하며 제품 WCET는 별도 검증한다.
 
+## Prospective correction after the first #252 run / #252 최초 실행 이후 수정 결정
+
+The independent first on bacd8dc retained 5/6 host checks and a failed plain LLF normal boot. At 62,500,000 Hz (Q=6,250,000), grid 2 switched service to A at entry 19,407,096; the restore stamp was 19,409,081. A reached completion SVC at 27,348,788 after the pending grid-3 target 25,543,296 and before its deadline 38,043,296. No grid-3 IRQ preceded that SVC. B never ran. Keep this first and its verdict. The counters establish event order; the source also allows a delayed A start to displace its relative 250 ms stop.
+
+For both admitted supply profiles only, interpret A’s 250 ms as an absolute stop S+250 ms (halfway between grids 2 and 3). Pass that checked counter to a linked A entry sharing the original progress/product loop. B keeps 30 ms relative to its own start. Print the actual absolute stop passed to A and require positive A progress at interruption and after restoration, including in plain output. Tight refused controls retain the original relative table and no worker launch. All model costs, job deadlines, calendar, PPI verification and k<grid SVC guard remain binding. A late resume with no positive post-restore work fails qualification. A delayed or misordered event still fails under the original rules. First corrected runs have their own positions.
+
+The existing EDF admission visits each release/deadline interval in table order. With costs MAX and 2 and deadlines 5 and 7 the first interval [0,5) has demand MAX and supply 4, so reject Demand there. Set the second deadline to 5 in a second assertion: both jobs then contribute to the first interval and checked MAX+2 returns Overflow before comparison. Preserve the implementation and both refusal reasons.
+
+독립 최초 실행(bacd8dc)은 호스트 검사 5/6 및 일반 LLF 실패로 보존한다. 그리드 2 서비스→A 진입 19,407,096, 복귀 19,409,081 이후 다음 타이머 25,543,296보다 늦고 A 마감 38,043,296보다 이른 27,348,788에 완료 SVC가 진입했다. 그 전에 그리드 3 IRQ는 없었고 B는 실행되지 않았다. 62.5 MHz에서 Q는 6,250,000이다. 두 정상 공급 프로필에서 A의 종료 기준을 S+250 ms로 고정하고 실제 인수와 중단 전·복귀 후 양의 진행량을 검증한다. B는 자기 시작부터 30 ms이다. 거부 표와 기존 네 프로필의 동작을 유지한다. 타이머 순서·마감·미관측 그리드 판정 기준은 그대로 적용하고 수정본 최초 결과는 따로 기록한다. EDF [0,5)에서 A 단독 수요 MAX는 공급 4를 초과하므로 Demand이다. B의 마감도 5로 설정한 별도 단언에서 MAX+2의 체크 덧셈이 Overflow를 반환해야 한다.
+
 [Ten pre-change deadline and cooperative build identities](evidence/deadline-cooperative-legacy-loads.en-ko.md).
 
 [Independent first assessment / 독립 최초 결과](evidence/deadline-supply-first.en-ko.md) · [Corrective action / 시정 이슈 #254](https://github.com/Romanof123/JNOX/issues/254).
