@@ -147,3 +147,5 @@ IMP-055 · VER-002/005/023. 일반 Rust 최초 부팅 3회에서 두 시드와 C
 CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 물리 UART 프로파일 계획](boards/pi4-serial-capture.md#chg-062)
 
 CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
+
+CHG-067 · [일반 Rust 뮤텍스 작업의 배치·소유권 기준](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)

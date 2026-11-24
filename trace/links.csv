@@ -1168,3 +1168,6 @@ CHG-061,affects,REQ-002
 CHG-061,affects,REQ-003
 CHG-061,affects,REQ-005
 CHG-061,affects,REQ-023
+CHG-067,affects,REQ-002
+CHG-067,affects,REQ-005
+CHG-067,affects,REQ-023
