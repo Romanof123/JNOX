@@ -120,6 +120,19 @@ fn main() {
                 .filter(|key| key.starts_with("CARGO_FEATURE_")).all(|key| allowed.contains(&key.as_str())),
             "legacy partition diagnostic requires standalone virt assembly partition fixture");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_mask)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_mask_long)");
+    if let Some(mode) = selector("JNOX_PARTITION_WORKER_MASK") {
+        assert!(legacy_bench == "boot" && bench == "partition" && table_p != table_q
+            && selector("JNOX_PARTITION_NOTICE").is_none() && scenario.is_none(),
+            "worker mask requires standalone ordinary P or Q without delayed notice");
+        assert!(matches!(mode.as_str(), "short" | "long"),
+            "JNOX_PARTITION_WORKER_MASK must be short or long");
+        println!("cargo::rustc-cfg=jnox_partition_mask");
+        if mode == "long" {
+            println!("cargo::rustc-cfg=jnox_partition_mask_long");
+        }
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice)");
     println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice_long)");
     if let Some(mode) = selector("JNOX_PARTITION_NOTICE") {

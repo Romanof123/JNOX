@@ -3,7 +3,7 @@
 # All launch artifacts, including an incomplete capture, stay in the new directory.
 set -eu
 if [ "$#" -ne 5 ]; then
-    echo "usage: sh capture_partition_notice.sh P|Q short|long ELF EXPECTED_SHA256 NEW_DIRECTORY" >&2
+    echo "usage: sh capture_partition_notice.sh P|Q short|long|mask-short|mask-long ELF EXPECTED_SHA256 NEW_DIRECTORY" >&2
     exit 1
 fi
 table=$1
@@ -11,7 +11,7 @@ mode=$2
 elf=$3
 expected=$4
 out=$5
-case "$table/$mode" in P/short|P/long|Q/short|Q/long) ;; *) exit 1 ;; esac
+case "$table/$mode" in P/short|P/long|Q/short|Q/long|P/mask-short|P/mask-long|Q/mask-short|Q/mask-long) ;; *) exit 1 ;; esac
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 mkdir -- "$out"
 cp -- "$elf" "$out/kernel.elf"
@@ -50,6 +50,14 @@ if [ "$status" -ne 124 ]; then
     exit 1
 fi
 sha256sum -c sha256 >&2
+case "$mode" in
+    mask-*)
+        # Preserve raw evidence. The delayed-compare scorer models a different fault.
+        grep -Fx "OP MASKBOOT table=$table mode=${mode#mask-}" uart >/dev/null
+        grep '^OP STOP ' uart >/dev/null
+        echo "capture only; worker-mask qualification requires independent replay" > capture-status
+        exit 0 ;;
+esac
 score=0
 python3 "$repo/tools/ordinary_partition_account.py" uart --origin guest \
     --table "$table" --case "$mode" --elf kernel.elf \
