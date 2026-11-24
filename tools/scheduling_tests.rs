@@ -279,3 +279,53 @@ fn cyclic_window_end_at_clock_limit() {
     assert_eq!(table.decision(u64::MAX - 3, |_| true), None);
     assert_eq!(table.dispatch(u64::MAX - 3, |_| true), Some(0));
 }
+
+#[path = "../kernel/src/event_loop.rs"]
+mod event_loop;
+
+#[test]
+fn cooperative_turns_preserve_fifo_across_wraparound() {
+    let mut events = event_loop::EventLoop::<u8, 3>::new();
+    for event in [1, 2, 3] {
+        assert_eq!(events.enqueue(event), Ok(()));
+    }
+    assert_eq!(events.enqueue(99), Err(99));
+
+    let mut trace = Vec::new();
+    for expected in 1..=6 {
+        assert!(events.dispatch_one(|event, enqueue| {
+            trace.push(event);
+            if event <= 3 {
+                assert_eq!(enqueue(event + 3), Ok(()));
+                assert_eq!(enqueue(98), Err(98));
+            }
+        }));
+        assert_eq!(trace.len(), expected);
+    }
+    assert_eq!(trace, [1, 2, 3, 4, 5, 6]);
+    assert!(!events.dispatch_one(|_, _| panic!("empty loop ran a handler")));
+}
+
+#[test]
+fn cooperative_events_can_repeat_and_enqueue_multiple_successors() {
+    let mut events = event_loop::EventLoop::<u8, 4>::new();
+    events.enqueue(1).unwrap();
+    events.enqueue(2).unwrap();
+    assert!(events.dispatch_one(|event, enqueue| {
+        assert_eq!(event, 1);
+        for next in [1, 3, 1] {
+            enqueue(next).unwrap();
+        }
+    }));
+    for expected in [2, 1, 3, 1] {
+        assert!(events.dispatch_one(|event, _| assert_eq!(event, expected)));
+    }
+    assert!(!events.dispatch_one(|_, _| unreachable!()));
+}
+
+#[test]
+fn zero_capacity_returns_owned_event() {
+    let mut events = event_loop::EventLoop::<String, 0>::new();
+    assert_eq!(events.enqueue(String::from("pending")).unwrap_err(), "pending");
+    assert!(!events.dispatch_one(|_, _| unreachable!()));
+}

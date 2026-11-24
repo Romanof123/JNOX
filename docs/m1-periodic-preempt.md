@@ -12,7 +12,7 @@ CHG-011은 POL-004를 확장한다. IMP-009는 EVD-009의 합격 조건을 정�
 
 ## 독립 관찰
 
-periodic-preempt-bench로 빌드하면 periodic-bench도 활성화된다. CBS를 함께 활성화하면 CBS가 우선한다. WSL Bash의 저장소 루트에서 리비전과 ELF를 보관하고 구현이나 추적 로그를 열기 전에 첫 블랙박스 판정을 실패까지 포함해 기록한다. 기본 관찰 단위는 새 단일 코어 Cortex-A72 게스트 한 대다.
+periodic-preempt-bench로 빌드하면 periodic-bench도 활성화된다. 여러 기능을 켠 경우의 선택 순서는 [스케줄링 카탈로그](scheduling-policies.md)에 있다. WSL Bash의 저장소 루트에서 리비전과 ELF를 보관하고 구현이나 추적 로그를 열기 전에 첫 블랙박스 판정을 실패까지 포함해 기록한다. 기본 관찰 단위는 새 단일 코어 Cortex-A72 게스트 한 대다.
 
 ```sh
 set -e -o pipefail

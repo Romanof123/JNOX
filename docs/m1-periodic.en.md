@@ -16,7 +16,7 @@ Worker bodies are finite and keep IRQs masked until completion. The bench checks
 
 ## Independent observation
 
-A fresh verifier records the revision and first launch verdict, including failure, before inspecting source, disassembly or the exception log. Run once in WSL Bash from the repository root. Feature precedence is CBS, periodic, then legacy benchmarks. The periodic observer defaults to one Cortex-A72 guest with one core, GICv2, TCG and 128 MiB.
+A fresh verifier records the revision and first launch verdict, including failure, before inspecting source, disassembly or the exception log. Run once in WSL Bash from the repository root. The [scheduling catalog](scheduling-policies.en.md) gives the selection order for combined features. The periodic observer defaults to one Cortex-A72 guest with one core, GICv2, TCG and 128 MiB.
 
 ```sh
 set -e -o pipefail

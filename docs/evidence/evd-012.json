@@ -1,0 +1,108 @@
+{
+  "verdict": "PASS",
+  "first_verdict": "PASS",
+  "observer_exit": 0,
+  "commit": "d3a8e492d91bc25b75e00125ce00f8b114d25a1a",
+  "tree": "d4f1c3fea54165f588629a2d7c2b34f5bddb8ddc",
+  "sha256": {
+    "kernel.elf": "65d9096add8edae83270e690751d0e855264661d3e5c8c7b8073086a4f1ecc79",
+    "int.log": "9654f14b380ad80c45bc438d2646cd70757f5fe493d0e5f3570d6aeb5a951c81",
+    "uart.bin": "87a5d4170547caf8e06974b684f2dcd26ddb2e3cb0705862a5250e1d03e5aa36",
+    "host.log": "a9a2fda1351a5024c1b4a87dfa5c44436f6854547d9ed9e7fc3600004e6ef4db",
+    "disassembly.txt": "135b5431786f2ed41dbc6816b59a17f51a82bf7360912727060275f60203f573",
+    "symbols.txt": "63968097388a6f5185b9e73e82aa5fb2e24ec24bed2c114836b44c2dc584ffc5",
+    "runner.log": "e5488de41afb0aafab9c44b33a07bd6f1e4c9b7f9e0451d19c7a06aae7ff5d9e"
+  },
+  "guest_launches": 1,
+  "pid": 490,
+  "argv": [
+    "/usr/bin/qemu-system-aarch64",
+    "-d",
+    "int",
+    "-D",
+    "coop-raw/int.log",
+    "-machine",
+    "virt,gic-version=2",
+    "-cpu",
+    "cortex-a72",
+    "-smp",
+    "1",
+    "-accel",
+    "tcg",
+    "-m",
+    "128M",
+    "-nodefaults",
+    "-display",
+    "none",
+    "-monitor",
+    "none",
+    "-serial",
+    "stdio",
+    "-kernel",
+    "coop-raw/kernel.elf"
+  ],
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nCOOP A FIRST\nCOOP IRQ B READY\nCOOP A RETAINED\nCOOP B FIRST\nCOOP A RESUMED\nCOOP B WOKEN\nCOOP B RESUMED\nEVENT 1\nEVENT 2\nEVENT 3\nCOOP PASS\n",
+  "exception_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201290\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201290\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x402012dc\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201330\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000003\n...with ELR 0x4020134c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x402012dc\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000004\n...with ELR 0x40201304\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201304\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020132c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020134c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201374\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201378\n",
+  "exception_pairs": [
+    [
+      "IRQ",
+      "0x0/0x0",
+      "0x40201290",
+      "0x40201290"
+    ],
+    [
+      "SVC",
+      "0x15/0x56000002",
+      "0x402012dc",
+      "0x40201330"
+    ],
+    [
+      "SVC",
+      "0x15/0x56000003",
+      "0x4020134c",
+      "0x402012dc"
+    ],
+    [
+      "SVC",
+      "0x15/0x56000004",
+      "0x40201304",
+      "0x40201304"
+    ],
+    [
+      "SVC",
+      "0x15/0x56000001",
+      "0x4020132c",
+      "0x4020134c"
+    ],
+    [
+      "SVC",
+      "0x15/0x56000001",
+      "0x40201374",
+      "0x40201378"
+    ]
+  ],
+  "transitions": [
+    "IRQ A work_begin -> same instruction in A; B enters ready queue",
+    "SVC 2 A yield -> B entry; older ready B precedes requeued A",
+    "SVC 3 B block -> A after yield",
+    "SVC 4 A wake B -> A after wake",
+    "SVC 1 A exit -> B after block",
+    "SVC 1 B exit -> event entry"
+  ],
+  "policy": "A=1, B=0, equal rank, oldest ready wins. Initial ERET targets A entry 0x4020124c.",
+  "witnesses": "Guest checks private SP=stack_top-16, frame below SP, X19 and [SP] equal 0xa19 for A and 0xb19 for B. IRQ checks X14=1 and X20 nonzero, stores X20 to [SP+8], resumed A checks count delta <=1. Trace supplies exception PCs but no register/stack dump.",
+  "events": "Capacity two: preload 1,2; reject 4 before mutation. Pop 1 then handler appends 3 behind 2. Dispatcher waits for each handler to return before popping again. Ordered 1,2,3 observed on UART. Overflow and callback return inferred from executed guest checks plus code; no function-level trace.",
+  "limits": "One single-core Cortex-A72 TCG guest, GICv2, 128 MiB. 0.1 second UART quiet window. No board, real-time latency, WCET or SMP measurement.",
+  "host_tests": {
+    "toolchain": "rustc +1.95.0 --edition 2024 --test tools/scheduling_tests.rs",
+    "args": [
+      "--test-threads=1"
+    ],
+    "output": "\nrunning 33 tests\ntest aperiodic_policy::tests::full_replenishment_queue_delays_credit_and_preserves_budget ... ok\ntest aperiodic_policy::tests::identical_releases_distinguish_the_three_servers ... ok\ntest aperiodic_policy::tests::invalid_parameters_and_overflows_preserve_state ... ok\ntest aperiodic_policy::tests::periodic_servers_handle_preemption_drain_and_boundary ... ok\ntest cbs_admission_and_service_match_demand_over_common_frame ... ok\ntest cooperative_events_can_repeat_and_enqueue_multiple_successors ... ok\ntest cooperative_turns_preserve_fifo_across_wraparound ... ok\ntest cyclic_decisions_match_expanded_slots ... ok\ntest cyclic_window_end_at_clock_limit ... ok\ntest dispatch_matches_stable_sort_for_all_ordered_triples ... ok\ntest fair_policy::tests::weighted_service_and_eligible_deadlines ... ok\ntest guest_checks::aperiodic_policy ... ok\ntest guest_checks::dispatch_policy ... ok\ntest guest_checks::domain_policy ... ok\ntest guest_checks::fair_policy ... ok\ntest guest_checks::feedback_policy ... ok\ntest guest_checks::group_policy ... ok\ntest guest_checks::service_policy ... ok\ntest guest_checks::temporal_policy ... ok\ntest hrrn_distinguishes_adjacent_ratios_at_the_clock_limit ... ok\ntest ready_queue::tests::preempted_task_precedes_peers_and_higher_priorities_still_win ... ok\ntest ready_queue::tests::rejected_insertions_preserve_contents_and_order ... ok\ntest ready_queue::tests::yield_moves_to_tail_even_when_ids_arrive_in_reverse_order ... ok\ntest saturated_hard_server_runs_only_its_quota_each_period ... ok\ntest service_policy::tests::aligned_budget_throttles_and_replenishes ... ok\ntest service_policy::tests::stride_shares_service_and_accounts_for_wakeups ... ok\ntest temporal_policy::tests::cyclic_frame_boundaries_and_configuration ... ok\ntest temporal_policy::tests::hard_cbs_activation_and_throttling ... ok\ntest temporal_policy::tests::hard_cbs_admission_boundaries ... ok\ntest temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok\ntest temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok\ntest weighted_and_eligible_deadline_selection_in_twelfths ... ok\ntest zero_capacity_returns_owned_event ... ok\n\ntest result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s\n\n"
+  },
+  "observer_controls": {
+    "missing": "UART deadline exceeded (0.04s)",
+    "reordered": "unexpected UART bytes or marker order",
+    "trailing": "unexpected UART bytes or marker order"
+  }
+}

@@ -14,7 +14,7 @@ CHG-008 defines the acceptance contract for IMP-006 and the independent executio
 
 ## Independent observation
 
-A fresh verifier records the revision and first launch outcome before reading implementation source or disassembly, including any failed attempt. From the repository root in WSL Bash, run the following once. CBS takes precedence when benchmark features are combined. The cbs observer defaults to one single-core Cortex-A72 GICv2 guest under TCG with 128 MiB.
+A fresh verifier records the revision and first launch outcome before reading implementation source or disassembly, including any failed attempt. From the repository root in WSL Bash, run the following once. The [scheduling catalog](scheduling-policies.en.md) gives the selection order for combined features. The cbs observer defaults to one single-core Cortex-A72 GICv2 guest under TCG with 128 MiB.
 
 ```sh
 set -e -o pipefail

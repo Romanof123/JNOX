@@ -89,7 +89,21 @@ PARTITION_TRANSCRIPT = BOOT_TRANSCRIPT + (
     b"PART STOP\n"
     b"PART PASS\n"
 )
+COOP_TRANSCRIPT = BOOT_TRANSCRIPT + (
+    b"COOP A FIRST\n"
+    b"COOP IRQ B READY\n"
+    b"COOP A RETAINED\n"
+    b"COOP B FIRST\n"
+    b"COOP A RESUMED\n"
+    b"COOP B WOKEN\n"
+    b"COOP B RESUMED\n"
+    b"EVENT 1\n"
+    b"EVENT 2\n"
+    b"EVENT 3\n"
+    b"COOP PASS\n"
+)
 TRANSCRIPTS = {
+    "coop": COOP_TRANSCRIPT,
     "boot": BOOT_TRANSCRIPT,
     "pi4": b"JNOX PI4 BOOT\nJNOX PI4 READY\n",
     "partition": PARTITION_TRANSCRIPT,
