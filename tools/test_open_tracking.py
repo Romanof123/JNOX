@@ -32,6 +32,23 @@ class TrackingTests(unittest.TestCase):
             with self.subTest(body=body):
                 self.assertTrue(audit([item(4, "#1", True), item(1, body)])[1])
 
+    def test_release_and_canonical_link_destinations(self):
+        for body in ("<https://github.com/Romanof123/JNOX/pull/4>",
+                     "[#99](https://github.com/Romanof123/JNOX/pull/4)"):
+            with self.subTest(body=body):
+                self.assertFalse(audit([item(4, "#1", True, ("team:release",)), item(1, body)])[1])
+
+    def test_quoted_html_and_unsupported_destinations(self):
+        for body in ("  > #4", " > quote\n#4", "  > ~~~\n  > #4\n  > ~~~",
+                     "<code>#4</code>", "<PRE class='example'>\n#4\n</PRE>",
+                     "[#4][elsewhere]", "[name]: https://example.com/#4",
+                     "![#4](https://github.com/Romanof123/JNOX/pull/4)",
+                     "[#4](https://github.com/Romanof123/JNOX.evil/pull/4)",
+                     "[#4](https://github.com.evil/Romanof123/JNOX/pull/4)",
+                     "<https://example.com/#4>", "other/repo#4", r"\#4"):
+            with self.subTest(body=body):
+                self.assertTrue(audit([item(4, "#1", True), item(1, body)])[1])
+
     def test_invalid_team_assignments(self):
         for roles in ((), ("team:fiction",), ("team:pm", "team:systems")):
             self.assertTrue(audit([item(1, None, roles=roles)])[1])

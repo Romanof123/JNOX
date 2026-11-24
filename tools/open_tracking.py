@@ -7,17 +7,26 @@ from pathlib import Path
 
 REPO = "romanof123/jnox"
 ROLES = {"team:" + name for name in
-         ("development", "functional-safety", "integration", "pm", "systems", "verification")}
+         ("development", "functional-safety", "integration", "pm", "release", "systems", "verification")}
 URL = re.compile(r"https://github\.com/" + REPO + r"/(issues|pull)/([1-9][0-9]*)/?", re.I)
-TOKEN = re.compile(r"https?://[^\s<>\[\]()]+|(?<![\w/#\\.-])"
+TOKEN = re.compile(r"https?://[^\s<>\[\]()]+|(?<![^\s(,;])"
                    r"(?:(?P<repo>[\w.-]+/[\w.-]+))?#(?P<num>[1-9][0-9]*)(?![A-Za-z0-9_])", re.I)
 
 
 def references(body):
     """Extract supported prose references, retaining the target type of URLs."""
+    body = re.sub(r"<!--.*?(?:-->|\Z)|<(code|pre)\b[^>]*>.*?(?:</\1\s*>|\Z)",
+                  " ", body, flags=re.I | re.S)
     lines = []
+    quoted = False
     fence = ""
     for line in body.splitlines():
+        if not line.strip():
+            quoted = False
+        if not fence and re.match(r"^\s*>", line):
+            quoted = True
+        if quoted:
+            continue
         marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
         if fence:
             if marker and marker[1].startswith(fence) and not marker[2].strip():
@@ -28,8 +37,16 @@ def references(body):
             lines.append(line)
     prose = re.sub(r"<!--.*?(?:-->|\Z)", " ", "\n".join(lines), flags=re.S)
     prose = re.sub(r"(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)", " ", prose, flags=re.S)
-    # For Markdown links, the destination identifies the referenced repository.
-    prose = re.sub(r"\[[^\]\n]*\]\(([^()\s]+)\)", r" \1 ", prose)
+    lines = []
+    for line in prose.splitlines():
+        line = re.sub(r"(!?)\[([^\[\]\n]*)\]\(([^()\s]+)\)", lambda m:
+                      " " + m[3] + " " if not m[1] and URL.fullmatch(m[3]) else " ", line)
+        line = re.sub(r"<(https?://[^<>\s]+)>", lambda m:
+                      " " + m[1] + " " if URL.fullmatch(m[1]) else " ", line, flags=re.I)
+        # Skip unresolved bracket syntax, HTML, and malformed code spans.
+        if not any(char in line for char in "[]<>`"):
+            lines.append(line)
+    prose = "\n".join(lines)
     refs = set()
     for token in TOKEN.finditer(prose):
         if token["num"]:
