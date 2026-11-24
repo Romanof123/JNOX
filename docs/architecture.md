@@ -189,3 +189,5 @@ CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
 CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
 
 [DES-004 커널 아키텍처 선택](../arch/README.ko.md)
+
+IMP-053 · VER-002/005/023. v2는 정상 1/8, 거절 2/2, 비교 v1 정상 0/8이었다. CBS 포화 추적 1회만 완료했고 W 네 건 모두 B 실행권이 없었다. v2 지연 실행과 제품 적격 판정은 없다. [EVD-053](evidence/evd-053.md)

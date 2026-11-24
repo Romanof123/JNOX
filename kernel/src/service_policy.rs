@@ -2,6 +2,7 @@
 //! for reservations and equal-length service quanta for stride scheduling.
 
 /// A fixed budget for each period aligned to the initial start time.
+#[derive(Clone)]
 pub(crate) struct PeriodicReservation {
     budget: u64,
     period: u64,
@@ -22,6 +23,18 @@ impl PeriodicReservation {
             remaining: budget,
             earliest_start: start,
         })
+    }
+
+    /// Project aligned replacement credit without consuming or accumulating it.
+    #[allow(dead_code)]
+    pub(crate) fn allocation_at(&self, now: u64) -> Option<(u64, u64)> {
+        if now < self.period_start {
+            return Some((0, self.period_start));
+        }
+        let elapsed = now - self.period_start;
+        let start = now - elapsed % self.period;
+        let remaining = if elapsed >= self.period { self.budget } else { self.remaining };
+        Some((remaining, start.checked_add(self.period)?))
     }
 
     /// Commits a contiguous interval beginning at `now`. A caller must stop

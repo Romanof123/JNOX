@@ -225,6 +225,18 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("weighted"));
         println!("cargo::rustc-cfg=jnox_weighted_trace");
     }
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_stage, values("eoi", "frames"))"#);
+    if let Some(site) = selector("JNOX_RESERVATION_STAGE") {
+        assert!(matches!(site.as_str(), "eoi" | "frames"), "unknown reservation stage");
+        assert!(board == "virt" && bench == "boot" && profile.as_deref() == Some("reservation")
+            && matches!(app.as_deref(), Some("aligned-wake" | "cbs-saturated"))
+            && scenario.is_none() && env::var("OPT_LEVEL").as_deref() == Ok("s"),
+            "reservation stage requires the size-optimized ordinary virt W/S study configuration");
+        println!(r#"cargo::rustc-cfg=jnox_reservation_stage="{site}""#);
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_reservation)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_policy, values("aligned", "cbs"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_case, values("wake", "saturated", "refused", "late"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
@@ -288,6 +300,16 @@ fn main() {
                     "ordinary proportional requires an explicit lottery, stride or diagnostic app");
             println!("cargo::rustc-cfg=jnox_ordinary_prop");
             println!("cargo::rustc-cfg=jnox_prop_case=\"{case}\"");
+        }
+        Some("reservation") => {
+            assert!(board == "virt" && bench == "boot", "reservation requires virt without benchmark features");
+            let (policy, case) = app.as_deref().and_then(|name| name.split_once('-'))
+                .expect("reservation requires JNOX_APP=<aligned|cbs>-<wake|saturated|refused|late>");
+            assert!(matches!(policy, "aligned" | "cbs"), "invalid reservation policy {policy}");
+            assert!(matches!(case, "wake" | "saturated" | "refused" | "late"), "invalid reservation case {case}");
+            println!("cargo::rustc-cfg=jnox_ordinary_reservation");
+            println!(r#"cargo::rustc-cfg=jnox_reservation_policy="{policy}""#);
+            println!(r#"cargo::rustc-cfg=jnox_reservation_case="{case}""#);
         }
         Some("aperiodic") => {
             assert!(board == "virt" && bench == "boot", "ordinary aperiodic requires virt without benchmarks");
@@ -373,8 +395,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, multilevel, periodic, aperiodic or deadline"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, multilevel, periodic, aperiodic or deadline"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, multilevel, periodic, aperiodic, deadline or reservation"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, multilevel, periodic, aperiodic, deadline or reservation"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",

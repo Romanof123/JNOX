@@ -1,0 +1,3022 @@
+{
+  "parent": "87bee9296a8c6f3deeb18debc57d184272429f4a",
+  "candidate": "efabd263c24a8ad8bd71c614ccfd2f437020ff81",
+  "original_period_ticks": 3125000,
+  "opening_limit_ticks": 62500,
+  "frequency_hz": 62500000,
+  "scope": "One virtual AArch64 Cortex-A72, normal default-clock TCG scheduling; two cold samples per selector/site per revision.",
+  "archive": {
+    "file": "reservation-chg081-first.zip",
+    "sha256": "8d8aa6467bd9d4704e9f235883559e9a0b21d0122565d5163d4d094dae5cc5a3",
+    "bytes": 1230586
+  },
+  "positions": [
+    {
+      "role": "parent",
+      "position": "01-WB",
+      "mask": 31,
+      "terminal": [
+        13,
+        3264691,
+        0,
+        0,
+        2,
+        2,
+        3216434,
+        3152467
+      ],
+      "source": 3174755,
+      "pre": 3196082,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 21327,
+      "irq_after_epoch": 14213,
+      "irq_to_source": 8075,
+      "commit_after_epoch": 46991,
+      "marker_after_epoch": 63967,
+      "grants": 1,
+      "raw_sha256": "00304a8ad7dba0bb4a93a34dccb19a173d7d53becbdbff84515e73c2b4c045ef",
+      "elf_sha256": "5c1ca941d2dc0e72274308bb97ee60c95097e527014c1f8493a3938bb98e9270",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "failed"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "02-WE",
+      "mask": 31,
+      "terminal": [
+        13,
+        109435303,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3182235,
+      "pre": 3201312,
+      "probe": 3185067,
+      "prefix": 2832,
+      "suffix": 16245,
+      "whole": 19077,
+      "irq_after_epoch": 21408,
+      "irq_to_source": 5365,
+      "commit_after_epoch": 48682,
+      "marker_after_epoch": 61086,
+      "grants": 18,
+      "raw_sha256": "5f23c15cf849b9b48b509e4a42d509458a4b9a7b6bd94e915304d6a73f421ad0",
+      "elf_sha256": "631cbdb9bbb60b224dac76b4e72fe4d79225d5de88b8543af7a20a0b4b417328",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "03-WF",
+      "mask": 3,
+      "terminal": [
+        13,
+        3248642,
+        0,
+        2,
+        2,
+        5,
+        3220179,
+        3151651
+      ],
+      "source": 3191740,
+      "pre": 3220179,
+      "probe": 3215913,
+      "prefix": 24173,
+      "suffix": 4266,
+      "whole": 28439,
+      "irq_after_epoch": 30071,
+      "irq_to_source": 10018,
+      "commit_after_epoch": null,
+      "marker_after_epoch": null,
+      "grants": 0,
+      "raw_sha256": "efd61925f6ff72393efed21220ba8431398d9f78c0c65eed3ce5589da947b0ad",
+      "elf_sha256": "7057ed28320bac15bde4c4bc43b675296c132423bf473230c4291c35df5b9b1d",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "failed",
+        "authority write/readback and observed owner": "unobserved",
+        "postcommit time bound": "unobserved",
+        "cutoff CVAL and CTL readback": "unobserved",
+        "planned/selected time bound": "unobserved",
+        "first actual worker return": "unobserved",
+        "first worker opening bound": "unobserved"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "04-SF",
+      "mask": 31,
+      "terminal": [
+        13,
+        34453337,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3187280,
+      "pre": 3203492,
+      "probe": 3201139,
+      "prefix": 13859,
+      "suffix": 2353,
+      "whole": 16212,
+      "irq_after_epoch": 18776,
+      "irq_to_source": 5360,
+      "commit_after_epoch": 43109,
+      "marker_after_epoch": 56023,
+      "grants": 8,
+      "raw_sha256": "19929e54467a4fa974bcb43d839b573e47e9de1623622037eb700a953836fd03",
+      "elf_sha256": "db70c54fb205f44b1e8465fc1725dea26c11cb44bdbfc1640a77713d1527edb7",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "05-SE",
+      "mask": 15,
+      "terminal": [
+        13,
+        3245602,
+        0,
+        2,
+        2,
+        5,
+        3226152,
+        3162987
+      ],
+      "source": 3198790,
+      "pre": 3215313,
+      "probe": 3201653,
+      "prefix": 2863,
+      "suffix": 13660,
+      "whole": 16523,
+      "irq_after_epoch": 26835,
+      "irq_to_source": 8968,
+      "commit_after_epoch": 55063,
+      "marker_after_epoch": null,
+      "grants": 0,
+      "raw_sha256": "89a256f3ba610acc2df8b1323262ca863b01beb9fd128b412ac3ac60016040a7",
+      "elf_sha256": "2a820a1f62546d43e1382f3ef5d4198bd0a8a79a0db4a1d703717e93735e1153",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "failed; identical terminal format for planned or selection sample; exact subguard unobserved",
+        "first actual worker return": "unobserved",
+        "first worker opening bound": "unobserved"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "06-SB",
+      "mask": 3,
+      "terminal": [
+        13,
+        3245405,
+        0,
+        2,
+        2,
+        5,
+        3227053,
+        3160722
+      ],
+      "source": 3207505,
+      "pre": 3227053,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 19548,
+      "irq_after_epoch": 38033,
+      "irq_to_source": 8750,
+      "commit_after_epoch": null,
+      "marker_after_epoch": null,
+      "grants": 0,
+      "raw_sha256": "a3dc154aa5ed8f83c96587594eb7f92cc81d4e0b32f87c9a550a92e3c1dbdfeb",
+      "elf_sha256": "0d40e0948581ae2d401637caeb07a3b3cc75efe1bcdcdc79788530c3cb0579c9",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "failed",
+        "authority write/readback and observed owner": "unobserved",
+        "postcommit time bound": "unobserved",
+        "cutoff CVAL and CTL readback": "unobserved",
+        "planned/selected time bound": "unobserved",
+        "first actual worker return": "unobserved",
+        "first worker opening bound": "unobserved"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "07-SB",
+      "mask": 31,
+      "terminal": [
+        13,
+        6271666,
+        0,
+        0,
+        2,
+        2,
+        3217865,
+        3155304
+      ],
+      "source": 3179981,
+      "pre": 3199266,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 19285,
+      "irq_after_epoch": 18207,
+      "irq_to_source": 6470,
+      "commit_after_epoch": 47508,
+      "marker_after_epoch": 62561,
+      "grants": 1,
+      "raw_sha256": "a3dd45acabed67e282515f885314c62a6f8b188772405426d79ce4d3741bff8f",
+      "elf_sha256": "0d40e0948581ae2d401637caeb07a3b3cc75efe1bcdcdc79788530c3cb0579c9",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "failed"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "08-SE",
+      "mask": 31,
+      "terminal": [
+        13,
+        6270458,
+        0,
+        0,
+        2,
+        2,
+        3218472,
+        3153502
+      ],
+      "source": 3181850,
+      "pre": 3198979,
+      "probe": 3185129,
+      "prefix": 3279,
+      "suffix": 13850,
+      "whole": 17129,
+      "irq_after_epoch": 22749,
+      "irq_to_source": 5599,
+      "commit_after_epoch": 48210,
+      "marker_after_epoch": 64970,
+      "grants": 1,
+      "raw_sha256": "940e64315b74d8c98b163cf7c663b73c3370948bee97e7b065190b6d1d23a27e",
+      "elf_sha256": "2a820a1f62546d43e1382f3ef5d4198bd0a8a79a0db4a1d703717e93735e1153",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "failed"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "09-SF",
+      "mask": 31,
+      "terminal": [
+        13,
+        34452102,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3184471,
+      "pre": 3204557,
+      "probe": 3201633,
+      "prefix": 17162,
+      "suffix": 2924,
+      "whole": 20086,
+      "irq_after_epoch": 17339,
+      "irq_to_source": 6257,
+      "commit_after_epoch": 47044,
+      "marker_after_epoch": 62136,
+      "grants": 8,
+      "raw_sha256": "33d105a65cf6f989346081030e06535f1adfab1feb3b0c641f18e9f6f5f42d39",
+      "elf_sha256": "db70c54fb205f44b1e8465fc1725dea26c11cb44bdbfc1640a77713d1527edb7",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "10-WF",
+      "mask": 31,
+      "terminal": [
+        13,
+        109454019,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3190851,
+      "pre": 3211891,
+      "probe": 3208862,
+      "prefix": 18011,
+      "suffix": 3029,
+      "whole": 21040,
+      "irq_after_epoch": 17369,
+      "irq_to_source": 6258,
+      "commit_after_epoch": 48131,
+      "marker_after_epoch": 61986,
+      "grants": 18,
+      "raw_sha256": "862ffde876a360836dc7687f09f160596e0d8a6012ba637a713189d935a63119",
+      "elf_sha256": "7057ed28320bac15bde4c4bc43b675296c132423bf473230c4291c35df5b9b1d",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "11-WE",
+      "mask": 15,
+      "terminal": [
+        13,
+        3238203,
+        0,
+        2,
+        2,
+        5,
+        3221692,
+        3158458
+      ],
+      "source": 3187634,
+      "pre": 3211603,
+      "probe": 3191101,
+      "prefix": 3467,
+      "suffix": 20502,
+      "whole": 23969,
+      "irq_after_epoch": 23101,
+      "irq_to_source": 6075,
+      "commit_after_epoch": 56545,
+      "marker_after_epoch": null,
+      "grants": 0,
+      "raw_sha256": "ee396adb42512bc668fc9dacd5b1e3056050ce3e281fca45972f8c2e626f0641",
+      "elf_sha256": "631cbdb9bbb60b224dac76b4e72fe4d79225d5de88b8543af7a20a0b4b417328",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "failed; identical terminal format for planned or selection sample; exact subguard unobserved",
+        "first actual worker return": "unobserved",
+        "first worker opening bound": "unobserved"
+      }
+    },
+    {
+      "role": "parent",
+      "position": "12-WB",
+      "mask": 31,
+      "terminal": [
+        13,
+        109435946,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3182016,
+      "pre": 3200071,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 18055,
+      "irq_after_epoch": 16582,
+      "irq_to_source": 5838,
+      "commit_after_epoch": 43123,
+      "marker_after_epoch": 60601,
+      "grants": 18,
+      "raw_sha256": "da82808651d869ec16a3e89b4449a761e82190cbc2f9af701f309ed8e35198fa",
+      "elf_sha256": "5c1ca941d2dc0e72274308bb97ee60c95097e527014c1f8493a3938bb98e9270",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "01-WB",
+      "mask": 31,
+      "terminal": [
+        13,
+        109435285,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3176189,
+      "pre": 3194434,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 18245,
+      "irq_after_epoch": 17458,
+      "irq_to_source": 6067,
+      "commit_after_epoch": 45272,
+      "marker_after_epoch": 59039,
+      "grants": 18,
+      "raw_sha256": "34c9dd99a56be943194707372498da68f8a595791966d6b568b8bb502d31526f",
+      "elf_sha256": "4cd9be5fbaa9028e5805e68c3970d8828ca7ed50635b53bb5cf6dca20d9e74e9",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "02-WE",
+      "mask": 31,
+      "terminal": [
+        13,
+        109436515,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3180662,
+      "pre": 3196058,
+      "probe": 3183284,
+      "prefix": 2622,
+      "suffix": 12774,
+      "whole": 15396,
+      "irq_after_epoch": 16051,
+      "irq_to_source": 4655,
+      "commit_after_epoch": 38792,
+      "marker_after_epoch": 50159,
+      "grants": 18,
+      "raw_sha256": "9dbbeaa56cf24b480436019bde9eae3dbc4261450e8748f8eaebfffcc1babedb",
+      "elf_sha256": "94e65a122ea0c0ce29d0e46edbb84ea80e535c4e310173d44268c2c5f37f228b",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "03-WF",
+      "mask": 31,
+      "terminal": [
+        13,
+        109434274,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3177673,
+      "pre": 3197508,
+      "probe": 3194573,
+      "prefix": 16900,
+      "suffix": 2935,
+      "whole": 19835,
+      "irq_after_epoch": 18409,
+      "irq_to_source": 6307,
+      "commit_after_epoch": 47898,
+      "marker_after_epoch": 61693,
+      "grants": 18,
+      "raw_sha256": "a409341ed00c95a0883b9cf7f091081295fb2fdb32c7868223634df046b8a8c9",
+      "elf_sha256": "d0f3250d3123751881c706605afa40fe6e4ad0bee24e20fbef2493cd9e11f8b2",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "04-SF",
+      "mask": 31,
+      "terminal": [
+        13,
+        34450280,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3187337,
+      "pre": 3204140,
+      "probe": 3201830,
+      "prefix": 14493,
+      "suffix": 2310,
+      "whole": 16803,
+      "irq_after_epoch": 20662,
+      "irq_to_source": 7062,
+      "commit_after_epoch": 47256,
+      "marker_after_epoch": 59585,
+      "grants": 8,
+      "raw_sha256": "dc791e237d30570c00d58d1c086ce029c0efde8c255b54c18a631670736cfa50",
+      "elf_sha256": "1c5039f7ac45d46ef12050dcd97500ec7f34b190fbf4c45ded8e2e24ee869b7c",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "05-SE",
+      "mask": 15,
+      "terminal": [
+        13,
+        3234770,
+        0,
+        2,
+        2,
+        5,
+        3218134,
+        3154822
+      ],
+      "source": 3186372,
+      "pre": 3205967,
+      "probe": 3189974,
+      "prefix": 3602,
+      "suffix": 15993,
+      "whole": 19595,
+      "irq_after_epoch": 24299,
+      "irq_to_source": 7251,
+      "commit_after_epoch": 54479,
+      "marker_after_epoch": null,
+      "grants": 0,
+      "raw_sha256": "7f96f8c2fb508510224f3a05ea62bbe994ebadb71f87f58ac6b78937e0122694",
+      "elf_sha256": "da80cdfcfdc72e50beff9227a93b1c81a8eae291389c319671bcc151a27925c9",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "failed; identical terminal format for planned or selection sample; exact subguard unobserved",
+        "first actual worker return": "unobserved",
+        "first worker opening bound": "unobserved"
+      }
+    },
+    {
+      "role": "source",
+      "position": "06-SB",
+      "mask": 31,
+      "terminal": [
+        13,
+        34440028,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3181022,
+      "pre": 3195779,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 14757,
+      "irq_after_epoch": 25125,
+      "irq_to_source": 6314,
+      "commit_after_epoch": 48870,
+      "marker_after_epoch": 60909,
+      "grants": 8,
+      "raw_sha256": "51f2b063536f1f75b10f230e030a2914a9b90108249b45ccc68a28570f17c20c",
+      "elf_sha256": "2694158ec7c58566f0cb4cb0d0f3e4b2e1d5ca85130f18edd913da733b337e3d",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "07-SB",
+      "mask": 31,
+      "terminal": [
+        13,
+        34443285,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3183149,
+      "pre": 3198035,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 14886,
+      "irq_after_epoch": 21488,
+      "irq_to_source": 5657,
+      "commit_after_epoch": 44742,
+      "marker_after_epoch": 56993,
+      "grants": 8,
+      "raw_sha256": "1bea5cc7e08694abdd6c0d550d2c5517d98a9bbcabbe0c20c1806d7a922db818",
+      "elf_sha256": "2694158ec7c58566f0cb4cb0d0f3e4b2e1d5ca85130f18edd913da733b337e3d",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "08-SE",
+      "mask": 31,
+      "terminal": [
+        13,
+        34448457,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3185501,
+      "pre": 3204697,
+      "probe": 3188855,
+      "prefix": 3354,
+      "suffix": 15842,
+      "whole": 19196,
+      "irq_after_epoch": 18467,
+      "irq_to_source": 6482,
+      "commit_after_epoch": 47471,
+      "marker_after_epoch": 61995,
+      "grants": 8,
+      "raw_sha256": "8fd28eea14eab83737475e8677b9ccca1612274008f6a7c6f536b613196522ca",
+      "elf_sha256": "da80cdfcfdc72e50beff9227a93b1c81a8eae291389c319671bcc151a27925c9",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "09-SF",
+      "mask": 31,
+      "terminal": [
+        13,
+        34449166,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3182994,
+      "pre": 3201986,
+      "probe": 3199098,
+      "prefix": 16104,
+      "suffix": 2888,
+      "whole": 18992,
+      "irq_after_epoch": 21093,
+      "irq_to_source": 7244,
+      "commit_after_epoch": 50049,
+      "marker_after_epoch": 62134,
+      "grants": 8,
+      "raw_sha256": "d6ab4ea7d91ef6892d3a54f8f5313a79c6c37e3c8f408632ff0cc4a805718607",
+      "elf_sha256": "1c5039f7ac45d46ef12050dcd97500ec7f34b190fbf4c45ded8e2e24ee869b7c",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    },
+    {
+      "role": "source",
+      "position": "10-WF",
+      "mask": 15,
+      "terminal": [
+        13,
+        3237581,
+        0,
+        2,
+        2,
+        5,
+        3221052,
+        3158533
+      ],
+      "source": 3190648,
+      "pre": 3210372,
+      "probe": 3207851,
+      "prefix": 17203,
+      "suffix": 2521,
+      "whole": 19724,
+      "irq_after_epoch": 25603,
+      "irq_to_source": 6512,
+      "commit_after_epoch": 54574,
+      "marker_after_epoch": null,
+      "grants": 0,
+      "raw_sha256": "8003ab9261bf003bd7600b492c87baa97b328f692bc4f0752efccf653f92a3bd",
+      "elf_sha256": "d0f3250d3123751881c706605afa40fe6e4ad0bee24e20fbef2493cd9e11f8b2",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "failed; identical terminal format for planned or selection sample; exact subguard unobserved",
+        "first actual worker return": "unobserved",
+        "first worker opening bound": "unobserved"
+      }
+    },
+    {
+      "role": "source",
+      "position": "11-WE",
+      "mask": 15,
+      "terminal": [
+        13,
+        3238345,
+        0,
+        2,
+        2,
+        5,
+        3218150,
+        3154968
+      ],
+      "source": 3183719,
+      "pre": 3205894,
+      "probe": 3187156,
+      "prefix": 3437,
+      "suffix": 18738,
+      "whole": 22175,
+      "irq_after_epoch": 22448,
+      "irq_to_source": 6303,
+      "commit_after_epoch": 54358,
+      "marker_after_epoch": null,
+      "grants": 0,
+      "raw_sha256": "51c092aabc4e34b0a0c9cf8a0ac159682692a72c140b4ff19df53a8c76c4cce1",
+      "elf_sha256": "94e65a122ea0c0ce29d0e46edbb84ea80e535c4e310173d44268c2c5f37f228b",
+      "passed": false,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "failed; identical terminal format for planned or selection sample; exact subguard unobserved",
+        "first actual worker return": "unobserved",
+        "first worker opening bound": "unobserved"
+      }
+    },
+    {
+      "role": "source",
+      "position": "12-WB",
+      "mask": 31,
+      "terminal": [
+        13,
+        109438870,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source": 3186600,
+      "pre": 3204996,
+      "probe": null,
+      "prefix": null,
+      "suffix": null,
+      "whole": 18396,
+      "irq_after_epoch": 17629,
+      "irq_to_source": 5017,
+      "commit_after_epoch": 44517,
+      "marker_after_epoch": 58855,
+      "grants": 18,
+      "raw_sha256": "ddf3d2be77c82e2dc07227345997992c7f38ea2b80535c277f8c68cb8343bb4a",
+      "elf_sha256": "4cd9be5fbaa9028e5805e68c3970d8828ca7ed50635b53bb5cf6dca20d9e74e9",
+      "passed": true,
+      "guards": {
+        "source IRQ and timer identity": "passed",
+        "live idle/worker frames, ledger eligibility and destination configuration": "passed",
+        "precommit time bound": "passed",
+        "authority write/readback and observed owner": "passed",
+        "postcommit time bound": "passed",
+        "cutoff CVAL and CTL readback": "passed",
+        "planned/selected time bound": "passed",
+        "first actual worker return": "observed",
+        "first worker opening bound": "passed"
+      }
+    }
+  ],
+  "phase_comparisons": {
+    "parent": {
+      "WE": {
+        "prefixes": [
+          2832,
+          3467
+        ],
+        "suffixes": [
+          16245,
+          20502
+        ],
+        "wholes": [
+          19077,
+          23969
+        ],
+        "baseline_wholes": [
+          21327,
+          18055
+        ],
+        "local_majority": "suffix",
+        "range_overlap": true,
+        "all_reached_same_stage": false,
+        "baseline_attribution": "unresolved"
+      },
+      "WF": {
+        "prefixes": [
+          24173,
+          18011
+        ],
+        "suffixes": [
+          4266,
+          3029
+        ],
+        "wholes": [
+          28439,
+          21040
+        ],
+        "baseline_wholes": [
+          21327,
+          18055
+        ],
+        "local_majority": "prefix",
+        "range_overlap": true,
+        "all_reached_same_stage": false,
+        "baseline_attribution": "unresolved"
+      },
+      "SE": {
+        "prefixes": [
+          2863,
+          3279
+        ],
+        "suffixes": [
+          13660,
+          13850
+        ],
+        "wholes": [
+          16523,
+          17129
+        ],
+        "baseline_wholes": [
+          19548,
+          19285
+        ],
+        "local_majority": "suffix",
+        "range_overlap": false,
+        "all_reached_same_stage": false,
+        "baseline_attribution": "unresolved"
+      },
+      "SF": {
+        "prefixes": [
+          13859,
+          17162
+        ],
+        "suffixes": [
+          2353,
+          2924
+        ],
+        "wholes": [
+          16212,
+          20086
+        ],
+        "baseline_wholes": [
+          19548,
+          19285
+        ],
+        "local_majority": "prefix",
+        "range_overlap": true,
+        "all_reached_same_stage": false,
+        "baseline_attribution": "unresolved"
+      }
+    },
+    "source": {
+      "WE": {
+        "prefixes": [
+          2622,
+          3437
+        ],
+        "suffixes": [
+          12774,
+          18738
+        ],
+        "wholes": [
+          15396,
+          22175
+        ],
+        "baseline_wholes": [
+          18245,
+          18396
+        ],
+        "local_majority": "suffix",
+        "range_overlap": true,
+        "all_reached_same_stage": false,
+        "baseline_attribution": "unresolved"
+      },
+      "WF": {
+        "prefixes": [
+          16900,
+          17203
+        ],
+        "suffixes": [
+          2935,
+          2521
+        ],
+        "wholes": [
+          19835,
+          19724
+        ],
+        "baseline_wholes": [
+          18245,
+          18396
+        ],
+        "local_majority": "prefix",
+        "range_overlap": false,
+        "all_reached_same_stage": false,
+        "baseline_attribution": "unresolved"
+      },
+      "SE": {
+        "prefixes": [
+          3602,
+          3354
+        ],
+        "suffixes": [
+          15993,
+          15842
+        ],
+        "wholes": [
+          19595,
+          19196
+        ],
+        "baseline_wholes": [
+          14757,
+          14886
+        ],
+        "local_majority": "suffix",
+        "range_overlap": false,
+        "all_reached_same_stage": false,
+        "baseline_attribution": "unresolved"
+      },
+      "SF": {
+        "prefixes": [
+          14493,
+          16104
+        ],
+        "suffixes": [
+          2310,
+          2888
+        ],
+        "wholes": [
+          16803,
+          18992
+        ],
+        "baseline_wholes": [
+          14757,
+          14886
+        ],
+        "local_majority": "prefix",
+        "range_overlap": false,
+        "all_reached_same_stage": true,
+        "baseline_attribution": "unresolved"
+      }
+    }
+  },
+  "decoder_controls": {
+    "elf-digest": "ELF mismatch",
+    "uart-digest": "UART mismatch",
+    "duplicate": "missing or duplicate diagnostic row",
+    "missing": "missing or duplicate diagnostic row",
+    "misordered": "misplaced diagnostic",
+    "wrong-site": "expected MRS CNTPCT_EL0 at pinned PC"
+  },
+  "controls": {
+    "aligned-late": {
+      "terminal": [
+        13,
+        6426717,
+        0,
+        0,
+        2,
+        2,
+        3226021,
+        3152382
+      ],
+      "verdict": "first stop before qualifying late-enforcement verdict",
+      "grants": [
+        {
+          "slot": 0,
+          "owner": 0,
+          "action": 1,
+          "count": 9164480,
+          "checksum": 6879409833189390489,
+          "open": 3152382,
+          "pre_eret_offset": 70997,
+          "worker_offset": 73639,
+          "upper": 3181467,
+          "allocation_upper": 3181467,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 6404846,
+          "after_cutoff": 189964,
+          "after_end": 127464,
+          "remaining_tail": 0,
+          "saved_frame": 1075946112,
+          "saved_pc": "0x40201384",
+          "linked_pc": "_ZN11jnox_kernel21ordinary_reservations17virtual_mask_hook17h8f225f6edc8eaad9E",
+          "stack_local": 1075946944
+        }
+      ],
+      "return_count": 2,
+      "overrun": {
+        "mask_begin": 6154977,
+        "cutoff": 6214882,
+        "end": 6277382,
+        "edge": 6277386,
+        "edge_count": 8811440,
+        "unmask": 6402985,
+        "end_count": 9164480,
+        "stop": 6404846,
+        "excess": 127464,
+        "lost_owner": 1,
+        "fixture_valid": true
+      },
+      "traces": [
+        [
+          "ERET",
+          "0x40201c78",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13418407120472472652"
+        ],
+        [
+          "IRQ",
+          "0x40201c7c",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13418407120472472652"
+        ],
+        [
+          "ERET",
+          "0x40202990",
+          "reservation_worker_a"
+        ],
+        [
+          "IRQ",
+          "0x40201384",
+          "_ZN11jnox_kernel21ordinary_reservations17virtual_mask_hook17h8f225f6edc8eaad9E"
+        ]
+      ]
+    },
+    "aligned-refused": {
+      "terminal": [
+        13,
+        105763,
+        18446744073709551615,
+        2,
+        1,
+        2,
+        9,
+        8
+      ],
+      "verdict": "expected admission refusal",
+      "grants": [],
+      "return_count": 0,
+      "overrun": null,
+      "traces": []
+    },
+    "aligned-saturated": {
+      "terminal": [
+        13,
+        34445512,
+        10,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "verdict": "horizon completed",
+      "grants": [
+        {
+          "slot": 0,
+          "owner": 0,
+          "action": 1,
+          "count": 17991104,
+          "checksum": 18158997902957775513,
+          "open": 3159361,
+          "pre_eret_offset": 58252,
+          "worker_offset": 61233,
+          "upper": 3014066,
+          "allocation_upper": 3014066,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 6231679,
+          "after_cutoff": 9818,
+          "after_end": -52682,
+          "remaining_tail": 52682,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 1,
+          "owner": 1,
+          "action": 1,
+          "count": 15606160,
+          "checksum": 14364339286855561465,
+          "open": 6284361,
+          "pre_eret_offset": 31074,
+          "worker_offset": 31704,
+          "upper": 3040555,
+          "allocation_upper": 3040555,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 9355990,
+          "after_cutoff": 9129,
+          "after_end": -53371,
+          "remaining_tail": 53371,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 2,
+          "owner": 0,
+          "action": 1,
+          "count": 18162912,
+          "checksum": 3887022372305680089,
+          "open": 9409361,
+          "pre_eret_offset": 7821,
+          "worker_offset": 8552,
+          "upper": 3062733,
+          "allocation_upper": 3062733,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 12479915,
+          "after_cutoff": 8054,
+          "after_end": -54446,
+          "remaining_tail": 54446,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 3,
+          "owner": 1,
+          "action": 1,
+          "count": 15833200,
+          "checksum": 15692729032862512921,
+          "open": 12534361,
+          "pre_eret_offset": 5441,
+          "worker_offset": 5639,
+          "upper": 3065322,
+          "allocation_upper": 3065322,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 15605124,
+          "after_cutoff": 8263,
+          "after_end": -54237,
+          "remaining_tail": 54237,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 4,
+          "owner": 0,
+          "action": 1,
+          "count": 18514912,
+          "checksum": 1795880888411829529,
+          "open": 15659361,
+          "pre_eret_offset": 4238,
+          "worker_offset": 4406,
+          "upper": 3066378,
+          "allocation_upper": 3066378,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 18729977,
+          "after_cutoff": 8116,
+          "after_end": -54384,
+          "remaining_tail": 54384,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 5,
+          "owner": 1,
+          "action": 1,
+          "count": 15896736,
+          "checksum": 18330612195418961881,
+          "open": 18784361,
+          "pre_eret_offset": 4468,
+          "worker_offset": 4649,
+          "upper": 3066275,
+          "allocation_upper": 3066275,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 21855104,
+          "after_cutoff": 8243,
+          "after_end": -54257,
+          "remaining_tail": 54257,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 6,
+          "owner": 0,
+          "action": 3,
+          "count": 256,
+          "checksum": 15120295880677622553,
+          "open": 21909361,
+          "pre_eret_offset": 7740,
+          "worker_offset": 7945,
+          "upper": 7109,
+          "allocation_upper": 7109,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 21924210,
+          "after_cutoff": -3047651,
+          "after_end": -3110151,
+          "remaining_tail": 3110151,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203498",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 7,
+          "owner": 1,
+          "action": 3,
+          "count": 256,
+          "checksum": 5868392260519282137,
+          "open": 25034361,
+          "pre_eret_offset": 12545,
+          "worker_offset": 13491,
+          "upper": 1614,
+          "allocation_upper": 1614,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 25048520,
+          "after_cutoff": -3048341,
+          "after_end": -3110841,
+          "remaining_tail": 3110841,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203498",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        }
+      ],
+      "return_count": 19,
+      "overrun": null,
+      "traces": [
+        [
+          "ERET",
+          "0x4020211c",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x4020349c",
+          "reservation_worker_a"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x402034a8",
+          "reservation_worker_b"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "SVC",
+          "0x40203498",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "SVC",
+          "0x40203498",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.6120328835886319100"
+        ]
+      ]
+    },
+    "cbs-late": {
+      "terminal": [
+        13,
+        6439335,
+        0,
+        0,
+        2,
+        2,
+        3227899,
+        3156829
+      ],
+      "verdict": "first stop before qualifying late-enforcement verdict",
+      "grants": [
+        {
+          "slot": 0,
+          "owner": 0,
+          "action": 1,
+          "count": 8981968,
+          "checksum": 783591699505449849,
+          "open": 3156829,
+          "pre_eret_offset": 67060,
+          "worker_offset": 71070,
+          "upper": 3185863,
+          "allocation_upper": 3185863,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 6409752,
+          "after_cutoff": 190423,
+          "after_end": 127923,
+          "remaining_tail": 0,
+          "saved_frame": 1075946112,
+          "saved_pc": "0x40201384",
+          "linked_pc": "_ZN11jnox_kernel21ordinary_reservations17virtual_mask_hook17h8f225f6edc8eaad9E",
+          "stack_local": 1075946944
+        }
+      ],
+      "return_count": 2,
+      "overrun": {
+        "mask_begin": 6159348,
+        "cutoff": 6219329,
+        "end": 6281829,
+        "edge": 6281829,
+        "edge_count": 8655056,
+        "unmask": 6407895,
+        "end_count": 8981968,
+        "stop": 6409752,
+        "excess": 127923,
+        "lost_owner": 1,
+        "fixture_valid": true
+      },
+      "traces": [
+        [
+          "ERET",
+          "0x40201c7c",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.148459832911016730"
+        ],
+        [
+          "IRQ",
+          "0x40201c80",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.148459832911016730"
+        ],
+        [
+          "ERET",
+          "0x40202994",
+          "reservation_worker_a"
+        ],
+        [
+          "IRQ",
+          "0x40201384",
+          "_ZN11jnox_kernel21ordinary_reservations17virtual_mask_hook17h8f225f6edc8eaad9E"
+        ]
+      ]
+    },
+    "cbs-refused": {
+      "terminal": [
+        13,
+        58829,
+        18446744073709551615,
+        2,
+        1,
+        2,
+        9,
+        8
+      ],
+      "verdict": "expected admission refusal",
+      "grants": [],
+      "return_count": 0,
+      "overrun": null,
+      "traces": []
+    },
+    "cbs-wake": {
+      "terminal": [
+        13,
+        109432291,
+        34,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "verdict": "horizon completed",
+      "grants": [
+        {
+          "slot": 0,
+          "owner": 0,
+          "action": 2,
+          "count": 256,
+          "checksum": 1178062349629151257,
+          "open": 3152438,
+          "pre_eret_offset": 57055,
+          "worker_offset": 59535,
+          "upper": 9457,
+          "allocation_upper": 9457,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 3218950,
+          "after_cutoff": -2995988,
+          "after_end": -3058488,
+          "remaining_tail": 3058488,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203470",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 1,
+          "owner": 1,
+          "action": 1,
+          "count": 18340960,
+          "checksum": 16493829896778637401,
+          "open": 6277438,
+          "pre_eret_offset": 53796,
+          "worker_offset": 54770,
+          "upper": 3016004,
+          "allocation_upper": 3016004,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 9347238,
+          "after_cutoff": 7300,
+          "after_end": -55200,
+          "remaining_tail": 55200,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 4,
+          "owner": 0,
+          "action": 2,
+          "count": 256,
+          "checksum": 16874149959994746393,
+          "open": 15652438,
+          "pre_eret_offset": 19863,
+          "worker_offset": 21231,
+          "upper": 2043,
+          "allocation_upper": 11500,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 15674344,
+          "after_cutoff": -3040594,
+          "after_end": -3103094,
+          "remaining_tail": 3103094,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203470",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 5,
+          "owner": 1,
+          "action": 1,
+          "count": 18440032,
+          "checksum": 14952436450409250713,
+          "open": 18777438,
+          "pre_eret_offset": 16967,
+          "worker_offset": 18049,
+          "upper": 3053206,
+          "allocation_upper": 3053206,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 21847611,
+          "after_cutoff": 7673,
+          "after_end": -54827,
+          "remaining_tail": 54827,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 8,
+          "owner": 0,
+          "action": 2,
+          "count": 256,
+          "checksum": 13183962365131027481,
+          "open": 28152438,
+          "pre_eret_offset": 11071,
+          "worker_offset": 11311,
+          "upper": 1556,
+          "allocation_upper": 1556,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 28165065,
+          "after_cutoff": -3049873,
+          "after_end": -3112373,
+          "remaining_tail": 3112373,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203470",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 9,
+          "owner": 1,
+          "action": 1,
+          "count": 18378816,
+          "checksum": 10686535166038536985,
+          "open": 31277438,
+          "pre_eret_offset": 10520,
+          "worker_offset": 10749,
+          "upper": 3059703,
+          "allocation_upper": 3059703,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 34347661,
+          "after_cutoff": 7723,
+          "after_end": -54777,
+          "remaining_tail": 54777,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 13,
+          "owner": 1,
+          "action": 1,
+          "count": 18494800,
+          "checksum": 3068251583562612089,
+          "open": 43777438,
+          "pre_eret_offset": 10725,
+          "worker_offset": 10924,
+          "upper": 3060381,
+          "allocation_upper": 3060381,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 46848544,
+          "after_cutoff": 8606,
+          "after_end": -53894,
+          "remaining_tail": 53894,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 14,
+          "owner": 0,
+          "action": 2,
+          "count": 256,
+          "checksum": 2462364125526835737,
+          "open": 46902438,
+          "pre_eret_offset": 5893,
+          "worker_offset": 6553,
+          "upper": 1263,
+          "allocation_upper": 1263,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 46909594,
+          "after_cutoff": -3055344,
+          "after_end": -3117844,
+          "remaining_tail": 3117844,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203470",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 17,
+          "owner": 1,
+          "action": 1,
+          "count": 18488432,
+          "checksum": 11289098115254459289,
+          "open": 56277438,
+          "pre_eret_offset": 13643,
+          "worker_offset": 13953,
+          "upper": 3056900,
+          "allocation_upper": 3056900,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 59347981,
+          "after_cutoff": 8043,
+          "after_end": -54457,
+          "remaining_tail": 54457,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 21,
+          "owner": 1,
+          "action": 1,
+          "count": 18511760,
+          "checksum": 8232357867803547001,
+          "open": 68777438,
+          "pre_eret_offset": 12515,
+          "worker_offset": 13495,
+          "upper": 3057884,
+          "allocation_upper": 3057884,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 71847837,
+          "after_cutoff": 7899,
+          "after_end": -54601,
+          "remaining_tail": 54601,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 22,
+          "owner": 0,
+          "action": 2,
+          "count": 256,
+          "checksum": 18440433936950202393,
+          "open": 71902438,
+          "pre_eret_offset": 6380,
+          "worker_offset": 7145,
+          "upper": 1360,
+          "allocation_upper": 1360,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 71910178,
+          "after_cutoff": -3054760,
+          "after_end": -3117260,
+          "remaining_tail": 3117260,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203470",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 23,
+          "owner": 0,
+          "action": 1,
+          "count": 18473552,
+          "checksum": 11180295595835396217,
+          "open": 75027438,
+          "pre_eret_offset": 10617,
+          "worker_offset": 10813,
+          "upper": 3058914,
+          "allocation_upper": 3060274,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 78096969,
+          "after_cutoff": 7031,
+          "after_end": -55469,
+          "remaining_tail": 55469,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 25,
+          "owner": 1,
+          "action": 1,
+          "count": 18243664,
+          "checksum": 10183169625804460505,
+          "open": 81277438,
+          "pre_eret_offset": 10880,
+          "worker_offset": 11122,
+          "upper": 3065583,
+          "allocation_upper": 3065583,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 84353901,
+          "after_cutoff": 13963,
+          "after_end": -48537,
+          "remaining_tail": 48537,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 29,
+          "owner": 1,
+          "action": 1,
+          "count": 18539408,
+          "checksum": 6431907043084174265,
+          "open": 93777438,
+          "pre_eret_offset": 10422,
+          "worker_offset": 10667,
+          "upper": 3060441,
+          "allocation_upper": 3060441,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 96848301,
+          "after_cutoff": 8363,
+          "after_end": -54137,
+          "remaining_tail": 54137,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x402033f4",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        },
+        {
+          "slot": 30,
+          "owner": 0,
+          "action": 1,
+          "count": 18377696,
+          "checksum": 14205883416657243833,
+          "open": 96902438,
+          "pre_eret_offset": 5848,
+          "worker_offset": 6601,
+          "upper": 3063846,
+          "allocation_upper": 3063846,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 99972132,
+          "after_cutoff": 7194,
+          "after_end": -55306,
+          "remaining_tail": 55306,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 31,
+          "owner": 0,
+          "action": 1,
+          "count": 18540624,
+          "checksum": 594804792832109337,
+          "open": 100027438,
+          "pre_eret_offset": 5035,
+          "worker_offset": 5233,
+          "upper": 3065035,
+          "allocation_upper": 6128881,
+          "allocation_limit": 6250000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 103097508,
+          "after_cutoff": 7570,
+          "after_end": -54930,
+          "remaining_tail": 54930,
+          "saved_frame": 1075950480,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075951320
+        },
+        {
+          "slot": 33,
+          "owner": 1,
+          "action": 1,
+          "count": 18529616,
+          "checksum": 17572438748335384089,
+          "open": 106277438,
+          "pre_eret_offset": 11187,
+          "worker_offset": 11387,
+          "upper": 3059237,
+          "allocation_upper": 3059237,
+          "allocation_limit": 3125000,
+          "slot_limit": 3125000,
+          "dispatch_limit": 62500,
+          "stop": 109347862,
+          "after_cutoff": 7924,
+          "after_end": -54576,
+          "remaining_tail": 54576,
+          "saved_frame": 1075966864,
+          "saved_pc": "0x40203414",
+          "linked_pc": "reservation_rust_work",
+          "stack_local": 1075967704
+        }
+      ],
+      "return_count": 52,
+      "overrun": null,
+      "traces": [
+        [
+          "ERET",
+          "0x4020211c",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x4020349c",
+          "reservation_worker_a"
+        ],
+        [
+          "SVC",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402034a8",
+          "reservation_worker_b"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "SVC",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "SVC",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "SVC",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "SVC",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203470",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x402033f4",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "ERET",
+          "0x402033f4",
+          "reservation_rust_work"
+        ],
+        [
+          "IRQ",
+          "0x40203414",
+          "reservation_rust_work"
+        ],
+        [
+          "ERET",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ],
+        [
+          "IRQ",
+          "0x402024a8",
+          "_ZN11jnox_kernel21ordinary_reservations4idle17hc965054124715ef9E.llvm.13717648197018982417"
+        ]
+      ]
+    }
+  },
+  "layout": {
+    "parent-SB": {
+      "sections": {
+        "text": 23868,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116504,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 723,
+          "load_instructions": 128,
+          "branches": 131
+        },
+        "svc": {
+          "start": "0000000040202064",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "00000000402032f8",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "parent-SE": {
+      "sections": {
+        "text": 24028,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 742,
+          "load_instructions": 132,
+          "branches": 133
+        },
+        "svc": {
+          "start": "00000000402020b0",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "0000000040203398",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "parent-SF": {
+      "sections": {
+        "text": 24016,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 738,
+          "load_instructions": 131,
+          "branches": 131
+        },
+        "svc": {
+          "start": "00000000402020a0",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "000000004020338c",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "parent-WB": {
+      "sections": {
+        "text": 23864,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116504,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 723,
+          "load_instructions": 128,
+          "branches": 131
+        },
+        "svc": {
+          "start": "0000000040202060",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "00000000402032f4",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "parent-WE": {
+      "sections": {
+        "text": 24020,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 742,
+          "load_instructions": 132,
+          "branches": 133
+        },
+        "svc": {
+          "start": "00000000402020ac",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "0000000040203390",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "parent-WF": {
+      "sections": {
+        "text": 24008,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 738,
+          "load_instructions": 131,
+          "branches": 131
+        },
+        "svc": {
+          "start": "000000004020209c",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "0000000040203384",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "source-SB": {
+      "sections": {
+        "text": 23800,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116504,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 711,
+          "load_instructions": 129,
+          "branches": 127
+        },
+        "svc": {
+          "start": "0000000040202034",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "00000000402032c8",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "source-SE": {
+      "sections": {
+        "text": 23960,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 730,
+          "load_instructions": 133,
+          "branches": 129
+        },
+        "svc": {
+          "start": "0000000040202080",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "0000000040203368",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "source-SF": {
+      "sections": {
+        "text": 23948,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 726,
+          "load_instructions": 132,
+          "branches": 127
+        },
+        "svc": {
+          "start": "0000000040202070",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "000000004020335c",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "source-WB": {
+      "sections": {
+        "text": 23796,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116504,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 711,
+          "load_instructions": 129,
+          "branches": 127
+        },
+        "svc": {
+          "start": "0000000040202030",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "00000000402032c4",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "source-WE": {
+      "sections": {
+        "text": 23952,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 730,
+          "load_instructions": 133,
+          "branches": 129
+        },
+        "svc": {
+          "start": "000000004020207c",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "0000000040203360",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    },
+    "source-WF": {
+      "sections": {
+        "text": 23940,
+        "rodata": 994,
+        "data": 1800,
+        "bss": 116528,
+        "stack": 16384
+      },
+      "functions": {
+        "irq": {
+          "start": "00000000402012c8",
+          "instructions": 726,
+          "load_instructions": 132,
+          "branches": 127
+        },
+        "svc": {
+          "start": "000000004020206c",
+          "instructions": 58,
+          "load_instructions": 7,
+          "branches": 15
+        },
+        "snapshot": {
+          "start": "0000000040203354",
+          "instructions": 45,
+          "load_instructions": 6,
+          "branches": 11
+        }
+      }
+    }
+  }
+}

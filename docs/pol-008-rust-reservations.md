@@ -1,6 +1,6 @@
 # CHG-054 · Ordinary Rust reservations / 일반 Rust 예약 작업
 
-[#123](https://github.com/Romanof123/JNOX/issues/123) · [#21](https://github.com/Romanof123/JNOX/issues/21) · intended IMP-053 · planned EVD-053
+[#123](https://github.com/Romanof123/JNOX/issues/123) · [#21](https://github.com/Romanof123/JNOX/issues/21) · IMP-053 · [EVD-053](evidence/evd-053.en.md) · [한국어](evidence/evd-053.md)
 
 ## English
 
@@ -39,3 +39,100 @@ Before arming the first timer or enabling a client, use checked arithmetic to va
 이미 설정한 컷오프 IRQ의 전달 지연은 별도 시뮬레이터 진단 구성에서만 제어한다. 일반 클라이언트에는 마스킹·지연·결함 주입 연산이 없다. 명목 슬롯 끝, 원래 비교 레지스터 값과 대기 IRQ를 유지하고 진단 지연 구간, 실제 트랩과 중단까지의 나가는 작업 실행량을 기록한다. 비교값을 주입 종료 시각으로 바꾸지 않는다. 진단 코드 자체 비용을 분리하고 불확실하면 나가는 작업의 보수적 실행 범위를 남긴다. 늦은 트랩에서 실제 초과와 다음 소유자의 서비스 손실을 원장에 보존하고 후속 할당을 중단한다. 정상 적격 판정은 수정 없는 기본 시계 게스트 실행으로만 수행한다. 진단 게스트는 늦은 집행과 실패 정지를 관측하고, 호스트의 산술·기록 변조 대조는 판정기 동작만 검증한다.
 
 첫 타이머 설정·작업 활성화 전에 기준 시각부터 관측 끝까지, 모든 절대 목표·컷오프, 관측 끝을 넘는 마지막 마감까지 포함한 보충·스케줄링 마감, 진단 지연을 포함한 누적 경과·과금의 최대 필요값을 검사 산술로 검증한다. 실행 중에도 단조 시각 차와 각 누적 덧셈을 원장 변경 전에 확인한다. 오버플로·순환·표현 불가능한 마감·상한 없는 관측 구간은 시작 전 거부하며 실행 중 검출 시 마지막 유효 원장을 보존하고 정지한다. 호스트 대조군은 관측 끝·마감·누적량 각각의 표현 가능 최댓값과 한 단위 초과를 검사한다.
+
+## IMP-053 build and capture / 빌드 및 기록
+
+From the repository's `kernel` directory, choose one application for each build. Use a fresh native Linux capture directory for each cold attempt. The board selector is `virt`, the profile is `reservation`, and the application is the policy and case joined by a hyphen. Build without Cargo benchmark features. Both plain and externally traced runs use the same copied ELF for a given application. The first independent boot results are recorded in EVD-053 v1.
+
+저장소의 `kernel` 디렉터리에서 벤치마크 Cargo 기능 없이 애플리케이션 하나씩 빌드한다. 매 콜드 실행에는 Linux 기본 파일시스템의 새 디렉터리를 사용한다. 같은 애플리케이션의 일반·외부 예외 추적 실행은 해시가 같은 ELF를 쓴다. 최초 독립 실행 기록은 EVD-053 v1에 있다.
+
+| Policy / 정책 | Application values / 애플리케이션 값 |
+| --- | --- |
+| Aligned | `aligned-wake`, `aligned-saturated`, `aligned-refused`, `aligned-late` |
+| Hard CBS | `cbs-wake`, `cbs-saturated`, `cbs-refused`, `cbs-late` |
+
+~~~bash
+export JNOX_BOARD=virt JNOX_PROFILE=reservation JNOX_APP=aligned-wake
+run_dir=$(mktemp -d /tmp/jnox-reservation.XXXXXXXX)
+cargo build --release --locked &&
+  cp target/aarch64-unknown-none/release/jnox-kernel "$run_dir/kernel.elf" || exit 1
+sha256sum "$run_dir/kernel.elf" > "$run_dir/kernel.sha256"
+qemu=(qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1
+      -accel tcg -m 128M -nodefaults -display none -monitor none -serial stdio
+      -kernel "$run_dir/kernel.elf")
+# Traced arm only / 외부 추적 실행에서만:
+# qemu+=(-d int -D "$run_dir/exceptions.log")
+printf '%q ' "${qemu[@]}" > "$run_dir/argv"
+timeout 15s "${qemu[@]}" > "$run_dir/uart" 2> "$run_dir/stderr"
+printf '%s\n' "$?" > "$run_dir/host-status"
+~~~
+
+Keep first-launch errors, incomplete records, host status, QEMU and toolchain versions with each attempt. A parked guest may outlive its terminal record; independently check completeness, exception attribution and the frozen case verdict. The two late applications select only the simulator fault fixture. Run refused cases separately from live service. [Requirements and design](requirements.en.md) · [Verification](verification-plan.en.md)
+
+최초 실행 오류·불완전 기록·호스트 종료 코드·QEMU 및 도구 버전을 함께 보관한다. 게스트가 최종 기록 뒤 대기할 수 있어 기록 완결성·예외 귀속·동결한 사례 판정을 독립 확인한다. late 두 구성은 시뮬레이터 결함 주입용이며 refused는 실제 서비스와 분리한다. [요구사항](requirements.md) · [검증 계획](verification-plan.md)
+
+### Capture fields / 캡처 필드
+
+`RSRV RAW 1` opens the decimal-u64 stream and `RSRV END` closes it. Each row is `tag tick slot id a b c d`; A/B/idle IDs are 0/1/2; an unavailable slot uses u64::MAX (reserved zero fields are literal zeros). Preserve stream order, including equal ticks. The pre-ERET sample precedes the final restore instructions. Only the separately captured exception stream witnesses actual ERET. 이 형식은 같은 틱에서도 원래 순서를 보존한다. 복귀 직전 게스트 표본과 실제 ERET의 외부 관측을 별도로 기록한다.
+
+| Tag | Event / 사건 | a, b, c, d |
+| --- | --- | --- |
+| 1 | Configuration / 구성 | frequency, slot ticks, policy (aligned=0/CBS=1), case (wake=0/saturated=1/refused=2/late=3) |
+| 2 | Epoch / 기준 | epoch, horizon, 0, 0 |
+| 3 | Arm / 타이머 설정 | target, CTL readback, CVAL readback, kind (boundary=0/cutoff=1) |
+| 4 | IRQ | target, kind, IAR, CTL |
+| 5 | Allocation / 할당 | q before, d before, q after, d after |
+| 6 | Demand / 수요 | released, remaining, pre-service state, selected action (none=0/long=1/block=2/exit=3) |
+| 7 | Selection / 선택 | nominal start, nominal end, frame, ELR |
+| 8 | Stop / 중단 | initial updates, final updates, initial accumulator, final accumulator |
+| 9 | Frame / 프레임 | frame address, ELR, x19, TPIDR |
+| 10 | Service bounds / 실행 범위 | lower start, first worker observation, upper stop, conservative elapsed upper (counter ticks) |
+| 11 | Trap / 트랩 | action, syndrome, stack-local address, saved SP after frame |
+| 12 | Return sample / 복귀 표본 | frame, ELR, raw return index, 0 |
+| 13 | Result / 결과 | status (complete=0/refused=1/timing violation=2/invalid=3), reason, argument, argument |
+| 14 | Lost service / 서비스 손실 | next nominal boundary, actual stop, lost neighbor, nominal excess |
+| 15 | Refusal / 거부 | input (9/8=0/Q=0=1/Q>P=2/arithmetic overflow=3/P=0=4), reason, frames, operational arms |
+| 16 | Fixture delay / 결함 주입 | sample after mask, sample before unmask, programmed cutoff, nominal slot end |
+| 17 | Stack / 스택 | base, top, seed, 0 |
+| 18 | Expected return / 예상 복귀 | frame, ELR, expected x19, expected TPIDR |
+| 19 | Allocation service / 할당별 시간 상한 | allocation deadline (logical slot), cumulative elapsed upper (ticks), pre-ERET frame, pre-ERET PC |
+| 20 | Diagnostic progress / 진단 진행 | first hook tick at/after nominal end, committed count then, pre-unmask tick, committed count then |
+| 21 | Horizon snapshot / 종료 경계 상태 | committed count, accumulator, private progress address, 0 |
+
+All eight columns are unsigned decimal 64-bit integers, including IDs, addresses and logical slots. The tick column and raw time samples are CNTPCT ticks. Row 1 provides Hz and slot length in ticks. Row 5 q/d and row 19 deadline are logical units; row 6 carries released/remaining work in grant units. Row 6 state codes 0–4 are unreleased, ready, saved, blocked, exited. Row 15 reasons 1–4 mean invalid, over capacity, overflow, unexpected. Row 17 seeds are 0xa19/0xb19/0xc19 for A/B/idle. Distinguish result status 2 reason 1 (late stop or overrun), 3 reason 10 (insufficient diagnostic mask/progress evidence), and 3 reason 8 (client state changed since its last trap). Decode other result reasons at the emitting branch of the [runtime](../kernel/src/ordinary_reservations.rs).
+
+**Replay.** One entitlement unit is debited per grant. For its separate elapsed upper use row 10, U = upper_stop − lower_start, from the assembly sample before ERET through the sampled exception vector entry. Check lower_start ≤ first_worker_observation ≤ upper_stop; the first observation is a worker generation marker, not the first executed instruction. Sum U by client and allocation deadline with checked arithmetic and compare with row 19, S per grant and Q·S per allocation. U includes restore/entry overhead and any diagnostic hook inside the interval. It is a conservative bound on elapsed client service; it cannot isolate CPU cycles spent on arithmetic. Kernel validation after the vector sample is outside U.
+
+Workers publish count and wrapping u64 accumulator (x=3x+1) together through alternating private stack cells after each 16-update chunk. Check row 8 differences are positive multiples of 16, independently advance each seed, and require exactly 256 committed updates for each short block/exit. Long grants interrupt ordinary work asynchronously. IRQ never fabricates a completed chunk. Join row 9 saved state, row 11 trap and row 18 planned return to independent IRQ/SVC/ERET, linked PCs and stack ranges. Block is SVC #1, exit SVC #2; subsequent idle/neighbor rows must leave an exited client’s count and accumulator unchanged. Row 21 reports each client encountered at the terminal horizon; early failure can truncate the pair. Verify both clients’ unchanged progress at boundaries from available evidence, distinguishing guest checks from externally observable events.
+
+Only late S slot 0 instruments A’s ordinary loop. The hook samples once per chunk, masks near cutoff−1 ms, and unmasks no earlier than nominal end+2 ms. Row 20 witnesses committed updates during the overrun; require its second count to exceed its first, and correlate rows 14/16/19 with actual enforcement. Row 16 end precedes DAIF unmask. Neither timestamp is the instant the CPU stopped; use the vector sample for the upper stop bracket. Lost B opportunity is recorded separately from the outgoing A bound. The fixed RAM capacities are 1,024 eight-word rows and 64 three-word assembly return samples. Capacity overflow, missing markers, partial rows, unexplained returns or an invalid diagnostic outcome cannot qualify. Row 12 samples are emitted at terminal dump in return-index order with their original timestamps; join them to dispatch/row 18 by return index before comparing chronology. The same ELF is used in plain and external-trace arms. A complete stream ending in status 0 is still subject to independent replay.
+
+**한국어 재현.** 한 줄은 십진 u64 여덟 열이며 A/B/유휴 ID는 0/1/2, 해당 슬롯 없음은 u64::MAX, 예약 필드 0은 실제 0이다. 카운터 틱은 사건 1의 주파수로 환산한다. 사건 5의 q/d와 19의 마감은 논리 단위다. 사건 6의 상태 0~4는 미릴리스·준비·저장·차단·종료, 사건 15의 사유 1~4는 잘못된 값·용량 초과·오버플로·예상 외 상태다. 19는 해당 할당 마감·누적 시간 상한·복귀 전 프레임·PC, 20은 명목 끝 이후 최초 후크 틱/완료 수와 마스크 해제 직전 틱/완료 수, 21은 종료 경계별 완료 수·누산기·전용 주소를 담는다.
+
+할당 자격은 선택마다 한 단위를 차감한다. 별도로 사건 10에서 U=벡터 진입 표본−ERET 전 표본을 계산하고 작업·할당 마감별 누적합을 사건 19와 대조한다. 두 표본 사이에 실제 작업의 첫 세대 표식이 있어야 한다. U에는 복귀·진입 비용과 진단 후크가 포함된다. 순수 계산 CPU 시간으로 해석할 수 없다. 벡터 표본 이후 검사 비용은 U 밖이다. A/B는 0xa19/0xb19로 시작해 u64 순환식 x=3x+1을 16회씩 수행하고 두 스택 셀을 번갈아 진행 수와 누산기를 확정한다. 사건 8의 증가는 16의 양의 배수여야 하며 짧은 차단·종료는 정확히 256회다. 사건 9/11/18, 외부 예외·링크된 PC·스택을 대조한다. SVC #1은 차단, #2는 종료다. 종료 뒤 진척이 바뀌면 실패한다. 최종 경계의 두 작업을 사건 21로 대조하고 조기 실패 시 누락한 종료 행을 합격시키지 않는다.
+
+late 전용 S의 0번 슬롯에서는 A의 실제 작업이 계속 진행한다. 매 묶음의 후크는 컷오프 1 ms 전부터 마스킹하고 명목 끝+2 ms 이후 해제한다. 사건 16의 두 번째 시각은 해제 직전이며 실제 중단 시각이 아니다. 사건 20의 두 완료 수 증가와 14/16/19 및 벡터 표본으로 실제 초과와 B의 기회 손실을 확인한다. 상태/사유 2/1은 시간 위반, 3/10은 마스킹·진척 증거 부족, 3/8은 경계에서 무단 상태 변화를 뜻한다. RAM은 8워드 행 1,024개와 복귀 표본 64개로 제한한다. 사건 12는 종료 시 원래 시각을 유지해 복귀 인덱스순으로 출력하므로 18의 순서와 연결한다. 오버플로·누락·설명되지 않는 복귀는 실패다. 일반 실행의 ERET 전 표본과 같은 ELF 추적 실행의 실제 ERET는 해당 실행에만 귀속한다.
+
+CHG-056 · [First-opening measurements and conditional preparation / 최초 개방 계측 및 조건부 준비](reservation-opening-plan.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+### CHG-056 source revision of IMP-053 / IMP-053 소스 수정
+
+Use the same build selectors, capture commands, eight-column decimal format and 1 ms opening limit. Record the exact ELF/source revision because the stream header is shared with v1. In a revised normal W/S run, join the following records to the existing boundary, selection and worker observations; reject absence of a required record on a claimed completed path. Preserve partial traces on failure.
+
+| Tag | Header tick, slot, ID / 시각·슬롯·ID | a, b, c, d |
+| --- | --- | --- |
+| 24 | Post-admission sample, unavailable slot, idle / 수용 후·슬롯 없음·유휴 | first runtime sample, epoch E, 0, 0 |
+| 22 | End of private preparation, slot 0, idle / 비공개 준비 끝·0·유휴 | setup start, E, max(E−end,0), 0 |
+| 23 | After authoritative commit, slot 0, chosen owner / 실제 커밋 직후·0·선택 소유자 | actual boundary-vector entry, sample before commit, E, new generation 1 |
+
+R terminates before all three records. The admitted late fixture emits 24 and uses synchronous opening without 22/23. In the normal candidate the prep bracket excludes outer mask/return instructions; report those unknown edges. Replay boot-sample→first worker using 24.a and 10.b, preserve the true E, and keep full outgoing charge and actual return/neighbor checks. CHG-056 affects REQ-002/005/023, which link to the existing IMP-053. EVD-053 v1 scored the earlier c2efde4 only: 8/8 ordinary runs stopped in slot 0, 2/2 rejected overload before start and 2/2 late runs first failed opening. [EVD-053 v2](evidence/evd-053-v2.en.md) records the matched study. [Original results](evidence/evd-053-v1.en.md) · [Repair design](reservation-opening-plan.md)
+
+동일 빌드 선택자·캡처 명령·8열 십진 형식·1 ms 한계를 사용한다. 스트림 표지가 v1과 같으므로 ELF와 소스 신원을 보존한다. 정상 W/S는 24.a 최초 런타임 표본부터 10.b 실제 작업 표식까지 계산하고, 22의 내부 준비 구간 밖 마스킹·복귀 비용 및 23의 실제 커밋 구간을 구분한다. R 거부는 세 기록 전 종료한다. 기존 late 진단은 24만 추가하고 최초 동기식 판정을 유지한다. CHG-056은 REQ-002/005/023을 통해 기존 IMP-053에 연결된다. v1의 8/8 정상 첫 슬롯 실패, 2/2 시작 전 거부, 2/2 지연 사례의 선행 개방 실패는 c2efde4에서 나온 결과다. [EVD-053 v2](evidence/evd-053-v2.md)에 비교 실행 판정이 있다. [최초 결과](evidence/evd-053-v1.md) · [수정 설계](reservation-opening-plan.md)
+
+CHG-059 · [Compact first-boundary handoff / 첫 경계 인계 비용 축소](reservation-compact-handoff-plan.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+Four of eight ordinary candidate boots completed, compared with five of eight paired predecessor boots and one of eight historical predecessor boots. Both overload refusals in each paired cohort succeeded. Full-profile qualification remains on hold. [EVD-053 v3](evidence/evd-053-v3.en.md)
+
+후보 일반 실행 8건 중 4건, 같은 실험의 선행 버전 8건 중 5건, 과거 선행 버전 8건 중 1건이 완료됐다. 후보와 동시 비교군은 각각 과부하 2건을 모두 거절했다. 전체 프로필 적격 판정은 보류한다. [EVD-053 v3](evidence/evd-053-v3.md)
+
+CHG-071 · [First IRQ stage attribution / 첫 IRQ 구간 계측](reservation-stage-attribution-plan.md) · REQ-002/005/009/023 · DES-003/012 · VER-002/005/023

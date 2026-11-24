@@ -1,0 +1,117 @@
+{
+  "evidence_id": "EVD-053",
+  "version": 1,
+  "source": "c2efde463ee48ef7754a56c52e7dd63552b53b5b",
+  "implementation": "IMP-053",
+  "change": "CHG-054",
+  "release_verdict": "Failed ordinary default-clock gate; first 12 reservation and four separate legacy runs retained.",
+  "reviewer_manifest_sha256": "865f1ded2ef42ba628ee764fe8c16a0d7bad9255110ee5e837bb4cb556886699",
+  "build_index_sha256": "22de1966a3def8bb661187786b70349150ad6a6980dc73b73a3eac684910d2d6",
+  "observations_sha256": "eaa62a801dc6ba0115825bf75ef33db3f8cb91deb20397aecb20ff04de3c51f4",
+  "report_sha256": "6904a30cf4da1c6dd72b79887de969cf15e203f28abb35a5f250b35c7c1d9d84",
+  "expected_slots_sha256": "fe1b4376e06e6d0628247b85aa175962730202aae7ce63856f554af6054b283c",
+  "kernel_sha256": {
+    "aligned-wake": "3409a8ca1012161f6e55b2c76107deb10efa375240840b5f29e580e4a44ace62",
+    "aligned-saturated": "37b4a4c475e01ffef3180f8db17313a17ce26814771046d86529530b44de1579",
+    "aligned-refused": "f4af99b8b186581715a6eb412d585aa94646b0250629ca44a7cdf02b2d6083df",
+    "aligned-late": "f32e1790b0db5c12d344188c3860b20eb5ffa78ee4516f6882f2ad8cf80b2e6d",
+    "cbs-wake": "9edbaf3f57016481a205bf3dedea060e6bbd36a2399a0d41f95dd7547b826f2d",
+    "cbs-saturated": "c1dcd1a29a93a0515018424db85e0e0d91d264062e746a79ab456b599ec54ef0",
+    "cbs-refused": "0aeb7ec7b841100b71050668df39360e41ceed3ee5ca1ebfcdc5d9307ae80c30",
+    "cbs-late": "09422a476b4db34458fc7a7fae12b1d339a74328417a493ba4ef4aab0fc94b82",
+    "cbs-bench": "6124011ca66037170d35418abf7616ad77875453b9a3b6a257d46babcea731b5",
+    "cbs-wake-bench": "fb26ae36c1b00b041c65b1c53e1b2b4b48efd7a215f891af1354983b5f3c4e41"
+  },
+  "outcomes": {
+    "aligned-late/plain": [
+      2,
+      2,
+      3238563,
+      3171363
+    ],
+    "aligned-refused/plain": [
+      1,
+      2,
+      9,
+      8
+    ],
+    "aligned-saturated/plain": [
+      2,
+      2,
+      3252728,
+      3174667
+    ],
+    "aligned-saturated/trace": [
+      2,
+      2,
+      3250114,
+      3170869
+    ],
+    "aligned-wake/plain": [
+      2,
+      2,
+      3275047,
+      3186929
+    ],
+    "aligned-wake/trace": [
+      2,
+      2,
+      3254953,
+      3173359
+    ],
+    "cbs-late/plain": [
+      2,
+      2,
+      3223113,
+      3152396
+    ],
+    "cbs-refused/plain": [
+      1,
+      2,
+      9,
+      8
+    ],
+    "cbs-saturated/plain": [
+      2,
+      2,
+      3241493,
+      3169584
+    ],
+    "cbs-saturated/trace": [
+      2,
+      2,
+      3245774,
+      3173070
+    ],
+    "cbs-wake/plain": [
+      2,
+      2,
+      3244556,
+      3160747
+    ],
+    "cbs-wake/trace": [
+      2,
+      2,
+      3263691,
+      3182554
+    ]
+  },
+  "archive": {
+    "file": "evd-053-v1-captures.zip",
+    "bytes": 286004,
+    "sha256": "a91d45534b457c48bf10a5235f1a318e047cb43ac92014bc546bd7aeaa60c3f7",
+    "files": 100,
+    "restore_python_from_repo_root": [
+      "from pathlib import Path",
+      "import hashlib,json,zipfile",
+      "d=Path('docs/evidence'); j=json.loads((d/'evd-053-v1.json').read_bytes()); a=j['archive']; p=d/a['file']",
+      "assert hashlib.sha256(p.read_bytes()).hexdigest()==a['sha256']",
+      "with zipfile.ZipFile(p) as z: z.extractall('reservation-study')",
+      "r=Path('reservation-study'); ledger=(r/'FILES.sha256').read_bytes()",
+      "for line in ledger.decode().splitlines():",
+      "    h,n=line.split('  ',1); assert hashlib.sha256((r/n).read_bytes()).hexdigest()==h",
+      "assert hashlib.sha256((r/'reservation53-fresh/SHA256SUMS').read_bytes()).hexdigest()==j['reviewer_manifest_sha256']"
+    ],
+    "replay": "Use a disposable restored copy on Linux with Python 3 and aarch64-linux-gnu-nm. In reservation-study/reservation53-fresh run python3 verify.py, python3 verify_legacy.py and python3 check_limits.py. expected.json is the independent model. observations.json and legacy-checks.json retain the measured outcomes."
+  }
+}

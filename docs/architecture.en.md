@@ -189,3 +189,5 @@ CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
 CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
 
 [DES-004 kernel architecture selection](../arch/README.md)
+
+IMP-053 · VER-002/005/023. One of eight normal v2 boots completed, both refusals succeeded, and none of eight matched v1 normal boots completed. Only saturated CBS with tracing reached the horizon. No wake case delivered B service (0/4). No v2 late fixture ran. The full profile remains unqualified. [EVD-053](evidence/evd-053.en.md)

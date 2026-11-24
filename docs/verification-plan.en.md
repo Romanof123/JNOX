@@ -155,3 +155,5 @@ CHG-061 · [OFF-only comparison collector and synthetic controls](permit-observe
 [CHG-069 · 16 OFF-only launches and eight paired comparisons](evidence/permit-observer-cost-v3.en.md)
 
 IMP-056 / VER-002/005/008/023. Two cold boots each recorded two CPU0→CPU1 SGIs, receiver completion, and return to interrupted pinned background work. [EVD-056](evidence/evd-056.en.md)
+
+IMP-053 · VER-002/005/023. One of eight normal v2 boots completed, both refusals succeeded, and none of eight matched v1 normal boots completed. Only saturated CBS with tracing reached the horizon. No wake case delivered B service (0/4). No v2 late fixture ran. The full profile remains unqualified. [EVD-053](evidence/evd-053.en.md)

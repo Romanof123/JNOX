@@ -155,3 +155,5 @@ CHG-061 · [OFF 전용 비교 수집기와 합성 대조](permit-observer-cost-p
 [CHG-069 · OFF 전용 실행 16건과 여덟 쌍 비교](evidence/permit-observer-cost-v3.md)
 
 IMP-056 / VER-002/005/008/023. 콜드 부팅 2회에서 각각 CPU0→CPU1 지정 SGI 2회, 수신 작업 완료, 선점된 고정 백그라운드 작업 복귀를 기록했다. [EVD-056](evidence/evd-056.md)
+
+IMP-053 · VER-002/005/023. v2는 정상 1/8, 거절 2/2, 비교 v1 정상 0/8이었다. CBS 포화 추적 1회만 완료했고 W 네 건 모두 B 실행권이 없었다. v2 지연 실행과 제품 적격 판정은 없다. [EVD-053](evidence/evd-053.md)
