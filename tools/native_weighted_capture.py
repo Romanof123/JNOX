@@ -17,10 +17,15 @@ ARMS = ("share", "wake")
 CLOCKS = ("default", "icount3")
 
 
-def qemu_command(qemu, root, clock):
+def qemu_command(qemu, root, clock, timer_observation=False):
     cmd = command(qemu, root)
     if clock == "icount3":
         cmd[1:1] = ["-icount", "shift=3,align=off,sleep=off"]
+    if timer_observation:
+        from native_weighted_timer import EVENTS
+
+        cmd[cmd.index("-d") + 1] = "int," + ",".join("trace:" + name for name in EVENTS)
+        cmd[1:1] = ["-S", "-msg", "timestamp=on"]
     return cmd
 
 
@@ -43,11 +48,24 @@ def capture(args):
     if base != 0x40200000 or not base < limit <= base + (16 << 20):
         raise ValueError("bounded physical RAM extent")
     qemu = str(Path(shutil.which(args.qemu) or args.qemu).resolve(strict=True))
-    cmd = qemu_command(qemu, root, args.clock)
+    observer = None
+    if args.timer_observation:
+        from native_weighted_timer import EVENTS, HostObserver, PIN
+
+        if (args.arm, args.clock) != ("share", "default") or sha(Path(qemu)) != PIN:
+            raise ValueError("timer observer requires pinned default share QEMU")
+        available = subprocess.check_output(
+            [qemu, "-trace", "help"], text=True
+        ).splitlines()
+        if not set(EVENTS).issubset(available):
+            raise ValueError("required timer/GIC tracepoints unavailable")
+        observer = HostObserver(root)
+    cmd = qemu_command(qemu, root, args.clock, args.timer_observation)
     save(
         root / "launch.json",
         dict(
             version=1,
+            **({"timer_observation": 1} if args.timer_observation else {}),
             arm=args.arm,
             clock=args.clock,
             argv=cmd,
@@ -61,7 +79,7 @@ def capture(args):
             probe_sha256=sha(root / "probe.c"),
         ),
     )
-    return observe(root, cmd, base, limit, TERMINAL, SUCCESS)
+    return observe(root, cmd, base, limit, TERMINAL, SUCCESS, observer)
 
 
 if __name__ == "__main__":
@@ -72,5 +90,6 @@ if __name__ == "__main__":
         parser.add_argument(name, type=Path)
     parser.add_argument("revision")
     parser.add_argument("--qemu", default="qemu-system-aarch64")
+    parser.add_argument("--timer-observation", action="store_true")
     parser.add_argument("--nm", default="aarch64-linux-gnu-nm")
     sys.exit(capture(parser.parse_args()))

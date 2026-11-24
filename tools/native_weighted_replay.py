@@ -645,6 +645,19 @@ def replay(folder, digest):
         "uart.bin",
         "exceptions.log",
     }
+    run = json.loads(bounded(folder / "launch.json", 65536), object_pairs_hook=obj)
+    instrumented = "timer_observation" in run
+    if instrumented:
+        from native_weighted_timer import PIN, split_log, timing_report
+
+        need(
+            run["timer_observation"] == 1
+            and run["arm"] == "share"
+            and run["clock"] == "default"
+            and run["qemu_sha256"] == PIN,
+            "timer cohort identity",
+        )
+        required.add("host-timing.json")
     hashes = session["hashes"]
     need(set(hashes) <= required, "unexpected capture file")
     for name, val in hashes.items():
@@ -655,7 +668,7 @@ def replay(folder, digest):
         raise FileNotFoundError(
             "incomplete terminal capture: " + str(session["marker"])
         )
-    run = json.loads(bounded(folder / "launch.json", 65536), object_pairs_hook=obj)
+
     need(
         run["version"] == 1
         and session["pid"] > 0
@@ -670,7 +683,7 @@ def replay(folder, digest):
     original = PurePosixPath(argv[-1].replace(chr(92), "/")).parent
     actual = [part.replace(chr(92), "/") for part in argv]
     need(
-        actual == qemu_command(actual[0], original, run["clock"]),
+        actual == qemu_command(actual[0], original, run["clock"], instrumented),
         "QEMU configuration and artifact paths",
     )
     for src, name in (
@@ -705,6 +718,9 @@ def replay(folder, digest):
     head, rows = journal(mem, kernel)
     need(ARMS[head[2] - 1] == run["arm"], "guest/launch arm")
     k, u, ttbrs, products = check_images(kbytes, ubytes, mem, head, rows)
+    log = bounded(folder / "exceptions.log", 64 << 20)
+    if instrumented:
+        log, events = split_log(log)
     report = history(
         head,
         rows,
@@ -713,8 +729,13 @@ def replay(folder, digest):
         u,
         ttbrs,
         products,
-        bounded(folder / "exceptions.log", 64 << 20),
+        log,
     )
+    if instrumented:
+        host = json.loads(
+            bounded(folder / "host-timing.json", 4 << 20), object_pairs_hook=obj
+        )
+        report["timer_observation"] = timing_report(events, report["closures"], host)
     report.update(
         arm=run["arm"],
         clock=run["clock"],
