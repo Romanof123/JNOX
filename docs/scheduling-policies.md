@@ -27,10 +27,12 @@ J-NOX는 프로파일마다 다음 스레드를 고르는 규칙, 선점 시점,
 | 뮤텍스 경합과 우선순위 복원 | IMP-018, POL-014 | 작업 네 개로 직접 양도·연쇄 상속·실제 타이머 만료에 따른 회수·중첩 즉시 천장을 검증했다. [EVD-018](evidence/evd-018.md) |
 | 다단계 준비 큐 | IMP-019, POL-009 | 상위 큐 포화 네 구간과 누적 강등·부스트·다음 복귀를 독립 검증했다. [EVD-019](evidence/evd-019.md) |
 | 혼합 임계도 예산 집행 | IMP-020, POL-015 | 네 작업 슬롯이 찬 이월 부하에서 실제 IRQ로 모드 전환과 HI 예산 상한을 집행했다. [EVD-020](evidence/evd-020.md) |
+| 복권·실행량 기반 스트라이드 | IMP-021, POL-010 | 두 시드, 늦은 참여, 가변 서비스, 의도적으로 지연한 IRQ를 포함해 81개 허용을 대조했다. [EVD-021](evidence/evd-021.md) |
+| 가중 가상 실행시간 | IMP-022, POL-011 | 수면과 깨우기를 거친 선택 21회 및 계상값이 독립 카운터 재생과 일치했다. [EVD-022](evidence/evd-022.md) |
 | 선택·회계 검증 완료 | `IMP-004`, POL-001~POL-018 각각에서 범위를 한정한 정책 함수 | 준비 집합, 시각, 실행량, 추첨값, CPU 마스크와 동작점 모델을 입력해 한 게스트에서 검사를 통과했다. 각 결과의 범위는 해당 선택 또는 상태 전이다. [EVD-004](evidence/evd-004.md) |
 | 프로파일 통합 출시 | 활성화한 세부 정책별 | 구성에 적용되는 실제 차단, 깨우기, 타이머 만료, 문맥 전환과 종료 경로를 실행해 대상 환경의 추적 자료를 보관한다. 실보드 시간 측정과 분석, 제품 안전 심사는 각각 해당 단계에서 진행한다. |
 
-QEMU `virt`에서 기능을 여러 개 켜면 한 부팅에 한 검증 프로필만 실행한다. 현재 선택 순서는 `coop → batch → deadline → aperiodic → smp → mutex → multilevel → amc → partition → cbs → periodic-preempt → periodic → rr → fifo → edf → scheduler → boot`이다. 특정 정책을 검증하려면 해당 벤치 기능만 지정하고 같은 이름의 관찰기를 사용한다.
+QEMU `virt`에서 기능을 여러 개 켜면 한 부팅에 한 검증 프로필만 실행한다. 현재 선택 순서는 `coop → batch → deadline → aperiodic → smp → mutex → multilevel → amc → proportional → vruntime → partition → cbs → periodic-preempt → periodic → rr → fifo → edf → scheduler → boot`이다. 특정 정책을 검증하려면 해당 벤치 기능만 지정하고 같은 이름의 관찰기를 사용한다.
 
 하드 CBS는 이상적인 단일 코어의 독립 서버에 대해 주기당 예산 비율의 합을 검사한다. 서버는 정수 틱, 주기와 같은 기한과 미완료 작업 최대 하나를 전제한다. 기약분수로 줄인 중간 합도 정수 표현 범위를 넘으면 보수적으로 거부한다. 스트라이드 후보는 길이가 같은 할당량을 배정한다. MLFQ는 양보 전후 실행량을 세 단계에서 누적하고 호출자가 요청할 때 우선순위를 올린다. 복권 후보는 추첨값을 입력으로 받는다. 가상 실행시간과 EEVDF는 이미 가상 시간축에 배치된 요청들의 스냅샷에서 다음 대상을 고른다. 이들 정책으로 실제 스레드를 깨우고 이동·선점하는 경로는 통합 단계의 검증 대상이다. [시간 정책](../kernel/src/temporal_policy.rs) · [예약과 스트라이드](../kernel/src/service_policy.rs) · [피드백과 추첨](../kernel/src/feedback_policy.rs) · [공정 배분 선택](../kernel/src/fair_policy.rs)
 

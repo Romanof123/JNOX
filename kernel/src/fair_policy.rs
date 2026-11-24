@@ -23,7 +23,11 @@ impl VirtualTime {
         })
     }
 
-    fn compare(self, other: Self) -> Ordering {
+    pub(crate) fn parts(self) -> (u64, u64, u64) {
+        (self.whole, self.remainder, self.denominator)
+    }
+
+    pub(crate) fn compare(self, other: Self) -> Ordering {
         self.whole.cmp(&other.whole).then_with(|| {
             (u128::from(self.remainder) * u128::from(other.denominator))
                 .cmp(&(u128::from(other.remainder) * u128::from(self.denominator)))
@@ -31,7 +35,7 @@ impl VirtualTime {
     }
 
     /// Task timestamps use their scheduling weight as denominator.
-    fn after_service(self, ticks: u64) -> Option<Self> {
+    pub(crate) fn after_service(self, ticks: u64) -> Option<Self> {
         let ticks = u128::from(self.remainder) + u128::from(ticks);
         let weight = u128::from(self.denominator);
         Some(Self {

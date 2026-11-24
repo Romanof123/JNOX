@@ -54,3 +54,5 @@ The two-CPU QEMU configuration exercises fixed homes, global migration and singl
 The mutex configuration checks effective priority on real block, timer timeout and ownership handoff. [Mutex release cases](m1-mutex.en.md)
 
 [Multilevel queues](m4-multilevel.en.md) · [Mixed-criticality budgets](m3-mixed-criticality.en.md)
+
+[Lottery and stride](m4-proportional.en.md) · [Weighted virtual runtime](m4-vruntime.en.md)
