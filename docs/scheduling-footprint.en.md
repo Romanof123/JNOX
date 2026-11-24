@@ -54,3 +54,4 @@ The same linker script produced a valid retained .rodata section that the origin
 
 The valid original minimal and fixed-RR measurements remain part of the first-gate record. The corrected checker must reproduce their byte counts and deltas from those same ELFs. Both input positions must reject each off-boundary BSS control, and retained read-only constants must reproduce the ordinary read-only accounting.
 The first independent static measurements and the original checker findings for #188 are recorded in [EVD-090](evidence/evd-090-virt-static-first.en.md).
+The [corrected independent receipt and blind check](evidence/evd-090-virt-static-corrected.en-ko.md) record the static acceptance decision for the minimal virt image.
