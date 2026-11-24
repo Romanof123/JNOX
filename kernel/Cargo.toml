@@ -8,6 +8,7 @@ publish = false
 sched-bench = []
 # Cooperative FCFS takes precedence over all other benches.
 coop-bench = ["sched-bench"]
+batch-bench = []
 # Live partition windows take precedence over CBS and older benches.
 partition-bench = []
 cbs-bench = []
