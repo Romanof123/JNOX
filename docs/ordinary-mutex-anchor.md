@@ -31,3 +31,5 @@ H/T/S/E/R/C/B/HIGH/A/M/K는 RAW 1의 순서·폭·단위를 유지한다. T 뒤�
 각 선택값마다 PI 일반·추적, 천장 일반·추적 네 자리를 별도로 고정한다. 새 Linux 기본 파일시스템에서 1코어 Cortex-A72, virt/GICv2/TCG, 128 MiB, 기본 시계, 15초 관측 시간으로 각 자리 최초 실행을 보존한다. 일반·추적은 같은 ELF를 쓰며 완전한 푸터 도착 후 호스트가 중지한다. 종료·시간 초과·부분 출력도 포함해 UART, stderr, argv, PID·종료 상태, 경과 시간, 소스·ELF 해시, 링크 디스어셈블리와 요청된 외부 예외 로그를 남긴다.
 
 예를 들어 `python3 tools/mutex_anchor_replay.py <uart> --app ordinary-pi --anchor selected-return`을 사용한다. 종료 0은 무장 기록·IRQ 표식·완료 데이터를 확인한 경우, 1은 형식이 완전한 게스트 실패, 2는 불완전하거나 모순된 자료다. 한도는 96 KiB, E 32행, R 64행, C 256행이다. 독립 판정에는 기존 잠금·준비·인계 순서, 해당 ELF의 실제 계산 명령에서의 IRQ, 스택·결과·종료 및 추적 실행의 SVC/IRQ/ERET 대조가 필요하다. 기본 PI·천장·기존 mutex-bench의 ELF, PT_LOAD, 텍스트도 보존본과 비교한다. 새 구성의 실행·링크·실보드 결과는 아직 없다. [기존 계약](ordinary-mutex-runtime.md) · [오프라인 재생](../tools/mutex_anchor_replay.py)
+
+[최초 기본 PI 사전 검사 · 명령어 일치, 로드 메타데이터 차이, 게스트 실행 0건](evidence/ordinary-mutex-anchor-preflight/README.md)

@@ -37,3 +37,5 @@ Retain position 1 as observed. At masked boot validate F and exact divisibility 
 Before adopting this layout, map the existing linked path from the sample to the timer writes, readback, SVC epilogue, restore entry, existing R sample and ERET. The retained UART measures the aggregate arm→R interval of 6533 ticks. It cannot partition that time between Rust, timer operations, translation and restoration. In a separately labeled characterization arm collect write/readback-end and restore-entry samples with bounded stores; keep the same compare, retain measurement overhead and reject missing stages. Assess this Rust-anchor layout with its own fresh immutable ELFs and first captures. The later return-anchor sibling remains a distinct question. Original PI/plain qualification remains open.
 
 [Optional image selectors and RAW 2 capture contract](ordinary-mutex-anchor.en.md)
+
+[First default PI preflight: identical instructions, changed loadable metadata, zero guest launches](evidence/ordinary-mutex-anchor-preflight/README.md)
