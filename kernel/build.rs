@@ -37,11 +37,22 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_case, values("handoff-healthy", "handoff-loss", "healthy", "loss", "late", "demand", "worst", "tie", "early-command", "expired-command", "no-command", "missing-permit", "invalid", "silence", "saturation", "recovery", "old-generation"))"#);
     let scenario = selector("JNOX_CONTROL_CASE");
     println!("cargo::rustc-check-cfg=cfg(jnox_control_cold)");
-    if let Some(mode) = selector("JNOX_CONTROL_COLD") {
+    let cold = selector("JNOX_CONTROL_COLD");
+    if let Some(mode) = cold.as_deref() {
         assert!(mode == "diagnostic" && profile.as_deref() == Some("periodic")
             && scenario.as_deref() == Some("healthy"),
             "JNOX_CONTROL_COLD requires diagnostic, periodic and explicit healthy");
         println!("cargo::rustc-cfg=jnox_control_cold");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_control_descriptor)");
+    if let Some(value) = selector("JNOX_CONTROL_DESCRIPTOR") {
+        assert!(value == "1" && profile.as_deref() == Some("periodic")
+            && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
+            && scenario.as_deref() == Some("healthy"),
+            "JNOX_CONTROL_DESCRIPTOR=1 requires ordinary periodic healthy RM or DM");
+        assert!(cold.is_none() && selector("JNOX_CONTROL_MARKERS").is_none(),
+            "control descriptor, cold and marker comparison arms must be built separately");
+        println!("cargo::rustc-cfg=jnox_control_descriptor");
     }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
