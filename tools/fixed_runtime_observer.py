@@ -13,7 +13,7 @@ def validate(data, prefix):
         return False
     events = [line[len(tag):] for line in markers]
     if prefix == b"FIXED FIFO":
-        chain = [b"START", b"A START", b"B SLEEP", b"A RESUME", b"A DONE", b"B DONE"]
+        chain = [b"START", b"A START", b"B YIELD", b"A RESUME", b"A DONE", b"B SLEEP", b"B DONE"]
     elif prefix == b"FIXED RR":
         chain = [b"START", b"A START", b"A DONE", b"B DONE"]
     else:

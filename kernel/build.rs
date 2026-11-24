@@ -12,8 +12,18 @@ fn selector(key: &str) -> Option<String> {
 fn main() {
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
+    let trace = selector("JNOX_FIXED_TRACE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
+    if let Some(value) = trace {
+        assert!(value == "1", "JNOX_FIXED_TRACE must be unset or 1");
+        assert!(
+            profile.as_deref() == Some("fixed"),
+            "JNOX_FIXED_TRACE requires JNOX_PROFILE=fixed"
+        );
+        println!("cargo::rustc-cfg=jnox_fixed_trace");
+    }
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_fixed)"#);
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed"))"#);
     println!("cargo::rerun-if-env-changed=JNOX_BOARD");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
@@ -59,11 +69,11 @@ fn main() {
             assert!(bench == "boot", "JNOX_PROFILE=fixed conflicts with bench features");
             assert!(board == "virt", "JNOX_PROFILE=fixed requires JNOX_BOARD=virt");
             match app.as_deref() {
-                Some(name @ ("fixed-fifo" | "fixed-rr")) => {
+                Some(name @ ("fixed-fifo" | "fixed-rr" | "fixed-empty" | "fixed-delayed")) => {
                     println!("cargo::rustc-cfg=jnox_fixed");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
-                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo or fixed-rr"),
+                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, or fixed-delayed"),
             }
         }
         Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed"),

@@ -73,12 +73,18 @@ mod selected {
 
     fn sleeper() {
         record_stack(1);
+        uart_write(b"FIXED FIFO B YIELD\n");
+        if !rt::sleep_ticks(0) {
+            uart_write(b"FIXED FIFO B YIELD FAILED\n");
+            rt::exit();
+        }
         uart_write(b"FIXED FIFO B SLEEP\n");
-        if rt::sleep_ticks(QUANTUM * 2) {
+        if rt::sleep_ticks(QUANTUM * 2) && !rt::sleep_ticks(u64::MAX) {
             uart_write(b"FIXED FIFO B DONE\n");
         } else {
             uart_write(b"FIXED FIFO B SLEEP FAILED\n");
         }
+        rt::exit();
     }
 
     fn alarm() {
@@ -133,6 +139,38 @@ mod selected {
     }
 }
 
+#[cfg(jnox_app = "fixed-empty")]
+mod selected {
+    use super::*;
+    static TABLE: [Task; 0] = [];
+
+    pub(super) fn start() -> ! {
+        uart_write(b"FIXED EMPTY START\n");
+        rt::run(&TABLE, Mode::Fifo)
+    }
+}
+
+#[cfg(jnox_app = "fixed-delayed")]
+mod selected {
+    use super::*;
+    static TABLE: [Task; 1] = [
+        Task { entry: delayed, priority: 1, delay: QUANTUM / 2 },
+    ];
+
+    pub(super) fn start() -> ! {
+        uart_write(b"FIXED DELAYED START\n");
+        rt::run(&TABLE, Mode::Fifo)
+    }
+
+    fn delayed() {
+        record_stack(0);
+        uart_write(b"FIXED DELAYED TASK\n");
+        rt::exit();
+    }
+}
+
 pub fn run() -> ! {
+    // Keep the named QMP observation region linked even for an empty table.
+    core::hint::black_box(&fixed_app_observations);
     selected::start()
 }

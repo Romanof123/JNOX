@@ -211,6 +211,8 @@ class DynamicTranscript(Enum):
 
 
 TRANSCRIPTS = {
+    "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
+    "fixed-delayed": BOOT_TRANSCRIPT + b"FIXED DELAYED START\nFIXED DELAYED TASK\n",
     "fixed-fifo": DynamicTranscript.FIXED_FIFO,
     "fixed-rr": DynamicTranscript.FIXED_RR,
     "priority-resume": BOOT_TRANSCRIPT + b"PRIORITY RESUME BEGIN\nPRIORITY RESUME PASS\n",

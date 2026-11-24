@@ -1,4 +1,8 @@
 //! Single-core, trusted EL1 fixed-priority task runtime.
+#[cfg(jnox_fixed_trace)]
+#[path = "fixed_runtime_trace.rs"]
+mod trace;
+
 use super::context::*;
 pub use super::fixed_policy::Mode;
 use super::fixed_policy::{Action, Config, Fixed, MAX_TASKS};
@@ -130,15 +134,31 @@ pub fn run(tasks: &'static [Task], mode: Mode) -> ! {
         );
     }
     frames[IDLE] = initial_frame(IDLE, fixed_runtime_idle as *const () as usize, 0);
-    let policy = Fixed::new(&configs[..tasks.len()], mode, counter()).unwrap_or_else(|| fail());
+    #[cfg(jnox_fixed_trace)]
+    trace::init(frequency());
+    let now = counter();
+    let policy = Fixed::new(&configs[..tasks.len()], mode, now).unwrap_or_else(|| fail());
     let state = unsafe { (&mut *(&raw mut STATE)).insert(Runtime { policy, frames }) };
-    let next = state.dispatch();
+    let next = state.dispatch(
+        #[cfg(jnox_fixed_trace)]
+        trace::Event {
+            kind: 0,
+            source: u64::MAX,
+            now,
+            owner: u64::MAX,
+            incoming: ptr::null_mut(),
+            argument: 0,
+            result: 0,
+            pre_ctl: u64::MAX,
+        },
+    );
     unsafe { sched_start_frame(next) }
 }
 
 impl Runtime {
-    fn dispatch(&self) -> *mut Frame {
-        if let Some(due) = self.policy.deadline().unwrap_or_else(|_| fail()) {
+    fn dispatch(&self, #[cfg(jnox_fixed_trace)] event: trace::Event) -> *mut Frame {
+        let deadline = self.policy.deadline().unwrap_or_else(|_| fail());
+        if let Some(due) = deadline {
             unsafe {
                 asm!("msr cntp_cval_el0, {}", "msr cntp_ctl_el0, {}", "isb",
                     in(reg) due, in(reg) 1u64, options(nostack, preserves_flags))
@@ -146,7 +166,10 @@ impl Runtime {
         } else {
             disable_timer();
         }
-        self.frames[self.policy.current().unwrap_or(IDLE)]
+        let next = self.frames[self.policy.current().unwrap_or(IDLE)];
+        #[cfg(jnox_fixed_trace)]
+        trace::publish(event, self, next, deadline);
+        next
     }
 
     fn save(&mut self, frame: *mut Frame) {
@@ -172,6 +195,8 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     if id >= 1020 {
         return frame;
     }
+    #[cfg(jnox_fixed_trace)]
+    let pre_ctl = trace::ctl();
     disable_timer();
     // Complete source deassertion before the combined EOI/deactivation.
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) }
@@ -181,11 +206,26 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     }
     let state = unsafe { state() };
     state.save(frame);
+    #[cfg(jnox_fixed_trace)]
+    let owner = state.policy.current().unwrap_or(IDLE) as u64;
+    let now = counter();
     state
         .policy
-        .event(counter(), Action::Poll)
+        .event(now, Action::Poll)
         .unwrap_or_else(|| fail());
-    state.dispatch()
+    state.dispatch(
+        #[cfg(jnox_fixed_trace)]
+        trace::Event {
+            kind: 1,
+            source: u64::from(id),
+            now,
+            owner,
+            incoming: frame,
+            argument: 0,
+            result: 0,
+            pre_ctl,
+        },
+    )
 }
 
 extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
@@ -196,6 +236,8 @@ extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
     }
     let state = unsafe { state() };
     state.save(frame);
+    #[cfg(jnox_fixed_trace)]
+    let owner = state.policy.current().unwrap_or(IDLE) as u64;
     let imm = syndrome & 0xffff;
     let action = match imm {
         0 => Action::Yield,
@@ -203,12 +245,28 @@ extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
         2 => Action::Sleep(unsafe { (*frame).gpr[0] }),
         _ => fail(),
     };
-    let accepted = state
-        .policy
-        .event(counter(), action)
-        .unwrap_or_else(|| fail());
+    #[cfg(jnox_fixed_trace)]
+    let argument = if imm == 2 {
+        unsafe { (*frame).gpr[0] }
+    } else {
+        0
+    };
+    let now = counter();
+    let accepted = state.policy.event(now, action).unwrap_or_else(|| fail());
     if imm == 2 {
         unsafe { (*frame).gpr[0] = u64::from(accepted) }
     }
-    state.dispatch()
+    state.dispatch(
+        #[cfg(jnox_fixed_trace)]
+        trace::Event {
+            kind: 2,
+            source: imm,
+            now,
+            owner,
+            incoming: frame,
+            argument,
+            result: u64::from(imm == 2 && accepted),
+            pre_ctl: u64::MAX,
+        },
+    )
 }
