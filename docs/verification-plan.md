@@ -132,4 +132,6 @@ POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 
 
 VER-002/005/023 · 콜드 24회 중 22회가 억제됐고 기술자 DM 2회는 허가 7건을 모두 수락한 뒤에도 OFF였다. 정상 시퀀스 0/24. [EVD-051](evidence/evd-051.md)
 
+CHG-055 · REQ-002/003/005/023 · [일반 허가 게시 및 독립 명령 시각 계획](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
 IMP-052 · VER-002/005/023. 실제 저널 4개의 104개 위상 재생 일치. 통합 제어 실행의 운영 적격 0/6. [EVD-052](evidence/evd-052.md)

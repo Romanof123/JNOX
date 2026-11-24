@@ -46,9 +46,11 @@ Descriptor construction executes with IRQs masked during the actual release. Row
 
 위 명령에서 기본 비교군은 JNOX_CONTROL_DESCRIPTOR를 해제하고, 작업 기술자 비교군은 1로 설정한다. 두 비교군 모두 healthy, 기본 시계, 동일한 opt-level s를 사용한다. DM은 JNOX_APP=control-dm과 별도의 /tmp 경로를 쓴다. 기술자 구성에서는 콜드 및 마커 선택자를 모두 해제한다. 실제 ELF 해시·디스어셈블리·실행 명세로 비교군을 식별한다. 기술자 작성 비용은 IRQ 내에서 발생하므로 행 34, 릴리스부터 판정·종료까지의 시간과 마스킹 구간을 함께 비교한다. 행 6·8의 작업 과금만으로 비용 절감이나 마스킹 상한을 판단할 수 없다. 기존 한계를 그대로 적용하고 연속 작업과 콜드 부팅에서 재개 동작을 독립 검증한다.
 
+[CHG-055 ordinary sender phase / 일반 송신 위상](ordinary-permit-phase-plan.md)
+
 ## IMP-052 marker capture / 계측 기록
 
-[#121](https://github.com/Romanof123/JNOX/issues/121) · CHG-053 · REQ-002/003/005/023 · DES-003/012. Source candidate for the first comparison. Independent build, image identity, first observations and timing verdict remain pending. / 첫 번째 비교용 선택 계측 소스다. 독립 빌드, ELF 동일성, 최초 관측과 시간 판정은 미결이다.
+[#121](https://github.com/Romanof123/JNOX/issues/121) · CHG-053 · REQ-002/003/005/023 · DES-003/012. [Release image comparisons and six boots](evidence/evd-052-release.en.md) / [릴리스 이미지 비교 및 부팅 6건](evidence/evd-052-release.md)
 
 From kernel/ in the native Linux workspace, save each resulting ELF, hash, disassembly and Cargo invocation before the next build. For DM replace control-rm with control-dm in both commands. Pair against the independently established archived stock hash, versioning any different baseline before pairing. / Linux 로컬 작업공간의 kernel/에서 다음 빌드 전에 각 ELF·해시·역어셈블리·명령을 보존한다. DM은 두 명령 모두 control-dm으로 바꾼다. 기존 기준 ELF 해시와 다르면 별도 기준판으로 기록한다.
 
