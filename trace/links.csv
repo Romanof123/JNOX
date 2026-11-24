@@ -152,3 +152,5 @@ CHG-001,affects,REQ-016
 DES-001,implemented-by,IMP-001
 REQ-016,partially-implemented-by,IMP-001
 IMP-001,partially-verified-by,VER-016
+IMP-001,tested-in,EVD-001
+VER-016,has-partial-evidence,EVD-001

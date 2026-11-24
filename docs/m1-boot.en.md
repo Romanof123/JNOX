@@ -2,6 +2,8 @@
 
 [한국어](m1-boot.md) · English
 
+The independent verification record contains the build hashes and the positive and negative boot results for the first source candidate. [EVD-001 boot results](evidence/evd-001.en.md)
+
 `CHG-001` introduces the first executable increment of the M1 kernel from planning baseline `4ce1e16`. `IMP-001` covers the AArch64 entry point, Rust startup, early UART output and CPU parking. The engineering question is whether the same standalone `no_std` kernel ELF reaches a defined point in Rust after each cold start on the P1 reference emulator. [M1 product scope](product-plan.en.md) · [Engineering lifecycle](lifecycle.en.md)
 
 | Trace | Scope of this change |
