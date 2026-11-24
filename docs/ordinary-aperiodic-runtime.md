@@ -52,3 +52,5 @@ Supplying `--exceptions` correlates the entire QEMU EL1 IRQ/SVC/ERET sequence wi
 저장소 루트에서 위 명령을 실행한다. 실제 빌드한 케이스와 시계, UART 경로를 지정한다. 결함 이미지에는 `-late`를 붙인다. 정상 완료와 지정 마스킹 결함 관측은 JSON으로 구분하며 종료 코드는 0이다. 시간 초과나 미완료 작업에 따른 억제는 1, 증거 누락·불일치·지원하지 않는 판정은 2다. 결함 주입 전 억제는 미실행으로 표시한다. 선택한 시계와 무관하게 같은 FIFO·예산·상환·단계별 계산·주기 마감을 재현한다. `--exceptions`는 실제 외부 예외 순서를 대조하고, 미지정 시 게스트 복귀 표본만 확인한다. `--elf`는 실행 구간과 해시를 확인한다. 별도 빌드 기록으로 ELF와 케이스의 대응 관계를 확인해야 한다. `--meta`가 없으면 시계는 호출자가 신고한 값이다.
 
 CHG-047 / IMP-045 ties this checker to REQ-002 (dispatch), REQ-005 (temporal behavior) and REQ-023 (resource bounds), DES-003/012 and VER-002/005/023. Raw replay covers the frozen virtual workload and the captured intervals. Product admission, M3 interference and additional execution evidence remain separate. [Frozen acceptance plan](pol-007-rust-server-plan.md)
+
+[Independent host replay of 44 archived captures and 26 controls](evidence/evd-045-host-replay.en.md) · [보관 기록 44건 및 대조 26건의 독립 호스트 재생](evidence/evd-045-host-replay.md) · [Replay index](evidence/evd-045-host-replay.json)
