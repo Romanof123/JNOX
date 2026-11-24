@@ -114,3 +114,5 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [EVD-041](evidence/evd-041.md)
 
 POL-004 / IMP-043. 조건부 호스트 산술과 CLI는 독립 재현을 통과했다. 런타임 추적 및 실측 예산 근거는 미확보다. [EVD-043](evidence/evd-043.md)
+
+POL-009 / IMP-046. 유한 작업 6종을 일반·진단 이미지에서 통과했다. [EVD-046](evidence/evd-046.md)

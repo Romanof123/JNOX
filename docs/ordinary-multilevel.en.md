@@ -50,3 +50,5 @@ The EVD-040 journal prefix is byte-compatible. Each new diagnostic app appends 2
 | 10 | Total owner service before outgoing charge |
 
 The independent observer must compare actual comparator and timing against the nominal deadline in the prefix, including the first ordinary timer after the deliberate delay. Preserve each first capture and verify the finite saturation window, per-owner charges, intermediate balances, queue order and later epoch crossing against the [frozen plan](multilevel-limits-plan.md). Historical replay for the original two selectors uses their original layout.
+
+POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)

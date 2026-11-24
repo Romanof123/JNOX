@@ -1,6 +1,6 @@
 # POL-009 virtual workload limits / 가상 작업 부하 한계
 
-CHG-048 · intended IMP-046 · planned EVD-046 · REQ/VER-002/005/023 · DES-003/012. [#102](https://github.com/Romanof123/JNOX/issues/102) · [#21](https://github.com/Romanof123/JNOX/issues/21) · [EVD-040](evidence/evd-040.en.md)
+CHG-048 · IMP-046 · [EVD-046 (English)](evidence/evd-046.en.md) · [EVD-046 (한국어)](evidence/evd-046.md) · REQ/VER-002/005/023 · DES-003/012. [#102](https://github.com/Romanof123/JNOX/issues/102) · [#21](https://github.com/Romanof123/JNOX/issues/21) · [EVD-040](evidence/evd-040.en.md)
 
 ## Frozen virtual inputs and verdicts
 

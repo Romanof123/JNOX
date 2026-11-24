@@ -1,0 +1,623 @@
+{
+ "verdict": "PASS for the six finite workloads",
+ "source": "96168c964644f3ff766eda69ee4cbb629771beea",
+ "cold_boots": 12,
+ "retries": 0,
+ "independent_report": "# Fresh POL-009 verification\n\nPASS. All twelve original cold runs completed. The build index and all twelve ELF digests matched. See provenance, preflight.log, status, individual launch.json, raw interrupt streams, UART, memory dumps, nm tables, and disassemblies. The WSL Git worktree-pointer preflight failed before first launch. Windows Git verified the frozen source/tree and a clean worktree. No guest retries occurred. No board was run.\n\nverify.py reconstructs every diagnostic row against raw QEMU exceptions and ELF symbols, with separate ready, blocked, exited, service, rank, debt, and reset accounting. check_images.py checks the linked task tables, exception stream, trampoline, idle PC and terminal timer bit. The six *-rows.json files hold the complete independent ledger. Plain mode exposes UART/exception/idle and terminal-control evidence for the new selectors. Detailed per-owner state and timings come from the diagnostic ELFs. QEMU used default virtual time without icount. The four new selectors used the frozen observer's one-second host-monotonic quiet interval, five-second UART deadline and an isolated CPU without a NIC.\n\nBlocked and exited each delivered two distinct task-owned SVCs. Terminal live/asleep masks were 3/15 and 0/15 including asleep unused slots. Both variants of each selector reached linked idle with timer enable clear. Saturated ran 25 diagnostic rows with eight opening high-only timers, high peer rotation and positive elapsed service on every closure, followed by low selection on last high exit and 865755 counts of low service.\n\nDelayed ran 15 rows. First start 70876, nominal due 2570876, armed compare 32570876, stop 32744052. A timer PPI closed the interval. Exactly 32673176 counts went to owner 0. Its pre-reset rank was bottom with 3576824 remaining. Queue [1,2,0] survived a single reset over three periods. All three received a fresh top balance and owner 1 resumed. Subsequent ordinary comparators and additional period crossings replayed exactly. Baseline MLQ and MLFQ diagnostic runs completed 16 and 42 rows with normal returns.\n\nELF stack areas are four 16 KiB slices. Each diagnostic incoming frame was aligned and wholly inside the actual owner's slice. Each selected frame pointer and PC matched its saved frame or initial linked trampoline and QEMU's exception-return PC. The two high saturation peers and three delayed workers share code; ownership is established by the separate frame address and queue history. These are finite virtual observations.\n",
+ "reviewer_manifest_sha256": "54fd7c796e8ad4d0f6ed151e2957fc89864be3171d6134c36fa6bc3e1b301429",
+ "build_index": {
+  "source": "96168c964644f3ff766eda69ee4cbb629771beea",
+  "tree": "4079fee169998a49490311c285b909249977814f",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+  "cwd": "D:\\codex\\.jnox-work\\next-fixed\\ml46-src\\kernel",
+  "images": {
+   "mlq-blocked": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq-blocked"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq-blocked/build.log",
+    "log_sha256": "1411008497a1c084c16733791f0778cb1e99a778582212446997b0b327bc5f66",
+    "path": "mlq-blocked/kernel.elf",
+    "size": 90544,
+    "sha256": "910a7efbcab5f56c6edcf9bf667bf27283b5ffc02b06ffa6ca7f3dc432147776"
+   },
+   "mlq-blocked-trace": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq-blocked",
+     "JNOX_MULTILEVEL_TRACE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq-blocked-trace/build.log",
+    "log_sha256": "f6e528506264d2a1ca6e9ac8e6c537e62ebed82a3d0566706f1881f22e01f4b1",
+    "path": "mlq-blocked-trace/kernel.elf",
+    "size": 93824,
+    "sha256": "c9036874997c9018c1cac4d045f2ddfe7b62faf2df43bcd58fc3ef82e358cd4c"
+   },
+   "mlq-exited": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq-exited"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq-exited/build.log",
+    "log_sha256": "a72c408b3ca8c49abe6c2fb6e8cf4d529de631436c9d2a224e12d6b51c250d69",
+    "path": "mlq-exited/kernel.elf",
+    "size": 90544,
+    "sha256": "f5ca834d0dc2c7060357459502ab00f6fa438e703f0e7854d2c0e311b62cef42"
+   },
+   "mlq-exited-trace": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq-exited",
+     "JNOX_MULTILEVEL_TRACE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq-exited-trace/build.log",
+    "log_sha256": "de5219063417d6390f14d2aed4d70e5ea2f493126a4bfc74ca69ae52c7c14924",
+    "path": "mlq-exited-trace/kernel.elf",
+    "size": 93800,
+    "sha256": "326b61aae8380883310d246e60c56b599af3d587cb2f7937b596f211d0c6aa35"
+   },
+   "mlq-saturated": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq-saturated"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq-saturated/build.log",
+    "log_sha256": "4cd14abda794d550b8178bfe4c43a04c07f176627d14c9cf9cc8fd4aff8309e9",
+    "path": "mlq-saturated/kernel.elf",
+    "size": 90832,
+    "sha256": "dfb8b1d9fcf3a3675f695ebc35039ca168221fc1e243d24b3c3f3ecb981354ac"
+   },
+   "mlq-saturated-trace": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq-saturated",
+     "JNOX_MULTILEVEL_TRACE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq-saturated-trace/build.log",
+    "log_sha256": "0bb9ae90600d8ef4c6d35ee094ff12c36071d5c9c5a0bf92fdaa291408201741",
+    "path": "mlq-saturated-trace/kernel.elf",
+    "size": 94056,
+    "sha256": "02ba72283311a7b0fc7767eec88a01d3729d38b7ae919011a55a3d54af9d7e71"
+   },
+   "mlfq-delayed": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlfq-delayed"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlfq-delayed/build.log",
+    "log_sha256": "ee2407d2e43a9063615b39f47733c323cbc99867a4f0ff3f404f3604a6df41c9",
+    "path": "mlfq-delayed/kernel.elf",
+    "size": 90720,
+    "sha256": "c151de6c85c63fe88986b52370a6bad6612d72c04a5c1315ef5b8387fed5cf4e"
+   },
+   "mlfq-delayed-trace": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlfq-delayed",
+     "JNOX_MULTILEVEL_TRACE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlfq-delayed-trace/build.log",
+    "log_sha256": "a631efddd841346c7f5a1b44431d4cbc78727abaee7853650c07d22ac39ff226",
+    "path": "mlfq-delayed-trace/kernel.elf",
+    "size": 93944,
+    "sha256": "016009cc6d86651918f8ee01e8ca307d82d2038ca8b5c47532694e44bf89dbf5"
+   },
+   "mlq": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq/build.log",
+    "log_sha256": "db7e5897eaf3f5b83c25fadff2f37ea4d1ca9fb17ec6c26e5d809832d0062963",
+    "path": "mlq/kernel.elf",
+    "size": 90464,
+    "sha256": "696b1dc96a6ea7691e496f9a92c74910145717c3c4bf111d0f83e2f0500fd5bb"
+   },
+   "mlq-trace": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlq",
+     "JNOX_MULTILEVEL_TRACE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlq-trace/build.log",
+    "log_sha256": "f14d9615f58f75aaa9bbf822181288a969b186d4a5e767e92815ffbc18061805",
+    "path": "mlq-trace/kernel.elf",
+    "size": 93176,
+    "sha256": "24267af63f51dda6000659e76048c123af60fb063a8826e80008b9ca31a36557"
+   },
+   "mlfq": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlfq"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlfq/build.log",
+    "log_sha256": "518fbb84a7e56d6969928f146c0fe9160f9687529aa3894aaa1bc1a9d62dba17",
+    "path": "mlfq/kernel.elf",
+    "size": 90576,
+    "sha256": "8ec73ab3557419f45d069a8b1d0eac43b8ff9bc49e767e21dc5081c7ea640feb"
+   },
+   "mlfq-trace": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\ml46-builds",
+     "JNOX_PROFILE": "multilevel",
+     "JNOX_APP": "mlfq",
+     "JNOX_MULTILEVEL_TRACE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "mlfq-trace/build.log",
+    "log_sha256": "d8f2e19b5feb38777954f2d2da7ca755667276d08d477a7bbdc3d635de2034cb",
+    "path": "mlfq-trace/kernel.elf",
+    "size": 93272,
+    "sha256": "56256fc2d247ca9b0845c82a4e67bbf82cba23d5939ef5ec3ca26aeaa8c046b6"
+   }
+  }
+ },
+ "profiles": {
+  "mlq": {
+   "rows": 16,
+   "exceptions": 15,
+   "service": [
+    244396,
+    3898218,
+    4576257
+   ],
+   "terminal": {
+    "row": 15,
+    "owner": 0,
+    "event": 1,
+    "result": 0,
+    "ready": [],
+    "choice": 4,
+    "boost": 0,
+    "ext": null,
+    "charged": 8718871,
+    "delta": 123374,
+    "ranks": [
+     0,
+     2,
+     2
+    ],
+    "remaining": [
+     625000,
+     625000,
+     625000
+    ],
+    "service": [
+     244396,
+     3898218,
+     4576257
+    ],
+    "start": 8694256,
+    "due": 9319256,
+    "stop": 8817630
+   }
+  },
+  "mlfq": {
+   "rows": 42,
+   "exceptions": 41,
+   "service": [
+    2722245,
+    20420398,
+    15121957
+   ],
+   "terminal": {
+    "row": 41,
+    "owner": 2,
+    "event": 1,
+    "result": 0,
+    "ready": [],
+    "choice": 4,
+    "boost": 0,
+    "ext": null,
+    "charged": 38264600,
+    "delta": 113533,
+    "ranks": [
+     2,
+     1,
+     1
+    ],
+    "remaining": [
+     2500000,
+     3495091,
+     844189
+    ],
+    "service": [
+     2722245,
+     20420398,
+     15121957
+    ],
+    "start": 38269875,
+    "due": 39227597,
+    "stop": 38383408
+   }
+  },
+  "mlq-blocked": {
+   "rows": 3,
+   "exceptions": 2,
+   "service": [
+    168543,
+    129569,
+    0
+   ],
+   "terminal": {
+    "row": 2,
+    "owner": 1,
+    "event": 2,
+    "result": 0,
+    "ready": [],
+    "choice": 4,
+    "boost": 0,
+    "ext": [
+     0,
+     1,
+     625000,
+     0,
+     3,
+     15,
+     881256,
+     1,
+     0,
+     0,
+     168543
+    ],
+    "charged": 298112,
+    "delta": 129569,
+    "ranks": [
+     1,
+     1,
+     0
+    ],
+    "remaining": [
+     625000,
+     625000,
+     625000
+    ],
+    "service": [
+     168543,
+     129569,
+     0
+    ],
+    "start": 256256,
+    "due": 881256,
+    "stop": 385825
+   }
+  },
+  "mlq-exited": {
+   "rows": 3,
+   "exceptions": 2,
+   "service": [
+    176222,
+    125314,
+    0
+   ],
+   "terminal": {
+    "row": 2,
+    "owner": 1,
+    "event": 1,
+    "result": 0,
+    "ready": [],
+    "choice": 4,
+    "boost": 0,
+    "ext": [
+     0,
+     1,
+     625000,
+     0,
+     0,
+     15,
+     891325,
+     1,
+     0,
+     0,
+     176222
+    ],
+    "charged": 301536,
+    "delta": 125314,
+    "ranks": [
+     1,
+     1,
+     0
+    ],
+    "remaining": [
+     625000,
+     625000,
+     625000
+    ],
+    "service": [
+     176222,
+     125314,
+     0
+    ],
+    "start": 266325,
+    "due": 891325,
+    "stop": 391639
+   }
+  },
+  "mlq-saturated": {
+   "rows": 25,
+   "exceptions": 24,
+   "service": [
+    865755,
+    7677069,
+    7542977
+   ],
+   "terminal": {
+    "row": 24,
+    "owner": 0,
+    "event": 1,
+    "result": 0,
+    "ready": [],
+    "choice": 4,
+    "boost": 0,
+    "ext": [
+     0,
+     0,
+     625000,
+     0,
+     0,
+     15,
+     16687744,
+     1,
+     0,
+     15068301,
+     15964466
+    ],
+    "charged": 16085801,
+    "delta": 121335,
+    "ranks": [
+     0,
+     2,
+     2
+    ],
+    "remaining": [
+     625000,
+     625000,
+     625000
+    ],
+    "service": [
+     865755,
+     7677069,
+     7542977
+    ],
+    "start": 16062744,
+    "due": 16687744,
+    "stop": 16184079
+   }
+  },
+  "mlfq-delayed": {
+   "rows": 15,
+   "exceptions": 14,
+   "service": [
+    40262226,
+    10133885,
+    9966062
+   ],
+   "terminal": {
+    "row": 14,
+    "owner": 1,
+    "event": 1,
+    "result": 0,
+    "ready": [],
+    "choice": 4,
+    "boost": 0,
+    "ext": [
+     0,
+     2,
+     2368080,
+     4,
+     0,
+     15,
+     62837999,
+     1,
+     0,
+     60070876,
+     60230253
+    ],
+    "charged": 60362173,
+    "delta": 131920,
+    "ranks": [
+     2,
+     2,
+     2
+    ],
+    "remaining": [
+     2372559,
+     2368080,
+     2500000
+    ],
+    "service": [
+     40262226,
+     10133885,
+     9966062
+    ],
+    "start": 60337999,
+    "due": 62837999,
+    "stop": 60469919
+   }
+  }
+ },
+ "archive": {
+  "encoding": "Ordered base64 chunks of gzip tar",
+  "parts": [
+   "evd-046-raw-01.json",
+   "evd-046-raw-02.json",
+   "evd-046-raw-03.json",
+   "evd-046-raw-04.json",
+   "evd-046-raw-05.json",
+   "evd-046-raw-06.json",
+   "evd-046-raw-07.json",
+   "evd-046-raw-08.json"
+  ],
+  "sha256": "cad4e8dac15209b6b9f79ac9be938f41dd62b17067aad91894c43461408c0fe3",
+  "restore_python": "from pathlib import Path\nimport json,base64,hashlib,tarfile,io\na=json.loads(Path('evd-046.json').read_bytes())['archive']; parts=[]\nfor name in a['parts']:\n    o=json.loads(Path(name).read_bytes()); b=base64.b64decode(o['data'],validate=True); assert hashlib.sha256(b).hexdigest()==o['sha256']; parts.append(b)\nb=b''.join(parts); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for name,h in json.load(t.extractfile('archive-file-digests.json')).items():\n        p=Path('evd-046-raw')/name; assert p.resolve().is_relative_to(Path('evd-046-raw').resolve()); b=t.extractfile(name).read(); assert hashlib.sha256(b).hexdigest()==h; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b)",
+  "replay": "Run restore_python with Python 3.9+ beside the JSON and chunks. In a disposable extraction run python -B evd-046-raw/ml46-fresh/verify.py to regenerate all six row ledgers. The separate original check_images.py also needs digest-matching ELF binaries at the paths specified in the included ml46-builds/index.json. Collection commands, symbol tables, disassemblies, ELF hashes, original image-verifier output, UART, QMP, RAM, terminal controls and interrupt streams are included."
+ }
+}
