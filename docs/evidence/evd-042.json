@@ -1,0 +1,37 @@
+{
+  "evidence_id": "EVD-042",
+  "issue": 94,
+  "implementation": "IMP-042",
+  "policy": "POL-004",
+  "verdict": "PARTIAL",
+  "versions": [
+    {
+      "version": 1,
+      "verdict": "PARTIAL",
+      "source": "d17ce2d36c7c9bc4db40dc60fccec4f0ebfc8d29",
+      "captures": 23,
+      "scope": "Single-core QEMU virt, PL061 register readback, local Rust sender",
+      "summary": {
+        "deterministic_handoffs_passed": 4,
+        "deterministic_state_scripts_passed": 9,
+        "default_clock_cases_inhibited_before_enable": 8,
+        "exact_boundaries_unqualified": 2
+      },
+      "english": "evd-042-v1.en.md",
+      "korean": "evd-042-v1.md",
+      "evidence": "evd-042-v1.json",
+      "evidence_sha256": "4a1ebc573b69f9111997e0d6d05a859301ca79edafccb8ce9ad48b82deecbd7f",
+      "reviewer_manifest_sha256": "f2b3b666fb4d5d876b605307d56dd0a59ba02d690f7ec1190ba58f21cd04f8b4"
+    }
+  ],
+  "pending_candidate": {
+    "source": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
+    "status": "Awaiting independent runtime verdict"
+  },
+  "limits": [
+    "External board and electrical signal",
+    "Safety IPC transport",
+    "Measured admission-budget provenance and general timing bounds",
+    "Full #94 release qualification"
+  ]
+}

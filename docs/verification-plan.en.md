@@ -90,4 +90,4 @@ CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-0
 
 [POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. The first runtime review is partial.
 
-POL-004 / IMP-042. Four deterministic handoffs passed; eight default-clock cases and two exact-boundary cases remain unqualified. [EVD-042 v1](evidence/evd-042-v1.en.md)
+POL-004 / IMP-042. The v1 verdict is partial: four deterministic handoffs and nine scripts passed. Eight default-clock cases inhibited before enable, and two exact-boundary cases missed their targets. [EVD-042](evidence/evd-042.en.md)
