@@ -178,6 +178,6 @@ CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust r
 
 CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage.  [Capture format and build](ordinary-partition-capture.en.md)
 
-POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. All four delayed virtual timer notifications exceeded the original 1 ms envelope at injection and recovered to the specified window. No unrelated edge exceeded the limit. Live worker masking remains unverified. [EVD-044 · delayed notice](evidence/evd-044-notice.en.md) [EVD-044 v2](evidence/evd-044-v2.en.md)
 
 POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
