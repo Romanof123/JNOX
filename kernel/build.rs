@@ -37,7 +37,10 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_control_case, values("handoff-healthy", "handoff-loss", "healthy", "loss", "late", "demand", "worst", "tie", "early-command", "expired-command", "no-command", "missing-permit", "invalid", "silence", "saturation", "recovery", "old-generation"))"#);
     let scenario = selector("JNOX_CONTROL_CASE");
     println!("cargo::rustc-check-cfg=cfg(jnox_control_markers)");
+    let descriptor = selector("JNOX_CONTROL_DESCRIPTOR");
     if let Some(value) = selector("JNOX_CONTROL_MARKERS") {
+        assert!(descriptor.is_none(),
+            "JNOX_CONTROL_MARKERS and JNOX_CONTROL_DESCRIPTOR require separate builds");
         assert!(value == "1" && profile.as_deref() == Some("periodic")
             && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
             && scenario.as_deref() == Some("healthy"),

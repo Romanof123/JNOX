@@ -33,9 +33,11 @@ EVD-050 v2의 기본 시계 128회 모두 62.5 MHz에서 제어 서비스 상한
 From kernel/ in the native Linux workspace, save each resulting ELF, hash, disassembly and Cargo invocation before the next build. For DM replace control-rm with control-dm in both commands. Pair against the independently established archived stock hash, versioning any different baseline before pairing. / Linux 로컬 작업공간의 kernel/에서 다음 빌드 전에 각 ELF·해시·역어셈블리·명령을 보존한다. DM은 두 명령 모두 control-dm으로 바꾼다. 기존 기준 ELF 해시와 다르면 별도 기준판으로 기록한다.
 
 ```sh
-env -u JNOX_CONTROL_MARKERS JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy cargo build --release
-JNOX_CONTROL_MARKERS=1 JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy cargo build --release
+env -u JNOX_CONTROL_DESCRIPTOR -u JNOX_CONTROL_MARKERS JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy cargo build --release
+env -u JNOX_CONTROL_DESCRIPTOR JNOX_CONTROL_MARKERS=1 JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy cargo build --release
 ```
+
+For selector validation, build stock with both variables unset, then build markers alone as above. Setting both `JNOX_CONTROL_DESCRIPTOR=1` and `JNOX_CONTROL_MARKERS=1` must fail at build-script selection. Changing either variable reruns the selector. / 선택 검증은 두 변수를 모두 해제한 기본 빌드와 계측만 켠 빌드로 시작한다. 두 변수를 모두 1로 지정한 빌드는 선택 단계에서 실패해야 한다. 어느 변수든 변경하면 Cargo가 선택을 다시 검사한다.
 
 Preserve stock UART and external IRQ/ERET trace per cold boot. After CONTROL END, stop QEMU via QMP. Read control_marker_journal address and extent from the matched ELF with nm -S, then use QMP pmemsave. Keep the binary, symbol output, ELF hash and launch arguments. From repository root run `python tools/control_service_markers.py journal.bin uart > markers.json`. The 57,368-byte little-endian journal has three u64 header words (number reserved, overflow, sealed), then 1,024 rows of seven u64 words (kind, t, a, b, write-start, write-end, reservation+1). The decoder rejects unsealed, incomplete or overflowed captures. Overflow sets a flag while ordinary safety processing continues. / 콜드 부팅마다 기존 UART와 외부 IRQ/ERET 기록을 보관한다. CONTROL END 뒤 QMP stop 후 해당 ELF에서 nm -S로 찾은 심볼 주소와 크기로 pmemsave한다. 위 명령으로 해독한다. 헤더는 예약 수·초과·봉인, 1,024행은 종류·t·a·b·쓰기 시작·쓰기 종료·예약 번호+1이다. 미봉인·누락·초과는 판정할 수 없다. 초과하면 표시를 남기고 기존 안전 처리를 계속한다.
 
