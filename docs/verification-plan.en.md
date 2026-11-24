@@ -149,3 +149,7 @@ CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile
 CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
 
 CHG-067 · [Ordinary Rust mutex workload and batch ownership criteria](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
+
+CHG-061 · [OFF-only comparison collector and synthetic controls](permit-observer-cost-plan.md) · VER-002/003/005/023
+
+[CHG-069 · 16 OFF-only launches and eight paired comparisons](evidence/permit-observer-cost-v3.en.md)

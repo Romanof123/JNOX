@@ -1,0 +1,495 @@
+{
+  "case": "Independent integrated #144 / CHG-069 OFF-only collector host gate",
+  "verdict": "PASS for the archived OFF-only study and integrated host controls; the LF checkout by itself fails strict byte identity with the measured CRLF scripts.",
+  "independence": "Protocol frozen before opening code or captured evidence. Public commit fetched into an isolated checkout and tree checked against the provided staged integration. No new guest launch, build, hardware execution or publication. The six subprocess controls are deliberately ordinary Python programs replaying files.",
+  "candidate": "e067c1a425cd4ec32760b70d53d01838aa3b165f",
+  "tree": "85cd2f656b356ad33d59c9c0276838bb56d8366d",
+  "measured_source": "34ef5fa604e09258d5711642272677bce97643cc",
+  "completed_capture_commit": "2c79c5f0aaf1bc759fdb21c4a8d6dd8bbb0f102f",
+  "archive": {
+    "bytes": 292777,
+    "sha256": "019f0aa70f8fb6652251f6ec1cce0ee6e1c99de96772d920dcdccfdda46b6a24"
+  },
+  "coverage": {
+    "unique_zip_entries": 170,
+    "sha256sums_entries": 168,
+    "sha256sums_exclusions": [
+      "SHA256SUMS",
+      "inventory.json"
+    ],
+    "inventory_files": 168,
+    "privacy_mapped": 19,
+    "identical_original_public_files": 149,
+    "raw_streams": 64,
+    "per_position_results": 16,
+    "native_ext4_to_durable_replica": {
+      "native_source_present": true,
+      "positions_checked": 16,
+      "files_checked": 80,
+      "mismatches": 0
+    },
+    "full_position_aggregate_receipts_checked": 16,
+    "public_original_receipt_rule": "Map public metadata to preserved original hashes and lengths before checking original manifests. All 19 changes were reproduced via the private cohort-prefix / hostname substitutions without recording their values. Two synthetic preflight symlinks are represented by inventory targets rather than regular ZIP members."
+  },
+  "inputs": "Four frozen v3 images match the four canonical EVD-054 first-source ELFs byte for byte. The separately packaged EVD-054 integration images all have different hashes. Six measured Python files are identical as Git blobs at study, finished-capture and public-merge revisions. The four frozen runtime dependencies and both vector files are exact LF-to-CRLF expansions. All six actual files in the original supplied staging checkout and the ZIP have the measured CRLF bytes. No Python semantic equivalence claim substitutes for the raw freeze check.",
+  "image_identities": {
+    "rm-off-1": {
+      "evd-054-first": "576623513c85e0e4355d24e56278e21259a22f0a0f245fdcd38dc5078f89d1a8",
+      "evd-054-integration": "44384147d465f01c05e4c88f9d8614916e98c7ac6acd7b0a84a68819b11be67b"
+    },
+    "rm-off-2": {
+      "evd-054-first": "28d6d97b150bd469ca3a99b3f372d660b33abef3e60900392f623a95065aeecb",
+      "evd-054-integration": "9ccc58e1ca9e303fa7214a7c6fc858b431a39e98446a77e09146c81676e9d9df"
+    },
+    "dm-off-1": {
+      "evd-054-first": "ba717cbaa75c001fb662dff175523d85c76ae48fa2fb9899df9dcdcf0418c35f",
+      "evd-054-integration": "8ffbff67e0188a4b8ec7eab237003813afb5c3cc40e864daaab023f5569def4a"
+    },
+    "dm-off-2": {
+      "evd-054-first": "5cf396115ec95777d6ee455c612ecb5da9ea5a5dd1a596506ccae0bec2333f92",
+      "evd-054-integration": "f4e61e05db5e381c6a70f9cbc5aea8d8d54537073a0cd4792ce5876a21d7784f"
+    }
+  },
+  "code_identities": {
+    "tools/permit_cost_guard.py": {
+      "git_blob": "0e257fdc3e24d1bd36a6f2104f6dafba29605fd4",
+      "lf_sha256": "d2688744767fd7bf48e8f64223d41f0f1214a6f92b889774b7eea829b2ea8290",
+      "measured_crlf_sha256": "506767bd254292473409d99391cb12bbdb81db73a02f391e0ae7acb2e64311cd",
+      "frozen_runtime": true
+    },
+    "tools/permit_cost_guard_vectors.py": {
+      "git_blob": "7749c5ac87722edb052a9c3178f230cfd2c9840c",
+      "lf_sha256": "309cefbe0593752fd7adea437bc75e97de860d0c66cbeb39a7a7562dcad45ee7",
+      "measured_crlf_sha256": "e0335f48ea6580990e47aece425884d679763a3e3ea2b137e91e1df1d9aa0777",
+      "frozen_runtime": false
+    },
+    "tools/permit_cost_retention.py": {
+      "git_blob": "54ea236712e95126ea9b7b897450dc658fd28f5b",
+      "lf_sha256": "bb574e006ac1749379240fbc8e64765dafae16fab9ddc3de4ce9af14eb06cb10",
+      "measured_crlf_sha256": "20afabcf6a21f46a19a280f1eac6c724107fc534c97dc3cf83a39ad4b83c7038",
+      "frozen_runtime": true
+    },
+    "tools/permit_cost_retention_vectors.py": {
+      "git_blob": "850a744a83cc39ac823d284911e5601a63c0d743",
+      "lf_sha256": "784e7325c1f600d12023d9db782df59a0396567f19b47e7a96cc25f56a0d8f2a",
+      "measured_crlf_sha256": "adddb3bf25956ff531ce12c2dc17527ccf641ac62c425407fa76e88f70dbd02c",
+      "frozen_runtime": false
+    },
+    "tools/permit_observer_cost.py": {
+      "git_blob": "a96ab825dad74103993346187797504eb882a297",
+      "lf_sha256": "91afe87b3f89cb99755b0df982ed1887a864ef25290b950ecc7ff2583ad8f3f0",
+      "measured_crlf_sha256": "4444587f3c38ebb1432cebf2d03ad43f032058f5ac13137a647ef045b7dbf1a0",
+      "frozen_runtime": true
+    },
+    "tools/permit_phase_observations.py": {
+      "git_blob": "42365302d2d457907e0e93eb4b4680bbfd1b81d5",
+      "lf_sha256": "1eaa4200ce78afa6988aac021d499ae3789e00f9fa2c0ebb4c2126c770f8c2f2",
+      "measured_crlf_sha256": "76f65fd3087e7992212c0af085e34090ab1054112ad55b6e9e50e17ef863bf2a",
+      "frozen_runtime": true
+    }
+  },
+  "capture_history": "v1 reached one of 16 launches, failed on stderr and retained only a mechanism excerpt. Zero complete pairs. v2 preflight accepted an unmanifested file and stopped before launching. v3 contains 16 observed-off-only host captures and eight adjacent pairs. Reviewed first-run dispositions, termination receipts and serial transfers before subsequent recorded starts.",
+  "guest_event_counts": {
+    "counter_Hz": 62500000,
+    "scheduled_opportunities": 112,
+    "unattempted": 112,
+    "attempt_rows_71": 0,
+    "publication_rows_74": 0,
+    "command_ingress_rows_76": 0,
+    "receipt_rows_78": 0,
+    "operational_rearm_rows_20": 0,
+    "actual_edge_rows_14": 0,
+    "zero_write_requests_80": 33,
+    "zero_before_readbacks_81": 33,
+    "zero_after_readbacks_82": 33,
+    "faults": {
+      "103": 15,
+      "107": 1
+    },
+    "fault_107_position": "03-rm-off-1-R",
+    "admitted": 0
+  },
+  "timing_calculation": "Raw guest counter ticks. First service is the first tag 8 value for task index 0. First phase delay is the first tag 10 tick minus its target. First IRQ delay is the first tag 3 tick minus its preceding tag 2 compare value at the same index. Subtract F from R within each adjacent pair with identical policy, case and ELF. F permits external PL061 reads, R omits their logging. Both languages of the table and both stored summaries agree.",
+  "positions": [
+    {
+      "name": "01-rm-off-1-F",
+      "case": "rm-off-1",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        19672,
+        50784,
+        9787
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1209
+    },
+    {
+      "name": "02-rm-off-1-R",
+      "case": "rm-off-1",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        21342,
+        54914,
+        11660
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": null
+    },
+    {
+      "name": "03-rm-off-1-R",
+      "case": "rm-off-1",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        32313,
+        70855,
+        13950
+      ],
+      "guest_off_writes": 3,
+      "first_fault": 107,
+      "external_reads": null
+    },
+    {
+      "name": "04-rm-off-1-F",
+      "case": "rm-off-1",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        20354,
+        51888,
+        10372
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1308
+    },
+    {
+      "name": "05-rm-off-2-R",
+      "case": "rm-off-2",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        21740,
+        59036,
+        12007
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": null
+    },
+    {
+      "name": "06-rm-off-2-F",
+      "case": "rm-off-2",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        24228,
+        59824,
+        12964
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1072
+    },
+    {
+      "name": "07-rm-off-2-F",
+      "case": "rm-off-2",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        18920,
+        52274,
+        10055
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1287
+    },
+    {
+      "name": "08-rm-off-2-R",
+      "case": "rm-off-2",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        22761,
+        58733,
+        11697
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": null
+    },
+    {
+      "name": "09-dm-off-1-F",
+      "case": "dm-off-1",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        22716,
+        59644,
+        14742
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1298
+    },
+    {
+      "name": "10-dm-off-1-R",
+      "case": "dm-off-1",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        26994,
+        60645,
+        12388
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": null
+    },
+    {
+      "name": "11-dm-off-1-R",
+      "case": "dm-off-1",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        19835,
+        53312,
+        11585
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": null
+    },
+    {
+      "name": "12-dm-off-1-F",
+      "case": "dm-off-1",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        23666,
+        58241,
+        11969
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1226
+    },
+    {
+      "name": "13-dm-off-2-R",
+      "case": "dm-off-2",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        22095,
+        56054,
+        10580
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": null
+    },
+    {
+      "name": "14-dm-off-2-F",
+      "case": "dm-off-2",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        20727,
+        54677,
+        11480
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1212
+    },
+    {
+      "name": "15-dm-off-2-F",
+      "case": "dm-off-2",
+      "logging": "F",
+      "first_service_phase_irq_ticks": [
+        19833,
+        52251,
+        10382
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": 1215
+    },
+    {
+      "name": "16-dm-off-2-R",
+      "case": "dm-off-2",
+      "logging": "R",
+      "first_service_phase_irq_ticks": [
+        21438,
+        57424,
+        11074
+      ],
+      "guest_off_writes": 2,
+      "first_fault": 103,
+      "external_reads": null
+    }
+  ],
+  "within_pair_ticks": [
+    {
+      "positions": [
+        "01-rm-off-1-F",
+        "02-rm-off-1-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 1670,
+        "first_phase_delay": 4130,
+        "first_irq_delay": 1873
+      }
+    },
+    {
+      "positions": [
+        "03-rm-off-1-R",
+        "04-rm-off-1-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 11959,
+        "first_phase_delay": 18967,
+        "first_irq_delay": 3578
+      }
+    },
+    {
+      "positions": [
+        "05-rm-off-2-R",
+        "06-rm-off-2-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": -2488,
+        "first_phase_delay": -788,
+        "first_irq_delay": -957
+      }
+    },
+    {
+      "positions": [
+        "07-rm-off-2-F",
+        "08-rm-off-2-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 3841,
+        "first_phase_delay": 6459,
+        "first_irq_delay": 1642
+      }
+    },
+    {
+      "positions": [
+        "09-dm-off-1-F",
+        "10-dm-off-1-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 4278,
+        "first_phase_delay": 1001,
+        "first_irq_delay": -2354
+      }
+    },
+    {
+      "positions": [
+        "11-dm-off-1-R",
+        "12-dm-off-1-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": -3831,
+        "first_phase_delay": -4929,
+        "first_irq_delay": -384
+      }
+    },
+    {
+      "positions": [
+        "13-dm-off-2-R",
+        "14-dm-off-2-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 1368,
+        "first_phase_delay": 1377,
+        "first_irq_delay": -900
+      }
+    },
+    {
+      "positions": [
+        "15-dm-off-2-F",
+        "16-dm-off-2-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 1605,
+        "first_phase_delay": 5173,
+        "first_irq_delay": 692
+      }
+    }
+  ],
+  "directions_reduced_minus_full": {
+    "first_service_positive_negative": [
+      6,
+      2
+    ],
+    "first_phase_positive_negative": [
+      6,
+      2
+    ],
+    "first_IRQ_positive_negative": [
+      4,
+      4
+    ]
+  },
+  "host_independent_controls": {
+    "ack": {
+      "disposition": "observed-off-only",
+      "host_status": 0,
+      "termination_output": "matched-sigterm-ack"
+    },
+    "silent": {
+      "disposition": "observed-off-only",
+      "host_status": 0,
+      "termination_output": "silent-terminal-stop"
+    },
+    "edge": {
+      "disposition": "containment",
+      "host_status": 0,
+      "first_failure": "ContainmentError: pl061_set_output /machine/unattached/device[6] setting output 0 to 1"
+    },
+    "read-in-reduced": {
+      "disposition": "incomplete",
+      "host_status": 0,
+      "first_failure": "ValueError: read logging enabled in reduced arm"
+    },
+    "late-noise": {
+      "disposition": "incomplete",
+      "host_status": 0,
+      "first_failure": "ValueError: unexpected, mixed or incomplete emulator stderr"
+    },
+    "early-exit": {
+      "disposition": "incomplete",
+      "host_status": 0,
+      "first_failure": "ValueError: guest exited before terminal"
+    },
+    "retained-positive": "five artifacts, source and replica hashes, manifest exact",
+    "same-size-final-mutation": "published manifest, source or replica mismatch",
+    "empty-source-directory": "unexpected entry or type: unexpected",
+    "source-extra-symlink": "unexpected symlink: unexpected"
+  },
+  "repository_host_tests": {
+    "permit_cost_guard_vectors.py": 6,
+    "permit_cost_retention_vectors.py": 7,
+    "test_scheduling_evidence.py": 6,
+    "test_scheduling_footprint.py": 4,
+    "scheduling_evidence.py_graph_findings": [],
+    "overall_exit_code": 0,
+    "additional_structural_checks": "Both published language tables agreed with recomputation. All local links in these two documents resolved."
+  },
+  "scope_limitations": [
+    "Single existing cohort, programmatically checked by independent host replay. F/R timing differences do not establish a uniform optimization or causal per-read cost.",
+    "The external PL061 records have no tick-to-guest clock mapping and R has no external read observations. Zero readbacks in this model cannot establish device timing, actual ON behavior, physical safety, product approval or operational admission.",
+    "The CLI retained-file publication path was exercised by genuine filesystem fixtures. New host controls use synthetic Python children and original recorded files, with no full-system guest, new build, or new cross-device publication.",
+    "An LF-only clean checkout fails the four measured runtime byte-hash checks. The archived measured script files or a byte-equivalent CRLF materialization reproduce those hashes."
+  ],
+  "commands": [
+    "python -B reconstruct.py",
+    "WSL Ubuntu: python3 -B controls.py",
+    "WSL Ubuntu: python3 -B native_check.py",
+    "From immutable public source under WSL Ubuntu: python3 -B tools/permit_cost_guard_vectors.py; python3 -B tools/permit_cost_retention_vectors.py; python3 -B tools/test_scheduling_evidence.py; python3 -B tools/scheduling_evidence.py; python3 -B tools/test_scheduling_footprint.py",
+    "python -B finish_report.py"
+  ],
+  "supporting_artifacts": {
+    "protocol.md": "591880dfc8645c25462b903aa1eca57996c856aa1031462dd679a7d4b3ae1fa8",
+    "reconstruct.py": "aa09cd35c21315eb946a2e4cfd62391723818b34ffce2b38acdf34a4c5b12ec4",
+    "reconstruction.json": "ebac946067ab99680ab54b34590e6fdad45aef569607084b5aeb0f6bfdb0714d",
+    "controls.py": "000c98b8fd51de6a96c6b5090973d1db6f868d65afb1d56c38f15da7c3d217ca",
+    "controls.json": "0ce07fbf0ad471eb53fd91f0ff6f9f29a4daa1faf2b7de2f64e94187921a505b",
+    "native_check.py": "768d3b22ed03e40666e2b92dcf17f36aeed672b05fc7c38e2227b1b81bd75f41",
+    "native-check.json": "541ca293b690d73b60d7cd8910cba8fa15da0faedcbbf331bc57dd5270612dbe",
+    "graph.json": "c64584a13c095c4a716cf0394a5294318bf06f790e6f8173ed128047b73cd0e5"
+  }
+}
