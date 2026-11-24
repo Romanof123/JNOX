@@ -8,7 +8,7 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 서비스 
 
 AArch64 QEMU `virt`에서 네이티브 v1 SDK로 빌드한 정적 C 실행 파일 하나가 사용자 모드(EL0)에 진입해 37을 계산하고 종료값 37을 전달했습니다. 표준 출력 쓰기 시스템 호출은 `-ENOSYS`를 반환했고 출력은 0바이트였습니다. [네이티브 C 시작·종료 검증](docs/native-el0-startup.md)
 
-AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO와 라운드로빈으로 실행할 수 있습니다. 두 정책 모두 Raspberry Pi 4 모델에서도 부팅했습니다. 스케줄링 출시 표에는 시험한 구성별 근거와 남은 작업이 연결되어 있습니다. [Rust 작업 실행](docs/fixed-runtime.md) · [Pi 4 모델 검증](docs/evidence/evd-031.md) · [스케줄링 출시 표](docs/scheduling-release-cases.md)
+AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO와 라운드로빈으로 실행할 수 있습니다. 두 정책 모두 Raspberry Pi 4 모델에서도 부팅했습니다. 별도의 Pi 4 모델 실행 6회에서는 중단된 CRC 작업이 전역 스케줄링에서 다른 코어로, 분할·클러스터 스케줄링에서 같은 코어로 복귀해 계산을 마쳤습니다. [CRC 작업 복귀 기록](https://github.com/Romanof123/JNOX/blob/447e777d7a007fef405d5f9a6ac3c38ead475a15/docs/evidence/pi4-crc-mainline-first.en-ko.md) 스케줄링 출시 표에는 시험한 구성별 근거와 남은 작업이 연결되어 있습니다. [Rust 작업 실행](docs/fixed-runtime.md) · [Pi 4 모델 검증](docs/evidence/evd-031.md) · [스케줄링 출시 표](docs/scheduling-release-cases.md)
 
 단일 코어 QEMU에서 세 배치 정책으로 표본 요약, 임계값 이상 표본 집계, 잘못된 입력 거절을 확인했습니다. 별도의 중첩 그룹 작업은 할당량 창 세 개에 걸쳐 재개되어 누적 합계 100224를 확인했습니다. [배치 결과](docs/evidence/admitted-telemetry-batch-first.en-ko.md) · [중첩 그룹 결과](docs/evidence/recurring-hierarchical-first.en-ko.md)
 
