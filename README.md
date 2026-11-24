@@ -2,7 +2,9 @@
 
 English · [한국어](README.ko.md)
 
-**Just-enough Nucleus, Open eXtensions.** J-NOX is a Rust real-time microkernel project for embedded systems. Its architecture calls for a small kernel, isolated services, native Rust drivers and a compatibility domain for Linux drivers.
+J-NOX is a lightweight real-time microkernel written in Rust for embedded systems with functional safety requirements.
+
+The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture calls for isolated services, native Rust drivers and a compatibility domain for Linux drivers.
 
 On AArch64 QEMU, the kernel runs linked Rust tasks using fixed-priority FIFO or round robin. Both policies also boot on the Raspberry Pi 4 model. The scheduling release matrix links each tested configuration to its evidence and lists the remaining work. [Run linked Rust tasks](docs/fixed-runtime.en.md) · [Pi 4 model results](docs/evidence/evd-031.en.md) · [Scheduling release matrix](docs/scheduling-release-cases.en.md)
 
@@ -22,6 +24,7 @@ On AArch64 QEMU, the kernel runs linked Rust tasks using fixed-priority FIFO or 
 | [M1 equal-priority FIFO](docs/m1-fifo.en.md) | Acceptance criteria for ready order, voluntary yield and resumption of equal-priority threads |
 | [Run linked Rust tasks](docs/fixed-runtime.en.md) | Build the AArch64 fixed-priority runtime, select an application table and boot it with FIFO or round robin |
 | [Run ordinary Rust batch jobs](docs/ordinary-batch.en.md) | Submit and release jobs, compare SJF/SRTF/HRRN and recover linked frames from a QEMU capture |
+| [Run multilevel queues](docs/ordinary-multilevel.en.md) | Run linked Rust workers under MLQ and MLFQ and inspect how blocking, demotion and priority boosts affect dispatch |
 | [Scheduling policies and round robin](docs/scheduling-policies.en.md) | Selection, budget and isolation contracts, with execution evidence by policy |
 | [IPC profiles](docs/ipc-mechanisms.en.md) | Ten IPC families, their resource limits and acceptance cases after scheduling qualification |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
