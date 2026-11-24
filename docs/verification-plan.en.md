@@ -135,3 +135,5 @@ VER-002/005/023 · Twenty-two of 24 boots inhibited. Two descriptor DM boots acc
 CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
 
 IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journals. None of six integrated control boots qualified operationally. [EVD-052](evidence/evd-052.en.md)
+
+CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
