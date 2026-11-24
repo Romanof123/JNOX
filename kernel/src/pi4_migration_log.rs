@@ -86,6 +86,18 @@ impl Drop for LocalWriter {
 /// Index i becomes visible only after its tag and all eight words are complete.
 pub(crate) fn event(cpu: usize, tag: u64, data: [u64; WORDS]) {
     let local = LocalWriter::enter();
+    append(&local, cpu, tag, data);
+}
+
+/// Publish the adjacent summary and commit separately while the SVC owns this CPU.
+pub(crate) fn terminal(cpu: usize, summary: [u64; WORDS], commit: [u64; WORDS]) {
+    let local = LocalWriter::enter();
+    append(&local, cpu, 13, summary);
+    append(&local, cpu, 9, commit);
+}
+
+#[inline(always)]
+fn append(local: &LocalWriter, cpu: usize, tag: u64, data: [u64; WORDS]) {
     if cpu != local.cpu || cpu >= LOG.len() {
         INVALID.store(true, Ordering::Release);
         return;
