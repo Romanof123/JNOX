@@ -22,3 +22,5 @@ python3 "$REPO/tools/mutex_chain_replay.py" trace.uart
 CHAIN RAW 1 retains the original mutex E field order plus remaining ready and wait queue order, encoded oldest first in nibbles (task ID + 1). E rank bytes are the pre-dispatch snapshot. H reports termination reason, decisions and assembly restores. T records frequency, arm, target, IAR, IRQ CTL and CVAL. S identifies stack bounds and frame size. P contains BASE count/sum, LOW published count/sum, HIGH returned timeout and independent MEDIUM sum. BASE exits last with no successor. The terminal header follows that exit. Preserve external trace for independent instruction-level review.
 
 [Independent verification of the first six QEMU boots](evidence/ordinary-timed-chain-first.en-ko.md).
+
+[First combined-main trial and held control results / 최초 통합 기록](evidence/ordinary-timed-chain-integration.en-ko.md).
