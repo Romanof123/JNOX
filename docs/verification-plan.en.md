@@ -139,3 +139,5 @@ IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journa
 CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
 
 CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
+
+CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)

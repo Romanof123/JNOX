@@ -183,3 +183,5 @@ POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에�
 POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 번의 콜드 부팅에서 IRQ 6회 후 PASS에 도달했다. 의도적 음성 대조군은 첫 A 마커에서 조건 99, 실제값 0, 기대값 1을 기록했다. 기존 PART FAIL의 원인은 미확정이다. [EVD-047](evidence/evd-047.md)
 
 CHG-060 · CAP-013 · [애플리케이션 추적 계약](application-tracing.md)
+
+CHG-063 · POL-002 · [Pi 4 시험 이미지의 FIFO/RR 실행 증거](boards/pi4-fixed-runtime.md#chg-063)
