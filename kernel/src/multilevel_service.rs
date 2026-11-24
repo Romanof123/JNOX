@@ -24,6 +24,10 @@ struct Runtime {
     due: u64,
     service: [u64; CAP],
     total: u64,
+    #[cfg(jnox_multilevel_limits)]
+    actual_compare: u64,
+    #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+    arm_control: u64,
     period: Option<u64>,
 }
 global_asm!(
@@ -70,6 +74,17 @@ pub fn counter() -> u64 {
     let now;
     unsafe { asm!("isb", "mrs {}, cntpct_el0", out(reg) now, options(nostack, preserves_flags)) }
     now
+}
+
+#[cfg(jnox_multilevel_limits)]
+#[unsafe(no_mangle)]
+static mut multilevel_terminal_ctl: u64 = u64::MAX;
+
+#[cfg(jnox_multilevel_limits)]
+fn timer_control() -> u64 {
+    let ctl;
+    unsafe { asm!("mrs {}, cntp_ctl_el0", out(reg) ctl, options(nostack, preserves_flags)) }
+    ctl
 }
 
 fn disable_timer() {
@@ -131,6 +146,10 @@ pub fn run(tasks: &'static [Task], mode: Mode) -> ! {
         start: 0,
         due: 0,
         total: 0,
+        #[cfg(jnox_multilevel_limits)]
+        actual_compare: 0,
+        #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+        arm_control: 0,
     };
     for (id, task) in tasks.iter().enumerate() {
         runtime.frames[id] = initial_frame(
@@ -161,6 +180,10 @@ struct Event {
     boost: bool,
     frame: *mut Frame,
     source: u64,
+    #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+    pre_reset: [u64; 3],
+    #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+    before: u64,
 }
 
 impl Runtime {
@@ -174,10 +197,21 @@ impl Runtime {
         self.owner = self.policy.dispatch();
         #[cfg(jnox_multilevel_trace)]
         record(self, &event, queue);
-        #[cfg(not(jnox_multilevel_trace))]
+        #[cfg(all(not(jnox_multilevel_trace), not(jnox_multilevel_limits)))]
         let _ = event;
         let Some(id) = self.owner else {
             disable_timer();
+            #[cfg(jnox_multilevel_limits)]
+            {
+                let ctl = timer_control();
+                unsafe { ptr::write_volatile(&raw mut multilevel_terminal_ctl, ctl); }
+                #[cfg(jnox_multilevel_trace)]
+                unsafe {
+                    let j = &mut *(&raw mut ordinary_multilevel_witness);
+                    j.limits[j.count as usize - 1][8] = ctl;
+                }
+                if ctl & 1 != 0 { fail() }
+            }
             if self.live.contains(&true) {
                 super::uart_write(b"MULTILEVEL STALL\n");
             } else {
@@ -191,9 +225,37 @@ impl Runtime {
         }
         self.start = counter();
         self.due = self.start.checked_add(grant).unwrap_or_else(|| fail());
+        let compare = self.due;
+        #[cfg(jnox_app = "mlfq-delayed")]
+        let compare = if event.owner.is_none() {
+            let period = self.period.unwrap_or_else(|| fail());
+            period.checked_mul(3).and_then(|n| n.checked_add(period / 4))
+                .and_then(|n| self.start.checked_add(n)).unwrap_or_else(|| fail())
+        } else { compare };
+        #[cfg(any(jnox_app = "mlq-saturated", jnox_app = "mlfq-delayed"))]
+        if event.owner.is_none() {
+            // Both peers use this one absolute end, measured from initial dispatch.
+            let units = if cfg!(jnox_app = "mlq-saturated") { 24 } else { 96 };
+            let end = (frequency() / 100).checked_mul(units)
+                .and_then(|n| self.start.checked_add(n)).unwrap_or_else(|| fail());
+            super::multilevel_apps::WORK_END.store(end, core::sync::atomic::Ordering::Relaxed);
+            #[cfg(jnox_multilevel_trace)]
+            unsafe {
+                let j = &mut *(&raw mut ordinary_multilevel_witness);
+                j.limits[j.count as usize - 1][9] = end;
+            }
+        }
         unsafe {
             asm!("msr cntp_cval_el0, {}", "msr cntp_ctl_el0, {}", "isb",
-            in(reg) self.due, in(reg) 1u64, options(nostack, preserves_flags))
+            in(reg) compare, in(reg) 1u64, options(nostack, preserves_flags))
+        }
+        #[cfg(jnox_multilevel_limits)]
+        {
+            unsafe { asm!("mrs {}, cntp_cval_el0", out(reg) self.actual_compare, options(nostack, preserves_flags)); }
+            let ctl = timer_control();
+            if self.actual_compare != compare || ctl & 3 != 1 { fail() }
+            #[cfg(jnox_multilevel_trace)]
+            { self.arm_control = ctl; }
         }
         self.frames[id]
     }
@@ -236,6 +298,12 @@ impl Runtime {
         {
             fail()
         }
+        #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+        let pre_reset = [
+            self.policy.queued().iter().fold(0, |q, id| (q << 4) | (*id as u64 + 1)),
+            self.policy.priority(id).unwrap_or_else(|| fail()) as u64,
+            self.policy.remaining(id).unwrap_or_else(|| fail()),
+        ];
         let boost = self.period.is_some_and(|p| self.total / p != before / p);
         if boost && !self.policy.boost() {
             fail()
@@ -251,6 +319,10 @@ impl Runtime {
             boost,
             frame,
             source,
+            #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+            pre_reset,
+            #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+            before,
         })
     }
 }
@@ -283,6 +355,8 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) }
     gic_write(GICC + 0x10, iar);
     let state = unsafe { state() };
+    #[cfg(jnox_multilevel_limits)]
+    if now < state.actual_compare { fail() }
     if iar & 1023 != TIMER_IRQ || ctl & 7 != 5 || now < state.due {
         fail()
     }
@@ -297,6 +371,8 @@ struct Journal {
     count: u64,
     frequency: u64,
     rows: [[u64; WORDS]; 256],
+    #[cfg(jnox_multilevel_limits)]
+    limits: [[u64; 11]; 256],
 }
 #[cfg(jnox_multilevel_trace)]
 #[unsafe(no_mangle)]
@@ -304,6 +380,8 @@ static mut ordinary_multilevel_witness: Journal = Journal {
     count: 0,
     frequency: 0,
     rows: [[0; WORDS]; 256],
+    #[cfg(jnox_multilevel_limits)]
+    limits: [[0; 11]; 256],
 };
 
 #[cfg(jnox_multilevel_trace)]
@@ -343,6 +421,21 @@ fn record(rt: &Runtime, e: &Event, queue: u64) {
             );
             // Wake's return value is installed in x0 for ERET. Preserve raw entry x0 in the copy.
             row[27] = e.arg;
+        }
+        #[cfg(jnox_multilevel_limits)]
+        {
+            fn mask(flags: &[bool]) -> u64 {
+                flags.iter().enumerate().fold(0, |bits, (id, &set)| bits | ((set as u64) << id))
+            }
+            #[cfg(any(jnox_app = "mlq-saturated", jnox_app = "mlfq-delayed"))]
+            let end = super::multilevel_apps::WORK_END.load(core::sync::atomic::Ordering::Relaxed);
+            #[cfg(not(any(jnox_app = "mlq-saturated", jnox_app = "mlfq-delayed")))]
+            let end = 0;
+            journal.limits[i] = [
+                e.pre_reset[0], e.pre_reset[1], e.pre_reset[2], rt.policy.resets,
+                mask(&rt.live), mask(rt.policy.asleep()), rt.actual_compare, rt.arm_control,
+                u64::MAX, end, e.before,
+            ];
         }
         ptr::write_volatile(&mut journal.count, i as u64 + 1);
     }

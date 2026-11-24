@@ -23,9 +23,10 @@ fn main() {
                 "JNOX_GROUP_TRACE requires 1 and JNOX_PROFILE=groups");
         println!("cargo::rustc-cfg=jnox_group_trace");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_multilevel_limits)");
     println!("cargo::rustc-check-cfg=cfg(jnox_multilevel)");
     println!("cargo::rustc-check-cfg=cfg(jnox_multilevel_trace)");
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("mlq", "mlfq"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("mlq", "mlfq", "mlq-blocked", "mlq-exited", "mlq-saturated", "mlfq-delayed"))"#);
     if let Some(value) = selector("JNOX_MULTILEVEL_TRACE") {
         assert!(value == "1" && profile.as_deref() == Some("multilevel"),
                 "JNOX_MULTILEVEL_TRACE=1 requires multilevel profile");
@@ -99,7 +100,20 @@ fn main() {
             "JNOX_FIXED_COST requires 1, virt and fixed FIFO/RR");
         println!("cargo::rustc-cfg=jnox_fixed_cost");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_ap)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_ap_late)");
+    if let Some(value) = selector("JNOX_APERIODIC_LATE") {
+        assert!(value == "1" && profile.as_deref() == Some("aperiodic"), "JNOX_APERIODIC_LATE=1 requires aperiodic profile");
+        println!("cargo::rustc-cfg=jnox_ap_late");
+    }
     match profile.as_deref() {
+        Some("aperiodic") => {
+            assert!(board == "virt" && bench == "boot", "ordinary aperiodic requires virt without benchmarks");
+            let name = app.as_deref().expect("aperiodic profile requires JNOX_APP");
+            assert!(matches!(name, "a-ps" | "a-ds" | "a-ss1" | "a-ss2" | "b-ps" | "b-ds" | "b-ss1" | "b-ss2"), "invalid aperiodic application");
+            println!("cargo::rustc-cfg=jnox_ap");
+            println!("cargo::rustc-env=JNOX_AP_APP={name}");
+        }
         Some("groups") => {
             assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(), Some("ordinary-groups" | "ordinary-groups-late")),
                     "groups requires virt, ordinary-groups or ordinary-groups-late, and no benchmark");
@@ -109,11 +123,12 @@ fn main() {
         Some("multilevel") => {
             assert!(bench == "boot" && board == "virt", "multilevel requires virt without bench features");
             match app.as_deref() {
-                Some(name @ ("mlq" | "mlfq")) => {
+                Some(name @ ("mlq" | "mlfq" | "mlq-blocked" | "mlq-exited" | "mlq-saturated" | "mlfq-delayed")) => {
+                    if name.contains('-') { println!("cargo::rustc-cfg=jnox_multilevel_limits"); }
                     println!("cargo::rustc-cfg=jnox_multilevel");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
-                _ => panic!("multilevel requires JNOX_APP=mlq or mlfq"),
+                _ => panic!("multilevel requires a supported MLQ or MLFQ application"),
             }
         }
         Some("fixed") => {
@@ -158,8 +173,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel or periodic"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel or periodic"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel, periodic or aperiodic"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel, periodic or aperiodic"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",

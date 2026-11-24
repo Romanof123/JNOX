@@ -113,3 +113,7 @@ CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-s
 For CHG-046, record P/Q controlled delayed-compare cases as separate planned tests under VER-002/005/023. Preserve actual timer readback, IRQ entry, exception return, worker/idle observations and elapsed attribution. The worker-masked cases retain their independent evidence requirement. [Timing criteria](pol-006-rust-partition-plan.en.md#additional-virtual-delayed-notice-cases)
 
 POL-004 / IMP-042. v3 remains partial. Both deterministic exact boundaries qualified. Fourteen of 23 primary cases qualified on the first attempt and 15 including one cold retry. Eight default-clock ordinary cases and four separate default-clock handoff diagnostics remained unqualified. [EVD-042](evidence/evd-042.en.md)
+
+POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)
+
+POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
