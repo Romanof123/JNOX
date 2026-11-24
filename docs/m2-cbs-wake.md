@@ -14,7 +14,9 @@ cbs-wake-bench 기능으로 빌드한다. POSIX 셸에서 보관한 ELF와 새 �
 
 ```sh
 chmod +x tools/cbs_wake_capture.py
-CBS_WAKE_CAPTURE_DIR="$capture" python3 tools/qemu_boot.py --profile cbs-wake --qemu ./tools/cbs_wake_capture.py --kernel "$elf"
+CBS_WAKE_CAPTURE_DIR="$capture" python3 tools/qemu_boot.py --profile cbs-wake --timeout 15 --qemu ./tools/cbs_wake_capture.py --kernel "$elf"
 ```
 
 기본 부팅 및 준비 출력 뒤 CBS WAKE TIMER STOP과 CBS WAKE PASS 두 줄을 확인한다. cbs_wake_witness는 리틀엔디언 u64 24열 × 34행이다. 열 0–1은 틱과 깨움 비트, 2–5는 깨운 직후의 A(q,d), B(q,d), 6은 선택 ID(A=0,B=1,유휴=2), 7–10은 과금 직후의 같은 할당이다. 11–15는 기준 카운터, 슬롯 길이, 비교값, 디스패치 PC와 프레임 주소이다. 16–19는 IRQ 카운터, 중단 ID, PC, x20이다. 20–22는 SVC 카운터, 복귀 PC, x20이며 SVC가 없으면 0이다. 열 23은 IRQ 프레임 주소이다. 첫 진입 프레임은 같은 작업의 이후 저장 프레임보다 16바이트 높다. 선택되지 않은 서버의 원시 상태를 읽을 때 지연 보충을 고려한다.
+
+계측 실행기의 호스트 시간 한도는 시작·수집·UART를 포함해 15초다. 게스트 안에서는 물리 타이머로 연속된 50 ms 슬롯 34개를 집행한다. 각 IRQ에는 기존 한 슬롯 이내의 지연 상한을 그대로 적용하고 전체 행과 종료 표식 둘을 모두 확인한다. 최초 5초 관측은 25개 행에서 끝났고 부분 실행 기록으로 보존한다.
