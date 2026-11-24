@@ -1,5 +1,5 @@
 use core::arch::{asm, global_asm};
-use core::mem::{offset_of, size_of};
+use core::mem::{align_of, offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicPtr, AtomicU64, AtomicUsize, Ordering};
 
@@ -38,6 +38,14 @@ static mut jnox_ap_returns: Returns = Returns {
 static mut PLANS: [[u64; 2]; 64] = [[NA; 2]; 64];
 static mut TRACE: [[u64; 8]; MAX_ROWS] = [[0; 8]; MAX_ROWS];
 static mut USED: usize = 0;
+// An initial frame at top(id) - size_of::<Frame>() is wholly inside that
+// fixed stack and naturally aligned. Resumed frames still need within().
+const _: () = {
+    assert!(size_of::<Stack>() == STACK_BYTES);
+    assert!(size_of::<Frame>() <= STACK_BYTES);
+    assert!(align_of::<Stack>() >= align_of::<Frame>());
+    assert!(STACK_BYTES % align_of::<Frame>() == 0);
+};
 static mut STACKS: [Stack; 3] = [const { Stack([0; STACK_BYTES]) }; 3];
 static mut RUNTIME: Option<Runtime> = None;
 static mut TERMINAL: bool = false;
@@ -98,7 +106,7 @@ fn finish(status: u64, why: u64, slot: u64, id: usize, a: u64, b: u64) -> ! {
         TERMINAL = true;
     }
     if COMPACT {
-        compact_dump()
+        stage_hooks::terminal!(compact_dump())
     }
     for i in 0..return_count().min(64) {
         let [frame, pc, t] = returned(i);
@@ -107,7 +115,7 @@ fn finish(status: u64, why: u64, slot: u64, id: usize, a: u64, b: u64) -> ! {
     }
     event(13, now(), slot, id, [status, why, a, b]);
     uart_write(if COMPACT {
-        b"RSRV RAW 3\n"
+        stage_hooks::header!(b"RSRV RAW 3\n")
     } else {
         b"RSRV RAW 1\n"
     });
@@ -546,7 +554,6 @@ impl Runtime {
         let frame = self.frames[id];
         if frame.addr() != expected.address
             || frame.addr() != top(id) - size_of::<Frame>()
-            || !within(id, frame.addr(), size_of::<Frame>())
         {
             unexpected()
         }
@@ -701,7 +708,7 @@ impl Runtime {
         for id in 0..2 {
             self.validate_first_frame(id, &p.frames[id]);
         }
-        let bank = self.destination.as_ref().unwrap_or_else(|| unexpected());
+        let bank = stage_hooks::after_frames!(self.destination.as_ref()).unwrap_or_else(|| unexpected());
         let (id, action) = bank.pending_grant().unwrap_or_else(|| unexpected());
         if !self.jobs.same_configuration(bank)
             || p.decision.owner != Some(id)
@@ -851,7 +858,10 @@ impl Runtime {
         }
         if let Some(id) = d.owner {
             let action = d.action.unwrap_or_else(|| unexpected());
-            let (count, acc, _) = snapshot(id);
+            // Both live progress records matched the retirement ledger above.
+            // IRQ is masked and no worker can run before exception return.
+            let count = self.last_count[id];
+            let acc = self.last_acc[id];
             if self.allocation_deadline[id] != d.after[id].d {
                 self.allocation_deadline[id] = d.after[id].d;
                 self.allocation_service[id] = 0;
@@ -1053,7 +1063,7 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
     }
     unsafe { asm!("msr cntp_ctl_el0,xzr", "isb", "dsb sy", options(nostack)) };
     gic_write(GICC + 0x10, iar);
-    unsafe { asm!("dsb sy", options(nostack)) };
+    stage_hooks::eoi_barrier!(slot, s.kind, unsafe { asm!("dsb sy", options(nostack)) });
     if s.kind == 1 {
         s.close(frame, entry, Action::Long, 0);
         s.arm(slot, 0, checked(s.clock.boundary(slot + 1)));
@@ -1193,3 +1203,6 @@ pub(super) fn run() -> ! {
     let frame = s.select(NA, IDLE);
     unsafe { sched_start_frame(frame) }
 }
+
+#[path = "reservation_stage_hooks.rs"]
+mod stage_hooks;

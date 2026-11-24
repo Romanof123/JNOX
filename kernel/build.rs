@@ -127,6 +127,15 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("weighted"));
         println!("cargo::rustc-cfg=jnox_weighted_trace");
     }
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_stage, values("eoi", "frames"))"#);
+    if let Some(site) = selector("JNOX_RESERVATION_STAGE") {
+        assert!(matches!(site.as_str(), "eoi" | "frames"), "unknown reservation stage");
+        assert!(board == "virt" && bench == "boot" && profile.as_deref() == Some("reservation")
+            && matches!(app.as_deref(), Some("aligned-wake" | "cbs-saturated"))
+            && scenario.is_none() && env::var("OPT_LEVEL").as_deref() == Ok("s"),
+            "reservation stage requires the size-optimized ordinary virt W/S study configuration");
+        println!(r#"cargo::rustc-cfg=jnox_reservation_stage="{site}""#);
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_reservation)");
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_policy, values("aligned", "cbs"))"#);
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_reservation_case, values("wake", "saturated", "refused", "late"))"#);
