@@ -219,3 +219,25 @@ fn opening_requires_matching_idle_return_and_owned_frames() {
     assert!(!first_return_matches(Some(witness), 96, 132, 7, f, f));
     assert!(!first_return_matches(Some(witness), 96, 128, 6, f, f));
 }
+
+#[test]
+fn compact_destination_keeps_pristine_origin_and_single_pending_debit() {
+    for policy in [Policy::Aligned, Policy::Cbs] {
+        for manifest in [Manifest::W,Manifest::S] {
+            let origin=Jobs::new(policy,manifest).unwrap();
+            let mut destination=origin.clone();
+            let expected=destination.prepare_destination().unwrap();
+            assert!(origin.pristine());
+            assert!(origin.same_configuration(&destination));
+            assert!(destination.matches_first_decision(&expected));
+            assert!(destination.prepare_destination().is_err());
+            assert!(origin.pending_grant().is_none());
+            let (id,action)=destination.pending_grant().unwrap();
+            assert_eq!(id,0);
+            assert!(destination.trap(1,action).is_err());
+            destination.trap(id,action).unwrap();
+            assert!(destination.trap(id,action).is_err());
+            assert!(origin.pristine());
+        }
+    }
+}

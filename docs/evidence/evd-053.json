@@ -2,7 +2,7 @@
   "evidence_id": "EVD-053",
   "implementation": "IMP-053",
   "change": "CHG-054",
-  "verdict": "v2 full gate failed: one saturated CBS trace completed among eight ordinary boots. Both refusals succeeded.",
+  "verdict": "Four of eight ordinary candidate boots completed, compared with five of eight paired predecessor boots and one of eight historical predecessor boots. Both overload refusals in each paired cohort succeeded. Full-profile qualification remains on hold.",
   "versions": [
     {
       "version": 1,
@@ -23,6 +23,21 @@
       "evidence": "evd-053-v2.json",
       "evidence_sha256": "befe7feada42f5f659db721095f13279ddc972c01c0590e5f34ceea41b390b55",
       "reviewer_manifest_sha256": "5397c5a9a72ba373d3ab6f3318ea546023fc425ad69fa4c86e47ef3298b42d2a"
+    },
+    {
+      "version": 3,
+      "change": "CHG-059",
+      "source": "b9a247c68c3ab2544f18158c8dd13fc15cab6428",
+      "english": "evd-053-v3.en.md",
+      "korean": "evd-053-v3.md",
+      "evidence": "evd-053-v3.json",
+      "evidence_sha256": "ee0771b7068cb473206ba2672caaac8f6e5f8a1764d11b5b5411f7ae2c27b022",
+      "reviewer_manifest_sha256": "f2c8804662fd513511f67422b93034fb0b01a255d899cc6bfdbc80b71730f008"
     }
-  ]
+  ],
+  "compiler_profile_supplement": {
+    "record": "evd-053-compiler.json",
+    "sha256": "2c9add13919b9ce754026791e401fb81c89875dc9d672fe60e3814678f0152e9",
+    "source": "aacdbebe958feca152b358ce8cf36033cd7d6749"
+  }
 }

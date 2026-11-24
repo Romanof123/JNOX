@@ -1,0 +1,28 @@
+{
+  "evidence_id": "EVD-053",
+  "version": 3,
+  "change": "CHG-059",
+  "implementation": "IMP-053",
+  "runtime": "b9a247c68c3ab2544f18158c8dd13fc15cab6428",
+  "offline_parser": "54218be8e6e06382cd491bc2e3af9f61705d4f0c",
+  "kernel_tree": "6509cec59da7fd263e0720ffa1e39323a18b6234",
+  "verdict": "Four of eight ordinary candidate boots completed, compared with five of eight paired predecessor boots and one of eight historical predecessor boots. Both overload refusals in each paired cohort succeeded. Full-profile qualification remains on hold.",
+  "archive": "evd-053-v3-captures.zip",
+  "archive_sha256": "68977fcecbad2abd3cf12ff10fb25cb8d1be97dacf52f41d00def9fd9de72bb5",
+  "archive_members": {
+    "reservation-compact-fresh.tar.gz": "ecaaca995eb21a65fd9f7ae1fc6b3176c08dff8be2049f21f56f9a9634f15350",
+    "pinned/reservation_handoff.py": "fdb0b70a64ab2264536540fc9845a0f54063af7aabebabd6013d3077d2904b12",
+    "corrected/reservation_handoff.py": "250b6b04709abe28efaf177795bda032f942d645f474f69bef0d08c1efb00688"
+  },
+  "reviewer_manifest_sha256": "f2c8804662fd513511f67422b93034fb0b01a255d899cc6bfdbc80b71730f008",
+  "original_report_sha256": "8378e822a0b14ae158dc87829db0962c5202daf07c7b302d5f9ec8e71c3f5628",
+  "original_manifest_entries": 117,
+  "contents": {
+    "freeze.json": "Run order, tool, per-image SHA256 and argv",
+    "build-manifest.json": "Frozen controls and build identities",
+    "raw/": "20 original launches, ELF and decoder outputs",
+    "observations.json": "Measured operands, service, stages and linked returns",
+    "offline-decoder-comparison.json": "Independent and both shipped decoder versions"
+  },
+  "external_scope": "External IRQ/SVC/ERET counts in the candidate trace arms were 48/5/53 for aligned wake, 17/2/19 for saturated CBS and 1/0/1 for each pre-selection stop. The guest timer records identify PPI 30. A traced return PC can be joined to the ELF. Plain runs rely on guest records. No v3 late fixture ran. Physical timing and deployed isolation remain open."
+}

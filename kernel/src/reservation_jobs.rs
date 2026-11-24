@@ -222,13 +222,43 @@ impl Jobs {
 
     /// For slot zero, the slot counter is a non-repeating ledger generation:
     /// every successful open advances it, and a trap requires an earlier open.
-    fn pristine(&self) -> bool {
+    pub(crate) fn pristine(&self) -> bool {
         self.slot == 0
             && self.state == [State::Unreleased; 2]
             && self.pending.is_none()
             && self.demand == [0; 2]
     }
 
+    /// Only an unpublished destination bank may execute this in idle.
+    pub(crate) fn prepare_destination(&mut self) -> Result<Decision, Error> {
+        if !self.pristine() {
+            return Err(Error::Unexpected);
+        }
+        self.decide(0)
+    }
+    pub(crate) fn same_configuration(&self, other: &Self) -> bool {
+        self.manifest == other.manifest
+            && core::mem::discriminant(&self.backend) == core::mem::discriminant(&other.backend)
+    }
+    pub(crate) fn pending_grant(&self) -> Option<(usize, Action)> {
+        self.pending
+    }
+    pub(crate) fn matches_first_decision(&self, d: &Decision) -> bool {
+        if self.slot != 1
+            || self.pending != d.owner.zip(d.action)
+            || self.state != d.states
+            || self.demand != d.demand
+        {
+            return false;
+        }
+        (0..2).all(|id| {
+            let remaining = match &self.backend {
+                Backend::Aligned(v) => v[id].allocation_at(0),
+                Backend::Cbs(v) => v.allocation(id).map(|(q, d)| (u64::from(q), d)),
+            };
+            remaining == Some((d.after[id].q, d.after[id].d))
+        })
+    }
     pub(crate) fn prepare_first(&self) -> Result<FirstTransition, Error> {
         if !self.pristine() {
             return Err(Error::Unexpected);
