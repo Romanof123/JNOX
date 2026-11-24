@@ -63,3 +63,7 @@ The retained section tables contain no DWARF. Decoding the 24-byte little-endian
 Keep the original module filename and line layout. Wrap four existing expressions in compile-time macros whose baseline expansions reproduce the original expressions. Keep the E/F-only code in a separate file. Record the hook source and each actual ELF. Repeat the complete frozen baseline and instruction checks for both selectors in a new evidence directory before any guest. A missing or changed load byte stops the study.
 
 첫 aligned-W B 준비에서 실행 코드와 주소는 일치했으나 읽기 전용 적재 영역 10바이트가 달라 게스트 실행 전에 중단했다. 보존 ELF에는 DWARF가 없으며, 위 주소에서 파일명·길이·행·열을 해독해 같은 파일의 행 번호만 달라진 것을 확인했다. 최초 거부 ELF, 해시, 맵 및 비교 로그는 원본으로 보존한다. 원래 소스 파일 경로와 행 배치를 복원한다. 기존 표현식 네 곳을 매크로로 감싸고 B에서는 원래 표현식으로 확장한다. E/F 전용 코드는 별도 파일에 둔다. 두 선택자의 전체 적재 바이트와 실제 명령 검증을 새 디렉터리에서 다시 수행한다. 최초 시도와 수정 결과는 별도 기록한다.
+
+Both baseline load images matched. Both E images failed the required linked instruction order. Zero of twelve planned guests launched. [Second reservation stage preflight](evidence/reservation-stage-v2-first.en.md)
+
+두 기준 로드 이미지가 일치했지만 E 이미지 둘 모두 링크된 명령 순서 조건에 실패했다. 예정된 게스트 12건의 실행 수는 0이다. [예약 단계 두 번째 사전 검사](evidence/reservation-stage-v2-first.md)

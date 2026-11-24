@@ -1,0 +1,135 @@
+{
+  "change": "CHG-071",
+  "version": 2,
+  "candidate": "45d21d76d924ca3cc1c6248c3f7dbddddecd72e0",
+  "parent_reference": "aacdbebe958feca152b358ce8cf36033cd7d6749",
+  "result": {
+    "source": "45d21d76d924ca3cc1c6248c3f7dbddddecd72e0",
+    "baseline": "W and S PT_LOAD matched historical and fresh references",
+    "eligibility": "stopped before guest: conditional branch between final EOI DSB and sample sequence in both E ELFs",
+    "eoidsb": "0x402013e4",
+    "branch": "0x402013e8",
+    "isb": "0x402013ec",
+    "mrs": "0x402013f0",
+    "first_positions": [
+      {
+        "ordinal": 1,
+        "case": "WB",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 2,
+        "case": "WE",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 3,
+        "case": "WF",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 4,
+        "case": "SF",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 5,
+        "case": "SE",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 6,
+        "case": "SB",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 7,
+        "case": "SB",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 8,
+        "case": "SE",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 9,
+        "case": "SF",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 10,
+        "case": "WF",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 11,
+        "case": "WE",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      },
+      {
+        "ordinal": 12,
+        "case": "WB",
+        "launched": false,
+        "uart": null,
+        "terminal": null,
+        "intervals": null
+      }
+    ]
+  },
+  "manifest_entries": 51,
+  "manifest_sha256": "f852c5eac07b4c0559525e9028e132b90a60df8ae291a3a50d67951224ed1400",
+  "archive": "reservation-stage-v2-first.zip",
+  "archive_bytes": 1395792,
+  "archive_sha256": "fe562c0b54de8df48c71e1bd5c22fbbbf1cea1627bdd30e80b3a7479044da455",
+  "external_member": {
+    "name": "reference.zip",
+    "source": "evd-053-compiler.zip",
+    "sha256": "2b32fff859625cd60b65e4227b2a444974b3ee7bef31499260f119e43dad75d2"
+  },
+  "elf_sha256": {
+    "candidate-SB.elf": "7755a8e855ebc2cff8b9618829118865ad6d2d2a8e1104f62f600e1101a00392",
+    "candidate-SE.elf": "6bc52ca9e429f44b3c1261027c7d736a348c4e0d48196799dfc88e72894e0529",
+    "candidate-SF.elf": "e8171a7f8dc01e5f112954b8f76fa89a435865a09f7425dadbefaba59af39455",
+    "candidate-WB.elf": "22ace7c72cd176bdd50a84c7dfc878eeec80d723e1a6612d3bd69691ef01a193",
+    "candidate-WE.elf": "ba9484d9fd9e14c50d151f545e207856aeac9f14520c8e233df78f494f5a9e6f",
+    "candidate-WF.elf": "a8f3dc28d59fec4cfa99ebb3773178a87fbaa34df40aa3d3f414ac078d00e709",
+    "parent-SB.elf": "cf91276a11cadd3f273e79f7271edfdb62648c0a363deed8492583fdcf83e00f",
+    "parent-WB.elf": "7cfa99d34389ee71a8e55bc65e1e89dfd75f2e4abcdea017ffef51132e89fbb4",
+    "reference-S.elf": "cf91276a11cadd3f273e79f7271edfdb62648c0a363deed8492583fdcf83e00f",
+    "reference-W.elf": "7cfa99d34389ee71a8e55bc65e1e89dfd75f2e4abcdea017ffef51132e89fbb4"
+  }
+}
