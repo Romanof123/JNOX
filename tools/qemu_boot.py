@@ -254,6 +254,7 @@ TRANSCRIPTS = {
     "pi4-fixed-fifo": DynamicTranscript.PI4_FIXED_FIFO,
     "pi4-fixed-rr": DynamicTranscript.PI4_FIXED_RR,
     "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
+    "eevdf-wake": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF WAKE STOP\nEEVDF WAKE PASS\n",
     "eevdf": BOOT_TRANSCRIPT + (
         b"EEVDF BEGIN\nEEVDF EARLY INELIGIBLE\nEEVDF SLICE CHANGE\n"
         b"EEVDF WEIGHT CHANGE\nEEVDF TWO WAKES\nEEVDF STOP\nEEVDF PASS\n"
@@ -277,6 +278,10 @@ TRANSCRIPTS = {
     "rr": RR_TRANSCRIPT,
     "cbs": CBS_TRANSCRIPT,
     "periodic": PERIODIC_TRANSCRIPT,
+    "periodic-exact": BOOT_TRANSCRIPT + (
+        b"RM 00 A\nRM 00 B\nRM 10 A\nRM 12 B\n"
+        b"DM 00 B\nDM 00 A\nDM 10 A\nDM 12 B\nPERIODIC EXACT PASS\n"
+    ),
     "periodic-preempt": PERIODIC_PREEMPT_TRANSCRIPT,
 }
 TRANSCRIPTS["smp-single"] = TRANSCRIPTS["smp"]

@@ -123,6 +123,7 @@ The three single-CPU profiles below exercise queue order, periodic job generatio
 
 - POL-002 · CHG-029 · IMP-027 · [Fixed priority, queue order and remaining service](m1-priority-resume.en.md)
 - POL-004 · CHG-030 · IMP-028 · [Periodic deadline misses and overlapping releases](m1-periodic-overrun.en.md)
+- POL-004 · CHG-035 · IMP-033 · [Exact periodic pair](pol-004-exact-periodic.md)
 - POL-008 · CHG-031 · IMP-029 · [Hard-CBS wakeup and deadline renewal](m2-cbs-wake.en.md)
 
 ## Linked Rust task configuration
@@ -132,5 +133,7 @@ CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at 
 CHG-033 and IMP-031 select the ordinary FIFO/RR task tables on the P1 BCM2711 profile. Verification tracks the raw payload, model boot and physical observation separately. [Pi 4 linked-task runtime](boards/pi4-fixed-runtime.en.md)
 
 CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry and overdue wakes after a bounded masked IRQ. Use ordinary execution and the optional diagnostic trace to reconstruct actual charged service. [Simultaneous and late timer events](fixed-runtime-edges.en.md)
+
+The opt-in POL-012 workload repeatedly blocks and wakes a linked worker through SVC and timer IRQ scheduling on one EEVDF instance. [Repeated-wake design](m4-eevdf-wake-design.md) [EVD-034](evidence/evd-034.en.md)
 
 CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)

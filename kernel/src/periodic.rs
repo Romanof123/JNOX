@@ -1,4 +1,4 @@
-//! Two six-tick periodic workloads driven by the EL1 physical timer.
+//! Periodic workloads driven by the EL1 physical timer.
 use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
 use core::ptr;
@@ -9,8 +9,13 @@ use super::ready_queue::ReadyQueue;
 use super::{park, uart_write};
 
 const IDLE: usize = 2;
-const PERIOD: [u64; 2] = [2, 3];
-const DEADLINE: [u64; 2] = [2, 1];
+// Keep the existing preempt workload when both periodic extensions are selected.
+const EXACT: bool =
+    cfg!(feature = "periodic-exact-bench") && !cfg!(feature = "periodic-preempt-bench");
+const PERIOD: [u64; 2] = if EXACT { [10, 12] } else { [2, 3] };
+const DEADLINE: [u64; 2] = if EXACT { [9, 4] } else { [2, 1] };
+const EPOCH: u8 = if EXACT { 14 } else { 6 };
+const PERIODIC_IRQS: u8 = 2 * EPOCH;
 
 unsafe extern "C" {
     fn periodic_controller();
@@ -122,14 +127,15 @@ fn with_bench<R>(f: impl FnOnce(&mut Bench) -> R) -> R {
 impl Bench {
     fn tick(&self) -> u8 {
         #[cfg(feature = "periodic-preempt-bench")]
-        if self.interrupts > 12 {
+        if self.interrupts > PERIODIC_IRQS {
             return (self.interrupts - 13) % 3;
         }
-        (self.interrupts - 1) % 6
+        (self.interrupts - 1) % EPOCH
     }
 
     fn dispatch(&mut self) -> *mut Frame {
-        let policy = if self.interrupts <= 6 || (13..=15).contains(&self.interrupts) {
+        let policy = if self.interrupts <= EPOCH || (!EXACT && (13..=15).contains(&self.interrupts))
+        {
             DispatchPolicy::RateMonotonic
         } else {
             DispatchPolicy::DeadlineMonotonic
@@ -139,7 +145,7 @@ impl Bench {
         if let Some(id) = policy.pop_ready(&mut self.queue, tick, |id| jobs[id]) {
             self.current = id;
             #[cfg(feature = "periodic-preempt-bench")]
-            if self.interrupts > 12 && id == 0 {
+            if self.interrupts > PERIODIC_IRQS && id == 0 {
                 if self.tick() == 0 {
                     let frame = fresh(id);
                     unsafe { (*frame).elr = periodic_running_a as *const () as u64 };
@@ -272,13 +278,20 @@ extern "C" fn marker(id: usize, sp: usize, _progress: u64) {
             return;
         }
         require(id == b.current && sp == stack_top(id).addr() && !b.marked);
-        let mut line = *b"RM 0 A\n";
-        if b.interrupts > 6 {
+        let mut line = *b"RM 00 A\n";
+        if b.interrupts > EPOCH {
             line[..2].copy_from_slice(b"DM");
         }
-        line[3] += b.tick();
-        line[5] += id as u8;
-        uart_write(&line);
+        let tick = b.tick();
+        line[3] += tick / 10;
+        line[4] += tick % 10;
+        line[6] += id as u8;
+        if EXACT {
+            uart_write(&line);
+        } else {
+            line.copy_within(4.., 3);
+            uart_write(&line[..7]);
+        }
         b.marked = true;
     });
 }
@@ -321,15 +334,21 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
         #[cfg(not(feature = "periodic-preempt-bench"))]
         b.record_controller(frame);
         let tick = u64::from(b.tick());
-        if tick == 5 {
-            require(b.completed == 5 * usize::from(b.interrupts / 6));
+        if tick == u64::from(EPOCH - 1) && b.interrupts <= PERIODIC_IRQS {
+            let per_epoch = if EXACT { 4 } else { 5 };
+            require(b.completed == per_epoch * usize::from(b.interrupts / EPOCH));
+            require(b.jobs.iter().all(Option::is_none));
             #[cfg(not(feature = "periodic-preempt-bench"))]
-            if b.interrupts == 12 {
-                uart_write(b"PERIODIC PASS\n");
+            if b.interrupts == PERIODIC_IRQS {
+                uart_write(if EXACT {
+                    b"PERIODIC EXACT PASS\n"
+                } else {
+                    b"PERIODIC PASS\n"
+                });
                 park();
             }
         }
-        if b.interrupts <= 12 {
+        if b.interrupts <= PERIODIC_IRQS {
             for id in [1, 0] {
                 if tick % PERIOD[id] == 0 {
                     b.release(id, tick);
