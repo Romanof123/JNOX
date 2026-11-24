@@ -1,0 +1,25 @@
+# POL-016 · Recurring nested-group service / 중첩 그룹의 반복 서비스
+
+Decision for [#212](https://github.com/Romanof123/JNOX/issues/212) under [#21](https://github.com/Romanof123/JNOX/issues/21), based on ca0b3dd3f87f0f459449271d957af1eb8e77d2cd. REQ-002/005/023 → DES-003/012 → IMP-038 → VER-002/005/023. [Existing service and quotas](ordinary-groups.md) · [previous observed cohort](evidence/evd-038.en.md).
+
+### Earliest actionable service / 서비스 재개 시각
+
+The runtime queries the policy after settling the outgoing interval. Previously `next_actionable` subtracted a node's last window from the requested window without checking chronology. A query in an earlier window could underflow. If credit was already positive, it returned the start of that window even when that instant had passed. At the counter horizon a nominal boundary at u64::MAX cannot start a positive-duration slice.
+
+For a fixed ready mask, reject observations before the committed end and any observation with no representable future tick. Return the observation itself if a ready path can receive one tick there. Otherwise return the earliest representable refill boundary where all three nodes of a ready path have positive credit and one tick fits. No ready path, or an unrepresentable slice, returns None. A query consumes no budget. Keep fixed-grid refill, signed debt, rank, grant and settlement unchanged. Check stale input before and after a cross-window settlement, a funded midwindow query, an empty mask, outstanding reserved time, exact debt payment with zero credit, and the last two counter values including a recovery that would start at u64::MAX. Compare the answer to a stepwise small-period ledger through repeated settlements and refills.
+
+기존 조회는 노드의 마지막 창보다 앞선 시각의 창 번호를 빼며 언더플로가 가능했다. 이미 잔액이 있는 경우 지난 창 시작을 반환할 수 있었다. 예약이 끝나기 전의 오래된 조회와 한 틱의 실행도 표현할 수 없는 경우는 거부한다. 실행 가능한 경로가 있으면 조회 시각 자체를, 없으면 부모·자식·리프 모두 양수이며 한 틱을 실행할 수 있는 최초 재충전 경계를 반환한다. 조회는 잔액을 바꾸지 않는다. 오래된 창, 예약 중 시각, 창 중간 즉시 실행, 빈 준비 집합, 부채 정확 상환, 마지막 두 카운터 값 및 반복 재충전을 독립 대조한다.
+
+### Workload and frozen evidence / 워크로드 및 사전 판정
+
+Add `JNOX_PROFILE=groups JNOX_APP=ordinary-groups-recurring` for one A72 QEMU virt/GICv2 CPU. Reuse the original three worker stacks, real idle stack, rank, CNTP timer, common period P=floor(CNTFRQ/4), parent quotas P/4 and P/2, and full-period child and leaf quotas. Workers use their ordinary IRQ-enabled entry points. Leaf 0 blocks and leaf 1 wakes it. In round r=1,2,3 leaf 0 publishes the sum over i=1..256 of (i+r) and awaits the peer receipt. Leaf 2 in the other parent checks each sum and returns a cumulative total. Require 33,152, 33,408 and 33,664 in order, final sum 100,224. The peer waits for the next request between receipts, so each parent uses its own allowance and idle runs until an actionable refill. After the third round all three jobs exit. Keep each round's observed handshake and timer-driven service separately attributable. This is an ordinary throughput/eligibility case using the deployed accounting code.
+
+같은 A72 가상 CPU, 기존 세 작업·유휴 스택·물리 타이머와 할당량을 사용한다. 작업 0이 차단되고 작업 1이 이를 깨운다. IRQ를 허용한 작업 0과 다른 부모의 작업 2가 세 배치의 합과 누적 확인값을 교환한다. 합은 차례로 33,152, 33,408, 33,664이고 최종 누적은 100,224여야 한다. 매 회 부모별 예산 소진과 실제 재개를 검증한다.
+
+Freeze four independent first cold boots in order: original ordinary plain, recurring plain, original ordinary diagnostic, recurring diagnostic. Keep each first outcome and original ELF, argv/tool identities, UART and available exception/journal artifacts. Plain acceptance checks the complete task transcript including all three peer acknowledgements and final worker-side validation. For both diagnostic boots use the existing QMP capture and `tools/group_replay.py --audit ...` (add `--recurring` for the new case). Independently decode raw rows, link the saved and restored frames to stack owners and correlate timer/SVC entry and return with the external trace. Keep parent exhaustion in three separate windows, two peer quota expirations, three actual idle recoveries, at least two strictly positive parent-0 debts at different timer events, every interval charged once to each outgoing level, idle charged zero, and no sibling selection while its common parent is exhausted. Preserve the original P/8 timer reaction and eight-period observation bounds. The old ordinary diagnostic still has eight rows; the recurring diagnostic must have fourteen. Score timing and missing events on the first records. Host arithmetic controls use exact synthetic ticks. Product workload admission, costs, physical latency and isolation remain open.
+
+기본 일반, 반복 일반, 기본 진단, 반복 진단 순서로 각각 최초 부팅을 보존한다. 진단은 원시 저널과 외부 예외 추적, 스택·프레임 및 복귀를 대조한다. 서로 다른 세 창에서 부모 0의 예산 소진, 동료 부모의 두 번 만료, 세 번의 실제 유휴 복귀, 적어도 두 번의 양수 부모 부채를 요구한다. 각 경과량은 실행 경로 세 단계에 한 번씩만 부과하며 유휴에는 부과하지 않는다. 같은 부모의 형제는 부모 소진 동안 실행할 수 없다. 타이머 반응 P/8과 관측 간 최대 8주기를 유지한다. 기본 진단 8행, 반복 진단 14행을 각각 검사한다. 산술 경계의 합성 호스트 대조와 제품 수용·실기 지연·격리 판정은 별도 근거로 관리한다.
+
+[Independent first runs, signed ledger and originals / 최초 실행과 독립 검증 기록](evidence/recurring-hierarchical-first.en-ko.md).
+
+[Combined telemetry and groups integration / 배치 및 그룹 통합 실행](evidence/cross-profile-integration.en-ko.md).

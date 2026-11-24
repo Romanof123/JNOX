@@ -1,5 +1,7 @@
 # Ordinary nested group service · POL-016
 
+[Three-round IRQ-enabled workload and earliest-service contract / IRQ 허용 반복 작업과 서비스 재개 시각](nested-group-recurring-service.en-ko.md)
+
 ## English
 
 #84 under #21. CHG-040 / IMP-038. [EVD-038 independent execution](evidence/evd-038.en.md). Single-core virt, trusted linked EL1 Rust tasks, physical counter ticks, CNTP absolute compare and GICv2 PPI30. The supported maximum topology has two parents, three child groups and three leaves, with exactly three budgeted levels and one common fixed-grid period P. Each node has a positive quota Q ≤ P. Lower sibling index wins. block suspends the caller. wake(id) immediately readies a blocked leaf, may preempt the caller, and returns false for other states or invalid ids. Returning exits permanently. A system with no ready leaves runs WFI with timer disabled.

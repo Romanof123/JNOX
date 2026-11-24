@@ -106,3 +106,56 @@ fn full_counter_horizon_keeps_debt_and_rejects_unrepresentable_wakeup() {
     );
     assert_eq!(h.next_actionable(u64::MAX, &[true]), None);
 }
+
+#[test]
+fn earliest_action_rejects_stale_time_and_requires_a_representable_tick() {
+    let mut h = Hierarchy::new(10, 8, [4], [(0, 8)], [(0, 8)]).unwrap();
+    assert_eq!(h.next_actionable(13, &[true]), Some(13));
+    assert_eq!(h.next_actionable(13, &[false]), None);
+    assert_eq!(h.grant_at(13, 4, &[true]), Some((0, 0, 0, 4)));
+    assert_eq!(h.next_actionable(14, &[true]), None);
+    // Cross into window 1, then query the earlier grid without moving any balance.
+    assert_eq!(h.finish_at(19), Some((6, 2, [0; 3])));
+    assert_eq!(h.next_actionable(11, &[true]), None);
+    assert_eq!(h.next_actionable(19, &[true]), Some(19));
+    assert_eq!(h.grant_at(19, 4, &[true]), Some((0, 0, 0, 2)));
+
+    let start = u64::MAX - 4;
+    let mut last = Hierarchy::new(start, 4, [3], [(0, 4)], [(0, 4)]).unwrap();
+    assert_eq!(last.next_actionable(u64::MAX - 1, &[true]), Some(u64::MAX - 1));
+    assert_eq!(last.grant_at(start, 3, &[true]), Some((0, 0, 0, 3)));
+    assert_eq!(last.finish_at(start + 3), Some((3, 0, [0; 3])));
+    assert_eq!(last.next_actionable(start + 3, &[true]), None);
+    assert_eq!(last.next_actionable(u64::MAX, &[true]), None);
+}
+
+#[test]
+fn repeated_settlement_matches_single_tick_parent_credit() {
+    // The child and leaf have a full period. Only the parent limits these grants.
+    let period = 12;
+    let quota = 3i64;
+    let mut h = Hierarchy::new(0, period, [quota as u64], [(0, period)], [(0, period)]).unwrap();
+    let mut balance = quota;
+    let mut now = 0;
+    for duration in [6, 5, 8, 4] {
+        let mut first = now;
+        while balance <= 0 {
+            first += 1;
+            if first % period == 0 {
+                balance = (balance + quota).min(quota);
+            }
+        }
+        assert_eq!(h.next_actionable(now, &[true]), Some(first));
+        let reserved = (balance as u64).min(period - first % period);
+        assert_eq!(h.grant_at(first, period, &[true]), Some((0, 0, 0, reserved)));
+        now = first + duration;
+        for end in first + 1..=now {
+            balance -= 1;
+            if end % period == 0 {
+                balance = (balance + quota).min(quota);
+            }
+        }
+        assert_eq!(h.finish_at(now), Some((duration, duration.saturating_sub(reserved),
+                                          [(-balance).max(0) as u64, 0, 0])));
+    }
+}

@@ -229,6 +229,7 @@ fn main() {
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_groups_recurring)");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_witness)");
     println!("cargo::rustc-check-cfg=cfg(jnox_rr_handoff)");
     println!("cargo::rustc-check-cfg=cfg(jnox_rr_inner)");
@@ -397,10 +398,12 @@ fn main() {
             }
         }
         Some("groups") => {
-            assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(), Some("ordinary-groups" | "ordinary-groups-late")),
-                    "groups requires virt, ordinary-groups or ordinary-groups-late, and no benchmark");
+            assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(),
+                    Some("ordinary-groups" | "ordinary-groups-late" | "ordinary-groups-recurring")),
+                    "groups requires virt, a supported ordinary group application, and no benchmark");
             println!("cargo::rustc-cfg=jnox_groups");
             if app.as_deref() == Some("ordinary-groups-late") { println!("cargo::rustc-cfg=jnox_groups_late"); }
+            if app.as_deref() == Some("ordinary-groups-recurring") { println!("cargo::rustc-cfg=jnox_groups_recurring"); }
         }
         Some("multilevel") => {
             assert!(bench == "boot" && board == "virt", "multilevel requires virt without bench features");
