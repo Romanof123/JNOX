@@ -168,3 +168,51 @@ fn full_task_mask_and_partial_high_carry_in_survive_the_transition() {
     end(&mut rt, 1, 5, 3, 0, 9);
     assert!(rt.reset(true));
 }
+
+#[test]
+fn staggered_idle_baselines_and_carry_demands() {
+    // Every admitted product: idle length 1..=4, both carry demands 1..=2.
+    for idle in 1..=4 {
+        for low in 1..=2 {
+            for survivor in 1..=2 {
+                let mut rt = AmcRuntime::new([
+                    spec(Low(2), 1, 4),
+                    spec(High { lo: 1, hi: 3 }, 4, 4),
+                    spec(Low(2), 2, 3),
+                    spec(High { lo: 1, hi: 2 }, 3, 5),
+                ]).unwrap();
+                assert!(rt.release(0, 1));
+                assert!(!rt.advance_idle(1));
+                start(&mut rt, 0, 0);
+                assert!(!rt.advance_idle(1));
+                end(&mut rt, 0, 1, 1, 0, 4);
+                assert_eq!(rt.start_slot(), Some(Dispatch::Idle));
+                assert_eq!(rt.now(), 1);
+                assert!(!rt.advance_idle(0));
+                assert!(rt.advance_idle(idle));
+                let b = 1 + idle;
+                assert!(rt.release(0, low));
+                start(&mut rt, 0, 0);
+                end(&mut rt, 0, b+1, 1, low-1, b+4);
+                assert!(rt.release(3, survivor));
+                start(&mut rt, 3, 0);
+                end(&mut rt, 3, b+2, 1, survivor-1, b+6);
+                assert!(rt.release(1, 2));
+                start(&mut rt, 1, 0);
+                end(&mut rt, 1, b+3, 1, 1, b+6);
+                start(&mut rt, 1, u32::from(low == 2));
+                end(&mut rt, 1, b+4, 2, 0, b+6);
+                if survivor == 2 {
+                    start(&mut rt, 3, 0);
+                    end(&mut rt, 3, b+5, 2, 0, b+6);
+                }
+                assert_eq!(rt.start_slot(), Some(Dispatch::Idle));
+                assert!(rt.advance_idle(u64::MAX - rt.now()));
+                assert!(!rt.advance_idle(1));
+                assert_eq!(rt.now(), u64::MAX);
+                assert!(rt.mode() == CriticalityMode::High);
+                assert!(!rt.release(3, 1));
+            }
+        }
+    }
+}
