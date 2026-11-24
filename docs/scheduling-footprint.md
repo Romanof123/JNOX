@@ -21,3 +21,5 @@ python tools/scheduling_footprint.py --baseline out/minimal.elf --feature extend
 | linked_stack | NOLOAD 예약 공간을 포함한 .stack 또는 .stack.* 이름의 할당 섹션 구간을 합친 길이. |
 
 모든 구간은 시작 주소를 포함하고 끝 주소를 제외한다. 지표 안에서는 중복 바이트를 한 번만 센다. 주소 공간이 다르거나 범주가 겹치는 지표끼리 합산하면 안 된다. 길이 0인 구간은 기여하지 않는다. 이름 기반 집계는 링커 명명 규칙에 의존한다. linked_stack은 링크 시 예약량이다. 실행 중 최대 스택 사용량, 힙 사용량, 물리 배치, 스케줄링 비용과 실제 로더 동작은 별도 근거가 필요하다.
+
+[릴리스 구성 30종의 독립 측정 결과](evidence/scheduling-footprint-review.md)

@@ -21,3 +21,5 @@ Repeat --feature NAME=PATH for additional builds. Success emits one JSON object 
 | linked_stack | Union of allocated sections named .stack or .stack.* including NOLOAD reservations. |
 
 All ranges are half-open. Unions count overlapping bytes once within each metric. Metrics in different address spaces or overlapping categories must not be added. Zero-sized ranges contribute zero. Named section counts depend on linker naming. Linked stack measures a reservation. Runtime stack high water, heap use, physical placement, scheduling cost and actual bare-metal loader behavior require separate evidence.
+
+[Independent measurements of 30 release configurations](evidence/scheduling-footprint-review.en.md)
