@@ -17,7 +17,7 @@ ARMS = ("share", "wake")
 CLOCKS = ("default", "icount3")
 
 
-def qemu_command(qemu, root, clock, timer_observation=False):
+def qemu_command(qemu, root, clock, timer_observation=False, marker_sites=None):
     cmd = command(qemu, root)
     if clock == "icount3":
         cmd[1:1] = ["-icount", "shift=3,align=off,sleep=off"]
@@ -26,6 +26,10 @@ def qemu_command(qemu, root, clock, timer_observation=False):
 
         cmd[cmd.index("-d") + 1] = "int," + ",".join("trace:" + name for name in EVENTS)
         cmd[1:1] = ["-S", "-msg", "timestamp=on"]
+    if marker_sites is not None:
+        from native_weighted_marker import plugin_args
+
+        cmd[1:1] = plugin_args(root, marker_sites)
     return cmd
 
 
@@ -60,12 +64,23 @@ def capture(args):
         if not set(EVENTS).issubset(available):
             raise ValueError("required timer/GIC tracepoints unavailable")
         observer = HostObserver(root)
-    cmd = qemu_command(qemu, root, args.clock, args.timer_observation)
+    sites = None
+    if args.marker_plugin:
+        from native_weighted_marker import MarkerObserver, marker_sites
+        from native_weighted_timer import PIN
+
+        if (args.arm, args.clock) != ("share", "default") or sha(Path(qemu)) != PIN:
+            raise ValueError("marker observer requires pinned default share QEMU")
+        shutil.copyfile(args.marker_plugin, root / "marker.so")
+        sites = marker_sites((root / "kernel.elf").read_bytes())
+        observer = MarkerObserver(root)
+    cmd = qemu_command(qemu, root, args.clock, args.timer_observation, sites)
     save(
         root / "launch.json",
         dict(
             version=1,
             **({"timer_observation": 1} if args.timer_observation else {}),
+            **({"marker_observation": 1} if sites else {}),
             arm=args.arm,
             clock=args.clock,
             argv=cmd,
@@ -90,6 +105,8 @@ if __name__ == "__main__":
         parser.add_argument(name, type=Path)
     parser.add_argument("revision")
     parser.add_argument("--qemu", default="qemu-system-aarch64")
-    parser.add_argument("--timer-observation", action="store_true")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--timer-observation", action="store_true")
+    group.add_argument("--marker-plugin", type=Path)
     parser.add_argument("--nm", default="aarch64-linux-gnu-nm")
     sys.exit(capture(parser.parse_args()))

@@ -658,6 +658,14 @@ def replay(folder, digest):
             "timer cohort identity",
         )
         required.add("host-timing.json")
+    marker = "marker_observation" in run
+    if marker:
+        from native_weighted_timer import PIN
+        from native_weighted_marker import marker_sites, marker_report
+
+        need(not instrumented and run["marker_observation"] == 1 and run["arm"] == "share"
+             and run["clock"] == "default" and run["qemu_sha256"] == PIN, "marker cohort identity")
+        required.update(("markers.bin", "marker.so", "marker-cpu.json"))
     hashes = session["hashes"]
     need(set(hashes) <= required, "unexpected capture file")
     for name, val in hashes.items():
@@ -682,8 +690,9 @@ def replay(folder, digest):
     argv = run["argv"]
     original = PurePosixPath(argv[-1].replace(chr(92), "/")).parent
     actual = [part.replace(chr(92), "/") for part in argv]
+    sites = marker_sites(bounded(folder / "kernel.elf", 64 << 20)) if marker else None
     need(
-        actual == qemu_command(actual[0], original, run["clock"], instrumented),
+        actual == qemu_command(actual[0], original, run["clock"], instrumented, sites),
         "QEMU configuration and artifact paths",
     )
     for src, name in (
@@ -736,6 +745,8 @@ def replay(folder, digest):
             bounded(folder / "host-timing.json", 4 << 20), object_pairs_hook=obj
         )
         report["timer_observation"] = timing_report(events, report["closures"], host)
+    if marker:
+        report["marker_observation"] = marker_report(folder, report["closures"])
     report.update(
         arm=run["arm"],
         clock=run["clock"],
@@ -766,7 +777,8 @@ if __name__ == "__main__":
     try:
         report = replay(args.folder, args.trusted_session_sha256)
         print(json.dumps(report, indent=2))
-        raise SystemExit(1 if report["timing_misses"] else 0)
+        clock_ok = report.get("marker_observation", {}).get("qualified", True)
+        raise SystemExit(1 if report["timing_misses"] or not clock_ok else 0)
     except (FileNotFoundError, ImportError) as exc:
         parser.exit(2, f"UNOBSERVED {exc}\n")
     except (ValueError, OSError, KeyError, IndexError, TypeError) as exc:
