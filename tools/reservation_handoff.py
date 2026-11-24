@@ -53,12 +53,82 @@ def decode(raw):
             "ledger_rows": events(5),
             "commit": events(23),
         }
+    receipts = events(24)
+    require(all(r[2] in (NA, 0) for r in receipts), "unknown tag 24 slot")
+    terminal = [r for r in receipts if r[2] == 0]
+    anchors = [r for r in receipts if r[2] == NA]
+    require(
+        len(terminal) == 1 and len(anchors) <= 1, "missing or duplicate receipt role"
+    )
+    receipt = terminal[0]
+    rid, flags, authority, owner = receipt[4:]
+    sealed = rid != NA
+    require(
+        receipt[3] == (0 if sealed else 2) and receipt[1] <= result[1],
+        "invalid terminal receipt",
+    )
+    if not anchors:
+        # Before the boot anchor only clock/configuration or Jobs construction can fail.
+        tags = [r[0] for r in rows]
+        require(
+            tags in ([24, 33, 13], [1, 24, 33, 13])
+            and receipt[4:] == [NA, 0, 0, NA]
+            and result[2:5] == [NA, 2, 3]
+            and result[5] in (1, 2)
+            and one(33)[1:4] == [receipt[1], 0, 2],
+            "missing boot anchor for claimed opening",
+        )
+        return {
+            "wire_version": 3,
+            "result": result[4:],
+            "stages": 0,
+            "boot_anchor": None,
+            "descriptor": NA,
+            "authority": 0,
+            "ledger_provenance": "absent",
+            "actual_worker_return": [],
+            "descriptive_allocations": [],
+            "descriptive_demand": [],
+            "live_receipts": {},
+        }
+    anchor = anchors[0]
     cfg = one(1)
     require(
         cfg[6] in (0, 1) and cfg[7] in (0, 1) and cfg[4] > 0 and cfg[4] % 1000 == 0,
         "unexpected compact configuration",
     )
-    rid, flags, authority, owner = one(24)[4:]
+    boot, epoch, zero1, zero2 = anchor[4:]
+    require(
+        cfg[2:4] == [NA, 2]
+        and cfg[5] == cfg[4] // 20
+        and anchor[3] == 2
+        and zero1 == zero2 == 0
+        and boot <= epoch - cfg[5] <= cfg[1] <= anchor[1] <= receipt[1]
+        and rows.index(cfg) < rows.index(anchor) < rows.index(receipt),
+        "invalid boot anchor",
+    )
+    setup = events(2)
+    require(
+        len(setup) <= 1 and (not (sealed or flags or result[4] == 0) or setup),
+        "missing or duplicate clock setup",
+    )
+    if setup:
+        row = setup[0]
+        require(
+            row[2:] == [NA, 2, epoch, 34 if cfg[7] == 0 else 10, 0, 0]
+            and anchor[1] <= row[1] <= receipt[1]
+            and rows.index(anchor) < rows.index(row) < rows.index(receipt),
+            "setup conflicts with boot anchor",
+        )
+    for tag in range(25, 38):
+        for r in events(tag):
+            require(r[2] == 0, f"unexpected slot for compact tag {tag}")
+            if tag not in (31, 32, 34, 35):
+                require(
+                    r[3] == (0 if tag in (27, 28, 29, 30) else 2),
+                    f"unexpected owner for tag {tag}",
+                )
+    require(one(33)[1] == receipt[1], "storage row differs from terminal receipt")
     require(flags in (0, 1, 3, 7, 15, 31), "impossible receipt stages")
     for mask, tag in ((1, 25), (1, 37), (2, 26), (4, 27), (8, 28), (16, 29), (16, 30)):
         require(
@@ -70,7 +140,7 @@ def decode(raw):
         authority == (3 if published else 0) and owner == (0 if published else NA),
         "bank/owner readback mismatch",
     )
-    sealed = rid != NA
+    require(not (flags & 2) or sealed, "precommit without witness")
     require(not published or sealed, "publication without its witness")
     if sealed:
         require(rid == 1 + 2 * cfg[6] + cfg[7], "wrong descriptor for policy/manifest")
@@ -81,7 +151,7 @@ def decode(raw):
         )
     if sealed:
         require(
-            all(r[1] == one(24)[1] for tag in (31, 32, 34, 35) for r in events(tag)),
+            all(r[1] == receipt[1] for tag in (31, 32, 34, 35) for r in events(tag)),
             "wrong descriptor decode timestamp",
         )
         w = cfg[7] == 0
@@ -112,13 +182,14 @@ def decode(raw):
             "source sample interval invalid",
         )
         require(
-            irq[4] & 1023 == 30 and irq[5] & 7 == 5 and irq[6] == irq[7],
+            irq[4] & 1023 == 30 and irq[5] & 7 == 5 and irq[6] == irq[7] == epoch,
             "timer source or opening readback invalid",
         )
     if flags & 2:
         pre = one(26)
         require(
-            pre[4:6] == [rid, 0] and one(37)[1] <= pre[1], "precommit receipt invalid"
+            pre[4:] == [rid, 0, epoch, 0] and one(37)[1] <= pre[1],
+            "precommit receipt invalid",
         )
     if published:
         commit = one(27)
@@ -145,7 +216,7 @@ def decode(raw):
         )
         require(
             sequence[4] == 1
-            and sequence[7] == rid
+            and sequence[5:] == [epoch, epoch + cfg[5], rid]
             and arm[1] <= plan[1] == sequence[1],
             "wrong return plan",
         )
@@ -177,6 +248,7 @@ def decode(raw):
         "wire_version": 3,
         "result": result[4:],
         "stages": flags,
+        "boot_anchor": anchor,
         "ledger_provenance": "committed descriptor"
         if published
         else "prepared only"

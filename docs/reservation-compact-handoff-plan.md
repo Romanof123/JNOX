@@ -44,7 +44,8 @@ Use the existing virt reservation selectors with aligned-wake, aligned-saturated
 
 | Tag | Time and four payload fields / 시각 및 네 필드 |
 |---|---|
-|24|Terminal decode time / 종료 시각. Descriptor ID, stage bits (IRQ 1, precommit 2, commit 4, cutoff readback 8, selected 16), terminal authority word, observed owner.|
+|24, slot UINT64_MAX, owner 2|Boot anchor / 부팅 기준. Boot counter sample, original epoch, zero, zero. The row timestamp follows clock setup. 행 시각은 시계 설정 후의 표본이다.|
+|24, slot 0|Terminal decode time / 종료 시각. Descriptor ID, stage bits (IRQ 1, precommit 2, commit 4, cutoff readback 8, selected 16), terminal authority word, observed owner.|
 |25, 37|Vector entry and end of real source reads / 벡터 진입 및 실제 읽기 종료. 25 gives IAR, CTL, CVAL, original target. 37 gives entry, read end, CVAL, IAR.|
 |26, 27|Actual publication brackets / 게시 전후 표본. 26 gives descriptor, origin word, epoch, zero. 27 gives authority readback, bank, generation, owner read through that bank.|
 |28|After cutoff programming / 컷오프 설정 후. Requested compare, CTL, readback compare, timer kind.|
@@ -57,3 +58,7 @@ Use the existing virt reservation selectors with aligned-wake, aligned-saturated
 Descriptor IDs 1–4 identify aligned W/S then CBS W/S. The sole writer switches the authority word from 0 to 3. Bits encode bank in bit 0 and generation above it. Tags 31–35 carry the terminal decode timestamp. Tags 31/32 describe a debit only when actual publication/readback identifies the committed bank. An absent selection or return stays unobserved. Counter brackets include instrumentation and the ready sample precedes the final unmask. Whole-path time and independent ERET still require fresh captures.
 
 결정 ID 1~4는 aligned W/S, CBS W/S 순서다. 단일 작성자가 권한 단어를 0에서 3으로 게시한다. 하위 1비트는 뱅크, 상위 비트는 세대다. 31~35행은 종료 시각에 해석한다. 31/32행의 차감은 실제 게시 및 되읽기로 뱅크가 확인된 경우에만 성립한다. 선택·복귀 기록이 없으면 미관측으로 둔다. 계측 비용을 포함하며 36행은 인터럽트 마스크 해제 직전의 표본이다. 전체 경로와 독립 ERET 확인은 신규 실행에 남는다.
+
+The original offline decoder rejected a complete RAW 3 capture because it counted both tag 24 roles as one. Retain that first result with its decoder revision. The corrected decoder checks the boot anchor against clock setup and reports actual stage bits on complete failure streams. Only an explicit pre-anchor setup abort with empty stages may omit the anchor. RAW 1 summarizes the archived terminal payload including refusals. An incomplete UART cannot establish a guest result. The normalized regression input preserves the row order and fields of the aligned-saturated traced failure (status 2, reason 5).
+
+초판 판독기는 완전한 RAW 3 기록의 24행 두 역할을 하나로 세어 거부했다. 첫 결과와 당시 리비전을 보존한다. 수정판은 부팅 기준과 시계 설정을 대조하고 실패로 종료된 기록에서도 관측한 단계를 보고한다. 부팅 기준 이전 중단은 빈 단계와 명시적인 설정 실패일 때만 인정한다. RAW 1은 거부를 포함한 종료값을 요약한다. 종료가 잘린 UART로 게스트 결과를 판정할 수 없다. 회귀 입력에는 aligned-saturated 추적 실패의 행 순서와 수치를 보존했다.
