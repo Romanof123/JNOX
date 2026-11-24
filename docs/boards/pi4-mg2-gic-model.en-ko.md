@@ -50,3 +50,4 @@ python3 tools/pi4_mg2_gic.py replay NEW_DIR FREEZE_SHA256 2 TRACED_SESSION_SHA25
 Replay records line numbers within each TID, committed guest row indices and marker-level matches. A null value records a missing or ambiguous join. Replay exit 2 preserves partial evidence, including a traced case without a unique opening write. Exit 0 concerns capture completeness. The actual SGI rows, receiver chain and guest terminal determine the observation. Store replay output outside the immutable session directories. [Collector](../../tools/pi4_mg2_gic.py) · [Host parser checks](../../tools/test_pi4_mg2_gic.py)
 
 Linux에서 새 디렉터리에 두 순번을 먼저 고정하고 지정된 슬롯에서 한 번에 한 게스트만 실행한다. 각 세션의 SHA로 위 명령을 재생한다. null은 누락되었거나 단일 사건으로 결합할 수 없는 관측이다. 코드 2는 불완전한 근거를 보존한다. 코드 0은 수집 범위에 대한 결과이며, 기존 이주 기준은 별도다.
+[First control and traced position / 대조·계측 최초 실행](../evidence/pi4-mg2-gic-first.en-ko.md).
