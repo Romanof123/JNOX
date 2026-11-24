@@ -36,3 +36,5 @@
 [제품 기획](product-plan.md) · [안전·보안 개념](safety-security-concept.md) · [추적 링크](../trace/links.csv)
 
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
