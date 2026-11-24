@@ -75,3 +75,5 @@ These three additions require an explicit product decision. The PM records the u
 | PRO-003 | **Attested update manifest** | OBJ-002 | REQ-010, REQ-012, REQ-017 | Security and release · after the M4 update contract | Extend the planned signed update and SBOM with a machine-verifiable binding between release approval, SBOM digest, board profile, permitted version transition and measured post-boot identity. An offline verifier accepts the approved evidence bundle and rejects a substituted SBOM, wrong board, disallowed transition or replayed attestation. Record the attestation trust root and freshness check. |
 
 CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
+CHG-077 elaborates CAP-001/012 (time), CAP-005/006/007/008 (files and storage) and CAP-018/021 (applications and display). [Platform checklist](platform-checklist.en.md) · [System time](system-time-plan.en.md) · [Filesystems](filesystem-plan.en.md) · [Window system](window-system-plan.en.md)
