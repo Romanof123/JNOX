@@ -142,7 +142,7 @@ IMP-054 · VER-002/003/005. 운영 0/20. 결정적 OFF 4건에서 허가 28건�
 
 CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
 
-IMP-055 · VER-002/005/023. 일반 Rust 최초 부팅 3회에서 두 시드와 C 합류를 재생했다. 두 진단 사례는 미실행이다. [EVD-055](evidence/evd-055.md)
+IMP-055 · VER-002/005/023. 일반 Rust 최초 부팅 3회에서 두 시드와 C 합류를 재생했다. [EVD-055](evidence/evd-055.md) [#200](https://github.com/Romanof123/JNOX/blob/3a08323b8e526b24a5f708d9ccac0fd0da082774/docs/evidence/ordinary-stride-late-first.en-ko.md)에서 QEMU 지정 사례 5건을 검증해 [#54](https://github.com/Romanof123/JNOX/issues/54)을 종료했다. lottery-miss는 기대값 1에 실측값 2를 거부했고 stride-delay는 A에 정수 3단위를 부과하고 4,142카운트를 남겼다. 제품 추첨 경로와 부하·서비스 창은 대상 장치에서 검증해야 한다. 과거 실패 피연산자는 여전히 확인되지 않았다. [#79](https://github.com/Romanof123/JNOX/issues/79)
 
 CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 물리 UART 프로파일 계획](boards/pi4-serial-capture.md#chg-062)
 
