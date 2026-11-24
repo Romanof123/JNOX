@@ -8,6 +8,8 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 서비스 
 
 AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO와 라운드로빈으로 실행할 수 있습니다. 두 정책 모두 Raspberry Pi 4 모델에서도 부팅했습니다. 스케줄링 출시 표에는 시험한 구성별 근거와 남은 작업이 연결되어 있습니다. [Rust 작업 실행](docs/fixed-runtime.md) · [Pi 4 모델 검증](docs/evidence/evd-031.md) · [스케줄링 출시 표](docs/scheduling-release-cases.md)
 
+단일 코어 QEMU `virt` 모델에서는 마감이 가장 이른 작업을 선택하는 EDF, 일정 주기로 남은 여유 시간이 가장 짧은 작업을 선택하는 LLF, 가중치로 CPU 시간을 배분하는 가상 실행시간 스케줄러도 실행할 수 있습니다. EDF·LLF 시험은 선점된 Rust 작업이 저장된 명령 위치로 복귀하는지 확인합니다. 가중치 시험은 두 작업의 CPU 점유율과 잠든 동료를 깨운 뒤 실제로 실행되기까지 걸린 시간을 측정합니다. [EDF·LLF 실행](docs/ordinary-deadline-plan.md) · [가중치 작업 실행](docs/ordinary-weighted.md)
+
 첫 기준선은 **기획 초안 0.1**입니다. 자동차 적용에서는 특정 제품 구성의 ISO 26262 ASIL D 안전 목표를 지원하고 ISO/SAE 21434에 따라 사이버보안을 개발하는 것을 목표로 합니다. 적용 제품 선정, 실보드 검증, 안전 상태 승인과 인증은 남아 있습니다. 가상 벤치에는 별도의 안전 매개변수를 정했습니다. [벤치 안전 결정](docs/safety-parameters.md)
 
 | 시작 문서 | 다루는 내용 |
