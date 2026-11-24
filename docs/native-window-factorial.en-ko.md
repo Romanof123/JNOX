@@ -27,3 +27,5 @@ Stock tools/native_partition_replay.py consumes each capture directory and recor
 위 식으로 실행 전 80개 위치를 확정하고 단일 레인에서 한 번씩 콜드 부팅한다. 각 표·클록에서 같은 라운드 네 결과만 짝지어 비교한다. 다섯 번째 순서의 반복을 표시한다. 빌드 실패, 미실행, 시간 초과, 누락, 구조 실패, 마감 초과를 최초 위치와 원본 자료에 연결해 외부 검증표에도 모두 공개한다. 후속 성공으로 대체하지 않는다.
 
 원래 한도는 모든 일반 창에서 62,500틱이다. P 10개와 Q 확장 포함 13개, 각 부팅의 종료 41·42를 검증한다. 2세대부터 직전 IRQ 진입, 현재 선택, 반환 표본, 사용자 최초 관측까지 나누고 첫 세대의 없는 IRQ 값은 비워 둔다. 각 ABI 방식으로 동일 부팅의 소유자별 104워드 전체를 복원 검증한다. 두 클록을 별도로 보고하며, 마감·구조·누락을 구별하고 실제 하드웨어 보장이나 릴리스 전체 판정으로 확대하지 않는다.
+
+[Independent first comparison and raw files / 최초 독립 비교와 원본](evidence/native-window-factorial-first.en-ko.md).
