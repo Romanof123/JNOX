@@ -267,6 +267,7 @@ TRANSCRIPTS = {
     "pi4-fixed-fifo": DynamicTranscript.PI4_FIXED_FIFO,
     "pi4-fixed-rr": DynamicTranscript.PI4_FIXED_RR,
     "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
+    "eevdf-dynamic": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF DYNAMIC STOP\nEEVDF DYNAMIC PASS\n",
     "eevdf-wake": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF WAKE STOP\nEEVDF WAKE PASS\n",
     "eevdf": BOOT_TRANSCRIPT + (
         b"EEVDF BEGIN\nEEVDF EARLY INELIGIBLE\nEEVDF SLICE CHANGE\n"
@@ -434,7 +435,7 @@ def stop(process):
     return None
 
 
-def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, capture_dir=None):
+def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, capture_dir=None, env=None):
     profile = dynamic_profile(expected)
     with tempfile.TemporaryDirectory(prefix="jnox-qemu-") as folder:
         output_dir = capture_dir or Path(folder)
@@ -442,7 +443,7 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
         stderr_path = output_dir / "stderr"
         with uart_path.open("wb") as output, stderr_path.open("wb") as errors:
             process = subprocess.Popen(
-                command, stdin=subprocess.DEVNULL, stdout=output, stderr=errors
+                command, stdin=subprocess.DEVNULL, stdout=output, stderr=errors, env=env
             )
             try:
                 print(f"  QEMU PID = {process.pid}", flush=True)
@@ -503,7 +504,9 @@ def main():
         expected = TRANSCRIPTS[args.profile]
         image_type = "raw image" if pi4 else "ELF"
         capture_script = Path(args.qemu)
+        launch_env = None
         if capture_script.suffix == ".py" and capture_script.is_file():
+            launch_env = dict(os.environ, JNOX_CAPTURE_PROFILE=args.profile)
             launcher = [sys.executable, "-B", str(capture_script.resolve())]
         else:
             launcher = [args.qemu]
@@ -532,7 +535,7 @@ def main():
                 run_command = [*command, "-d", "int", "-D", str(capture_dir / "exceptions.log")]
             print(f"Run {run}/{runs}  {image_type} SHA-256 = {expected_hash}")
             print(f"  argv = {json.dumps(run_command, ensure_ascii=True)}", flush=True)
-            run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir,
+            run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir, env=launch_env,
                      quiet_seconds=1 if pi4 else QUIET_SECONDS)
             if kernel_sha256(kernel, raw=pi4) != expected_hash:
                 raise ValueError(f"kernel {image_type} changed during testing")

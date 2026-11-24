@@ -34,3 +34,5 @@ Each row is a candidate requirement awaiting approval. Safety analysis or board 
 The footprint targets in `REQ-009` exclude boot firmware, user services, and the Linux image. Kernel RAM includes kernel objects, page tables, stacks, and reserve pools in the configuration profile. Record the image sizing method and link map at build time.
 
 [Product plan](product-plan.en.md) · [Safety and security concept](safety-security-concept.en.md) · [Trace links](../trace/links.csv)
+
+[POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).

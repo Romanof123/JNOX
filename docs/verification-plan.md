@@ -95,3 +95,5 @@ CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd
 POL-003 / IMP-037. SJF·SRTF·HRRN에서 일반 부팅 6회와 진단 부팅 3회가 통과했으며 진단 기록의 결정 60개를 독립 재현했다. [EVD-037](evidence/evd-037.md)
 
 POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한국어) · [실행 부채와 회복 EVD-038](evidence/evd-038.md)
+
+[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).

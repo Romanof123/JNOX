@@ -53,6 +53,7 @@ fn main() {
         ("VRUNTIME", "vruntime"),
         ("EEVDF", "eevdf"),
         ("EEVDF_WAKE", "eevdf_wake"),
+        ("EEVDF_DYNAMIC", "eevdf_dynamic"),
         ("HIERARCHY", "hierarchy"),
         ("POWER", "power"),
         ("EXTENSION", "extension"),
@@ -69,7 +70,7 @@ fn main() {
     .find(|(feature, _)| env::var_os(format!("CARGO_FEATURE_{feature}_BENCH")).is_some())
     .map_or("boot", |(_, profile)| *profile);
     println!(
-        r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "proportional", "vruntime", "eevdf", "eevdf_wake", "hierarchy", "power", "extension", "aperiodic", "deadline", "batch", "coop", "priority_resume", "periodic_overrun", "cbs_wake"))"#
+        r#"cargo::rustc-check-cfg=cfg(jnox_bench, values("boot", "scheduler", "rr", "periodic", "cbs", "partition", "smp", "mutex", "multilevel", "amc", "proportional", "vruntime", "eevdf", "eevdf_wake", "eevdf_dynamic", "hierarchy", "power", "extension", "aperiodic", "deadline", "batch", "coop", "priority_resume", "periodic_overrun", "cbs_wake"))"#
     );
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     let board = match env::var("JNOX_BOARD") {
