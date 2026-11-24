@@ -1,0 +1,9 @@
+# #232 ordinary timed priority inheritance · 설계 v1
+
+[Parent mutex design and requirements](ordinary-mutex-plan.md) · [#232](https://github.com/Romanof123/JNOX/issues/232) · [#49](https://github.com/Romanof123/JNOX/issues/49) · [#21](https://github.com/Romanof123/JNOX/issues/21)
+
+REQ-002/005/023 → DES-003/012 → VER-002/005/023. Single CPU virt, explicit ordinary-chain selector. BASE (1) owns Y and admits LOW (2). LOW owns X and blocks on Y, admitting HIGH (4) and MEDIUM (3). HIGH requests X with a one-shot physical timer deadline of one millisecond. BASE inherits 4 while MEDIUM remains ready. BASE processes a fixed 4 MiB of volatile sensor samples under Y, records progress after each 256 samples and commits count/sum. An actual PPI30 must interrupt this work with partial progress. Remove HIGH only, set its saved result to timeout, recompute LOW and BASE to 2, dispatch HIGH then MEDIUM. LOW receives Y by direct handoff at BASE's release and publishes the checked aggregate under X. HIGH records its timeout without touching X. No spinning on time, artificial sleeps or retries. The timer interval and all work sizes are fixed before capture.
+
+독립 QA는 같은 ELF로 일반 및 외부 추적 최초 콜드 실행을 각각 보존한다. 원본 UART, ELF 해시와 역어셈블리, QEMU 인수 및 종료 사유를 보존하고 IRQ·SVC·ERET, 프레임과 복귀 PC를 대조한다. 준비 큐와 잠금 대기 순서, 두 소유자의 상속 및 하향 복원, HIGH 시간 초과와 LOW 소유권 이전, MEDIUM 실행, 보호된 합계와 부분 진행을 독립 재현한다. 최초 실패 또는 불완전 관측도 보존한다. 실제 보드 시간 상한은 별도 검증 대상이다.
+
+QA must retain first plain and externally traced cold boots, independently replay ready/wait order, both priority changes, PPI comparator and useful progress, match saved and resumed PCs/results to linked code and inspect actual reads and publication. Historical selectors and their acceptance thresholds continue to use their original implementation. First evidence and independent verdict are pending.
