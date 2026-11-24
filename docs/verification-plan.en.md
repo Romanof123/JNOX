@@ -117,3 +117,5 @@ POL-004 / IMP-042. v3 remains partial. Both deterministic exact boundaries quali
 POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)
 
 POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)

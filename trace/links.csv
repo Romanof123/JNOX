@@ -1025,3 +1025,6 @@ VER-023,has-partial-evidence,EVD-045
 CHG-052,affects,REQ-002
 CHG-052,affects,REQ-005
 CHG-052,affects,REQ-023
+CHG-054,affects,REQ-002
+CHG-054,affects,REQ-005
+CHG-054,affects,REQ-023

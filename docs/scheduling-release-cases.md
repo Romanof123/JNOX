@@ -54,3 +54,5 @@ CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-00
 CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
 POL-004 / IMP-042. v3는 부분 통과다. 결정론적 정확 경계 두 건이 적격이었다. 기본 구성 23개 중 최초 14개, 콜드 재시도 한 건 포함 15개가 적격이었다. 기본 클록 일반 8개와 별도 기본 클록 인계 진단 4개는 미충족이었다. [EVD-042](evidence/evd-042.md)
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
