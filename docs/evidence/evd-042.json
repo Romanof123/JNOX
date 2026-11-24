@@ -36,6 +36,23 @@
       "evidence": "evd-042-v2.json",
       "independent_report_sha256": "cf29a8018c15b4a4ed30de95003ef6128dbea1e58da638acce6c8b7e722d0c7e",
       "evidence_sha256": "51d6c27d4cfd3017dbb610db6675fa1bebc0dc4f57e5689acf789c9311bf7cc8"
+    },
+    {
+      "version": 3,
+      "source": "ddbc13b5587148f36dafc386d5405f61b63942e4",
+      "verdict": "PARTIAL",
+      "primary_configurations": 23,
+      "diagnostic_configurations": 10,
+      "guest_attempts": 34,
+      "first_primary_qualified": 14,
+      "retry_inclusive_primary_qualified": 15,
+      "complete_primary_default_qualified": 0,
+      "diagnostic_qualified": 6,
+      "english": "evd-042-v3.en.md",
+      "korean": "evd-042-v3.md",
+      "evidence": "evd-042-v3.json",
+      "reviewer_manifest_sha256": "0fd9a38e13d0f6db14f36b2da0a43e81f656f091fa060fac3a7a910253643cd1",
+      "evidence_sha256": "fefc511fc5edf14a1c237566ef648bfa66b42c17dca35c1f3fe5160425aeab92"
     }
   ],
   "limits": [

@@ -31,6 +31,8 @@ pub(crate) struct Multilevel<const N: usize> {
     ready: ReadyQueue<N>,
     asleep: [bool; N],
     running: Option<usize>,
+    #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+    pub(crate) resets: u64,
 }
 
 impl<const N: usize> Multilevel<N> {
@@ -40,6 +42,8 @@ impl<const N: usize> Multilevel<N> {
             ready: ReadyQueue::new(),
             asleep: [true; N],
             running: None,
+            #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+            resets: 0,
         }
     }
 
@@ -126,6 +130,24 @@ impl<const N: usize> Multilevel<N> {
         true
     }
 
+    #[cfg(jnox_multilevel)]
+    pub(crate) fn close_interval(&mut self, id: usize, elapsed: u64, blocked: bool) -> bool {
+        if self.running != Some(id) { return false; }
+        if let Ranking::Feedback(tasks) = &mut self.ranking {
+            tasks[id].charge_interval(elapsed);
+        }
+        if blocked { self.asleep[id] = true; }
+        else { assert!(self.ready.push_back(id)); }
+        self.running = None;
+        true
+    }
+
+    #[cfg(jnox_multilevel_trace)]
+    pub(crate) fn queued(&self) -> &[usize] { self.ready.entries() }
+
+    #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+    pub(crate) fn asleep(&self) -> &[bool; N] { &self.asleep }
+
     /// At a caller-selected scheduling boundary, reset every feedback task
     /// (including sleepers). Existing ready order breaks the newly formed ties.
     pub(crate) fn boost(&mut self) -> bool {
@@ -135,6 +157,8 @@ impl<const N: usize> Multilevel<N> {
         let Ranking::Feedback(tasks) = &mut self.ranking else {
             return false;
         };
+        #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
+        { self.resets = self.resets.checked_add(1).expect("reset count overflow"); }
         for task in tasks {
             task.boost();
         }

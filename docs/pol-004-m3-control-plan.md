@@ -34,6 +34,8 @@ Planning baseline d8aebaf. QEMU virt, one Cortex-A72, GICv2, TCG, 128 MiB. Freez
 
 ### English decision
 
+For the frozen positive rearm case, actual permit issue times must be exactly 10 ms apart. The ordinary sender has nominal 10 ms releases; no issue-time tolerance has been approved. An off-nominal run leaves the positive case unqualified and establishes no product rejection requirement. An exact-timed injector may establish the initial enabled condition only when recorded issue and delivery ticks meet the declared timing. Then transfer sole ownership of the generation and next sequence to the ordinary sender and record the handoff. Label ordinary-sender evidence separately and retain the independent exact-boundary controls. Missing ticks invalidate the timing evidence; never backdate them or score the run as passing.
+
 Authorize implementation of a single 5 ms control job, deadline 5 ms, with two real freshness decisions per job. ADR-001 sets a maximum gap and permits an earlier expiry decision at or after age 20 ms. Additional observations must have no effect on sequence, generation, permit count or explicit command consumption merely because an unchanged input is read again. Both phases run the same expiry-first logic on current state, use the actual decision time and can latch inhibition immediately. Freeze sender T=D=10 ms for this workload. Retain every ADR-001 fault, rearm and verdict boundary in sections 4–5. A separate declared single-check boundary configuration must actually realize the specified consecutive 5 ms gap straddling expiry. Record its configuration and evidence separately from the two-phase workload.
 
 1. Fix phase targets at job release and +2.5 ms from a common epoch. Require each programmed target, actual timer IRQ entry, worker ready/resume, completed decision and job finish in the raw trace. Use a counter supporting exact targets. For this bench assign a maximum 0.5 ms target-to-IRQ lateness and a 1 ms target-to-completed-decision envelope inclusive of all delays and timestamp uncertainty. Early completions fail. These are test requirements. Consecutive completed decisions then have a maximum gap of 3.5 ms under the envelope, including across jobs. Independently check every actual gap ≤5 ms and each job finish by its own nominal deadline. Anchor the first check to the first nominal release while inhibited. Continue checks in the inhibited state. End with a declared observation horizon, a subsequent actual check covering the final gap, completion of the last scored job and independent confirmation of the required output state. Score all phases of all scored jobs.
@@ -45,9 +47,19 @@ Authorize implementation of a single 5 ms control job, deadline 5 ms, with two r
 
 ### 한국어 결정
 
+동결한 재무장 성공 사례에서는 실제 허가 발행 시각의 간격이 정확히 10 ms여야 한다. 일반 송신 작업의 명목 릴리스 간격은 10 ms이며 발행 시각 허용 오차는 승인되지 않았다. 명목값에서 벗어난 실행으로는 성공 사례를 입증할 수 없으며, 그 결과가 제품의 거부 요건을 정하지 않는다. 정시 주입기는 실제 발행·전달 틱이 지정 시점을 충족한 경우에만 초기 활성 상태를 설정할 수 있다. 이후 해당 세대와 다음 순번의 단독 소유권을 일반 송신 작업에 인계하고 이를 기록한다. 일반 송신 작업의 증거는 따로 표시하고 정확한 경계 대조 시험도 별도로 유지한다. 누락 틱이 있으면 타이밍 증거는 무효이며 과거 시각을 부여하거나 합격 처리할 수 없다.
+
 QEMU 벤치에서 주기와 마감이 각각 5 ms인 단일 제어 작업에 실제 신선도 판정 두 회를 구현한다. ADR-001은 판정 간격의 최댓값을 정하므로 나이 20 ms 이상에서 더 일찍 만료를 발견할 수 있다. 같은 입력을 다시 읽어도 순번·세대·연속 허가 수·명령 소비 상태가 추가로 진행되어서는 안 된다. 두 위상 모두 현재 판정 시각으로 만료부터 검사하고 즉시 차단을 래치할 수 있다. 이 작업의 송신 주기·마감은 10 ms로 고정한다. 4–5절의 차단·재무장·한계 판정 사례를 모두 유지한다. 만료 한 틱 전부터 정확히 5 ms 간격인 연속 판정은 별도 단일 판정 구성에서 실제로 재현하고 두 위상 구성과 구별하여 기록한다.
 
 1. 공통 기준 시각에서 작업 릴리스와 그 2.5 ms 뒤를 위상 목표로 정한다. 정확히 표현 가능한 카운터로 타이머 목표, IRQ 진입, 준비·재개, 실제 판정 완료와 작업 종료를 남긴다. 시험 입력으로 목표 대비 IRQ 지연 0.5 ms 이하, 계측 불확실성과 모든 지연을 포함한 판정 완료 지연 0~1 ms를 요구한다. 이 조건에서 작업 경계를 포함한 연속 판정 간격 상한은 3.5 ms이다. 실측 간격 5 ms 이하와 각 명목 릴리스부터 종료까지 5 ms 이하를 별도로 검증한다. 부팅 시 차단 상태에서 첫 릴리스를 첫 판정의 기준으로 삼고 차단 중에도 계속 판정한다. 종료 관측 시각을 사전에 지정하고 그 이후 실제 판정까지 마지막 간격을 확인한다. 평가 대상 작업은 마지막 작업까지 모든 위상 및 종료를 기록하고 최종 장치 상태를 독립 확인한다.
 2. 같은 작업이 두 번째 위상에서 타이머로 재개한다. 위상별 반복 CPU 실행 예산, 송신 비용, 각 IRQ의 최소 간격·지터, 마스킹·간섭을 평가 전에 고정한다. 매 활성화에서 선점·대기를 분리해 양의 실제 CPU 실행량을 확인하고 위상별·작업별·반복 10 ms 구간별 수요 및 위상 IRQ를 대조한다. 타이머 설정, 진입·복귀, 스케줄러와 관찰 비용을 한 번씩 반영한다. 기존 호스트 도구는 작업 자체 대기를 모델링하지 않는다. 두 위상 창, 이전 구간에서 넘어온 간섭과 송신 응답을 포괄하는 분할 분석 또는 정당화된 보수 분석이 있어야 해석적으로 수용한다. 측정 최대값과 시험 입력만으로 실행 상한을 확정할 수 없다.
 3. 늦게 깨어나면 현재 시각으로 한 번 실제 평가하고 지연과 누락 위상을 기록한다. 위상 누락·허용 지연 초과·작업 중첩·관찰 불능 경계는 불합격이다. 타이밍 실패 시 차단을 요청하고 장치 꺼짐과 직전 활성 상태였다면 실제 하강 전이를 확인한다. 타이밍 실패와 허가 만료 원인을 구분하며 강제 차단으로 만료 응답 시험을 통과시킬 수 없다. 밀린 판정 재생, 과거 시각 부여, 기준 시각 이동과 자동 재무장을 금한다. 복구는 승인된 새 세대 재무장 절차를 따른다. IRQ 지연 초과와 반복 CPU 수요 초과를 각각 주입해 검출을 확인한다.
 4. 입력을 동결하고 두 정책을 각각 독립 재현한다. 이번 결정은 시뮬레이터 구현을 승인한다. 해석적 수용, 독립 실행 증거, 해당 보드 사례와 #21 전체 프로파일 판정은 미완료이며 IPC #24의 선행 조건은 유지된다.
+
+The host analysis and CLI passed independent replay. Runtime and budget provenance require separate evidence. [EVD-043](evidence/evd-043.en.md)
+
+호스트 분석 및 CLI는 독립 재현을 통과했다. 런타임과 예산 상한 근거는 별도 검증 대상이다. [EVD-043](evidence/evd-043.md)
+
+In v3, 14/23 primary cases qualified on the first attempt and 15/23 including one cold retry after a host read error. The deterministic worst-phase and same-tick cases qualified. All eight default-clock ordinary cases remained unqualified. The ten diagnostics were scored separately. [EVD-042 v3](evidence/evd-042-v3.en.md) · [#109](control-cold-plan.md)
+
+v3 주 시험은 첫 시도에서 23건 중 14건이 적격이었고 호스트 읽기 오류 후 콜드 재시도 1회를 포함하면 15건이었다. 결정론적 최악 위상과 동일 틱 사례는 적격이었고 기본 클록 일반 사례 8건은 모두 부적격이었다. 진단 10건은 별도 판정했다. [EVD-042 v3](evidence/evd-042-v3.md) · [#109](control-cold-plan.md)

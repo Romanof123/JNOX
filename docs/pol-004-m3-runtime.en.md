@@ -98,3 +98,5 @@ UART 기록이 잘렸거나 형식이 잘못된 경우, 다른 차단 원인이 
 For late and demand controls, row 11 records issuance, row 12 accepted delivery, row 24 receiver rejection and row 23 a gate-blocked attempt. The scorer splits the stream at the actual timing latch using record order for ties. It requires accepted input before the latch, explicitly rejected issuance thereafter, no subsequent acceptance or rearm, and independent PL061 readbacks of the rising edge, falling edge and final off state. The reported last accepted issue comes from the latch evidence. These observations concern the virtual device.
 
 IRQ 지연 및 실행량 초과 대조군에서는 실제 차단 래치를 기준으로 입력을 구분한다. 이벤트 11은 발행, 12는 수신 승인, 24는 수신 거부, 23은 게이트에서 막힌 시도다. 차단 전 승인된 마지막 발행 시각과 차단 후 거부를 확인하고 재승인이나 재무장이 있으면 부적격으로 판정한다. QEMU PL061에서 독립적으로 읽은 상승·하강 전이와 최종 꺼짐 상태가 필요하다.
+
+v3 remains partial. Both deterministic exact boundaries qualified. Fourteen of 23 primary cases qualified on the first attempt and 15 including one cold retry. Eight default-clock ordinary cases and four separate default-clock handoff diagnostics remained unqualified. [EVD-042 v3](evidence/evd-042-v3.en.md)

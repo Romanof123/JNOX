@@ -40,3 +40,5 @@ PART PASS
 ```
 
 [EVD-010](evidence/evd-010.md)
+
+CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)

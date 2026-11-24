@@ -626,3 +626,18 @@ mod deadline_tests;
 mod request_server;
 #[path = "request_server_tests.rs"]
 mod request_server_tests;
+
+#[test]
+fn late_batch_release_charges_incumbent_and_preserves_contractual_wait() {
+    use batch_policy::{BatchPolicy, BatchScheduler};
+    let mut batch = BatchScheduler::<3>::new(BatchPolicy::Hrrn, 0);
+    batch.release(0, 0, 100).unwrap();
+    assert_eq!(batch.decide(0), Ok(Some(0)));
+    // Earlier job has waited 19/100 service estimates, later job 10/20.
+    // Erasing their distinct due times would choose slot 1 by insertion order.
+    batch.release_due(20, 1, 1, 100).unwrap();
+    batch.release_due(20, 10, 2, 20).unwrap();
+    assert_eq!(batch.remaining(0), Some(80));
+    batch.complete(20, 0).unwrap();
+    assert_eq!(batch.decide(20), Ok(Some(2)));
+}

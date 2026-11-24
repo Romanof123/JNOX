@@ -1,0 +1,984 @@
+{
+ "source": "86457068e7ba019d3deabb80f63f47d50436c4a6",
+ "version": 1,
+ "verdict": "PARTIAL: all 10 default-clock guests failed before arbitration",
+ "independent_summary": "# Independent ordinary aperiodic results\nSource 86457068e7ba019d3deabb80f63f47d50436c4a6. All ten ELF and build-log SHA-256 values matched the supplied index. Each capture retains the raw UART, QEMU exception trace, stderr and metadata with exact command, QEMU executable and image hashes, host UNIX nanosecond start and end. Use python check.py to reproduce the per-image results in checked.txt. Execution used WSL QEMU 6.2.0, one A72 TCG, virt/GICv2, 128 MiB, no network or default devices.\n\nAll ten first boots used default QEMU virtual time without icount. Each stopped at IRQ 0 with guest verdict 1. First IRQ lateness ranged from 130150 to 366557 counter ticks at 62.5 MHz (2.0824\u20135.864912 ms), exceeding 62500 ticks before any submission, grant, worker or mask. Whole slots missed at detection were zero. These runs provide no normal periodic response or effective live injection. Measured values include the instrumented QEMU and host scheduling environment.\n\nThe separately declared icount shift=0 diagnostic subset comprised all four pattern A servers, B/SS1 and the two late images. Initial 15-second capture timed out while transmitting UART on each of the five normal diagnostics. Both initial fault captures completed. All first captures survive under diagnostic. The same subset was cold-restarted with Linux-local UART capture under diagnostic-complete. These runs cannot qualify default-clock timing.\n\nOn the five completed normal diagnostic traces, FIFO unit identities, returned quota and dated credits, 256-step wrapping checksums, retired counts and all four periodic releases matched. The independent checker joins assembly return samples to QEMU ERET PCs, checks exception ELRs and complete 832-byte frame containment in 16 KiB task stacks. A/SS1 merges at slot 3 to (7,2). The per-slot conservation replay includes reservation in outstanding work until worker completion. Actual per-unit latency, slot, request ID and unit offset are in checked.txt. Across these samples IRQ lateness was zero ticks, max sampled preparation through the assembly return sample was 94 ticks (1.504 microseconds), and periodic finishes were 258\u2013260 ticks after nominal release (4.128\u20134.160 microseconds). Timer resolution was 16 ns. Ties preserve stream order. QEMU ERET tracing identifies destinations but provides no timestamp for the instructions after the restore sample. Host timestamps include boot and UART dump.\n\nBoth complete diagnostic fault traces stop after 128 server steps. The IRQ interrupts the server after the recorded mask window, 4687500 ticks (75 ms) late, with one full slot elapsed beyond the target. A/SS2 freezes at slot 2 with one outstanding unit, B/DS at slot 1 with four. Both have one charge and zero retired units, no following arbitration or completion. No independent bound justifies 1 ms, 5 ms or the 45 ms residual allowance. Default qualification, admission, board WCET and actual M3 interference remain open.\n",
+ "reviewer_manifest_sha256": "c85166508ad4942eb3a0c350cf65ef8e688de0a94938ebde2af850cb92af2c9a",
+ "build_index": {
+  "source": "86457068e7ba019d3deabb80f63f47d50436c4a6",
+  "tree": "ec6ac0ba42bf097ca64fb838815fddc69b31925d",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-pc-windows-msvc\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+  "cwd": "D:\\codex\\.jnox-work\\next-fixed\\aper45-src\\kernel",
+  "images": {
+   "a-ps": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "a-ps"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "a-ps/build.log",
+    "log_sha256": "5b3907b6cb4f1b8477a4d32d7f010b39ee9734f6214fe70e2a1fb2b363480abf",
+    "path": "a-ps/kernel.elf",
+    "size": 97016,
+    "sha256": "ee8d6f39fcb899fa21fef8f31b8b321795640f71101d82ce7893d28c9fbc870b"
+   },
+   "a-ds": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "a-ds"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "a-ds/build.log",
+    "log_sha256": "7a56eb2db58882a35a139204b72ff7206121ce0ca5de698360eb8f3e8f32d022",
+    "path": "a-ds/kernel.elf",
+    "size": 97016,
+    "sha256": "8f1873495434b5155d3e0bbb3426ec9bff85e82064b2c57e8979e9b8d6270f82"
+   },
+   "a-ss1": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "a-ss1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "a-ss1/build.log",
+    "log_sha256": "b353dd8f65962a26a76038249c5aaca8ede1cd56356a235e083a0d2045f1f488",
+    "path": "a-ss1/kernel.elf",
+    "size": 96296,
+    "sha256": "d839f4593bbba083cb3e7eb62be9f6ea41d5ab81801989b2e5e4ab5374a013a8"
+   },
+   "a-ss2": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "a-ss2"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "a-ss2/build.log",
+    "log_sha256": "b353dd8f65962a26a76038249c5aaca8ede1cd56356a235e083a0d2045f1f488",
+    "path": "a-ss2/kernel.elf",
+    "size": 97016,
+    "sha256": "43db0cc2755d132b6d9fc8f90f27aef6afb2a508ab7964ac48797afcf2207273"
+   },
+   "b-ps": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "b-ps"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "b-ps/build.log",
+    "log_sha256": "b353dd8f65962a26a76038249c5aaca8ede1cd56356a235e083a0d2045f1f488",
+    "path": "b-ps/kernel.elf",
+    "size": 97016,
+    "sha256": "e854e17dacdc66403eb4553b312037c63fbbabfd87556a3326ff7662805017d2"
+   },
+   "b-ds": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "b-ds"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "b-ds/build.log",
+    "log_sha256": "b353dd8f65962a26a76038249c5aaca8ede1cd56356a235e083a0d2045f1f488",
+    "path": "b-ds/kernel.elf",
+    "size": 97016,
+    "sha256": "18a8e5a5f3441fd558709edf41436a2bd4349a3b6b9cd2ed70b2650c368a6f34"
+   },
+   "b-ss1": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "b-ss1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "b-ss1/build.log",
+    "log_sha256": "b353dd8f65962a26a76038249c5aaca8ede1cd56356a235e083a0d2045f1f488",
+    "path": "b-ss1/kernel.elf",
+    "size": 96296,
+    "sha256": "0f43551bdd87c94dba47a319519ca3531a20f42355334fdea0baca5f010d257d"
+   },
+   "b-ss2": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "b-ss2"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "b-ss2/build.log",
+    "log_sha256": "7a56eb2db58882a35a139204b72ff7206121ce0ca5de698360eb8f3e8f32d022",
+    "path": "b-ss2/kernel.elf",
+    "size": 97016,
+    "sha256": "adf36a8503f5cd08443c882665fa80dae617a5ec0e36baea210e73358b89ebbd"
+   },
+   "a-ss2-late": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "a-ss2",
+     "JNOX_APERIODIC_LATE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "a-ss2-late/build.log",
+    "log_sha256": "7a56eb2db58882a35a139204b72ff7206121ce0ca5de698360eb8f3e8f32d022",
+    "path": "a-ss2-late/kernel.elf",
+    "size": 97128,
+    "sha256": "9fcaab3dc9c4ff39460fea6dc686ec734158399dda51ed4422f1511d62d381e2"
+   },
+   "b-ds-late": {
+    "environment": {
+     "JNOX_BOARD": "virt",
+     "CARGO_TARGET_DIR": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds\\target",
+     "CARGO_BUILD_JOBS": "1",
+     "TEMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "TMP": "D:\\codex\\.jnox-work\\next-fixed\\aper45-builds",
+     "JNOX_PROFILE": "aperiodic",
+     "JNOX_APP": "b-ds",
+     "JNOX_APERIODIC_LATE": "1"
+    },
+    "command": [
+     "cargo",
+     "+1.95.0",
+     "build",
+     "--locked",
+     "--release",
+     "-j1"
+    ],
+    "exit": 0,
+    "build_log": "b-ds-late/build.log",
+    "log_sha256": "7a56eb2db58882a35a139204b72ff7206121ce0ca5de698360eb8f3e8f32d022",
+    "path": "b-ds-late/kernel.elf",
+    "size": 97128,
+    "sha256": "49263d4e04915c30b33a619f283e6077c12be7f9ac5493ff1ac401f7e1c30f32"
+   }
+  }
+ },
+ "per_case": {
+  "default": {
+   "a-ds": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 163913,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     4063950,
+     3900037,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "a-ps": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 131064,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     4146893,
+     4015829,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "a-ss1": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 366557,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     4100358,
+     3733801,
+     0,
+     1075956240,
+     1075844540,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "a-ss2": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 143503,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     3937677,
+     3794174,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "a-ss2-late": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 130150,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     3847208,
+     3717058,
+     0,
+     1075956272,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "b-ds": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 133675,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     3874217,
+     3740542,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "b-ds-late": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 130643,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     3826082,
+     3695439,
+     0,
+     1075956272,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "b-ps": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 167667,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     3920179,
+     3752512,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "b-ss1": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 139452,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     3880898,
+     3741446,
+     0,
+     1075956240,
+     1075844540,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   },
+   "b-ss2": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 139971,
+    "preparation_return_max_ticks": null,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 0,
+    "retired": 0,
+    "pending": 0,
+    "last_irq": [
+     1,
+     0,
+     3883314,
+     3743343,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     0,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 0
+   }
+  },
+  "diagnostic-complete": {
+   "a-ds": {
+    "end": 0,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 0,
+    "preparation_return_max_ticks": 92,
+    "periodic_release_to_finish_ticks": [
+     [
+      2,
+      258
+     ],
+     [
+      6,
+      258
+     ],
+     [
+      10,
+      258
+     ],
+     [
+      14,
+      258
+     ]
+    ],
+    "server_submit_to_finish_ticks": [
+     [
+      1,
+      1,
+      0,
+      261
+     ],
+     [
+      3,
+      2,
+      0,
+      262
+     ],
+     [
+      4,
+      2,
+      1,
+      3125263
+     ],
+     [
+      5,
+      3,
+      0,
+      3125221
+     ]
+    ],
+    "charged": 4,
+    "retired": 4,
+    "pending": 0,
+    "last_irq": [
+     1,
+     16,
+     53129646,
+     53129646,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     4,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 2048
+   },
+   "a-ps": {
+    "end": 0,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 0,
+    "preparation_return_max_ticks": 91,
+    "periodic_release_to_finish_ticks": [
+     [
+      2,
+      258
+     ],
+     [
+      6,
+      258
+     ],
+     [
+      10,
+      258
+     ],
+     [
+      14,
+      258
+     ]
+    ],
+    "server_submit_to_finish_ticks": [
+     [
+      4,
+      1,
+      0,
+      9375262
+     ],
+     [
+      5,
+      2,
+      0,
+      6250220
+     ],
+     [
+      8,
+      2,
+      1,
+      15625221
+     ],
+     [
+      9,
+      3,
+      0,
+      15625222
+     ]
+    ],
+    "charged": 4,
+    "retired": 4,
+    "pending": 0,
+    "last_irq": [
+     1,
+     16,
+     53129646,
+     53129646,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     4,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 2048
+   },
+   "a-ss1": {
+    "end": 0,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 0,
+    "preparation_return_max_ticks": 92,
+    "periodic_release_to_finish_ticks": [
+     [
+      2,
+      259
+     ],
+     [
+      6,
+      259
+     ],
+     [
+      10,
+      259
+     ],
+     [
+      14,
+      258
+     ]
+    ],
+    "server_submit_to_finish_ticks": [
+     [
+      1,
+      1,
+      0,
+      262
+     ],
+     [
+      3,
+      2,
+      0,
+      263
+     ],
+     [
+      7,
+      2,
+      1,
+      12500223
+     ],
+     [
+      8,
+      3,
+      0,
+      12500223
+     ]
+    ],
+    "charged": 4,
+    "retired": 4,
+    "pending": 0,
+    "last_irq": [
+     1,
+     16,
+     53129646,
+     53129646,
+     0,
+     1075956240,
+     1075844540,
+     0,
+     4,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 2048
+   },
+   "a-ss2": {
+    "end": 0,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 0,
+    "preparation_return_max_ticks": 94,
+    "periodic_release_to_finish_ticks": [
+     [
+      2,
+      259
+     ],
+     [
+      6,
+      260
+     ],
+     [
+      10,
+      259
+     ],
+     [
+      14,
+      258
+     ]
+    ],
+    "server_submit_to_finish_ticks": [
+     [
+      1,
+      1,
+      0,
+      262
+     ],
+     [
+      3,
+      2,
+      0,
+      265
+     ],
+     [
+      5,
+      2,
+      1,
+      6250227
+     ],
+     [
+      7,
+      3,
+      0,
+      9375227
+     ]
+    ],
+    "charged": 4,
+    "retired": 4,
+    "pending": 0,
+    "last_irq": [
+     1,
+     16,
+     53129646,
+     53129646,
+     0,
+     1075956256,
+     1075844548,
+     0,
+     4,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 2048
+   },
+   "a-ss2-late": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 4687500,
+    "preparation_return_max_ticks": 91,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 1,
+    "retired": 0,
+    "pending": 1,
+    "last_irq": [
+     1,
+     2,
+     14067147,
+     9379647,
+     2,
+     1075989024,
+     1075844924,
+     1,
+     0,
+     1
+    ],
+    "mask": [
+     6254877,
+     14067147
+    ],
+    "step_count": 128
+   },
+   "b-ds-late": {
+    "end": 1,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 4687500,
+    "preparation_return_max_ticks": 90,
+    "periodic_release_to_finish_ticks": [],
+    "server_submit_to_finish_ticks": [],
+    "charged": 1,
+    "retired": 0,
+    "pending": 4,
+    "last_irq": [
+     1,
+     1,
+     10942147,
+     6254647,
+     2,
+     1075989024,
+     1075844924,
+     1,
+     0,
+     4
+    ],
+    "mask": [
+     3129876,
+     10942147
+    ],
+    "step_count": 128
+   },
+   "b-ss1": {
+    "end": 0,
+    "frequency": 62500000,
+    "IRQ_max_ticks": 0,
+    "preparation_return_max_ticks": 91,
+    "periodic_release_to_finish_ticks": [
+     [
+      2,
+      260
+     ],
+     [
+      6,
+      260
+     ],
+     [
+      10,
+      260
+     ],
+     [
+      14,
+      260
+     ]
+    ],
+    "server_submit_to_finish_ticks": [
+     [
+      0,
+      1,
+      0,
+      262
+     ],
+     [
+      1,
+      1,
+      1,
+      3125221
+     ],
+     [
+      5,
+      1,
+      2,
+      15625222
+     ],
+     [
+      7,
+      1,
+      3,
+      21875222
+     ],
+     [
+      11,
+      2,
+      0,
+      21875223
+     ],
+     [
+      12,
+      2,
+      1,
+      25000223
+     ]
+    ],
+    "charged": 6,
+    "retired": 6,
+    "pending": 0,
+    "last_irq": [
+     1,
+     16,
+     53129646,
+     53129646,
+     0,
+     1075956240,
+     1075844540,
+     0,
+     6,
+     0
+    ],
+    "mask": [
+     0,
+     0
+    ],
+    "step_count": 2560
+   }
+  }
+ },
+ "archive": {
+  "encoding": "Ordered base64 gzip-tar chunks",
+  "parts": [
+   "evd-045-v1-raw-01.json",
+   "evd-045-v1-raw-02.json",
+   "evd-045-v1-raw-03.json",
+   "evd-045-v1-raw-04.json"
+  ],
+  "sha256": "34e4509a81532f551305769a0f20f8cbc1c7f9fcd95ad3aabc51b0918662372f",
+  "restore_python": "from pathlib import Path\nimport json,base64,io,tarfile,hashlib\na=json.loads(Path('evd-045-v1.json').read_bytes())['archive']; parts=[]\nfor name in a['parts']:\n    o=json.loads(Path(name).read_bytes()); b=base64.b64decode(o['data'],validate=True); assert hashlib.sha256(b).hexdigest()==o['sha256']; parts.append(b)\nb=b''.join(parts); assert hashlib.sha256(b).hexdigest()==a['sha256']\nwith tarfile.open(fileobj=io.BytesIO(b),mode='r:gz') as t:\n    for name,h in json.load(t.extractfile('archive-file-digests.json')).items():\n        p=Path('evd-045-raw')/name; assert p.resolve().is_relative_to(Path('evd-045-raw').resolve()); b=t.extractfile(name).read(); assert hashlib.sha256(b).hexdigest()==h; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b)",
+  "replay": "Run restore_python alongside the chunk files using Python 3.9+. Run python -B evd-045-raw/aper45-fresh/check.py in the extracted tree to reproduce checked.txt output. No guest or ELF is needed for offline replay."
+ }
+}

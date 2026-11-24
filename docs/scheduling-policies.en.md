@@ -27,6 +27,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Live SMP on two virtual CPUs | IMP-017, POL-013 | CPU0 suspended a running thread on a timer IRQ and CPU1 resumed its saved instruction. Both host threading modes passed. Physical interference remains open. [EVD-017](evidence/evd-017.en.md) |
 | Mutex contention and priority restoration | IMP-018, POL-014 | Four contexts exercised direct handoff, transitive donation, withdrawal on a real timer IRQ and nested immediate ceilings. [EVD-018](evidence/evd-018.en.md) |
 | Multilevel ready queues | IMP-019, POL-009 | Four saturated high-class slots and cumulative feedback demotion, boost and next return were independently traced. [EVD-019](evidence/evd-019.en.md) |
+| Ordinary multilevel tasks | IMP-040, POL-009 | Reconstructed class saturation, block/wake, demotion and boost over 15 MLQ and 42 MLFQ diagnostic decisions. [EVD-040](evidence/evd-040.en.md) |
 | Mixed-criticality budget enforcement | IMP-020, POL-015 | Real IRQs enforced mode change and a HI budget ceiling in a six-slot workload with four occupied slots at carry-in. [EVD-020](evidence/evd-020.en.md) |
 | Ticket lottery and measured stride | IMP-021, POL-010 | Two seeds, late admission, unequal service and a deliberately late IRQ were checked against all 81 grants. [EVD-021](evidence/evd-021.en.md) |
 | Weighted virtual runtime | IMP-022, POL-011 | All 21 dispatches and their service charges matched a separate counter-based replay through sleep and wake. [EVD-022](evidence/evd-022.en.md) |
@@ -104,4 +105,18 @@ POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under D
 
 POL-010 · Forced first-grant rejection and two passing controls. [EVD-035](evidence/evd-035.en.md)
 
-POL-004 / IMP-042. v2 is partial. Fourteen primary cases qualified, including the worst-phase case. Eight default-clock cases inhibited early; same-tick ingress remains unqualified. The ten diagnostic cases are recorded separately. [EVD-042](evidence/evd-042.en.md)
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)
+
+[POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
+
+POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
+
+POL-004 / IMP-043. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
+
+POL-004 / IMP-042. v3 remains partial. Both deterministic exact boundaries qualified. Fourteen of 23 primary cases qualified on the first attempt and 15 including one cold retry. Eight default-clock ordinary cases and four separate default-clock handoff diagnostics remained unqualified. [EVD-042](evidence/evd-042.en.md)
+
+POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)
+
+POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)

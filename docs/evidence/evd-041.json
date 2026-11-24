@@ -1,0 +1,908 @@
+{
+ "source": "73d1b00067822f09f654e9541dea495ddb89a2a4",
+ "first_guest_verdict": "24 of 24 actual boots passed after 24 prelaunch harness failures",
+ "configs": {
+  "fixed-fifo-trace0-cost0": {
+   "elf": {
+    "path": "fixed-fifo-trace0-cost0/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 94192,
+    "sha256": "364ef621759c5f44c1d236b05a8348a0a2a027ff4c0cf7c6288d1cb2f234d8a5"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     14936,
+     14936
+    ],
+    [
+     1075855360,
+     288,
+     98672
+    ]
+   ],
+   "sections": {
+    ".text": 13472,
+    ".rodata": 1464,
+    ".data": 288,
+    ".bss": 81992,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {},
+   "groups": {}
+  },
+  "fixed-fifo-trace0-cost1": {
+   "elf": {
+    "path": "fixed-fifo-trace0-cost1/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 94400,
+    "sha256": "53e9c67f3de56c84620e272cc8965585e9b207e3b37330601d5a0c52070e1f77"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     15696,
+     15696
+    ],
+    [
+     1075855360,
+     288,
+     105872
+    ]
+   ],
+   "sections": {
+    ".text": 14228,
+    ".rodata": 1464,
+    ".data": 288,
+    ".bss": 89200,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {
+    "0": [
+     1008,
+     1008,
+     1008
+    ],
+    "1": [
+     992,
+     992,
+     992
+    ],
+    "2": [
+     976,
+     976,
+     976
+    ],
+    "4": [
+     992,
+     992,
+     992
+    ]
+   },
+   "groups": {
+    "yield_different": {
+     "count": 3,
+     "boots": 3,
+     "handler_min_max": [
+      9355,
+      12301
+     ],
+     "policy_min_max": [
+      4363,
+      5466
+     ]
+    },
+    "sleep_different": {
+     "count": 6,
+     "boots": 3,
+     "handler_min_max": [
+      2965,
+      5810
+     ],
+     "policy_min_max": [
+      577,
+      3042
+     ]
+    },
+    "irq_different": {
+     "count": 6,
+     "boots": 3,
+     "handler_min_max": [
+      2119,
+      12688
+     ],
+     "policy_min_max": [
+      1530,
+      5607
+     ]
+    },
+    "exit_different": {
+     "count": 9,
+     "boots": 3,
+     "handler_min_max": [
+      160,
+      1436
+     ],
+     "policy_min_max": [
+      84,
+      896
+     ]
+    },
+    "sleep_same": {
+     "count": 3,
+     "boots": 3,
+     "handler_min_max": [
+      1365,
+      1463
+     ],
+     "policy_min_max": [
+      1261,
+      1351
+     ]
+    }
+   }
+  },
+  "fixed-fifo-trace1-cost0": {
+   "elf": {
+    "path": "fixed-fifo-trace1-cost0/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 94504,
+    "sha256": "92343666ec00321c32d51f324f6fb0ebe84ccbbd0cbb1f064616f6651a7775b3"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     15728,
+     15728
+    ],
+    [
+     1075855360,
+     288,
+     108432
+    ]
+   ],
+   "sections": {
+    ".text": 14240,
+    ".rodata": 1488,
+    ".data": 288,
+    ".bss": 91752,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {},
+   "groups": {}
+  },
+  "fixed-fifo-trace1-cost1": {
+   "elf": {
+    "path": "fixed-fifo-trace1-cost1/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 98792,
+    "sha256": "51824e054c157fa50fd0ea08154b5631db1b02171a422941bdbae67a5669257b"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     16496,
+     16496
+    ],
+    [
+     1075859456,
+     288,
+     115632
+    ]
+   ],
+   "sections": {
+    ".text": 15004,
+    ".rodata": 1488,
+    ".data": 288,
+    ".bss": 98960,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {
+    "0": [
+     1328,
+     1328,
+     1328
+    ],
+    "1": [
+     1328,
+     1328,
+     1328
+    ],
+    "2": [
+     1312,
+     1312,
+     1312
+    ],
+    "4": [
+     1312,
+     1312,
+     1312
+    ]
+   },
+   "groups": {
+    "yield_different": {
+     "count": 3,
+     "boots": 3,
+     "handler_min_max": [
+      10925,
+      14367
+     ],
+     "policy_min_max": [
+      4147,
+      6959
+     ]
+    },
+    "sleep_different": {
+     "count": 6,
+     "boots": 3,
+     "handler_min_max": [
+      3800,
+      4751
+     ],
+     "policy_min_max": [
+      466,
+      2635
+     ]
+    },
+    "irq_different": {
+     "count": 6,
+     "boots": 3,
+     "handler_min_max": [
+      2227,
+      11065
+     ],
+     "policy_min_max": [
+      1438,
+      5506
+     ]
+    },
+    "exit_different": {
+     "count": 9,
+     "boots": 3,
+     "handler_min_max": [
+      158,
+      1505
+     ],
+     "policy_min_max": [
+      47,
+      929
+     ]
+    },
+    "sleep_same": {
+     "count": 3,
+     "boots": 3,
+     "handler_min_max": [
+      1382,
+      1492
+     ],
+     "policy_min_max": [
+      1241,
+      1332
+     ]
+    }
+   }
+  },
+  "fixed-rr-trace0-cost0": {
+   "elf": {
+    "path": "fixed-rr-trace0-cost0/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 94048,
+    "sha256": "edcaee2cbd1e9b80d331c8be4c0c461556562955c072b44fee91687ba5a77e0f"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     14728,
+     14728
+    ],
+    [
+     1075855360,
+     288,
+     98672
+    ]
+   ],
+   "sections": {
+    ".text": 13368,
+    ".rodata": 1360,
+    ".data": 288,
+    ".bss": 81992,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {},
+   "groups": {}
+  },
+  "fixed-rr-trace0-cost1": {
+   "elf": {
+    "path": "fixed-rr-trace0-cost1/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 94256,
+    "sha256": "13a284c2684ee2027c8c9601b54341b35daf2169dc9d29d83cb85745dc962f9e"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     15488,
+     15488
+    ],
+    [
+     1075855360,
+     288,
+     105872
+    ]
+   ],
+   "sections": {
+    ".text": 14124,
+    ".rodata": 1360,
+    ".data": 288,
+    ".bss": 89200,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {
+    "0": [
+     1024,
+     1024,
+     1024
+    ],
+    "1": [
+     976,
+     976,
+     976
+    ],
+    "2": [
+     1008,
+     1008,
+     1008
+    ],
+    "4": [
+     832,
+     832,
+     832
+    ]
+   },
+   "groups": {
+    "irq_different": {
+     "count": 9,
+     "boots": 3,
+     "handler_min_max": [
+      1738,
+      15240
+     ],
+     "policy_min_max": [
+      369,
+      8541
+     ]
+    },
+    "exit_different": {
+     "count": 9,
+     "boots": 3,
+     "handler_min_max": [
+      245,
+      6208
+     ],
+     "policy_min_max": [
+      74,
+      1953
+     ]
+    }
+   }
+  },
+  "fixed-rr-trace1-cost0": {
+   "elf": {
+    "path": "fixed-rr-trace1-cost0/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 94360,
+    "sha256": "60ad8f2174653edb5c3218fd140b003840f468eeb499d2ff4796ae01ca757864"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     15520,
+     15520
+    ],
+    [
+     1075855360,
+     288,
+     108432
+    ]
+   ],
+   "sections": {
+    ".text": 14136,
+    ".rodata": 1384,
+    ".data": 288,
+    ".bss": 91752,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {},
+   "groups": {}
+  },
+  "fixed-rr-trace1-cost1": {
+   "elf": {
+    "path": "fixed-rr-trace1-cost1/target/aarch64-unknown-none/release/jnox-kernel",
+    "size": 94560,
+    "sha256": "b97ca58d67d5f12313c8f4431d5e7920c77af4583b147689d47b4a29e168e197"
+   },
+   "PT_LOAD_phys_filesz_memsz": [
+    [
+     1075838976,
+     16288,
+     16288
+    ],
+    [
+     1075855360,
+     288,
+     115632
+    ]
+   ],
+   "sections": {
+    ".text": 14900,
+    ".rodata": 1384,
+    ".data": 288,
+    ".bss": 98960,
+    ".stack": 16384,
+    ".comment": 153
+   },
+   "stack_bytes": 81920,
+   "touched_depth_by_run": {
+    "0": [
+     1360,
+     1360,
+     1360
+    ],
+    "1": [
+     1328,
+     1328,
+     1328
+    ],
+    "2": [
+     1344,
+     1344,
+     1344
+    ],
+    "4": [
+     832,
+     832,
+     832
+    ]
+   },
+   "groups": {
+    "irq_different": {
+     "count": 9,
+     "boots": 3,
+     "handler_min_max": [
+      1946,
+      17074
+     ],
+     "policy_min_max": [
+      316,
+      9054
+     ]
+    },
+    "exit_different": {
+     "count": 9,
+     "boots": 3,
+     "handler_min_max": [
+      321,
+      7065
+     ],
+     "policy_min_max": [
+      71,
+      1864
+     ]
+    }
+   }
+  }
+ },
+ "original_independent_report": "# Independent fixed cost measurements\n\nFrozen target 73d1b00067822f09f654e9541dea495ddb89a2a4. Three sequential QEMU cold boots per cell, 24 accepted, zero guest failures. All 24 earlier capture-wrapper invocations stopped before launching QEMU due to a precreated directory. Their original logs are under prelaunch. Each accepted boot met the UART gate and its stopped PC lay inside the linked idle function.\n\n| Configuration | boots | ELF B | allocated section B | LOAD file / memory B | calibration ticks, min\u2013max |\n|---|---:|---:|---:|---|---|\n| fixed-fifo-trace0-cost0 | 3 | 94192 | 113600 | 15224 / 113608 | unobserved |\n| fixed-fifo-trace0-cost1 | 3 | 94400 | 121564 | 15984 / 121568 | [236, 251] |\n| fixed-fifo-trace1-cost0 | 3 | 94504 | 124152 | 16016 / 124160 | unobserved |\n| fixed-fifo-trace1-cost1 | 3 | 98792 | 132124 | 16784 / 132128 | [235, 247] |\n| fixed-rr-trace0-cost0 | 3 | 94048 | 113392 | 15016 / 113400 | unobserved |\n| fixed-rr-trace0-cost1 | 3 | 94256 | 121356 | 15776 / 121360 | [247, 330] |\n| fixed-rr-trace1-cost0 | 3 | 94360 | 123944 | 15808 / 123952 | unobserved |\n| fixed-rr-trace1-cost1 | 3 | 94560 | 131916 | 16576 / 131920 | [235, 293] |\n\n| Configuration | operation / frame | samples | boots | handler ticks min\u2013max | policy ticks min\u2013max |\n|---|---|---:|---:|---|---|\n| fixed-fifo-trace0-cost1 | yield_different | 3 | 3 | [9355, 12301] | [4363, 5466] |\n| fixed-fifo-trace0-cost1 | sleep_different | 6 | 3 | [2965, 5810] | [577, 3042] |\n| fixed-fifo-trace0-cost1 | irq_different | 6 | 3 | [2119, 12688] | [1530, 5607] |\n| fixed-fifo-trace0-cost1 | exit_different | 9 | 3 | [160, 1436] | [84, 896] |\n| fixed-fifo-trace0-cost1 | sleep_same | 3 | 3 | [1365, 1463] | [1261, 1351] |\n| fixed-fifo-trace1-cost1 | yield_different | 3 | 3 | [10925, 14367] | [4147, 6959] |\n| fixed-fifo-trace1-cost1 | sleep_different | 6 | 3 | [3800, 4751] | [466, 2635] |\n| fixed-fifo-trace1-cost1 | irq_different | 6 | 3 | [2227, 11065] | [1438, 5506] |\n| fixed-fifo-trace1-cost1 | exit_different | 9 | 3 | [158, 1505] | [47, 929] |\n| fixed-fifo-trace1-cost1 | sleep_same | 3 | 3 | [1382, 1492] | [1241, 1332] |\n| fixed-rr-trace0-cost1 | irq_different | 9 | 3 | [1738, 15240] | [369, 8541] |\n| fixed-rr-trace0-cost1 | exit_different | 9 | 3 | [245, 6208] | [74, 1953] |\n| fixed-rr-trace1-cost1 | irq_different | 9 | 3 | [1946, 17074] | [316, 9054] |\n| fixed-rr-trace1-cost1 | exit_different | 9 | 3 | [321, 7065] | [71, 1864] |\n\n| Cost-enabled configuration | changed depth min\u2013max B, slots 0 / 1 / 2 / idle | frequency Hz |\n|---|---|---:|\n| fixed-fifo-trace0-cost1 | 1008\u20131008 / 992\u2013992 / 976\u2013976 / 992\u2013992 | [62500000] |\n| fixed-fifo-trace1-cost1 | 1328\u20131328 / 1328\u20131328 / 1312\u20131312 / 1312\u20131312 | [62500000] |\n| fixed-rr-trace0-cost1 | 1024\u20131024 / 976\u2013976 / 1008\u20131008 / 832\u2013832 | [62500000] |\n| fixed-rr-trace1-cost1 | 1360\u20131360 / 1328\u20131328 / 1344\u20131344 / 832\u2013832 | [62500000] |\n\nThe four configured stacks include the 832-byte fabricated frame. Slot 3 remained all zero in each of the twelve cost-enabled captures. Each image reserves 81920 bytes for five stacks. Cost-enabled images also reserve 7208 journal bytes. The boot stack occupies a separate 16384 bytes. Changed-byte depth can underestimate stack use through coincidental paint, restoration and unused stack-pointer adjustments.\n\nThe counter includes parts of the Rust handler and the complete inner policy event. Vector entry, saves, restores, ERET and handler prologue/epilogue are outside the sampled interval. Trace publication, decoding, timer servicing and sampling instructions can affect the inclusive outer measurements. Appending a journal entry after the endpoint can affect later scheduling. Calibration is one ordered counter pair per boot, with no subtraction. Convert ticks using ticks \u00d7 1e9 / frequency. Cost-off images establish behavior and static footprint only. The samples do not establish runtime overhead relative to the uninstrumented kernel, cross-cell speed rankings, worst-case bounds, board performance or qualification.\n\nRun python3 verify.py to reconstruct observations.json. Each event row gives group, incoming/selected frame addresses, four ordered counter endpoints, outer/inner ticks and cumulative group maxima within that run. Slot depth arrays retain boot order. Per-ELF PT_LOAD ranges, section sizes, all symbols, ELF binaries and corresponding build logs are included. The candidate patch and tracked working-tree patch are supplied. working-tree-status.txt records the untracked Python cache.\n",
+ "full_local_archive": {
+  "filename": "cost-fresh.tar.gz",
+  "sha256": "a94fffb1d18e6ffadbbfd060d27423487a37f009776c2224ae633c17296418d0"
+ },
+ "archive": {
+  "format": "Ordered byte chunks of one DEFLATE ZIP; each linked JSON stores base64 and SHA-256",
+  "sha256": "24c69f5c67b32ce8100ad3f160b61ff07b023fb948475008657b832b0fe357d4",
+  "parts": [
+   "evd-041-raw-01.json",
+   "evd-041-raw-02.json",
+   "evd-041-raw-03.json",
+   "evd-041-raw-04.json",
+   "evd-041-raw-05.json"
+  ],
+  "entry_sha256": {
+   "build_cost_matrix.py": "dccb320b7c037721fee9821b6fb14de1966aefecc8f676b9ad20fb3c275561e5",
+   "candidate.patch": "7028f1fbd5c8b2d4fc22b103ac855adec7b97f13d5c08ea0813718ae9295e953",
+   "fixed-fifo-trace0-cost0/1/gate.log": "b848c71d7226ffa760dd44de3ed60a57d5dae2962ce45413a995f24e55466851",
+   "fixed-fifo-trace0-cost0/1/raw/audit.bin": "779324012a3735655b4fb49242ee6e8d823587ef4e56e1ef4e65c00d62a36227",
+   "fixed-fifo-trace0-cost0/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace0-cost0/1/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace0-cost0/1/raw/launch.json": "d987c8f367a0e98b3b397bb0f941936605d5e2fed2f690455cda0242abd464a6",
+   "fixed-fifo-trace0-cost0/1/raw/qmp.json": "6e4e89d445043adc9adfe57b2dd13fd9e64192571f6924a1117b30f5f3087221",
+   "fixed-fifo-trace0-cost0/1/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-fifo-trace0-cost0/1/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace0-cost0/1/status.json": "8bb05c13b8c559a9c3b47a10334585f4ac07c16a09a9a0c110299cfa887eb60b",
+   "fixed-fifo-trace0-cost0/2/gate.log": "e182fecdddc24b9bb7025068c10aec324ca2ed342273fc0c1e73f9934ef7bd96",
+   "fixed-fifo-trace0-cost0/2/raw/audit.bin": "8e21e87d91b00d3d1a85e4af22e01dba9aa33d1301c80dbcc22e5e0b5a4b199f",
+   "fixed-fifo-trace0-cost0/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace0-cost0/2/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace0-cost0/2/raw/launch.json": "719d701901af932ee8b54ea9eb288710633c634b1726bfa385957441de6f6173",
+   "fixed-fifo-trace0-cost0/2/raw/qmp.json": "9d1f3a9e853f6f5b9b31d0500a0096358919e87a440b34d001752382b9407296",
+   "fixed-fifo-trace0-cost0/2/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-fifo-trace0-cost0/2/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace0-cost0/2/status.json": "95de0d42eb66040698bf7a340306ea0ba8d5668fd0109aaebf15dc1ad95b07f3",
+   "fixed-fifo-trace0-cost0/3/gate.log": "814db1deeaa32bbe4f283026c14fc7319a0dbdcbdc2c4d38bdfece0c9ec96e87",
+   "fixed-fifo-trace0-cost0/3/raw/audit.bin": "86b6daad47528d4bff9dafabfdbe266a0abaac701fa6b6f3876dc4d4779324ce",
+   "fixed-fifo-trace0-cost0/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace0-cost0/3/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace0-cost0/3/raw/launch.json": "600e0c94885030831cff094c27a4b428fa22c269eed9a3cb17357e66fc354a02",
+   "fixed-fifo-trace0-cost0/3/raw/qmp.json": "cd29beb7f6ef5d356b40e487da2cc4c0a1cac219fcb4f99052cb546b5033295b",
+   "fixed-fifo-trace0-cost0/3/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-fifo-trace0-cost0/3/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace0-cost0/3/status.json": "71cb415eb3cd423a0f36da89d84c8f5d05d59218eecd4f6477be9a25b1b086e2",
+   "fixed-fifo-trace0-cost0/build.log": "70f85d2ed812acd9f102d56a193fc537f09f37c89349f3eea82ca17971299ee7",
+   "fixed-fifo-trace0-cost0/nm-S.txt": "2ea4850819f0ed12460f6830d5cf3ca748c0075160322fb32192877827eb8b1f",
+   "fixed-fifo-trace0-cost0/readelf-lW.txt": "e88bdb8e75b3c6f9fa66b7cbe7f994e359f9d30cd4d4135c3ff70b8fde545eff",
+   "fixed-fifo-trace0-cost0/readelf-SW.txt": "a13cfd90e1965bbe3b7aa2a2f3f24e78b1835d76837db754e475cf671d29d269",
+   "fixed-fifo-trace0-cost0/size-A.txt": "1fdcc9cd56c276837205551a0fa12ed27c9ec85dc7389042ea9c8719967861d9",
+   "fixed-fifo-trace0-cost1/1/gate.log": "3179531dedeabcd2efc9c647d035a86b5379ee79e70eefa84484b889c43b1657",
+   "fixed-fifo-trace0-cost1/1/raw/audit.bin": "5571bc12a0e3be953395e184c7c1689a034adaf984d6709aec8662e9b3bac2fa",
+   "fixed-fifo-trace0-cost1/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace0-cost1/1/raw/fixed_cost_records.bin": "bc99c375b89f72a534c93f7660bc57cd460baf715bb0ab1161ad7331ee7e4ff0",
+   "fixed-fifo-trace0-cost1/1/raw/fixed_cost_stacks.bin": "d6d6aa1efe08ef11623d82dde0fef810bb1253e10db3ff43a3cf104cb2dae3cc",
+   "fixed-fifo-trace0-cost1/1/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace0-cost1/1/raw/launch.json": "17c081d27eb647829ea8f0929c8db0be9a9ab82750b635a4bfa64c856960c673",
+   "fixed-fifo-trace0-cost1/1/raw/qmp.json": "88ecd5cd80a91c2569e0db8e6dbf42398605cb6ad0edbad697124571a20498c8",
+   "fixed-fifo-trace0-cost1/1/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-fifo-trace0-cost1/1/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace0-cost1/1/status.json": "fb2f69856a83d1684e24cde293a13a084cc5cedd572e4e6963548f4bbbc3dfa5",
+   "fixed-fifo-trace0-cost1/2/gate.log": "4e2d1aa4818a9ec909f655491e222efb55d8563eb3f5f3b79eaedf69fef9f244",
+   "fixed-fifo-trace0-cost1/2/raw/audit.bin": "e1a90660cae3e23b1ed82fc6d2b6eb0055bf871e7f86532ef5f487c8312d5a04",
+   "fixed-fifo-trace0-cost1/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace0-cost1/2/raw/fixed_cost_records.bin": "ff70d50445618c402000ca6829a0f1dbaeddf93d7dd94fdcab65a6fdec580d01",
+   "fixed-fifo-trace0-cost1/2/raw/fixed_cost_stacks.bin": "eb27bcc5ac7ec74e3346961df348696a179bff438f806c45f4242342b4c05fd7",
+   "fixed-fifo-trace0-cost1/2/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace0-cost1/2/raw/launch.json": "6e05d926bd16642e64fbc7202e635f4afffbe206900f11352019eebb4ab51914",
+   "fixed-fifo-trace0-cost1/2/raw/qmp.json": "2a11fcea8d76c4bc2478fd0f0df47eb25be5617496a1eb9dfbccc76c15b89abd",
+   "fixed-fifo-trace0-cost1/2/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-fifo-trace0-cost1/2/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace0-cost1/2/status.json": "96b332b86481e4d97a63e23b92904ce82de46975efdd03e7eac783b348265475",
+   "fixed-fifo-trace0-cost1/3/gate.log": "643e07b1340a163f680733a148de8d332a78a477e143e2845438c31dccf0d0ce",
+   "fixed-fifo-trace0-cost1/3/raw/audit.bin": "439e225d111157263ef206e7649a16868dce5ab9538ac9a3fc3191296b2e827a",
+   "fixed-fifo-trace0-cost1/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace0-cost1/3/raw/fixed_cost_records.bin": "347ea500454af009b3655a6f8aab2cb078b82414a92aa8d1961fb2b069d37c0e",
+   "fixed-fifo-trace0-cost1/3/raw/fixed_cost_stacks.bin": "cd3cd1dae2644ad6f1f3d5796bc46526a76be0974696109d11702f89c0a26eaa",
+   "fixed-fifo-trace0-cost1/3/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace0-cost1/3/raw/launch.json": "869819ec9b963a19ccdae1209ce2123737de63095477a647eca7bcab08bdb368",
+   "fixed-fifo-trace0-cost1/3/raw/qmp.json": "7a89d1f89da2bd469e2cc186d1dbe71c4b6d00270ed179d5154a36ad60cfd24b",
+   "fixed-fifo-trace0-cost1/3/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-fifo-trace0-cost1/3/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace0-cost1/3/status.json": "6b11e0871971680fe033a586cd2a212d008054251f484989b543e2f8840ed3a9",
+   "fixed-fifo-trace0-cost1/build.log": "655586e41b5a167ae208652bb228dbad2f031546c4a7fbe255b5c3a7d544e85c",
+   "fixed-fifo-trace0-cost1/nm-S.txt": "e365b6e4e8ba972750b749dd10ce82043ded4fcadc4ebc916934c8ebe7fea3e4",
+   "fixed-fifo-trace0-cost1/readelf-lW.txt": "e4a83e57a15d6674e3c3b544fcf37a7b353874e6a5acd42687f34541f1087c0a",
+   "fixed-fifo-trace0-cost1/readelf-SW.txt": "7c7d774843da49f8412eccf524cc7c29f56ec8c06d1850ddc961c4374d456876",
+   "fixed-fifo-trace0-cost1/size-A.txt": "d73ba3eda38d28819a7a0304f997449b3d36baa82db0ee49d7994b404aa7d23f",
+   "fixed-fifo-trace1-cost0/1/gate.log": "0db9b7e275fd3bb9531a6e2ef6edae75a8ab9d67657cfeb6822236e4ab00f01f",
+   "fixed-fifo-trace1-cost0/1/raw/audit.bin": "22d2fe44970e4111506ef1e79dd8ccbfd238ba4165a46174a471840f3cdb52fb",
+   "fixed-fifo-trace1-cost0/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace1-cost0/1/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace1-cost0/1/raw/launch.json": "e2e965106947aa51b2d23a6a7f5d018b7f8b9a7f56fa67dd86aa3ff315f7f0c6",
+   "fixed-fifo-trace1-cost0/1/raw/qmp.json": "e2bb9629ed54b3c789dd80347169d5fe23c0665b4fe70acc8668dc472eeb8642",
+   "fixed-fifo-trace1-cost0/1/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-fifo-trace1-cost0/1/raw/trace.bin": "3e80c55de53cfaf91561db8d431fdd9af9a9de183569f142a551c12448b2003d",
+   "fixed-fifo-trace1-cost0/1/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace1-cost0/1/status.json": "9dd75dd24f646922dfe745f96c8ec346a0186495a894c9da7cee99c58f60d61e",
+   "fixed-fifo-trace1-cost0/2/gate.log": "9c1035d68426156e12e9abd6aa9b735cde1e8de117da03e2a685dc85aa4287c2",
+   "fixed-fifo-trace1-cost0/2/raw/audit.bin": "3f6e982d467fec3faa33f945ee72a342ab260fd4726beebf5c02ec1045465d7b",
+   "fixed-fifo-trace1-cost0/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace1-cost0/2/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace1-cost0/2/raw/launch.json": "d2608c055e48a8814413e0d2906b1450520ebab7cc471c7e010fd00cf0995789",
+   "fixed-fifo-trace1-cost0/2/raw/qmp.json": "50f63870b87d13de23dab6f32f940a8f970bdaa6bf0651cb41b8ac3a0f478906",
+   "fixed-fifo-trace1-cost0/2/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-fifo-trace1-cost0/2/raw/trace.bin": "ad814d327c53918785bdf9e54be27bc7548fff3dfa0f07ebb252f234ea585c24",
+   "fixed-fifo-trace1-cost0/2/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace1-cost0/2/status.json": "f52a2e1b6616aa41d4cb8b66c81b1f4cfc14aee03bd5ec00877ca08280cdc517",
+   "fixed-fifo-trace1-cost0/3/gate.log": "06c948a53e2623f9a2719f399b55c2e1895e9305ab6c94fa939362678620e60a",
+   "fixed-fifo-trace1-cost0/3/raw/audit.bin": "d52f2105285533cc338cd179131552c591f71b09fa6134e6ad29463b8d688b8d",
+   "fixed-fifo-trace1-cost0/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace1-cost0/3/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace1-cost0/3/raw/launch.json": "6758a5610678eba52cdee48ea0602abe01ae4e3293adb761dc0529d0839c4c36",
+   "fixed-fifo-trace1-cost0/3/raw/qmp.json": "8a190388b2e59c3b893fea0d6a5f826c7bedbc1e9f8973d4ee24addf01e8899d",
+   "fixed-fifo-trace1-cost0/3/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-fifo-trace1-cost0/3/raw/trace.bin": "897d0aec8d63bc6d82e54903f084b1a36d0de9b920d27ff8690ab0defddec948",
+   "fixed-fifo-trace1-cost0/3/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace1-cost0/3/status.json": "7870eace4da92066596092c6f5b77f9bf720a1e367af9ddf4a1bd9280b639acb",
+   "fixed-fifo-trace1-cost0/build.log": "8f650ae0015fcc292fb238475bdcb57dec055331f3cfbfcf9b3e4cb49e6cfa31",
+   "fixed-fifo-trace1-cost0/nm-S.txt": "fccb2f0cd567f8324ccfc500a2efb00349795ef52d213834e4271d5d1d6a72e7",
+   "fixed-fifo-trace1-cost0/readelf-lW.txt": "946253b701653087cdbe36e00d207e164f24aff25628216e80bafe80e943842a",
+   "fixed-fifo-trace1-cost0/readelf-SW.txt": "570b9ec8d29e607bdf38bafb318fe2acaa829bb32f22b9be4509311fb19537c3",
+   "fixed-fifo-trace1-cost0/size-A.txt": "c34cfc1d8c33e06af917e03b357ec81d92875891fb7b46a5454044711139a174",
+   "fixed-fifo-trace1-cost1/1/gate.log": "35a9c67fe27842e7e98ad3d778a84ff01e215436f644745cd2bcdd14ebc5eb97",
+   "fixed-fifo-trace1-cost1/1/raw/audit.bin": "eb66fac29b211146a15777d7cb5ab0f251a3974e229979a5e23e925cf29d589c",
+   "fixed-fifo-trace1-cost1/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace1-cost1/1/raw/fixed_cost_records.bin": "9ff1bb899b7683f720c3317dc432365691eaa87f9a61cf39691109ce6c512f5b",
+   "fixed-fifo-trace1-cost1/1/raw/fixed_cost_stacks.bin": "bc3847a2d55b4a2b1478cb327fc8347729354bd56e5cfe0a4c24a457148cc31b",
+   "fixed-fifo-trace1-cost1/1/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace1-cost1/1/raw/launch.json": "4c7d8c5fc28445b1dc2ac5ddb8c231bbfbffb0194f1bad3708346cc488c29f34",
+   "fixed-fifo-trace1-cost1/1/raw/qmp.json": "4b284fdf532b5d5c75602a533e5c9c391076b1003770e727ac21bd8833028134",
+   "fixed-fifo-trace1-cost1/1/raw/registers.txt": "d87e450973b2309fb20dab5a586a1c1df9a2467d61b21581786abe7a65d1b7f1",
+   "fixed-fifo-trace1-cost1/1/raw/trace.bin": "fe2ceb26a9bd956769b3d89b7650100bc1d7d6bab79ecad5b006f8f960cc0083",
+   "fixed-fifo-trace1-cost1/1/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace1-cost1/1/status.json": "af0485f3df4a1d84b3773d18f9be82fd9dae5333f3b9df9168d2e1c417f9fe17",
+   "fixed-fifo-trace1-cost1/2/gate.log": "cb33470a9ca50508238ba7060948522398e93e5ae1b89f9c91355da71f6ad90d",
+   "fixed-fifo-trace1-cost1/2/raw/audit.bin": "83972d9f38693d3a45c079d126676d2e98b4c94efa835ade3f1cec11d45e658c",
+   "fixed-fifo-trace1-cost1/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace1-cost1/2/raw/fixed_cost_records.bin": "44d1cd0759faca0d718c1bfcafead826aa8f06e0710becc721e6293107278f5e",
+   "fixed-fifo-trace1-cost1/2/raw/fixed_cost_stacks.bin": "4148900bafddadef040d6fb89cf97f52a77c2c354c9850a8c62d39c827610854",
+   "fixed-fifo-trace1-cost1/2/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace1-cost1/2/raw/launch.json": "2fe38076a56e9a4e14bd5fc158544dbb6992966adb57816d878a2777702ea479",
+   "fixed-fifo-trace1-cost1/2/raw/qmp.json": "10cbefd109b1b642ff18670c4e927bfa580f47314d999922596137d76763424d",
+   "fixed-fifo-trace1-cost1/2/raw/registers.txt": "d87e450973b2309fb20dab5a586a1c1df9a2467d61b21581786abe7a65d1b7f1",
+   "fixed-fifo-trace1-cost1/2/raw/trace.bin": "2099147cb69a1e35b5795809347a2acb405f85fc68e29a9eebb9b3851039023f",
+   "fixed-fifo-trace1-cost1/2/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace1-cost1/2/status.json": "4533f40dc1c61edf2559c245cf1869a85ecba9e648a5e66e42674846db9c4727",
+   "fixed-fifo-trace1-cost1/3/gate.log": "b5b3b7d7b033eec4952fa456f4336e92e3dcce409fcdef168399f94fed9a928c",
+   "fixed-fifo-trace1-cost1/3/raw/audit.bin": "49e8f4b980c2897aa292a51774ba90ebc1e3b781d4d910b00ac2d8b35241fa5f",
+   "fixed-fifo-trace1-cost1/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-fifo-trace1-cost1/3/raw/fixed_cost_records.bin": "7836f77ae2f1050a19bd8bcd4935c95747948d5d5a9c9e6b341e8e0a78e1286f",
+   "fixed-fifo-trace1-cost1/3/raw/fixed_cost_stacks.bin": "cc0403e44e73f40fe5da99016af273d1ed709851ba9c8070c88369095af2aa51",
+   "fixed-fifo-trace1-cost1/3/raw/int.trace": "ec9402d34f96b65e9d3c56c43c046be7cb33cb0f04d2740b2249c9cea4a03567",
+   "fixed-fifo-trace1-cost1/3/raw/launch.json": "6ba76ff95eae08d1112d298984f0c198e1b01e6ba81797d875eafd0e96d38df4",
+   "fixed-fifo-trace1-cost1/3/raw/qmp.json": "d7f77db8f05082b6ae78d54f1a4d6beaa09a40d1a0e288322a366c3fedabbbe2",
+   "fixed-fifo-trace1-cost1/3/raw/registers.txt": "d87e450973b2309fb20dab5a586a1c1df9a2467d61b21581786abe7a65d1b7f1",
+   "fixed-fifo-trace1-cost1/3/raw/trace.bin": "88dac508850fba6e4cc72af6d9d239a7fe63d5c671e4e74b975d9c59bf926714",
+   "fixed-fifo-trace1-cost1/3/raw/uart.bin": "a40ee0fadd2e8ad9d97f313d3ba6db2da8f4952faacc8f7bfc5175fda6d2b543",
+   "fixed-fifo-trace1-cost1/3/status.json": "face925a71b9d4d1b389d248d3a99a4c8624a8145be82c6f8b393ea9004293b3",
+   "fixed-fifo-trace1-cost1/build.log": "d6c6d91d707a5556da5134bfaed29e00cb40a3517573d3a09fedc4f19f573581",
+   "fixed-fifo-trace1-cost1/nm-S.txt": "a2d9988e84f7d8250fff0fd7d4b9f1f97648587bedfa03ec1b17acb154c18123",
+   "fixed-fifo-trace1-cost1/readelf-lW.txt": "edafe6983fa022b8a9661958f6b264cb89db5dea0d1c9b0054e25845cd85029b",
+   "fixed-fifo-trace1-cost1/readelf-SW.txt": "59deeddb095d7e72e7370a9c705d31e4d8d5e2864ab933d1c3b11d5736abc967",
+   "fixed-fifo-trace1-cost1/size-A.txt": "b985c7f978c96d3456e1db6a2fde4fa33f396241794e5417a675b9ba2feabd83",
+   "fixed-rr-trace0-cost0/1/gate.log": "af4a85cfb4411732a39886aad3feac6fe820dabf451e561c8f86321733833cce",
+   "fixed-rr-trace0-cost0/1/raw/audit.bin": "0b02e41c8173ee1c2d457ea553d40693229c359621d5a7b64ae73468925787f1",
+   "fixed-rr-trace0-cost0/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace0-cost0/1/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace0-cost0/1/raw/launch.json": "5f7f7bf84f44df3f1dd5a752c412763abc1965ea5b67fec55d9067ca53d2a5fe",
+   "fixed-rr-trace0-cost0/1/raw/qmp.json": "6b9b8cc4ca7d0efff305a18e08932e621208beb151da7efb7fd9a6accb8c5f27",
+   "fixed-rr-trace0-cost0/1/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-rr-trace0-cost0/1/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace0-cost0/1/status.json": "967275adb587727494c184708c32c4e6080b42e5b0be92cb96ffb5c8f3fe389a",
+   "fixed-rr-trace0-cost0/2/gate.log": "656eaf8df03f34f35917a2761d43bbc9ff64c2bb06cefc9223b27ec79db0bfca",
+   "fixed-rr-trace0-cost0/2/raw/audit.bin": "6ff41cd6d0160e39499b8b60d1f6a1bc8039512c6d0628cc362818ec9ef6bd63",
+   "fixed-rr-trace0-cost0/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace0-cost0/2/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace0-cost0/2/raw/launch.json": "f92aa457ccaa7d055a6f4d600e6ac9d224854d49c71281c5751afbeadea15e00",
+   "fixed-rr-trace0-cost0/2/raw/qmp.json": "a9f8a2a7f2804695699cd221a89bb789a48dcf24c1eeed74daf90809010db396",
+   "fixed-rr-trace0-cost0/2/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-rr-trace0-cost0/2/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace0-cost0/2/status.json": "5516e06f77703b8f66d83e19735d969ffc74249dabec0b90c9e6f2adf1da07d8",
+   "fixed-rr-trace0-cost0/3/gate.log": "91484f52bbc37169fd0535ea0fbb309a6e34a911e7fa6ed92abee64faca0c2a6",
+   "fixed-rr-trace0-cost0/3/raw/audit.bin": "47d49e7f8a2015cef32ace0efb51106634571f3579c0f40c3cf4652ecc85689d",
+   "fixed-rr-trace0-cost0/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace0-cost0/3/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace0-cost0/3/raw/launch.json": "5ec46f618e6a7e95035985dec49a38160c0e4cb897328f5bdc3b63c5e999a54d",
+   "fixed-rr-trace0-cost0/3/raw/qmp.json": "4f325ea17b2ec99b83652e306d1ade84a14142a00a891d56cc46942e134e36b6",
+   "fixed-rr-trace0-cost0/3/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-rr-trace0-cost0/3/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace0-cost0/3/status.json": "22a7c1435d4050c62a69a6cbce0883ff287eeb4a6284d02fbd691009a7f7d4c1",
+   "fixed-rr-trace0-cost0/build.log": "075c6d418b6434c1f7575111f9977f14a7e3d426099b4fa28082ae2c4b3c2041",
+   "fixed-rr-trace0-cost0/nm-S.txt": "5d92227caed6c1e7c25a09d98f7e3e715079e27455aff438ce12491fc02bf2fe",
+   "fixed-rr-trace0-cost0/readelf-lW.txt": "8a66273c576152dc535ec8bc213f03fc0beedd236f3e1dc0c129fe32a9d05698",
+   "fixed-rr-trace0-cost0/readelf-SW.txt": "e23236eebc831f0d9e42375de71fff3e553b8f575ca45c5e6e1b684e38bfcbd9",
+   "fixed-rr-trace0-cost0/size-A.txt": "ab4077fe5f1ec7964a7a9c52578484c65fb8502a062ea18b09fd645f9e30bedc",
+   "fixed-rr-trace0-cost1/1/gate.log": "d152244fc4017f839030bca06d6bc9f86cae417f2bb0639dafb8a7750704ae52",
+   "fixed-rr-trace0-cost1/1/raw/audit.bin": "d2211fa58d5d3319c9182d690f0c808abfb9c8afed8aa5cc191ffa0edc059354",
+   "fixed-rr-trace0-cost1/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace0-cost1/1/raw/fixed_cost_records.bin": "b9912d9ab297a2fce66741b89bd0186b47dcba21059109c5f25ca1d7eac96292",
+   "fixed-rr-trace0-cost1/1/raw/fixed_cost_stacks.bin": "fc994e2ae9db1a7456d071e2dbb55c0a69a8e9da032cb48b35a535717e2fd20d",
+   "fixed-rr-trace0-cost1/1/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace0-cost1/1/raw/launch.json": "58b8102b06e38c68a1d3658e291d04da7a4f2ea803d9d7e645d6e5254f465208",
+   "fixed-rr-trace0-cost1/1/raw/qmp.json": "fc8b31342ddc5fd5c8501506e81f3b59aab699864b2410f3d4fe24c6a8de3af6",
+   "fixed-rr-trace0-cost1/1/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-rr-trace0-cost1/1/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace0-cost1/1/status.json": "71b30fd690d21d567d28c927d677424d2bf272bf189b6415a5f692de8a270af0",
+   "fixed-rr-trace0-cost1/2/gate.log": "30a00afe817f3873e8f019254b6b171177b772d89094759f4497eff7331cc553",
+   "fixed-rr-trace0-cost1/2/raw/audit.bin": "7a9cfeb14373561a39e54b3d34eb45ed0a48bf22788b812af4ca543d52281266",
+   "fixed-rr-trace0-cost1/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace0-cost1/2/raw/fixed_cost_records.bin": "5eb34d697e9c8909b7a6c4ce03eddfb21410507a65dd517fbff896df4574020c",
+   "fixed-rr-trace0-cost1/2/raw/fixed_cost_stacks.bin": "e7bfbac2c89df2855641c27f00955062acd8cee8cd0b2af07677d81fa9b7f79a",
+   "fixed-rr-trace0-cost1/2/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace0-cost1/2/raw/launch.json": "f5f812fbf937b79a225cfbca263d37d0b9d94c0d7ebc4511be606678d5a0b80c",
+   "fixed-rr-trace0-cost1/2/raw/qmp.json": "5d3e81a4720d51f94c2ba005b6cfdb915c06c54350d4cae2aa38c41eee999af3",
+   "fixed-rr-trace0-cost1/2/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-rr-trace0-cost1/2/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace0-cost1/2/status.json": "cbc69a3ff7e29b93293835438f05989a857ea719626d4594a1a8e447732a596c",
+   "fixed-rr-trace0-cost1/3/gate.log": "ec74e555a2f66c6523ad5e2fc2aaf1708c119f0ee3554e2163bdf24a3976164b",
+   "fixed-rr-trace0-cost1/3/raw/audit.bin": "bfafca6bbdb4af28874244abbcb1d283f3b4502a4a15b31bc4ca5b98b4e00efb",
+   "fixed-rr-trace0-cost1/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace0-cost1/3/raw/fixed_cost_records.bin": "3ba16abbd097e93b1e107cefce82f3a41cdf98fb830270573cc9a0118c6421b3",
+   "fixed-rr-trace0-cost1/3/raw/fixed_cost_stacks.bin": "df5db85612b8188d2bccf794a448b946d1461fb8f82f561d4e4677df9beafab8",
+   "fixed-rr-trace0-cost1/3/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace0-cost1/3/raw/launch.json": "812d812e2ba08d8844c6b50ef30a6dfbf5714cdbc4f56724341cc87784ada95a",
+   "fixed-rr-trace0-cost1/3/raw/qmp.json": "1857e82d47d28d680c42464ac947e03890e07706a348b5b9c4dcd6a7f0dfc846",
+   "fixed-rr-trace0-cost1/3/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-rr-trace0-cost1/3/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace0-cost1/3/status.json": "10f326ea6b3746a0c41ab1f49c4f04d3795958e8de235b80aea322103677d77f",
+   "fixed-rr-trace0-cost1/build.log": "6d3ac225d6fde95b5d72e55b448f6fb1289f8c1323cbee4e529ff5e9566b4024",
+   "fixed-rr-trace0-cost1/nm-S.txt": "8b38b353ef2a874135cad99a1b210a630c1c03ee55566c596b139bbb4913a308",
+   "fixed-rr-trace0-cost1/readelf-lW.txt": "e2db47cc02ea272eb60b64bf83c0169777f444be5523ed4a3eadd7eb78208353",
+   "fixed-rr-trace0-cost1/readelf-SW.txt": "49fed6f80810fa8580d875872bafa457b82595a14a04f15c28c6adeee503f9c3",
+   "fixed-rr-trace0-cost1/size-A.txt": "ad91a7a36eb28599ba2171b6bea96d11756c1017fb150e3462b041d05cdc0b5a",
+   "fixed-rr-trace1-cost0/1/gate.log": "cfc9079d17f68feb63f0640b55796087eed8c306edd156a1fc4bbcb000f84d88",
+   "fixed-rr-trace1-cost0/1/raw/audit.bin": "f11163ac4ceec97ce731375dc63405ce01ffdb544d1e80c503a8a8e6e8b6a845",
+   "fixed-rr-trace1-cost0/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace1-cost0/1/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace1-cost0/1/raw/launch.json": "d324f147cd6673404a45b1b19d893f19e8a0664303fa8a38c83dc39810376f1c",
+   "fixed-rr-trace1-cost0/1/raw/qmp.json": "a5c138cc0f88c799865058d94ca67c5ef06b08d70e9613cc71e000fb4e98f337",
+   "fixed-rr-trace1-cost0/1/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-rr-trace1-cost0/1/raw/trace.bin": "6a66385ea0f21f908ee6aea35206fd0d6b0ea3796022c7af1917208cdda91ce3",
+   "fixed-rr-trace1-cost0/1/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace1-cost0/1/status.json": "d74a590572c3d789f71567204b878d64bddca5efc2705650c4a70a9f0e84af75",
+   "fixed-rr-trace1-cost0/2/gate.log": "012b77918e3981b039d678e78ffad057298ab511d8474aebd1fb0f29b3fcb339",
+   "fixed-rr-trace1-cost0/2/raw/audit.bin": "f532ad19acffcf39c002ed825385ad9e478e8deab3d2853eebab8e677c093154",
+   "fixed-rr-trace1-cost0/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace1-cost0/2/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace1-cost0/2/raw/launch.json": "0211672da79835ce3f6c3e0d4b1897ccbec39a7f798afbdf5b111857d49247e3",
+   "fixed-rr-trace1-cost0/2/raw/qmp.json": "ada01cb7db8c14b465029ffdd94c62b16e70a5f7d3127479e39df5d78fda36b7",
+   "fixed-rr-trace1-cost0/2/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-rr-trace1-cost0/2/raw/trace.bin": "ed9e3cb2c6bc019c535ac8b8b9433ef1a504f260e08d294e0735c60e09b489b9",
+   "fixed-rr-trace1-cost0/2/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace1-cost0/2/status.json": "dad2a18846fef023bebd28849746f75e46bb43906ca2a6a75b8fae6390ef0266",
+   "fixed-rr-trace1-cost0/3/gate.log": "3aeb144ffa3e25c2a5a63d70f2e3e9923b2ba7032d7925b6a00a8494b805838d",
+   "fixed-rr-trace1-cost0/3/raw/audit.bin": "82e9b727a5bc4a79f6fb9fbca5d867a684f1a97f0a67e41e021f1227b368d515",
+   "fixed-rr-trace1-cost0/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace1-cost0/3/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace1-cost0/3/raw/launch.json": "cb2562145ca60e5ab53d8ee5adedf9ecbdaffcdc4cdd655685a9fda47030d134",
+   "fixed-rr-trace1-cost0/3/raw/qmp.json": "914b3b24a6984e80b2727410576964acb6cafb4703d4e2994e03fc45309dfabf",
+   "fixed-rr-trace1-cost0/3/raw/registers.txt": "94108b3d55b863282ec241599c1925f93ee0ce737d3720537deedcf879ea3ee0",
+   "fixed-rr-trace1-cost0/3/raw/trace.bin": "963147015e2ab8d78e3b953c08f54718b0a20680f5fb45b17bbaad92193340ec",
+   "fixed-rr-trace1-cost0/3/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace1-cost0/3/status.json": "9530873b9ec88cd42e369d9db5806a93105b51f54266b72cc55506963ada6fb0",
+   "fixed-rr-trace1-cost0/build.log": "62c4d12c97f00972823ff50700596326ba74970dcb7b9ea39989890eb8dd75a0",
+   "fixed-rr-trace1-cost0/nm-S.txt": "08a00dea8df2ecbb0c4987de10875e06ad9af6e9eb7685782bd576c223726765",
+   "fixed-rr-trace1-cost0/readelf-lW.txt": "78b1916d9c572227e19f4126215b7f5a52935ab4ffda4ad7a4696261fe6d50d6",
+   "fixed-rr-trace1-cost0/readelf-SW.txt": "62f77eb43d08fd4c48c79a95962e8db5b7f696e8847e2327eb4bd4cff05e619c",
+   "fixed-rr-trace1-cost0/size-A.txt": "ddd2d1b35490785d768710027ade8c07fea7b5c136fc718e9c930c3556355180",
+   "fixed-rr-trace1-cost1/1/gate.log": "768c6598ad7e7ceaacda121987b6e7045c8f0755f9cfeeabe04fd5c28171a435",
+   "fixed-rr-trace1-cost1/1/raw/audit.bin": "92266b596f6cb07791d90860ed1b924bf68bbe785775d8ce0740a1a7bd1197f8",
+   "fixed-rr-trace1-cost1/1/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace1-cost1/1/raw/fixed_cost_records.bin": "1ce664b2517baa3e88fbe0b8ef39d99b20a01f2c54392a31e4db3d254ff1843b",
+   "fixed-rr-trace1-cost1/1/raw/fixed_cost_stacks.bin": "a6bab761085a13a4a6f146f4d3e0ae0a984717244b2d741e40c6009f42140bb0",
+   "fixed-rr-trace1-cost1/1/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace1-cost1/1/raw/launch.json": "ab53e3f5d96a0f8ff72ccc10d9fe9626083b1780a05229293391f6364c8823ac",
+   "fixed-rr-trace1-cost1/1/raw/qmp.json": "d68740934d2ee611455b2ba979ed6063483bee66eac11b0632e65533fab36394",
+   "fixed-rr-trace1-cost1/1/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-rr-trace1-cost1/1/raw/trace.bin": "67424c204608ba55b0f7c734633153942fb7d857e836b377a781177a7158135e",
+   "fixed-rr-trace1-cost1/1/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace1-cost1/1/status.json": "b488543c33bec28570855ff8849bffb79807b45c31f18c580f236fa4b55bc7d0",
+   "fixed-rr-trace1-cost1/2/gate.log": "f52eb13e03d5022a4c1632450979d8b76dde8227dd5bfa88473250eb53edd218",
+   "fixed-rr-trace1-cost1/2/raw/audit.bin": "a17657b850b66817b62f023a8ac368cefbb36005fc4bb326a2946df3cb7fe66a",
+   "fixed-rr-trace1-cost1/2/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace1-cost1/2/raw/fixed_cost_records.bin": "01e2bc9edbb705ab6bf7528c4d2a669425281001d113e76cd33979a977181841",
+   "fixed-rr-trace1-cost1/2/raw/fixed_cost_stacks.bin": "28c84555ef3edb96d2689848f9f5a5a59842ca515f3dff52c349d41d27062648",
+   "fixed-rr-trace1-cost1/2/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace1-cost1/2/raw/launch.json": "0afef8001925642b5911088572b795e42ab36055b94365245685d5093d7eb518",
+   "fixed-rr-trace1-cost1/2/raw/qmp.json": "afc7196f7801b3af66a075878215a145392e7e12215a2c51d6cbfc490c737011",
+   "fixed-rr-trace1-cost1/2/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-rr-trace1-cost1/2/raw/trace.bin": "07798efba4fa36eb245e985af8ca9e1a1a92721f4b946c746737ba9b82b9b67f",
+   "fixed-rr-trace1-cost1/2/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace1-cost1/2/status.json": "ca54ed75842ac5aea7b59af8e894f31b1f5bf1f8e5a6d255eb5e8060dead3cc0",
+   "fixed-rr-trace1-cost1/3/gate.log": "42052d4db7533b4de58d3148c3aa274c7a863a678ebb03637fb0756037a8a483",
+   "fixed-rr-trace1-cost1/3/raw/audit.bin": "5b3cff72c381cc45a25bd77c0ee2bc284b35b7c462f50b237dad40ba3ea17f3c",
+   "fixed-rr-trace1-cost1/3/raw/exit.json": "2f8d9646eb96dbbff1f9d2ba1610fa508eab332561830d06f78650122268f0fd",
+   "fixed-rr-trace1-cost1/3/raw/fixed_cost_records.bin": "ace5e1d34aa92944457fc9a03392086c228fab8de6eb7ec95b6fc82599e3e112",
+   "fixed-rr-trace1-cost1/3/raw/fixed_cost_stacks.bin": "7346fd38dfc832909b20dac537885c3dd378e054e1e0cb74906119009ceed0ec",
+   "fixed-rr-trace1-cost1/3/raw/int.trace": "714489954e730d293618be9ecc77d679451a41821edcab11dcef1f55bef55067",
+   "fixed-rr-trace1-cost1/3/raw/launch.json": "c53b6d54e8e8122c70de2d7599d35b1edf03fda14732a537177d0d036647416b",
+   "fixed-rr-trace1-cost1/3/raw/qmp.json": "91dc447d85a9622528bb15086e2abb2c50746b1b0d84cbe472b0354dda4a0a42",
+   "fixed-rr-trace1-cost1/3/raw/registers.txt": "d669687b7d446c5cb46df13cce11ce0b792b02195e501f0c783cff558a9143d0",
+   "fixed-rr-trace1-cost1/3/raw/trace.bin": "02ce14abe3417e91fe25e5ba82fd32974b4d7974a2e5c13cd5fc09a14fe996db",
+   "fixed-rr-trace1-cost1/3/raw/uart.bin": "6cbff1030a7f38db67d4d653a693d0f2abd19e20e8de22d53ff89f57107d00ad",
+   "fixed-rr-trace1-cost1/3/status.json": "ad895f4f1404f7c09ec52048090028441de2c68f9b155317dcdd1ac0b4c20453",
+   "fixed-rr-trace1-cost1/build.log": "78e529f3c1afd8bf307d5178f6afda3c932c71f587a957513d7463ec38705758",
+   "fixed-rr-trace1-cost1/nm-S.txt": "1cfbea716e8f9c3e7da06f2c1044c5119d4fbaadd59418c3044ed78bbb6236c5",
+   "fixed-rr-trace1-cost1/readelf-lW.txt": "680ba7fcdd64fc844de01335053f031b516614ca6b8ceeb5bbee58ecd8b0e50a",
+   "fixed-rr-trace1-cost1/readelf-SW.txt": "552645f79cc7dfea199c54d40aac0981207d863b99262a2d6662da4d27829fd5",
+   "fixed-rr-trace1-cost1/size-A.txt": "1876202350ddf0643a12ab434758c0fef9e06bcefb8f879fe26787e054384f3b",
+   "index.json": "508a1400eb65ba0097a0bf89060b66e94e7a9810366bab57d6e74d910449d572",
+   "observations.json": "1087857ecfe7f116682c811d91bf5d72a94e9d61b4358ea13ba443d08c0cd6da",
+   "prelaunch/fixed-fifo-trace0-cost0/1/gate.log": "48b0c2f649cad40fe530032c2140b1bd51fea1663dfa239cd57ff1c0a53934f9",
+   "prelaunch/fixed-fifo-trace0-cost0/1/status.json": "a76f232d1afbafbb727f836819c7304abeb2331eb23fe938da8ab8af51655d55",
+   "prelaunch/fixed-fifo-trace0-cost0/2/gate.log": "50313f50269befdf01add76dad63cc750223f7267abfa4f2658b4fab947101e6",
+   "prelaunch/fixed-fifo-trace0-cost0/2/status.json": "29571eec5538007f5509b6599e49914809ea5d8415cb6a4f8b8453fbdf5dad0e",
+   "prelaunch/fixed-fifo-trace0-cost0/3/gate.log": "004b21b3a3d8419dfaf54f9ea4d7b39c9f75fe7a0db24178a955533543edf446",
+   "prelaunch/fixed-fifo-trace0-cost0/3/status.json": "4c155aedd4bc161aa0d761cff82ceaedcd5424ef57d92bbf2efeac4b00febdac",
+   "prelaunch/fixed-fifo-trace0-cost0/nm-S.txt": "2ea4850819f0ed12460f6830d5cf3ca748c0075160322fb32192877827eb8b1f",
+   "prelaunch/fixed-fifo-trace0-cost0/readelf-lW.txt": "e88bdb8e75b3c6f9fa66b7cbe7f994e359f9d30cd4d4135c3ff70b8fde545eff",
+   "prelaunch/fixed-fifo-trace0-cost0/readelf-SW.txt": "a13cfd90e1965bbe3b7aa2a2f3f24e78b1835d76837db754e475cf671d29d269",
+   "prelaunch/fixed-fifo-trace0-cost0/size-A.txt": "1fdcc9cd56c276837205551a0fa12ed27c9ec85dc7389042ea9c8719967861d9",
+   "prelaunch/fixed-fifo-trace0-cost1/1/gate.log": "5c3f8fc7c8f22ebdc87ea15b6252a1648a57211b5ed9a0b36da98336e9465fa9",
+   "prelaunch/fixed-fifo-trace0-cost1/1/status.json": "77401785877198b56aafd8c76f3177609cb34f60d031a8f8b09564dbcdfb93ff",
+   "prelaunch/fixed-fifo-trace0-cost1/2/gate.log": "7156e707d8c68cab46d1cda1640a01d07e98bc9f408064a100f8f9c23eae934d",
+   "prelaunch/fixed-fifo-trace0-cost1/2/status.json": "833b64e294a4580a70dd935cb555a0a1ee02569c8342e7cbe0fba1a73d315a36",
+   "prelaunch/fixed-fifo-trace0-cost1/3/gate.log": "cbab6e0bb3bb97b669fb0817174a20175735f0848a4c98a440ab303a97012dae",
+   "prelaunch/fixed-fifo-trace0-cost1/3/status.json": "c86a29e155b1d414478d3e8d72467d7215490d3d9790bbd95c1abe31029979f3",
+   "prelaunch/fixed-fifo-trace0-cost1/nm-S.txt": "e365b6e4e8ba972750b749dd10ce82043ded4fcadc4ebc916934c8ebe7fea3e4",
+   "prelaunch/fixed-fifo-trace0-cost1/readelf-lW.txt": "e4a83e57a15d6674e3c3b544fcf37a7b353874e6a5acd42687f34541f1087c0a",
+   "prelaunch/fixed-fifo-trace0-cost1/readelf-SW.txt": "7c7d774843da49f8412eccf524cc7c29f56ec8c06d1850ddc961c4374d456876",
+   "prelaunch/fixed-fifo-trace0-cost1/size-A.txt": "d73ba3eda38d28819a7a0304f997449b3d36baa82db0ee49d7994b404aa7d23f",
+   "prelaunch/fixed-fifo-trace1-cost0/1/gate.log": "e6cb1a8d8551d57dd247e32a7205c9e42485f1c9b57103b9fea85f1187edb863",
+   "prelaunch/fixed-fifo-trace1-cost0/1/status.json": "6af8c497a5b30a76c458013b8a5b1a5b13e8253cfe4e2f95a7c5ccc2b31abea6",
+   "prelaunch/fixed-fifo-trace1-cost0/2/gate.log": "bbd4a362ff3cf4d7b5c61c7a9505842bc8c09bcf327b4bdf9dfcb2563689ac96",
+   "prelaunch/fixed-fifo-trace1-cost0/2/status.json": "68c05f01231eaac64a966d2435adf8a2d7a8d26b3fcca8eb4b72badc2e7a72d6",
+   "prelaunch/fixed-fifo-trace1-cost0/3/gate.log": "ea47cf4c5d100ddfb9fe5b0b6eb5e4bc359c768977fdaed5c20488072618d26c",
+   "prelaunch/fixed-fifo-trace1-cost0/3/status.json": "b7fef40640b35908059300ae90072b8775cb00a6c1abb087753a4b1517b45e52",
+   "prelaunch/fixed-fifo-trace1-cost0/nm-S.txt": "fccb2f0cd567f8324ccfc500a2efb00349795ef52d213834e4271d5d1d6a72e7",
+   "prelaunch/fixed-fifo-trace1-cost0/readelf-lW.txt": "946253b701653087cdbe36e00d207e164f24aff25628216e80bafe80e943842a",
+   "prelaunch/fixed-fifo-trace1-cost0/readelf-SW.txt": "570b9ec8d29e607bdf38bafb318fe2acaa829bb32f22b9be4509311fb19537c3",
+   "prelaunch/fixed-fifo-trace1-cost0/size-A.txt": "c34cfc1d8c33e06af917e03b357ec81d92875891fb7b46a5454044711139a174",
+   "prelaunch/fixed-fifo-trace1-cost1/1/gate.log": "3e59920f1280695ce02754bbd3d0c988a7ccdf83ba56421a3827c3de2bf58564",
+   "prelaunch/fixed-fifo-trace1-cost1/1/status.json": "07112ebc5c873e13784062e0770abbc21e8dfadd6658116308fb0016a1a81742",
+   "prelaunch/fixed-fifo-trace1-cost1/2/gate.log": "a4f3f3aa8b87226d5a9fee30e2ff9d1591f6637140fa18b6bb40d3d895bfdc05",
+   "prelaunch/fixed-fifo-trace1-cost1/2/status.json": "88673fd6a83a3dbce85dfb548b5d1944d65c25fa8ff72e7151a0b43add386335",
+   "prelaunch/fixed-fifo-trace1-cost1/3/gate.log": "2eea4347d7fc5688036b0ba370cf711236b284ad6e7531d38b05b47bca366f22",
+   "prelaunch/fixed-fifo-trace1-cost1/3/status.json": "a8a60f37beb7947f49c51eb98d998a8b336455abb1ba972d192bbc0a716c65cf",
+   "prelaunch/fixed-fifo-trace1-cost1/nm-S.txt": "a2d9988e84f7d8250fff0fd7d4b9f1f97648587bedfa03ec1b17acb154c18123",
+   "prelaunch/fixed-fifo-trace1-cost1/readelf-lW.txt": "edafe6983fa022b8a9661958f6b264cb89db5dea0d1c9b0054e25845cd85029b",
+   "prelaunch/fixed-fifo-trace1-cost1/readelf-SW.txt": "59deeddb095d7e72e7370a9c705d31e4d8d5e2864ab933d1c3b11d5736abc967",
+   "prelaunch/fixed-fifo-trace1-cost1/size-A.txt": "b985c7f978c96d3456e1db6a2fde4fa33f396241794e5417a675b9ba2feabd83",
+   "prelaunch/fixed-rr-trace0-cost0/1/gate.log": "771fe065dff6190d03548b5fe3f2362bb16a709f71cabd39f614e91e0cd01772",
+   "prelaunch/fixed-rr-trace0-cost0/1/status.json": "0a8bfdc92cce67a3ce978c3b0eac9dcc4313f27f09292915dca026e9c26bd089",
+   "prelaunch/fixed-rr-trace0-cost0/2/gate.log": "c53d4619b9068960bc7a36231a96ac9a4202a647e6b9c5f0002cf4e4a8d59718",
+   "prelaunch/fixed-rr-trace0-cost0/2/status.json": "966af4677ae4efa410db7d3f4ea01b4b9ea95020766d31ea707f2e3b58219e20",
+   "prelaunch/fixed-rr-trace0-cost0/3/gate.log": "e38e7b636ce1a1f5f432a52a7328dd67f9de6721c0fc815e171cb10919aad9ee",
+   "prelaunch/fixed-rr-trace0-cost0/3/status.json": "176feecb5b692fb1632c4bd1525f7338d97f7cd8830841ab669b2e22330710e8",
+   "prelaunch/fixed-rr-trace0-cost0/nm-S.txt": "5d92227caed6c1e7c25a09d98f7e3e715079e27455aff438ce12491fc02bf2fe",
+   "prelaunch/fixed-rr-trace0-cost0/readelf-lW.txt": "8a66273c576152dc535ec8bc213f03fc0beedd236f3e1dc0c129fe32a9d05698",
+   "prelaunch/fixed-rr-trace0-cost0/readelf-SW.txt": "e23236eebc831f0d9e42375de71fff3e553b8f575ca45c5e6e1b684e38bfcbd9",
+   "prelaunch/fixed-rr-trace0-cost0/size-A.txt": "ab4077fe5f1ec7964a7a9c52578484c65fb8502a062ea18b09fd645f9e30bedc",
+   "prelaunch/fixed-rr-trace0-cost1/1/gate.log": "2d93a58ecea3a3908b3f7150b7fb02a673ef3f9ffd76e80c678cf96ba162bb0c",
+   "prelaunch/fixed-rr-trace0-cost1/1/status.json": "74c3299ee8eb78de395c7ec5fe59a00e4e4723311756828aee2e10904601b5e9",
+   "prelaunch/fixed-rr-trace0-cost1/2/gate.log": "bfcc4081a24a9606f5d0b9ca7a50c746d225b1f1909797d6bc9834e318641608",
+   "prelaunch/fixed-rr-trace0-cost1/2/status.json": "caff5d30878ed57e5e2194e5ac593a5e2cf7a454c713e183b1d88165783a168c",
+   "prelaunch/fixed-rr-trace0-cost1/3/gate.log": "6003311121d03e579efc3a13a6850c948de25b6b76e1653b20af232422f37aa7",
+   "prelaunch/fixed-rr-trace0-cost1/3/status.json": "087b9523f7780fabe0afdcc286cf24d19c9e18c096730eca196f5911268c9504",
+   "prelaunch/fixed-rr-trace0-cost1/nm-S.txt": "8b38b353ef2a874135cad99a1b210a630c1c03ee55566c596b139bbb4913a308",
+   "prelaunch/fixed-rr-trace0-cost1/readelf-lW.txt": "e2db47cc02ea272eb60b64bf83c0169777f444be5523ed4a3eadd7eb78208353",
+   "prelaunch/fixed-rr-trace0-cost1/readelf-SW.txt": "49fed6f80810fa8580d875872bafa457b82595a14a04f15c28c6adeee503f9c3",
+   "prelaunch/fixed-rr-trace0-cost1/size-A.txt": "ad91a7a36eb28599ba2171b6bea96d11756c1017fb150e3462b041d05cdc0b5a",
+   "prelaunch/fixed-rr-trace1-cost0/1/gate.log": "7c3449550d14ac7d908c65de3700db3597aa37cf4cc6517e69ba8d04754dc073",
+   "prelaunch/fixed-rr-trace1-cost0/1/status.json": "37eb7bf31db9d60354f56c06703bad78b5599de21065f71c15ba519f4c0f9a1a",
+   "prelaunch/fixed-rr-trace1-cost0/2/gate.log": "511c71cde05ec6f90c3dbe63de36af858f856e533e9f1a07e04881d1d9782e4d",
+   "prelaunch/fixed-rr-trace1-cost0/2/status.json": "ca4012f80efd9c84b733fdaff973e1510d8902d55c64a69dedf7da99231b6622",
+   "prelaunch/fixed-rr-trace1-cost0/3/gate.log": "5553474f842d2df45767b6c9dcb3eee3338572e946bdb8ddae2915ed45dec1fb",
+   "prelaunch/fixed-rr-trace1-cost0/3/status.json": "5f056caaade13814a9a43660ce390deb8f0fe95359d9f954b152095140384063",
+   "prelaunch/fixed-rr-trace1-cost0/nm-S.txt": "08a00dea8df2ecbb0c4987de10875e06ad9af6e9eb7685782bd576c223726765",
+   "prelaunch/fixed-rr-trace1-cost0/readelf-lW.txt": "78b1916d9c572227e19f4126215b7f5a52935ab4ffda4ad7a4696261fe6d50d6",
+   "prelaunch/fixed-rr-trace1-cost0/readelf-SW.txt": "62f77eb43d08fd4c48c79a95962e8db5b7f696e8847e2327eb4bd4cff05e619c",
+   "prelaunch/fixed-rr-trace1-cost0/size-A.txt": "ddd2d1b35490785d768710027ade8c07fea7b5c136fc718e9c930c3556355180",
+   "prelaunch/fixed-rr-trace1-cost1/1/gate.log": "d36341440e52ced2895e49e6ce1bb416adf59264eab1267a622b4518488719d2",
+   "prelaunch/fixed-rr-trace1-cost1/1/status.json": "90381cd6d0c188a5ab4f9593519332ef0a8c2d8988e9337bee154ca502e8db3e",
+   "prelaunch/fixed-rr-trace1-cost1/2/gate.log": "0526e96a2f01fe8a8cb3f2cd16c51a7c3fa51f859f5a3bbede4b0e390d3f5fba",
+   "prelaunch/fixed-rr-trace1-cost1/2/status.json": "ffa6d25c4894ef446b7db893476cf0431891afeb38c6e98e4f409b2fce413e2b",
+   "prelaunch/fixed-rr-trace1-cost1/3/gate.log": "e33319ae14425ae5b6b11c6a3c841a19b675d75880ed3dbd7b52b698c63d82c0",
+   "prelaunch/fixed-rr-trace1-cost1/3/status.json": "1003cb7975ac5a4817959b0fc893857b7fc7684c5a66c4b25bc7df3dd5cb7651",
+   "prelaunch/fixed-rr-trace1-cost1/nm-S.txt": "1cfbea716e8f9c3e7da06f2c1044c5119d4fbaadd59418c3044ed78bbb6236c5",
+   "prelaunch/fixed-rr-trace1-cost1/readelf-lW.txt": "680ba7fcdd64fc844de01335053f031b516614ca6b8ceeb5bbee58ecd8b0e50a",
+   "prelaunch/fixed-rr-trace1-cost1/readelf-SW.txt": "552645f79cc7dfea199c54d40aac0981207d863b99262a2d6662da4d27829fd5",
+   "prelaunch/fixed-rr-trace1-cost1/size-A.txt": "1876202350ddf0643a12ab434758c0fef9e06bcefb8f879fe26787e054384f3b",
+   "prelaunch/run.py": "c37c13ec278e384ff166b4bd5d44a8fb9def375fbbdfa3830336d8da951b5dfd",
+   "report.md": "d3b81c1d7bd349d72bfdcb9edd10487dea7d0ab4ee8a34320275df875e51c7df",
+   "run.py": "c80470fdb89e278ead12a8133a0fe81f157333fc8dd2dd2cb6fefcfa108d41fc",
+   "SHA256SUMS": "6c07c87c352e91a796c7c8377f604e366b472437195fb85161eff96e468cea8e",
+   "summarize.py": "89fce68658bcd64a749d3c8e26d38bd3112c492d9122ff2510f5e24737658507",
+   "tracked-working-tree.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "verify.py": "d563e6169985acd6b849ed20b1d5df7f895552f2f175c1b4b049f6c08ceea833",
+   "versions.txt": "406de809712dca46187485f4eb467465df101a70adf2f8bbf227e4c4eaddda18",
+   "working-tree-status.txt": "dc49db46c263734a850e5881337c8117df40d937c9aaa981d252a2b1ca2673c4",
+   "verify_tables.py": "a3672e5d4e13d18854acab6926596a4fc2ee834829a5920b9b0fe41ba1aab84e"
+  },
+  "restore_python": "import pathlib,json,base64,hashlib,io,zipfile\np=pathlib.Path('evd-041.json'); m=json.loads(p.read_bytes())['archive']; parts=[]\nfor name in m['parts']:\n    row=json.loads((p.parent/name).read_bytes()); data=base64.b64decode(row['data'],validate=True); assert hashlib.sha256(data).hexdigest()==row['sha256']; parts.append(data)\nb=b''.join(parts); assert hashlib.sha256(b).hexdigest()==m['sha256']\nwith zipfile.ZipFile(io.BytesIO(b)) as z:\n    assert all(hashlib.sha256(z.read(n)).hexdigest()==h for n,h in m['entry_sha256'].items()); z.extractall('evd-041-raw')",
+  "offline_replay": "Execute restore_python with Python 3 from the JSON directory, then python evd-041-raw/verify_tables.py. It reads the retained nm, section and segment tables and all captures, recalculating observations.json without ELF binaries. Original verify.py requires each matching ELF at its cell/kernel.elf path, verifies its recorded SHA-256 and performs the same decoding. Archived build_cost_matrix.py, run.py, index.json and versions.txt record original build and capture settings."
+ }
+}
