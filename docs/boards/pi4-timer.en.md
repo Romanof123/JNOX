@@ -35,3 +35,5 @@ Physical operation requires the boot firmware to enable the GIC path and delegat
 [BCM2711 Arm stub](https://github.com/raspberrypi/tools/blob/master/armstubs/armstub8.S) · [BCM2711 timer / GIC](https://github.com/raspberrypi/linux/blob/rpi-6.18.y/arch/arm/boot/dts/broadcom/bcm2711.dtsi) · [QEMU BCM2838 model](https://github.com/qemu/qemu/blob/master/hw/arm/bcm2838.c)
 
 [EVD-014](../evidence/evd-014.en.md)
+
+[Capture UART across two witnessed power cycles](pi4-serial-capture.en.md)
