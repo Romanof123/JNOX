@@ -166,4 +166,4 @@ CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust ta
 
 CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
-POL-011 · CHG-052 · IMP-049. Two ordinary Rust entries share the exception-return ABI and the weighted virtual-runtime scheduler. See the [approved workload plan](ordinary-vruntime-plan.md) and [build, capture and replay instructions](ordinary-weighted.md). VER-002/005/023 and EVD-049 await independent execution.
+POL-011 · CHG-052 · IMP-049. Two ordinary Rust entries share the exception-return ABI and the weighted virtual-runtime scheduler. See the [approved workload plan](ordinary-vruntime-plan.md) and [build, capture and replay instructions](ordinary-weighted.md). VER-002/005/023 · [EVD-049](evidence/evd-049.en.md).

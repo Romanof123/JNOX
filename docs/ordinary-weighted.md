@@ -1,6 +1,6 @@
 # Ordinary Rust weighted workloads / 가중 일반 Rust 작업
 
-CHG-052 · IMP-049 · issue #116 · [frozen criteria](ordinary-vruntime-plan.md). Implementation and replay instructions. VER-002/005/023 and EVD-049 await independent execution. [English architecture](architecture.en.md) · [한국어 아키텍처](architecture.md).
+CHG-052 · IMP-049 · issue #116 · [frozen criteria](ordinary-vruntime-plan.md). Implementation and replay instructions. [EVD-049](evidence/evd-049.en.md) · [한국어](evidence/evd-049.md). [English architecture](architecture.en.md) · [한국어 아키텍처](architecture.md).
 
 Use a fresh output directory per attempt. From the repository root on Linux with GNU timeout, QEMU AArch64, Rust aarch64-unknown-none and AArch64 binutils, run the following. Each guest parks after the terminal UART. The host limit is 20 seconds; timeout alone is never a successful observation. Retain partial files on every failure. Capture the first cold plain and diagnostic run separately in each clock cohort. Default TCG uses its normal clock. The separately declared instruction-counted cohort uses shift=3. Both cohorts use the same Q/H/G bounds. Only observed runs satisfying all frozen conditions may pass. Preserve each cohort's failures.
 
@@ -49,9 +49,11 @@ for app in weighted-share weighted-wake; do
   done
 done
 done
-rustc --edition=2024 --test tools/vruntime_tests.rs -o "$out/policy-controls"
-"$out/policy-controls"
+rustc +1.95.0 --edition=2024 --test tools/scheduling_tests.rs -o "$out/policy-controls"
+"$out/policy-controls" vruntime_tests::
 ```
+
+The shared command compiles the enclosing scheduling test crate and selects its weighted policy tests. 위 공통 명령은 스케줄링 테스트 크레이트를 컴파일한 뒤 가중 정책 테스트 모듈만 실행한다.
 
 **Reading the capture.** WEIGHTED1 records wake-mode, frequency, Q, journal capacity, A/B stack bases, stack bytes and frame bytes. W is one immutable closure in lease order. Its columns are sequence, owner, cause (0 timer, 1 ordinary return, 2 caller blocks, 3 peer wake), ready mask at dispatch, start, programmed compare, stop, scheduler gap, A/B pre-charge runtime, A/B charged runtime, A/B post-event runtime, A/B cumulative raw service, floor before charge, charged floor, post-event floor, acceptance sample (zero outside wake), A/B progress, block generation, full solo closures, latest B resume witness, completed resume generation, selection begin and end. All virtual times/floors are exact half ticks. Counter and service values are raw ticks. B's signed lag equals doubled floor minus doubled B runtime. Row 36 freezes the continuous result. Later rows belong to the exit tail. Both entries exit on their next horizon observation, with an additional finite u32::MAX loop guard. At most 64 closures fit. A capacity breach halts with failure. There are two fixed 16 KiB stacks, two policy records, one outstanding lease and no heap.
 

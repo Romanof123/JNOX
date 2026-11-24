@@ -1,6 +1,6 @@
 # POL-011 · Ordinary weighted Rust tasks / 가중 일반 Rust 태스크
 
-CHG-052 · intended IMP-049 · planned EVD-049 · REQ/VER-002/005/023 · DES-003/012. [#116](https://github.com/Romanof123/JNOX/issues/116) · [EVD-022](evidence/evd-022.en.md) · [release cases](scheduling-release-cases.en.md)
+CHG-052 · IMP-049 · [EVD-049](evidence/evd-049.en.md) · [한국어](evidence/evd-049.md) · REQ/VER-002/005/023 · DES-003/012. [#116](https://github.com/Romanof123/JNOX/issues/116) · [EVD-022](evidence/evd-022.en.md) · [release cases](scheduling-release-cases.en.md)
 
 ## Frozen bench inputs
 
