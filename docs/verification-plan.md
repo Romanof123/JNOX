@@ -105,3 +105,5 @@ CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md)
 [EVD-041](evidence/evd-041.md)은 VER-002/005/009/023 중 FIFO/RR 부분을 대상으로 한다. 이미지별 정적 크기와 반복 실행에서 관측한 핸들러 시간을 비교한다. VER-016의 진단 선택자, unsafe 접근 및 고정 빌드 입력 검토는 별도이며 실기 시간 적격성은 미확정이다. [판정 및 수집 절차](fixed-cost.md)
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)

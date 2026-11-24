@@ -2,7 +2,7 @@
 
 [한국어](ordinary-partition-capture.md) · [Frozen plan](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99) · [#21](https://github.com/Romanof123/JNOX/issues/21)
 
-CHG-046 affects REQ-002/005/023. IMP-044 partially implements those requirements and POL-006 under DES-003/012. VER-002/005/023 and EVD-044 outcomes remain pending. P and Q are independent cold boots. The workers and idle have distinct Rust entry symbols and private stacks. Only the IRQ handler changes the absolute timer compare. B becomes eligible from the first explicit idle boundary. Select one ordinary table on virt with JNOX_PROFILE and JNOX_APP unset. Other benchmark features and board selections are rejected. Cargo feature `partition-bench` alone continues to select the assembly fixture and its existing entry point.
+CHG-046 affects REQ-002/005/023. IMP-044 partially implements those requirements and POL-006 under DES-003/012.  P and Q are independent cold boots. The workers and idle have distinct Rust entry symbols and private stacks. Only the IRQ handler changes the absolute timer compare. B becomes eligible from the first explicit idle boundary. Select one ordinary table on virt with JNOX_PROFILE and JNOX_APP unset. Other benchmark features and board selections are rejected. Cargo feature `partition-bench` alone continues to select the assembly fixture and its existing entry point.
 
 From a POSIX shell in `kernel`, with the pinned Rust toolchain, QEMU and LLVM utilities installed, run the following commands once for each table. Keep each ELF, UART, disassembly and exception log together. Use a fresh output directory per boot. Stop QEMU after the terminal line. A timeout or partial final line requires an incomplete verdict.
 
@@ -46,3 +46,5 @@ for table in P Q; do
 done
 python tools/test_ordinary_partition_account.py
 ```
+
+POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)

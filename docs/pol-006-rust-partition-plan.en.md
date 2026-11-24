@@ -1,6 +1,6 @@
 # POL-006 ordinary Rust partition workload
 
-[한국어](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99) · CHG-046 · intended IMP-044 · planned EVD-044
+[한국어](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99) · CHG-046 · IMP-044 · EVD-044
 
 ## Frozen virtual configuration
 
@@ -24,3 +24,5 @@ Time spent by a task past a boundary is charged to that outgoing task as measure
 Run each table healthy, then a separate finite masked-IRQ fault case. Inject in A’s first window, mask before its close d, unmask at d+q+q/4 (P reaches explicit idle; Q reaches the next B window across wrap). Measure actual masking and lost service. P must retain idle until the fixed wrap; Q must record the skipped closing B slot and restore eligible B for the remaining time. Then observe the next two full protected windows on the original epoch. Interpret this run as a successful fault observation only when the normal timing verdict fails and recovery, attribution and missing service are independently confirmed. Also inject a delay just over the 1 ms envelope without crossing a whole slot, and exercise the oracle at exactly F/1000 ticks and one tick above. Reject swapped owners, changed epochs, false resume PCs, missing post-return observations and truncated traces. In separate host cases probe every boundary and wrap at −1/0/+1 tick, including zero relative to a prior frame; reject zero-length, overlapping, gapped and unknown-owner tables. Preserve raw counters; use actual progression for workload observations and no backdated markers.
 
 A fresh verifier records first cold-boot verdict per table and fault case, config, revision, ELF/hash, disassembly, ordered raw events, stack ranges and independent exception return trace. Bound trace storage before capture and defer UART until scoring ends. Link implementation and evidence after execution. REQ-002/005/023 → DES-003/012 → VER-002/005/023. Temporal schedule integrity and memory partitioning need independent evidence. Private EL1 stacks share privilege/address space and do not establish memory protection, fault containment, physical latency, product safe state or FTTI. Product tables, bounded masking, board interference and applicable approval remain open under [#21](https://github.com/Romanof123/JNOX/issues/21).
+
+POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)

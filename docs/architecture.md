@@ -162,4 +162,6 @@ POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
-CHG-046 / IMP-044는 DES-003/012에 따라 virt 단일 CPU에서 일반 Rust A/B 작업과 전용 유휴 스택을 구현한다. POL-006과 REQ-002/005/023은 부분 구현 상태이며 VER-002/005/023 판정과 EVD-044는 미결이다. [기록 형식 및 빌드](ordinary-partition-capture.md)
+CHG-046 / IMP-044는 DES-003/012에 따라 virt 단일 CPU에서 일반 Rust A/B 작업과 전용 유휴 스택을 구현한다. POL-006과 REQ-002/005/023은 부분 구현 상태이며  [기록 형식 및 빌드](ordinary-partition-capture.md)
+
+POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)

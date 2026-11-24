@@ -2,7 +2,7 @@
 
 [English 및 재현 명령](ordinary-partition-capture.en.md) · [동결 계획](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99) · [#21](https://github.com/Romanof123/JNOX/issues/21)
 
-CHG-046은 REQ-002/005/023에 영향을 준다. IMP-044는 DES-003/012에 따른 해당 요구사항 및 POL-006의 부분 구현이다. VER-002/005/023 판정과 EVD-044는 미결이다. 아래 명령을 kernel 디렉터리에서 table=p와 table=q로 각각 실행한다. 각 콜드 부팅의 ELF, 해시, 리비전, 역어셈블리, UART, 예외 로그를 별도 보존한다. 기존 partition-bench 기능은 기존 어셈블리 시험을 실행한다.
+CHG-046은 REQ-002/005/023에 영향을 준다. IMP-044는 DES-003/012에 따른 해당 요구사항 및 POL-006의 부분 구현이다.  아래 명령을 kernel 디렉터리에서 table=p와 table=q로 각각 실행한다. 각 콜드 부팅의 ELF, 해시, 리비전, 역어셈블리, UART, 예외 로그를 별도 보존한다. 기존 partition-bench 기능은 기존 어셈블리 시험을 실행한다.
 
 virt에서 JNOX_PROFILE와 JNOX_APP를 설정하지 않고 P/Q 하나만 선택한다. 다른 벤치 기능이나 보드와의 조합은 거부한다. 고정된 Rust 툴체인, QEMU, LLVM 도구가 설치된 POSIX 셸을 사용한다. STOP 줄이 완성된 후 QEMU를 종료한다. 시간 초과 또는 끊긴 출력은 미완료로 기록한다.
 
@@ -48,3 +48,5 @@ for table in P Q; do
 done
 python tools/test_ordinary_partition_account.py
 ```
+
+POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)

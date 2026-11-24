@@ -105,3 +105,5 @@ CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel
 [EVD-041](evidence/evd-041.en.md) records measurements for the FIFO/RR parts of VER-002/005/009/023. Compare linked footprints and repeated observed handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)

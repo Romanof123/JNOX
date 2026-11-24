@@ -112,3 +112,5 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
 
 POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
+
+POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)

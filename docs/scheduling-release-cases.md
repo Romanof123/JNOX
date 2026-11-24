@@ -48,3 +48,5 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 [FIFO·RR 측정 및 판정 기준](fixed-cost.md) · [EVD-041 비용·스택 관측](evidence/evd-041.md)
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)

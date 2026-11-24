@@ -112,3 +112,5 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
 
 POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [EVD-041](evidence/evd-041.md)
+
+POL-006 / IMP-044. 최초 일반 실행 두 건 모두 1 ms 기준에 실패했고 Q는 준비된 B 창 하나를 건너뛰었다. 실제 마스킹 및 전체 릴리스 적격성은 미확정이다. [EVD-044](evidence/evd-044.md)

@@ -48,3 +48,5 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 [FIFO/RR measurement and acceptance criteria](fixed-cost.en.md) · [EVD-041 observed costs and stacks](evidence/evd-041.en.md)
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)

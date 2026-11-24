@@ -162,4 +162,6 @@ POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth.
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
-CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage. VER-002/005/023 and EVD-044 remain pending. [Capture format and build](ordinary-partition-capture.en.md)
+CHG-046 / IMP-044 implements ordinary Rust A/B workers and a private idle stack on a single virt CPU under DES-003/012. POL-006 and REQ-002/005/023 have partial implementation coverage.  [Capture format and build](ordinary-partition-capture.en.md)
+
+POL-006 / IMP-044. Both first ordinary runs failed the 1 ms criterion. Q skipped an eligible B window. Live masking and complete release qualification remain open. [EVD-044](evidence/evd-044.en.md)

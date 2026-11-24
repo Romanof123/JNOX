@@ -1,0 +1,18 @@
+{
+  "evidence_id": "EVD-044",
+  "implementation": "IMP-044",
+  "policy": "POL-006",
+  "verdict": "PARTIAL evidence; both timing cases FAILED",
+  "versions": [
+    {
+      "version": 1,
+      "source": "a57a0cb8563c28403f9afc2efa3bd9ba482f8398",
+      "english": "evd-044-v1.en.md",
+      "korean": "evd-044-v1.md",
+      "evidence": "evd-044-v1.json",
+      "sha256": "11179a299d84131b0aea94874edad97c386a8e8b3b658caddfa995df18c5e795",
+      "reviewer_manifest_sha256": "d471625eb17dfdec3e92dfb49fbde83a913d1c24677f8db38606ee61262b3e28"
+    }
+  ],
+  "scope": "First QEMU normal-counter P and Q and separate assembly fixture; no live prescribed masking, board or protection evidence."
+}
