@@ -1,0 +1,7 @@
+#ifndef JNOX_STDINT_H
+#define JNOX_STDINT_H
+typedef __UINT32_TYPE__ uint32_t;
+typedef __UINT64_TYPE__ uint64_t;
+#define UINT16_MAX __UINT16_MAX__
+#define UINT64_MAX __UINT64_MAX__
+#endif

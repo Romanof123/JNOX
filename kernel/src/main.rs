@@ -5,6 +5,15 @@ use core::arch::asm;
 use core::panic::PanicInfo;
 use core::ptr;
 
+#[cfg(jnox_native_el0)]
+#[path = "../native/elf.rs"]
+mod native_elf;
+#[cfg(jnox_native_el0)]
+mod native_el0;
+#[cfg(jnox_native_el0)]
+mod native_el0_mmu;
+
+
 #[cfg(jnox_bench = "aperiodic")]
 mod aperiodic;
 #[cfg(jnox_bench = "amc")]
@@ -205,6 +214,8 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
     #[cfg(not(jnox_pi4))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
+    #[cfg(jnox_native_el0)]
+    native_el0::run();
     #[cfg(jnox_pi4_smp)]
     pi4_smp_bsp::primary();
     #[cfg(jnox_fixed)]
@@ -231,11 +242,11 @@ extern "C" fn kernel_main() -> ! {
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+    #[cfg(not(any(jnox_native_el0, jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
+#[cfg(not(any(jnox_native_el0, jnox_eevdf_app, jnox_rust_amc, jnox_pi4_smp, jnox_ordinary_mutex, jnox_control, jnox_ap, jnox_ordinary_prop, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

@@ -251,7 +251,23 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_rust_amc)");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_migration)");
     println!("cargo::rustc-check-cfg=cfg(jnox_eevdf_app)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_el0)");
+    let native_image = selector("JNOX_NATIVE_ELF");
+    let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
+    if profile.as_deref() != Some("native") {
+        assert!(native_image.is_none() && native_hash.is_none(),
+            "native ELF packaging variables require JNOX_PROFILE=native");
+    }
     match profile.as_deref() {
+        Some("native") => {
+            assert!(board == "virt" && app.as_deref() == Some("startup-probe")
+                && bench == "boot" && trace.is_none() && scenario.is_none()
+                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                "native startup-probe requires virt and no benchmark features");
+            package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
+                native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"));
+            println!("cargo::rustc-cfg=jnox_native_el0");
+        }
         Some("eevdf") => {
             assert!(board == "virt" && bench == "boot" && app.as_deref() == Some("telemetry")
                 && trace.is_none() && scenario.is_none()
@@ -383,8 +399,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic or deadline"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic or deadline"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic, native or deadline"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic, native or deadline"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",
@@ -421,4 +437,20 @@ fn validate_architecture() {
         let expected = TARGET.trim_end();
         assert!(target == expected, "aarch64 requires TARGET={expected}, got {target:?}");
     }
+}
+
+fn package_native_image(source: &str, expected: &str) {
+    use std::{fs, path::Path, process::Command};
+    assert!(expected.len() == 64 && expected.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f')),
+        "native ELF needs a lowercase SHA-256");
+    let source = Path::new(source).canonicalize().expect("locate native ELF");
+    println!("cargo::rerun-if-changed={}", source.display());
+    let output = Path::new(&env::var_os("OUT_DIR").expect("missing Cargo output directory"))
+        .join("native_user.elf");
+    let len = fs::copy(source, &output).expect("snapshot native ELF");
+    assert!((64..=8 * 1024 * 1024).contains(&len), "native ELF package size");
+    let actual = Command::new("sha256sum").arg(&output).output().expect("run sha256sum");
+    let digest = std::str::from_utf8(&actual.stdout).expect("read ELF digest").split_whitespace().next();
+    assert!(actual.status.success() && digest == Some(expected), "native ELF hash mismatch");
+    println!("cargo::rustc-env=JNOX_PACKAGED_ELF_SHA256={expected}");
 }
