@@ -38,7 +38,7 @@ pub struct Service<C, const N: usize, const H: usize> {
     fifo: EventLoop<Request, N>,
     queued: u64,
     peak: usize,
-    last: Option<u64>,
+    watermark: Option<u64>,
     running_until: Option<u64>,
     invalid: bool,
 }
@@ -50,7 +50,7 @@ impl<C, const N: usize, const H: usize> Service<C, N, H> {
             fifo: EventLoop::new(),
             queued: 0,
             peak: 0,
-            last: None,
+            watermark: None,
             running_until: None,
             invalid: false,
         }
@@ -60,7 +60,17 @@ impl<C, const N: usize, const H: usize> Service<C, N, H> {
         self.peak
     }
 
+    /// Observe an active burst without changing FIFO accounting.
+    fn observe(&mut self, now: u64) -> bool {
+        let previous = self.watermark.unwrap_or(now);
+        self.watermark = Some(previous.max(now));
+        now >= previous
+    }
+
     fn admit(&mut self, req: Request, now: u64) -> Result<(), Decision> {
+        // A refused first request cannot open a burst. Structural refusals in an
+        // existing burst still participate in the single counter timeline.
+        let monotonic = self.watermark.is_none() || self.observe(now);
         let Some(handler) = self.handlers.get(req.handler) else {
             return Err(Decision::Invalid);
         };
@@ -71,7 +81,7 @@ impl<C, const N: usize, const H: usize> Service<C, N, H> {
             return Err(Decision::ZeroCost);
         }
         if self.invalid
-            || self.last.is_some_and(|last| now < last)
+            || !monotonic
             || self.running_until.is_some_and(|until| now > until)
         {
             return Err(Decision::InvalidInterval);
@@ -92,7 +102,7 @@ impl<C, const N: usize, const H: usize> Service<C, N, H> {
         self.fifo.enqueue(req).map_err(|_| Decision::Full)?;
         self.queued = queued;
         self.peak = self.peak.max(self.fifo.depth());
-        self.last = Some(now);
+        self.watermark = Some(now);
         Ok(())
     }
 
@@ -116,18 +126,18 @@ impl<C, const N: usize, const H: usize> Service<C, N, H> {
         self.queued -= cost;
         let start = clock();
         self.running_until = start.checked_add(cost);
-        self.invalid |= self.last.is_some_and(|last| start < last)
+        let monotonic = self.observe(start);
+        self.invalid |= !monotonic
             || self.running_until.is_none_or(|until| until > req.deadline);
-        self.last = Some(start);
         call(context, req, &mut |next, now| self.post(next, now));
         let finish = clock();
-        self.invalid |= self.last.is_some_and(|last| finish < last)
+        let monotonic = self.observe(finish);
+        self.invalid |= !monotonic
             || self.running_until.is_none_or(|until| finish > until);
         self.running_until = None;
-        self.last = Some(finish);
         if self.fifo.depth() == 0 {
             self.invalid = false;
-            self.last = None;
+            self.watermark = None;
         }
         Some((req, start, finish))
     }
