@@ -91,6 +91,12 @@ pub(crate) struct Clock {
     pub(crate) millisecond: u64,
 }
 impl Clock {
+    pub(crate) fn within_opening(&self, sampled: u64) -> bool {
+        sampled
+            .checked_sub(self.epoch)
+            .is_some_and(|delay| delay <= self.millisecond)
+    }
+
     pub(crate) fn new(epoch: u64, frequency: u64, manifest: Manifest) -> Result<Self, Error> {
         if frequency == 0 || frequency % 1000 != 0 {
             return Err(Error::Invalid);
@@ -166,6 +172,27 @@ pub(crate) struct Jobs {
     pending: Option<(usize, Action)>,
 }
 
+/// Bind the opening to the first real idle return and the same two saved
+/// frames. The caller separately validates each frame against its linked owner.
+pub(crate) fn first_return_matches(
+    returned: Option<[u64; 3]>,
+    idle_frame: u64,
+    idle_pc: u64,
+    setup_start: u64,
+    prepared: [usize; 2],
+    live: [usize; 2],
+) -> bool {
+    returned.is_some_and(|[frame, pc, stamp]| {
+        frame == idle_frame && pc == idle_pc && stamp <= setup_start
+    }) && prepared == live
+}
+
+pub(crate) struct FirstTransition {
+    next: Jobs,
+    pub(crate) decision: Decision,
+    generation: u64,
+}
+
 impl Jobs {
     pub(crate) fn new(policy: Policy, manifest: Manifest) -> Result<Self, Error> {
         let params = manifest.params();
@@ -191,6 +218,41 @@ impl Jobs {
             state: [State::Unreleased; 2],
             pending: None,
         })
+    }
+
+    /// For slot zero, the slot counter is a non-repeating ledger generation:
+    /// every successful open advances it, and a trap requires an earlier open.
+    fn pristine(&self) -> bool {
+        self.slot == 0
+            && self.state == [State::Unreleased; 2]
+            && self.pending.is_none()
+            && self.demand == [0; 2]
+    }
+
+    pub(crate) fn prepare_first(&self) -> Result<FirstTransition, Error> {
+        if !self.pristine() {
+            return Err(Error::Unexpected);
+        }
+        let mut next = self.clone();
+        let decision = next.decide(0)?;
+        Ok(FirstTransition {
+            next,
+            decision,
+            generation: self.slot,
+        })
+    }
+
+    pub(crate) fn commit_first(&mut self, prepared: FirstTransition) -> Result<Decision, Error> {
+        if !self.pristine()
+            || self.slot != prepared.generation
+            || self.manifest != prepared.next.manifest
+            || core::mem::discriminant(&self.backend)
+                != core::mem::discriminant(&prepared.next.backend)
+        {
+            return Err(Error::Unexpected);
+        }
+        *self = prepared.next;
+        Ok(prepared.decision)
     }
 
     /// Exactly once per observed slot boundary. Keep the prior ledger intact

@@ -114,3 +114,17 @@ Only late S slot 0 instruments A’s ordinary loop. The hook samples once per ch
 late 전용 S의 0번 슬롯에서는 A의 실제 작업이 계속 진행한다. 매 묶음의 후크는 컷오프 1 ms 전부터 마스킹하고 명목 끝+2 ms 이후 해제한다. 사건 16의 두 번째 시각은 해제 직전이며 실제 중단 시각이 아니다. 사건 20의 두 완료 수 증가와 14/16/19 및 벡터 표본으로 실제 초과와 B의 기회 손실을 확인한다. 상태/사유 2/1은 시간 위반, 3/10은 마스킹·진척 증거 부족, 3/8은 경계에서 무단 상태 변화를 뜻한다. RAM은 8워드 행 1,024개와 복귀 표본 64개로 제한한다. 사건 12는 종료 시 원래 시각을 유지해 복귀 인덱스순으로 출력하므로 18의 순서와 연결한다. 오버플로·누락·설명되지 않는 복귀는 실패다. 일반 실행의 ERET 전 표본과 같은 ELF 추적 실행의 실제 ERET는 해당 실행에만 귀속한다.
 
 CHG-056 · [First-opening measurements and conditional preparation / 최초 개방 계측 및 조건부 준비](reservation-opening-plan.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+### CHG-056 source revision of IMP-053 / IMP-053 소스 수정
+
+Use the same build selectors, capture commands, eight-column decimal format and 1 ms opening limit. Record the exact ELF/source revision because the stream header is shared with v1. In a revised normal W/S run, join the following records to the existing boundary, selection and worker observations; reject absence of a required record on a claimed completed path. Preserve partial traces on failure.
+
+| Tag | Header tick, slot, ID / 시각·슬롯·ID | a, b, c, d |
+| --- | --- | --- |
+| 24 | Post-admission sample, unavailable slot, idle / 수용 후·슬롯 없음·유휴 | first runtime sample, epoch E, 0, 0 |
+| 22 | End of private preparation, slot 0, idle / 비공개 준비 끝·0·유휴 | setup start, E, max(E−end,0), 0 |
+| 23 | After authoritative commit, slot 0, chosen owner / 실제 커밋 직후·0·선택 소유자 | actual boundary-vector entry, sample before commit, E, new generation 1 |
+
+R terminates before all three records. The admitted late fixture emits 24 and uses synchronous opening without 22/23. In the normal candidate the prep bracket excludes outer mask/return instructions; report those unknown edges. Replay boot-sample→first worker using 24.a and 10.b, preserve the true E, and keep full outgoing charge and actual return/neighbor checks. CHG-056 affects REQ-002/005/023, which link to the existing IMP-053. EVD-053 v1 scored the earlier c2efde4 only: 8/8 ordinary runs stopped in slot 0, 2/2 rejected overload before start and 2/2 late runs first failed opening. The revised source has no indexed execution verdict. [Original results](evidence/evd-053-v1.en.md) · [Repair design](reservation-opening-plan.md)
+
+동일 빌드 선택자·캡처 명령·8열 십진 형식·1 ms 한계를 사용한다. 스트림 표지가 v1과 같으므로 ELF와 소스 신원을 보존한다. 정상 W/S는 24.a 최초 런타임 표본부터 10.b 실제 작업 표식까지 계산하고, 22의 내부 준비 구간 밖 마스킹·복귀 비용 및 23의 실제 커밋 구간을 구분한다. R 거부는 세 기록 전 종료한다. 기존 late 진단은 24만 추가하고 최초 동기식 판정을 유지한다. CHG-056은 REQ-002/005/023을 통해 기존 IMP-053에 연결된다. v1의 8/8 정상 첫 슬롯 실패, 2/2 시작 전 거부, 2/2 지연 사례의 선행 개방 실패는 c2efde4에서 나온 결과다. 수정 소스의 실행 판정은 미등록이다. [최초 결과](evidence/evd-053-v1.md) · [수정 설계](reservation-opening-plan.md)

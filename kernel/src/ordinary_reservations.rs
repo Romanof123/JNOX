@@ -4,7 +4,9 @@ use core::ptr;
 use core::sync::atomic::{AtomicPtr, AtomicU64, AtomicUsize, Ordering};
 
 use super::context::*;
-use super::reservation_jobs::{Action, Clock, Error, Jobs, Manifest, Policy, admission, charge};
+use super::reservation_jobs::{
+    Action, Clock, Error, FirstTransition, Jobs, Manifest, Policy, admission, charge,
+};
 use super::{park, uart_write};
 
 const IDLE: usize = 2;
@@ -145,6 +147,13 @@ fn fresh(id: usize) -> *mut Frame {
     frame
 }
 extern "C" fn idle() -> ! {
+    if !LATE {
+        // The first opening timer is already armed. If setup crosses E,
+        // retain that epoch and report the missed preparation explicitly.
+        unsafe { asm!("msr daifset,#2", "isb", options(nostack)) };
+        state().prepare_first();
+        unsafe { asm!("msr daifclr,#2", "isb", options(nostack)) };
+    }
     loop {
         unsafe { asm!("wfi", options(nostack)) }
     }
@@ -279,8 +288,19 @@ struct Grant {
     acc: u64,
     deadline: u64,
 }
+struct Prepared {
+    setup_start: u64,
+    transition: FirstTransition,
+    epoch: u64,
+    end: u64,
+    cutoff: u64,
+    goal: u64,
+    frames: [usize; 2],
+}
+
 struct Runtime {
     jobs: Jobs,
+    prepared: Option<Prepared>,
     clock: Clock,
     horizon: u64,
     opened: u64,
@@ -297,6 +317,86 @@ struct Runtime {
 }
 
 impl Runtime {
+    fn first_frames(&self) -> [usize; 2] {
+        core::array::from_fn(|id| {
+            let frame = self.frames[id];
+            if frame.addr() != top(id) - size_of::<Frame>()
+                || !within(id, frame.addr(), size_of::<Frame>())
+            {
+                unexpected()
+            }
+            let f = unsafe { &*frame };
+            let pc = [
+                reservation_worker_a as *const (),
+                reservation_worker_b as *const (),
+            ][id];
+            if f.elr != pc as usize as u64
+                || f.spsr != 0x345
+                || f.gpr[19] != 0
+                || f.tpidr_el1 != SEED[id]
+                || GENERATION[id].load(Ordering::Acquire) != NA
+                || ACTION[id].load(Ordering::Acquire) != 0
+                || GOAL[id].load(Ordering::Acquire) != NA
+                || FIRST[id].load(Ordering::Acquire) != 0
+                || !POINTER[id].load(Ordering::Acquire).is_null()
+                || self.last_count[id] != 0
+                || self.last_acc[id] != SEED[id]
+                || self.allocation_deadline[id] != NA
+                || self.allocation_service[id] != 0
+            {
+                unexpected()
+            }
+            frame.addr()
+        })
+    }
+
+    fn prepare_first(&mut self) {
+        let begin = now();
+        let epoch = self.clock.epoch;
+        if self.prepared.is_some()
+            || self.opened != NA
+            || self.current != IDLE
+            || self.grant.is_some()
+            || self.kind != 0
+            || self.target != epoch
+            || return_count() != 1
+        {
+            unexpected()
+        }
+        let transition = checked(self.jobs.prepare_first());
+        let decision = transition.decision;
+        let id = decision.owner.unwrap_or_else(|| unexpected());
+        let action = decision.action.unwrap_or_else(|| unexpected());
+        let goal = if action == Action::Long {
+            NA
+        } else {
+            self.last_count[id]
+                .checked_add(256)
+                .unwrap_or_else(|| unexpected())
+        };
+        let p = Prepared {
+            setup_start: begin,
+            transition,
+            epoch,
+            goal,
+            end: checked(self.clock.boundary(1)),
+            cutoff: checked(self.clock.cutoff(0)),
+            frames: self.first_frames(),
+        };
+        self.prepared = Some(p);
+        let done = now();
+        event(
+            22,
+            done,
+            0,
+            IDLE,
+            [begin, epoch, epoch.saturating_sub(done), 0],
+        );
+        if done < begin || done >= epoch {
+            finish(2, 9, 0, IDLE, done, epoch)
+        }
+    }
+
     fn arm(&mut self, slot: u64, kind: u64, target: u64) {
         self.target = target;
         self.kind = kind;
@@ -337,8 +437,7 @@ impl Runtime {
         self.current = id;
         frame
     }
-    fn open(&mut self, slot: u64) -> *mut Frame {
-        self.opened = slot;
+    fn open(&mut self, slot: u64, entry: u64) -> *mut Frame {
         // After an early retirement or cutoff only idle may have run. Verify
         // both clients at the boundary, including final idle and exited clients.
         for id in 0..IDLE {
@@ -353,9 +452,53 @@ impl Runtime {
         if slot == self.horizon {
             finish(0, 0, slot, IDLE, 0, 0)
         }
-        let d = checked(self.jobs.open(slot));
-        let start = checked(self.clock.boundary(slot));
-        let end = checked(self.clock.boundary(slot + 1));
+        let (d, start, end, prepared_grant) = if slot == 0 && !LATE {
+            let p = self.prepared.take().unwrap_or_else(|| unexpected());
+            let ret = (return_count() == 1).then(|| returned(0));
+            let idle_entry = idle as *const () as usize as u64;
+            if self.opened != NA
+                || self.current != IDLE
+                || self.grant.is_some()
+                || self.kind != 0
+                || self.target != p.epoch
+                || self.clock.epoch != p.epoch
+                || !super::reservation_jobs::first_return_matches(
+                    ret,
+                    (top(IDLE) - size_of::<Frame>()) as u64,
+                    idle_entry,
+                    p.setup_start,
+                    p.frames,
+                    self.first_frames(),
+                )
+            {
+                unexpected()
+            }
+            let before = now();
+            if before < entry || !self.clock.within_opening(before) {
+                finish(2, 5, 0, IDLE, before, p.epoch)
+            }
+            let decision = checked(self.jobs.commit_first(p.transition));
+            let committed = now();
+            event(
+                23,
+                committed,
+                0,
+                decision.owner.unwrap_or(IDLE),
+                [entry, before, p.epoch, 1],
+            );
+            if committed < before || !self.clock.within_opening(committed) {
+                finish(2, 5, 0, IDLE, committed, p.epoch)
+            }
+            (decision, p.epoch, p.end, Some((p.goal, p.cutoff)))
+        } else {
+            (
+                checked(self.jobs.open(slot)),
+                checked(self.clock.boundary(slot)),
+                checked(self.clock.boundary(slot + 1)),
+                None,
+            )
+        };
+        self.opened = slot;
         for id in 0..2 {
             event(
                 5,
@@ -399,7 +542,9 @@ impl Runtime {
                 deadline: d.after[id].d,
             });
             GOAL[id].store(
-                if action == Action::Long {
+                if let Some((goal, _)) = prepared_grant {
+                    goal
+                } else if action == Action::Long {
                     NA
                 } else {
                     count.checked_add(256).unwrap_or_else(|| unexpected())
@@ -409,7 +554,8 @@ impl Runtime {
             ACTION[id].store(1 + action as u64, Ordering::Relaxed);
             FIRST[id].store(0, Ordering::Relaxed);
             GENERATION[id].store(slot, Ordering::Release);
-            let cutoff = checked(self.clock.cutoff(slot));
+            let cutoff = prepared_grant
+                .map_or_else(|| checked(self.clock.cutoff(slot)), |(_, cutoff)| cutoff);
             if LATE && slot == 0 {
                 MASK_FROM.store(cutoff - self.clock.millisecond, Ordering::Relaxed);
                 NOMINAL_END.store(end, Ordering::Relaxed);
@@ -564,6 +710,13 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
         s.current,
         [s.target, s.kind, iar as u64, ctl],
     );
+    if slot == 0 && s.kind == 0 && !LATE {
+        let compare: u64;
+        unsafe { asm!("mrs {},cntp_cval_el0",out(reg)compare,options(nostack)) };
+        if compare != s.target || compare != s.clock.epoch {
+            unexpected()
+        }
+    }
     if iar & 0x3ff != TIMER_IRQ || ctl & 7 != 5 || entry < s.target {
         finish(3, 4, slot, s.current, iar as u64, ctl)
     }
@@ -582,7 +735,7 @@ extern "C" fn irq(frame: *mut Frame) -> *mut Frame {
         if entry - s.target > s.clock.millisecond {
             finish(2, 5, slot, IDLE, entry, s.target)
         }
-        s.open(slot)
+        s.open(slot, entry)
     }
 }
 extern "C" fn svc(frame: *mut Frame) -> *mut Frame {
@@ -607,6 +760,8 @@ extern "C" fn svc(frame: *mut Frame) -> *mut Frame {
 }
 
 pub(super) fn run() -> ! {
+    #[cfg(any(jnox_reservation_case = "wake", jnox_reservation_case = "saturated"))]
+    let boot_sample = now();
     let policy = if cfg!(jnox_reservation_policy = "cbs") {
         Policy::Cbs
     } else {
@@ -659,6 +814,8 @@ pub(super) fn run() -> ! {
         finish(1, Error::OverCapacity as u64, NA, IDLE, 9, 8)
     }
     let jobs = checked(Jobs::new(policy, manifest));
+    #[cfg(any(jnox_reservation_case = "wake", jnox_reservation_case = "saturated"))]
+    event(24, now(), NA, IDLE, [boot_sample, epoch, 0, 0]);
     init_timer_irq();
     let frames = core::array::from_fn(fresh);
     let horizon = manifest.horizon();
@@ -679,6 +836,7 @@ pub(super) fn run() -> ! {
     unsafe {
         RUNTIME = Some(Runtime {
             jobs,
+            prepared: None,
             clock,
             horizon,
             opened: NA,
