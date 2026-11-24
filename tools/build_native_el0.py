@@ -29,11 +29,15 @@ def output(args, cwd=ROOT, env=None):
     return subprocess.check_output(args, cwd=cwd, env=env, text=True).strip()
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, type=Path, help="new package directory")
     parser.add_argument("--app", choices=SOURCES, default="startup-probe")
-    args = parser.parse_args()
+    parser.add_argument("--partition-phase", choices=("irq-v1",),
+                        help="include native P/Q IRQ stage timestamps in the kernel")
+    args = parser.parse_args(argv)
+    if args.partition_phase and args.app not in ("partition-p", "partition-q"):
+        parser.error("--partition-phase requires --app partition-p or partition-q")
     source = ROOT / "examples/portability" / SOURCES[args.app]
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -63,6 +67,9 @@ def main():
         env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=args.app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,
                    CARGO_TARGET_DIR=str(out / "target"))
+        if args.partition_phase:
+            env["JNOX_PARTITION_PHASE"] = args.partition_phase
+            metadata["partition_phase"] = args.partition_phase
         subprocess.run(kernel_command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                        check=True)
     shutil.copyfile(out / "target" / TARGET / "release/jnox-kernel", kernel_elf)

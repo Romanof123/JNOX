@@ -6,7 +6,7 @@ Independent first protocol / 독립 첫 실험. Before inspecting timings, alloc
 
 Validate each capture using the ordinary partition replay. Join phase rows to adjacent ordinary windows by old/new generation and actual old/new PID, including same-PID Q transitions. Require ordered absolute stamps between the previous IRQ sample and the next selection. Compare the first transition with later transitions individually. Report phase minus plain for IRQ-to-selection, selection-to-return, return-to-first-user and opening-to-first-user, plus both margins to 1 ms. No threshold adjustment or subtraction of observer cost. 정상 재생 검증 뒤 실제 세대와 PID로 연결하고 타임스탬프 순서를 확인한다. 각 구간 차이와 양쪽 여유를 보고하며 계측 비용을 차감하지 않는다.
 
-Select the diagnostic with `JNOX_PARTITION_PHASE=irq-v1` during the kernel build. Leave the variable unset for the matched ordinary kernel. Capture both with the existing native_weighted_capture.py. Run `python tools/native_partition_phase.py PLAIN_DIR PLAIN_SESSION_SHA256 PHASE_DIR PHASE_SESSION_SHA256` for each pair. The ordinary decoder and journal remain version 2. The sibling decoder requires the separate v1 ELF symbol only in the instrumented image. A failed first boot stays in the denominator and cannot supply a complete phase report.
+Pass `--partition-phase irq-v1` to `tools/build_native_el0.py` for the diagnostic kernel. Omit this argument for the matched ordinary kernel. Capture both with the existing native_weighted_capture.py. Run `python tools/native_partition_phase.py PLAIN_DIR PLAIN_SESSION_SHA256 PHASE_DIR PHASE_SESSION_SHA256` for each pair. The ordinary decoder and journal remain version 2. The sibling decoder requires the separate v1 ELF symbol only in the instrumented image. A failed first boot stays in the denominator and cannot supply a complete phase report.
 
 Read consecutive raw counter differences as intervals. Observe includes the existing frame save, prior-return read, timer and interrupt handling. Result covers the existing private result copy. Audit includes evidence publication and ordinary checks. Schedule includes generation bookkeeping and decision. MMU includes switch and address-space identity. Publication covers the actual generation write. The gap between audit end and schedule begin includes the first diagnostic record write. The second record write follows selection and is visible in the comparison to the next return. Neither raw nor paired values isolate host translation costs.
 
@@ -19,3 +19,24 @@ Read consecutive raw counter differences as intervals. Observe includes the exis
 The public packager strips ambient JNOX_* settings. Preserve the original missing-symbol capture and genuine diagnostic boot separately. Before changing packaging, require an explicit partition-only option, rejection before output creation, no diagnostic variable in the user compiler environment, a recorded diagnostic manifest field and unchanged ordinary manifest keys. Verify the linked symbol in both package outputs and equal user ELF bytes in the executable example. Use mocked package runs for low-resource regression coverage. Preserve the original cold-pair and 1 ms protocol.
 
 공개 패키저가 외부 환경 변수를 제거하므로 P/Q 전용 명령행 옵션을 추가한다. 잘못된 조합은 출력 디렉터리를 만들기 전에 거부한다. 일반 매니페스트 형식과 사용자 ELF를 유지하고 예제에서 두 커널의 심볼을 확인한다. 심볼 누락 증거와 실제 계측 부팅 증거를 따로 보존한다.
+
+Run this POSIX shell example from the repository root with four fresh output directories, Python, the native build toolchain and readelf on PATH. It checks both P/Q pairs before capture.
+
+```sh
+set -eu
+for arm in partition-p partition-q; do
+    plain="$arm-plain"
+    phase="$arm-phase"
+    python tools/build_native_el0.py --app "$arm" --out "$plain"
+    python tools/build_native_el0.py --app "$arm" --partition-phase irq-v1 --out "$phase"
+    cmp "$plain/user.elf" "$phase/user.elf"
+    for dir in "$plain" "$phase"; do
+        expected=0
+        if [ "$dir" = "$phase" ]; then expected=1; fi
+        readelf -Ws "$dir/kernel.elf" > "$dir/kernel-symbols.txt"
+        awk -v expected="$expected" \
+            '$NF == "native_partition_irq_phase_v1" && $7 != "UND" { count++ } END { exit (count+0 != expected) }' \
+            "$dir/kernel-symbols.txt"
+    done
+done
+```
