@@ -82,3 +82,5 @@ For chronological rows i and i+1, row i's selected owner runs during the counter
 The empty application keeps its eight observation words at zero. The delayed application records slot 0’s nonzero aligned stack pointer in the first word and leaves the other seven words zero.
 
 First independent results for ordinary and instrumented images and their scope are recorded in [EVD-030](evidence/evd-030.en.md)
+
+[Simultaneous and late timer events](fixed-runtime-edges.en.md) · [#72](https://github.com/Romanof123/JNOX/issues/72)

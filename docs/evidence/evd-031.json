@@ -1,0 +1,965 @@
+{
+ "revision": "24462f17f9db38f0abd3722505a1bf9846421a41",
+ "independent_report_sha256": "6fa46368660f1c37061437d334c0eae444e3d2c4cc7177a82dcaa4cf0ad30e02",
+ "independent_verifier": {
+  "revision": "24462f17f9db38f0abd3722505a1bf9846421a41",
+  "first_ordinary_verdict": "PASS 4/4 (2 FIFO, 2 RR), no retries",
+  "qemu_version": "QEMU emulator version 11.1.3",
+  "qemu_sha256": "3ae2c079d4491362fece2abb641f0ff17d88e9008c9fcd13600f249b9bd1c862",
+  "evidence_root": "/mnt/d/codex/.jnox-work/next-fixed/pi4-fresh",
+  "profiles": {
+   "fifo": {
+    "elf": "/mnt/d/codex/.jnox-work/next-fixed/pi4-fixed-fifo/target/aarch64-unknown-none/release/jnox-kernel",
+    "elf_sha256": "870948e16c721737b31fa6ef8ca1ad8a3cd6122ca08864ccaa24090cadd30f62",
+    "raw": "/mnt/d/codex/.jnox-work/next-fixed/pi4-fixed-fifo/boot/kernel8.img",
+    "raw_sha256": "46abe4230616ff8b27d8c5087de014c8e48083fd47aca363fcbb09cf196f574e",
+    "command": {
+     "argv": [
+      "/usr/bin/python3",
+      "tools/qemu_boot.py",
+      "--profile",
+      "pi4-fixed-fifo",
+      "--kernel",
+      "/mnt/d/codex/.jnox-work/next-fixed/pi4-fixed-fifo/boot/kernel8.img",
+      "--qemu",
+      "/mnt/d/codex/arm-speed-lab/build/system/qemu-system-aarch64",
+      "--runs",
+      "2",
+      "--capture-dir",
+      "/mnt/d/codex/.jnox-work/next-fixed/pi4-fresh/fifo"
+     ],
+     "exit": 0,
+     "wall_seconds": 3.6228992570000003
+    },
+    "counter_register_replay": {
+     "pc_before": "0x81864",
+     "pc_after": "0x81868",
+     "mrs": "mrs x9,cntfrq_el0",
+     "x9": 62500000,
+     "end_pc": "0x8125c",
+     "end_sp": "0x98120",
+     "observations": [
+      557328,
+      573712,
+      590112,
+      14746048,
+      0,
+      14746047,
+      0,
+      0
+     ]
+    },
+    "quantum_ms": 200.0,
+    "replay_stack_slots_A_B_HIGH": [
+     0,
+     1,
+     2
+    ],
+    "stack_base": "0x84120",
+    "stack_bytes_per_slot": 16384,
+    "replay_observation_predicates": "PASS",
+    "wall_definition": "monotonic host seconds around complete two-run runner including both 1s quiet windows",
+    "cold_boots": [
+     {
+      "run": 1,
+      "boot_erets": [
+       {
+        "pc": "0x80064",
+        "symbol": "_start+0x64",
+        "instruction": "msr\tspsel, #0x1"
+       },
+       {
+        "pc": "0x8124c",
+        "symbol": "fixed_runtime_enter+0x0",
+        "instruction": "blr\tx0"
+       }
+      ],
+      "events": [
+       {
+        "kind": "SVC",
+        "esr": "0x56000000",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81498",
+         "symbol": "jnox_kernel::fixed_apps::selected::producer+0x50",
+         "instruction": "nop"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "yield A to B",
+        "svc_instruction": {
+         "pc": "0x81494",
+         "symbol": "jnox_kernel::fixed_apps::selected::producer+0x4c",
+         "instruction": "svc\t#0x0"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x8136c",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x50",
+         "instruction": "cbz\tx0, 8142c <jnox_kernel::fixed_apps::selected::sleeper+0x110>"
+        },
+        "eret": {
+         "pc": "0x81498",
+         "symbol": "jnox_kernel::fixed_apps::selected::producer+0x50",
+         "instruction": "nop"
+        },
+        "fixture_interpretation": "B zero sleep yields to A",
+        "svc_instruction": {
+         "pc": "0x81368",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x4c",
+         "instruction": "svc\t#0x2"
+        }
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x38a0000",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "stlr\tx8, [x9]"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "IRQ preempts A for HIGH"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "stlr\tx8, [x9]"
+        },
+        "fixture_interpretation": "HIGH returns via trampoline to interrupted A",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8136c",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x50",
+         "instruction": "cbz\tx0, 8142c <jnox_kernel::fixed_apps::selected::sleeper+0x110>"
+        },
+        "fixture_interpretation": "A returns via trampoline to B",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x813ac",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x90",
+         "instruction": "cbz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "eret": {
+         "pc": "0x81258",
+         "symbol": "fixed_runtime_idle+0x0",
+         "instruction": "wfi"
+        },
+        "fixture_interpretation": "B sleeps to idle",
+        "svc_instruction": {
+         "pc": "0x813a8",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x8c",
+         "instruction": "svc\t#0x2"
+        }
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8125c",
+         "symbol": "fixed_runtime_idle+0x4",
+         "instruction": "b\t81258 <fixed_runtime_idle>"
+        },
+        "eret": {
+         "pc": "0x813ac",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x90",
+         "instruction": "cbz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "fixture_interpretation": "timer wakes B"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x813b8",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x9c",
+         "instruction": "cbnz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "eret": {
+         "pc": "0x813b8",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x9c",
+         "instruction": "cbnz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "fixture_interpretation": "B rejected sleep resumes B",
+        "svc_instruction": {
+         "pc": "0x813b4",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x98",
+         "instruction": "svc\t#0x2"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81424",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x108",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8125c",
+         "symbol": "fixed_runtime_idle+0x4",
+         "instruction": "b\t81258 <fixed_runtime_idle>"
+        },
+        "fixture_interpretation": "B explicit exit to idle",
+        "svc_instruction": {
+         "pc": "0x81420",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x104",
+         "instruction": "svc\t#0x1"
+        }
+       }
+      ],
+      "uart": "JNOX PI4 BOOT\nJNOX PI4 READY\nFIXED FIFO START\nFIXED FIFO A START\nFIXED FIFO B YIELD\nFIXED FIFO A RESUME\nFIXED FIFO HIGH\nFIXED FIFO A DONE\nFIXED FIFO B SLEEP\nFIXED FIFO B DONE\n"
+     },
+     {
+      "run": 2,
+      "boot_erets": [
+       {
+        "pc": "0x80064",
+        "symbol": "_start+0x64",
+        "instruction": "msr\tspsel, #0x1"
+       },
+       {
+        "pc": "0x8124c",
+        "symbol": "fixed_runtime_enter+0x0",
+        "instruction": "blr\tx0"
+       }
+      ],
+      "events": [
+       {
+        "kind": "SVC",
+        "esr": "0x56000000",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81498",
+         "symbol": "jnox_kernel::fixed_apps::selected::producer+0x50",
+         "instruction": "nop"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "yield A to B",
+        "svc_instruction": {
+         "pc": "0x81494",
+         "symbol": "jnox_kernel::fixed_apps::selected::producer+0x4c",
+         "instruction": "svc\t#0x0"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x8136c",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x50",
+         "instruction": "cbz\tx0, 8142c <jnox_kernel::fixed_apps::selected::sleeper+0x110>"
+        },
+        "eret": {
+         "pc": "0x81498",
+         "symbol": "jnox_kernel::fixed_apps::selected::producer+0x50",
+         "instruction": "nop"
+        },
+        "fixture_interpretation": "B zero sleep yields to A",
+        "svc_instruction": {
+         "pc": "0x81368",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x4c",
+         "instruction": "svc\t#0x2"
+        }
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x38a0000",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "stlr\tx8, [x9]"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "IRQ preempts A for HIGH"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "stlr\tx8, [x9]"
+        },
+        "fixture_interpretation": "HIGH returns via trampoline to interrupted A",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8136c",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x50",
+         "instruction": "cbz\tx0, 8142c <jnox_kernel::fixed_apps::selected::sleeper+0x110>"
+        },
+        "fixture_interpretation": "A returns via trampoline to B",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x813ac",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x90",
+         "instruction": "cbz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "eret": {
+         "pc": "0x81258",
+         "symbol": "fixed_runtime_idle+0x0",
+         "instruction": "wfi"
+        },
+        "fixture_interpretation": "B sleeps to idle",
+        "svc_instruction": {
+         "pc": "0x813a8",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x8c",
+         "instruction": "svc\t#0x2"
+        }
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8125c",
+         "symbol": "fixed_runtime_idle+0x4",
+         "instruction": "b\t81258 <fixed_runtime_idle>"
+        },
+        "eret": {
+         "pc": "0x813ac",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x90",
+         "instruction": "cbz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "fixture_interpretation": "timer wakes B"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000002",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x813b8",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x9c",
+         "instruction": "cbnz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "eret": {
+         "pc": "0x813b8",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x9c",
+         "instruction": "cbnz\tx0, 813f0 <jnox_kernel::fixed_apps::selected::sleeper+0xd4>"
+        },
+        "fixture_interpretation": "B rejected sleep resumes B",
+        "svc_instruction": {
+         "pc": "0x813b4",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x98",
+         "instruction": "svc\t#0x2"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81424",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x108",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8125c",
+         "symbol": "fixed_runtime_idle+0x4",
+         "instruction": "b\t81258 <fixed_runtime_idle>"
+        },
+        "fixture_interpretation": "B explicit exit to idle",
+        "svc_instruction": {
+         "pc": "0x81420",
+         "symbol": "jnox_kernel::fixed_apps::selected::sleeper+0x104",
+         "instruction": "svc\t#0x1"
+        }
+       }
+      ],
+      "uart": "JNOX PI4 BOOT\nJNOX PI4 READY\nFIXED FIFO START\nFIXED FIFO A START\nFIXED FIFO B YIELD\nFIXED FIFO A RESUME\nFIXED FIFO HIGH\nFIXED FIFO A DONE\nFIXED FIFO B SLEEP\nFIXED FIFO B DONE\n"
+     }
+    ]
+   },
+   "rr": {
+    "elf": "/mnt/d/codex/.jnox-work/next-fixed/pi4-fixed-rr/target/aarch64-unknown-none/release/jnox-kernel",
+    "elf_sha256": "12c52ae237264cda6f9256d09768f95d0173ab035fc7ffd9e755c7f8426cddf9",
+    "raw": "/mnt/d/codex/.jnox-work/next-fixed/pi4-fixed-rr/boot/kernel8.img",
+    "raw_sha256": "80ad9177f2e5c613946de557e85d856533559539b5a2be39dbb43058ec9d6d9d",
+    "command": {
+     "argv": [
+      "/usr/bin/python3",
+      "tools/qemu_boot.py",
+      "--profile",
+      "pi4-fixed-rr",
+      "--kernel",
+      "/mnt/d/codex/.jnox-work/next-fixed/pi4-fixed-rr/boot/kernel8.img",
+      "--qemu",
+      "/mnt/d/codex/arm-speed-lab/build/system/qemu-system-aarch64",
+      "--runs",
+      "2",
+      "--capture-dir",
+      "/mnt/d/codex/.jnox-work/next-fixed/pi4-fresh/rr"
+     ],
+     "exit": 0,
+     "wall_seconds": 3.320787852999999
+    },
+    "counter_register_replay": {
+     "pc_before": "0x81804",
+     "pc_after": "0x81808",
+     "mrs": "mrs x9,cntfrq_el0",
+     "x9": 62500000,
+     "end_pc": "0x8125c",
+     "end_sp": "0x98120",
+     "observations": [
+      557312,
+      590096,
+      573728,
+      36294353,
+      37570301,
+      17637443,
+      36294352,
+      37570300
+     ]
+    },
+    "quantum_ms": 200.0,
+    "replay_stack_slots_A_B_HIGH": [
+     0,
+     2,
+     1
+    ],
+    "stack_base": "0x84120",
+    "stack_bytes_per_slot": 16384,
+    "replay_observation_predicates": "PASS",
+    "wall_definition": "monotonic host seconds around complete two-run runner including both 1s quiet windows",
+    "cold_boots": [
+     {
+      "run": 1,
+      "boot_erets": [
+       {
+        "pc": "0x80064",
+        "symbol": "_start+0x64",
+        "instruction": "msr\tspsel, #0x1"
+       },
+       {
+        "pc": "0x8124c",
+        "symbol": "fixed_runtime_enter+0x0",
+        "instruction": "blr\tx0"
+       }
+      ],
+      "events": [
+       {
+        "kind": "IRQ",
+        "esr": "0x38a0000",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "IRQ preempts A for HIGH"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "fixture_interpretation": "HIGH returns via trampoline to interrupted A",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "RR timer rotates A to new B"
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x38a0000",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "fixture_interpretation": "RR timer rotates B to suspended A"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "fixture_interpretation": "A returns via trampoline to suspended B",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x81258",
+         "symbol": "fixed_runtime_idle+0x0",
+         "instruction": "wfi"
+        },
+        "fixture_interpretation": "B returns via trampoline to idle",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       }
+      ],
+      "uart": "JNOX PI4 BOOT\nJNOX PI4 READY\nFIXED RR START\nFIXED RR A START\nFIXED RR HIGH\nFIXED RR B START\nFIXED RR A DONE\nFIXED RR B DONE\n"
+     },
+     {
+      "run": 2,
+      "boot_erets": [
+       {
+        "pc": "0x80064",
+        "symbol": "_start+0x64",
+        "instruction": "msr\tspsel, #0x1"
+       },
+       {
+        "pc": "0x8124c",
+        "symbol": "fixed_runtime_enter+0x0",
+        "instruction": "blr\tx0"
+       }
+      ],
+      "events": [
+       {
+        "kind": "IRQ",
+        "esr": "0x38a0000",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "IRQ preempts A for HIGH"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "fixture_interpretation": "HIGH returns via trampoline to interrupted A",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "eret": {
+         "pc": "0x8124c",
+         "symbol": "fixed_runtime_enter+0x0",
+         "instruction": "blr\tx0"
+        },
+        "fixture_interpretation": "RR timer rotates A to new B"
+       },
+       {
+        "kind": "IRQ",
+        "esr": "0x38a0000",
+        "vector": {
+         "pc": "0x80a80",
+         "symbol": "sched_vectors+0x280",
+         "instruction": "00000000 00000000 00000000     a..............."
+        },
+        "elr": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "fixture_interpretation": "RR timer rotates B to suspended A"
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x8127c",
+         "symbol": "jnox_kernel::fixed_apps::work_until+0x14",
+         "instruction": "add\tx10, x8, #0x18"
+        },
+        "fixture_interpretation": "A returns via trampoline to suspended B",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       },
+       {
+        "kind": "SVC",
+        "esr": "0x56000001",
+        "vector": {
+         "pc": "0x80a00",
+         "symbol": "sched_vectors+0x200",
+         "instruction": "00000000 00000000 00000000     ................"
+        },
+        "elr": {
+         "pc": "0x81254",
+         "symbol": "fixed_runtime_enter+0x8",
+         "instruction": "brk\t#0x0"
+        },
+        "eret": {
+         "pc": "0x81258",
+         "symbol": "fixed_runtime_idle+0x0",
+         "instruction": "wfi"
+        },
+        "fixture_interpretation": "B returns via trampoline to idle",
+        "svc_instruction": {
+         "pc": "0x81250",
+         "symbol": "fixed_runtime_enter+0x4",
+         "instruction": "svc\t#0x1"
+        }
+       }
+      ],
+      "uart": "JNOX PI4 BOOT\nJNOX PI4 READY\nFIXED RR START\nFIXED RR A START\nFIXED RR HIGH\nFIXED RR B START\nFIXED RR A DONE\nFIXED RR B DONE\n"
+     }
+    ]
+   }
+  },
+  "scope": "raspi4b direct raw loading. Ordinary exception logs record PCs and syndrome, not task SP, banked timer registers, INTID or slot number. Task attributions use UART order, linked fixture and scheduling contract; independent replay measures stacks/progress. No per-event counter sample or per-ordinary-run register dump.",
+  "evidence_sha256": {
+   "fifo/run-1/exceptions.log": "95f6247c4620c4af25791654ffed117f98eff640cbc97312f820b051c25e9654",
+   "fifo/run-1/stderr": "08f2f67a52c32c6969dcf034f3ee9a4c13f1d19bd9021f88a7f109b4082c0851",
+   "fifo/run-1/uart": "27b7fd073a1169532eedc29242273597da093866d031ac4c4d00fdc6c008f15f",
+   "fifo/run-2/exceptions.log": "95f6247c4620c4af25791654ffed117f98eff640cbc97312f820b051c25e9654",
+   "fifo/run-2/stderr": "08f2f67a52c32c6969dcf034f3ee9a4c13f1d19bd9021f88a7f109b4082c0851",
+   "fifo/run-2/uart": "27b7fd073a1169532eedc29242273597da093866d031ac4c4d00fdc6c008f15f",
+   "fifo-replay.json": "7f56614b5fdc75f9b96023761a8a8bb14d2e517d2c8011ad8eb12c09c2f5f56b",
+   "fifo-replay.rsp": "40dbeb7272c7ed81304ee705cb15f9a815a10a881b5b9084996c6d5e532cef1e",
+   "fifo-replay.stderr": "fa7ae5971def9e2583624e0c2b8051fdd31bc23ef5a690b433212918afc928f6",
+   "fifo-replay.uart": "27b7fd073a1169532eedc29242273597da093866d031ac4c4d00fdc6c008f15f",
+   "fifo.command.json": "cd39231add91a02fb742a07452642017496af9fad50f1e896b17c3128b5afe9b",
+   "fifo.dis": "61935c2e28178a8027a399608f583802d02c7dc7aa28bd2d68269d84fde6a293",
+   "fifo.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "fifo.stdout": "198125a61342c6560ccc095b5cb0c83aba6beba00fe8cb2072012a23eb7d7ef0",
+   "fifo.sym": "412b07ea859c56d24f2401ad6d898bb5da8f47b65801cfb9e9661cad4f721b8f",
+   "ordinary.py": "3a75e799d6c9bcc72eaf2c4dd2e0d51896f4d747baf54d890cc47d0be827d938",
+   "replay.py": "db6189abd410426fcb948dc361c1a969f101e332b8dda7ac6168e7eff27379fa",
+   "rr/run-1/exceptions.log": "6101d3e86d8e6db622134ffca80f19cdf9c0bb8c87ad4aaac57b7e31ae0ce269",
+   "rr/run-1/stderr": "d8194b4b8f490b0c856ff2999345303a3d93a087614f765f049d3a8dcda05afa",
+   "rr/run-1/uart": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+   "rr/run-2/exceptions.log": "6101d3e86d8e6db622134ffca80f19cdf9c0bb8c87ad4aaac57b7e31ae0ce269",
+   "rr/run-2/stderr": "d8194b4b8f490b0c856ff2999345303a3d93a087614f765f049d3a8dcda05afa",
+   "rr/run-2/uart": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+   "rr-replay.json": "c1bd2665594d9d94dae6b84d4063588115eb598d7c34bf501fab1fd87ff1b8b4",
+   "rr-replay.rsp": "5a02dbf0ad8c94b6fc652490fabc4b69418fd3a4f0119893ab6c73935cff2eb9",
+   "rr-replay.stderr": "fa7ae5971def9e2583624e0c2b8051fdd31bc23ef5a690b433212918afc928f6",
+   "rr-replay.uart": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+   "rr.command.json": "b9da564f782fa04ffa2e628f0f7bd6127e27d05f4469b2b3855e9e80cbe4b593",
+   "rr.dis": "0acae3d1e54b0f6cdad8e8c20cf0e4359638fc773394a11a8f0d4cf23df44805",
+   "rr.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "rr.stdout": "6830bf1cf7413e00f6d924a23b6a8b7edf8f5e2cec77365670df74c7564263c4",
+   "rr.sym": "d4f6399ba5c5c15e5ddd1af46140b5d92dae958afdb38cb70d0baf225c2491e1",
+   "verify.py": "973b7214583edc8495f6cfd7bca3d523a9b192db7eda4215848a5afb88f2874a"
+  }
+ },
+ "firmware_manifest_sha256": "23110232bf15cc9bed00fad3a685c9027a3dcd57a7c2ef4462bfdb89c66844e3",
+ "firmware_manifest": {
+  "repository": "https://github.com/raspberrypi/firmware",
+  "tag": "1.20250430",
+  "commit": "bc7f439c234e19371115e07b57c366df59cc1bc7",
+  "files": {
+   "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593",
+   "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+   "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+   "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+   "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+   "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7"
+  }
+ },
+ "packages": {
+  "fifo": {
+   "elf_sha256": "870948e16c721737b31fa6ef8ca1ad8a3cd6122ca08864ccaa24090cadd30f62",
+   "kernel8_img_sha256": "46abe4230616ff8b27d8c5087de014c8e48083fd47aca363fcbb09cf196f574e",
+   "staged_manifest_sha256": "bc97131903f7f695ab1aa63103de27f815289daae8b61c0226b4573ddf48e3ad",
+   "staged_manifest": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7  COPYING.linux\nc7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b  LICENCE.broadcom\n4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16  bcm2711-rpi-4-b.dtb\n4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601  config.txt\nca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553  fixup4.dat\n46abe4230616ff8b27d8c5087de014c8e48083fd47aca363fcbb09cf196f574e  kernel8.img\nea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02  overlays/disable-bt.dtbo\n2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593  start4.elf\n",
+   "offline_zip": "jnox-pi4-fixed-fifo.zip",
+   "offline_zip_sha256": "cc8bdcb8aac22f2a08b8eff53ef2eeca6d0426f7e4487a8eb339c2836d6841b5",
+   "offline_zip_bytes": 1363766
+  },
+  "rr": {
+   "elf_sha256": "12c52ae237264cda6f9256d09768f95d0173ab035fc7ffd9e755c7f8426cddf9",
+   "kernel8_img_sha256": "80ad9177f2e5c613946de557e85d856533559539b5a2be39dbb43058ec9d6d9d",
+   "staged_manifest_sha256": "b2244bb7db982279c5514fd7f3732ac65f41f5527ed8205625968c2a816bcb69",
+   "staged_manifest": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7  COPYING.linux\nc7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b  LICENCE.broadcom\n4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16  bcm2711-rpi-4-b.dtb\n4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601  config.txt\nca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553  fixup4.dat\n80ad9177f2e5c613946de557e85d856533559539b5a2be39dbb43058ec9d6d9d  kernel8.img\nea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02  overlays/disable-bt.dtbo\n2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593  start4.elf\n",
+   "offline_zip": "jnox-pi4-fixed-rr.zip",
+   "offline_zip_sha256": "61535472bb3dac5203c7f2b5c86346f3e49a9e2a48b40b6e62b48b0bdf9c1dc3",
+   "offline_zip_bytes": 1363742
+  }
+ },
+ "archive": "evd-031-raw.json",
+ "reproduction": "The archived staging script records objcopy, the offline firmware package command, sha256sum -c, and deterministic ZIP construction (sorted paths, fixed 2026-01-01 timestamps, DEFLATE)."
+}

@@ -65,10 +65,21 @@
 
 - POL-002 · CHG-029 · IMP-027 · [고정 우선순위, 대기열 순서와 남은 실행량](m1-priority-resume.md)
 - POL-004 · CHG-030 · IMP-028 · [주기 기한 초과와 중첩 릴리스](m1-periodic-overrun.md)
+- POL-004 · CHG-035 · IMP-033 · [정확한 주기 작업 쌍](pol-004-exact-periodic.md#한국어)
 - POL-008 · CHG-031 · IMP-029 · [하드 CBS 깨우기와 기한 갱신](m2-cbs-wake.md)
 
 ## Rust 작업 테이블 구성
 
 CHG-032 / IMP-030은 빌드 때 단일 코어 런타임과 정적 Rust 작업 테이블을 선택한다. 같은 커널 인터페이스에서 서로 다른 우선순위·초기 기동 시각을 사용하는 FIFO·RR 앱을 실행한다. EVD-030에서는 구성별 첫 부팅, 작업 예외·스택 및 최종 유휴 상태를 검증한다. [고정 우선순위 런타임](fixed-runtime.md)
+
+CHG-033과 IMP-031은 P1 BCM2711에서 일반 FIFO·RR 작업 테이블을 선택한다. 원시 페이로드, 모델 부팅, 실기기 관측은 각각 검증한다. [Pi 4 Rust 작업 런타임](boards/pi4-fixed-runtime.md)
+
+[EVD-031](evidence/evd-031.md)
+
+CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 지연 깨움을 시험한다. 일반 실행과 선택형 계측을 이용해 실제 실행 시간을 대조한다. [동시·지연 타이머 사건](fixed-runtime-edges.md)
+
+[EVD-032](evidence/evd-032.md)
+
+POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택했고 두 구간 모두 10틱에 A, 12틱에 B를 다시 실행했다. [EVD-033](evidence/evd-033.md)
 
 [EVD-034](evidence/evd-034.md) 에서 고정 가중치·슬라이스의 할당 128회와 기상 지연 16회를 독립 재구성했다. [반복 기상 설계](m4-eevdf-wake-design.md)

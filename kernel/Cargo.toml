@@ -29,6 +29,7 @@ priority-resume-bench = []
 periodic-overrun-bench = []
 cbs-wake-bench = []
 periodic-bench = ["sched-bench"]
+periodic-exact-bench = ["periodic-bench"]
 periodic-preempt-bench = ["periodic-bench"]
 # FIFO and RR take precedence when combined with EDF.
 edf-bench = ["sched-bench"]

@@ -26,6 +26,7 @@ mod periodic_overrun;
 #[cfg(jnox_bench = "cbs_wake")]
 mod cbs_wake;
 #[cfg(jnox_fixed)]
+#[cfg_attr(any(jnox_app = "fixed-ties", jnox_app = "fixed-late"), path = "fixed_edge_apps.rs")]
 mod fixed_apps;
 #[cfg(jnox_fixed)]
 mod fixed_policy;
@@ -133,7 +134,7 @@ static mut BSS_PROBE: u64 = 0;
 global_asm!(
     include_str!("start.S"),
     pi4 = const cfg!(jnox_pi4) as usize,
-    pi4_scheduler = const cfg!(all(jnox_pi4, jnox_bench = "scheduler")) as usize,
+    pi4_scheduler = const cfg!(all(jnox_pi4, any(jnox_bench = "scheduler", jnox_fixed))) as usize,
     bss_probe = sym BSS_PROBE,
     rust_entry = sym kernel_main,
 );

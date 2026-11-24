@@ -14,7 +14,7 @@ fn main() {
     let app = selector("JNOX_APP");
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
-    if let Some(value) = trace {
+    if let Some(value) = trace.as_deref() {
         assert!(value == "1", "JNOX_FIXED_TRACE must be unset or 1");
         assert!(
             profile.as_deref() == Some("fixed"),
@@ -23,7 +23,7 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_fixed_trace");
     }
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_fixed)"#);
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("fixed-fifo", "fixed-rr", "fixed-empty", "fixed-delayed", "fixed-ties", "fixed-late"))"#);
     println!("cargo::rerun-if-env-changed=JNOX_BOARD");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4)");
     // A single selected backend owns the vector table. Cargo sets these
@@ -68,13 +68,19 @@ fn main() {
     match profile.as_deref() {
         Some("fixed") => {
             assert!(bench == "boot", "JNOX_PROFILE=fixed conflicts with bench features");
-            assert!(board == "virt", "JNOX_PROFILE=fixed requires JNOX_BOARD=virt");
+            if board == "pi4" {
+                assert!(
+                    matches!(app.as_deref(), Some("fixed-fifo" | "fixed-rr")),
+                    "JNOX_BOARD=pi4 fixed profile supports fixed-fifo or fixed-rr only"
+                );
+                assert!(trace.is_none(), "Pi 4 fixed runtime requires JNOX_FIXED_TRACE unset");
+            }
             match app.as_deref() {
-                Some(name @ ("fixed-fifo" | "fixed-rr" | "fixed-empty" | "fixed-delayed")) => {
+                Some(name @ ("fixed-fifo" | "fixed-rr" | "fixed-empty" | "fixed-delayed" | "fixed-ties" | "fixed-late")) => {
                     println!("cargo::rustc-cfg=jnox_fixed");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
-                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, or fixed-delayed"),
+                _ => panic!("JNOX_PROFILE=fixed requires JNOX_APP=fixed-fifo, fixed-rr, fixed-empty, fixed-delayed, fixed-ties, or fixed-late"),
             }
         }
         Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed"),
@@ -90,7 +96,7 @@ fn main() {
                     .filter_map(|(key, _)| key.into_string().ok())
                     .filter(|key| key.starts_with("CARGO_FEATURE_"))
                     .all(|key| key == "CARGO_FEATURE_SCHED_BENCH"),
-                "JNOX_BOARD=pi4 supports serial boot or sched-bench only"
+                "JNOX_BOARD=pi4 supports serial boot, sched-bench, or uninstrumented fixed FIFO/RR"
             );
             println!("cargo::rustc-cfg=jnox_pi4");
             "pi4.ld"
