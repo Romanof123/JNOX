@@ -11,6 +11,13 @@ _start:
     // identity-addressed firmware/loader handoff with MMU and D-cache off.
     msr daifset, #0xf
     .if {pi4}
+    .if {pi4_smp}
+    mrs x18, CurrentEL
+    mrs x1, mpidr_el1
+    ldr x2, =0xff00ffffff
+    tst x1, x2
+    b.ne .Lpark
+    .endif
     // BCM2711 has a single cluster with Aff0 identifying each A72.
     mrs x0, mpidr_el1
     tst x0, #0xff
@@ -76,6 +83,12 @@ _start:
     str x17, [x0]
     .endif
     // Stack grows down from a 16-byte-aligned top. Rust never returns.
+    .if {pi4_smp}
+    ldr x0, =pi4_entry_el
+    str x18, [x0]
+    bl pi4_smp_translate
+    cbz x0, .Lpark
+    .endif
     b {rust_entry}
 .Lpark:
     wfe

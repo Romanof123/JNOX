@@ -1,0 +1,404 @@
+{
+  "change": "CHG-069",
+  "record": "v3 finite OFF-only observation",
+  "source": "34ef5fa604e09258d5711642272677bce97643cc",
+  "archive": "permit-observer-cost-v3.zip",
+  "archive_bytes": 292777,
+  "archive_sha256": "019f0aa70f8fb6652251f6ec1cce0ee6e1c99de96772d920dcdccfdda46b6a24",
+  "original_freeze_sha256": "35c2bcd7ea8ba1768f7dbf56d1642823da7e88ed1c0d49f6127c0f0401d04f07",
+  "original_close_sha256": "866d6271215ca018fb6654c2313a4b19d2bb3ce74e1061aacc6c1f05d49a683f",
+  "images": {
+    "rm-off-1": "576623513c85e0e4355d24e56278e21259a22f0a0f245fdcd38dc5078f89d1a8",
+    "rm-off-2": "28d6d97b150bd469ca3a99b3f372d660b33abef3e60900392f623a95065aeecb",
+    "dm-off-1": "ba717cbaa75c001fb662dff175523d85c76ae48fa2fb9899df9dcdcf0418c35f",
+    "dm-off-2": "5cf396115ec95777d6ee455c612ecb5da9ea5a5dd1a596506ccae0bec2333f92"
+  },
+  "pairs": [
+    {
+      "positions": [
+        "01-rm-off-1-F",
+        "02-rm-off-1-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 1670,
+        "first_phase_delay": 4130,
+        "first_irq_delay": 1873
+      }
+    },
+    {
+      "positions": [
+        "03-rm-off-1-R",
+        "04-rm-off-1-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 11959,
+        "first_phase_delay": 18967,
+        "first_irq_delay": 3578
+      }
+    },
+    {
+      "positions": [
+        "05-rm-off-2-R",
+        "06-rm-off-2-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": -2488,
+        "first_phase_delay": -788,
+        "first_irq_delay": -957
+      }
+    },
+    {
+      "positions": [
+        "07-rm-off-2-F",
+        "08-rm-off-2-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 3841,
+        "first_phase_delay": 6459,
+        "first_irq_delay": 1642
+      }
+    },
+    {
+      "positions": [
+        "09-dm-off-1-F",
+        "10-dm-off-1-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 4278,
+        "first_phase_delay": 1001,
+        "first_irq_delay": -2354
+      }
+    },
+    {
+      "positions": [
+        "11-dm-off-1-R",
+        "12-dm-off-1-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": -3831,
+        "first_phase_delay": -4929,
+        "first_irq_delay": -384
+      }
+    },
+    {
+      "positions": [
+        "13-dm-off-2-R",
+        "14-dm-off-2-F"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 1368,
+        "first_phase_delay": 1377,
+        "first_irq_delay": -900
+      }
+    },
+    {
+      "positions": [
+        "15-dm-off-2-F",
+        "16-dm-off-2-R"
+      ],
+      "R_minus_F_ticks": {
+        "first_service": 1605,
+        "first_phase_delay": 5173,
+        "first_irq_delay": 692
+      }
+    }
+  ],
+  "positions": [
+    {
+      "id": "01-rm-off-1-F",
+      "arm": "A1",
+      "service": 19672,
+      "phase": 50784,
+      "irq": [
+        9787
+      ],
+      "first_fault": [
+        [
+          66,
+          299538,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "02-rm-off-1-R",
+      "arm": "A1",
+      "service": 21342,
+      "phase": 54914,
+      "irq": [
+        11660
+      ],
+      "first_fault": [
+        [
+          66,
+          303928,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "03-rm-off-1-R",
+      "arm": "A1",
+      "service": 32313,
+      "phase": 70855,
+      "irq": [
+        13950
+      ],
+      "first_fault": [
+        [
+          66,
+          303696,
+          107,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "04-rm-off-1-F",
+      "arm": "A1",
+      "service": 20354,
+      "phase": 51888,
+      "irq": [
+        10372
+      ],
+      "first_fault": [
+        [
+          66,
+          289630,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "05-rm-off-2-R",
+      "arm": "A2",
+      "service": 21740,
+      "phase": 59036,
+      "irq": [
+        12007
+      ],
+      "first_fault": [
+        [
+          66,
+          310587,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "06-rm-off-2-F",
+      "arm": "A2",
+      "service": 24228,
+      "phase": 59824,
+      "irq": [
+        12964
+      ],
+      "first_fault": [
+        [
+          66,
+          308970,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "07-rm-off-2-F",
+      "arm": "A2",
+      "service": 18920,
+      "phase": 52274,
+      "irq": [
+        10055
+      ],
+      "first_fault": [
+        [
+          66,
+          291916,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "08-rm-off-2-R",
+      "arm": "A2",
+      "service": 22761,
+      "phase": 58733,
+      "irq": [
+        11697
+      ],
+      "first_fault": [
+        [
+          66,
+          308474,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "09-dm-off-1-F",
+      "arm": "A1",
+      "service": 22716,
+      "phase": 59644,
+      "irq": [
+        14742
+      ],
+      "first_fault": [
+        [
+          66,
+          305575,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "10-dm-off-1-R",
+      "arm": "A1",
+      "service": 26994,
+      "phase": 60645,
+      "irq": [
+        12388
+      ],
+      "first_fault": [
+        [
+          66,
+          312175,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "11-dm-off-1-R",
+      "arm": "A1",
+      "service": 19835,
+      "phase": 53312,
+      "irq": [
+        11585
+      ],
+      "first_fault": [
+        [
+          66,
+          297299,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "12-dm-off-1-F",
+      "arm": "A1",
+      "service": 23666,
+      "phase": 58241,
+      "irq": [
+        11969
+      ],
+      "first_fault": [
+        [
+          66,
+          307690,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "13-dm-off-2-R",
+      "arm": "A2",
+      "service": 22095,
+      "phase": 56054,
+      "irq": [
+        10580
+      ],
+      "first_fault": [
+        [
+          66,
+          295769,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "14-dm-off-2-F",
+      "arm": "A2",
+      "service": 20727,
+      "phase": 54677,
+      "irq": [
+        11480
+      ],
+      "first_fault": [
+        [
+          66,
+          295930,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "15-dm-off-2-F",
+      "arm": "A2",
+      "service": 19833,
+      "phase": 52251,
+      "irq": [
+        10382
+      ],
+      "first_fault": [
+        [
+          66,
+          296399,
+          103,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "16-dm-off-2-R",
+      "arm": "A2",
+      "service": 21438,
+      "phase": 57424,
+      "irq": [
+        11074
+      ],
+      "first_fault": [
+        [
+          66,
+          297251,
+          103,
+          0
+        ]
+      ]
+    }
+  ],
+  "redacted_files": [
+    "v3/cohort-close/01-rm-off-1-F-retention.json",
+    "v3/cohort-close/02-rm-off-1-R-retention.json",
+    "v3/cohort-close/03-rm-off-1-R-retention.json",
+    "v3/cohort-close/04-rm-off-1-F-retention.json",
+    "v3/cohort-close/05-rm-off-2-R-retention.json",
+    "v3/cohort-close/06-rm-off-2-F-retention.json",
+    "v3/cohort-close/07-rm-off-2-F-retention.json",
+    "v3/cohort-close/08-rm-off-2-R-retention.json",
+    "v3/cohort-close/09-dm-off-1-F-retention.json",
+    "v3/cohort-close/10-dm-off-1-R-retention.json",
+    "v3/cohort-close/11-dm-off-1-R-retention.json",
+    "v3/cohort-close/12-dm-off-1-F-retention.json",
+    "v3/cohort-close/13-dm-off-2-R-retention.json",
+    "v3/cohort-close/14-dm-off-2-F-retention.json",
+    "v3/cohort-close/15-dm-off-2-F-retention.json",
+    "v3/cohort-close/16-dm-off-2-R-retention.json",
+    "v3/cohort-close/cohort.json",
+    "v3/frozen-inputs/freeze.json",
+    "independent/final/native-handoff.json"
+  ],
+  "native_handoff_original_sha256": "1e432e2dbad048279c39eb1a699cebb720562a64768ea104c177edd5b65c2a60",
+  "native_handoff_public_sha256": "d7ee6c85dc6767af28165baab687f28df5e23e53aaeb786f7b95bf69e87ed23a",
+  "operational_credit": false
+}
