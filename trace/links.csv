@@ -1119,3 +1119,7 @@ IMP-052,partially-verified-by,VER-005
 VER-005,has-partial-evidence,EVD-052
 IMP-052,partially-verified-by,VER-023
 VER-023,has-partial-evidence,EVD-052
+CHG-060,affects,REQ-014
+CHG-060,affects,REQ-011
+CHG-060,affects,REQ-002
+CHG-060,affects,REQ-009
