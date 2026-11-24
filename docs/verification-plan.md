@@ -129,3 +129,4 @@ CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예
 POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에서 1 ms를 충족했다. v1은 P 9/10, Q 11/12 경계가 초과했고 Q가 준비된 B 구간을 건너뛰었다. 실제 지연 주입과 IRQ 마스킹은 미검증이다. [EVD-044 v2](evidence/evd-044-v2.md)
 
 VER-002/005/023 · 콜드 24회 중 22회가 억제됐고 기술자 DM 2회는 허가 7건을 모두 수락한 뒤에도 OFF였다. 정상 시퀀스 0/24. [EVD-051](evidence/evd-051.md)
+CHG-055 · REQ-002/003/005/023 · [일반 허가 게시 및 독립 명령 시각 계획](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)

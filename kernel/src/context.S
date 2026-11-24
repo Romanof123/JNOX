@@ -193,6 +193,23 @@ sched_start_frame:
     adrp x10, weighted_restore_counter
     str x9, [x10, :lo12:weighted_restore_counter]
     .endif
+    .ifdef JNOX_PERMIT
+    adrp x9, jnox_permit_returns
+    add x9, x9, :lo12:jnox_permit_returns
+    ldr x10, [x9]
+    cmp x10, #128
+    b.hs .Lunexpected
+    add x11, x10, #1
+    str x11, [x9], #8
+    mov x11, #24
+    madd x9, x10, x11, x9
+    mov x10, sp
+    mrs x11, elr_el1
+    stp x10, x11, [x9]
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, #16]
+    .endif
     integer_pairs ldp
     ldr x30, [sp, #240]
     add sp, sp, #{frame_size}

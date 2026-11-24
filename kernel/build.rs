@@ -45,7 +45,22 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_control_cold");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_control_descriptor)");
-    if let Some(value) = selector("JNOX_CONTROL_DESCRIPTOR") {
+    let descriptor=selector("JNOX_CONTROL_DESCRIPTOR");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_phase)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_anchor)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_off)");
+    let permit_arm=selector("JNOX_PERMIT_PHASE");
+    if let Some(mode)=selector("JNOX_PERMIT_PHASE_MODE") {
+        assert!(mode=="characterize-off" && permit_arm.is_some(),"JNOX_PERMIT_PHASE_MODE requires characterize-off and an A1/A2 arm");
+        println!("cargo::rustc-cfg=jnox_permit_off");
+    }
+    if let Some(arm)=permit_arm {
+        assert!(descriptor.as_deref()==Some("1") && matches!(arm.as_str(),"nominal"|"anchor"),
+            "JNOX_PERMIT_PHASE requires nominal or anchor and JNOX_CONTROL_DESCRIPTOR=1");
+        println!("cargo::rustc-cfg=jnox_permit_phase");
+        if arm=="anchor" {println!("cargo::rustc-cfg=jnox_permit_anchor")}
+    }
+    if let Some(value) = descriptor {
         assert!(value == "1" && profile.as_deref() == Some("periodic")
             && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
             && scenario.as_deref() == Some("healthy"),
