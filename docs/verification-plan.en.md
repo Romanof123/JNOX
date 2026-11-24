@@ -125,3 +125,5 @@ Single-core virtual evidence for VER-002/005/023. [EVD-048](evidence/evd-048.en.
 Finite weighted service and wakeup observations for VER-002/005/023. [EVD-049](evidence/evd-049.en.md)
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+IMP-053 · VER-002/005/023. All eight normal boots stopped on slot-zero timing during A’s first grant. Both refusals behaved as expected. Both late controls recorded progress past nominal end, but an earlier opening fault prevented qualification of the prescribed late branch. Four legacy CBS regressions are separate. Neighbor service isolation remains unverified. [EVD-053](evidence/evd-053.en.md)

@@ -1069,6 +1069,14 @@ REQ-023,partially-implemented-by,IMP-053
 POL-008,partially-implemented-by,IMP-053
 DES-003,implemented-by,IMP-053
 DES-012,implemented-by,IMP-053
+IMP-053,tested-in,EVD-053
+POL-008,has-analysis-evidence,EVD-053
+IMP-053,partially-verified-by,VER-002
+VER-002,has-partial-evidence,EVD-053
+IMP-053,partially-verified-by,VER-005
+VER-005,has-partial-evidence,EVD-053
+IMP-053,partially-verified-by,VER-023
+VER-023,has-partial-evidence,EVD-053
 CHG-056,affects,REQ-002
 CHG-056,affects,REQ-005
 CHG-056,affects,REQ-023

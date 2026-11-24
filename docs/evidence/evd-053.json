@@ -1,0 +1,17 @@
+{
+  "evidence_id": "EVD-053",
+  "implementation": "IMP-053",
+  "change": "CHG-054",
+  "verdict": "Failed ordinary default-clock gate; first 12 reservation and four separate legacy runs retained.",
+  "versions": [
+    {
+      "version": 1,
+      "source": "c2efde463ee48ef7754a56c52e7dd63552b53b5b",
+      "english": "evd-053-v1.en.md",
+      "korean": "evd-053-v1.md",
+      "evidence": "evd-053-v1.json",
+      "evidence_sha256": "416c6172ad6c68bf097cee8bd1d60fa62183e8b4b3848ac29489b64c6f8a23f6",
+      "reviewer_manifest_sha256": "865f1ded2ef42ba628ee764fe8c16a0d7bad9255110ee5e837bb4cb556886699"
+    }
+  ]
+}

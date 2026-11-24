@@ -175,3 +175,5 @@ CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 �
 POL-011 · CHG-052 · IMP-049. 두 일반 Rust 진입점이 예외 복귀 ABI와 가중 가상시간 스케줄러를 공유한다. [승인된 작업 계획](ordinary-vruntime-plan.md)과 [빌드·캡처·재생 방법](ordinary-weighted.md)을 참조한다. VER-002/005/023 · [EVD-049](evidence/evd-049.md).
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+IMP-053 · VER-002/005/023. 정상 8회 모두 첫 A 실행권의 슬롯 0 시간 기준에 실패했다. 거절 2회는 예상대로 동작했고 지연 2회는 명목 종료를 넘는 실제 진행을 기록했지만 더 이른 시작 결함 때문에 지정된 지연 판정을 충족하지 못했다. 기존 CBS 회귀 4회는 별도다. 동료 서비스 격리는 미검증이다. [EVD-053](evidence/evd-053.md)
