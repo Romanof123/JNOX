@@ -705,9 +705,9 @@ impl Runtime {
         {
             unexpected()
         }
-        for id in 0..2 {
+        stage_hooks::validation_window!(p.epoch, for id in 0..2 {
             self.validate_first_frame(id, &p.frames[id]);
-        }
+        });
         let bank = stage_hooks::after_frames!(self.destination.as_ref()).unwrap_or_else(|| unexpected());
         let (id, action) = bank.pending_grant().unwrap_or_else(|| unexpected());
         if !self.jobs.same_configuration(bank)

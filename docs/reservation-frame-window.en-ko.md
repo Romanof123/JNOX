@@ -1,0 +1,34 @@
+# POL-008 · Slot-zero frame validation interval / 슬롯 0 프레임 검증 구간
+
+[#172](https://github.com/Romanof123/JNOX/pull/172) · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · Prospective diagnostic / 진단 계획
+
+The original eight default-clock boots used four normal size-optimized ELFs built at `68b4b4c88bcb669133528ae7d845ee9468c9efc3`; the results were published at `259aaebb4138cde18d1851fc567bc09632d1268c`. All offsets below are architectural counter ticks from the relevant slot opening (62,500 ticks = 1 ms). Missing values mean the event was unobserved. / 원래 부팅 8건은 일반 최적화 ELF 네 개를 사용했다. 아래 값은 해당 슬롯 개시부터의 아키텍처 카운터 틱이며, 빈칸은 미관측이다. [First observations / 최초 관측](evidence/reservation-integrated-first.en.md)
+
+| Position · case · mode | Terminal slot | First reported stop or horizon / 최초 중단 또는 지평선 |
+| --- | ---: | --- |
+| 1 aligned-wake plain | 34 | Completed 18 grants. Slot 0 A marker 62,342. |
+| 2 cbs-wake trace | 0 | A selected 60,684, pre-ERET 62,956, worker 66,220. SVC charge 14,794. |
+| 3 aligned-saturated trace | 0 | Source-read end 40,762, precommit 68,797; no publication or measured service. |
+| 4 cbs-saturated plain | 0 | A selected 59,815, pre-ERET 61,880, worker 64,228. Cutoff charge 3,007,461. |
+| 5 aligned-wake trace | 1 | Slot 0 A marker 56,282. Slot 1 B pre-ERET 61,683, worker 62,728; charge 3,011,337. |
+| 6 cbs-wake plain | 0 | Commit 53,371, arm 61,066, opening guard 63,570. A's published debit has no worker return or measured service. |
+| 7 aligned-saturated plain | 0 | Source-read end 39,066, precommit 67,004; no publication or measured service. |
+| 8 cbs-saturated trace | 10 | Completed eight grants. Slot 0 A marker 60,535. |
+
+At positions 2, 4 and 5 the real stop minus the pre-ERET timestamp was charged to the executing worker and its allocation deadline. Those charges and cutoff checks stayed within their recorded limits. Positions 3/7 used the same ELF. Its PT_LOAD metadata and bytes match the earlier CHG-081 aligned-saturated control, which completed with source-read end 25,978, precommit 44,580 and worker 61,233. The cbs-wake control also has matching load images and completed with worker 59,535. The earlier E/F probes cover aligned-wake and cbs-saturated; their timestamps belong to different runs. These records localize the aligned-saturated stops to the interval ending before publication, but include variable IRQ entry, timer service, identity checks and emulator execution. The duration of the two live worker frame checks is unknown. [CHG-081 comparison and controls](evidence/reservation-chg081-first.en-ko.md)
+
+2·4·5번은 작업자 복귀 전 표본부터 실제 트랩까지를 해당 작업·할당 기한에 부과했다. 관측된 부과량과 차단 시각은 원래 한계 안이었다. 3·7번과 이전 aligned-saturated 성공 대조는 적재 구역 속성과 바이트가 같다. 과거 성공의 소스 판독 종료·커밋 직전·첫 작업은 각각 25,978·44,580·61,233틱이었다. 과거 cbs-wake 성공 대조의 첫 작업도 같은 적재 이미지에서 59,535틱이었다. 과거 E/F는 다른 작업 구성과 별개의 부팅이다. IRQ 진입·타이머·상태 확인·에뮬레이터 실행 시간 가운데 두 실시간 프레임 검증의 실제 기여도를 이 자료로 결정할 수 없다.
+
+## One diagnostic / 단일 계측
+
+1. On integrated aligned-saturated only, bracket the existing validation loop for the two initial live frames on the real slot-zero IRQ. P samples ISB/MRS CNTPCT_EL0 immediately before and after the same loop, retaining both PCs using ADR and publishing the pair only after both checks return. No publication or worker runs before its normal boundary. Clock readings, barriers, address capture, retained data and any spills/translation affect this diagnostic. Report both whole intervals (source-end to precommit), their difference, added instructions/storage and actual stages. The bracket includes loop/control and measurement overhead. Preserve original 1 ms opening and cutoff rules, first Rust marker, work recurrence, ownership and all actual per-deadline charges.
+2. B leaves the stage unset; P sets `JNOX_RESERVATION_STAGE=frame-window`. Before running, freeze the two ELFs, actual source/command/compiler/linker/QEMU, raw linked disassembly and expected MRS PCs, plus four slot assignments in order: B external trace, P external trace, P plain, B plain. Use one fresh 15-second recorder per position with the original 1-vCPU Cortex-A72/GICv2/default clock and 128 MiB. Verify B's PT_LOAD headers and contents against #172's archived aligned-saturated ELF. Verify P's first MRS precedes validation of A, its second follows B's full successful validation on every normal path, and both precede destination-bank access and the unchanged precommit guard. Preserve every first result and exact UART, same-process trace where applicable, hashes and terminal disposition.
+3. RAW3 is the uninstrumented B schema. P emits RAW5 with adjacent terminal tags 39 then 40 before the compact dump. Each row contains tag, timestamp, slot 0, owner 2, aligned-saturated descriptor 2, presence, actual counter PC and the opening epoch. Both are absent (zero tick/PC/epoch) when a complete pair was never published. On a covered precommit require a present pair. Bind each original to its frozen ELF and capture hashes. Check ordering and operands against that same boot's source-end and precommit. Report the three parts and their exact sum, time left at each point, pre-ERET to Rust worker when present, and original guard operands. The matched baseline retains its own verdict. A changed reached stage, timing divergence or a missing observation limits attribution; no diagnostic receipt counts toward the eight-case gate.
+4. Run `python3 tools/reservation_frame_window.py LAUNCH.json UART ELF` for an individual original, then replay the preserved reservation ownership/allocation/exit ledger using the existing audit after stripping only P's diagnostic rows. Freeze ordinal, external-trace flag, mode (B/P), selector, ELF SHA-256 and the two ordered counter PCs before launch (null for B). Add the actual UART SHA-256 from that position's immutable capture. Decoder controls reject swapped/duplicate/missing or foreign records, PCs, epochs, selectors and digests.
+
+1. 실제 슬롯 0 IRQ에서 aligned-saturated 작업자 두 개의 초기 프레임 검증 직전·직후에 ISB/MRS로 CNTPCT를 읽고 ADR로 각 명령 주소를 얻는다. 검증 둘이 모두 돌아온 뒤 한 번만 쌍을 게시한다. 배리어·카운터 판독·주소 계산·저장·컴파일 결과가 계측 비용에 포함된다. 소스 판독 종료→커밋 직전 전체 구간과 세 부분을 보고한다. 원래 1 ms 개시와 차단 한계·첫 Rust 표본·실제 계산·소유권·기한별 부과를 유지한다.
+2. B는 기존 바이너리, P만 위 옵션을 켠다. 순서는 외부 추적 B/P, 일반 P/B이다. 같은 기존 환경에서 각 위치 최초 1회만 기록한다. 사전에 ELF·원본 적재 바이트·도구·명령·두 MRS 주소·분기를 대조한다. P가 A 검증 전과 B 검증 성공 직후를 정확히 감싸고 커밋 전 가드는 보존하는지 확인한다. 결과와 실패를 모두 보관한다.
+3. RAW5의 39·40행 순서·유효성·슬롯·소유자·선택자·PC·시대값을 같은 실행에서 확인한다. 미완료 검증은 양쪽 미관측이다. B는 RAW3을 유지한다. 전체 구간, 내부 검증시간과 양쪽 나머지 시간, 단계 도달·원래 실패 피연산자와 작업자 최초 시각을 비교한다. 계측에 따라 도달 단계나 시간이 달라지면 B의 원인으로 확정할 수 없다.
+4. 사전 고정한 ELF와 수집된 UART를 위 명령으로 판독하고 원래 원장·서비스·출구 결과를 독립 대조한다. 누락·중복·순서 뒤바뀜, 다른 부팅의 시각·PC·해시를 거부한다. 진단은 8개 사례의 합격 수에 포함하지 않는다.
+
+[Four first observations / 최초 실행 네 건](evidence/reservation-frame-window-first.en-ko.md)
