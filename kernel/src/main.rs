@@ -142,6 +142,7 @@ static mut BSS_PROBE: u64 = 0;
 // start.S. The assembly establishes the Rust ABI before calling kernel_main.
 global_asm!(
     include_str!("start.S"),
+    cold = const cfg!(jnox_control_cold) as usize,
     pi4 = const cfg!(jnox_pi4) as usize,
     pi4_scheduler = const cfg!(all(jnox_pi4, any(jnox_bench = "scheduler", jnox_fixed))) as usize,
     bss_probe = sym BSS_PROBE,
