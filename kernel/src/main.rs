@@ -132,6 +132,10 @@ mod multilevel;
 mod multilevel_policy;
 #[cfg(jnox_multilevel)]
 mod multilevel_service;
+#[cfg(jnox_mlq_admission)]
+mod mlq_admission;
+#[cfg(jnox_mlq_admission)]
+mod mlq_bound;
 #[cfg(jnox_multilevel)]
 mod multilevel_apps;
 #[cfg(jnox_bench = "partition")]
