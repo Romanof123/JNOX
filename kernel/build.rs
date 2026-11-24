@@ -99,7 +99,22 @@ fn main() {
             "JNOX_FIXED_COST requires 1, virt and fixed FIFO/RR");
         println!("cargo::rustc-cfg=jnox_fixed_cost");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_weighted)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_weighted_wake)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_weighted_trace)");
+    if let Some(value) = selector("JNOX_WEIGHTED_TRACE") {
+        assert!(value == "1" && profile.as_deref() == Some("weighted"));
+        println!("cargo::rustc-cfg=jnox_weighted_trace");
+    }
     match profile.as_deref() {
+        Some("weighted") => {
+            assert!(board == "virt" && bench == "boot" && scenario.is_none());
+            assert!(matches!(app.as_deref(), Some("weighted-share" | "weighted-wake")));
+            println!("cargo::rustc-cfg=jnox_weighted");
+            if app.as_deref() == Some("weighted-wake") {
+                println!("cargo::rustc-cfg=jnox_weighted_wake");
+            }
+        }
         Some("groups") => {
             assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(), Some("ordinary-groups" | "ordinary-groups-late")),
                     "groups requires virt, ordinary-groups or ordinary-groups-late, and no benchmark");
@@ -158,8 +173,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel or periodic"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel or periodic"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, weighted, multilevel or periodic"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, multilevel or periodic"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",

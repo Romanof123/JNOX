@@ -165,3 +165,5 @@ POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
 
 CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+POL-011 · CHG-052 · IMP-049. 두 일반 Rust 진입점이 예외 복귀 ABI와 가중 가상시간 스케줄러를 공유한다. [승인된 작업 계획](ordinary-vruntime-plan.md)과 [빌드·캡처·재생 방법](ordinary-weighted.md)을 참조한다. VER-002/005/023 및 EVD-049는 독립 실행을 기다린다.
