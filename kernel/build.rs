@@ -133,6 +133,28 @@ fn main() {
     } else {
         legacy_bench
     };
+    // The winning backend owns its selector validation. A shadowed partition
+    // feature cannot select diagnostic code or reject a higher-ranked bench.
+    if bench == "partition" && env::var_os("CARGO_FEATURE_PARTITION_LEGACY_DIAG").is_some() {
+        let allowed = ["CARGO_FEATURE_PARTITION_BENCH", "CARGO_FEATURE_PARTITION_LEGACY_DIAG",
+                       "CARGO_FEATURE_PARTITION_LEGACY_DIAG_NEGATIVE"];
+        assert!(board == "virt" && profile.is_none() && app.is_none()
+            && env::vars_os().filter_map(|(key, _)| key.into_string().ok())
+                .filter(|key| key.starts_with("CARGO_FEATURE_")).all(|key| allowed.contains(&key.as_str())),
+            "legacy partition diagnostic requires standalone virt assembly partition fixture");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_notice_long)");
+    if let Some(mode) = selector("JNOX_PARTITION_NOTICE") {
+        assert!(legacy_bench == "boot" && bench == "partition" && table_p != table_q,
+            "JNOX_PARTITION_NOTICE requires an effective ordinary partition P or Q on virt");
+        assert!(matches!(mode.as_str(), "short" | "long"),
+            "JNOX_PARTITION_NOTICE must be short or long");
+        println!("cargo::rustc-cfg=jnox_partition_notice");
+        if mode == "long" {
+            println!("cargo::rustc-cfg=jnox_partition_notice_long");
+        }
+    }
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");

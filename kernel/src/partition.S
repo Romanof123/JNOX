@@ -1,5 +1,20 @@
 // The IRQ vector is the only path between these non-yielding task bodies.
 // Each has distinct work PCs, progress in x20 and a private stack witness.
+.macro part_check branch, code, actual, expected
+    .if {diagnostic}
+        \branch .Lpart_bad\@
+        b .Lpart_good\@
+.Lpart_bad\@:
+        mov x0, #\code
+        mov x1, \actual
+        mov x2, \expected
+        mov x3, #-1
+        b partition_diag_stop
+.Lpart_good\@:
+    .else
+        \branch .Lunexpected
+    .endif
+.endm
 .macro part_task entry, begin, end, id, witness
 .global \entry
 .type \entry, %function
@@ -25,15 +40,15 @@
     msr daifset, #2
     sub x10, x20, x9
     cmp x10, #1
-    b.hi .Lunexpected
+    part_check b.hi, 41, x10, #1
     ldr x10, [sp]
     cmp x10, x19
-    b.ne .Lunexpected
+    part_check b.ne, 42, x10, x19
     mrs x10, tpidr_el1
     cmp x10, x19
-    b.ne .Lunexpected
+    part_check b.ne, 43, x10, x19
     cmp x19, #\witness
-    b.ne .Lunexpected
+    part_check b.ne, 44, x19, #\witness
     mov x0, #\id
     mov x1, #1
     mov x2, sp

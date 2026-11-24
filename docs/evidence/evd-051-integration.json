@@ -1,0 +1,244 @@
+{
+  "head_verdicts": {
+    "descriptor": "integration functional checks PASS; strict audit findings []; all healthy timing replays nonqualifying; control PT_LOAD differs from isolated references",
+    "markers": "HOLD: strict audit dangling implementation for POL-004: IMP-052. Integrated decoder and selector checks pass; all healthy timing replays nonqualifying; control PT_LOAD differs from isolated references"
+  },
+  "audits": {
+    "descriptor-integrated-pinned": {
+      "findings": [],
+      "exit": 0,
+      "sha256": "fe3126bf6f2865cd30478f1ee56c4dab3cf7efbe2381c86d9ffda248f1259cc3",
+      "head": "fe8821bf0e144c6bbef5b4408b28e27ab03e9488"
+    },
+    "markers-integrated-pinned": {
+      "findings": [
+        "dangling implementation for POL-004: IMP-052"
+      ],
+      "exit": 1,
+      "sha256": "38e356920b2f619814516e15f2c9c123a871f65e44f7c336abdf67bcedec97d4",
+      "head": "ab14de00b4e1b61d0e20eb37ef8eafc8d504d306"
+    },
+    "reservation-repair-plan-evidence": {
+      "findings": [],
+      "exit": 0,
+      "sha256": "6698fd69db070fafd6ae3715302580b8ffbf5e8f8dc658466c04d731d9a926e5",
+      "head": "e815393c7c7fd6e617aa3293792d1e64f36c1c5b"
+    }
+  },
+  "reservation_EVD053": "Explicit typed CSV edge POL-008,has-analysis-evidence,EVD-053. Strict audit includes in POL-008 analysis, with direct IMP-053 -> VER-002/005/023 paths. Docs-only audit.",
+  "build_exits": {
+    "descriptor-rm-baseline": 0,
+    "descriptor-rm-descriptor": 0,
+    "descriptor-rm-cold": 0,
+    "descriptor-rm-cold+descriptor": 101,
+    "descriptor-rm-descriptor+marker": 101,
+    "descriptor-dm-baseline": 0,
+    "descriptor-dm-descriptor": 0,
+    "descriptor-dm-cold": 0,
+    "markers-rm-baseline": 0,
+    "markers-rm-descriptor": 0,
+    "markers-rm-cold": 0,
+    "markers-rm-marker": 0,
+    "markers-rm-cold+descriptor": 101,
+    "markers-rm-descriptor+marker": 101,
+    "markers-rm-cold+marker": 101,
+    "markers-dm-baseline": 0,
+    "markers-dm-descriptor": 0,
+    "markers-dm-cold": 0,
+    "markers-dm-marker": 0
+  },
+  "boots": {
+    "descriptor-rm-descriptor": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "actual delivery"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": null
+    },
+    "descriptor-dm-descriptor": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "rearm issue spacing"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": null
+    },
+    "markers-rm-marker": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "actual delivery"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": 0
+    },
+    "markers-dm-marker": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "phase envelope"
+      ],
+      "cold_fixed_no_probe": null,
+      "external_decoder": 0
+    },
+    "markers-dm-cold": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "unknown event 48 at line 4"
+      ],
+      "cold_fixed_no_probe": true,
+      "external_decoder": null
+    },
+    "descriptor-rm-cold": {
+      "terminal": true,
+      "healthy": "nonqualifying",
+      "failures": [
+        "unknown event 48 at line 4"
+      ],
+      "cold_fixed_no_probe": true,
+      "external_decoder": null
+    }
+  },
+  "elf_comparisons": {
+    "descriptor-rm-baseline": {
+      "instruction_differences": 0,
+      "load_byte_differences": 12,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "descriptor-rm-descriptor": {
+      "instruction_differences": 0,
+      "load_byte_differences": 9,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "descriptor-rm-cold": {
+      "instruction_differences": 0,
+      "load_byte_differences": 10,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "descriptor-dm-baseline": {
+      "instruction_differences": 0,
+      "load_byte_differences": 12,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "descriptor-dm-descriptor": {
+      "instruction_differences": 0,
+      "load_byte_differences": 9,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "descriptor-dm-cold": {
+      "instruction_differences": 0,
+      "load_byte_differences": 10,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-rm-baseline": {
+      "instruction_differences": 0,
+      "load_byte_differences": 12,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-rm-descriptor": {
+      "instruction_differences": 0,
+      "load_byte_differences": 9,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-rm-cold": {
+      "instruction_differences": 0,
+      "load_byte_differences": 11,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-rm-marker": {
+      "instruction_differences": 0,
+      "load_byte_differences": 12,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-dm-baseline": {
+      "instruction_differences": 0,
+      "load_byte_differences": 12,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-dm-descriptor": {
+      "instruction_differences": 0,
+      "load_byte_differences": 9,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-dm-cold": {
+      "instruction_differences": 0,
+      "load_byte_differences": 11,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-dm-marker": {
+      "instruction_differences": 0,
+      "load_byte_differences": 12,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "descriptor-mlq": {
+      "instruction_differences": 0,
+      "load_byte_differences": 0,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "descriptor-a-ps": {
+      "instruction_differences": 0,
+      "load_byte_differences": 0,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-mlq": {
+      "instruction_differences": 0,
+      "load_byte_differences": 0,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    },
+    "markers-a-ps": {
+      "instruction_differences": 0,
+      "load_byte_differences": 0,
+      "all_changed_bytes_in_source_line_metadata": true,
+      "same_layout": true
+    }
+  },
+  "earlier_guests": {
+    "descriptor-mlq": {
+      "exit": 0,
+      "ap_end": null
+    },
+    "descriptor-a-ps": {
+      "exit": 0,
+      "ap_end": 0
+    },
+    "markers-mlq": {
+      "exit": 0,
+      "ap_end": null
+    },
+    "markers-a-ps": {
+      "exit": 0,
+      "ap_end": 0
+    }
+  },
+  "decoder": "All four genuine journals, UART and ordered external exceptions pass repaired decoder, regression and independent phase/interval join for all 104 marker phases. Original decoder has no external exception API: two-input results reproduced saved outputs, with identical disjoint totals for all slices. Independent boot 02 n=9 values below. Controls reject reversed interval, wrong phase, omitted and duplicated data, PC and terminal trace corruption.",
+  "boot02_first": [
+    9,
+    273778,
+    275568,
+    0,
+    1790
+  ],
+  "addendum_sha256": "ccc143b211729d70bd2de61ce69416fe8184729c0979200ccfc86c51d2c1fd6b",
+  "limitations": "Single default-clock boot per selected guest. Timing nonqualification stands. No semantic or hardware equivalence inferred from matching instructions. Descriptor head predates marker implementation; cold+marker exclusivity exercised on marker-integrated head."
+}
