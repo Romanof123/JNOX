@@ -13,6 +13,7 @@
 | [기능안전팀의 첫 벤치 결정](docs/safety-parameters.md) | 가상 출력의 안전 상태와 시간 예산, 제품 값 확정에 필요한 근거 |
 | [시스템 요구사항](docs/requirements.md) | 추적 ID가 붙은 요구사항과 합격 기준 |
 | [시스템 아키텍처](docs/architecture.md) | 커널, Linux 드라이버 도메인, 스케줄링, 포팅, 서비스 설계 |
+| [M1 Rust 커널 첫 부팅](docs/m1-boot.md) | AArch64 QEMU에서 부팅할 최소 커널의 범위와 UART 합격 조건 |
 | [검증 계획](docs/verification-plan.md) | 시험 방법, 합격 판정, 실기기 검증, 증거 형식 |
 | [개발 수명주기와 변경관리](docs/lifecycle.md) | 기획에서 구현·검증까지의 문서 연결, 변경 시 재설계 및 재승인 절차 |
 | [추적 링크](trace/links.csv) | 문서 간 관계를 자동 검사할 수 있는 데이터 |

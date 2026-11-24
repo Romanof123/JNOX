@@ -13,6 +13,7 @@
 | [First bench decision by the functional safety team](docs/safety-parameters.en.md) | Safe state and timing budget for a virtual output, and the evidence needed to set product values |
 | [System requirements](docs/requirements.en.md) | Requirements, trace IDs and acceptance criteria |
 | [System architecture](docs/architecture.en.md) | Kernel, Linux driver domain, scheduling, ports and user services |
+| [First boot of the M1 Rust kernel](docs/m1-boot.en.md) | Scope and UART acceptance criteria for the minimal AArch64 QEMU kernel |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
 | [Development lifecycle and change control](docs/lifecycle.en.md) | Traceability from planning through implementation and verification, including redesign and reapproval after a change |
 | [Trace links](trace/links.csv) | Machine-readable relationships shared by both language editions |
