@@ -95,7 +95,24 @@ fn main() {
             "JNOX_FIXED_COST requires 1, virt and fixed FIFO/RR");
         println!("cargo::rustc-cfg=jnox_fixed_cost");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_deadline)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_deadline_trace)");
+    if let Some(value) = selector("JNOX_DEADLINE_TRACE") {
+        assert!(value == "1" && profile.as_deref() == Some("deadline"), "JNOX_DEADLINE_TRACE=1 requires ordinary deadline profile");
+        println!("cargo::rustc-cfg=jnox_deadline_trace");
+    }
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun"))"#);
     match profile.as_deref() {
+        Some("deadline") => {
+            assert!(bench == "boot" && board == "virt", "ordinary deadline requires virt without benchmark features");
+            match app.as_deref() {
+                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun")) => {
+                    println!("cargo::rustc-cfg=jnox_ordinary_deadline");
+                    println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
+                }
+                _ => panic!("deadline requires an ordinary EDF/LLF application"),
+            }
+        }
         Some("groups") => {
             assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(), Some("ordinary-groups" | "ordinary-groups-late")),
                     "groups requires virt, ordinary-groups or ordinary-groups-late, and no benchmark");

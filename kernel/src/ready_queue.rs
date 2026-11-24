@@ -13,7 +13,7 @@ impl<const N: usize> ReadyQueue<N> {
         }
     }
 
-    #[cfg(jnox_multilevel_trace)]
+    #[cfg(any(jnox_multilevel_trace, jnox_ordinary_deadline))]
     pub(crate) fn entries(&self) -> &[usize] { &self.ids[..self.len] }
 
     fn can_insert(&self, id: usize) -> bool {

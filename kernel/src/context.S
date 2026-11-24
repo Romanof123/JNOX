@@ -67,6 +67,13 @@ sched_vectors:
 
 .macro handle callback
     sub sp, sp, #{frame_size}
+    .ifdef JNOX_ORDINARY_DEADLINE
+    str x9, [sp, #72]
+    isb
+    mrs x9, cntpct_el0
+    str x9, [sp, #({simd} - 8)]
+    ldr x9, [sp, #72]
+    .endif
     integer_pairs stp
     str x30, [sp, #240]
     simd_pairs stp
@@ -82,7 +89,9 @@ sched_vectors:
     mrs x9, tpidr_el0
     mrs x10, tpidrro_el0
     stp x9, x10, [sp, #{tpidr_el0}]
+    .ifndef JNOX_ORDINARY_DEADLINE
     str xzr, [sp, #({simd} - 8)]
+    .endif
     mov x0, sp
     .ifdef JNOX_SMP
     // Rust must leave the outgoing task's stack before publishing its frame.
@@ -123,6 +132,12 @@ sched_start_frame:
     msr tpidr_el0, x9
     msr tpidrro_el0, x10
     simd_pairs ldp
+    .ifdef JNOX_ORDINARY_DEADLINE
+    adrp x9, deadline_restore_count
+    isb
+    mrs x10, cntpct_el0
+    str x10, [x9, :lo12:deadline_restore_count]
+    .endif
     integer_pairs ldp
     ldr x30, [sp, #240]
     add sp, sp, #{frame_size}
