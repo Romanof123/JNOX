@@ -8,13 +8,17 @@ use core::ptr;
 #[cfg(all(
     feature = "rr-bench",
     not(any(
+        feature = "coop-bench",
         feature = "cbs-bench",
         feature = "periodic-bench",
         feature = "partition-bench"
     ))
 ))]
 mod aperiodic_policy;
-#[cfg(all(feature = "cbs-bench", not(feature = "partition-bench")))]
+#[cfg(all(
+    feature = "cbs-bench",
+    not(any(feature = "partition-bench", feature = "coop-bench"))
+))]
 mod cbs;
 #[cfg(any(
     feature = "sched-bench",
@@ -22,23 +26,33 @@ mod cbs;
     feature = "partition-bench"
 ))]
 mod context;
+#[cfg(feature = "coop-bench")]
+mod coop;
 #[cfg(all(
     feature = "sched-bench",
-    not(any(feature = "cbs-bench", feature = "partition-bench"))
+    not(any(
+        feature = "coop-bench",
+        feature = "cbs-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod dispatch_policy;
 #[cfg(all(
     feature = "rr-bench",
     not(any(
+        feature = "coop-bench",
         feature = "cbs-bench",
         feature = "periodic-bench",
         feature = "partition-bench"
     ))
 ))]
 mod domain_policy;
+#[cfg(feature = "coop-bench")]
+mod event_loop;
 #[cfg(all(
     feature = "rr-bench",
     not(any(
+        feature = "coop-bench",
         feature = "cbs-bench",
         feature = "periodic-bench",
         feature = "partition-bench"
@@ -48,6 +62,7 @@ mod fair_policy;
 #[cfg(all(
     feature = "rr-bench",
     not(any(
+        feature = "coop-bench",
         feature = "cbs-bench",
         feature = "periodic-bench",
         feature = "partition-bench"
@@ -57,20 +72,25 @@ mod feedback_policy;
 #[cfg(all(
     feature = "rr-bench",
     not(any(
+        feature = "coop-bench",
         feature = "cbs-bench",
         feature = "periodic-bench",
         feature = "partition-bench"
     ))
 ))]
 mod group_policy;
-#[cfg(all(
-    feature = "sched-bench",
-    not(any(feature = "cbs-bench", feature = "partition-bench"))
+#[cfg(any(
+    feature = "coop-bench",
+    all(
+        feature = "sched-bench",
+        not(any(feature = "cbs-bench", feature = "partition-bench"))
+    )
 ))]
 mod ready_queue;
 #[cfg(all(
     feature = "sched-bench",
     not(any(
+        feature = "coop-bench",
         feature = "cbs-bench",
         feature = "periodic-bench",
         feature = "partition-bench"
@@ -80,12 +100,14 @@ mod sched;
 #[cfg(all(
     feature = "rr-bench",
     not(any(
+        feature = "coop-bench",
         feature = "cbs-bench",
         feature = "periodic-bench",
         feature = "partition-bench"
     ))
 ))]
 mod service_policy;
+#[cfg(not(feature = "coop-bench"))]
 #[cfg(any(
     feature = "partition-bench",
     feature = "cbs-bench",
@@ -95,11 +117,15 @@ mod temporal_policy;
 
 #[cfg(all(
     feature = "periodic-bench",
-    not(any(feature = "cbs-bench", feature = "partition-bench"))
+    not(any(
+        feature = "coop-bench",
+        feature = "cbs-bench",
+        feature = "partition-bench"
+    ))
 ))]
 mod periodic;
 
-#[cfg(feature = "partition-bench")]
+#[cfg(all(feature = "partition-bench", not(feature = "coop-bench")))]
 mod partition;
 
 static mut BSS_PROBE: u64 = 0;
@@ -125,6 +151,14 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
     #[cfg(not(jnox_pi4))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
+    #[cfg(feature = "coop-bench")]
+    coop::run();
+    #[cfg(not(feature = "coop-bench"))]
+    run_bench()
+}
+
+#[cfg(not(feature = "coop-bench"))]
+fn run_bench() -> ! {
     #[cfg(all(
         feature = "rr-bench",
         not(any(

@@ -467,3 +467,12 @@ IMP-011,tested-in,EVD-011
 VER-008,has-partial-evidence,EVD-011
 VER-016,has-partial-evidence,EVD-011
 CAP-014,has-partial-evidence,EVD-011
+CHG-014,affects,REQ-023
+CHG-014,affects,REQ-002
+CHG-014,affects,REQ-005
+DES-012,implemented-by,IMP-012
+DES-003,implemented-by,IMP-012
+POL-001,partially-implemented-by,IMP-012
+IMP-012,partially-verified-by,VER-023
+IMP-012,partially-verified-by,VER-002
+IMP-012,partially-verified-by,VER-005
