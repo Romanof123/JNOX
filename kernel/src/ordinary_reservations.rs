@@ -195,11 +195,22 @@ struct Progress {
     cells: [[AtomicU64; 2]; 2],
     active: AtomicUsize,
 }
-static POINTER: [AtomicPtr<Progress>; 2] = [const { AtomicPtr::new(ptr::null_mut()) }; 2];
-static GOAL: [AtomicU64; 2] = [const { AtomicU64::new(NA) }; 2];
-static ACTION: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
-static GENERATION: [AtomicU64; 2] = [const { AtomicU64::new(NA) }; 2];
-static FIRST: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
+struct WorkerMailbox {
+    generation: AtomicU64,
+    action: AtomicU64,
+    goal: AtomicU64,
+    first: AtomicU64,
+    progress: AtomicPtr<Progress>,
+}
+static MAILBOXES: [WorkerMailbox; 2] = [const {
+    WorkerMailbox {
+        generation: AtomicU64::new(NA),
+        action: AtomicU64::new(0),
+        goal: AtomicU64::new(NA),
+        first: AtomicU64::new(0),
+        progress: AtomicPtr::new(ptr::null_mut()),
+    }
+}; 2];
 static MASK_FROM: AtomicU64 = AtomicU64::new(NA);
 static MASK_UNTIL: AtomicU64 = AtomicU64::new(NA);
 static NOMINAL_END: AtomicU64 = AtomicU64::new(NA);
@@ -248,12 +259,13 @@ extern "C" fn reservation_rust_work(id: usize) -> ! {
         cells: core::array::from_fn(|_| [AtomicU64::new(0), AtomicU64::new(acc)]),
         active: AtomicUsize::new(0),
     };
-    POINTER[id].store(&raw mut progress, Ordering::Release);
+    let mailbox = &MAILBOXES[id];
+    mailbox.progress.store(&raw mut progress, Ordering::Release);
     let mut observed = NA;
     loop {
-        let generation = GENERATION[id].load(Ordering::Acquire);
+        let generation = mailbox.generation.load(Ordering::Acquire);
         if generation != observed {
-            FIRST[id].store(now(), Ordering::Release);
+            mailbox.first.store(now(), Ordering::Release);
             observed = generation;
         }
         if LATE && id == 0 {
@@ -267,8 +279,8 @@ extern "C" fn reservation_rust_work(id: usize) -> ! {
         progress.cells[index][0].store(n, Ordering::Relaxed);
         progress.cells[index][1].store(acc, Ordering::Relaxed);
         progress.active.store(index, Ordering::Release);
-        if n == GOAL[id].load(Ordering::Acquire) {
-            if ACTION[id].load(Ordering::Relaxed) == 2 {
+        if n == mailbox.goal.load(Ordering::Acquire) {
+            if mailbox.action.load(Ordering::Relaxed) == 2 {
                 unsafe { asm!("svc #1", options(nostack)) }
             } else {
                 unsafe { asm!("svc #2", options(noreturn)) }
@@ -291,7 +303,7 @@ fn advanced(mut x: u64, mut steps: u64) -> u64 {
     x
 }
 fn snapshot(id: usize) -> (u64, u64, usize) {
-    let p = POINTER[id].load(Ordering::Acquire);
+    let p = MAILBOXES[id].progress.load(Ordering::Acquire);
     if p.is_null() {
         return (0, SEED[id], 0);
     }
@@ -562,16 +574,17 @@ impl Runtime {
         {
             unexpected()
         }
+        let mailbox = &MAILBOXES[id];
         let f = unsafe { &*frame };
         if f.elr != expected.pc
             || f.spsr != expected.mode
             || f.gpr[19] != expected.register
             || f.tpidr_el1 != expected.thread
-            || GENERATION[id].load(Ordering::Acquire) != NA
-            || ACTION[id].load(Ordering::Acquire) != 0
-            || GOAL[id].load(Ordering::Acquire) != NA
-            || FIRST[id].load(Ordering::Acquire) != 0
-            || !POINTER[id].load(Ordering::Acquire).is_null()
+            || mailbox.generation.load(Ordering::Acquire) != NA
+            || mailbox.action.load(Ordering::Acquire) != 0
+            || mailbox.goal.load(Ordering::Acquire) != NA
+            || mailbox.first.load(Ordering::Acquire) != 0
+            || !mailbox.progress.load(Ordering::Acquire).is_null()
             || self.last_count[id] != expected.updates
             || self.last_acc[id] != expected.accumulator
             || self.allocation_deadline[id] != NA
@@ -763,10 +776,11 @@ impl Runtime {
         self.opened = 0;
         self.allocation_deadline[id] = p.grant.deadline;
         self.grant = Some(ActiveGrant::First(&p.grant));
-        GOAL[id].store(p.goal, Ordering::Release);
-        ACTION[id].store(1 + action as u64, Ordering::Relaxed);
-        FIRST[id].store(0, Ordering::Relaxed);
-        GENERATION[id].store(0, Ordering::Release);
+        let mailbox = &MAILBOXES[id];
+        mailbox.goal.store(p.goal, Ordering::Release);
+        mailbox.action.store(1 + action as u64, Ordering::Relaxed);
+        mailbox.first.store(0, Ordering::Relaxed);
+        mailbox.generation.store(0, Ordering::Release);
         self.kind = 1;
         self.target = p.cutoff;
         let (compare, ctl) = program_timer(p.cutoff);
@@ -885,7 +899,8 @@ impl Runtime {
                 acc,
                 deadline: d.after[id].d,
             }));
-            GOAL[id].store(
+            let mailbox = &MAILBOXES[id];
+            mailbox.goal.store(
                 if action == Action::Long {
                     NA
                 } else {
@@ -893,9 +908,9 @@ impl Runtime {
                 },
                 Ordering::Release,
             );
-            ACTION[id].store(1 + action as u64, Ordering::Relaxed);
-            FIRST[id].store(0, Ordering::Relaxed);
-            GENERATION[id].store(slot, Ordering::Release);
+            mailbox.action.store(1 + action as u64, Ordering::Relaxed);
+            mailbox.first.store(0, Ordering::Relaxed);
+            mailbox.generation.store(slot, Ordering::Release);
             let cutoff = checked(self.clock.cutoff(slot));
             if LATE && slot == 0 {
                 MASK_FROM.store(cutoff - self.clock.millisecond, Ordering::Relaxed);
@@ -930,7 +945,7 @@ impl Runtime {
         }
         let saved = unsafe { &*frame };
         let (count, acc, p) = snapshot(id);
-        let first = FIRST[id].load(Ordering::Acquire);
+        let first = MAILBOXES[id].first.load(Ordering::Acquire);
         let start = checked(self.clock.boundary(slot));
         let end = checked(self.clock.boundary(slot + 1));
         let cutoff = checked(self.clock.cutoff(slot));
