@@ -148,3 +148,9 @@ REQ-022,implemented-by-design,DES-005
 REQ-022,verified-by,VER-022
 REQ-011,implemented-by-design,DES-011
 REQ-021,verified-by,VER-011
+CHG-001,affects,REQ-016
+DES-001,implemented-by,IMP-001
+REQ-016,partially-implemented-by,IMP-001
+IMP-001,partially-verified-by,VER-016
+IMP-001,tested-in,EVD-001
+VER-016,has-partial-evidence,EVD-001

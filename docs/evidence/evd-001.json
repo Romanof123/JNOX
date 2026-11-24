@@ -1,0 +1,256 @@
+{
+  "record": "EVD-001",
+  "candidate": "604b03186841059ce3b4226367824fa923742e88",
+  "date": "2026-11-24",
+  "scope": "AArch64 single-core full-system QEMU boot bench",
+  "environment": {
+    "build_host": "Windows 11 Professional 10.0.26200 x86_64-pc-windows-msvc",
+    "rustc": "1.95.0 (59807616e1fa2540724bfbac14d7976d7e4a3860)",
+    "cargo": "1.95.0 (f2d3ce0bd7f24a49f8f72d9000448f8838c4e850)",
+    "linker": "LLD 22.1.2 (1cb4e3833c1919c2e6fb579a23ac0e2b22587b7e)",
+    "emulator_host": "Ubuntu 22.04.3 LTS on WSL2, kernel 6.18.58.1-microsoft-standard-WSL2",
+    "qemu": "6.2.0 (1:6.2+dfsg-2ubuntu6.31)",
+    "python": "3.10.12"
+  },
+  "reproduction": {
+    "source": "git archive the candidate into two empty directories. From each kernel directory run cargo build --release --locked. Use the matching target ELF for each launch.",
+    "normalization": "$WORK replaces the temporary directory path. Process IDs, timestamps, UART bytes and process return codes are preserved.",
+    "independent_observer": "Launch QEMU from the recorded argv with separate UART/stdout and stderr pipes. Require the two full marker lines within 5 seconds, check that the process stays alive and UART stays quiet for a further second, then stop QEMU from the host. Timing fields measure the host observation only.",
+    "negative_mutation": "In a separate copy of kernel/src/start.S replace exactly str xzr, [x0], #8 with add x0, x0, #8. Build with the same locked command. Check for an empty UART during the specified negative deadline.",
+    "public_runner": "From the checkout root run python3 tools/qemu_boot.py --kernel kernel/target/aarch64-unknown-none/release/jnox-kernel in the emulator environment."
+  },
+  "independent_cold_boots": [
+    {
+      "command": [
+        "qemu-system-aarch64",
+        "-machine",
+        "virt",
+        "-cpu",
+        "cortex-a72",
+        "-smp",
+        "1",
+        "-m",
+        "128M",
+        "-nodefaults",
+        "-display",
+        "none",
+        "-monitor",
+        "none",
+        "-chardev",
+        "stdio,id=probe,signal=off,mux=off",
+        "-serial",
+        "chardev:probe",
+        "-kernel",
+        "$WORK/a/target/aarch64-unknown-none/release/jnox-kernel"
+      ],
+      "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "serial_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a",
+      "stderr_hex": "",
+      "boot_timeout_s": 5.0,
+      "requested_quiet_s": 1.0,
+      "ready_s": 0.031115,
+      "elapsed_s": 1.031287,
+      "live_at_deadline": true,
+      "after_stop_returncode": -9,
+      "passed": true,
+      "events": [
+        {
+          "t": 0.031091,
+          "stream": "serial",
+          "hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a"
+        }
+      ]
+    },
+    {
+      "command": [
+        "qemu-system-aarch64",
+        "-machine",
+        "virt",
+        "-cpu",
+        "cortex-a72",
+        "-smp",
+        "1",
+        "-m",
+        "128M",
+        "-nodefaults",
+        "-display",
+        "none",
+        "-monitor",
+        "none",
+        "-chardev",
+        "stdio,id=probe,signal=off,mux=off",
+        "-serial",
+        "chardev:probe",
+        "-kernel",
+        "$WORK/b/target/aarch64-unknown-none/release/jnox-kernel"
+      ],
+      "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "serial_hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d312052454144590a",
+      "stderr_hex": "",
+      "boot_timeout_s": 5.0,
+      "requested_quiet_s": 1.0,
+      "ready_s": 0.026765,
+      "elapsed_s": 1.026971,
+      "live_at_deadline": true,
+      "after_stop_returncode": -9,
+      "passed": true,
+      "events": [
+        {
+          "t": 0.026727,
+          "stream": "serial",
+          "hex": "4a4e4f58204d3120424f4f540a4a4e4f58204d31205245"
+        },
+        {
+          "t": 0.026762,
+          "stream": "serial",
+          "hex": "4144590a"
+        }
+      ]
+    }
+  ],
+  "independent_negative_observation": {
+    "command": [
+      "qemu-system-aarch64",
+      "-machine",
+      "virt",
+      "-cpu",
+      "cortex-a72",
+      "-smp",
+      "1",
+      "-m",
+      "128M",
+      "-nodefaults",
+      "-display",
+      "none",
+      "-monitor",
+      "none",
+      "-chardev",
+      "stdio,id=probe,signal=off,mux=off",
+      "-serial",
+      "chardev:probe",
+      "-kernel",
+      "$WORK/mutant/target/aarch64-unknown-none/release/jnox-kernel"
+    ],
+    "elf_sha256": "1a2b297110b3b55fcc6323d8ecb84255c6434389bf3a0329054234f63cbb6ccb",
+    "serial_hex": "",
+    "stderr_hex": "",
+    "boot_timeout_s": 1.0,
+    "requested_quiet_s": 1.0,
+    "ready_s": null,
+    "elapsed_s": 1.001067,
+    "live_at_deadline": true,
+    "after_stop_returncode": -9,
+    "passed": false,
+    "events": []
+  },
+  "public_runner_real_guests": {
+    "positive": {
+      "args": [
+        "/usr/bin/python3",
+        "a/tools/qemu_boot.py",
+        "--kernel",
+        "a/target/aarch64-unknown-none/release/jnox-kernel"
+      ],
+      "actual_exit_code": 0,
+      "stdout": "Run 1/2  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 510\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 507 (/usr/bin/python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nRun 2/2  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 513\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 507 (/usr/bin/python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 2 cold boot(s)\n",
+      "stderr": ""
+    },
+    "negative": {
+      "args": [
+        "/usr/bin/python3",
+        "a/tools/qemu_boot.py",
+        "--kernel",
+        "mutant/target/aarch64-unknown-none/release/jnox-kernel",
+        "--runs",
+        "1",
+        "--timeout",
+        "1"
+      ],
+      "actual_exit_code": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 1a2b297110b3b55fcc6323d8ecb84255c6434389bf3a0329054234f63cbb6ccb\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/mutant/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 517\n  UART (0 bytes) = b''\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 516 (/usr/bin/python3)\\n'\n",
+      "stderr": "FAIL: UART deadline exceeded (1s)\n"
+    }
+  },
+  "public_runner_transcript_controls": {
+    "full": {
+      "expected": 0,
+      "actual": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1888\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b''\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    "missing": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1891\n  UART (13 bytes) = b'JNOX M1 BOOT\\n'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: UART deadline exceeded (0.4s)\n"
+    },
+    "reversed": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1895\n  UART (27 bytes) = b'JNOX M1 READY\\nJNOX M1 BOOT\\n'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: unexpected UART bytes or marker order\n"
+    },
+    "duplicate": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1897\n  UART (54 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nJNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: unexpected UART bytes or marker order\n"
+    },
+    "extra": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1900\n  UART (28 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n!'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: unexpected UART bytes or marker order\n"
+    },
+    "partial": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1904\n  UART (26 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: UART deadline exceeded (0.4s)\n"
+    },
+    "stderr_only": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1908\n  UART (0 bytes) = b''\n  QEMU stderr = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n",
+      "stderr": "FAIL: UART deadline exceeded (0.4s)\n"
+    },
+    "exit_early": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1912\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: QEMU exited before host stop (status 0)\n"
+    },
+    "during_quiet": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1914\n  UART (28 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n?'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: unexpected UART bytes or marker order\n"
+    },
+    "on_shutdown": {
+      "expected": 1,
+      "actual": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"/tmp/tmpsrm12ykn/fake-qemu\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"$WORK/a/target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 1917\n  UART (28 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n?'\n  QEMU stderr = b''\n",
+      "stderr": "FAIL: unexpected UART bytes during shutdown\n"
+    }
+  },
+  "source_tree": "1323645eb7c147d4b3057c92b156021065329314",
+  "inputs_sha256": {
+    "Cargo.lock": "ebf37879f659f886cbaafd87f9de8fa665788968b5d1ce317e3b2499f4417274",
+    "Cargo.toml": "c89db6a0f7bce5b98015b55252558d55293b389cf67ffbbf09ffb788f9a3a234",
+    ".cargo/config.toml": "6c521d835951ed91cb9a8980684743e5ecadcd3e7ea324582151a3bdf3a3240c",
+    "build.rs": "16c6c4a70062848122646219281490c33d7475b4fef81766b17c743935734ed5",
+    "link.ld": "81b77e9571343e99fd29a6a332e20fba1db283132d8830cb359c40dd65ce6ca0",
+    "rust-toolchain.toml": "cbd062eb36ef81719756e5b01dc219f040ea7a4620106f1bf74f69dc3c822fa6",
+    "src/main.rs": "fd650dc464cdb20fc85790635d0e0f978954074e593541d38cb72b55779030fa",
+    "src/start.S": "94f2b4e0cbe84d34876c3e84f2ea93847e78f101b6dcb8c17fbfd1dd7414c9ed"
+  },
+  "public_runner_sha256": "b0b3dbdadc18f2752f1ab7af75dbfa068c44b684a553cfb1f954f59d8e072901",
+  "implementation_review": "The ELF has two PT_LOAD headers (RX and RW), no dynamic interpreter. _start @ 0x40200000 masks interrupts and checks EL1, selects the 16-byte-aligned stack top 0x40204120 and enables EL1 FP/SIMD. The BSS probe spans the entire present 8-byte BSS, from 0x40200118 to 0x40200120 exclusive. After seeding all ones and clearing it, compiled Rust reloads the probe; a nonzero word parks in a WFE loop. A zero word leads to aligned 32-bit PL011 configuration and polling on the single-core MMU-off fixed emulated board, then WFE and branch back at 0x402000f0. Acceptance requires the specific emulator and starting state.",
+  "observer_scope": "Two independent QEMU processes started with fresh memory. The independent observer used the default system emulator accelerator; x86_64 host cannot use hardware virtualization to execute this Arm guest. The public runner also explicitly supplied -accel tcg. The independent observer used SIGKILL only at end of observation (return code -9). Public runner used SIGTERM; QEMU diagnostics are separate.",
+  "independent_replay": {
+    "script_directory": "evd-001-replay",
+    "command": "powershell -NoProfile -File docs/evidence/evd-001-replay/replay.ps1 -Repository .",
+    "expected_elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+    "replayed_successfully": true
+  }
+}
