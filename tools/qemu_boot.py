@@ -196,10 +196,13 @@ APERIODIC_TRANSCRIPT = BOOT_TRANSCRIPT + (
 class DynamicTranscript(Enum):
     FIXED_FIFO = ("FIXED FIFO", "fixed_runtime_observer")
     FIXED_RR = ("FIXED RR", "fixed_runtime_observer")
+    PI4_FIXED_FIFO = ("FIXED FIFO", "fixed_runtime_observer", "PI4")
+    PI4_FIXED_RR = ("FIXED RR", "fixed_runtime_observer", "PI4")
     AMC = ("AMC", "amc_observer")
     VRUNTIME = ("VR", "vruntime_observer")
 
-    def __init__(self, label, module):
+    def __init__(self, label, module, board="M1"):
+        self.board = board.encode("ascii")
         self.label = label
         self.prefix = label.encode("ascii")
         self.module = module
@@ -210,9 +213,16 @@ class DynamicTranscript(Enum):
         return import_module(self.module)
 
 
+def fixed_edge_transcript(prefix):
+    markers = (b"START", b"A START", b"B RUN", b"C RUN", b"A RESUME", b"A DONE")
+    return BOOT_TRANSCRIPT + b"".join(prefix + b" " + marker + b"\n" for marker in markers)
+
+
 TRANSCRIPTS = {
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
     "fixed-delayed": BOOT_TRANSCRIPT + b"FIXED DELAYED START\nFIXED DELAYED TASK\n",
+    "fixed-ties": fixed_edge_transcript(b"FIXED TIES"),
+    "fixed-late": fixed_edge_transcript(b"FIXED LATE"),
     "fixed-fifo": DynamicTranscript.FIXED_FIFO,
     "fixed-rr": DynamicTranscript.FIXED_RR,
     "priority-resume": BOOT_TRANSCRIPT + b"PRIORITY RESUME BEGIN\nPRIORITY RESUME PASS\n",
@@ -241,6 +251,8 @@ TRANSCRIPTS = {
     "coop": COOP_TRANSCRIPT,
     "boot": BOOT_TRANSCRIPT,
     "pi4": PI4_BOOT_TRANSCRIPT,
+    "pi4-fixed-fifo": DynamicTranscript.PI4_FIXED_FIFO,
+    "pi4-fixed-rr": DynamicTranscript.PI4_FIXED_RR,
     "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
     "eevdf": BOOT_TRANSCRIPT + (
         b"EEVDF BEGIN\nEEVDF EARLY INELIGIBLE\nEEVDF SLICE CHANGE\n"
@@ -344,7 +356,7 @@ def observe_amc(process, serial, timeout, *, allow_crlf=True, quiet_seconds=QUIE
 
 def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
     contract = profile.observer()
-    workload = profile in (DynamicTranscript.FIXED_FIFO, DynamicTranscript.FIXED_RR)
+    workload = profile.module == "fixed_runtime_observer"
     passed = profile.prefix + (b" B DONE\n" if workload else b" PASS\n")
     failed = profile.prefix + b" FAIL\n"
     stop_line = b"\n" + profile.prefix + b" STOP\n"
@@ -374,7 +386,7 @@ def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet
             if passed in data or failed in data or b"\n" in after_stop:
                 if not data.endswith(b"\n" + passed):
                     return f"unexpected {profile.label} UART transcript", None
-                valid = contract.validate(data, profile.prefix) if workload else contract.validate(data)
+                valid = contract.validate(data, profile.prefix, profile.board) if workload else contract.validate(data)
                 if not valid:
                     return f"unexpected {profile.label} UART transcript", None
                 accepted = raw
@@ -402,11 +414,12 @@ def stop(process):
     return None
 
 
-def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, capture_dir=None):
     profile = dynamic_profile(expected)
     with tempfile.TemporaryDirectory(prefix="jnox-qemu-") as folder:
-        uart_path = Path(folder) / "uart"
-        stderr_path = Path(folder) / "stderr"
+        output_dir = capture_dir or Path(folder)
+        uart_path = output_dir / "uart"
+        stderr_path = output_dir / "stderr"
         with uart_path.open("wb") as output, stderr_path.open("wb") as errors:
             process = subprocess.Popen(
                 command, stdin=subprocess.DEVNULL, stdout=output, stderr=errors
@@ -453,9 +466,10 @@ def main():
     parser.add_argument("--runs", type=int, help="fresh sequential QEMU boots (default: boot 2, other profiles 1)")
     parser.add_argument("--timeout", type=float, metavar="SECONDS",
                         help="UART deadline per boot (pi4: 30s plus 1s quiet, others: 5s plus 0.1s quiet)")
+    parser.add_argument("--capture-dir", type=Path, help="new directory for each run's raw uart, stderr and QEMU -d int trace")
     args = parser.parse_args()
     boot = args.profile == "boot"
-    pi4 = args.profile in ("pi4", "pi4-scheduler")
+    pi4 = args.profile == "pi4" or args.profile.startswith("pi4-")
     timeout = args.timeout if args.timeout is not None else (30 if pi4 else 5)
     runs = args.runs if args.runs is not None else (2 if boot else 1)
     if runs < 1:
@@ -487,10 +501,18 @@ def main():
                 "-accel", accelerator, "-m", "128M", "-nodefaults",
             ]
         command.extend(["-display", "none", "-monitor", "none", "-serial", "stdio", "-kernel", str(kernel)])
+        if args.capture_dir:
+            args.capture_dir.mkdir(parents=True, exist_ok=False)
         for run in range(1, runs + 1):
+            capture_dir = None
+            run_command = command
+            if args.capture_dir:
+                capture_dir = args.capture_dir.resolve() / f"run-{run}"
+                capture_dir.mkdir()
+                run_command = [*command, "-d", "int", "-D", str(capture_dir / "exceptions.log")]
             print(f"Run {run}/{runs}  {image_type} SHA-256 = {expected_hash}")
-            print(f"  argv = {json.dumps(command, ensure_ascii=True)}", flush=True)
-            run_boot(command, timeout, expected, allow_crlf=not pi4,
+            print(f"  argv = {json.dumps(run_command, ensure_ascii=True)}", flush=True)
+            run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir,
                      quiet_seconds=1 if pi4 else QUIET_SECONDS)
             if kernel_sha256(kernel, raw=pi4) != expected_hash:
                 raise ValueError(f"kernel {image_type} changed during testing")

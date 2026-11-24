@@ -78,6 +78,11 @@ fn configure_timer_ppi() {
 
 #[cfg(jnox_pi4)]
 fn configure_timer_ppi() {
+    #[cfg(jnox_fixed)]
+    use super::fixed_runtime::fail;
+    #[cfg(not(jnox_fixed))]
+    use super::sched::fail;
+
     let ppi = 1 << TIMER_IRQ;
     // CPU0 owns this banked PPI. CNTP is deasserted and DAIF masked; leave
     // every other enable, pending bit, target and priority unchanged.
@@ -100,13 +105,13 @@ fn configure_timer_ppi() {
     // The stub uses combined EOI/deactivation. Preserve the interface mode
     // and reject a foreign split-EOI handoff before unmasking interrupts.
     if gic_read(GICC) & (1 << 9) != 0 {
-        super::sched::fail();
+        fail();
     }
     unsafe { ptr::write_volatile((GICD + 0x400 + TIMER_IRQ as usize) as *mut u8, 0x80) };
     gic_write(GICD + 0x280, ppi); // ICPENDR0
     gic_write(GICD + 0x100, ppi); // ISENABLER0
     if gic_read(GICD + 0x100) & ppi == 0 {
-        super::sched::fail(); // The secure stub must delegate this PPI.
+        fail(); // The secure stub must delegate this PPI.
     }
     gic_write(GICC + 4, 0xff); // PMR permits the timer's priority
     gic_write(GICD, gic_read(GICD) | dist_enable);
