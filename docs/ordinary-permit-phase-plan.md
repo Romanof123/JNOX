@@ -1,6 +1,6 @@
 # CHG-055 · Phase of ordinary permit publication / 일반 허가 게시의 위상
 
-[#94](https://github.com/Romanof123/JNOX/issues/94) · intended IMP-054 · [ADR-001](safety-parameters.en.md) · [FS-M3-01](pol-004-m3-control-plan.md) · [CHG-053](control-service-plan.md)
+[#94](https://github.com/Romanof123/JNOX/issues/94) · IMP-054 · [ADR-001](safety-parameters.en.md) · [FS-M3-01](pol-004-m3-control-plan.md) · [CHG-053](control-service-plan.md)
 
 ## English
 
@@ -39,3 +39,5 @@
 **실행과 종료.** 비용 상한만 없을 때에는 유한 관측 구간·호스트 타임아웃 안에서 실제 일반 송신자의 한 번의 제한된 재개와 기회별 최대 한 번의 게시를 측정한다. A1은 명목 목표, A2는 입증된 첫 게시 기준을 사용한다. 기준을 판정할 수 없으면 그 구간과 미실행 인덱스를 남기고 의존 계열을 중단한다. 수신자는 실제 게시 기록을 독립 검증하고 감독자 명령의 입력·소비를 별도로 관측한다. 같은 카운터로 실제 릴리스·대기·깨우기·IRQ·마스킹·복귀·슬라이스별 과금·게시·수신·명령·출력을 기록한다. 송신 750 µs/10 ms, 제어 250 µs, IRQ 0.5 ms, 위상 1 ms, 제어 5 ms 한계는 유지한다. 잠든 시간과 시스템 간섭을 분리한다. 위반·위상 누락·깨우기 실패·소유자 오류·허가 만료·중요 시각 불확실은 기존 중단·만료·차단 절차와 실제 대기 IRQ 증거를 보존한다. 가정상 적격성은 해당 표본 범위에서만 보고한다. 정확한 틱을 관측해도 운영 적격, 정상 재무장, ON→OFF 고장 응답 또는 제품 시간 승인이 되지 않는다.
 
 [IMP-054 runtime, selectors and raw events / 실행 구성 및 원시 이벤트](ordinary-permit-phase-runtime.md)
+
+[First virtual observations](evidence/evd-054.en.md) · [최초 가상 실행](evidence/evd-054.md)

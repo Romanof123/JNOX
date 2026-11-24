@@ -55,3 +55,5 @@ A0는 기존 기술자 실행이며 허가 위상 선택자를 설정하지 않�
 기본 시계 16개와 결정적 시계 4개의 운영 비교 위치 및 거부를 보존한다. OFF 특성 측정은 별도의 기본 시계 8개와 결정적 시계 4개로 구분한다. 발행·재개·IRQ 마스킹·수신·복귀 비용과 조기 중단 후 남은 인덱스를 해당 실행에 귀속한다. 상한 미확정, 단일 틱 불확실성, 누락된 대기, 서비스 과다, 최초 실패를 그대로 보고한다. 최초 수용률의 분자에 특성 측정 결과를 넣지 않는다.
 
 Hostile-input and one-tick-over controls still require independently retained replay or synthetic oracle fixtures with explicit provenance. The historical scripted boundary fixtures retain their own identity. This healthy-only source and the single transient-ON observer input do not establish those case verdicts.
+
+[First virtual observations](evidence/evd-054.en.md) · [최초 가상 실행](evidence/evd-054.md)

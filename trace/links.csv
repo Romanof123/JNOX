@@ -1101,3 +1101,11 @@ REQ-005,partially-implemented-by,IMP-054
 POL-004,partially-implemented-by,IMP-054
 DES-003,implemented-by,IMP-054
 DES-006,implemented-by,IMP-054
+IMP-054,tested-in,EVD-054
+POL-004,has-analysis-evidence,EVD-054
+IMP-054,partially-verified-by,VER-002
+VER-002,has-partial-evidence,EVD-054
+IMP-054,partially-verified-by,VER-003
+VER-003,has-partial-evidence,EVD-054
+IMP-054,partially-verified-by,VER-005
+VER-005,has-partial-evidence,EVD-054

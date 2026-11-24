@@ -130,3 +130,5 @@ POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에�
 
 VER-002/005/023 · 콜드 24회 중 22회가 억제됐고 기술자 DM 2회는 허가 7건을 모두 수락한 뒤에도 OFF였다. 정상 시퀀스 0/24. [EVD-051](evidence/evd-051.md)
 CHG-055 · REQ-002/003/005/023 · [일반 허가 게시 및 독립 명령 시각 계획](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
+IMP-054 · VER-002/003/005. 운영 0/20. 결정적 OFF 4건에서 허가 28건을 수락했고 출력은 OFF였다. [EVD-054](evidence/evd-054.md)
