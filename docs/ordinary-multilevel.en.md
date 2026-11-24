@@ -1,5 +1,7 @@
 # Planned acceptance for POL-009 (#21, #89)
 
+[한국어](ordinary-multilevel.md) · [EVD-040](evidence/evd-040.en.md)
+
 CHG-042 / IMP-040 / planned EVD-040. On virt CPU0, JNOX_PROFILE=multilevel selects JNOX_APP=mlq or mlfq. JNOX_MULTILEVEL_TRACE=1 separately enables the bounded RAM witness. Trusted linked Rust entries own separate 16 KiB stacks. Up to four tasks initially join in declaration order. MLQ chooses the largest unsigned class and rotates ties. MLFQ uses three nonzero allotments, preserves consumption across yield and block, demotes on exhaustion, and resets all levels at a configured cumulative owner-service period. Ties retain enqueue order across boost.
 
 Measure every outgoing interval in raw CNTPCT counts. Include exception entry/restore latency and IRQ overshoot on its owner, exclude time spent selecting another task. Program CNTP for the earlier of remaining allotment and next boost. At a delayed boundary settle owner service, then coalesce elapsed boosts. Verify frame, queue, class, remaining, timer and owner service independently. Compare an always-ready low class against two runnable higher peers, and observe a CPU worker, early yields, block/wake and post-boost dispatch with a peer ready.
