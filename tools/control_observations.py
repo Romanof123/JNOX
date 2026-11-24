@@ -323,16 +323,34 @@ def script_observations(rows, case):
         require(
             [(a, b) for _, a, b in edges] == [(0, 1), (1, 0)], "actual device lifecycle"
         )
+        require(
+            len(commands) == 1 and len(events(20)) == 1
+            and events(20)[0][1:] == (issued[0][0], issued[1][0])
+            and commands[0][0] <= events(20)[0][0] <= issued[2][0],
+            "explicit command followed by successful rearm before anchor",
+        )
         anchor = issued[2][0]
         require(
-            accepted[2][0] == anchor,
+            accepted[2] == (anchor, 3, anchor),
             "boundary issue and delivery on same measured tick",
+        )
+        require(
+            events(30)[2] == (anchor, anchor, 3), "unambiguous anchor publication",
         )
         checks = events(21)
         if case == "worst":
             require(
-                checks[-2][0] == anchor + 8 * step - 1
-                and checks[-1][0] == checks[-2][0] + 2 * step,
+                events(29) == [(anchor, anchor, 0)]
+                and events(16) == [(anchor, 3, anchor)]
+                and [tag for tag, stamp, _, _ in rows
+                     if stamp == anchor and tag in (11, 30, 12, 29, 16)]
+                == [11, 30, 12, 29, 16]
+                and [seq for _, seq, _ in accepted] == [1, 2, 3],
+                "gate closed immediately after final delivery on its measured tick",
+            )
+            require(
+                checks[-2][0] == checks[-2][2] == anchor + 8 * step - 1
+                and checks[-1][0] == checks[-1][2] == checks[-2][0] + 2 * step,
                 "exact consecutive completed decisions",
             )
             require(
@@ -350,13 +368,15 @@ def script_observations(rows, case):
                     "ordered bracketed 25/5/30ms",
                 )
         else:
-            require(not events(16) and len(accepted) == 4, "open gate and arrival")
+            require(
+                not events(16) and [seq for _, seq, _ in accepted] == [1, 2, 3],
+                "open gate and retained accepted sequence",
+            )
             target = anchor + 8 * step
             require(
                 checks[-1][0]
                 == checks[-1][2]
                 == issued[3][0]
-                == accepted[-1][0]
                 == target,
                 "exact expiry/arrival tick",
             )
@@ -364,7 +384,30 @@ def script_observations(rows, case):
                 len(events(13)) == 1 and events(13)[0][1] == 0, "expiry-first latch"
             )
             require(
-                events(30)[-1][:2] == (target, target), "unambiguous arrival bracket"
+                events(47) == [(target, target, 4)]
+                and events(28) == [(target, target, 0)]
+                and events(13) == [(target, 0, anchor)]
+                and issued[3][1:] == (4, issued[2][2]),
+                "unambiguous expiry and fourth permit ingress",
+            )
+            boundary_order = [
+                tag for tag, stamp, _, _ in rows
+                if stamp >= target and tag in (28, 13, 21, 11, 47, 24)
+            ]
+            require(
+                boundary_order == [28, 13, 21, 11, 47, 24],
+                "same-tick latch before ingress and receiver consumption",
+            )
+            edge = events(27)[-1]
+            require(
+                edge[2] == 0 and target <= edge[0] <= edge[1]
+                and edge[1] - target <= 2 * step,
+                "observed inhibition within 5 ms",
+            )
+            rejects = events(24)
+            require(
+                len(rejects) == 1 and rejects[0][0] >= target and rejects[0][1] == 4,
+                "post-latch receiver rejected fourth permit",
             )
     elif case in (
         "recovery",

@@ -206,6 +206,9 @@ impl Runtime {
 }
 
 extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
+    // Preserve an event across the idle work check -> WFE race. No task
+    // other than idle executes WFE while this workload is active.
+    unsafe { asm!("sev", options(nostack, preserves_flags)) };
     let iar = gic_read(GICC + 0x0c);
     if iar & 0x3ff != TIMER_IRQ {
         fail()
@@ -215,6 +218,8 @@ extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
     let s = state();
     s.account(entry);
     let id = s.current;
+    log(45, entry, id as u64, unsafe { (*frame).elr });
+    log(46, entry, requested_mask(frame), s.next);
     s.frames[id] = frame;
     if id < IDLE {
         s.enqueue(id)
@@ -388,9 +393,23 @@ pub(super) fn sample_at(target: u64) -> u64 {
     sampled
 }
 
+fn requested_mask(frame: *mut Frame) -> u64 {
+    unsafe { (*frame).spsr & 0x3c0 }
+}
+
 extern "C" fn idle() -> ! {
+    // Start the one immutable epoch after idle's frame is restored. No
+    // worker/IRQ path is warmed, and every scored release remains visible.
+    locked(|| {
+        let s = state();
+        log(43, now(), s.frequency, s.step);
+        s.epoch = now() + s.step;
+        log(1, s.epoch, s.frequency, LAST);
+        arm(s.epoch, 0);
+    });
+    let mut last_wait = None;
     loop {
-        locked(|| {
+        let (wait, index) = locked(|| {
             app::observe();
             let s = state();
             if s.stopping {
@@ -404,7 +423,7 @@ extern "C" fn idle() -> ! {
             } else if let Some(target) = app::command_target(s.step) {
                 if s.next == 7 {
                     if now().saturating_add(s.step / 200) < target {
-                        return;
+                        return (false, s.next);
                     }
                     app::command(sample_at(target));
                 }
@@ -414,8 +433,20 @@ extern "C" fn idle() -> ! {
                     core::hint::spin_loop()
                 }
             }
-            // Poll with IRQs unmasked between bounded critical sections.
+            (!app::HANDOFF || !app::pending_subphase(s.next), s.next)
         });
+        if wait {
+            if last_wait != Some(index) {
+                let mask: u64;
+                unsafe { asm!("mrs {},daif",out(reg)mask,options(nostack,preserves_flags)) };
+                let sampled = now();
+                locked(|| log(44, sampled, index, mask));
+                last_wait = Some(index);
+            }
+            // The exception handler sends SEV even when idle was interrupted
+            // immediately before WFE. A pending event prevents a lost wake.
+            unsafe { asm!("wfe", options(nostack, preserves_flags)) }
+        }
     }
 }
 
@@ -437,11 +468,10 @@ pub(super) fn run() -> ! {
         dump()
     }
     let step = frequency / 400;
-    let epoch = now() + step;
     unsafe {
         STATE = Some(Runtime {
             frequency,
-            epoch,
+            epoch: 0,
             step,
             next: 0,
             current: IDLE,
@@ -456,7 +486,5 @@ pub(super) fn run() -> ! {
             missed: None,
         })
     };
-    log(1, epoch, frequency, LAST);
-    arm(epoch, 0);
     unsafe { sched_start_frame(fresh(IDLE)) }
 }

@@ -1,5 +1,7 @@
 # IMP-042 virtual periodic control candidate
 
+[한국어](pol-004-m3-runtime.md)
+
 Base 33bb739dfc34c3afcf29799ba72d84bf52bcdab6. Admission is refused by the [fixture manifest](pol-004-m3-runtime.json) pending substantiated bounds. This candidate supplies source for independent replay.
 
 ## Structure
@@ -63,6 +65,24 @@ Select JNOX_CONTROL_CASE=handoff-healthy or handoff-loss under either policy. Co
 
 The idle supervisor initially owns generation 1. With IRQs masked it prepares a bounded receiver slot, samples the actual issue tick, publishes the timestamp into that slot, and samples the post-store tick after a barrier. Both must equal the programmed instant at epoch +0.5 ms and again 10 ms later. At +15 ms relative to the first permit it issues the explicit command. The ordinary control worker evaluates it. Idle independently reads the PL061 rising transition before transferring sole ownership. The first two ordinary sender activations abstain. At its next release the sender takes generation 1, sequence 3. In the loss case it actually delivers sequences 3 and 4 before closing the gate.
 
-Rows 37 through 42 distinguish pre-owner sender abstention, disqualified target, successful transfer (generation and next sequence), injector sample (sequence or command index and programmed target), injector issue (sequence and generation), and injector delivery (sequence and issue tick). A missed issue, post-store receipt or command tick disqualifies setup for this cold boot. Preserve all raw samples. Rows 11/12 belong only to the ordinary sender. A transfer additionally requires actual independent device readback after the control worker accepts the command.
+Rows 37 through 42 distinguish pre-owner sender abstention, disqualified target, successful transfer (generation and next sequence), injector sample (sequence or command index and programmed target), injector issue (sequence and generation), and injector delivery (sequence and issue tick). A missed issue, post-store receipt or command tick disqualifies setup for this cold boot. Preserve all raw samples. In the handoff profile, rows 11/12 belong only to the ordinary sender. A transfer additionally requires actual independent device readback after the control worker accepts the command.
 
 First independent runtime verdict, PARTIAL. [EVD-042 v1](evidence/evd-042-v1.en.md) · [한국어](evidence/evd-042-v1.md)
+
+## Cold-start observation revision
+
+The first default-counter captures for d17ce2d recorded RM loss programming phase zero 2.382 ms before the epoch and entering the first timer vector 2.547 ms after it (requested index 0, observed index 1). RM healthy armed 2.337 ms early, reached the first vector 1.972 ms late and subsequently recorded further late entries. Those captures remain failed evidence. They establish timely initial compare programming. They cannot attribute the delivery delay to host scheduling, translation, CPU masking or a specific QEMU path.
+
+This revision initializes runtime state, constructs the private idle frame and performs the first exception return before choosing its one immutable epoch. The lead remains one 2.5 ms phase. Ordinary idle spends the interval between pending jobs in an IRQ-enabled WFE; a timer IRQ sends SEV so a wake arriving between the idle decision and WFE is retained on the single PE. Idle polls only when an explicit supervisor subphase must occur before the next timer. The late-IRQ negative still deliberately masks across its programmed deadline. The new event instructions and trace stores are part of this distinct executable and must be charged in its own capture.
+
+Raw row 43 samples first private idle-stack entry, with frequency and phase length. Row 44 samples idle preparing for an unmasked wait, with the next requested index and sampled DAIF. Row 45 records the interrupted worker and saved return PC at the vector sample; row 46 records saved DAIF mask bits and the requested phase at that same sample. Correlate the PC with the exact ELF and compare rows 1/2/3/43/44 for setup, programmed lead and vector lateness. No warmup release or discarded first job exists. Passing still requires the original envelopes and actual events on every scored job. This revision is a source candidate awaiting separate first-cold verification.
+
+## Exact scripted boundary observations
+
+Only the separately selected worst and tie cases use the compact AArch64 primitive. It reads the live physical counter, compares the previous accepted issue with expiry, conditionally stores the real fault latch and reads the counter after completion. The tie then separately samples issue, publishes the prepared fourth permit and samples the completed ingress store. Equal counter samples on both sides of each operation and source instruction order establish a tie at counter resolution. Tracing and the GPIO write/readback follow these operations. Event 47 carries the ingress interval and sequence. The normal receiver consumes and rejects that permit after the latch. Event 12 represents accepted state and ends at sequence 3. The old scorer simultaneously required expiry-first inhibition and a fourth accepted permit, although this latch disables rearm and makes normal delivery reject it.
+
+Use the frozen deterministic clock. A timestamp outside its required tick fails even when the lateness is one tick. Preserve first captures including failures. Independent verification must establish both boundaries and the device response from the raw samples. These scripted paths supply no ordinary worker scheduling evidence.
+
+For independent replay use the Replay build command above with JNOX_CONTROL_CASE=worst or JNOX_CONTROL_CASE=tie, separately for control-rm and control-dm. Add the documented -icount option to each QEMU invocation and retain unique UART/stderr files. From kernel, score each capture with `python3 ../tools/control_observations.py worst rm-worst.uart` or `python3 ../tools/control_observations.py tie rm-tie.uart`, substituting its actual filename.
+
+In the worst-phase script the last permit is accepted while the queue is empty. The same instruction block closes the gate before tracing. Rows 12 and 16 must identify sequence 3. Both ends of the row 29 closure bracket must equal the anchor tick. A later closure fails even if the response intervals alone fit. Row 17 records a supervisor command arrival and row 20 records successful rearm.

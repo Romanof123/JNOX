@@ -115,6 +115,17 @@ pub(super) fn sender_owns() -> bool {
 
 // IRQ masking keeps the prevalidated slot private until the sampled store.
 // The injector records and checks actual issue and post-publication ticks.
+// A pre-handoff issue/command is the only idle work due strictly between
+// two periodic IRQs. Once published, idle may sleep until the next release.
+pub(super) fn pending_subphase(next_irq: u64) -> bool {
+    matches!(
+        (app().owner, next_irq),
+        (Owner::Injector { next: 1 }, 1)
+            | (Owner::Injector { next: 2 }, 5)
+            | (Owner::Injector { next: 3 }, 7)
+    )
+}
+
 pub(super) fn supervise(epoch: u64, step: u64) {
     let a = app();
     let seq = match a.owner {
@@ -338,6 +349,99 @@ pub(super) const SCRIPTED: bool = cfg!(any(
     jnox_control_case = "old-generation"
 ));
 
+// The single-core scripted dispatcher has no concurrent receiver. Prepare the
+// payload privately and publish its sampled issue field as the final store.
+fn boundary_anchor(target: u64, step: u64) -> u64 {
+    let a = app();
+    let old = a.last.unwrap();
+    assert!(a.enabled && a.gate && !a.faulted && a.queued.is_none());
+    assert!(old.generation == a.generation && old.set && target > old.issued);
+    a.previous = Some(old);
+    a.last = Some(Permit { seq: old.seq + 1, issued: 0, ..old });
+    let p = a.last.as_mut().unwrap();
+    let issue: u64;
+    let delivery: u64;
+    let closure: u64;
+    let gate = if cfg!(jnox_control_case = "worst") {
+        &raw mut a.gate
+    } else {
+        core::ptr::null_mut()
+    };
+    unsafe {
+        core::arch::asm!(
+            "2:", "isb", "mrs {issue},cntpct_el0", "cmp {issue},{target}", "b.lo 2b",
+            "str {issue},[{slot}]", "dsb sy", "isb", "mrs {delivery},cntpct_el0",
+            "cbz {gate},3f", "strb wzr,[{gate}]", "dsb sy",
+            "3:", "isb", "mrs {closure},cntpct_el0",
+            gate=in(reg)gate, closure=out(reg)closure,
+            issue=out(reg)issue, delivery=out(reg)delivery, target=in(reg)target,
+            slot=in(reg)(&raw mut p.issued), options(nostack));
+    }
+    assert!(issue - old.issued < 8 * step && delivery - issue < 8 * step);
+    log(11, issue, p.seq, p.generation);
+    log(30, issue, delivery, p.seq);
+    log(12, delivery, p.seq, p.issued);
+    if cfg!(jnox_control_case = "worst") {
+        // The queue was empty at entry and the single scripted owner has no
+        // concurrent publisher. Delivery precedes the gate store in the asm.
+        log(29, delivery, closure, 0);
+        log(16, closure, p.seq, issue);
+    }
+    issue
+}
+
+// On this scripted path only, the state is already enabled, no command is
+// pending and the receiver has one valid last permit. Compare a fresh counter
+// sample to its expiry and commit the real latch before sampling completion.
+// A tie additionally publishes a prepared permit to the ingress slot, with
+// its own sampled issue time. The normal receiver consumes the slot afterward.
+fn boundary_check(target: u64, index: u64, step: u64, arrival: bool) {
+    let a = app();
+    let old = a.last.unwrap();
+    assert!(a.enabled && !a.faulted && a.command.is_none());
+    assert!(a.expired_before_delivery.is_none() && a.queued.is_none());
+    let mut slot = core::ptr::null_mut::<u64>();
+    if arrival {
+        assert!(a.gate);
+        a.queued = Some(Permit { seq: old.seq + 1, issued: 0, ..old });
+        slot = &raw mut a.queued.as_mut().unwrap().issued;
+    }
+    let started: u64;
+    let done: u64;
+    let issued: u64;
+    let received: u64;
+    unsafe {
+        core::arch::asm!(
+            "2:", "isb", "mrs {started},cntpct_el0", "cmp {started},{target}", "b.lo 2b",
+            "cmp {started},{expiry}", "b.lo 3f",
+            "strb {one:w},[{latch}]", "dsb sy",
+            "3:", "isb", "mrs {done},cntpct_el0",
+            "cbnz {slot},5f", "mov {issued},xzr", "mov {received},xzr", "b 4f",
+            "5:", "isb", "mrs {issued},cntpct_el0",
+            "str {issued},[{slot}]", "dsb sy", "isb", "mrs {received},cntpct_el0",
+            "4:",
+            started=out(reg)started, done=out(reg)done, issued=out(reg)issued,
+            received=out(reg)received, target=in(reg)target, expiry=in(reg)(old.issued + 8 * step),
+            latch=in(reg)(&raw mut a.faulted), one=in(reg)1u32, slot=in(reg)slot,
+            options(nostack));
+    }
+    if a.faulted {
+        log(28, started, done, 0);
+        log(13, done, 0, old.issued);
+        a.can_rearm = false;
+        a.enabled = false;
+        write_output(false);
+    }
+    log(21, done, index, started);
+    a.previous_check = Some(done);
+    if arrival {
+        let p = a.queued.unwrap();
+        log(11, issued, p.seq, p.generation);
+        log(47, issued, received, p.seq);
+        deliver(step);
+    }
+}
+
 // Separately selected counter-driven fixture. Every planned target is accompanied
 // by its sampled event. A missed equality cannot become an ordinary-workload pass.
 pub(super) fn script(hz: u64) {
@@ -401,11 +505,7 @@ pub(super) fn script(hz: u64) {
     check(1, step);
     observe();
     if cfg!(any(jnox_control_case = "worst", jnox_control_case = "tie")) {
-        let issued = sample_at(first + 8 * step);
-        send(8, step, issued);
-        if cfg!(jnox_control_case = "worst") {
-            close()
-        }
+        let issued = boundary_anchor(first + 8 * step, step);
         // Check intermediate points so the artificial gap never causes a
         // timing-failure latch. The preceding actual completion is also logged.
         for phase in 0..4 {
@@ -414,15 +514,10 @@ pub(super) fn script(hz: u64) {
             observe();
         }
         let target = issued + 8 * step - u64::from(cfg!(jnox_control_case = "worst"));
-        sample_at(target);
-        check(6, step);
-        if cfg!(jnox_control_case = "tie") {
-            send(12, step, now())
-        }
+        boundary_check(target, 6, step, cfg!(jnox_control_case = "tie"));
         observe();
         if cfg!(jnox_control_case = "worst") {
-            sample_at(target + 2 * step);
-            check(7, step);
+            boundary_check(target + 2 * step, 7, step, false);
             observe();
         }
     }
