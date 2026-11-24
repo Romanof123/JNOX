@@ -89,22 +89,23 @@ pub(crate) struct Clock {
     pub(crate) epoch: u64,
     pub(crate) slot_ticks: u64,
     pub(crate) millisecond: u64,
+    pub(crate) opening_deadline: u64,
 }
 impl Clock {
     pub(crate) fn within_opening(&self, sampled: u64) -> bool {
-        sampled
-            .checked_sub(self.epoch)
-            .is_some_and(|delay| delay <= self.millisecond)
+        (self.epoch..=self.opening_deadline).contains(&sampled)
     }
 
     pub(crate) fn new(epoch: u64, frequency: u64, manifest: Manifest) -> Result<Self, Error> {
         if frequency == 0 || frequency % 1000 != 0 {
             return Err(Error::Invalid);
         }
+        let millisecond = frequency / 1000;
         let clock = Self {
             epoch,
             slot_ticks: frequency / 20,
-            millisecond: frequency / 1000,
+            millisecond,
+            opening_deadline: epoch.checked_add(millisecond).ok_or(Error::Overflow)?,
         };
         let horizon = manifest.horizon();
         // Union of required deadlines for these two fixed policies. W/aligned

@@ -721,7 +721,9 @@ impl Runtime {
             RECEIPT.before = before;
             RECEIPT.valid |= 2;
         }
-        if before < entry || !self.clock.within_opening(before) {
+        // The IRQ checked entry >= target, and target == epoch above.
+        let opening_deadline = self.clock.opening_deadline;
+        if before < entry || before > opening_deadline {
             finish(2, 5, 0, IDLE, before, p.epoch)
         }
         AUTHORITY.store(3, Ordering::Release);
@@ -741,7 +743,7 @@ impl Runtime {
         if word != 3 || observed != id as u64 {
             unexpected()
         }
-        if post < before || !self.clock.within_opening(post) {
+        if post < before || post > opening_deadline {
             finish(2, 5, 0, IDLE, post, p.epoch)
         }
         self.opened = 0;
@@ -775,7 +777,7 @@ impl Runtime {
             unexpected()
         }
         let planned = now();
-        if armed < post || planned < armed || !self.clock.within_opening(planned) {
+        if armed < post || planned < armed || planned > opening_deadline {
             finish(2, 5, 0, IDLE, planned, p.epoch)
         }
         let frame = self.frames[id];
