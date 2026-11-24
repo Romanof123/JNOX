@@ -22,3 +22,5 @@ python3 tools/native_el0_replay.py NEW_CAPTURE_DIR SESSION_SHA256
 ```
 
 **Observer correction frozen after the first cold capture.** Preserve the original capture and the original replay result (exit code 1). The kernel emitted its common privileged startup lines before the native-profile lines. Score the complete raw UART against exactly four LF-terminated lines in order: `JNOX M1 BOOT`, `JNOX M1 READY`, `NATIVE EL0 ELF <lowercase user ELF SHA-256>`, and `NATIVE EL0 EXIT 37`. Missing, changed, reordered or additional bytes fail, including application output and CRLF substitutions. Apply the corrected observer to the same retained run.
+
+The first cold native process entered EL0 at 0x400000 and exited 37. Original replay returned 1 on the common privileged UART prefix. Host-only replay of the immutable capture returned 0. [CHG-087](evidence/native-el0-startup-first.en-ko.md)
