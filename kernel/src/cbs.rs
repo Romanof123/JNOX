@@ -35,8 +35,8 @@ global_asm!(
     simd = const offset_of!(Frame, simd),
     marker = sym task_marker,
     irq = sym timer_interrupt,
-    svc = sym fail,
-    fail = sym fail,
+    svc = sym unexpected_sync,
+    fail = sym fail, diagnostic = const cfg!(jnox_cbs_condition) as u8,
 );
 
 static mut STACKS: [Stack; 3] = [const { Stack([0; STACK_BYTES]) }; 3];
@@ -52,7 +52,7 @@ struct Bench {
     progress: [u64; 3],
     markers: usize,
 }
-
+#[cfg(not(jnox_cbs_condition))]
 fn require(ok: bool) {
     if !ok {
         fail()
@@ -61,8 +61,8 @@ fn require(ok: bool) {
 
 extern "C" fn fail() -> ! {
     unsafe { asm!("msr daifset, #0xf", options(nostack, preserves_flags)) };
-    uart_write(b"CBS FAIL\n");
-    park()
+    choose!({ uart_write(b"CBS FAIL\n"); park() };
+        condition::no_operands(1))
 }
 
 fn counter() -> u64 {
@@ -72,7 +72,7 @@ fn counter() -> u64 {
 }
 
 fn stack_top(id: usize) -> *mut u8 {
-    require(id <= IDLE);
+    verify!(id <= IDLE; condition::at_most(3, id as u64, IDLE as u64));
     (&raw mut STACKS)
         .cast::<u8>()
         .wrapping_add((id + 1) * STACK_BYTES)
@@ -83,16 +83,16 @@ fn stack_top(id: usize) -> *mut u8 {
 fn with_bench<R>(f: impl FnOnce(&mut Bench) -> R) -> R {
     let daif: u64;
     unsafe { asm!("mrs {}, daif", out(reg) daif, options(nostack, preserves_flags)) };
-    require(daif & 0x80 != 0);
-    unsafe { f((*(&raw mut BENCH)).as_mut().unwrap_or_else(|| fail())) }
+    verify!(daif & 0x80 != 0; condition::irq_masked(daif));
+    unsafe { f((*(&raw mut BENCH)).as_mut().unwrap_or_else(|| choose!(fail(); condition::no_operands(5)))) }
 }
 
 impl Bench {
     fn boundary(&self, index: u64) -> u64 {
-        self.quantum
+        choose!(self.quantum
             .checked_mul(index)
             .and_then(|delta| self.epoch.checked_add(delta))
-            .unwrap_or_else(|| fail())
+            .unwrap_or_else(|| fail()); condition::boundary(self.epoch, self.quantum, index))
     }
 
     fn dispatch(&mut self) -> *mut Frame {
@@ -100,17 +100,17 @@ impl Bench {
         let id = self
             .policy
             .tick()
-            .unwrap_or_else(|_| fail())
+            .unwrap_or_else(|_error| choose!(fail(); condition::tick_error(slot, _error)))
             .unwrap_or(IDLE);
-        require(id == EXPECTED[slot]);
+        verify!(id == EXPECTED[slot]; condition::equal(36, id as u64, EXPECTED[slot] as u64));
         let frame = core::mem::replace(&mut self.frames[id], ptr::null_mut());
-        require(!frame.is_null());
+        verify!(!frame.is_null(); condition::incoming_frame(frame));
         if self.interrupted_pc[id] != 0 {
-            require(unsafe { (*frame).elr } == self.interrupted_pc[id]);
+            verify!(unsafe { (*frame).elr } == self.interrupted_pc[id]; condition::equal(38, unsafe { (*frame).elr }, self.interrupted_pc[id]));
         }
         self.current = id;
         let deadline = self.boundary(self.policy.now());
-        require(counter() < deadline);
+        verify!(counter() < deadline; condition::before_deadline(counter(), deadline));
         unsafe {
             asm!("msr cntp_cval_el0, {}", "msr cntp_ctl_el0, {}", "isb",
                 in(reg) deadline, in(reg) 1u64, options(nostack, preserves_flags))
@@ -120,25 +120,25 @@ impl Bench {
 
     fn record_interrupt(&mut self, frame: *mut Frame) {
         let id = self.current;
-        require(self.frames[id].is_null() && self.markers as u64 == self.policy.now());
-        require(frame.addr() == stack_top(id).addr() - 16 - size_of::<Frame>());
+        verify!(self.frames[id].is_null() && self.markers as u64 == self.policy.now(); condition::outgoing_owner(self, id));
+        verify!(frame.addr() == stack_top(id).addr() - 16 - size_of::<Frame>(); condition::equal(25, frame.addr() as u64, (stack_top(id).addr() - 16 - size_of::<Frame>()) as u64));
         let saved = unsafe { &*frame };
         let (begin, end) = match id {
             0 => (&raw const cbs_a_begin, &raw const cbs_a_end),
             1 => (&raw const cbs_b_begin, &raw const cbs_b_end),
             _ => (&raw const cbs_idle_begin, &raw const cbs_idle_end),
         };
-        require((begin.addr()..end.addr()).contains(&(saved.elr as usize)));
+        verify!((begin.addr()..end.addr()).contains(&(saved.elr as usize)); condition::range(26, begin.addr() as u64, end.addr() as u64, saved.elr));
         let witness = WITNESSES[id];
         let count = saved.gpr[20];
-        require(saved.spsr & 0x8f == 5 && saved.gpr[19] == witness && saved.tpidr_el1 == witness);
-        require(count >> 32 == witness && count as u32 > 0 && count > self.progress[id]);
+        verify!(saved.spsr & 0x8f == 5 && saved.gpr[19] == witness && saved.tpidr_el1 == witness; condition::registers(saved, witness));
+        verify!(count >> 32 == witness && count as u32 > 0 && count > self.progress[id]; condition::progress(self, id, count, witness));
         // x20 and these two words belong to the outgoing context. Publish
         // its exact progress for the assembly restore witness on redispatch.
         unsafe {
             let words = stack_top(id).sub(16).cast::<u64>();
-            require(ptr::read_volatile(words) == witness);
-            require(ptr::read_volatile(words.add(1)) == self.progress[id]);
+            verify!(ptr::read_volatile(words) == witness; condition::equal(33, ptr::read_volatile(words), witness));
+            verify!(ptr::read_volatile(words.add(1)) == self.progress[id]; condition::equal(34, ptr::read_volatile(words.add(1)), self.progress[id]));
             ptr::write_volatile(words.add(1), count);
         }
         self.frames[id] = frame;
@@ -149,9 +149,9 @@ impl Bench {
 
 pub(super) fn run() -> ! {
     init_timer_irq();
-    let mut policy = HardCbs::new(0, [(1, 3), (1, 4)]).unwrap_or_else(|| fail());
+    let mut policy = HardCbs::new(0, [(1, 3), (1, 4)]).unwrap_or_else(|| choose!(fail(); condition::no_operands(6)));
     for id in 0..2 {
-        require(policy.release(id, 3).is_ok());
+        choose!(require(policy.release(id, 3).is_ok()); condition::release(&mut policy, id, 3));
     }
     let entries: [unsafe extern "C" fn(); 3] = [cbs_a, cbs_b, cbs_idle];
     let frames = core::array::from_fn(|id| unsafe {
@@ -163,7 +163,7 @@ pub(super) fn run() -> ! {
     let frequency: u64;
     unsafe { asm!("mrs {}, cntfrq_el0", out(reg) frequency, options(nostack, preserves_flags)) };
     let quantum = frequency / 20;
-    require(quantum > 0);
+    verify!(quantum > 0; condition::positive_quantum(quantum));
     unsafe {
         BENCH = Some(Bench {
             policy,
@@ -182,16 +182,16 @@ pub(super) fn run() -> ! {
 extern "C" fn task_marker(id: usize, resumed: usize, sp: usize) {
     with_bench(|bench| {
         let slot = bench.markers;
-        require(EXPECTED.get(slot) == Some(&id) && bench.current == id);
-        require(resumed == usize::from(slot >= 3));
-        require(sp == stack_top(id).addr() - 16 * resumed);
+        verify!(EXPECTED.get(slot) == Some(&id) && bench.current == id; condition::marker_owner(bench, slot, id));
+        verify!(resumed == usize::from(slot >= 3); condition::equal(53, resumed as u64, u64::from(slot >= 3)));
+        verify!(sp == stack_top(id).addr() - 16 * resumed; condition::equal(54, sp as u64, (stack_top(id).addr() - 16 * resumed) as u64));
         let line: &[u8] = match (id, resumed) {
             (0, 0) => b"CBS A FIRST\n",
             (1, 0) => b"CBS B FIRST\n",
             (IDLE, 0) => b"CBS IDLE\n",
             (0, 1) => b"CBS A RESUMED\n",
             (1, 1) => b"CBS B RESUMED\n",
-            _ => fail(),
+            _ => choose!(fail(); condition::pair(55, id as u64, resumed as u64)),
         };
         bench.markers += 1;
         uart_write(line);
@@ -202,7 +202,7 @@ extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
     let iar = gic_read(GICC + 0x0c);
     let control: u64;
     unsafe { asm!("mrs {}, cntp_ctl_el0", out(reg) control, options(nostack, preserves_flags)) };
-    require(iar & 0x3ff == TIMER_IRQ && control & 7 == 5);
+    verify!(iar & 0x3ff == TIMER_IRQ && control & 7 == 5; condition::timer_source(iar, control));
     // Mask and disable the level source before writing the full EOI token.
     unsafe {
         asm!("msr cntp_ctl_el0, {}", "isb", "dsb sy", in(reg) 2u64, options(nostack, preserves_flags))
@@ -211,14 +211,37 @@ extern "C" fn timer_interrupt(frame: *mut Frame) -> *mut Frame {
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
     with_bench(|bench| {
         let boundary = bench.policy.now();
-        require((bench.boundary(boundary)..bench.boundary(boundary + 1)).contains(&counter()));
+        verify!((bench.boundary(boundary)..bench.boundary(boundary + 1)).contains(&counter()); condition::range(22, bench.boundary(boundary), bench.boundary(boundary + 1), counter()));
         bench.record_interrupt(frame);
         if boundary == EXPECTED.len() as u64 {
-            require(bench.frames.iter().all(|frame| !frame.is_null()));
-            require(bench.progress.iter().all(|&count| count != 0));
+            verify!(bench.frames.iter().all(|frame| !frame.is_null()); condition::terminal_frames(bench));
+            verify!(bench.progress.iter().all(|&count| count != 0); condition::terminal_progress(bench));
             uart_write(b"CBS TIMER STOP\nCBS PASS\n");
             park()
         }
         bench.dispatch()
     })
 }
+
+// Select at expansion time. On the ordinary image the compiler sees the original
+// predicate and its source span. In particular a counter, IAR or volatile load
+// appearing in both alternatives is evaluated by exactly one alternative.
+mod guard_selection {
+    #[cfg(not(jnox_cbs_condition))]
+    macro_rules! choose { ($plain:expr; $observed:expr) => { $plain }; }
+    #[cfg(jnox_cbs_condition)]
+    macro_rules! choose { ($plain:expr; $observed:expr) => { $observed }; }
+    macro_rules! verify {
+        ($original:expr; $observed:expr) => { choose!(require($original); $observed) };
+    }
+    pub(super) use {choose, verify};
+}
+use guard_selection::{choose, verify};
+
+#[cfg(jnox_cbs_condition)]
+#[path = "cbs_condition.rs"]
+mod condition;
+#[cfg(jnox_cbs_condition)]
+use condition::unexpected_sync;
+#[cfg(not(jnox_cbs_condition))]
+use fail as unexpected_sync;

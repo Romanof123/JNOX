@@ -1,5 +1,23 @@
 // The IRQ vector is the only path between these non-yielding task bodies.
 // Each has distinct work PCs, progress in x20 and a private stack witness.
+.macro cbs_restore_guard condition, site, actual, expected, worker
+    .if {diagnostic}
+    b.\condition .Lcbs_restore_fail\@
+    // Keep the failure stub outside the measured task body. The success path
+    // still executes only the original conditional branch.
+    .pushsection .text.cbs_condition, "ax"
+.Lcbs_restore_fail\@:
+    mov x1, \actual
+    mov x2, \expected
+    mov x3, #\worker
+    mov x0, #\site
+    b cbs_condition_asm_fail
+    .popsection
+    .else
+    b.\condition .Lunexpected
+    .endif
+.endm
+
 .macro cbs_task entry, begin, end, id, witness
 .global \entry
 .type \entry, %function
@@ -25,15 +43,15 @@
     msr daifset, #2
     sub x10, x20, x9
     cmp x10, #1
-    b.hi .Lunexpected
+    cbs_restore_guard hi, 60, x10, #1, \id
     ldr x10, [sp]
     cmp x10, x19
-    b.ne .Lunexpected
+    cbs_restore_guard ne, 61, x10, x19, \id
     mrs x10, tpidr_el1
     cmp x10, x19
-    b.ne .Lunexpected
+    cbs_restore_guard ne, 62, x10, x19, \id
     cmp x19, #\witness
-    b.ne .Lunexpected
+    cbs_restore_guard ne, 63, x19, #\witness, \id
     mov x0, #\id
     mov x1, #1
     mov x2, sp
