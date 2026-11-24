@@ -113,6 +113,13 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("aperiodic"), "JNOX_APERIODIC_LATE=1 requires aperiodic profile");
         println!("cargo::rustc-cfg=jnox_ap_late");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_deadline)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_deadline_trace)");
+    if let Some(value) = selector("JNOX_DEADLINE_TRACE") {
+        assert!(value == "1" && profile.as_deref() == Some("deadline"), "JNOX_DEADLINE_TRACE=1 requires ordinary deadline profile");
+        println!("cargo::rustc-cfg=jnox_deadline_trace");
+    }
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun"))"#);
     match profile.as_deref() {
         Some("aperiodic") => {
             assert!(board == "virt" && bench == "boot", "ordinary aperiodic requires virt without benchmarks");
@@ -120,6 +127,16 @@ fn main() {
             assert!(matches!(name, "a-ps" | "a-ds" | "a-ss1" | "a-ss2" | "b-ps" | "b-ds" | "b-ss1" | "b-ss2"), "invalid aperiodic application");
             println!("cargo::rustc-cfg=jnox_ap");
             println!("cargo::rustc-env=JNOX_AP_APP={name}");
+        }
+        Some("deadline") => {
+            assert!(bench == "boot" && board == "virt", "ordinary deadline requires virt without benchmark features");
+            match app.as_deref() {
+                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun")) => {
+                    println!("cargo::rustc-cfg=jnox_ordinary_deadline");
+                    println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
+                }
+                _ => panic!("deadline requires an ordinary EDF/LLF application"),
+            }
         }
         Some("groups") => {
             assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(), Some("ordinary-groups" | "ordinary-groups-late")),
@@ -180,8 +197,8 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_control_dm");
             }
         }
-        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel, periodic or aperiodic"),
-        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel, periodic or aperiodic"),
+        Some(other) => panic!("unknown JNOX_PROFILE {other:?}; expected fixed, batch, groups, multilevel, periodic, aperiodic or deadline"),
+        None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, multilevel, periodic, aperiodic or deadline"),
     }
     let script = match board.as_str() {
         "virt" => "link.ld",

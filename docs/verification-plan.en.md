@@ -119,3 +119,5 @@ POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds
 POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
 
 CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes initialized. After the input repair all 96 startup checks passed. Operational qualification was 0/128 in the repaired series. [EVD-050](evidence/evd-050.en.md)
+
+Single-core virtual evidence for VER-002/005/023. [EVD-048](evidence/evd-048.en.md)

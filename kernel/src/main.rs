@@ -45,13 +45,17 @@ mod control_app;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
 #[cfg(jnox_bench = "deadline")]
 mod deadline;
-#[cfg(jnox_bench = "deadline")]
+#[cfg(jnox_ordinary_deadline)]
+mod ordinary_deadline;
+#[cfg(jnox_ordinary_deadline)]
+mod deadline_jobs;
+#[cfg(any(jnox_ordinary_deadline, jnox_bench = "deadline"))]
 mod deadline_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
@@ -126,6 +130,7 @@ mod proportional_policy;
     jnox_batch,
     jnox_fixed,
     jnox_multilevel,
+    jnox_ordinary_deadline,
     jnox_bench = "deadline",
     jnox_bench = "coop",
     jnox_bench = "mutex",
@@ -186,17 +191,19 @@ extern "C" fn kernel_main() -> ! {
     batch_app::run();
     #[cfg(jnox_ap)]
     ordinary_server::run();
+    #[cfg(jnox_ordinary_deadline)]
+    ordinary_deadline::run();
     #[cfg(jnox_groups)]
     group_apps::run();
     #[cfg(jnox_multilevel)]
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+    #[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+#[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();
