@@ -24,3 +24,77 @@ rustc --edition=2024 --cfg jnox_ordinary_deadline --test tools/deadline_supply_t
 ```
 
 호스트 회귀 시험은 커널의 실제 함수를 불러와 작은 영역의 모든 IRQ 오프셋·조기 완료 시각·구간 폭·시작점을 열거한 최대 이벤트 수와 비교한다.
+
+## Run the eight ordinary guest configurations / 일반 게스트 8개 구성 실행
+
+From the repository root on Linux or WSL, use a POSIX shell with GNU timeout, sha256sum, Python 3, the project's Rust target and QEMU AArch64. Start with unrelated JNOX selectors unset. The generic deadline benchmark uses separate build inputs and its own transcript. This recipe retains every first attempt under a new persistent directory. EVD-095 supply replay can score accepted captures in both modes because the cap enables D/J output even in plain mode. Refusal occurs before the supply replay's worker inputs exist. The terminal checks below establish completion or refusal; independent owner-window scoring uses the frozen contract above.
+
+```sh
+(
+set -eu
+root=$(pwd -P)
+archive=${JNOX_EVIDENCE_DIR:-"$HOME/jnox-evidence"}
+mkdir -p "$archive"
+archive=$(cd "$archive" && pwd -P)
+run=$(mktemp -d "$archive/owner-cap.XXXXXXXX")
+printf 'Capture directory: %s\n' "$run"
+git rev-parse HEAD > "$run/source-commit"
+result=0
+for mode in plain trace; do
+  for app in ordinary-edf-supply ordinary-llf-supply; do
+    for cap in 3 4; do
+      out="$run/$app-$cap-$mode"
+      mkdir "$out"
+      export JNOX_BOARD=virt JNOX_PROFILE=deadline JNOX_APP="$app" JNOX_DEADLINE_OWNER_CAP="$cap"
+      unset JNOX_DEADLINE_TRACE
+      if [ "$mode" = trace ]; then export JNOX_DEADLINE_TRACE=1; fi
+      rc=0
+      (cd "$root/kernel" && CARGO_TARGET_DIR="$run/target" cargo build --locked --release -j1) > "$out/build.log" 2>&1 || rc=$?
+      echo "$rc" > "$out/build.rc"
+      if [ "$rc" != 0 ]; then result=1; continue; fi
+      cp "$run/target/aarch64-unknown-none/release/jnox-kernel" "$out/kernel.elf"
+      rc=0
+      timeout 10s qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 \
+        -accel tcg -smp 1 -m 128M -nographic -nic none -monitor none -serial stdio \
+        -d int -D "$out/exceptions.log" -kernel "$out/kernel.elf" \
+        < /dev/null > "$out/uart.raw" 2> "$out/qemu.stderr" || rc=$?
+      echo "$rc" > "$out/qemu.rc"
+      (cd "$out" && sha256sum kernel.elf uart.raw > SHA256SUMS)
+      if [ "$rc" != 124 ]; then result=1; fi
+      check=0
+      python3 - "$out/uart.raw" "$cap" > "$out/terminal.log" 2>&1 <<'PY' || check=$?
+import sys
+from pathlib import Path
+
+raw = Path(sys.argv[1]).read_bytes()
+lines = raw.replace(b"\r\n", b"\n").split(b"\n")
+if lines[-1] != b"":
+    raise SystemExit("incomplete final line")
+lines.pop()
+accepted = sys.argv[2] == "4"
+expected = b"ORDINARY DEADLINE FINISHED" if accepted else b"ORDINARY OWNER CAP REFUSED BEFORE LAUNCH"
+terminals = [line for line in lines if line.startswith((b"ORDINARY DEADLINE ", b"ORDINARY OWNER CAP "))]
+if terminals != [expected] or lines[-1:] != [expected]:
+    raise SystemExit("unexpected or incomplete terminal transcript")
+if not accepted and any(line.split()[:1] in ([tag] for tag in
+        (b"JOB", b"D", b"J", b"A_STOP", b"A_PROGRESS", b"RESULT", b"OWNER_EVENT", b"OWNER_PEAK")) for line in lines):
+    raise SystemExit("execution record in refusal")
+print(expected.decode())
+PY
+      echo "$check" > "$out/terminal.rc"
+      if [ "$check" != 0 ]; then result=1; fi
+      if [ "$cap" = 4 ]; then
+        rc=0
+        python3 "$root/tools/deadline_supply_replay.py" "$app" "$out/uart.raw" \
+          > "$out/supply-replay.json" 2> "$out/supply-replay.stderr" || rc=$?
+        echo "$rc" > "$out/supply-replay.rc"
+        if [ "$rc" != 0 ]; then result=1; fi
+      fi
+    done
+  done
+done
+exit "$result"
+)
+```
+
+저장 디렉터리는 기본적으로 홈 아래의 영속 경로다. 매 실행의 ELF·UART·예외 로그와 종료 코드를 보존한다. 한도 4의 두 모드는 D/J 원본으로 기존 공급 검증을 실행하며, 한도 3은 거부 문구와 작업 실행 기록 부재를 확인한다. 모든 이동 구간의 소유자 전환 검증에는 위 계약을 적용한다.
