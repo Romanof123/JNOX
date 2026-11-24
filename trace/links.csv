@@ -1140,3 +1140,13 @@ IMP-055,partially-verified-by,VER-005
 VER-005,has-partial-evidence,EVD-055
 IMP-055,partially-verified-by,VER-023
 VER-023,has-partial-evidence,EVD-055
+CHG-062,affects,REQ-002
+CHG-062,affects,REQ-005
+CHG-062,affects,REQ-008
+CHG-062,affects,REQ-016
+CHG-062,affects,REQ-023
+CHG-063,affects,REQ-002
+CHG-063,affects,REQ-005
+CHG-063,affects,REQ-008
+CHG-063,affects,REQ-016
+CHG-063,affects,REQ-023

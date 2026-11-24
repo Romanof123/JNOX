@@ -141,3 +141,7 @@ CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
 CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
 
 IMP-055 · VER-002/005/023. Three first boots replayed both seeds and C’s stride join. Two diagnostic cases remain unexecuted. [EVD-055](evidence/evd-055.en.md)
+
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
+
+CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)

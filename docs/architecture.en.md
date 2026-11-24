@@ -183,3 +183,5 @@ POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. 
 POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
 
 CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
+CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
