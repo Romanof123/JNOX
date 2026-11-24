@@ -573,3 +573,8 @@ mod batch_tests {
 mod deadline_policy;
 #[path = "deadline_tests.rs"]
 mod deadline_tests;
+
+#[path = "../kernel/src/request_server.rs"]
+mod request_server;
+#[path = "request_server_tests.rs"]
+mod request_server_tests;

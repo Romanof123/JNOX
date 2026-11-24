@@ -5,7 +5,9 @@ use core::arch::{asm, global_asm};
 use core::panic::PanicInfo;
 use core::ptr;
 
-#[cfg(jnox_bench = "rr")]
+#[cfg(jnox_bench = "aperiodic")]
+mod aperiodic;
+#[cfg(any(jnox_bench = "rr", jnox_bench = "aperiodic"))]
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
 mod batch;
@@ -51,6 +53,8 @@ mod periodic;
     jnox_bench = "coop"
 ))]
 mod ready_queue;
+#[cfg(jnox_bench = "aperiodic")]
+mod request_server;
 #[cfg(any(jnox_bench = "scheduler", jnox_bench = "rr"))]
 mod sched;
 #[cfg(jnox_bench = "rr")]
@@ -118,6 +122,8 @@ fn run_bench() -> ! {
     batch::run();
     #[cfg(jnox_bench = "deadline")]
     deadline::run();
+    #[cfg(jnox_bench = "aperiodic")]
+    aperiodic::run();
     #[cfg(jnox_bench = "coop")]
     coop::run();
     #[cfg(jnox_bench = "boot")]

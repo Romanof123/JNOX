@@ -28,10 +28,10 @@ pub(crate) enum ServerError {
     TimeOverflow,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-struct Replenishment {
-    due: u64,
-    amount: u32,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Replenishment {
+    pub(crate) due: u64,
+    pub(crate) amount: u32,
 }
 
 /// R is the maximum number of pending sporadic replenishments. Periodic
@@ -75,6 +75,24 @@ impl<const R: usize> AperiodicServer<R> {
             .checked_add(work)
             .ok_or(ServerError::BacklogOverflow)?;
         Ok(())
+    }
+
+    pub(crate) fn now(&self) -> u64 {
+        self.now
+    }
+
+    pub(crate) fn remaining_quota(&self) -> u32 {
+        self.remaining
+    }
+
+    pub(crate) fn unreserved_work(&self) -> u32 {
+        self.backlog
+    }
+
+    /// Entries are ordered by due tick. A full queue can merge several units
+    /// at the youngest due tick.
+    pub(crate) fn pending_replenishments(&self) -> &[Replenishment] {
+        &self.replenishments[..self.used]
     }
 
     /// Replenishments precede dispatch. Preemption advances the clock and
