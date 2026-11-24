@@ -101,9 +101,14 @@ def main():
     try:
         config = json.loads(args.config.read_text(encoding="utf-8"), object_pairs_hook=_unique_fields)
         result = analyze(config, args.policy)
+        output = json.dumps(result, indent=2)
+    except RecursionError:
+        result = dict(status="unknown", reason="configuration nesting exceeds parser limit")
+        output = json.dumps(result, indent=2)
     except (ValueError, OSError) as exc:
         result = dict(status="unknown", reason=str(exc))
-    print(json.dumps(result, indent=2))
+        output = json.dumps(result, indent=2)
+    print(output)
     return {"conditional": 0, "refused": 1, "unknown": 2}[result["status"]]
 
 

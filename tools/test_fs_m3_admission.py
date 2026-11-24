@@ -62,16 +62,35 @@ class AdmissionCases(unittest.TestCase):
         self.data["irq_entry_lateness"] += 1
         self.assertEqual(analyze(self.data, "rm")["unproved_limits"], ["irq_entry_500us"])
 
-    def test_duplicate_json_key(self):
+    def assert_cli_unknown(self, payload):
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "duplicate.json"
-            path.write_text('{"a": 1, "a": 2}')
+            path = Path(directory) / "invalid.json"
+            path.write_text(payload, encoding="utf-8")
             run = subprocess.run([sys.executable, str(TOOLS / "fs_m3_admission.py"),
                                   str(path), "rm"], capture_output=True, text=True)
-            self.assertEqual(run.returncode, 2)
-            out = json.loads(run.stdout)
-            self.assertEqual(out["status"], "unknown")
-            self.assertIn("duplicate", out["reason"])
+        self.assertEqual(run.returncode, 2)
+        self.assertEqual(run.stderr, "")
+        out = json.loads(run.stdout)
+        self.assertEqual(out["status"], "unknown")
+        return out["reason"]
+
+    def test_duplicate_json_key(self):
+        self.assertIn("duplicate", self.assert_cli_unknown('{"a": 1, "a": 2}'))
+
+    def test_deep_json_input(self):
+        self.assert_cli_unknown("[" * 1500 + "0" + "]" * 1500)
+
+    def test_noninteger_numeric_input(self):
+        payload = json.dumps(self.data).replace('"uncertainty": 5', '"uncertainty": 1e9999')
+        self.assertIn("uncertainty", self.assert_cli_unknown(payload))
+
+    @unittest.skipUnless(getattr(sys, "get_int_max_str_digits", lambda: 0)(),
+                         "requires integer string conversion limit")
+    def test_oversized_derived_result(self):
+        # Both operands parse separately, while their sum needs one more digit.
+        digits = "9" * sys.get_int_max_str_digits()
+        payload = json.dumps(self.data).replace('"uncertainty": 5', '"uncertainty": ' + digits)
+        self.assert_cli_unknown(payload)
 
 
 if __name__ == "__main__":
