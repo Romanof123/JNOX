@@ -1,0 +1,9 @@
+# #184 paired guest counter-read observation / 게스트 카운터 읽기 관찰
+
+Before implementation, freeze one default-clock share control and one instrumented cold share boot with identical frozen ELFs, pinned Ubuntu QEMU 6.2, the existing 20-second capture limit and ordinary single-vCPU TCG configuration. Preserve both first attempts, partial outputs and the established budget. Build no guest changes. The installed executable exports the v1 instruction translation and execution hooks; this observer needs no register-reading API or privileged scheduler trace.
+
+Resolve return, synchronous entry and IRQ entry CNTPCT_EL0 reads in the actual ELF. Hook immediately before each read and before its next instruction. Record CLOCK_MONOTONIC and CLOCK_THREAD_CPUTIME_ID in each vCPU callback, Linux TID and vCPU index. Keep output bounded in shared file-backed memory. Independently match QMP vCPU TID and the complete ordered journal of closed grants. Return-to-entry is a whole grant, including execution before the timer deadline. It cannot localize host delay to the overrun or identify IRQ assertion.
+
+Require exact matching PCs/opcodes, marker order and count, stable identity, complete guest replay in both arms, positive clock resolutions <= 100 us, every counter-read bracket <= 1 ms, and nonnegative consistent elapsed bounds with the prior fixture's 1,000 ppm allowance. Treat each adjacent pair around one counter read as the in-guest short control; report all widths and per-grant bounds including sync grants. Compare service/budget results for both boots without claiming a universal perturbation bound from a single pair.
+
+구현 전 동일 ELF의 기본 share 부팅과 관찰 부팅 각 1회를 고정한다. 기존 20초 제한, 예산, 첫 실패 기록을 유지한다. 실제 ELF의 복귀·동기 예외·IRQ 진입 카운터 읽기 직전과 다음 명령 직전에서 동일 vCPU 스레드의 벽시계와 CPU 시계를 읽는다. QMP 스레드 ID, 전체 게스트 저널, 명령 주소와 기계어, 순서를 대조한다. 각 짧은 대조 구간은 1 ms 이하, 시계 해상도는 100 µs 이하여야 한다. 1,000 ppm 가정 아래 전체 그랜트의 CPU 외 시간 범위를 산출한다. 만료 이후 구간만의 지연, 실제 IRQ 신호 시점, 과거 실행의 원인은 판정할 수 없다.
