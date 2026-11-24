@@ -29,8 +29,8 @@ Terminal reasons 1–4 indicate runtime initialization, invalid enqueue, empty s
 
 [한국어](ordinary-mutex-runtime.md)
 
-## Traceability and pending first verification
+## Traceability and first verification
 
 CHG-067 affects REQ-002, REQ-005 and REQ-023. DES-003 and DES-012 cover scheduling, frame return and priority changes under contention. The implementation binds these designs to two manifests, the shared lock policy and the ordinary Rust dispatcher. [CHG-067 design](ordinary-mutex-plan.md) · [Manifests](../kernel/src/ordinary_mutex_manifest.rs) · [Lock policy](../kernel/src/mutex_policy.rs) · [Dispatcher and workers](../kernel/src/ordinary_mutex.rs)
 
-First verification is pending under VER-002, VER-005 and VER-023. The native manifest test exercises handoff and priority restoration. Independent verification must retain the first four captures, compare every transition and chunk with its replay, and record the terminal reason and any missing observation. [Native test source](../tools/scheduling_tests.rs) · [Verification plan](verification-plan.en.md)
+The first PI plain launch was unqualified. PI traced and both ceiling launches covered the workload. [Independent first cohort and raw captures](evidence/ordinary-mutex-first/README.md) · [Verification plan](verification-plan.en.md)
