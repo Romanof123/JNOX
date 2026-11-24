@@ -35,6 +35,6 @@ Baseline `19d2154`. Each row allocates the existing release criteria to recorded
 
 The fixed-priority Rust runtime work shipped in [#71](https://github.com/Romanof123/JNOX/issues/71) and [#72](https://github.com/Romanof123/JNOX/issues/72). Its SVC #1 exits a task. The periodic profile uses SVC #1 for job completion and EEVDF uses it to block.
 
-[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. Implementation and independent evidence are pending.
+[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. The virtual runtime and its independent guest evidence are pending.
 
-[Host segmented admission method](fs-m3-admission.md) · CHG-045 / IMP-043, POL-004 #94. EVD-043 is planned for independent host verification.
+[Host segmented admission method](fs-m3-admission.md) · CHG-045 / IMP-043, POL-004 #94. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)

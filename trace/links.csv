@@ -873,3 +873,10 @@ CHG-045,affects,REQ-003
 CHG-045,affects,REQ-005
 CHG-045,affects,REQ-023
 POL-004,partially-implemented-by,IMP-043
+DES-012,implemented-by,IMP-043
+IMP-043,partially-verified-by,VER-002
+IMP-043,partially-verified-by,VER-023
+IMP-043,tested-in,EVD-043
+POL-004,has-analysis-evidence,EVD-043
+VER-002,has-partial-evidence,EVD-043
+VER-023,has-partial-evidence,EVD-043

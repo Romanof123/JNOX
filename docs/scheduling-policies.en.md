@@ -103,3 +103,5 @@ CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at 
 POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under DM, then repeated A at tick 10 and B at tick 12 in both epochs. [EVD-033](evidence/evd-033.en.md)
 
 POL-010 · Forced first-grant rejection and two passing controls. [EVD-035](evidence/evd-035.en.md)
+
+POL-004 / IMP-043. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)

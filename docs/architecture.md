@@ -140,6 +140,6 @@ CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd
 
 [#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).
 
-[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 가상 런타임 구현과 독립 게스트 검증은 미완료다.
 
-[호스트 위상별 수용 분석](fs-m3-admission.md) · POL-004 #94의 CHG-045 / IMP-043. 독립 호스트 검증 근거 EVD-043은 계획 단계이다.
+[호스트 위상별 수용 분석](fs-m3-admission.md) · POL-004 #94의 CHG-045 / IMP-043. 조건부 호스트 산술과 CLI는 독립 재현을 통과했다. 런타임 추적 및 실측 예산 근거는 미확보다. [EVD-043](evidence/evd-043.md)
