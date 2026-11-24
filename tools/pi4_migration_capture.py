@@ -70,7 +70,7 @@ def acquire(args, terminal_observer=None):
     session = dict(freeze_sha256=args.digest, case=record["case"], ordinal=args.ordinal,
                    platform="raspi4b-tcg", argv=cmd, wall_start_ns=time.time_ns())
     if terminal_observer is not None:
-        session["diagnostic"] = "mg2-post-terminal-ram-v1"
+        session["diagnostic"] = getattr(terminal_observer, "profile", "mg2-post-terminal-ram-v1")
     save(dest / "attempt.json", session)
     proc = None
     tids = {}

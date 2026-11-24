@@ -34,3 +34,19 @@ To pursue the full ordering gate, use a separate build directory, the matching 1
 CPU1 스레드에서 SGIR 쓰기 진입, CPU0 대상의 IRQ 1 최우선 후보, 이어지는 IRQ 출력 1 결정의 실제 행을 보존한다. pending 비트 쓰기 자체에는 이벤트가 없고 출력 이벤트는 모델의 출력 적용 전이다. 연속된 행은 같은 스레드 관측이며 별도 호출 ID는 없다. CPU0에서는 실제 IRQ 진입, acknowledge, 반환된 IAR 0x401 및 같은 값을 쓴 EOIR를 따로 확인한다. 기존 게스트 트랩·EOI 행과 결합하고 역방향 SGI는 별도로 표시한다. CPU0의 최종 체크포인트와 같은 CPU의 트랩 순서는 확인 가능하지만 CPU1의 쓰기와 체크포인트 사이의 순서는 결정할 수 없다. 한 쌍에서 실물 지연이나 이주 성공률을 추정하지 않는다.
 
 제공된 QEMU 빌드는 플러그인이 꺼져 있다. 전체 순서 관측에는 위에 고정한 소스와 패치, 동일 도구·설정을 사용한 별도 플러그인 활성 QEMU와 단일 작업 빌드가 필요하다. 재빌드한 모델 안에서 플러그인 비활성·활성 대조를 새로 고정한 뒤 실제 체크포인트 커밋과 송신의 양의 표식으로 인과 간선을 계산해야 한다. 이 단계에서는 해당 빌드나 모델 실행을 수행하지 않는다.
+
+## Collector and individual verdicts
+
+Use a new native Linux directory, the pinned executable, Python and pyelftools. Freeze the pair before either launch. Supply the freeze SHA printed by the first command and retain each session SHA printed by the two runs. Run each position in its assigned slot after preserving its predecessor.
+
+```sh
+python3 tools/pi4_mg2_gic.py freeze NEW_DIR PINNED_QEMU
+python3 tools/pi4_mg2_gic.py run NEW_DIR FREEZE_SHA256 1
+python3 tools/pi4_mg2_gic.py replay NEW_DIR FREEZE_SHA256 1 CONTROL_SESSION_SHA256
+python3 tools/pi4_mg2_gic.py run NEW_DIR FREEZE_SHA256 2
+python3 tools/pi4_mg2_gic.py replay NEW_DIR FREEZE_SHA256 2 TRACED_SESSION_SHA256
+```
+
+Replay records line numbers within each TID, committed guest row indices and marker-level matches. A null value records a missing or ambiguous join. Replay exit 2 preserves partial evidence, including a traced case without a unique opening write. Exit 0 concerns capture completeness. The actual SGI rows, receiver chain and guest terminal determine the observation. Store replay output outside the immutable session directories. [Collector](../../tools/pi4_mg2_gic.py) · [Host parser checks](../../tools/test_pi4_mg2_gic.py)
+
+Linux에서 새 디렉터리에 두 순번을 먼저 고정하고 지정된 슬롯에서 한 번에 한 게스트만 실행한다. 각 세션의 SHA로 위 명령을 재생한다. null은 누락되었거나 단일 사건으로 결합할 수 없는 관측이다. 코드 2는 불완전한 근거를 보존한다. 코드 0은 수집 범위에 대한 결과이며, 기존 이주 기준은 별도다.
