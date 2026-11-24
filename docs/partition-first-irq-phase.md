@@ -40,3 +40,5 @@ for arm in partition-p partition-q; do
     done
 done
 ```
+
+[Corrected public CLI first runs and per-transition reconstruction / 수정된 공개 CLI의 최초 계측과 전환별 재생](evidence/native-partition-packager-corrected-first.en-ko.md).
