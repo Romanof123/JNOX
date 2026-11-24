@@ -79,3 +79,7 @@ For a fresh v3 preflight, freeze relative names from intended artifacts. The inp
 ff9f459의 독립 사전 점검에서 가드 6개와 실제 자식 SIGTERM을 포함한 종료·보존 대조 5개가 통과했다. 두 지속성 파일시스템에서 파일·디렉터리 fsync, 이름 변경, 재읽기도 통과했다. 별도 추가 항목 대조는 거부를 예상했으나 raw만 기재한 매니페스트와 함께 extra-unmanifested까지 발행했다. 위 원본 결과와 발행 파일 3개를 보존했다. v2는 QEMU 시작 전 중단되어 0/16 실행, 0/8 쌍이다. v1은 1/16 실행, 0/8 쌍이며 문서화된 일부만 남았다. 양쪽 모두 관찰 비용과 OFF 유지 판단은 미측정이다. [v1 부분 기록](evidence/permit-observer-first-partial.md)
 
 새 v3 사전 점검은 의도한 상대 이름을 먼저 고정한다. 입력은 freeze.json, trace-events-all, images/ 아래 ELF 4개다. 완전한 자리는 uart, mechanism, stdout, stderr, result.json을 요구한다. 실패 자리는 빠진 스트림을 명시하고 확보한 의도된 스트림을 실패 식별자로 보존한다. 독립 cohort-close/에는 cohort.json과 각 시도별 보존 JSON 하나만 둔다. ext4 원본, D: 임시·최종 복제본의 전체 상대 이름, 일반 파일 유형, 필요한 디렉터리, 바이트 수 및 SHA-256을 같은 기준으로 대조한다. 복제본에만 정확한 페이로드 목록의 retained-manifest.json을 허용한다. 추가 파일·링크·특수 항목·빈 디렉터리·누락·불일치는 진행을 중단한다. 거부된 원본·임시·최종 상태를 자리/묶음 식별자로 보존한다. 게스트 종료 후 전송하고 다음 자리 전 원본과 최종 복제본을 재확인한다. 별도 고정 코호트에 앞서 독립 호스트 대조를 수행한다.
+
+All 16 first launches completed the recorded OFF-only observation, yielding eight adjacent pairs. Suppressing external PL061 read logging gave mixed changes in first-service, phase and IRQ timing. [OFF-only observer cost · Third cohort](evidence/permit-observer-cost-v3.en.md)
+
+첫 실행 16건에서 OFF 전용 관찰을 완료해 인접한 8쌍을 얻었다. PL061 읽기 로그를 제외한 경우 첫 서비스·위상·IRQ 시간 차이의 방향은 일정하지 않았다. [OFF 전용 관찰 비용 · 세 번째 집단](evidence/permit-observer-cost-v3.md)
