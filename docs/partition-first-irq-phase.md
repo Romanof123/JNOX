@@ -13,3 +13,9 @@ Read consecutive raw counter differences as intervals. Observe includes the exis
 기존 캡처 도구로 양쪽 RAM을 보존하고 위 명령으로 비교한다. 이전 프레임과 복귀 관측, 결과 읽기, 기록·검증, 스케줄 결정, MMU 전환 및 세대 게시를 각각 실제 호출 경계에서 잰다. 선택 이후 진단 기록 비용도 복귀까지의 차이에 포함된다.
 
 [First packaging and separate measured IRQ stage series / 최초 패키징 및 별도 정상 단계 계측](evidence/native-partition-irq-phases-first.en-ko.md).
+
+## Public packager correction protocol / 공개 패키징 경로 수정 계획
+
+The public packager strips ambient JNOX_* settings. Preserve the original missing-symbol capture and genuine diagnostic boot separately. Before changing packaging, require an explicit partition-only option, rejection before output creation, no diagnostic variable in the user compiler environment, a recorded diagnostic manifest field and unchanged ordinary manifest keys. Verify the linked symbol in both package outputs and equal user ELF bytes in the executable example. Use mocked package runs for low-resource regression coverage. Preserve the original cold-pair and 1 ms protocol.
+
+공개 패키저가 외부 환경 변수를 제거하므로 P/Q 전용 명령행 옵션을 추가한다. 잘못된 조합은 출력 디렉터리를 만들기 전에 거부한다. 일반 매니페스트 형식과 사용자 ELF를 유지하고 예제에서 두 커널의 심볼을 확인한다. 심볼 누락 증거와 실제 계측 부팅 증거를 따로 보존한다.
