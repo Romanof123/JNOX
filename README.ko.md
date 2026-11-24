@@ -37,6 +37,7 @@ AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO�
 | [IPC 프로파일](docs/ipc-mechanisms.md) | 스케줄링 승인 후 개발할 IPC 10개 계열의 자원 한도와 인수 시험 |
 | [검증 계획](docs/verification-plan.md) | 시험 방법, 합격 판정, 실기기 검증, 증거 형식 |
 | [개발 수명주기와 변경관리](docs/lifecycle.md) | 기획에서 구현·검증까지의 문서 연결, 변경 시 재설계 및 재승인 절차 |
+| [현재 작업과 팀 인계](https://github.com/Romanof123/JNOX/issues/6) | 진행 중인 티켓, 다음 담당 팀, 독립 검증 및 병합 보류 상태 |
 | [추적 링크](trace/links.csv) | 문서 간 관계를 자동 검사할 수 있는 데이터 |
 
 작업 양식은 [변경 요청](.github/ISSUE_TEMPLATE/change-request.md), [PR 인계](.github/pull_request_template.md), [검증 증거](docs/templates/verification-evidence.md)에서 확인할 수 있습니다.

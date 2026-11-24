@@ -85,3 +85,5 @@ A standalone raw HTTP(S) URL will be treated as one token before Markdown bracke
 [First assessment](evidence/open-tracking-first.en-ko.md) · [second](evidence/open-tracking-second.en-ko.md) · [third](evidence/open-tracking-third.en-ko.md) · [fourth](evidence/open-tracking-fourth.en-ko.md) · [corrected live and archived inventory audit](evidence/open-tracking-fifth.en-ko.md) · [23 independently frozen inputs](evidence/open-tracking-blind.en-ko.md). PM confirms the primary tracking issue after the automated link check.
 
 [PM snapshot of all open issues and primary PR owners, November 25 KST](evidence/pm-open-tracking-20261124T180640Z.en-ko.md).
+
+[Open issues, pull requests and primary owners, November 25 at 04:47 KST](evidence/pm-open-tracking-20261124T194750Z.en-ko.md).
