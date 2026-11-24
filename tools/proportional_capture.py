@@ -6,4 +6,5 @@ from qemu_capture import main
 
 
 if __name__ == "__main__":
-    sys.exit(main("proportional_witness", "PROPORTIONAL_CAPTURE_DIR"))
+    sys.exit(main("proportional_witness", "PROPORTIONAL_CAPTURE_DIR",
+                  trace_symbol="proportional_failure"))

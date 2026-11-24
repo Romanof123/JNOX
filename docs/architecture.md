@@ -123,6 +123,7 @@ EDF·LLF 시간 격자 구성은 실행 중인 작업에 경과 시간을 차감
 
 - POL-002 · CHG-029 · IMP-027 · [고정 우선순위, 대기열 순서와 남은 실행량](m1-priority-resume.md)
 - POL-004 · CHG-030 · IMP-028 · [주기 기한 초과와 중첩 릴리스](m1-periodic-overrun.md)
+- POL-004 · CHG-035 · IMP-033 · [정확한 주기 작업 쌍](pol-004-exact-periodic.md#한국어)
 - POL-008 · CHG-031 · IMP-029 · [하드 CBS 깨우기와 기한 갱신](m2-cbs-wake.md)
 
 ## Rust 작업 테이블 구성
@@ -132,5 +133,9 @@ CHG-032 / IMP-030은 빌드 때 단일 코어 런타임과 정적 Rust 작업 �
 CHG-033과 IMP-031은 P1 BCM2711에서 일반 FIFO·RR 작업 테이블을 선택한다. 원시 페이로드, 모델 부팅, 실기기 관측은 각각 검증한다. [Pi 4 Rust 작업 런타임](boards/pi4-fixed-runtime.md)
 
 CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 지연 깨움을 시험한다. 일반 실행과 선택형 계측을 이용해 실제 실행 시간을 대조한다. [동시·지연 타이머 사건](fixed-runtime-edges.md)
+
+POL-012의 선택형 단일 코어 워크로드는 하나의 EEVDF 정책 인스턴스에서 타이머 IRQ와 SVC로 반복 기상을 수행한다. [반복 기상 설계](m4-eevdf-wake-design.md) [EVD-034](evidence/evd-034.md)
+
+CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd-035.md)를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)
 
 [#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).

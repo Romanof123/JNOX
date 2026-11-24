@@ -65,6 +65,7 @@
 
 - POL-002 · CHG-029 · IMP-027 · [고정 우선순위, 대기열 순서와 남은 실행량](m1-priority-resume.md)
 - POL-004 · CHG-030 · IMP-028 · [주기 기한 초과와 중첩 릴리스](m1-periodic-overrun.md)
+- POL-004 · CHG-035 · IMP-033 · [정확한 주기 작업 쌍](pol-004-exact-periodic.md#한국어)
 - POL-008 · CHG-031 · IMP-029 · [하드 CBS 깨우기와 기한 갱신](m2-cbs-wake.md)
 
 ## Rust 작업 테이블 구성
@@ -78,5 +79,11 @@ CHG-033과 IMP-031은 P1 BCM2711에서 일반 FIFO·RR 작업 테이블을 선�
 CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 지연 깨움을 시험한다. 일반 실행과 선택형 계측을 이용해 실제 실행 시간을 대조한다. [동시·지연 타이머 사건](fixed-runtime-edges.md)
 
 [EVD-032](evidence/evd-032.md)
+
+POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택했고 두 구간 모두 10틱에 A, 12틱에 B를 다시 실행했다. [EVD-033](evidence/evd-033.md)
+
+[EVD-034](evidence/evd-034.md) 에서 고정 가중치·슬라이스의 할당 128회와 기상 지연 16회를 독립 재구성했다. [반복 기상 설계](m4-eevdf-wake-design.md)
+
+CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd-035.md)를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)
 
 [#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).

@@ -4,6 +4,8 @@
 
 [EVD-007 independent verification](evidence/evd-007.en.md)
 
+POL-004 · CHG-035 · IMP-033 · [Exact periodic pair](pol-004-exact-periodic.md)
+
 CHG-009 extends POL-004 with the IMP-007 acceptance contract and independent execution record EVD-007.
 
 | Trace | Acceptance condition |
