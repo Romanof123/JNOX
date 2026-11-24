@@ -26,7 +26,7 @@ LO=(2,1,2,1)
 HI=(0,3,0,1)
 FRAME=832
 WIDTH=dict(RELEASE=8, GRANT=12, IRQ=11, WORK=9, RETIRE=7,
-           CARRY=5, DENY=3, FAULT=3, RESET=3, FINAL=5)
+           CARRY=5, DENY=3, FAULT=3, RESET=3, FINAL=5, COMPLETE=13, FROZEN=7)
 
 
 class Incomplete(ValueError):
@@ -189,6 +189,36 @@ def symbols(raw):
 
 
 
+def finite_layout(raw):
+    from elftools.elf.elffile import ELFFile
+    elf=ELFFile(io.BytesIO(raw))
+    table=elf.get_section_by_name(".symtab")
+    def code(name):
+        hits=table.get_symbol_by_name(name) or []
+        if len(hits)!=1:raise Incomplete("missing or ambiguous "+name)
+        sym=hits[0];section=elf.get_section(sym["st_shndx"])
+        start=sym["st_value"];size=sym["st_size"]
+        offset=start-section["sh_addr"]
+        need(section["sh_flags"]&4 and size>0 and (start|size)%4==0 and offset>=0,
+             "invalid linked function "+name)
+        data=section.data()[offset:offset+size]
+        need(len(data)==size,"incomplete linked function")
+        return start,[n[0] for n in struct.iter_unpack("<I",data)]
+    worker,instructions=code("ordinary_amc_finite_worker")
+    idle,idle_code=code("ordinary_amc_completed_idle")
+    # SVC immediate #76 encodes as 0xd4000981; ELR points to its successor.
+    calls=[worker+4*(i+1) for i,w in enumerate(instructions) if w==0xd4000001+(76<<5)]
+    need(len(calls)==1,"finite worker lacks unique linked SVC #76")
+    need(any(w&0xffe00c00==0xf8600800 or w&0xffc00000==0xf9400000 for w in instructions),
+         "missing linked 64-bit worker load")
+    need(0xd503207f in idle_code,"completion idle lacks linked WFI")
+    stacks=[s for s in table.iter_symbols() if "ordinary_amc" in s.name and "IDLE" in s.name
+            and s["st_size"]==16384]
+    if len(stacks)!=1:raise Incomplete("missing or ambiguous private idle stack")
+    lo=stacks[0]["st_value"]
+    return worker,calls[0],idle,idle+4*len(idle_code),lo,lo+16384
+
+
 def external(raw):
     observed=[];pending=None
     for num,line in enumerate(raw.decode().splitlines(),1):
@@ -196,11 +226,11 @@ def external(raw):
         elr=re.fullmatch(r"\.\.\.with ELR (0x[0-9a-fA-F]+)",line)
         ret=re.fullmatch(r"Exception return from AArch64 EL1 to AArch64 EL1 PC (0x[0-9a-fA-F]+)",line)
         if exc:
-            need(pending is None and exc[1]=="IRQ" and exc[2] in (None,"0"),"unexpected exception")
-            pending=num
+            need(pending is None and exc[1] in ("IRQ","SVC") and exc[2] in (None,"0"),"unexpected exception")
+            pending=(exc[1].lower(),num)
         if elr:
             need(pending is not None,"unattributed exception PC")
-            observed.append(("irq",int(elr[1],16),pending,num));pending=None
+            observed.append((pending[0],int(elr[1],16),pending[1],num));pending=None
         if ret:
             need(pending is None,"return before IRQ ELR")
             observed.append(("eret",int(ret[1],16),num,num))
@@ -210,7 +240,7 @@ def external(raw):
 def assess(case,raw,elf,trace):
     header,events=parse(raw)
     version,case_id,hz,origin,q=header
-    need(version==1 and case==case_id and hz>=20 and q==hz//20 and origin>0,"case/frequency/origin")
+    need((version==1 or version==2 and case in (1,2)) and case==case_id and hz>=20 and q==hz//20 and origin>0,"case/frequency/origin")
     releases,slots,carry,faults=model(case)
     need(origin+(len(slots)+1)*q<=U64,"compare calculation overflows")
     grouped=defaultdict(list)
@@ -226,10 +256,12 @@ def assess(case,raw,elf,trace):
          "missing/duplicate grant, IRQ, task work or retirement")
     base,limit,loops,(pool_base,pool_size)=symbols(elf)
     if not loops:raise Incomplete("no linked telemetry-input loop backedge identified")
+    finite=finite_layout(elf) if version==2 else None
+    need(len(by("COMPLETE"))==len(by("FROZEN"))==int(version==2),"missing or extraneous finite records")
     stacks={};release_seq={}
     for seq,(at,t,g,units,deadline,lo,hi,entry) in grouped["RELEASE"]:
         need(lo%16==hi%16==0 and 0x40200000<=lo<=hi-FRAME<hi<=0x48000000
-             and entry==base,"invalid stack extent or Rust entry")
+             and entry==(finite[0] if finite and (t,g)==(0,2) else base),"invalid stack extent or Rust entry")
         key=(t,g)
         need(hi-lo==16384 and lo==pool_base+16384*len(stacks) and hi<=pool_base+pool_size,
              "release does not use its linked private stack")
@@ -256,16 +288,36 @@ def assess(case,raw,elf,trace):
         _,_,_,iar,icval,ctl,stamp,fi,pci,spi,xi=irq
         need(compare==readback==icval==b and iar&1023==30 and ctl&7==5
              and previous_irq<=commit<stamp and b<=stamp<b+q,"timer IAR/CTL/compare/entry")
-        need(in_stack(key,f,sp) and in_stack(key,fi,spi),"saved frame/stack mismatch")
+        finite_slot=bool(finite and k==5)
+        need(in_stack(key,f,sp) and (finite_slot or in_stack(key,fi,spi)),"saved frame/stack mismatch")
         if key in last_irq:
             need((f,pc,sp,x19)==last_irq[key],"resumed generation lost frame/ELR/SP/x19")
         else:
-            need(pc==base,"fresh generation did not start at linked Rust entry")
+            need(pc==(finite[0] if finite_slot else base),"fresh generation did not start at linked Rust entry")
         outside_loop=not any(begin<=pci<finish for begin,finish in loops)
-        if outside_loop:
+        if outside_loop and not finite_slot:
             raise Incomplete(f"slot {k}: IRQ ELR {pci:#x} outside identifiable linked input loop")
         last_irq[key]=fi,pci,spi,xi
-        expected_external.extend([("eret",pc),("irq",pci)])
+        expected_external.append(("eret",pc))
+        if finite_slot:
+            complete_i,complete=grouped["COMPLETE"][0]
+            frozen_i,frozen=grouped["FROZEN"][0]
+            task_entry,svc_elr,idle_entry,idle_end,idle_lo,idle_hi=finite
+            _,_,_,n,value,tick,svc_tick,wf,welr,wsp,idle_frame,selected_pc,idle_sp=complete
+            need(grant_i<complete_i<irq_i<frozen_i<work_i<end_i and
+                 complete[:5]==(5,0,2,8,sample_sum(0,2,8)) and
+                 frozen==(5,0,2,n,value,tick,stamp),"finite completion/frozen evidence mismatch")
+            need(commit<=tick<=svc_tick<b<=stamp and in_stack(key,wf,wsp) and welr==svc_elr,
+                 "late or unbound finite completion SVC")
+            need(all(hi<=idle_lo or idle_hi<=lo for lo,hi in stacks.values())
+                 and selected_pc==idle_entry and idle_sp==idle_hi and idle_frame==idle_hi-FRAME
+                 and idle_lo<=fi and fi%16==0 and fi+FRAME==spi<=idle_hi and
+                 idle_entry<=pci<idle_end and (pci-idle_entry)%4==0,
+                 "closing IRQ is not on linked private idle context")
+            need(work[3:6]==(work[3],1,sample_sum(0,2,1)) and work[6:]==(tick,n,value),
+                 "finite first/last task publication differs from completion")
+            expected_external.extend([("svc",svc_elr),("eret",idle_entry)])
+        expected_external.append(("irq",pci))
         _,_,_,first_tick,first_n,first_sum,last_tick,last_n,last_sum=work
         before=last_commit.get(key,(0,0,0))[0]
         if key not in last_commit:need(first_n==1,"fresh generation did not start at first sample")
@@ -308,11 +360,19 @@ def assess(case,raw,elf,trace):
     actual=external(trace)
     if not actual:raise Incomplete("same-process IRQ/return trace absent")
     need([(kind,pc) for kind,pc,_,_ in actual]==expected_external,"linked exception/ERET history mismatch")
-    return dict(case=CASES[case],frequency=hz,epoch=origin,quantum=q,owners=[s[1] for s in slots],
+    result=dict(case=CASES[case],frequency=hz,epoch=origin,quantum=q,owners=[s[1] for s in slots],
                 generation_products=products,switch=transition,
                 completions={f"{t}/{g}":v for (t,g),v in stopped.items()},
                 worker_extent=[base,limit],linked_loop_ranges=loops,
                 external_pc_line_ranges=actual,scope="one finite single-core QEMU workload")
+    if finite:
+        c=by("COMPLETE")[0];frozen=by("FROZEN")[0]
+        result["finite_completion"]=dict(wire_version=2, task=0,generation=2,
+            expected_ring=[RING[(2+i)%8] for i in range(8)], samples=c[3],checksum=c[4],
+            task_tick=c[5],svc_entry_tick=c[6],svc_elr=c[8],idle_entry=c[11],
+            closing_irq_tick=frozen[6],frozen_tick=frozen[5],
+            coverage="first/last task publications, completion SVC, idle return, closing reread and retirement; individual intermediate reads are not exported")
+    return result
 
 
 def replay(root,session_hash):

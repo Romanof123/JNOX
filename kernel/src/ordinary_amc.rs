@@ -20,7 +20,7 @@ global_asm!(".set JNOX_STAMP_X9,1",include_str!("context.S"),
     frame_size=const size_of::<Frame>(),elr=const offset_of!(Frame,elr),
     fpcr=const offset_of!(Frame,fpcr),tpidr_el1=const offset_of!(Frame,tpidr_el1),
     tpidr_el0=const offset_of!(Frame,tpidr_el0),simd=const offset_of!(Frame,simd),
-    irq=sym irq,svc=sym unexpected,fail=sym unexpected);
+    irq=sym irq,svc=sym complete,fail=sym unexpected);
 
 const RING: [u64; 8] = [2, 5, 1, 6, 3, 7, 4, 8];
 const JOBS: usize = 6;
@@ -30,7 +30,7 @@ const EMPTY: usize = usize::MAX;
 static mut STACKS: [Stack; JOBS] = [const { Stack([0; STACK_BYTES]) }; JOBS];
 static mut STATE: Option<Bench> = None;
 static SLOT: AtomicUsize = AtomicUsize::new(EMPTY);
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct Sample {
     tick: u64,
     n: u64,
@@ -93,6 +93,109 @@ extern "C" fn ordinary_amc_worker(id: usize, generation: usize) -> ! {
         unsafe { asm!("msr daif,{}",in(reg)mask,options(nostack,preserves_flags)) };
     }
 }
+// The final reference input is one complete ring. Each sample is committed
+// on the worker stack's execution path. A timer arriving before the completion
+// SVC has observed the publication is a real missed completion witness.
+#[unsafe(no_mangle)]
+#[inline(never)]
+extern "C" fn ordinary_amc_finite_worker(id: usize, generation: usize) -> ! {
+    let slot = SLOT.load(Acquire);
+    check(slot == 5 && id == 0 && generation == 2, 21);
+    let mut sum = 0u64;
+    for index in 0..RING.len() {
+        sum += unsafe { ptr::read_volatile(RING.as_ptr().add((generation + index) & 7)) };
+        let mask: u64;
+        unsafe {
+            asm!("mrs {},daif","msr daifset,#2",out(reg)mask,options(nostack,preserves_flags))
+        };
+        let sample = Sample {
+            tick: tick(),
+            n: (index + 1) as u64,
+            sum,
+        };
+        unsafe {
+            let work = (&raw mut WORK).cast::<Work>().add(slot);
+            if index == 0 {
+                ptr::write_volatile(&raw mut (*work).first, sample)
+            }
+            ptr::write_volatile(&raw mut (*work).last, sample);
+            asm!("msr daif,{}",in(reg)mask,options(nostack,preserves_flags));
+        }
+    }
+    unsafe { asm!("svc #76", options(noreturn)) }
+}
+
+static mut IDLE: Stack = Stack([0; STACK_BYTES]);
+#[unsafe(no_mangle)]
+extern "C" fn ordinary_amc_completed_idle() -> ! {
+    loop {
+        unsafe { asm!("wfi", options(nomem, nostack, preserves_flags)) }
+    }
+}
+fn idle_bounds() -> (usize, usize) {
+    let lo = (&raw const IDLE).addr();
+    (lo, lo + STACK_BYTES)
+}
+
+extern "C" fn complete(frame: *mut Frame) -> *mut Frame {
+    let esr: u64;
+    unsafe { asm!("mrs {},esr_el1",out(reg)esr,options(nostack,preserves_flags)) };
+    let s = unsafe { (*(&raw mut STATE)).as_mut().unwrap_or_else(|| fail(20)) };
+    check(
+        esr >> 26 == 0x15
+            && esr & 0xffff == 76
+            && s.case != 0
+            && s.policy.now() == 5
+            && s.completed.is_none(),
+        22,
+    );
+    let job = s.instances[s.owner];
+    let (lo, hi) = bounds(s.owner);
+    check(
+        job.id == 0
+            && job.generation == 2
+            && frame.addr() % 16 == 0
+            && (lo..=hi - size_of::<Frame>()).contains(&frame.addr()),
+        23,
+    );
+    let sample = unsafe { ptr::read_volatile(&raw const WORK[5].last) };
+    let (_, top) = idle_bounds();
+    let target = (top - size_of::<Frame>()) as *mut Frame;
+    let idle_pc = ordinary_amc_completed_idle as *const () as usize as u64;
+    unsafe {
+        target.write_bytes(0, 1);
+        (*target).elr = idle_pc;
+        (*target).spsr = 0x345;
+    }
+    let fr = unsafe { &*frame };
+    record(
+        b"COMPLETE",
+        &[
+            5,
+            0,
+            2,
+            sample.n,
+            sample.sum,
+            sample.tick,
+            fr.reserved,
+            frame.addr() as u64,
+            fr.elr,
+            (frame.addr() + size_of::<Frame>()) as u64,
+            target.addr() as u64,
+            idle_pc,
+            top as u64,
+        ],
+    );
+    check(
+        sample.n == 8
+            && sample.sum == 36
+            && sample.tick <= fr.reserved
+            && fr.reserved < s.boundary(6),
+        24,
+    );
+    s.completed = Some(sample);
+    target
+}
 fn num(mut n: u64) {
     let mut buf = [0; 20];
     let mut i = 20;
@@ -136,17 +239,17 @@ fn check(ok: bool, reason: u64) {
 struct Row {
     tag: &'static [u8],
     len: usize,
-    words: [u64; 12],
+    words: [u64; 13],
 }
 static mut ROWS: [Row; CAP] = [Row {
     tag: b"",
     len: 0,
-    words: [0; 12],
+    words: [0; 13],
 }; CAP];
 static mut COUNT: usize = 0;
 fn record(tag: &'static [u8], words: &[u64]) {
     unsafe {
-        check(COUNT < CAP && words.len() <= 12, 2);
+        check(COUNT < CAP && words.len() <= 13, 2);
         let row = &mut *(&raw mut ROWS).cast::<Row>().add(COUNT);
         row.tag = tag;
         row.len = words.len();
@@ -192,6 +295,7 @@ struct Instance {
     last: Sample,
 }
 struct Bench {
+    completed: Option<Sample>,
     policy: AmcRuntime<4>,
     case: u64,
     freq: u64,
@@ -222,7 +326,11 @@ impl Bench {
         self.next_gen[id] += 1;
         let (lo, hi) = bounds(i);
         let f = (hi - size_of::<Frame>()) as *mut Frame;
-        let entry = ordinary_amc_worker as *const () as usize as u64;
+        let entry = if self.case != 0 && id == 0 && g == 2 {
+            ordinary_amc_finite_worker
+        } else {
+            ordinary_amc_worker
+        } as extern "C" fn(usize, usize) -> ! as *const () as usize as u64;
         unsafe {
             f.write_bytes(0, 1);
             (*f).gpr[0] = id as u64;
@@ -336,7 +444,11 @@ impl Bench {
         let t = self.policy.now();
         let i = self.owner;
         let j = &mut self.instances[i];
-        let (lo, hi) = bounds(i);
+        let (lo, hi) = if self.completed.is_some() {
+            idle_bounds()
+        } else {
+            bounds(i)
+        };
         check(
             f.addr() % 16 == 0 && (lo..=hi - size_of::<Frame>()).contains(&f.addr()),
             11,
@@ -359,7 +471,14 @@ impl Bench {
                 fr.gpr[19],
             ],
         );
-        let w = unsafe { WORK[t as usize] };
+        let w = unsafe { ptr::read_volatile((&raw const WORK).cast::<Work>().add(t as usize)) };
+        if self.case != 0 && t == 5 {
+            record(
+                b"FROZEN",
+                &[5, 0, 2, w.last.n, w.last.sum, w.last.tick, entry],
+            );
+            check(self.completed == Some(w.last), 25);
+        }
         record(
             b"WORK",
             &[
@@ -375,7 +494,9 @@ impl Bench {
             ],
         );
         check(w.first.n > j.last.n && w.last.n >= w.first.n, 12);
-        j.frame = f.addr();
+        if self.completed.is_none() {
+            j.frame = f.addr();
+        }
         j.last = w.last;
         let end = self.policy.finish_slot().unwrap_or_else(|| fail(13));
         let now = tick();
@@ -406,7 +527,13 @@ impl Bench {
     fn export(&self) -> ! {
         line(
             b"BEGIN",
-            &[1, self.case, self.freq, self.origin, self.quantum],
+            &[
+                if self.case == 0 { 1 } else { 2 },
+                self.case,
+                self.freq,
+                self.origin,
+                self.quantum,
+            ],
         );
         dump_rows();
         for j in &self.instances[..self.released] {
@@ -438,6 +565,7 @@ pub(super) fn run() -> ! {
     };
     unsafe {
         *(&raw mut STATE) = Some(Bench {
+            completed: None,
             policy: AmcRuntime::new(SPEC).unwrap_or_else(|| fail(17)),
             case,
             freq,
