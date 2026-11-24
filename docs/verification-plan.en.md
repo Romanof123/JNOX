@@ -93,3 +93,5 @@ CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-0
 The acceptance contract requires the evidence to identify the source and exact selector, record raw task-side output from all three linked images, and check the interrupted caller resumes with its local result intact. Compare equal arrivals, estimate rejection, capacity, stale handles, overflow and underestimated service against independent host expectations. Preserve previous selectors and report physical timing and product capacity separately.
 
 POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)

@@ -147,3 +147,5 @@ virt 단일 EL1 CPU에서 신뢰된 Rust 태스크가 동기 예외를 통해 �
 앱 선택자는 batch-sjf, batch-srtf, batch-hrrn이다. 예상 서비스량은 양의 u32 범위다. 용량 초과, 잘못된 추정치, 오래된 완료 핸들 및 시간 오버플로를 거절해도 기존 작업은 보존한다. 이 구성은 16 KiB 작업 스택 네 개와 16 KiB 유휴 스택 한 개를 사용한다. 물리 시간, 실기기 측정, WCET 및 제품 용량 상한은 별도 근거가 필요하다.
 
 POL-003 / IMP-037. SJF·SRTF·HRRN에서 일반 부팅 6회와 진단 부팅 3회가 통과했으며 진단 기록의 결정 60개를 독립 재현했다. [EVD-037](evidence/evd-037.md)
+
+POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한국어) · [실행 부채와 회복 EVD-038](evidence/evd-038.md)

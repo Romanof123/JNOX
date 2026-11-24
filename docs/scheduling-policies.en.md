@@ -105,3 +105,5 @@ POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under D
 POL-010 · Forced first-grant rejection and two passing controls. [EVD-035](evidence/evd-035.en.md)
 
 POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)

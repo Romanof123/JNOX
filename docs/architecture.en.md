@@ -147,3 +147,5 @@ On one virt EL1 CPU a trusted Rust task submits a function, argument and estimat
 The application profile selects batch-sjf, batch-srtf or batch-hrrn. Admission accepts positive u32-sized service estimates. Full capacity, invalid estimates, stale completion and time overflow must leave live work intact. Four 16 KiB task stacks plus a dedicated 16 KiB idle stack bound this configuration. Physical timing, hardware measurements, WCET and product capacity limits require separate evidence.
 
 POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)
