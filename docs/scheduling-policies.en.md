@@ -23,6 +23,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Verified Pi 4 model preemption | IMP-014, POL-002 fixed priority | The Pi timer interrupted LOW and the scheduler restored its exact PC after HIGH exited. [EVD-014](evidence/evd-014.en.md) |
 | Verified sampled EDF and LLF | IMP-015, POL-005 | Recorded tie retention, preemption on a laxity crossover, negative slack, and exact restoration on one CPU. [EVD-015](evidence/evd-015.en.md) |
 | Verified aperiodic request service | IMP-016, POL-007 | Four configurations ran identical submissions and exposed each service slot, budget, replenishment and final pending total. [EVD-016](evidence/evd-016.en.md) |
+| Live SMP on two virtual CPUs | IMP-017, POL-013 | CPU0 suspended a running thread on a timer IRQ and CPU1 resumed its saved instruction. Both host threading modes passed. Physical interference remains open. [EVD-017](evidence/evd-017.en.md) |
 | Verified selection and accounting | `IMP-004`, bounded primitives from POL-001 through POL-018 | Controlled ready sets, clocks, charges, draws, CPU masks and operating-point models passed in one guest. Each result covers its stated decision or state transition. [EVD-004](evidence/evd-004.en.md) |
 | Integrated profile release | Each enabled variant | Run actual blocking, wakeup, expiry, switch and exit paths that apply to that profile. Record target traces. Physical timing, analysis and product safety review have their own milestones. |
 

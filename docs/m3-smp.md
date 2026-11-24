@@ -30,3 +30,5 @@ python3 tools/qemu_boot.py --profile smp --kernel kernel/target/aarch64-unknown-
 ELF의 smp_audit는 리틀엔디언 64비트 정수 140개다. 0–4번은 버전, 완료 사례 수, 구간 수와 CPU affinity, 5–18번은 인수 거부 두 건, 19–30번은 출발·도착 CPU, 저장·선택 PC, 저장·실행 SP와 레지스터 관측값이다. 31–39번과 40–48번은 사례·작업별 누적 시간과 CPU 마스크다. 49–136번의 11개 행은 각각 사례, 작업, CPU, 발급 순번, 시작, 종료, 간격과 원래 affinity를 담는다. 137–139번은 카운터 주파수, 출발 IRQ 진입 및 목적 작업 콜백 시각이다. 사례 0/1/2는 고정·전역·클러스터이고 작업 0/1/2는 M/P0/P1이다. 기록을 보존하려면 새 경로를 SMP_CAPTURE_DIR로 지정하고 Linux 실행 래퍼에서 python3 tools/smp_capture.py "$@"를 호출하여 관찰기의 --qemu 인자로 전달한다.
 
 같은 이미지의 가상 CPU 두 개를 호스트 스레드 하나로 실행하는 대조 시험은 --profile smp-single을 쓴다. 두 관찰기 모두 UART 제한은 5초다. 실행할 작업이 없거나 상대 CPU를 기다리는 구간에서 AArch64 YIELD 힌트를 발행한다. 각 모드의 결과를 따로 판정한다. [QEMU 6.2 AArch64 힌트 처리](https://github.com/qemu/qemu/blob/v6.2.0/target/arm/translate-a64.c#L1324-L1333)
+
+[독립 검증 기록](evidence/evd-017.md)

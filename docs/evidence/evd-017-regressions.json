@@ -1,0 +1,199 @@
+{
+  "source": "76f48d59bd3997c213e6dd63909fe41044ff0afd",
+  "rustc": "1.95.0 (59807616e)",
+  "qemu": "6.2.0 Ubuntu 6.2+dfsg-2ubuntu6.31",
+  "target": "aarch64-unknown-none",
+  "host_tests": "\nrunning 63 tests\ntest aperiodic_policy::tests::full_replenishment_queue_delays_credit_and_preserves_budget ... ok\ntest aperiodic_policy::tests::identical_releases_distinguish_the_three_servers ... ok\ntest aperiodic_policy::tests::invalid_parameters_and_overflows_preserve_state ... ok\ntest aperiodic_policy::tests::periodic_servers_handle_preemption_drain_and_boundary ... ok\ntest batch_tests::all_small_arrivals_estimates_and_id_orders_match_a_tick_calendar ... ok\ntest batch_tests::clock_sized_charge_preserves_one_tick_until_explicit_completion ... ok\ntest batch_tests::empty_capacity_remains_idle_through_clock_limit ... ok\ntest batch_tests::failed_operations_preserve_clock_budgets_runner_and_fifo_order ... ok\ntest batch_tests::hrrn_resolves_a_unit_difference_between_full_width_products ... ok\ntest batch_tests::release_and_completion_charge_elapsed_time_without_dispatch ... ok\ntest cbs_admission_and_service_match_demand_over_common_frame ... ok\ntest cooperative_events_can_repeat_and_enqueue_multiple_successors ... ok\ntest cooperative_turns_preserve_fifo_across_wraparound ... ok\ntest cyclic_decisions_match_expanded_slots ... ok\ntest cyclic_window_end_at_clock_limit ... ok\ntest deadline_tests::a_switch_consumes_the_boundary_and_skipped_boundaries_are_not_replayed ... ok\ntest deadline_tests::epoch_near_clock_limit_keeps_only_representable_boundaries ... ok\ntest deadline_tests::laxity_retains_full_signed_range_for_waiting_jobs ... ok\ntest deadline_tests::llf_retains_the_incumbent_at_equal_slack_then_reverses ... ok\ntest deadline_tests::one_consideration_per_boundary_including_retention_and_idle_dispatch ... ok\ntest deadline_tests::ordered_arrivals_on_small_tick_calendars ... ok\ntest deadline_tests::preempted_runner_resumes_ahead_of_an_equal_waiter ... ok\ntest deadline_tests::rejected_calls_preserve_time_service_queue_and_boundary ... ok\ntest deadline_tests::zero_capacity_and_zero_quantum ... ok\ntest dispatch_matches_stable_sort_for_all_ordered_triples ... ok\ntest fair_policy::tests::weighted_service_and_eligible_deadlines ... ok\ntest guest_checks::aperiodic_policy ... ok\ntest guest_checks::dispatch_policy ... ok\ntest guest_checks::domain_policy ... ok\ntest guest_checks::fair_policy ... ok\ntest guest_checks::feedback_policy ... ok\ntest guest_checks::group_policy ... ok\ntest guest_checks::service_policy ... ok\ntest guest_checks::temporal_policy ... ok\ntest hrrn_distinguishes_adjacent_ratios_at_the_clock_limit ... ok\ntest ready_queue::tests::preempted_task_precedes_peers_and_higher_priorities_still_win ... ok\ntest ready_queue::tests::rejected_insertions_preserve_contents_and_order ... ok\ntest ready_queue::tests::yield_moves_to_tail_even_when_ids_arrive_in_reverse_order ... ok\ntest request_server_tests::capacity_validation_and_clock_overflows_leave_the_previous_state_available ... ok\ntest request_server_tests::foreign_receipts_and_receipts_from_before_restart_cannot_complete_matching_ids ... ok\ntest request_server_tests::full_sporadic_queue_keeps_the_oldest_credit_at_its_original_due_tick ... ok\ntest request_server_tests::queue_and_aggregate_work_limits_are_atomic_even_with_an_outstanding_receipt ... ok\ntest request_server_tests::small_arrival_and_cpu_availability_masks_match_individual_credits ... ok\ntest request_server_tests::submitting_during_a_grant_preserves_identity_and_service_order ... ok\ntest request_server_tests::ten_interval_fifo_service_and_conservative_credit_merging ... ok\ntest saturated_hard_server_runs_only_its_quota_each_period ... ok\ntest service_policy::tests::aligned_budget_throttles_and_replenishes ... ok\ntest service_policy::tests::stride_shares_service_and_accounts_for_wakeups ... ok\ntest smp_tests::charge_overflow_preserves_both_owner_and_balance ... ok\ntest smp_tests::clustered_singletons_leave_the_flexible_task_on_another_cpu ... ok\ntest smp_tests::construction_checks_every_mask_and_task_limit ... ok\ntest smp_tests::highest_task_and_cpu_bits_support_a_full_lease_cycle ... ok\ntest smp_tests::invalid_rank_and_claim_inputs_preserve_ready_tasks ... ok\ntest smp_tests::migrating_task_has_one_owner_and_rejects_stale_leases ... ok\ntest smp_tests::release_validates_the_entire_selection_before_mutating ... ok\ntest smp_tests::two_cpu_plans_match_exhaustive_ranked_subset_oracle ... ok\ntest temporal_policy::tests::cyclic_frame_boundaries_and_configuration ... ok\ntest temporal_policy::tests::hard_cbs_activation_and_throttling ... ok\ntest temporal_policy::tests::hard_cbs_admission_boundaries ... ok\ntest temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok\ntest temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok\ntest weighted_and_eligible_deadline_selection_in_twelfths ... ok\ntest zero_capacity_returns_owned_event ... ok\n\ntest result: ok. 63 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s\n\n",
+  "host_compiler": {
+    "argv": [
+      "rustc",
+      "+1.95.0",
+      "--edition=2024",
+      "--test",
+      "tools/scheduling_tests.rs",
+      "-o",
+      "D:\\codex\\.jnox-work\\smp-e4bcd0aeae\\reg2\\host-tests.exe"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "response_analysis": {
+    "argv": [
+      "C:\\Users\\jonki\\anaconda3\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "test_fp_response.py"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.484s\n\nOK\n"
+  },
+  "builds": [
+    {
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "smp-bench,partition-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "    Finished `release` profile [optimized] target(s) in 0.02s\n"
+    },
+    {
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "smp-bench,aperiodic-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\smp-e4bcd0aeae\\src2\\kernel)\nwarning: function `service_trace_checks` is never used\n   --> src\\aperiodic_policy.rs:156:4\n    |\n156 | fn service_trace_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^\n    |\n    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `periodic_boundary_checks` is never used\n   --> src\\aperiodic_policy.rs:191:4\n    |\n191 | fn periodic_boundary_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `sporadic_queue_checks` is never used\n   --> src\\aperiodic_policy.rs:222:4\n    |\n222 | fn sporadic_queue_checks() -> bool {\n    |    ^^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `error_checks` is never used\n   --> src\\aperiodic_policy.rs:266:4\n    |\n266 | fn error_checks() -> bool {\n    |    ^^^^^^^^^^^^\n\nwarning: function `bench_checks` is never used\n   --> src\\aperiodic_policy.rs:310:15\n    |\n310 | pub(crate) fn bench_checks() -> bool {\n    |               ^^^^^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 5 warnings\n    Finished `release` profile [optimized] target(s) in 3.11s\n"
+    },
+    {
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--features",
+        "rr-bench"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\smp-e4bcd0aeae\\src2\\kernel)\nwarning: methods `now`, `remaining_quota`, `unreserved_work`, and `pending_replenishments` are never used\n  --> src\\aperiodic_policy.rs:80:19\n   |\n51 | impl<const R: usize> AperiodicServer<R> {\n   | --------------------------------------- methods in this implementation\n...\n80 |     pub(crate) fn now(&self) -> u64 {\n   |                   ^^^\n...\n84 |     pub(crate) fn remaining_quota(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n88 |     pub(crate) fn unreserved_work(&self) -> u32 {\n   |                   ^^^^^^^^^^^^^^^\n...\n94 |     pub(crate) fn pending_replenishments(&self) -> &[Replenishment] {\n   |                   ^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: struct `WindowDecision` is never constructed\n  --> src\\temporal_policy.rs:13:19\n   |\n13 | pub(crate) struct WindowDecision {\n   |                   ^^^^^^^^^^^^^^\n\nwarning: method `decision` is never used\n  --> src\\temporal_policy.rs:63:19\n   |\n25 | impl<const N: usize> CyclicExecutive<N> {\n   | --------------------------------------- method in this implementation\n...\n63 |     pub(crate) fn decision(\n   |                   ^^^^^^^^\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 3 warnings\n    Finished `release` profile [optimized] target(s) in 2.54s\n"
+    },
+    {
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1",
+        "--all-features"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\smp-e4bcd0aeae\\src2\\kernel)\nwarning: methods `push_front` and `pop_highest` are never used\n  --> src\\ready_queue.rs:31:19\n   |\n 8 | impl<const N: usize> ReadyQueue<N> {\n   | ---------------------------------- methods in this implementation\n...\n31 |     pub(crate) fn push_front(&mut self, id: usize) -> bool {\n   |                   ^^^^^^^^^^\n...\n48 |     pub(crate) fn pop_highest(&mut self, priority: impl Fn(usize) -> u8) -> Option<usize> {\n   |                   ^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `jnox-kernel` (bin \"jnox-kernel\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.11s\n"
+    },
+    {
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "build",
+        "--release",
+        "--locked",
+        "-j1"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "   Compiling jnox-kernel v0.1.0 (D:\\codex\\.jnox-work\\smp-e4bcd0aeae\\src2\\kernel)\n    Finished `release` profile [optimized] target(s) in 0.95s\n"
+    }
+  ],
+  "cold_boots": [
+    {
+      "profile": "smp-single",
+      "sha256": "921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=single\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 470\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 405 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "smp-single",
+      "sha256": "921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=single\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 476\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 475 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "smp-single",
+      "sha256": "921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=single\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 482\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 481 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "smp",
+      "sha256": "921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 488\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 487 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "smp",
+      "sha256": "921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 495\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 494 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "smp",
+      "sha256": "921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 921b84c609ff38558b775086ae1495e7c1f2f9fbcfbd34ba008fe2e7cba8ff51\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/target2/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 502\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 501 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "smp",
+      "sha256": "813fd10b75d9b37574e49b6b742204ca0626f2f4c06e7633b3b1c68113dcdde3",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 813fd10b75d9b37574e49b6b742204ca0626f2f4c06e7633b3b1c68113dcdde3\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/reg2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 479\n  UART (165 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nSMP BOTH ONLINE\\nSMP PARTITION PASS\\nSMP GLOBAL CONTENDED\\nSMP GLOBAL IRQ\\nSMP GLOBAL MIGRATED\\nSMP CLUSTER REJECTED\\nSMP CLUSTER PASS\\nSMP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 416 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "aperiodic",
+      "sha256": "f46c5abcff2382e726f8684aa8f65a1f2cca3efb65a6a83f7539d10bfb13550f",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = f46c5abcff2382e726f8684aa8f65a1f2cca3efb65a6a83f7539d10bfb13550f\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/reg2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 486\n  UART (1659 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nAPER BEGIN PS\\nAPER t=0 id=0 budget=0 credits=-\\nAPER t=1 id=0 budget=0 credits=-\\nAPER t=2 id=0 budget=0 credits=-\\nAPER t=3 id=0 budget=0 credits=-\\nAPER t=4 id=1 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=2 budget=1 credits=-\\nAPER t=9 id=2 budget=0 credits=-\\nAPER END pending=2 charged=4 completed=4\\nAPER BEGIN DS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=-\\nAPER t=2 id=0 budget=1 credits=-\\nAPER t=3 id=2 budget=0 credits=-\\nAPER t=4 id=2 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=3 budget=1 credits=-\\nAPER t=9 id=4 budget=0 credits=-\\nAPER END pending=0 charged=6 completed=6\\nAPER BEGIN SS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=5:1,7:1\\nAPER t=4 id=0 budget=0 credits=5:1,7:1\\nAPER t=5 id=2 budget=0 credits=7:1,9:1\\nAPER t=6 id=0 budget=0 credits=7:1,9:1\\nAPER t=7 id=2 budget=0 credits=9:1,11:1\\nAPER t=8 id=0 budget=0 credits=9:1,11:1\\nAPER t=9 id=3 budget=0 credits=11:1,13:1\\nAPER END pending=1 charged=5 completed=5\\nAPER BEGIN SS1\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=7:2\\nAPER t=4 id=0 budget=0 credits=7:2\\nAPER t=5 id=0 budget=0 credits=7:2\\nAPER t=6 id=0 budget=0 credits=7:2\\nAPER t=7 id=2 budget=1 credits=11:1\\nAPER t=8 id=2 budget=0 credits=12:2\\nAPER t=9 id=0 budget=0 credits=12:2\\nAPER END pending=2 charged=4 completed=4\\nAPER STOP\\nAPER PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 485 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "rr",
+      "sha256": "43bc43a3d52d2403959989a5de1b70182e502c84d747b0cdd4f2d1e5a4a5d11a",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 43bc43a3d52d2403959989a5de1b70182e502c84d747b0cdd4f2d1e5a4a5d11a\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/reg2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 517\n  UART (171 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPOLICY RANK PASS\\nPOLICY SERVICE PASS\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nRR A FIRST\\nRR B FIRST\\nRR A RESUMED\\nRR B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 516 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "coop",
+      "sha256": "785c9c36c14fa494fc9a6beeb6c4d400d72727bec668eff4098d6926fe532a26",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 785c9c36c14fa494fc9a6beeb6c4d400d72727bec668eff4098d6926fe532a26\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/reg2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 529\n  UART (163 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCOOP A FIRST\\nCOOP IRQ B READY\\nCOOP A RETAINED\\nCOOP B FIRST\\nCOOP A RESUMED\\nCOOP B WOKEN\\nCOOP B RESUMED\\nEVENT 1\\nEVENT 2\\nEVENT 3\\nCOOP PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 528 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    },
+    {
+      "profile": "boot",
+      "sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "observer_exit": 0,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/reg2-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 540\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 539 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+      "stderr": ""
+    }
+  ],
+  "integration_harness_error": {
+    "reason": "A stale target-directory path selected the earlier minimal boot ELF for the combined SMP/partition launch. The observer correctly rejected the 27-byte boot transcript. The integration script was repaired to use the build’s CARGO_TARGET_DIR and the complete five-image feature matrix was rerun.",
+    "run": {
+      "profile": "smp",
+      "sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "observer_exit": 1,
+      "stdout": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2,secure=off,virtualization=off\", \"-cpu\", \"cortex-a72\", \"-smp\", \"2\", \"-accel\", \"tcg,thread=multi\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/smp-e4bcd0aeae/reg-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 523\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 522 (python3)\\n'\n",
+      "stderr": "FAIL: UART deadline exceeded (5s)\n"
+    }
+  }
+}
