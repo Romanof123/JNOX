@@ -10,6 +10,12 @@ function Get-StreamSha256([string]$Path) {
     } finally { $algorithm.Dispose() }
 }
 try {
+    # WSL may inherit a module search path from a different PowerShell runtime.
+    # Resolve the two Windows inbox modules from this interpreter's own installation.
+    foreach ($module in @('Microsoft.PowerShell.Management','Microsoft.PowerShell.Utility')) {
+        $manifestFile = [System.IO.Path]::Combine($PSHOME, 'Modules', $module, "$module.psd1")
+        Import-Module -Name $manifestFile -ErrorAction Stop
+    }
     $full = (Resolve-Path -LiteralPath $Folder).ProviderPath
     if ([IO.Path]::GetPathRoot($full) -ine 'D:\') { throw "Destination is outside D:" }
     $manifestPath = Join-Path $full 'manifest.json'
