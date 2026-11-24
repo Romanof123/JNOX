@@ -120,6 +120,9 @@ struct Edge {
     live: u64,
     ret: u64,
     next: u64,
+    program_before: u64,
+    readback: u64,
+    program_after: u64,
     owner: usize,
     chosen: usize,
     from: usize,
@@ -177,11 +180,17 @@ impl Bench {
                 .unwrap_or_else(|| fail());
             let frame = self.frames[e.chosen];
             (e.in_pc, e.in_sp, e.in_hash) = frame_identity(frame, e.chosen);
+            e.program_before = counter();
             unsafe {
                 asm!("msr cntp_cval_el0, {}", "msr cntp_ctl_el0, {}", "isb",
                      in(reg) e.next, in(reg) 1u64, options(nostack, preserves_flags));
+                asm!("mrs {}, cntp_cval_el0", out(reg) e.readback, options(nostack, preserves_flags));
             }
-            if counter() < e.next {
+            e.program_after = counter();
+            if e.readback != e.next {
+                fail()
+            }
+            if e.program_after < e.next {
                 self.current = e.chosen;
                 self.edges[self.n] = e;
                 GENERATION.store(self.n, SeqCst);
@@ -344,6 +353,11 @@ fn dump(b: &Bench, terminal: Edge) -> ! {
                 } // bounded diagnostic on excessive trace loss
             }
         }
+        let _ = writeln!(
+            u,
+            "OP TIMER n={} d={} p={} c={} after={}",
+            n, e.next, e.program_before, e.readback, e.program_after
+        );
         let o = &OBS[n];
         let _ = writeln!(
             u,

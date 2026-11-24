@@ -26,3 +26,23 @@ All counters are decimal physical counter ticks. 0/1/2 denote A/B/idle, 3 is the
 Between consecutive edges, charge the bracket from the worker sample x to its last sample to that task (including measured spill), entry to pre-eret to the dispatcher, and the gaps last-to-entry and pre-eret-to-x to transition uncertainty. Split at every nominal boundary, retain idle separately, and include the boot interval from epoch to first pre-eret. Compare the complete deadline-to-x interval against F/1000; raw entry is sampled after the vector branch and a stack push. Treat ambiguous edge order, missing progress, any skipped runnable window, trace loss and over-limit uncertainty as failed or inconclusive according to the frozen plan. A terminal line alone confers no verdict.
 
 The initial pure-counter probes exercise same-slot and skipped-slot decisions at synthetic counter offsets. The live finite masked case and live just-over-limit case remain open. These probes provide no evidence of measured masking, spilled execution or live recovery. No execution evidence is attached.
+
+## Passive compare evidence and offline accounting
+
+IMP-044 records one TIMER row per returned generation. The guest writes the nominal next boundary d. The counter samples p and after bracket the actual comparator write and register readback c; entry i is in the following EDGE or STOP. Identical c and d are required for healthy guests. Frames P and Q have separate cold-build commands above. No guest delay selector is present. The #106 controlled delayed-notice cases and #99 live masking cases remain open.
+
+The host reconstruction reports disjoint intervals split at each nominal boundary, actual worker/idle ticks, dispatcher ticks, edge uncertainty, lost eligible service, skipped windows, B release eligibility and first subsequent selection. It separates c−d, i−c and x−i at the first A close. The elapsed accounting extends from epoch to the terminal entry sample. JSON origin records the input category declared by the caller. For guest evidence, independently check raw exception trace and ELF as required by the plan. Synthetic rows exercise both tables and all three timing cases and do not provide target execution evidence.
+
+```sh
+# From repository root, after collecting a fresh healthy guest UART:
+python tools/ordinary_partition_account.py capture-ordinary-p/uart --table P --case healthy --origin guest > guest-P.json
+python tools/ordinary_partition_account.py capture-ordinary-q/uart --table Q --case healthy --origin guest > guest-Q.json
+# Offline synthetic controls, with no guest:
+for table in P Q; do
+  for mode in healthy near long; do
+    python tools/test_ordinary_partition_account.py --emit "$table" "$mode" > "synthetic-$table-$mode.uart" || exit 1
+    python tools/ordinary_partition_account.py "synthetic-$table-$mode.uart" --table "$table" --case "$mode" --origin synthetic > "synthetic-$table-$mode.json" || exit 1
+  done
+done
+python tools/test_ordinary_partition_account.py
+```

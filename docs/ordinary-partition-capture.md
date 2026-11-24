@@ -28,3 +28,23 @@ A와 B는 독립 스택에서 서로 다른 누산기를 갱신한다. B는 첫 
 OBS부터 마지막 태스크 표본까지의 실행은 해당 태스크에, 진입부터 복귀 직전까지는 커널에 귀속한다. 그 사이의 불확실 구간은 명목 경계별로 분할하고 유휴 시간을 따로 계산한다. 시작 시각부터 최초 복귀 직전까지도 포함한다. 전체 지연 상한은 F/1000이다. 판정에는 세 프레임과 다음 프레임의 최초 복귀 증거가 필요하다. 유실, 불명확한 귀속, 누락 구간, 상한 초과는 계획의 실패·미확정 조건을 적용한다.
 
 부팅 전 합성 카운터 검사는 지연 시점에 해당하는 선택 결과를 확인한다. 실제 유한 IRQ 마스킹과 실제 1ms 초과 지연 시험, 실측 점유·복구 증거는 미결이다. 실행 결과는 첨부하지 않았다.
+
+## 타이머 비교값 관측 및 오프라인 시간 집계
+
+IMP-044는 복귀 세대마다 TIMER 한 줄을 기록한다. 정상 게스트는 다음 명목 경계 d를 타이머에 쓴다. 카운터 표본 p와 after는 비교값 쓰기와 실제 레지스터 읽기 c를 감싼다. 진입 표본 i는 다음 EDGE 또는 STOP에 있다. 정상 게스트는 c=d를 요구한다. P/Q의 정상 콜드 빌드는 위 명령을 따른다. 게스트 지연 선택자는 제공하지 않는다. #106의 제어된 지연 통지와 #99의 실제 IRQ 마스킹 관측은 미결이다.
+
+분석기는 각 명목 경계에서 구간을 나누어 작업별·유휴·커널·불확실 시간, 실행 자격이 있던 주체의 서비스 손실, 누락 구간, B의 준비 예정 시점과 이후 최초 선택 시점을 보고한다. A의 첫 종료 경계에 대해 c−d, i−c, x−i를 구분한다. 총합은 epoch부터 마지막 진입 표본까지다. JSON의 origin은 호출자가 지정한 입력 종류다. 게스트 판정은 원본 예외 복귀 기록과 ELF의 독립 대조가 필요하다. 아래 합성 6개 조합은 호스트 산술 검사용이다.
+
+```sh
+# From repository root, after collecting a fresh healthy guest UART:
+python tools/ordinary_partition_account.py capture-ordinary-p/uart --table P --case healthy --origin guest > guest-P.json
+python tools/ordinary_partition_account.py capture-ordinary-q/uart --table Q --case healthy --origin guest > guest-Q.json
+# Offline synthetic controls, with no guest:
+for table in P Q; do
+  for mode in healthy near long; do
+    python tools/test_ordinary_partition_account.py --emit "$table" "$mode" > "synthetic-$table-$mode.uart" || exit 1
+    python tools/ordinary_partition_account.py "synthetic-$table-$mode.uart" --table "$table" --case "$mode" --origin synthetic > "synthetic-$table-$mode.json" || exit 1
+  done
+done
+python tools/test_ordinary_partition_account.py
+```
