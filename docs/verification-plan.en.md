@@ -71,4 +71,4 @@ For each frozen image, independently capture one guest and compare its task prog
 
 CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at build time. The same kernel interface accepts FIFO and RR applications with different priorities and initial releases. EVD-030 calls for the first guest captures, task exception and stack checks, and terminal idle for each application configuration. [Fixed-priority runtime](fixed-runtime.en.md)
 
-Planned EVD-034 reconstructs service error across all 128 grants and the latency of each of 16 wakes from raw observations. [Repeated-wake design](m4-eevdf-wake-design.md)
+[EVD-034](evidence/evd-034.en.md) reconstructs service error across 128 grants and 16 wake delays at fixed weights and slices. [Repeated-wake design](m4-eevdf-wake-design.md)

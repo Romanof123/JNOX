@@ -13,3 +13,5 @@ Raw QMP journal rows preserve runnable mask, virtual state, dispatched/restored 
 QMP 원자료에는 매 턴 준비 집합·가상 시간·복귀 및 인터럽트 PC·프레임·진행량·타이머 시각을 남긴다. 기상별 SVC 프레임과 재개 PC 및 태스크에서 읽은 최초 시각을 연결한다. 예외 추적과 ELF 심벌로 독립 재구성한다.
 
 [Architecture](architecture.en.md) · [아키텍처](architecture.md) · [Verification plan](verification-plan.en.md) · [검증 계획](verification-plan.md)
+
+Independent capture / 독립 실행 근거: [EVD-034 English](evidence/evd-034.en.md) · [EVD-034 한국어](evidence/evd-034.md)
