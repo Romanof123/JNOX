@@ -13,8 +13,30 @@ use core::{
 };
 
 const IDLE: usize = N;
+const SERVICE: usize = N + 1;
+const SUPPLY_PROFILE: bool = cfg!(any(
+    jnox_app = "ordinary-edf-supply",
+    jnox_app = "ordinary-llf-supply",
+    jnox_app = "ordinary-edf-supply-refuse",
+    jnox_app = "ordinary-llf-supply-refuse"
+));
+const CONTEXTS: usize = N + 1 + SUPPLY_PROFILE as usize;
+static SERVICE_SUM: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+static SERVICE_SP: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+extern "C" fn supply_service() -> ! {
+    let sp: u64;
+    unsafe { asm!("mov {}, sp", out(reg) sp, options(nostack, preserves_flags)) }
+    SERVICE_SP.store(sp, Ordering::Relaxed);
+    let mut sum = 0;
+    for sample in 1u64..=64 {
+        let value = core::hint::black_box(sample);
+        sum += value * value;
+    }
+    SERVICE_SUM.store(sum, Ordering::Relaxed);
+    idle()
+}
 const CAP: usize = 24;
-static mut STACKS: [Stack; N + 1] = [const { Stack([0; STACK_BYTES]) }; N + 1];
+static mut STACKS: [Stack; CONTEXTS] = [const { Stack([0; STACK_BYTES]) }; CONTEXTS];
 #[unsafe(no_mangle)]
 static mut ordinary_deadline_rows: [Row; CAP] = [EMPTY; CAP];
 #[unsafe(no_mangle)]
@@ -121,7 +143,7 @@ struct Runtime {
     s: u64,
     grid: u64,
     owner: usize,
-    frames: [*mut Frame; N + 1],
+    frames: [*mut Frame; CONTEXTS],
     released: [bool; N],
     done: [bool; N],
     consumption: [u64; N],
@@ -185,7 +207,7 @@ impl Runtime {
         self.policy.account(k).unwrap();
         let mut missed = 0;
         if kind == 2 {
-            if out == IDLE
+            if out >= N
                 || self.done[out]
                 || elr != (&raw const ordinary_deadline_after_svc).addr() as u64
             {
@@ -196,6 +218,10 @@ impl Runtime {
             missed = u64::from(
                 entry > self.at(self.jobs.iter().find(|j| j.id == out).unwrap().deadline),
             );
+        }
+        let withheld = SUPPLY_PROFILE && k < HORIZON && jobs::RESERVED & (1 << k) != 0;
+        if withheld {
+            self.policy.withhold(k).unwrap();
         }
         let mut releases = 0;
         for j in self.jobs {
@@ -209,7 +235,11 @@ impl Runtime {
         for &id in self.policy.ready() {
             queue = queue * 10 + id as u64 + 1;
         }
-        self.owner = self.policy.decide(k).unwrap().unwrap_or(IDLE);
+        self.owner = if withheld {
+            SERVICE
+        } else {
+            self.policy.decide(k).unwrap().unwrap_or(IDLE)
+        };
         let next = self.frames[self.owner];
         let mut row = EMPTY;
         for id in 0..N {
@@ -267,6 +297,36 @@ impl Runtime {
             if cfg!(jnox_deadline_trace) {
                 self.log();
             }
+            if SUPPLY_PROFILE {
+                let rows = unsafe { &*(&raw const ordinary_deadline_rows) };
+                let progress_at = |out, owner| {
+                    rows[..self.len]
+                        .iter()
+                        .find(|row| {
+                            row.event[0] == 1 && row.event[9] == out && row.event[10] == owner
+                        })
+                        .map(|row| row.job[0][5])
+                };
+                let before = progress_at(0, SERVICE as u64);
+                let resumed = progress_at(SERVICE as u64, 0);
+                let finished = jobs::PROGRESS[0].load(Ordering::Relaxed) as i128;
+                line(
+                    b"A_PROGRESS",
+                    &[before.unwrap_or(-1), resumed.unwrap_or(-1), finished],
+                );
+                if before.is_none_or(|n| n <= 0 || resumed != Some(n) || finished <= n) {
+                    fail()
+                }
+                line(
+                    b"RESULT",
+                    &[
+                        SERVICE_SUM.load(Ordering::Relaxed) as i128,
+                        SERVICE_SP.load(Ordering::Relaxed) as i128,
+                        jobs::PRODUCT[0].load(Ordering::Relaxed) as i128,
+                        jobs::PRODUCT[1].load(Ordering::Relaxed) as i128,
+                    ],
+                );
+            }
             uart_write(b"ORDINARY DEADLINE FINISHED\n");
             park()
         }
@@ -322,7 +382,9 @@ pub fn run() -> ! {
     unsafe { asm!("mrs {}, cntfrq_el0",out(reg)hz,options(nostack,preserves_flags)) };
     let llf = cfg!(any(
         jnox_app = "ordinary-llf",
-        jnox_app = "ordinary-llf-overload"
+        jnox_app = "ordinary-llf-overload",
+        jnox_app = "ordinary-llf-supply",
+        jnox_app = "ordinary-llf-supply-refuse"
     ));
     let overload = cfg!(jnox_app = "ordinary-llf-overload");
     let policy = if llf {
@@ -330,7 +392,15 @@ pub fn run() -> ! {
     } else {
         DeadlinePolicy::Edf
     };
-    let jobs: &[Job] = if overload {
+    let tight = cfg!(any(
+        jnox_app = "ordinary-edf-supply-refuse",
+        jnox_app = "ordinary-llf-supply-refuse"
+    ));
+    let jobs: &[Job] = if tight {
+        &jobs::TIGHT
+    } else if SUPPLY_PROFILE {
+        &jobs::SUPPLIED
+    } else if overload {
         &jobs::LLF
     } else if llf {
         &jobs::LLF[..2]
@@ -339,7 +409,23 @@ pub fn run() -> ! {
     };
     let q = hz / 10;
     let s = counter().checked_add(q).unwrap();
-    let decision = jobs::admit(policy, jobs, hz, s);
+    let full = jobs::admit(policy, jobs, hz, s);
+    let decision = if SUPPLY_PROFILE {
+        line(
+            b"SUPPLY",
+            &[
+                jobs::RESERVED as i128,
+                full.is_ok() as i128,
+                tight as i128,
+                top(SERVICE) as i128,
+                STACK_BYTES as i128,
+                supply_service as *const () as usize as i128,
+            ],
+        );
+        jobs::admit_with_supply(policy, jobs, hz, s, jobs::RESERVED)
+    } else {
+        full
+    };
     let refused = match decision {
         Ok(()) => 0,
         Err(e) => e as u64,
@@ -357,6 +443,18 @@ pub fn run() -> ! {
             size_of::<Frame>() as i128,
         ],
     );
+    if tight {
+        let expected = if llf {
+            jobs::Refusal::Miss
+        } else {
+            jobs::Refusal::Demand
+        };
+        if refused != expected as u64 {
+            fail()
+        }
+        uart_write(b"ORDINARY DEADLINE REFUSED BEFORE LAUNCH\n");
+        park()
+    }
     if overload {
         if refused != jobs::Refusal::Miss as u64 {
             fail()
@@ -364,11 +462,22 @@ pub fn run() -> ! {
     } else if refused != 0 {
         fail()
     }
-    let mut frames = [ptr::null_mut(); N + 1];
+    let mut frames = [ptr::null_mut(); CONTEXTS];
+    if SUPPLY_PROFILE {
+        frames[SERVICE] = initial(SERVICE, supply_service as *const () as usize, 0);
+    }
     frames[IDLE] = initial(IDLE, idle as *const () as usize, 0);
     for j in jobs {
         let pc = j.entry.unwrap() as usize;
-        frames[j.id] = initial(j.id, pc, hz * j.milliseconds / 1000);
+        let duration = hz.checked_mul(j.milliseconds).unwrap() / 1000;
+        let arg = if SUPPLY_PROFILE && j.id == 0 {
+            let stop = jobs::absolute(s, 1, duration).unwrap();
+            line(b"A_STOP", &[stop as i128]);
+            stop
+        } else {
+            duration
+        };
+        frames[j.id] = initial(j.id, pc, arg);
         line(
             b"JOB",
             &[
