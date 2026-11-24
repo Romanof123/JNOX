@@ -106,27 +106,30 @@ fn gcd(mut a: u128, mut b: u128) -> u128 {
     a
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AdmissionError { Invalid, OverCapacity, Overflow }
+
 /// Accumulate exact reduced fractions in input order. Each intermediate
 /// cross-product has a u64 factor and a u32 factor, so their sum fits u128.
 /// Reject if the reduced running total exceeds one or cannot fit in two u64s.
-fn admits(reservations: &[(u32, u32)]) -> Option<()> {
+pub(crate) fn admit_reservations(reservations: &[(u32, u32)]) -> Result<(), AdmissionError> {
     let (mut numerator, mut denominator) = (0u64, 1u64);
     for &(quota, period) in reservations {
         if quota == 0 || quota > period {
-            return None;
+            return Err(AdmissionError::Invalid);
         }
         let period = u128::from(period);
         let denominator_wide = u128::from(denominator);
         let total = u128::from(numerator) * period + u128::from(quota) * denominator_wide;
         let scale = denominator_wide * period;
         if total > scale {
-            return None;
+            return Err(AdmissionError::OverCapacity);
         }
         let divisor = gcd(total, scale);
-        numerator = u64::try_from(total / divisor).ok()?;
-        denominator = u64::try_from(scale / divisor).ok()?;
+        numerator = u64::try_from(total / divisor).map_err(|_| AdmissionError::Overflow)?;
+        denominator = u64::try_from(scale / divisor).map_err(|_| AdmissionError::Overflow)?;
     }
-    Some(())
+    Ok(())
 }
 
 /// Hard constant-bandwidth servers under preemptive uniprocessor EDF. Each
@@ -136,6 +139,7 @@ fn admits(reservations: &[(u32, u32)]) -> Option<()> {
 /// CPU with no blocking, IRQ interference or scheduling overhead.
 /// Equal scheduling deadlines use ascending server ID. No bandwidth reclaiming.
 /// See <https://docs.kernel.org/scheduler/sched-deadline.html#main-algorithm>.
+#[derive(Clone)]
 pub(crate) struct HardCbs<const N: usize> {
     now: u64,
     servers: [Server; N],
@@ -144,7 +148,7 @@ pub(crate) struct HardCbs<const N: usize> {
 impl<const N: usize> HardCbs<N> {
     /// Reservation parameters are (quota, period), in whole ticks.
     pub(crate) fn new(start_tick: u64, reservations: [(u32, u32); N]) -> Option<Self> {
-        admits(&reservations)?;
+        admit_reservations(&reservations).ok()?;
         let servers = reservations.map(|(quota, period)| Server {
             quota,
             period,
@@ -162,7 +166,7 @@ impl<const N: usize> HardCbs<N> {
         self.now
     }
 
-    #[cfg(jnox_bench = "cbs_wake")]
+    #[allow(dead_code)]
     pub(crate) fn allocation(&self, id: usize) -> Option<(u32, u64)> {
         self.servers.get(id).map(|s| (s.remaining, s.deadline))
     }
@@ -194,6 +198,21 @@ impl<const N: usize> HardCbs<N> {
         Ok(())
     }
 
+    /// Effective credit at this tick, before EDF debit. A due replenishment
+    /// may be represented lazily until this client actually wins.
+    pub(crate) fn available(&self, id: usize) -> Result<Option<(u32, u64)>, CbsError> {
+        let server = self.servers.get(id).ok_or(CbsError::UnknownServer)?;
+        if server.work == 0 || (server.remaining == 0 && self.now < server.deadline) {
+            return Ok(None);
+        }
+        if server.remaining > 0 {
+            return Ok(Some((server.remaining, server.deadline)));
+        }
+        let deadline = server.deadline.checked_add(u64::from(server.period))
+            .ok_or(CbsError::TimeOverflow)?;
+        Ok(Some((server.quota, deadline)))
+    }
+
     /// Account for [now, now+1), returning the server that used the CPU. A hard
     /// server with zero budget waits until its scheduling deadline. At that
     /// boundary its allocation becomes (Q, old_deadline + P). Replenishment is
@@ -206,18 +225,7 @@ impl<const N: usize> HardCbs<N> {
             if server.work == 0 {
                 continue;
             }
-            let (deadline, remaining) = if server.remaining == 0 {
-                if self.now < server.deadline {
-                    continue;
-                }
-                let deadline = server
-                    .deadline
-                    .checked_add(u64::from(server.period))
-                    .ok_or(CbsError::TimeOverflow)?;
-                (deadline, server.quota)
-            } else {
-                (server.deadline, server.remaining)
-            };
+            let Some((remaining, deadline)) = self.available(id)? else { continue };
             if deadline <= self.now {
                 return Err(CbsError::MissedDeadline(id));
             }
