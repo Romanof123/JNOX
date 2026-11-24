@@ -15,3 +15,5 @@ On the established Linux toolchain, use the original migration build recipe with
 Use `python3 tools/pi4_migration_capture.py freeze CASE DIR ELF IMG DISASM QEMU --source COMMIT --workload sample-crc32-v1`. Retain all three freeze digests before launch. For each frozen position run `python3 tools/pi4_migration_capture.py run DIR FREEZE_SHA ORDINAL` once, retain and hash every raw file, then `python3 tools/pi4_migration_replay.py DIR ORDINAL SESSION_SHA`. The original default build and historical manifests select sum-65536. Replay derives all stream prefix CRCs with Python zlib independently of the guest's Rust CRC table. Verify reference vectors offline with `python3 -m unittest discover -s tools -p test_pi4_stream_v1.py`.
 
 기존 Linux 환경에서 세 배치별 ELF와 이미지, 역어셈블리를 먼저 고정한다. 독립 재생은 zlib로 모든 블록 CRC를 다시 계산한다. 기본 빌드와 기존 캡처는 원래 합산 앱으로 재생한다.
+
+[First build and freeze results / 최초 빌드 및 고정 결과](../evidence/pi4-crc-stream-first-builds.en-ko.md).
