@@ -85,6 +85,14 @@ impl<const N: usize> DeadlineScheduler<N> {
         Ok(())
     }
 
+    pub(crate) fn withhold(&mut self, now: u64) -> Result<(), DeadlineError> {
+        self.account(now)?;
+        if let Some(id) = self.running.take() {
+            assert!(self.ready.push_front(id));
+        }
+        Ok(())
+    }
+
     /// Queue a release without consuming the decision at this timestamp.
     pub(crate) fn release(
         &mut self,

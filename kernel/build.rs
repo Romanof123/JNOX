@@ -292,7 +292,7 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("deadline"), "JNOX_DEADLINE_TRACE=1 requires ordinary deadline profile");
         println!("cargo::rustc-cfg=jnox_deadline_trace");
     }
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun", "ordinary-edf-supply", "ordinary-llf-supply", "ordinary-edf-supply-refuse", "ordinary-llf-supply-refuse"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted)");
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted_wake)");
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted_trace)");
@@ -409,7 +409,7 @@ fn main() {
         Some("deadline") => {
             assert!(bench == "boot" && board == "virt", "ordinary deadline requires virt without benchmark features");
             match app.as_deref() {
-                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun")) => {
+                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun" | "ordinary-edf-supply" | "ordinary-llf-supply" | "ordinary-edf-supply-refuse" | "ordinary-llf-supply-refuse")) => {
                     println!("cargo::rustc-cfg=jnox_ordinary_deadline");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }
