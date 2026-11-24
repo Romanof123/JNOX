@@ -28,3 +28,5 @@ EVD-018은 어셈블리 작업의 직접 상속 8회·연쇄/시간초과 14회�
 - 각 구성별 동일 ELF로 일반/외부 추적 콜드 첫 실행을 한 번씩, 총 네 자리를 사전 선언한다. Linux 기본 파일시스템의 새 경로, 호스트 관측 한도 15초, 최초 실패·누락 포함이다. 고정 RAM 기록과 종료 후 UART로 해시·구성·주파수·호출자/후속 작업·소유자/대기자·우선순위·프레임·반환값·순서·진행·게시·읽기를 보존한다. 독립 정책/산술 재현 및 실제 IRQ/SVC/ERET와 링크된 PC·스택을 대조한다. IRQ→실제 HIGH acquire, 차단→소유권 이전, 이전→실제 복귀와 임계구간 체류를 계측 오차와 함께 분리한다. 누락·부분 게시·잘못된 소유·복원은 불합격이다. 제품 잠금 집합·WCET·실보드 최대 블로킹과 간섭은 별도 근거가 필요하다. REQ-002/005/023 → DES-003/012 → VER-002/005/023.
 
 [Ordinary Rust dispatcher and pending first verification](ordinary-mutex-runtime.en.md) · [일반 Rust 디스패처와 최초 검증 대기](ordinary-mutex-runtime.md)
+
+[CHG-072 retained IRQ evidence and additive return-path plan](ordinary-mutex-return-plan.en.md) · [CHG-072 최초 IRQ 관측과 추가 복귀 경로 계획](ordinary-mutex-return-plan.md)
