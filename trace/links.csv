@@ -154,3 +154,10 @@ REQ-016,partially-implemented-by,IMP-001
 IMP-001,partially-verified-by,VER-016
 IMP-001,tested-in,EVD-001
 VER-016,has-partial-evidence,EVD-001
+CHG-002,affects,REQ-002
+CHG-002,affects,REQ-005
+DES-003,implemented-by,IMP-002
+REQ-002,partially-implemented-by,IMP-002
+REQ-005,partially-implemented-by,IMP-002
+IMP-002,partially-verified-by,VER-002
+IMP-002,partially-verified-by,VER-005

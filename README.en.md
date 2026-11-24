@@ -14,6 +14,7 @@
 | [System requirements](docs/requirements.en.md) | Requirements, trace IDs and acceptance criteria |
 | [System architecture](docs/architecture.en.md) | Kernel, Linux driver domain, scheduling, ports and user services |
 | [First boot of the M1 Rust kernel](docs/m1-boot.en.md) | Scope and UART acceptance criteria for the minimal AArch64 QEMU kernel |
+| [M1 timer preemption](docs/m1-scheduler.en.md) | Criteria for observing the timer interrupt, higher-priority dispatch and interrupted thread resumption in one boot |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
 | [Development lifecycle and change control](docs/lifecycle.en.md) | Traceability from planning through implementation and verification, including redesign and reapproval after a change |
 | [Trace links](trace/links.csv) | Machine-readable relationships shared by both language editions |

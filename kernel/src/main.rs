@@ -5,6 +5,9 @@ use core::arch::{asm, global_asm};
 use core::panic::PanicInfo;
 use core::ptr;
 
+#[cfg(feature = "sched-bench")]
+mod sched;
+
 static mut BSS_PROBE: u64 = 0;
 
 // SAFETY: The ELF loader enters _start with the platform state described in
@@ -24,6 +27,9 @@ extern "C" fn kernel_main() -> ! {
 
     uart_init();
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
+    #[cfg(feature = "sched-bench")]
+    sched::run();
+    #[cfg(not(feature = "sched-bench"))]
     park()
 }
 
