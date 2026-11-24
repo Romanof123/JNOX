@@ -123,3 +123,5 @@ CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes i
 Single-core virtual evidence for VER-002/005/023. [EVD-048](evidence/evd-048.en.md)
 
 Finite weighted service and wakeup observations for VER-002/005/023. [EVD-049](evidence/evd-049.en.md)
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)

@@ -58,3 +58,5 @@ POL-004 / IMP-042. v3는 부분 통과다. 결정론적 정확 경계 두 건이
 CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 초기화되지 않았다. 입력 수정 후 시작 검사 96건이 모두 통과했으며 수정 구성의 운영 적격 결과는 0/128이었다. [EVD-050](evidence/evd-050.md)
 
 CHG-053 · [Ordinary control service and first dispatch / 일반 제어 서비스와 최초 디스패치](control-service-plan.md)
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)

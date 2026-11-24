@@ -173,3 +173,5 @@ POL-007 / IMP-045. 단독 기본 클록은 10/10건이 중재 전에 정지했�
 CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 초기화되지 않았다. 입력 수정 후 시작 검사 96건이 모두 통과했으며 수정 구성의 운영 적격 결과는 0/128이었다. [EVD-050](evidence/evd-050.md)
 
 POL-011 · CHG-052 · IMP-049. 두 일반 Rust 진입점이 예외 복귀 ABI와 가중 가상시간 스케줄러를 공유한다. [승인된 작업 계획](ordinary-vruntime-plan.md)과 [빌드·캡처·재생 방법](ordinary-weighted.md)을 참조한다. VER-002/005/023 · [EVD-049](evidence/evd-049.md).
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)

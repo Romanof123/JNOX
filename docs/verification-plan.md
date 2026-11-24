@@ -123,3 +123,5 @@ CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 �
 VER-002/005/023의 단일 코어 가상 실행 근거. [EVD-048](evidence/evd-048.md)
 
 VER-002/005/023의 유한 가중 작업 및 깨움 실행 근거. [EVD-049](evidence/evd-049.md)
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)

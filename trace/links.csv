@@ -1060,3 +1060,6 @@ IMP-049,partially-verified-by,VER-005
 VER-005,has-partial-evidence,EVD-049
 IMP-049,partially-verified-by,VER-023
 VER-023,has-partial-evidence,EVD-049
+CHG-054,affects,REQ-002
+CHG-054,affects,REQ-005
+CHG-054,affects,REQ-023
