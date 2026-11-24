@@ -513,11 +513,10 @@ pub(super) fn svc(c: usize, f: *mut Frame, imm: u16) -> *mut Frame {
             abort(26)
         }
         s.summaries |= bit;
-        log::event(c, 13, [role as u64, s.epoch, l.sequence, fr.gpr[2],
-                           fr.gpr[3], fr.gpr[4], fr.gpr[1], 0]);
-        log::event(
+        log::terminal(
             c,
-            9,
+            [role as u64, s.epoch, l.sequence, fr.gpr[2],
+             fr.gpr[3], fr.gpr[4], fr.gpr[1], 0],
             [role as u64, expected, l.sequence, s.epoch, 0, 0, 0, 0],
         );
         s.retire(c, role, fr.reserved, false);
