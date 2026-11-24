@@ -17,3 +17,15 @@ Judge runqueue measurements separately. Require all three proc counters readable
 각 경계에서 단조 시계, 스레드 CPU 시계, 선택형 schedstat 3개 값, CPU 시계, 단조 시계 순으로 읽는다. 첫 두 proc 값은 실행·대기 나노초이며 셋째 값은 슬라이스 수다. 시작·끝 괄호 및 양 끝의 시계 해상도 두 단위를 반영해 벽시계·CPU 시간의 상하한을 계산한다. 벽시계 상한의 1,000 ppm을 올림해 더한 뒤 두 시계 차이의 구간을 보고한다. 정규화된 차이에는 스레드 차단·실행큐 외에도 WSL의 계측 방식이 영향을 줄 수 있다. 과거 게스트 지연의 발생 순서나 원인은 이 차이로 정할 수 없다.
 
 시계 해상도 각각 100 µs 이하, 각 경계 너비 1 ms 이하, 빈 쌍 벽시계 상한 각각 2 ms 이하여야 한다. 두 작업의 CPU 하한은 39 ms 이상이다. 자발적 차단은 CPU 외 시간 하한 70 ms 이상, CPU 상한 5 ms 이하 및 자발 전환이 필요하다. 경쟁은 CPU 외 시간 하한 10 ms 이상, 비자발 전환과 상대 작업 진행이 필요하다. 실행큐 판정은 별도다. 세 proc 값의 단조성, 실제 세 구간의 실행량과 CPU 범위 차이 1 ms 이내, 대기량이 CPU 외 시간 상한+1 ms 이내인지 확인한다. 차단의 대기는 5 ms 이하, 경쟁의 대기는 10 ms 이상이고 추가 슬라이스가 있어야 한다. 누락·정체·상충·모든 대기량 0은 실행큐 검증 미충족이다. 잔여 시간을 대기값으로 대체하지 않는다. 실물·제품 및 기존 게스트 판정은 유지한다.
+
+## Capture and replay / 실행 및 재생
+
+Use 64-bit Linux, Python 3.9+, util-linux `taskset`, and Rust 1.95.0. The runner selects the lowest eligible CPU and binds only the child fixture. Use a new output path for the single first attempt. Record compiler version and flags, stdout/stderr, manifest, result if available and archive SHA-256 outside the capture. Replay on another host reads the raw numeric rows and saved hashes.
+
+```sh
+rustc +1.95.0 --edition=2024 -C opt-level=2 tools/native_weighted_host_fixture.rs -o /tmp/native-weighted-host-fixture
+python3 tools/native_weighted_host_accounting.py capture /tmp/native-weighted-host-fixture /tmp/jnox-184-host-first
+python3 tools/native_weighted_host_accounting.py replay /tmp/jnox-184-host-first
+```
+
+Exit 0 means both sets of controls passed, 1 means a measured set failed, and 2 means the capture was incomplete or unusable. `clock_controls_pass` and `queue_controls_pass` are separate. 일반 사용자로 실행하고 새 경로에 최초 결과를 보존한다. 종료 코드 0은 두 대조 통과, 1은 실측 기준 미충족, 2는 판정에 필요한 원자료가 불완전하거나 사용할 수 없음을 뜻한다.
