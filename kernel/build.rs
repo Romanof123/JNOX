@@ -12,6 +12,12 @@ fn selector(key: &str) -> Option<String> {
 fn main() {
     let profile = selector("JNOX_PROFILE");
     let app = selector("JNOX_APP");
+    println!("cargo::rustc-check-cfg=cfg(jnox_group_trace)");
+    if let Some(value) = selector("JNOX_GROUP_TRACE") {
+        assert!(value == "1" && profile.as_deref() == Some("groups"),
+                "JNOX_GROUP_TRACE requires 1 and JNOX_PROFILE=groups");
+        println!("cargo::rustc-cfg=jnox_group_trace");
+    }
     let trace = selector("JNOX_FIXED_TRACE");
     println!("cargo::rustc-check-cfg=cfg(jnox_fixed_trace)");
     if let Some(value) = trace.as_deref() {
@@ -64,7 +70,15 @@ fn main() {
         Err(env::VarError::NotPresent) => "virt".into(),
         Err(error) => panic!("invalid JNOX_BOARD: {error}"),
     };
+    println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
     match profile.as_deref() {
+        Some("groups") => {
+            assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(), Some("ordinary-groups" | "ordinary-groups-late")),
+                    "groups requires virt, ordinary-groups and no benchmark");
+            println!("cargo::rustc-cfg=jnox_groups");
+            if app.as_deref() == Some("ordinary-groups-late") { println!("cargo::rustc-cfg=jnox_groups_late"); }
+        }
         Some("fixed") => {
             assert!(bench == "boot", "JNOX_PROFILE=fixed conflicts with bench features");
             if board == "pi4" {

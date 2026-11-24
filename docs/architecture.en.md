@@ -133,3 +133,5 @@ CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at 
 CHG-033 and IMP-031 select the ordinary FIFO/RR task tables on the P1 BCM2711 profile. Verification tracks the raw payload, model boot and physical observation separately. [Pi 4 linked-task runtime](boards/pi4-fixed-runtime.en.md)
 
 CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry and overdue wakes after a bounded masked IRQ. Use ordinary execution and the optional diagnostic trace to reconstruct actual charged service. [Simultaneous and late timer events](fixed-runtime-edges.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups, planned EVD-038](ordinary-groups.md#english)

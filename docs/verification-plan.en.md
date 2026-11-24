@@ -81,3 +81,5 @@ CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry 
 [EVD-032](evidence/evd-032.en.md)
 
 POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under DM, then repeated A at tick 10 and B at tick 12 in both epochs. [EVD-033](evidence/evd-033.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups, planned EVD-038](ordinary-groups.md#english)

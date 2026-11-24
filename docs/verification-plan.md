@@ -81,3 +81,5 @@ CHG-034와 IMP-032는 동시 릴리스·만료 및 제한된 IRQ 차단 뒤의 �
 [EVD-032](evidence/evd-032.md)
 
 POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택했고 두 구간 모두 10틱에 A, 12틱에 B를 다시 실행했다. [EVD-033](evidence/evd-033.md)
+
+POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹, EVD-038 계획](ordinary-groups.md#한국어)

@@ -32,7 +32,7 @@ mod fixed_apps;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_fixed, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_fixed, jnox_groups, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -72,8 +72,12 @@ mod feedback_policy;
 mod group_policy;
 #[cfg(jnox_bench = "hierarchy")]
 mod hierarchy;
-#[cfg(jnox_bench = "hierarchy")]
+#[cfg(any(jnox_groups, jnox_bench = "hierarchy"))]
 mod hierarchy_policy;
+#[cfg(jnox_groups)]
+mod group_runtime;
+#[cfg(jnox_groups)]
+mod group_apps;
 #[cfg(jnox_bench = "mutex")]
 mod mutex;
 #[cfg(jnox_bench = "mutex")]
@@ -153,11 +157,13 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(jnox_fixed)]
     fixed_apps::run();
-    #[cfg(not(jnox_fixed))]
+    #[cfg(jnox_groups)]
+    group_apps::run();
+    #[cfg(not(any(jnox_fixed, jnox_groups)))]
     run_bench()
 }
 
-#[cfg(not(jnox_fixed))]
+#[cfg(not(any(jnox_fixed, jnox_groups)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();
