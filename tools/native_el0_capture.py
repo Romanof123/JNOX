@@ -85,7 +85,7 @@ def capture(args):
     )
 
 
-def observe(root, cmd, base, limit, terminal_pattern, success):
+def observe(root, cmd, base, limit, terminal_pattern, success, observer=None):
     """Retain one bounded QEMU process, its UART, exception trace and physical RAM."""
     marker = "unobserved"
     proc = None
@@ -110,7 +110,11 @@ def observe(root, cmd, base, limit, terminal_pattern, success):
 
                 pipe = Pipe()
                 request(pipe, "qmp_capabilities")
+                if observer is not None:
+                    observer.start(pipe, proc.pid)
                 while proc.poll() is None:
+                    if observer is not None:
+                        observer.sample()
                     uart = root / "uart.bin"
                     if uart.exists():
                         if uart.stat().st_size > 1 << 20:
@@ -145,6 +149,8 @@ def observe(root, cmd, base, limit, terminal_pattern, success):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
+        if observer is not None:
+            observer.finish()
         save(
             root / "session.json",
             dict(
