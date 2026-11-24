@@ -37,6 +37,7 @@ fn work_until(id: usize, end: u64) {
         PROGRESS[id].fetch_add(1, Ordering::Relaxed);
     }
     if cfg!(any(
+        jnox_deadline_recurring,
         jnox_app = "ordinary-edf-supply",
         jnox_app = "ordinary-llf-supply"
     )) {
@@ -83,6 +84,30 @@ pub static SUPPLIED: [Job; 2] = [
 ];
 pub static TIGHT: [Job; 1] = [job(0, 0, 2, 2, 250)];
 pub const RESERVED: u64 = 1 << 1;
+
+#[cfg(any(test, jnox_deadline_recurring))]
+pub static RECURRING: [Job; 2] = [
+    Job { entry: Some(deadline_worker_a_until), ..job(0, 0, 13, 9, 1050) },
+    job(1, 10, 16, 1, 30),
+];
+#[cfg(any(test, jnox_deadline_recurring))]
+pub static RECURRING_TIGHT: [Job; 1] = [job(0, 0, 10, 9, 1050)];
+
+/// Compile the finite calendar directly from cell membership. Subtraction
+/// only follows the offset check; the final occurrence is clipped at H.
+#[cfg(any(test, jnox_deadline_recurring))]
+pub fn recurring_mask(offset: u64, period: u64, width: u64) -> Result<u64, Refusal> {
+    if offset >= HORIZON || period == 0 || width == 0 || width > period {
+        return Err(Refusal::Grid);
+    }
+    let mut mask = 0;
+    for k in offset..HORIZON {
+        if (k - offset) % period < width {
+            mask |= 1 << k;
+        }
+    }
+    Ok(mask)
+}
 
 pub static EDF: [Job; N] = [
     job(

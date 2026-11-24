@@ -291,9 +291,15 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_deadline)");
     println!("cargo::rustc-check-cfg=cfg(jnox_deadline_trace)");
     println!("cargo::rustc-check-cfg=cfg(jnox_deadline_owner_cap)");
-    if let Some(value) = selector("JNOX_DEADLINE_OWNER_CAP") {
+    println!("cargo::rustc-check-cfg=cfg(jnox_deadline_recurring)");
+    let recurring = matches!(app.as_deref(), Some("ordinary-edf-recurring" | "ordinary-edf-recurring-refuse" | "ordinary-llf-recurring" | "ordinary-llf-recurring-refuse"));
+    if recurring {
+        println!("cargo::rustc-cfg=jnox_deadline_recurring");
+    }
+    let owner_cap = selector("JNOX_DEADLINE_OWNER_CAP");
+    if let Some(value) = owner_cap.as_deref().or(if recurring { Some("4") } else { None }) {
         assert!(profile.as_deref() == Some("deadline")
-            && matches!(app.as_deref(), Some("ordinary-edf-supply" | "ordinary-llf-supply")),
+            && (recurring || matches!(app.as_deref(), Some("ordinary-edf-supply" | "ordinary-llf-supply"))),
             "JNOX_DEADLINE_OWNER_CAP requires an ordinary finite supply profile");
         assert!(!value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()),
             "owner cap must be an unsigned decimal integer");
@@ -305,7 +311,7 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("deadline"), "JNOX_DEADLINE_TRACE=1 requires ordinary deadline profile");
         println!("cargo::rustc-cfg=jnox_deadline_trace");
     }
-    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun", "ordinary-edf-supply", "ordinary-llf-supply", "ordinary-edf-supply-refuse", "ordinary-llf-supply-refuse"))"#);
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_app, values("ordinary-edf", "ordinary-llf", "ordinary-llf-overload", "ordinary-edf-overrun", "ordinary-edf-supply", "ordinary-llf-supply", "ordinary-edf-supply-refuse", "ordinary-llf-supply-refuse", "ordinary-edf-recurring", "ordinary-edf-recurring-refuse", "ordinary-llf-recurring", "ordinary-llf-recurring-refuse"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted)");
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted_wake)");
     println!("cargo::rustc-check-cfg=cfg(jnox_weighted_trace)");
@@ -422,7 +428,7 @@ fn main() {
         Some("deadline") => {
             assert!(bench == "boot" && board == "virt", "ordinary deadline requires virt without benchmark features");
             match app.as_deref() {
-                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun" | "ordinary-edf-supply" | "ordinary-llf-supply" | "ordinary-edf-supply-refuse" | "ordinary-llf-supply-refuse")) => {
+                Some(name @ ("ordinary-edf" | "ordinary-llf" | "ordinary-llf-overload" | "ordinary-edf-overrun" | "ordinary-edf-supply" | "ordinary-llf-supply" | "ordinary-edf-supply-refuse" | "ordinary-llf-supply-refuse" | "ordinary-edf-recurring" | "ordinary-edf-recurring-refuse" | "ordinary-llf-recurring" | "ordinary-llf-recurring-refuse")) => {
                     println!("cargo::rustc-cfg=jnox_ordinary_deadline");
                     println!("cargo::rustc-cfg=jnox_app=\"{name}\"");
                 }

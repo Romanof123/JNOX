@@ -37,3 +37,31 @@ For each policy run six new positions: accepted ceiling 4 plain/trace, refused c
 정렬된 셀의 예외 진입은 최대 3, Q폭 임의 정수 이동 구간은 최대 4이다. 서비스 함수 반환은 예외가 아니다. 실제 다른 소유자로 복귀한 경우만 전환으로 센다. 미복귀 종료, 예약 셀과 실제 점유 시각을 구분한다. IRQ 셀 위반, 마감 위반, 누락된 반환이나 증거는 실패이다. 각 정책의 정상·한도 거부·공급 거부를 각각 일반/추적으로 실행해 총 12개 게스트의 UART·RAM·ELF·종료 PC를 보존하고 기존 진입점도 기준과 대조한다. 초기 의존성은 선택기 배선, 공용 달력 판정, 호출별 반환 기록이다. 기존 단일 예약 경로는 유지한다. 실제 하드웨어 최악 시간은 별도 검증 대상이다.
 
 [Finite supply / 유한 공급](evidence/evd-095.en.md) · [Owner bounds / 전환 한도](deadline-owner-cap-plan.en-ko.md) · [Runtime](../kernel/src/ordinary_deadline.rs) · [Admission](../kernel/src/deadline_jobs.rs)
+
+## Source implementation and capture / 구현 및 수집 절차
+
+From a clean Linux/WSL checkout with Cargo's aarch64-unknown-none target, QEMU and aarch64-linux-gnu binutils installed, use a new absolute evidence directory for each attempt. The wrapper receives SIGTERM after ten seconds, freezes the guest, verifies the terminal PC range and reads the ELF-named audit records. GNU timeout signals only the wrapper with --foreground. Inspect capture/exit.json and registers.txt as well as the terminal UART. Select cap 4 or 3 on the normal application, or cap 4 on its -refuse variant. Set JNOX_DEADLINE_TRACE=1 for the corresponding trace capture.
+
+깨끗한 Linux/WSL 환경에서 각 시도마다 새 증거 디렉터리를 사용한다. 일반 앱에 한도 4/3, 공급 거부 앱에 한도 4를 지정하고 각각 일반/추적 모드로 실행한다. 아래 예시는 EDF 승인 구성이다. 래퍼는 종료 위치에서 RAM을 동결하며 stdout, UART, 예외 기록과 심볼별 원본을 남긴다.
+
+~~~sh
+set -eu
+root=$(pwd -P)
+out=$(mktemp -d)
+export JNOX_BOARD=virt JNOX_PROFILE=deadline JNOX_APP=ordinary-edf-recurring
+export JNOX_DEADLINE_OWNER_CAP=4
+unset JNOX_DEADLINE_TRACE
+export JNOX_RECURRING_CAPTURE="$out/capture"
+git rev-parse HEAD > "$out/source"
+env | grep '^JNOX_' | sort > "$out/selectors"
+(cd kernel && CARGO_TARGET_DIR="$out/target" cargo build --locked --release -j1) > "$out/build.log" 2>&1
+cp "$out/target/aarch64-unknown-none/release/jnox-kernel" "$out/kernel.elf"
+aarch64-linux-gnu-objdump -d "$out/kernel.elf" > "$out/disassembly"
+timeout --foreground --preserve-status -k 4s 10s python3 "$root/tools/deadline_recurring_capture.py" \
+  -machine virt,gic-version=2 -cpu cortex-a72 -accel tcg -smp 1 -m 128M \
+  -nographic -nic none -monitor none -serial stdio -kernel "$out/kernel.elf" \
+  < /dev/null > "$out/uart.raw" 2> "$out/stderr"
+(cd "$out" && sha256sum kernel.elf uart.raw capture/*.bin > SHA256SUMS)
+~~~
+
+CALENDAR gives offset/period/width/mask and the first-reservation-only verdict. RECURRING_JOB gives id/release/deadline/cost/milliseconds before admission. CONFIG gives timer frequency, absolute origin and Q. audit.bin holds two rows of six little-endian u64 words (ordinal+1, first/last input, SP, sum, return counter). deadline_recurring_launch.bin counts frame initializations, timer compares programmed and the initial restore call. All three are zero on either refusal. For normals, decode D/J dispatch rows against the saved RAM, verify both worker products independently using the recorded block counts and locate the reducer call/return in disassembly.

@@ -131,3 +131,45 @@ fn owner_window_exhaustive_irq_offsets_and_early_completions() {
         }
     }
 }
+
+#[test]
+fn recurring_calendar_supply() {
+    for offset in 0..HORIZON {
+        for period in 1..=HORIZON + 1 {
+            for width in 1..=period {
+                let mask = recurring_mask(offset, period, width).unwrap();
+                let mut free = [true; HORIZON as usize];
+                for start in (offset..HORIZON).step_by(period as usize) {
+                    for k in start..(start + width).min(HORIZON) {
+                        free[k as usize] = false;
+                    }
+                }
+                for a in 0..=HORIZON {
+                    for b in a..=HORIZON {
+                        assert_eq!(available(mask, a, b).unwrap(),
+                            free[a as usize..b as usize].iter().filter(|v| **v).count() as u64);
+                    }
+                }
+            }
+        }
+    }
+    for args in [(HORIZON, 1, 1), (0, 0, 1), (0, 1, 0), (0, 2, 3)] {
+        assert_eq!(recurring_mask(args.0, args.1, args.2), Err(Refusal::Grid));
+    }
+    assert_eq!(recurring_mask(15, u64::MAX, u64::MAX), Ok(1 << 15));
+}
+
+#[test]
+fn recurring_second_reservation_and_ceiling() {
+    let mask = recurring_mask(1, 8, 1).unwrap();
+    assert_eq!(mask, 514);
+    for policy in [DeadlinePolicy::Edf, DeadlinePolicy::Llf] {
+        assert_eq!(admit_with_supply(policy, &RECURRING, 1000, 200, mask), Ok(()));
+        for single in [0, 2, 512] {
+            assert_eq!(admit_with_supply(policy, &RECURRING_TIGHT, 1000, 200, single), Ok(()));
+        }
+        let refusal = if policy == DeadlinePolicy::Edf { Refusal::Demand } else { Refusal::Miss };
+        assert_eq!(admit_with_supply(policy, &RECURRING_TIGHT, 1000, 200, mask), Err(refusal));
+    }
+    assert_eq!(owner_window_bound(100, HORIZON + 1, 100, 2), Ok(4));
+}
