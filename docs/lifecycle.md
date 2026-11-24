@@ -89,3 +89,5 @@ python tools/open_tracking.py open-pages.json
 [11월 25일 04시 47분 KST 열린 이슈·PR와 주 담당 전수 기록](evidence/pm-open-tracking-20261124T194750Z.en-ko.md).
 
 [05:32 KST open-work and document audit / 주 이슈·담당·문서 전수 점검](evidence/pm-tracking-20261124T203216Z.en-ko.md).
+
+[Historical PR and issue cross-index through #265 / #265까지 과거 PR·이슈 교차 색인](evidence/historical-pr-index-265.en-ko.md).
