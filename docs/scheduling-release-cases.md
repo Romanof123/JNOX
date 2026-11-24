@@ -9,7 +9,7 @@
 | POL-001 | 높은 ID의 선착순, 타이머 도착, 양보·차단·깨움·종료, 처리기 내부 등록 순서, 깊이 2와 초과 거부. [EVD-004](evidence/evd-004.md) · [EVD-012](evidence/evd-012.md) 연결된 서비스 두 종류에서 큐 점유량은 각각 최대 2와 1이었다. 가득 찬 큐와 미등록 핸들러 요청을 거부했고 핸들러가 새 이벤트를 넣어도 FIFO 순서를 유지했다. 두 소유 작업 모두 핸들러 복귀 후 예산 초과를 두 번 기록하고 실행을 계속했다. [EVD-036](evidence/evd-036.md) · [#80](https://github.com/Romanof123/JNOX/issues/80) | 실기기에서 핸들러 최악 실행 시간을 검증하고 제품의 큐·핸들러·부하 한계를 승인한다. |
 | POL-002 | HIGH 즉시·지연 실행, 동순위 도착·양보·종료, 상위 선점, RR 잔여량 만료, Rust 작업 및 Pi 모델. [EVD-002](evidence/evd-002.md) · [EVD-003](evidence/evd-003.md) · [EVD-004](evidence/evd-004.md) · [EVD-014](evidence/evd-014.md) · [EVD-027](evidence/evd-027.md) · [EVD-030](evidence/evd-030.md) QEMU Pi 4 모델에서는 FIFO·RR 작업의 선점과 RR 동순위 교대를 확인했다(#71). QEMU virt에서는 RR 만료와 깨움이 겹친 경우 및 IRQ 마스킹으로 깨움이 지연된 경우를 확인했다(#72). [EVD-031](evidence/evd-031.md) · [EVD-032](evidence/evd-032.md) QEMU virt에서 FIFO·RR 구성의 콜드 부팅 24회로 관측된 핸들러·정책 실행 구간과 작업 스택 사용량을 기록했다. [EVD-041](evidence/evd-041.md) | 실보드 검증과 승인은 #34에서 계속 추적한다. |
 | POL-003 | EVD-013에서 명시한 4 대 2 도착과 HRRN 대기 시간 예제를 확인했다. 4슬롯 M4 응용의 일반 부팅 6회와 진단 부팅 3회에서 동순위 순서·잘못된 추정치·추정 초과 실행을 확인했다. 독립 검증자는 결정 60회를 재구성해 측정 서비스량, SJF·HRRN의 실행 작업 유지, SRTF의 중단 프레임·복귀 PC 복원을 대조했다. [EVD-004](evidence/evd-004.md) · [EVD-013](evidence/evd-013.md) · [EVD-037](evidence/evd-037.md) | 일반 M4 작업 부하에서 명시된 기능 사례를 확인했다. 배포 검토에는 승인 대상 작업 구성과 용량 근거가 필요하다. 최악 실행 시간을 보장하려면 해당 부하의 측정 근거가 필요하다. |
-| POL-004 | 동시·후속 주기 릴리스, 실행 중 선점, 중첩·기한 위반. EVD-008은 지터·차단·IRQ·디스패치가 있는 조건부 호스트 상한 계산. QEMU virt에서 (10,9)/(12,4) 작업 쌍은 틱 0에 RM에서 A·B, DM에서 B·A 순서로 실행됐다. 두 정책 모두 틱 10에 A, 틱 12에 B를 실행했다. [EVD-004](evidence/evd-004.md) · [EVD-007](evidence/evd-007.md) · [EVD-008](evidence/evd-008.md) · [EVD-009](evidence/evd-009.md) · [EVD-028](evidence/evd-028.md) · [EVD-033](evidence/evd-033.md) | 승인 대상 작업 집합과 검증된 비용 자료로 분석한다. |
+| POL-004 | 동시·후속 주기 릴리스, 실행 중 선점, 중첩·기한 위반. EVD-008은 지터·차단·IRQ·디스패치가 있는 조건부 호스트 상한 계산. QEMU virt에서 (10,9)/(12,4) 작업 쌍은 틱 0에 RM에서 A·B, DM에서 B·A 순서로 실행됐다. 두 정책 모두 틱 10에 A, 틱 12에 B를 실행했다. [EVD-004](evidence/evd-004.md) · [EVD-007](evidence/evd-007.md) · [EVD-008](evidence/evd-008.md) · [EVD-009](evidence/evd-009.md) · [EVD-028](evidence/evd-028.md) · [EVD-033](evidence/evd-033.md) 독립 호스트 재현에서 명시된 입력에 대한 위상별 수용 산술과 CLI 동작을 검증했다. [EVD-043](evidence/evd-043.md) | 승인 대상 작업 집합과 검증된 비용 자료로 분석한다. |
 | POL-005 | (8,1)/(10,8) 최초 선택, 이른 기한 도착, 표본 시점 교차·동점·음의 여유, PC 복귀. [EVD-004](evidence/evd-004.md) · [EVD-005](evidence/evd-005.md) · [EVD-015](evidence/evd-015.md) | 승인 작업과 간섭 조건에 재평가 간격 및 전환 빈도 상한을 적용한다. |
 | POL-006 | 경계 직전·경계, 유휴·순환, 표 검사로 잘못된 슬롯 거부, 게스트 초과 실행과 다음 도메인 진입. [EVD-004](evidence/evd-004.md) · [EVD-010](evidence/evd-010.md) | 선택한 프레임·초과 조치·도메인 부하를 검증한다. |
 | POL-007 | 빈 폴링, 경계 전후 도착, 서비스량·잔여 예산, 보충액·시각과 포화 병합. [EVD-004](evidence/evd-004.md) · [EVD-016](evidence/evd-016.md) | 프로파일의 요청으로 서버 한계를 확인하고 M3 제어 간섭을 측정한다. |
@@ -43,8 +43,10 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 
 [POL-012 실행 중 설정 변경](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 · [EVD-039](evidence/evd-039.md)
 
-[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 가상 런타임 구현과 독립 게스트 검증은 미완료다.
 
 [FIFO·RR 측정 및 판정 기준](fixed-cost.md) · [EVD-041 비용·스택 관측](evidence/evd-041.md)
+
+[호스트 위상별 수용 분석](fs-m3-admission.md) · POL-004 #94의 CHG-045 / IMP-043. 조건부 호스트 산술과 CLI는 독립 재현을 통과했다. 런타임 추적 및 실측 예산 근거는 미확보다. [EVD-043](evidence/evd-043.md)
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)

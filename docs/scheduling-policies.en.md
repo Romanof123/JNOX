@@ -112,3 +112,5 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
 
 POL-002 · FIFO/RR handler intervals, linked footprint and observed stack depth. [EVD-041](evidence/evd-041.en.md)
+
+POL-004 / IMP-043. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
