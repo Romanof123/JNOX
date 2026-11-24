@@ -2,7 +2,9 @@
 
 [English](README.md) · 한국어
 
-**Just-enough Nucleus, Open eXtensions.** J-NOX는 임베디드 시스템용으로 Rust로 개발하는 실시간 마이크로커널 프로젝트입니다. 작은 커널, 독립 실행 영역의 서비스, 네이티브 Rust 드라이버와 Linux 드라이버 호환 영역을 설계 목표로 삼습니다.
+J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Rust로 개발하는 경량 실시간 마이크로커널입니다.
+
+J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 서비스 격리, 네이티브 Rust 드라이버, Linux 드라이버를 위한 별도 호환 영역을 설계 목표로 삼습니다.
 
 AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO와 라운드로빈으로 실행할 수 있습니다. 두 정책 모두 Raspberry Pi 4 모델에서도 부팅했습니다. 스케줄링 출시 표에는 시험한 구성별 근거와 남은 작업이 연결되어 있습니다. [Rust 작업 실행](docs/fixed-runtime.md) · [Pi 4 모델 검증](docs/evidence/evd-031.md) · [스케줄링 출시 표](docs/scheduling-release-cases.md)
 
@@ -22,6 +24,7 @@ AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO�
 | [M1 동일 우선순위 FIFO](docs/m1-fifo.md) | 같은 우선순위 스레드의 준비 순서, CPU 양보와 복귀를 확인하는 기준 |
 | [Rust 작업 테이블로 커널 실행](docs/fixed-runtime.md) | AArch64 고정 우선순위 커널을 빌드하고 앱 작업 테이블을 선택해 FIFO·라운드로빈 실행 |
 | [일반 Rust 배치 작업](docs/ordinary-batch.md) | 실행 중 작업 제출, 지연 도착, SJF·SRTF·HRRN 선택과 실제 프레임 검증 |
+| [다단계 큐 실행](docs/ordinary-multilevel.md) | MLQ와 MLFQ에서 Rust 작업을 실행하고 대기, 우선순위 강등·상향이 실제 실행 순서에 미치는 영향 확인 |
 | [스케줄링 정책과 라운드로빈](docs/scheduling-policies.md) | 고전·현대 정책의 선택·예산·격리 조건과 정책별 실행 검증 |
 | [IPC 프로파일](docs/ipc-mechanisms.md) | 스케줄링 승인 후 개발할 IPC 10개 계열의 자원 한도와 인수 시험 |
 | [검증 계획](docs/verification-plan.md) | 시험 방법, 합격 판정, 실기기 검증, 증거 형식 |
