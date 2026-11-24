@@ -36,3 +36,5 @@ The footprint targets in `REQ-009` exclude boot firmware, user services, and the
 [Product plan](product-plan.en.md) · [Safety and security concept](safety-security-concept.en.md) · [Trace links](../trace/links.csv)
 
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)

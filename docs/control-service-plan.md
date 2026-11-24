@@ -33,15 +33,15 @@ For the native Linux comparison, check out the candidate in a native /tmp direct
 
 ```sh
 export JNOX_BOARD=virt JNOX_PROFILE=periodic JNOX_APP=control-rm JNOX_CONTROL_CASE=healthy
-unset JNOX_CONTROL_MARKERS JNOX_CONTROL_DESCRIPTOR
+unset JNOX_CONTROL_COLD JNOX_CONTROL_MARKERS JNOX_CONTROL_DESCRIPTOR
 CARGO_TARGET_DIR=/tmp/jnox-rm-stock cargo build --locked --release
 JNOX_CONTROL_DESCRIPTOR=1 CARGO_TARGET_DIR=/tmp/jnox-rm-descriptor cargo build --locked --release
 ```
 
-Repeat with control-dm and separate DM directories. Manifest the source tree, explicit selector values, compiler invocations, sorted environment relevant to Cargo, ELF SHA-256, symbols, disassembly and section sizes. The selector is unset for stock or exactly 1 for the descriptor. Marker and descriptor arms are mutually exclusive. The default build retains the zero-argument control entry and its original reconstruction path. Verify the stock binary against its archived hash; label any source build that differs. The descriptor arm emits the existing UART format, so its identity must come from the frozen ELF and launch manifest.
+Repeat with control-dm and separate DM directories. Manifest the source tree, explicit selector values, compiler invocations, sorted environment relevant to Cargo, ELF SHA-256, symbols, disassembly and section sizes. The selector is unset for stock or exactly 1 for the descriptor. The descriptor arm requires both the cold and marker selectors to be unset. The default build retains the zero-argument control entry and its original reconstruction path. Verify the stock binary against its archived hash; label any source build that differs. The descriptor arm emits the existing UART format, so its identity must come from the frozen ELF and launch manifest.
 
 Descriptor construction executes with IRQs masked during the actual release. Row 34 includes that work, and the elapsed release-to-check and release-to-job-finish intervals include it. Compare the full handler and masking intervals, not just the worker's rows 6 and 8. The existing 250 µs debit, 0.5 ms IRQ envelope, 1 ms decision envelope and 5 ms spacing/deadline remain in force. Independent QA must determine whether any masked interval increased, confirm argument-register and resume behavior in the actual ELF, verify consecutive and cold-start generations, and reconcile accounting before claiming improvement. No source-only WCET or unchanged masking bound is established.
 
 제어 작업을 실제로 릴리스하는 IRQ가 중첩 검사를 통과한 뒤 전용 예외 프레임의 x0~x4에 두 위상의 인덱스·절대 목표와 시간 단위를 한 번 기록한다. 두 번째 목표는 오버플로를 검사해 더하며 두 인덱스가 관측 범위 안에서 연속인지 확인한다. 일반 작업은 이 값을 인자로 받아 두 번째 위상까지 같은 작업과 스택에서 사용한다. 놓친 위상은 기존 경로에서 현재 시각으로 최종 평가한다.
 
-위 명령에서 기본 비교군은 JNOX_CONTROL_DESCRIPTOR를 해제하고, 작업 기술자 비교군은 1로 설정한다. 두 비교군 모두 healthy, 기본 시계, 동일한 opt-level s를 사용한다. DM은 JNOX_APP=control-dm과 별도의 /tmp 경로를 쓴다. 마커 비교군과 함께 선택할 수 없다. 실제 ELF 해시·디스어셈블리·실행 명세로 비교군을 식별한다. 기술자 작성 비용은 IRQ 내에서 발생하므로 행 34, 릴리스부터 판정·종료까지의 시간과 마스킹 구간을 함께 비교한다. 행 6·8의 작업 과금만으로 비용 절감이나 마스킹 상한을 판단할 수 없다. 기존 한계를 그대로 적용하고 연속 작업과 콜드 부팅에서 재개 동작을 독립 검증한다.
+위 명령에서 기본 비교군은 JNOX_CONTROL_DESCRIPTOR를 해제하고, 작업 기술자 비교군은 1로 설정한다. 두 비교군 모두 healthy, 기본 시계, 동일한 opt-level s를 사용한다. DM은 JNOX_APP=control-dm과 별도의 /tmp 경로를 쓴다. 기술자 구성에서는 콜드 및 마커 선택자를 모두 해제한다. 실제 ELF 해시·디스어셈블리·실행 명세로 비교군을 식별한다. 기술자 작성 비용은 IRQ 내에서 발생하므로 행 34, 릴리스부터 판정·종료까지의 시간과 마스킹 구간을 함께 비교한다. 행 6·8의 작업 과금만으로 비용 절감이나 마스킹 상한을 판단할 수 없다. 기존 한계를 그대로 적용하고 연속 작업과 콜드 부팅에서 재개 동작을 독립 검증한다.

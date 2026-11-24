@@ -118,4 +118,14 @@ POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds
 
 POL-007 / IMP-045. The standalone default series stopped 10/10 before arbitration. Integrated default and icount each completed 8/8 ordinary cases and isolated 2/2 late controls with matching ELF hashes. Timing variation remains unexplained. [EVD-045](evidence/evd-045.en.md)
 
+CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes initialized. After the input repair all 96 startup checks passed. Operational qualification was 0/128 in the repaired series. [EVD-050](evidence/evd-050.en.md)
+
+Single-core virtual evidence for VER-002/005/023. [EVD-048](evidence/evd-048.en.md)
+
+Finite weighted service and wakeup observations for VER-002/005/023. [EVD-049](evidence/evd-049.en.md)
+
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. In v1, 9/10 P edges and 11/12 Q edges exceeded 1 ms and Q skipped a runnable B window. Live delay injection and IRQ masking remain unverified. [EVD-044 v2](evidence/evd-044-v2.en.md)
+
 VER-002/005/023 · Twenty-two of 24 boots inhibited. Two descriptor DM boots accepted seven permits each and stayed OFF. Healthy sequences: 0/24. [EVD-051](evidence/evd-051.en.md)

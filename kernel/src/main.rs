@@ -45,13 +45,17 @@ mod control_app;
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
 #[cfg(jnox_bench = "deadline")]
 mod deadline;
-#[cfg(jnox_bench = "deadline")]
+#[cfg(jnox_ordinary_deadline)]
+mod ordinary_deadline;
+#[cfg(jnox_ordinary_deadline)]
+mod deadline_jobs;
+#[cfg(any(jnox_ordinary_deadline, jnox_bench = "deadline"))]
 mod deadline_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
@@ -76,8 +80,8 @@ mod event_loop;
 mod extension;
 #[cfg(jnox_bench = "extension")]
 mod extension_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
-#[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
+#[cfg(any(jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
+#[cfg_attr(any(jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
 #[cfg(any(jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
@@ -106,6 +110,7 @@ mod multilevel_service;
 #[cfg(jnox_multilevel)]
 mod multilevel_apps;
 #[cfg(jnox_bench = "partition")]
+#[cfg_attr(jnox_ordinary_partition, path = "ordinary_partition.rs")]
 mod partition;
 #[cfg(jnox_bench = "periodic")]
 mod periodic;
@@ -126,6 +131,7 @@ mod proportional_policy;
     jnox_batch,
     jnox_fixed,
     jnox_multilevel,
+    jnox_ordinary_deadline,
     jnox_bench = "deadline",
     jnox_bench = "coop",
     jnox_bench = "mutex",
@@ -152,7 +158,9 @@ mod smp_policy;
 mod temporal_policy;
 #[cfg(jnox_bench = "vruntime")]
 mod vruntime;
-#[cfg(jnox_bench = "vruntime")]
+#[cfg(jnox_weighted)]
+mod weighted;
+#[cfg(any(jnox_weighted, jnox_bench = "vruntime"))]
 mod vruntime_policy;
 
 static mut BSS_PROBE: u64 = 0;
@@ -161,6 +169,7 @@ static mut BSS_PROBE: u64 = 0;
 // start.S. The assembly establishes the Rust ABI before calling kernel_main.
 global_asm!(
     include_str!("start.S"),
+    cold = const cfg!(jnox_control_cold) as usize,
     pi4 = const cfg!(jnox_pi4) as usize,
     pi4_scheduler = const cfg!(all(jnox_pi4, any(jnox_bench = "scheduler", jnox_fixed))) as usize,
     bss_probe = sym BSS_PROBE,
@@ -185,17 +194,21 @@ extern "C" fn kernel_main() -> ! {
     batch_app::run();
     #[cfg(jnox_ap)]
     ordinary_server::run();
+    #[cfg(jnox_ordinary_deadline)]
+    ordinary_deadline::run();
+    #[cfg(jnox_weighted)]
+    weighted::run();
     #[cfg(jnox_groups)]
     group_apps::run();
     #[cfg(jnox_multilevel)]
     multilevel_apps::run();
     #[cfg(jnox_control)]
     control_runtime::run();
-    #[cfg(not(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+    #[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_control, jnox_ap, jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
+#[cfg(not(any(jnox_control, jnox_ap, jnox_ordinary_deadline, jnox_fixed, jnox_batch, jnox_groups, jnox_weighted, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();

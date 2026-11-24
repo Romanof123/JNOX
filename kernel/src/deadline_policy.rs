@@ -70,7 +70,10 @@ impl<const N: usize> DeadlineScheduler<N> {
         self.jobs.get(id)?.map(|job| job.laxity(self.now))
     }
 
-    fn account(&mut self, now: u64) -> Result<(), DeadlineError> {
+    #[cfg(jnox_ordinary_deadline)]
+    pub(crate) fn ready(&self) -> &[usize] { self.ready.entries() }
+
+    pub(crate) fn account(&mut self, now: u64) -> Result<(), DeadlineError> {
         let elapsed = now
             .checked_sub(self.now)
             .ok_or(DeadlineError::TimeRegression)?;
@@ -129,6 +132,25 @@ impl<const N: usize> DeadlineScheduler<N> {
             if !boundary || self.last_boundary == Some(now) {
                 return Ok(Some(id));
             }
+            #[cfg(jnox_ordinary_deadline)]
+            {
+                let rank = |job: Job| match self.policy {
+                    DeadlinePolicy::Edf => i128::from(job.deadline),
+                    DeadlinePolicy::Llf => job.laxity(now),
+                };
+                let incumbent = rank(self.jobs[id].unwrap());
+                let selected = self.ready.pop_ranked(
+                    |candidate| self.jobs[candidate].map(rank).filter(|key| *key < incumbent),
+                    |a, b| a < b,
+                );
+                if let Some(next) = selected {
+                    assert!(self.ready.push_back(id));
+                    self.running = Some(next);
+                }
+                self.last_boundary = Some(now);
+                return Ok(self.running);
+            }
+            #[cfg(not(jnox_ordinary_deadline))]
             assert!(self.ready.push_front(id));
         }
         self.running = self.ready.pop_ranked(

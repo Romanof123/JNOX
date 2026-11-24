@@ -1,0 +1,563 @@
+{
+  "evidence_id": "EVD-044",
+  "version": 2,
+  "source": "155083fdc539ae3ed8b8e5b0bfa6a3530b21b949",
+  "implementation": "IMP-044",
+  "change": "CHG-046",
+  "reviewer_manifest_sha256": "8e3ac74dd37a44cc290b493a96e1354d4a66d28ee9b0e691ce2e1542d29ffcb8",
+  "summary": {
+    "guest": {
+      "firstP": {
+        "origin": "guest",
+        "table": "P",
+        "case": "healthy",
+        "epoch": 85296,
+        "frequency": 62500000,
+        "first_a_close": {
+          "d": 6335296,
+          "c": 6335296,
+          "i": 6369970,
+          "x": 6383331,
+          "c_minus_d": 0,
+          "i_minus_c": 34674,
+          "x_minus_i": 13361
+        },
+        "missed": [],
+        "b_release_nominal": 9460296,
+        "b_first_selection": 18853112,
+        "b_first_worker_observation": 18861981,
+        "ticks": {
+          "kernel": 67165,
+          "uncertainty": 56044,
+          "A": 24976586,
+          "idle": 12444538,
+          "B": 6223660
+        },
+        "measured_service_loss_ticks": {
+          "idle": 34980,
+          "A": 26824,
+          "B": 38928
+        },
+        "timing_envelope_met": true,
+        "recurrence_iterations_checked": 11970848,
+        "elf_sha256": "8702aeb14671e3865224d6157ecd325cae67ce1b6d4d0bd32d2d8bd14fbbb4eb",
+        "independent_return_trace_checked": true,
+        "edges": 10,
+        "elapsed_ticks": 43767993,
+        "max_latency_ticks": 48035,
+        "first_excess": null,
+        "over": 0
+      },
+      "priorP": {
+        "origin": "guest",
+        "table": "P",
+        "case": "healthy",
+        "epoch": 585696,
+        "frequency": 62500000,
+        "first_a_close": {
+          "d": 6835696,
+          "c": 6835696,
+          "i": 6978098,
+          "x": 7010107,
+          "c_minus_d": 0,
+          "i_minus_c": 142402,
+          "x_minus_i": 32009
+        },
+        "missed": [],
+        "b_release_nominal": 9960696,
+        "b_first_selection": 19674180,
+        "b_first_worker_observation": 19704799,
+        "ticks": {
+          "kernel": 41148,
+          "uncertainty": 1565234,
+          "A": 24582355,
+          "idle": 11927746,
+          "B": 5757883
+        },
+        "measured_service_loss_ticks": {
+          "idle": 27328,
+          "A": 22527,
+          "B": 31542
+        },
+        "timing_envelope_met": false,
+        "recurrence_iterations_checked": 13753651,
+        "elf_sha256": "ac357264972eef19dc01578633d2540fbf3fd97667b4fe74962aa2db1e788c0d",
+        "independent_return_trace_checked": true,
+        "edges": 10,
+        "elapsed_ticks": 43874366,
+        "max_latency_ticks": 369103,
+        "first_excess": {
+          "n": 1,
+          "nominal_close": 6835696,
+          "entry": 6978098,
+          "selected_at": 6985288,
+          "return_at": 6988312,
+          "x": 7010107,
+          "latency": 174411,
+          "within_bound": false,
+          "nominal_owner": "B",
+          "actual": "idle"
+        },
+        "over": 9
+      },
+      "firstQ": {
+        "origin": "guest",
+        "table": "Q",
+        "case": "healthy",
+        "epoch": 70232,
+        "frequency": 62500000,
+        "first_a_close": {
+          "d": 12570232,
+          "c": 12570232,
+          "i": 12587135,
+          "x": 12596344,
+          "c_minus_d": 0,
+          "i_minus_c": 16903,
+          "x_minus_i": 9209
+        },
+        "missed": [],
+        "b_release_nominal": 3195232,
+        "b_first_selection": 12587900,
+        "b_first_worker_observation": 12596344,
+        "ticks": {
+          "kernel": 68895,
+          "uncertainty": 80287,
+          "idle": 12431548,
+          "A": 18732987,
+          "B": 18695152
+        },
+        "measured_service_loss_ticks": {
+          "A": 24758,
+          "B": 37005,
+          "idle": 26809
+        },
+        "timing_envelope_met": true,
+        "recurrence_iterations_checked": 14088949,
+        "elf_sha256": "f74a7f5250c833fd2048e92ddc5271708a8d557a64082eb6d500f40ed93cc264",
+        "independent_return_trace_checked": true,
+        "edges": 13,
+        "elapsed_ticks": 50008869,
+        "max_latency_ticks": 44051,
+        "first_excess": null,
+        "over": 0
+      },
+      "priorQ": {
+        "origin": "guest",
+        "table": "Q",
+        "case": "healthy",
+        "epoch": 1476418,
+        "frequency": 62500000,
+        "first_a_close": {
+          "d": 13976418,
+          "c": 13976418,
+          "i": 14092107,
+          "x": 14115177,
+          "c_minus_d": 0,
+          "i_minus_c": 115689,
+          "x_minus_i": 23070
+        },
+        "missed": [
+          {
+            "start": 17101418,
+            "end": 20226418,
+            "owner": "B",
+            "eligible": "B"
+          }
+        ],
+        "b_release_nominal": 4601418,
+        "b_first_selection": 14092803,
+        "b_first_worker_observation": 14115177,
+        "ticks": {
+          "kernel": 40838,
+          "uncertainty": 4979138,
+          "idle": 11726180,
+          "A": 18390671,
+          "B": 14985622
+        },
+        "measured_service_loss_ticks": {
+          "A": 21803,
+          "B": 31410,
+          "idle": 13786
+        },
+        "timing_envelope_met": false,
+        "recurrence_iterations_checked": 15018414,
+        "elf_sha256": "45c4b2eba9074ec17cba84eb7dfa2bafbfbca266a8775234cf4b0b1b3b9f24a5",
+        "independent_return_trace_checked": true,
+        "edges": 12,
+        "elapsed_ticks": 50122449,
+        "max_latency_ticks": 3575899,
+        "first_excess": {
+          "n": 1,
+          "nominal_close": 4601418,
+          "entry": 4743182,
+          "selected_at": 4748790,
+          "return_at": 4751155,
+          "x": 4771039,
+          "latency": 169621,
+          "within_bound": false,
+          "nominal_owner": "idle",
+          "actual": "idle"
+        },
+        "over": 11
+      }
+    },
+    "legacy": {
+      "partition-bench": {
+        "uart": [
+          "JNOX M1 BOOT",
+          "JNOX M1 READY",
+          "PART A FIRST",
+          "PART IDLE FIRST",
+          "PART B READY",
+          "PART A RESUMED",
+          "PART B FIRST",
+          "PART IDLE RESUMED",
+          "PART STOP",
+          "PART PASS"
+        ],
+        "elf_matches_preselector": true,
+        "elf_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+        "text_sha256": "f139ccdd1fae85c30f4295a026a6ff06a2c0d223ebe0a59ec999de465da24de9",
+        "original_legacy_text_sha256": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+        "original_legacy_text_identical": false,
+        "diag_stop_symbol": false,
+        "irq_count": 6,
+        "return_count": 6,
+        "irq_vector": "0x40200a80",
+        "ppi_identity": "PPI 30 checked by runtime guard 28 on all six IRQs; QEMU trace records IRQ exception class and vector only.",
+        "first_failure": null,
+        "stable_after_terminal": true
+      },
+      "partition-legacy-diag": {
+        "uart": [
+          "JNOX M1 BOOT",
+          "JNOX M1 READY",
+          "PART A FIRST",
+          "PART IDLE FIRST",
+          "PART B READY",
+          "PART A RESUMED",
+          "PART B FIRST",
+          "PART IDLE RESUMED",
+          "PART STOP",
+          "PART PASS"
+        ],
+        "elf_matches_preselector": true,
+        "elf_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+        "text_sha256": "25f177052a7159acbd03de309cc48d05f27f266daf814ad700b416f703c97562",
+        "original_legacy_text_sha256": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+        "original_legacy_text_identical": false,
+        "diag_stop_symbol": true,
+        "irq_count": 6,
+        "return_count": 6,
+        "irq_vector": "0x40200a80",
+        "ppi_identity": "PPI 30 checked by runtime guard 28 on all six IRQs; QEMU trace records IRQ exception class and vector only.",
+        "first_failure": null,
+        "stable_after_terminal": true
+      },
+      "partition-legacy-diag-negative": {
+        "uart": [
+          "JNOX M1 BOOT",
+          "JNOX M1 READY",
+          "PART DIAG1 0000000000000063 0000000000000000 0000000000000001 ffffffffffffffff 0000000000000000 0000000000000000 0000000000000002 00000000005ff684 0000000000000000",
+          "PART FAIL"
+        ],
+        "elf_matches_preselector": true,
+        "elf_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+        "text_sha256": "cd0d8d06a0624adcf59549291e27edd75b3cf90a92f26e3d629013b861cf875e",
+        "original_legacy_text_sha256": "c10ca2b1dfacdcc3b59d058d5b101a90119d3ac97d9c6896315fe1ba082eac15",
+        "original_legacy_text_identical": false,
+        "diag_stop_symbol": true,
+        "irq_count": 0,
+        "return_count": 1,
+        "irq_vector": "0x40200a80",
+        "ppi_identity": "Negative terminates at first worker marker before IRQ.",
+        "first_failure": [
+          99,
+          0,
+          1,
+          18446744073709551615,
+          0,
+          0,
+          2,
+          6289028,
+          0
+        ],
+        "stable_after_terminal": true
+      }
+    },
+    "synthetic": {
+      "current-P-healthy": {
+        "timing_envelope_met": true,
+        "first_a_close": {
+          "d": 102000,
+          "c": 102000,
+          "i": 102001,
+          "x": 102006,
+          "c_minus_d": 0,
+          "i_minus_c": 1,
+          "x_minus_i": 5
+        },
+        "missed": [],
+        "measured_service_loss_ticks": {}
+      },
+      "current-P-near": {
+        "timing_envelope_met": false,
+        "first_a_close": {
+          "d": 102000,
+          "c": 102021,
+          "i": 102022,
+          "x": 102027,
+          "c_minus_d": 21,
+          "i_minus_c": 1,
+          "x_minus_i": 5
+        },
+        "missed": [],
+        "measured_service_loss_ticks": {
+          "idle": 21
+        }
+      },
+      "current-P-long": {
+        "timing_envelope_met": false,
+        "first_a_close": {
+          "d": 102000,
+          "c": 103250,
+          "i": 103251,
+          "x": 103256,
+          "c_minus_d": 1250,
+          "i_minus_c": 1,
+          "x_minus_i": 5
+        },
+        "missed": [
+          {
+            "start": 102000,
+            "end": 103000,
+            "owner": "B",
+            "eligible": "idle"
+          }
+        ],
+        "measured_service_loss_ticks": {
+          "idle": 1250
+        }
+      },
+      "current-Q-healthy": {
+        "timing_envelope_met": true,
+        "first_a_close": {
+          "d": 104000,
+          "c": 104000,
+          "i": 104001,
+          "x": 104006,
+          "c_minus_d": 0,
+          "i_minus_c": 1,
+          "x_minus_i": 5
+        },
+        "missed": [],
+        "measured_service_loss_ticks": {}
+      },
+      "current-Q-near": {
+        "timing_envelope_met": false,
+        "first_a_close": {
+          "d": 104000,
+          "c": 104021,
+          "i": 104022,
+          "x": 104027,
+          "c_minus_d": 21,
+          "i_minus_c": 1,
+          "x_minus_i": 5
+        },
+        "missed": [],
+        "measured_service_loss_ticks": {
+          "B": 21
+        }
+      },
+      "current-Q-long": {
+        "timing_envelope_met": false,
+        "first_a_close": {
+          "d": 104000,
+          "c": 105250,
+          "i": 105251,
+          "x": 105256,
+          "c_minus_d": 1250,
+          "i_minus_c": 1,
+          "x_minus_i": 5
+        },
+        "missed": [
+          {
+            "start": 104000,
+            "end": 105000,
+            "owner": "B",
+            "eligible": "B"
+          }
+        ],
+        "measured_service_loss_ticks": {
+          "B": 1250
+        }
+      }
+    },
+    "original_verdicts": {
+      "verdict": "FAIL both first normal-clock ordinary boots; separate assembly regression failed",
+      "cases": {
+        "P": {
+          "edges": 10,
+          "over": 9,
+          "max_ticks": 369103,
+          "max_ms": 5.905648,
+          "first_failure": {
+            "n": 1,
+            "nominal": 6835696,
+            "entry": 6978098,
+            "live": 6985288,
+            "ret": 6988312,
+            "x": 7010107,
+            "ticks": 174411,
+            "within": false,
+            "task": 2
+          },
+          "skipped": [],
+          "first_actual_b_selection": 19674180,
+          "release": 9960696,
+          "totals": {
+            "kernel": 41148,
+            "uncertain": 1565234,
+            "0": 24582355,
+            "2": 11927746,
+            "1": 5757883
+          },
+          "uncertainty_note": "last-to-entry and return-to-x are conservative transition brackets; displacement inside them cannot be charged to workers",
+          "all_readbacks_equal_nominal": true,
+          "exception_elr_eret_matches": true,
+          "stack_resume_and_checksum_verified": true
+        },
+        "Q": {
+          "edges": 12,
+          "over": 11,
+          "max_ticks": 3575899,
+          "max_ms": 57.214384,
+          "first_failure": {
+            "n": 1,
+            "nominal": 4601418,
+            "entry": 4743182,
+            "live": 4748790,
+            "ret": 4751155,
+            "x": 4771039,
+            "ticks": 169621,
+            "within": false,
+            "task": 2
+          },
+          "skipped": [
+            "Q tick 5 to 6, eligible B, at generation 4"
+          ],
+          "first_actual_b_selection": 14092803,
+          "release": 4601418,
+          "totals": {
+            "kernel": 40838,
+            "uncertain": 4979138,
+            "2": 11726180,
+            "0": 18390671,
+            "1": 14985622
+          },
+          "uncertainty_note": "last-to-entry and return-to-x are conservative transition brackets; displacement inside them cannot be charged to workers",
+          "all_readbacks_equal_nominal": true,
+          "exception_elr_eret_matches": true,
+          "stack_resume_and_checksum_verified": true
+        }
+      },
+      "fixture": "PART FAIL after A FIRST, first IRQ ELR 0x40201278 at part_a_begin, no second eret. Timeout after park. Unchanged partition.rs since a547ff1d. First trace lacks the counter samples and predicate ID necessary to diagnose timing versus other guards. No proof of source regression or configuration error.",
+      "host": "Both original UARTs rejected correctly for unplanned late dispatch. All six synthetic cases and all four documented unit tests passed. Host accepted synthetic corrupted OBS.value and initial return PC 1; it does not authenticate checksum or ELF/trace. Negative originals short-circuit without accounting output. b_release_first_selection reports selection of idle at release, not first actual B dispatch; e.g. synthetic P release 103000, selection 103002, first B 106002. No unexpected false rejection in executed controls.",
+      "scope": "No live injected masked/delayed cases or physical protection evidence. Q skipped runnable window at the first wrap; separate later same-owner returns verified. Synthetic long does not establish live recovery."
+    },
+    "live_delay": "No guest selector. Controlled near and long are synthetic only.",
+    "previous_fixture_compatibility": "Six older emitted synthetic streams are rejected (legacy accumulator/initial frame format). Current six emitted streams pass. Old bad first-PC input already fails on its invalid accumulator; fresh aligned one-word PC mutation isolates PC check.",
+    "run_id": "Wire format has no run ID; expected table, generation, ELF digest and independent IRQ/return sequence are checked."
+  },
+  "integration_build": {
+    "commit": "155083fdc539ae3ed8b8e5b0bfa6a3530b21b949",
+    "tree": "53bebcebf0f2d0c73bac51b7b2ddff6cd49432af",
+    "index": "2099297fe4fc4a9aa658fb37ef3f8fd95ce192119e5ca97face3fbbb629cb7b5",
+    "source_zip": "b87eb751612c764117a69d5e0991b1fd854769fb2e58e3b5f1c745d850f1e58e",
+    "artifacts_zip": "2b3bbcdd41576ab8b50aeb45f022e3f7dfc0492cdfed7ed23e431d8c7bc855da",
+    "individual": {
+      "ordinary-partition-p": {
+        "elf_sha256": "8702aeb14671e3865224d6157ecd325cae67ce1b6d4d0bd32d2d8bd14fbbb4eb",
+        "reference": "D:\\codex\\.jnox-work\\next-fixed\\partition-builds\\ordinary-partition-p\\kernel.elf",
+        "identical": true,
+        "text_identical": true,
+        "delta_bytes": [
+          0,
+          0
+        ]
+      },
+      "ordinary-partition-q": {
+        "elf_sha256": "f74a7f5250c833fd2048e92ddc5271708a8d557a64082eb6d500f40ed93cc264",
+        "reference": "D:\\codex\\.jnox-work\\next-fixed\\partition-builds\\ordinary-partition-q\\kernel.elf",
+        "identical": true,
+        "text_identical": true,
+        "delta_bytes": [
+          0,
+          0
+        ]
+      },
+      "partition-bench": {
+        "elf_sha256": "9a4e32ce9acf1f3f0c8bc9b513f9f5392a2488ad4d0cb135054da2a7751ef978",
+        "reference": "D:\\codex\\.jnox-work\\next-fixed\\partition-builds\\partition-bench\\kernel.elf",
+        "identical": true,
+        "text_identical": true,
+        "delta_bytes": [
+          0,
+          0
+        ]
+      },
+      "coop-bench": {
+        "elf_sha256": "f12ebef5b36129738ae50f7ab189506c83b3ab0bc3a4019cc4626ea2cdf13eff",
+        "reference": "D:\\codex\\.jnox-work\\next-fixed\\queue-server-gates\\all\\kernel.elf",
+        "identical": true,
+        "text_identical": true,
+        "delta_bytes": [
+          0,
+          0
+        ]
+      }
+    },
+    "selectors": {
+      "all": {
+        "actual": 0,
+        "expected": 0,
+        "accepted_as_designed": true
+      },
+      "invalid-pair": {
+        "actual": 101,
+        "expected": 101,
+        "accepted_as_designed": true
+      },
+      "partition-shadows-pair": {
+        "actual": 0,
+        "expected": 0,
+        "accepted_as_designed": true
+      },
+      "coop-shadows-pair": {
+        "actual": 0,
+        "expected": 0,
+        "accepted_as_designed": true
+      }
+    }
+  },
+  "archive": {
+    "parts": [
+      "evd-044-v2-raw-01.json",
+      "evd-044-v2-raw-02.json"
+    ],
+    "sha256": "ca8fb5f862dc284098986232be7e1e153751c3bb8a2e1fc4e1e491b3680cc5ec",
+    "format": "ordered base64 chunks of xz-compressed tar",
+    "files": 107,
+    "restore_python_from_repository_root": [
+      "from pathlib import Path",
+      "import json,base64,hashlib,tarfile,io",
+      "d=Path('docs/evidence'); j=json.loads((d/'evd-044-v2.json').read_bytes()); a=j['archive']",
+      "b=b''.join(base64.b64decode(json.loads((d/p).read_bytes())['base64']) for p in a['parts'])",
+      "assert hashlib.sha256(b).hexdigest()==a['sha256']",
+      "with tarfile.open(fileobj=io.BytesIO(b),mode='r:xz') as t: t.extractall('partition-restored',filter='data')",
+      "r=Path('partition-restored/partition-select-fresh'); m=(r/'manifest.sha256').read_bytes(); assert hashlib.sha256(m).hexdigest()==j['reviewer_manifest_sha256']",
+      "for line in m.decode().splitlines():",
+      "    h,n=line.split('  ',1); assert hashlib.sha256((r/n).read_bytes()).hexdigest()==h"
+    ]
+  }
+}

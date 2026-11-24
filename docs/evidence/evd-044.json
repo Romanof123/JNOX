@@ -1,0 +1,28 @@
+{
+  "evidence_id": "EVD-044",
+  "implementation": "IMP-044",
+  "policy": "POL-006",
+  "verdict": "Fresh healthy P/Q met the virtual envelope; v1 P/Q failed; live delay and masking remain open.",
+  "versions": [
+    {
+      "version": 1,
+      "source": "a57a0cb8563c28403f9afc2efa3bd9ba482f8398",
+      "english": "evd-044-v1.en.md",
+      "korean": "evd-044-v1.md",
+      "evidence": "evd-044-v1.json",
+      "sha256": "11179a299d84131b0aea94874edad97c386a8e8b3b658caddfa995df18c5e795",
+      "reviewer_manifest_sha256": "d471625eb17dfdec3e92dfb49fbde83a913d1c24677f8db38606ee61262b3e28",
+      "verdict": "PARTIAL evidence; both timing cases FAILED"
+    },
+    {
+      "version": 2,
+      "source": "155083fdc539ae3ed8b8e5b0bfa6a3530b21b949",
+      "english": "evd-044-v2.en.md",
+      "korean": "evd-044-v2.md",
+      "evidence": "evd-044-v2.json",
+      "sha256": "01bd08652d9abf41dbc232c2cf467c79c1b22bdfc5fcc499a1534a687bd4832d",
+      "reviewer_manifest_sha256": "8e3ac74dd37a44cc290b493a96e1354d4a66d28ee9b0e691ce2e1542d29ffcb8"
+    }
+  ],
+  "scope": "Ordinary P/Q cold boots and separate synthetic controls. See #112 for the distinct legacy assembly diagnostics."
+}

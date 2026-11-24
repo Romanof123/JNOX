@@ -11,6 +11,10 @@ use super::{
     uart_write,
 };
 
+#[cfg(jnox_control_cold)]
+#[path = "control_cold.rs"]
+mod cold;
+
 const IDLE: usize = 2;
 const LAST: u64 = 25; // 0..=25: thirteen complete jobs, horizon phase 24
 const CAPACITY: usize = 1024;
@@ -235,7 +239,13 @@ extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
     // Preserve an event across the idle work check -> WFE race. No task
     // other than idle executes WFE while this workload is active.
     unsafe { asm!("sev", options(nostack, preserves_flags)) };
+    #[cfg(jnox_control_cold)]
+    let handler = now();
     let iar = gic_read(GICC + 0x0c);
+    #[cfg(jnox_control_cold)]
+    if cold::on_irq(frame, entry, handler, iar) {
+        return frame;
+    }
     if iar & 0x3ff != TIMER_IRQ {
         fail()
     }
@@ -440,6 +450,9 @@ fn requested_mask(frame: *mut Frame) -> u64 {
 extern "C" fn idle() -> ! {
     // Start the one immutable epoch after idle's frame is restored. No
     // worker/IRQ path is warmed, and every scored release remains visible.
+    #[cfg(jnox_control_cold)]
+    cold::idle_start();
+    #[cfg(not(jnox_control_cold))]
     locked(|| {
         let s = state();
         log(43, now(), s.frequency, s.step);
@@ -494,15 +507,20 @@ pub(super) fn run() -> ! {
     init_timer_irq();
     let frequency: u64;
     unsafe { asm!("mrs {},cntfrq_el0",out(reg)frequency,options(nostack)) };
+    #[cfg(not(jnox_control_cold))]
     if frequency == 0 || frequency % 400 != 0 {
         fail()
     }
+    #[cfg(jnox_control_cold)]
+    cold::boot(frequency);
     let mut case_hash = 0u64;
     for byte in env!("JNOX_BUILT_CONTROL_CASE").bytes() {
         case_hash = case_hash.wrapping_mul(31).wrapping_add(byte as u64)
     }
     log(32, now(), cfg!(jnox_control_dm) as u64, case_hash);
     app::init();
+    #[cfg(jnox_control_cold)]
+    cold::initial_off();
     if app::SCRIPTED {
         app::script(frequency);
         dump()
