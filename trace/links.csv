@@ -912,3 +912,7 @@ VER-002,has-partial-evidence,EVD-039
 VER-005,has-partial-evidence,EVD-039
 VER-023,has-partial-evidence,EVD-039
 CAP-001,has-partial-evidence,EVD-039
+CHG-044,affects,REQ-002
+CHG-044,affects,REQ-003
+CHG-044,affects,REQ-005
+CHG-044,affects,REQ-023

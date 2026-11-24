@@ -97,3 +97,5 @@ POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 ind
 POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)
 
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
+
+[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. Implementation and independent evidence are pending.
