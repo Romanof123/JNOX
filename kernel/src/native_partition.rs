@@ -211,27 +211,23 @@ impl State {
         let [role, seen, first, work, checksum, status] = self.result();
         #[cfg(jnox_partition_phase)]
         let audit_before = ticks();
-        row(
-            22,
-            entry,
-            p,
-            &[
-                self.generation,
-                start,
-                compare,
-                ctl,
-                iar,
-                vector,
-                f.elr,
-                f.sp,
-                f.spsr,
-                f.tls,
-                f.x[8],
-                f.x[0],
-                #[cfg(jnox_partition_retained)]
-                (f as *const UserFrame) as u64,
-            ],
-        );
+        const TRAP_WORDS: usize = 12 + cfg!(jnox_partition_retained) as usize;
+        let trap_words = [
+            self.generation,
+            start,
+            compare,
+            ctl,
+            iar,
+            vector,
+            f.elr,
+            f.sp,
+            f.spsr,
+            f.tls,
+            f.x[8],
+            f.x[0],
+            (f as *const UserFrame) as u64,
+        ];
+        row(22, entry, p, &trap_words[..TRAP_WORDS]);
         row(
             23,
             entry,
