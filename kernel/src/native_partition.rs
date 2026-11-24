@@ -17,6 +17,11 @@ const RESULT_WORDS: usize = 6;
 #[unsafe(no_mangle)]
 static mut native_partition_irq_phase_v1: [[u64; 17]; 12] = [[0; 17]; 12];
 
+#[cfg(jnox_partition_retained)]
+unsafe extern "C" {
+    static mut native_partition_resume_v1: [UserFrame; 15];
+}
+
 enum Table {
     P(CyclicExecutive<3>),
     Q(CyclicExecutive<4>),
@@ -54,6 +59,8 @@ impl Table {
 struct State {
     table: Table,
     frames: [UserFrame; PROCESSES],
+    #[cfg(jnox_partition_retained)]
+    latest: [Option<usize>; PROCESSES],
     result: usize,
     q: u64,
     epoch: u64,
@@ -76,6 +83,7 @@ fn sum(a: u64, b: u64) -> u64 {
 
 // UserFrame is repr(C), 832 bytes of u64 fields and arrays, with no padding.
 // Record the entire incoming/outgoing bank, including SIMD, FP state and TLS.
+#[cfg(not(jnox_partition_retained))]
 fn audit_frame(tag: u64, tick: u64, pid: usize, frame: &UserFrame) {
     const _: () = assert!(core::mem::size_of::<UserFrame>() == 104 * 8);
     let words = unsafe { &*(core::ptr::from_ref(frame).cast::<[u64; 104]>()) };
@@ -130,7 +138,13 @@ impl State {
         #[cfg(jnox_partition_phase)]
         let publish_after = ticks();
         unsafe { native_vruntime_deadline = closing };
+        #[cfg(not(jnox_partition_retained))]
         let f = &self.frames[pid];
+        #[cfg(jnox_partition_retained)]
+        let f = match self.latest[pid] {
+            Some(index) => unsafe { &native_partition_resume_v1[index] },
+            None => &self.frames[pid],
+        };
         let selected = ticks();
         #[cfg(jnox_partition_phase)]
         if self.generation >= 2 && !self.drain {
@@ -164,6 +178,7 @@ impl State {
                 f as *const _ as u64,
             ],
         );
+        #[cfg(not(jnox_partition_retained))]
         audit_frame(24, selected, pid, f);
         f
     }
@@ -180,8 +195,17 @@ impl State {
         let p = self.pid;
         #[cfg(jnox_partition_phase)]
         let observe_before = ticks();
+        #[cfg(not(jnox_partition_retained))]
+        let saved = &mut self.frames[p];
+        #[cfg(jnox_partition_retained)]
+        let saved = {
+            let index = (self.generation - 1) as usize;
+            self.latest[p] = Some(index);
+            // Each generation writes this slot once before any selection.
+            unsafe { &mut native_partition_resume_v1[index] }
+        };
         let (start, compare, ctl, iar) =
-            observe_trap(p, f, vector, entry, self.generation, &mut self.frames[p]);
+            observe_trap(p, f, vector, entry, self.generation, saved);
         #[cfg(jnox_partition_phase)]
         let result_before = ticks();
         let [role, seen, first, work, checksum, status] = self.result();
@@ -204,6 +228,8 @@ impl State {
                 f.tls,
                 f.x[8],
                 f.x[0],
+                #[cfg(jnox_partition_retained)]
+                (f as *const UserFrame) as u64,
             ],
         );
         row(
@@ -212,6 +238,7 @@ impl State {
             p,
             &[self.generation, role, seen, first, work, checksum, status],
         );
+        #[cfg(not(jnox_partition_retained))]
         audit_frame(25, entry, p, f);
         if start < self.opening
             || start >= compare
@@ -340,7 +367,7 @@ pub(super) fn run() -> ! {
         );
     }
     let slots = if table_q { 13 } else { 10 };
-    header(0, 2);
+    header(0, if cfg!(jnox_partition_retained) { 3 } else { 2 });
     header(2, if table_q { 2 } else { 1 });
     header(3, frequency);
     header(4, q);
@@ -352,6 +379,8 @@ pub(super) fn run() -> ! {
         *(&raw mut STATE) = Some(State {
             table,
             frames,
+            #[cfg(jnox_partition_retained)]
+            latest: [None; PROCESSES],
             result,
             q,
             epoch: 0,

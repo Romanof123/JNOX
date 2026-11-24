@@ -46,6 +46,47 @@ def captured(folder, digest):
     return run
 
 
+class RetainedFrames:
+    """Linked snapshots and independently recorded assembly restore operands."""
+
+    def __init__(self, kernel, mem, transfers):
+        self.mem = mem
+        self.extents = []
+        def bank(name, size, used):
+            address, extent = symbol(kernel, "native_partition_" + name + "_v1")
+            need(address % 16 == 0 and extent == size and
+                 all(address + size <= start or end <= address for start, end in self.extents),
+                 "retained bank layout " + name)
+            self.extents.append((address, address + size))
+            need(not any(mem.read(address, size)[used:]), "unused retained bank " + name)
+            return address
+
+        self.traps = bank("traps", 15 * 832, transfers * 832)
+        self.resume = bank("resume", 15 * 832, transfers * 832)
+        witnesses = bank("restore", 15 * 8, transfers * 8)
+        cursor = bank("frame_cursor", 8, 8)
+        need(int.from_bytes(mem.read(cursor, 8), "little") == transfers, "restore count")
+        self.witnesses = struct.unpack("<15Q", mem.read(witnesses, 120))
+
+    def words(self, address):
+        return struct.unpack("<104Q", self.mem.read(address, 832))
+
+    def selection(self, seq, pointer, initial):
+        need(pointer == self.witnesses[seq - 1], "actual assembly restore base")
+        if initial:
+            need(all(pointer + 832 <= start or end <= pointer for start, end in self.extents),
+                 "independent initial frame storage")
+        return self.words(pointer)
+
+    def interruption(self, seq, pointer):
+        trap = self.traps + (seq - 1) * 832
+        resume = self.resume + (seq - 1) * 832
+        need(pointer == trap, "actual exception stack frame")
+        original = self.words(trap)
+        need(original == self.words(resume), "original and saved 104-word frames")
+        return original, resume
+
+
 def replay(folder, digest):
     run = captured(folder, digest)
     kernel = elf_file(bounded(folder / "kernel.elf", 64 << 20))
@@ -75,10 +116,13 @@ def replay(folder, digest):
     table = TABLES[run["arm"]]
     slots = len(table) * 3 + 1
     freq, q, epoch, count = head[3:7]
-    need(head[:3] == (2, 3, 1 if run["arm"] == "partition-p" else 2)
+    retained_symbol = kernel.get_section_by_name(".symtab").get_symbol_by_name("native_partition_traps_v1")
+    version = 3 if retained_symbol else 2
+    retained = RetainedFrames(kernel, mem, slots + 2) if retained_symbol else None
+    need(head[:3] == (version, 3, 1 if run["arm"] == "partition-p" else 2)
          and freq > 0 and freq % 1000 == 0 and q == freq // 20 and epoch > 0
          and head[7:9] == (0, 0) and head[10:12] == (slots, slots)
-         and head[14] == va and count == 3 + (slots + 2) * 19
+         and head[14] == va and count == 3 + (slots + 2) * (3 if retained else 19)
          and not any(any(r) for r in rows[count:]), "terminal header and complete rows")
     items = iter(rows[:count])
     trace = iter(transitions(bounded(folder / "exceptions.log", 64 << 20)))
@@ -130,7 +174,7 @@ def replay(folder, digest):
     need(len(set(controls)) == 1 and controls[0] not in private
          and struct.unpack("<2Q", mem.read(controls[0], 16)) == (1, slots + 2), "control page")
 
-    saved, frame_ptrs, exits = {}, {}, []
+    saved, frame_ptrs, initial_ptrs, exits = {}, {}, {}, []
     last_work, last_result = [0, 0, 0], [None] * 3
     nominal = previous_entry = epoch
     released = False
@@ -145,23 +189,29 @@ def replay(folder, digest):
         need((n, declared, ready, phase, space) == (seq, owner, 3 if released else 1, int(drain), ttbrs[pid])
              and opening == (previous_entry if drain else nominal) and previous_entry <= selected
              and (drain or closing == nominal + units*q), f"dispatch {seq}")
-        restored = frame(24, pid, selected)
+        restored = (retained.selection(seq, pointer, pid not in saved)
+                    if retained else frame(24, pid, selected))
         if pid not in saved:
             expected = [0] * 104
             expected[32:36] = [0x340, initial, TOP - 80, 4]
             expected[102] = TOP - 96 - 16*pid
             saved[pid] = tuple(expected)
             need(pointer % 16 == 0 and mem.base <= pointer <= mem.base + len(mem.raw) - 832
-                 and all(abs(pointer - prev) >= 832 for prev in frame_ptrs.values()), "private frame backing")
+                 and all(abs(pointer - prev) >= 832 for prev in initial_ptrs.values()), "private frame backing")
+            initial_ptrs[pid] = pointer
             frame_ptrs[pid] = pointer
         need(pointer == frame_ptrs[pid] and restored == saved[pid]
              and (pc, sp, psr, tls) == (restored[33], restored[34], restored[32], restored[102]),
              "full restored frame")
         event("eret", pc, 0)
-        entry, stop = take(22, pid, 12)
-        n, start, compare, ctl, iar, vector, epc, esp, epsr, etls, x8, x0 = stop
+        entry, stop = take(22, pid, 13 if retained else 12)
+        n, start, compare, ctl, iar, vector, epc, esp, epsr, etls, x8, x0 = stop[:12]
         _, result = take(23, pid, 7, entry)
-        saved[pid] = bank = frame(25, pid, entry)
+        if retained:
+            bank, frame_ptrs[pid] = retained.interruption(seq, stop[12])
+        else:
+            bank = frame(25, pid, entry)
+        saved[pid] = bank
         need((bank[33], bank[34], bank[32], bank[102], bank[8], bank[0]) ==
              (epc, esp, epsr, etls, x8, x0) and epsr & 0x3ff == 0x340 and bank[35] == 4
              and esp % 16 == 0 and 0x01001000 <= esp <= TOP

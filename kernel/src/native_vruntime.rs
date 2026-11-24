@@ -19,7 +19,15 @@ use core::{
     mem::{offset_of, size_of},
     ptr,
 };
-#[cfg(jnox_native_partition)]
+#[cfg(jnox_partition_retained)]
+global_asm!(
+    concat!(
+        ".set JNOX_CHECK_WINDOW,1\n.set JNOX_RETAINED,1\n",
+        include_str!("native_vruntime_vectors.S")
+    ),
+    options(raw)
+);
+#[cfg(all(jnox_native_partition, not(jnox_partition_retained)))]
 global_asm!(
     concat!(
         ".set JNOX_CHECK_WINDOW,1\n",

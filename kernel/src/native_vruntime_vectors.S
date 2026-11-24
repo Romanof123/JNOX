@@ -113,14 +113,38 @@ native_vruntime_start:
     str x10,[sp,#824]
     mov x2,x0
     mov x0,sp
+    .ifdef JNOX_RETAINED
+    vr_private_stack
+    .endif
     bl native_vruntime_trap
+    .ifndef JNOX_RETAINED
     add sp,sp,#832
+    .endif
 
 .Lvr_restore:
     cbz x0,.Lvr_unexpected
     tst x0,#15
     b.ne .Lvr_unexpected
     mov x30,x0
+    .ifdef JNOX_RETAINED
+    // Record the actual restore base. vr_entry will subtract one frame
+    // from this SP_EL1; EL0t continues using its own SP_EL0.
+    adrp x9,native_partition_frame_cursor_v1
+    add x9,x9,:lo12:native_partition_frame_cursor_v1
+    ldr x10,[x9]
+    cmp x10,#15
+    b.hs .Lvr_unexpected
+    adrp x11,native_partition_restore_v1
+    add x11,x11,:lo12:native_partition_restore_v1
+    str x30,[x11,x10,lsl #3]
+    add x10,x10,#1
+    str x10,[x9]
+    adrp x11,native_partition_traps_v1
+    add x11,x11,:lo12:native_partition_traps_v1
+    mov x12,#832
+    madd x11,x10,x12,x11
+    mov sp,x11
+    .endif
     ldp x9,x10,[x30,#256]
     and x11,x9,#0x3ff
     cmp x11,#0x340               // EL0t; D/A/F masked, I clear.
@@ -182,6 +206,20 @@ native_vruntime_eret:
     b .Lvr_park
 
 .section .bss.native_vruntime,"aw",%nobits
+.ifdef JNOX_RETAINED
+.macro vr_bank name, bytes
+    .balign 16
+    .global \name
+    .type \name,%object
+\name:
+    .space \bytes
+    .size \name,.-\name
+.endm
+vr_bank native_partition_traps_v1,12480
+vr_bank native_partition_resume_v1,12480
+vr_bank native_partition_restore_v1,120
+vr_bank native_partition_frame_cursor_v1,8
+.endif
 .balign 16
 .global native_vruntime_stack_bottom
 .type native_vruntime_stack_bottom,%object

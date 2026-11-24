@@ -35,7 +35,11 @@ def main(argv=None):
     parser.add_argument("--app", choices=SOURCES, default="startup-probe")
     parser.add_argument("--partition-phase", choices=("irq-v1",),
                         help="include native P/Q IRQ stage timestamps in the kernel")
+    parser.add_argument("--partition-frames", choices=("retained-v1",),
+                        help="retain independent native P/Q save and resume banks")
     args = parser.parse_args(argv)
+    if args.partition_frames and args.app not in ("partition-p", "partition-q"):
+        parser.error("--partition-frames requires --app partition-p or partition-q")
     if args.partition_phase and args.app not in ("partition-p", "partition-q"):
         parser.error("--partition-phase requires --app partition-p or partition-q")
     source = ROOT / "examples/portability" / SOURCES[args.app]
@@ -67,6 +71,9 @@ def main(argv=None):
         env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=args.app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,
                    CARGO_TARGET_DIR=str(out / "target"))
+        if args.partition_frames:
+            env["JNOX_PARTITION_FRAMES"] = args.partition_frames
+            metadata["partition_frames"] = args.partition_frames
         if args.partition_phase:
             env["JNOX_PARTITION_PHASE"] = args.partition_phase
             metadata["partition_phase"] = args.partition_phase
