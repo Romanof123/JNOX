@@ -141,7 +141,7 @@ def journal(raw, case, wire=1):
         for seq in range(n):
             need(pos<len(lines) and lines[pos][:2]==[b"MG",b"ROW"],"missing journal row")
             owner,order,kind,*v=numbers(lines[pos][2:],11);pos+=1
-            need((owner,order)==(cpu,seq) and 1<=kind<={1:12, 2:13, 3:15}[wire],"CPU/sequence/event kind")
+            need((owner,order)==(cpu,seq) and 1<=kind<={1:12, 2:13, 3:15, 4:17}[wire],"CPU/sequence/event kind")
             sections[cpu].append((kind,tuple(v)))
     need(pos+1==len(lines) and lines[pos][:2]==[b"MG",b"END"],"missing footer or extra records")
     end=numbers(lines[pos][2:],5)
@@ -390,15 +390,15 @@ def replay(root, ordinal, trusted):
     workload = frozen.get("workload", BASELINE)
     need(workload in (BASELINE, STREAM), "unknown migration workload")
     need(workload != STREAM or (sess["platform"] == "raspi4b-tcg" and
-         frozen["qemu_sha256"] == STOCK_SHA and frozen.get("wire_version") in (2, 3)), "stream model contract")
-    from pi4_mg3_symbols import mg3_symbols
+         frozen["qemu_sha256"] == STOCK_SHA and frozen.get("wire_version") in (2, 3, 4)), "stream model contract")
+    from pi4_mg3_symbols import declared_wire, mg3_symbols
     wire = frozen.get("wire_version", 1)
-    need(type(wire) is int and wire in (1, 2, 3), "unsupported frozen wire version")
+    need(type(wire) is int and wire in (1, 2, 3, 4) and wire == declared_wire(image), "unsupported frozen wire version")
     symbols = mg3_symbols(elf, image, frozen["case"], workload)
-    need((symbols is not None) == (wire == 3), "wire does not match linked MG3 profile")
-    if workload == STREAM or wire == 3:
+    need((symbols is not None) == (wire >= 3), "wire does not match linked MG3 profile")
+    if workload == STREAM or wire >= 3:
         bodies,entries=layout(elf,image,dis,workload)
-    if wire == 3:
+    if wire >= 3:
         need(sess["platform"] == "raspi4b-tcg" and frozen["qemu_sha256"] == STOCK_SHA,
              "MG3 requires frozen stock model")
         need(json.dumps(symbols, sort_keys=True) == json.dumps(frozen["local_symbols"], sort_keys=True),
@@ -406,11 +406,25 @@ def replay(root, ordinal, trusted):
         need(len(bodies) == 1 and json.dumps(frozen["loop_range"]) == json.dumps(bodies[0]),
              "MG3 manifest/linked loop differs")
         tools = frozen["tool_sha256"]
-        need(set(tools) == {"pi4_migration_capture.py", "pi4_migration_replay.py",
+        required_tools = {"pi4_migration_capture.py", "pi4_migration_replay.py",
                             "pi4_mg3_symbols.py", "pi4_mg3_replay.py", "pi4_smp_replay.py"}
-             and all(re.fullmatch(r"[0-9a-f]{64}", h) for h in tools.values()),
+        if wire == 4:
+            from pi4_mg3_symbols import handoff_terminal
+            required_tools.add("pi4_mg4_replay.py")
+            need(handoff_terminal(elf, image) == frozen.get("handoff_terminal"),
+                 "MG4 manifest/linked terminal differ")
+        need(set(tools) == required_tools and all(re.fullmatch(r"[0-9a-f]{64}", h) for h in tools.values()),
              "MG3 tool identities incomplete")
+    def partial(reason):
+        return dict(outcome="unobserved", reason=reason, position=ordinal, session_sha256=trusted,
+                    qualifying_inner_pc=False, verified_crossing=False, verified_same_core=False,
+                    observation=reason, remote_restore=None, subsequent_owner_work=None,
+                    handoffs={name: dict(published=None, consumed=None, terminal_phase="unobserved")
+                              for name in ("opening", "reverse")})
+
     if sess["reason"]!="terminal_quiet" or sess["quiet_ns"]<1_000_000_000:
+        if wire == 4:
+            return partial("first attempt ended without terminal quiet: " + sess["reason"])
         raise Unobserved("first attempt ended without terminal quiet: "+sess["reason"])
     need(sess["quiet_ns"]<=sess["elapsed_ns"]<=30_000_000_000,"capture ceiling")
     uart=bounded(folder/"uart.bin",8*1024*1024)
@@ -418,6 +432,8 @@ def replay(root, ordinal, trusted):
     if b"PI4 MIG UNOBSERVED M FINISHED BEFORE IRQ" in uart:
         need(fatal==["PI4 MIG FAIL 000000000000001d"] and b"MG END " not in uart,
              "early-finish marker inconsistent with terminal evidence")
+        if wire == 4:
+            return partial("M finished before migration IRQ")
         raise Unobserved("M finished before migration IRQ")
     need(not fatal,"guest failure: "+" | ".join(fatal))
     case=CASES.index(frozen["case"])
@@ -441,10 +457,16 @@ def replay(root, ordinal, trusted):
                 need(0<=off<=len(image)-4 and int.from_bytes(image[off:off+4],"little")&0xffffffe0==0x10000000,
                      "task evidence PC does not identify the linked ADR-self probe")
     result=score(sections,hz,totals,case,bodies,wire,workload)
-    if wire == 3:
+    if wire >= 3:
         from pi4_mg3_replay import witnesses
-        result["live_witnesses"] = witnesses(sections, symbols, case, workload == STREAM)
+        result["live_witnesses"] = witnesses(sections, symbols, case, workload == STREAM,
+                                             handoff=wire == 4)
         result.update(verified_crossing=False, verified_same_core=False)
+    if wire == 4:
+        from pi4_mg4_replay import handoffs, linked_restore
+        result["linked_restore"] = linked_restore(elf, image)
+        result["handoffs"] = handoffs(sections, case)
+        result.update(remote_restore=None, subsequent_owner_work=True)
     if workload == STREAM:
         result["workload"] = workload
     if sess["platform"]=="physical":
@@ -461,7 +483,9 @@ def replay(root, ordinal, trusted):
         return result
     need(all(external[c]==result["expected_external"][c] for c in (0,1)),
          "per-CPU external exception/ERET stream differs from guest PCs")
-    if wire == 3 and result["qualifying_inner_pc"]:
+    if wire == 4:
+        result["remote_restore"] = True
+    if wire >= 3 and result["qualifying_inner_pc"]:
         result["verified_crossing" if case == 0 else "verified_same_core"] = True
     result.update(position=ordinal,session_sha256=trusted,raw_observer_mapping=mapping,
                   observation=("matched finite model position; two first positions required per case"

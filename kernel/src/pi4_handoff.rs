@@ -38,6 +38,8 @@ pub(crate) struct Handoff {
 #[derive(Clone, Copy)]
 pub(crate) struct Receive {
     pub iar: u32,
+    /// Discovered GIC target mask of the logical peer for this directed edge.
+    pub peer_target: u8,
     pub cpu: usize,
     pub epoch: u64,
     pub claim: Option<Lease>,
@@ -47,8 +49,9 @@ pub(crate) struct Receive {
 }
 
 impl Receive {
-    fn matches(self, peer: u32, epoch: u64, target: Lease, live: u64) -> bool {
-        self.iar & 0x3ff == 1 && (self.iar >> 10) & 7 == peer
+    fn matches(self, epoch: u64, target: Lease, live: u64) -> bool {
+        self.peer_target.is_power_of_two() && self.iar & 0x3ff == 1
+            && (self.iar >> 10) & 7 == self.peer_target.trailing_zeros()
             && self.cpu == usize::from(target.cpu) && self.epoch == epoch
             && self.claim == Some(target) && self.live == live && self.trap_valid
     }
@@ -61,10 +64,17 @@ impl Handoff {
 
     pub fn install(&mut self, task: u8, pointer: usize, origin: Origin) -> Option<FrameInstall> {
         let slot = self.frames.get_mut(usize::from(task))?;
-        if pointer == 0 || pointer % 16 != 0 || (origin == Origin::IrqSaved && task != 0) {
+        if pointer == 0 || pointer % 16 != 0 {
             return None;
         }
         let version = slot.map_or(0, |frame| frame.version).checked_add(1)?;
+        match *slot {
+            None if origin == Origin::Fresh && self.opening == Slot::Empty => {}
+            Some(previous) if previous.origin == Origin::Fresh && previous.version == 1
+                && matches!(self.opening, Slot::Consumed(_)) && self.reverse == Slot::Empty
+                && matches!((task, origin), (0, Origin::IrqSaved) | (2, Origin::Fresh)) => {}
+            _ => return None,
+        }
         let frame = FrameInstall { pointer, version, origin };
         *slot = Some(frame);
         Some(frame)
@@ -86,7 +96,7 @@ impl Handoff {
     pub fn consume_opening(&mut self, rx: Receive, retired: Option<Lease>, source_claim: Option<Lease>, milestone: bool) -> Option<Opening> {
         let Slot::Pending(opening) = self.opening else { return None };
         if source_claim.is_some() || !milestone || retired != Some(opening.retired)
-            || !rx.matches(1, opening.epoch, opening.target, opening.target.sequence) {
+            || !rx.matches(opening.epoch, opening.target, opening.target.sequence) {
             return None;
         }
         self.opening = Slot::Consumed(opening);
@@ -117,7 +127,7 @@ impl Handoff {
     /// Caller validates the selected frame and role in addition to the idle trap.
     pub fn consume_reverse(&mut self, rx: Receive, global: bool) -> Option<Reverse> {
         let Slot::Pending(reverse) = self.reverse else { return None };
-        if !rx.matches(0, reverse.epoch, reverse.target, 0)
+        if !rx.matches(reverse.epoch, reverse.target, 0)
             || self.selection(rx.epoch, rx.claim?, global)? != reverse {
             return None;
         }

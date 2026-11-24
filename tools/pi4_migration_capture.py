@@ -2,9 +2,9 @@
 """Freeze one CHG-075 model case, then retain each of two cold launches on Linux.
 
 freeze CASE NEW_DIR ELF RAW DISASSEMBLY QEMU --source COMMIT
-       [--wire-version {1,2,3}] [--workload {sum-65536,sample-crc32-v1}]
+       [--wire-version {1,2,3,4}] [--workload {sum-65536,sample-crc32-v1}]
        [--compiler BUILD_RUSTC_VERSION]
-MG3 freezes both positions for one stock-model image. Select the stream
+MG3 and MG4 freeze both positions for one stock-model image. Select the stream
 workload explicitly and supply the compiler version from the build when the
 linked ELF omits rustc's version comment.
 run FROZEN_DIR TRUSTED_FREEZE_SHA256 ORDINAL
@@ -67,7 +67,7 @@ def freeze(args):
                   qemu=str(qemu), qemu_sha256=sha(qemu), flags=FLAGS,
                   hashes={name: sha(root / name) for name in FILES},
                   ceiling_ns=30_000_000_000, quiet_ns=1_000_000_000, positions=[1, 2])
-    if wire == 3 or workload == STREAM:
+    if wire >= 3 or workload == STREAM:
         if workload == STREAM and wire < 2:
             raise ValueError("sample stream requires MG2 or later")
         record["workload"] = workload
@@ -77,7 +77,7 @@ def freeze(args):
         bodies, _ = layout(elf, raw, disassembly, workload)
         if len(bodies) != 1:
             raise ValueError("expected one linked input-processing loop")
-    if wire == 3:
+    if wire >= 3:
         from elftools.elf.elffile import ELFFile
         comment = ELFFile(io.BytesIO(elf)).get_section_by_name(".comment")
         comments = comment.data().decode().strip("\0").split("\0") if comment else []
@@ -87,6 +87,17 @@ def freeze(args):
             raise ValueError("provide the build's rustc version with --compiler")
         names = ("pi4_migration_capture.py", "pi4_migration_replay.py", "pi4_mg3_symbols.py",
                  "pi4_mg3_replay.py", "pi4_smp_replay.py")
+        if wire == 4:
+            from pi4_mg3_symbols import handoff_terminal
+            record["handoff_terminal"] = handoff_terminal(elf, raw)
+            names += ("pi4_mg4_replay.py",)
+            # Whole-machine upper bounds in tag order, so each CPU alone is
+            # bounded for every selector. Five worker leases, four completions,
+            # two SGIs, two M leases (two sparse rows each, crossing and end),
+            # four pinned checkpoints. Three additional idle dispatches.
+            old_tag_bounds = (7, 5, 5, 6, 10, 2, 2, 2, 4, 2, 8, 2, 4, 5, 5)
+            if sum(old_tag_bounds) + 2 > 96:
+                raise ValueError("MG4 per-CPU journal capacity exceeded")
         record.update(local_symbols=symbols, loop_range=list(bodies[0]), compiler=compiler,
                       elf_comments=comments,
                       tool_sha256={name: sha(Path(__file__).with_name(name)) for name in names})
@@ -204,7 +215,7 @@ def main():
     for name in ("directory", "elf", "raw", "disassembly", "qemu"):
         f.add_argument(name, type=Path)
     f.add_argument("--source", required=True)
-    f.add_argument("--wire-version", type=int, choices=(1, 2, 3),
+    f.add_argument("--wire-version", type=int, choices=(1, 2, 3, 4),
                    help="require this version in the linked image")
     f.add_argument("--compiler", help="build compiler version if absent from ELF comments")
     f.add_argument("--workload", choices=(BASELINE, STREAM), default=BASELINE)

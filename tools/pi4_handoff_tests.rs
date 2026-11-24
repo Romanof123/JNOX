@@ -12,7 +12,7 @@ const M: Lease = Lease { cpu: 0, task: 0, sequence: 11 };
 const P1: Lease = Lease { cpu: 1, task: 2, sequence: 12 };
 
 fn opening_rx() -> Receive {
-    Receive { cpu: 0, epoch: 0, iar: 1025, live: M.sequence, claim: Some(M), trap_valid: true }
+    Receive { cpu: 0, epoch: 0, iar: (6 << 10) | 1, peer_target: 1 << 6, live: M.sequence, claim: Some(M), trap_valid: true }
 }
 
 fn opening_state() -> Handoff {
@@ -31,7 +31,7 @@ fn reverse_state(global: bool) -> (Handoff, Receive) {
     state.install(2, 0x3000, Origin::Fresh).unwrap();
     let target = Lease { cpu: 1, task: if global { 0 } else { 2 }, sequence: 14 };
     state.publish_reverse(1, target, global).unwrap();
-    (state, Receive { cpu: 1, epoch: 1, iar: 1, live: 0, claim: Some(target), trap_valid: true })
+    (state, Receive { cpu: 1, epoch: 1, iar: (4 << 10) | 1, peer_target: 1 << 4, live: 0, claim: Some(target), trap_valid: true })
 }
 
 fn rejected<T>(state: &mut Handoff, action: impl FnOnce(&mut Handoff) -> Option<T>) {
@@ -60,7 +60,8 @@ fn opening_requires_retirement_and_actual_local_execution() {
     let rx = opening_rx();
     for bad in [
         Receive { epoch: 1, ..rx }, Receive { cpu: 1, ..rx },
-        Receive { iar: 1, ..rx }, Receive { iar: 1026, ..rx },
+        Receive { iar: 1025, ..rx }, Receive { iar: (6 << 10) | 2, ..rx },
+        Receive { peer_target: 0, ..rx }, Receive { peer_target: 0x41, ..rx },
         Receive { live: 0, ..rx }, Receive { claim: None, ..rx },
         Receive { claim: Some(Lease { sequence: 13, ..M }), ..rx },
         Receive { trap_valid: false, ..rx },
@@ -94,9 +95,7 @@ fn reverse_requires_exact_installation_and_idle_recipient() {
         state.frames[0] = Some(wrong);
         rejected(&mut state, |s| s.consume_reverse(rx, true));
     }
-    state.frames[0] = Some(installed);
-    let newer = state.install(0, installed.pointer, installed.origin).unwrap();
-    assert_eq!(newer.version, installed.version + 1);
+    state.frames[0] = Some(FrameInstall { version: installed.version + 1, ..installed });
     rejected(&mut state, |s| s.consume_reverse(rx, true));
 }
 
@@ -111,4 +110,20 @@ fn empty_slots_bad_publication_and_version_exhaustion() {
     rejected(&mut state, |s| s.install(2, 0x3008, Origin::Fresh));
     state.frames[2] = Some(FrameInstall { pointer: 0x3000, version: u64::MAX, origin: Origin::Fresh });
     rejected(&mut state, |s| s.install(2, 0x4000, Origin::Fresh));
+}
+
+#[test]
+fn installations_follow_the_opening_and_reverse_transitions() {
+    let mut empty = Handoff::new();
+    rejected(&mut empty, |s| s.install(0, 0x1000, Origin::IrqSaved));
+    let mut state = opening_state();
+    rejected(&mut state, |s| s.install(0, 0x1010, Origin::IrqSaved));
+    state.consume_opening(opening_rx(), Some(P1), None, true).unwrap();
+    rejected(&mut state, |s| s.install(0, 0x1010, Origin::Fresh));
+    rejected(&mut state, |s| s.install(1, 0x2000, Origin::Fresh));
+    rejected(&mut state, |s| s.install(2, 0x3000, Origin::IrqSaved));
+    state.install(2, 0x3000, Origin::Fresh).unwrap();
+    rejected(&mut state, |s| s.install(2, 0x3000, Origin::Fresh));
+    state.install(0, 0x1010, Origin::IrqSaved).unwrap();
+    rejected(&mut state, |s| s.install(0, 0x1010, Origin::IrqSaved));
 }
