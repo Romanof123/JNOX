@@ -6,4 +6,6 @@ In original order, preflight.log records a shell invocation failure before compi
 
 두 개발 변경을 결합한 후보를 Rust 1.95.0으로 빌드했다. 최초 셸 호출 오류, 개별 모듈의 독립 컴파일 오류, 임시 경로를 찾지 못한 시도와 정상 재실행을 원래 순서로 보존했다. 실제 스케줄링 테스트 진입점에서 140건이 통과했다. 이 묶음은 개발 통합 기록이며 QEMU 독립 판정과 그 실행 이미지 해시는 별도 최초 실행 보고서에 있다.
 
-[Integration build and original host attempts / 통합 빌드 및 호스트 원본](ordinary-mutex-fifo-preflight.zip) · SHA-256 b6bed6e9c21503e6fe95b7031db38077d7d69e51357bb9065c487eac965acd7f.
+The independent first-run ELF was `aeb2d339bf92c9142bfd0e7f209ef0a703294558da9c683ba109e65e3fd97e76`. Both PT_LOAD records matched the PM preflight ELF in address, offset, permissions, alignment, file and memory extents, and payload SHA-256. The executable segment hash was `30cafdd54a8bd23438a3595559007a7143b28c9d52f4aea8e47217fe81e2eac9` and the writable segment hash was `c4788758dd80b18d7d939ddf57d9307342e530e3b8306d15c362df5cffbd44ef`. The section-level differences were in .symtab and .strtab. Extract this archive and run `python compare.py preflight.elf /path/to/ordinary-mutex-fifo-first.zip` to compare the two original binaries. 독립 검증용 ELF와 통합 ELF의 전체 해시는 달랐고, 두 적재 구간의 주소·권한·크기·바이트는 일치했다. 두 원본을 비교하는 스크립트와 결과를 포함했다. [Independent evidence / 독립 기록](ordinary-mutex-fifo-first.en-ko.md).
+
+[Integration inputs and host attempts / 통합 입력과 호스트 시도](ordinary-mutex-fifo-preflight.zip) · SHA-256 761e8ccfbbecbe9d1443a260424207dd52e1daf1ab16441d6b8e7c656c555dc4.
