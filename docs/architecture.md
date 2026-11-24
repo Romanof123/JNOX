@@ -139,3 +139,5 @@ POL-012의 선택형 단일 코어 워크로드는 하나의 EEVDF 정책 인스
 CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd-035.md)를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)
 
 [#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).
+
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.

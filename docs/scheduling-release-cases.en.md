@@ -34,3 +34,5 @@ Baseline `19d2154`. Each row allocates the existing release criteria to recorded
 3. Exercise bounded batch submission through SJF, SRTF and HRRN dispatch. [#81](https://github.com/Romanof123/JNOX/issues/81)
 
 The fixed-priority Rust runtime work shipped in [#71](https://github.com/Romanof123/JNOX/issues/71) and [#72](https://github.com/Romanof123/JNOX/issues/72). Its SVC #1 exits a task. The periodic profile uses SVC #1 for job completion and EEVDF uses it to block.
+
+[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. Implementation and independent evidence are pending.
