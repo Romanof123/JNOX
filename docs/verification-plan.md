@@ -88,4 +88,6 @@ CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd
 
 [#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).
 
-[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 최초 런타임 검증은 부분 통과다.
+
+POL-004 / IMP-042. 결정론적 인계 네 건은 통과했고 기본 클록 여덟 건과 정확 경계 두 건은 미충족이다. [EVD-042 v1](evidence/evd-042-v1.md)

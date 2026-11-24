@@ -2,7 +2,7 @@
 
 [English plan](#english) · [English decision](#decision-en) · [한국어 계획](#korean) · [한국어 결정](#decision-ko)
 
-CHG-044 · [#94](https://github.com/Romanof123/JNOX/issues/94) · intended IMP-042 · planned EVD-042. Virtual bench design approved. Implementation and evidence pending. 가상 벤치 설계 승인. 구현과 독립 검증은 미완료.
+CHG-044 · [#94](https://github.com/Romanof123/JNOX/issues/94) · IMP-042 · virtual bench design approved. First runtime verdict PARTIAL. [EVD-042 v1](evidence/evd-042-v1.en.md) · 가상 벤치 설계 승인. 최초 런타임 판정은 부분 통과. [EVD-042 v1 한국어](evidence/evd-042-v1.md)
 
 <a id="english"></a>
 
