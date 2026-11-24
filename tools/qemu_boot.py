@@ -265,6 +265,10 @@ TRANSCRIPTS = {
     "rr": RR_TRANSCRIPT,
     "cbs": CBS_TRANSCRIPT,
     "periodic": PERIODIC_TRANSCRIPT,
+    "periodic-exact": BOOT_TRANSCRIPT + (
+        b"RM 00 A\nRM 00 B\nRM 10 A\nRM 12 B\n"
+        b"DM 00 B\nDM 00 A\nDM 10 A\nDM 12 B\nPERIODIC EXACT PASS\n"
+    ),
     "periodic-preempt": PERIODIC_PREEMPT_TRANSCRIPT,
 }
 TRANSCRIPTS["smp-single"] = TRANSCRIPTS["smp"]

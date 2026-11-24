@@ -123,6 +123,7 @@ The three single-CPU profiles below exercise queue order, periodic job generatio
 
 - POL-002 · CHG-029 · IMP-027 · [Fixed priority, queue order and remaining service](m1-priority-resume.en.md)
 - POL-004 · CHG-030 · IMP-028 · [Periodic deadline misses and overlapping releases](m1-periodic-overrun.en.md)
+- POL-004 · CHG-035 · IMP-033 · [Exact periodic pair](pol-004-exact-periodic.md)
 - POL-008 · CHG-031 · IMP-029 · [Hard-CBS wakeup and deadline renewal](m2-cbs-wake.en.md)
 
 ## Linked Rust task configuration

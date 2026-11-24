@@ -764,3 +764,12 @@ VER-002,has-partial-evidence,EVD-030
 VER-005,has-partial-evidence,EVD-030
 VER-023,has-partial-evidence,EVD-030
 CAP-001,has-partial-evidence,EVD-030
+CHG-035,affects,REQ-002
+CHG-035,affects,REQ-005
+CHG-035,affects,REQ-023
+DES-003,implemented-by,IMP-033
+DES-012,implemented-by,IMP-033
+POL-004,partially-implemented-by,IMP-033
+IMP-033,partially-verified-by,VER-002
+IMP-033,partially-verified-by,VER-005
+IMP-033,partially-verified-by,VER-023
