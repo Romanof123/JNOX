@@ -326,6 +326,24 @@ pub(crate) fn copy_from_user(pid: usize, va: usize, dst: &mut [u8]) -> bool {
     true
 }
 
+/// Read the six-word partition ABI from the active process's private RW image.
+#[cfg(jnox_native_partition)]
+pub(super) fn partition_result(pid: usize, va: usize) -> Option<[u64; 6]> {
+    const BYTES: usize = core::mem::size_of::<[u64; 6]>();
+    if !(IMAGE_LO..=IMAGE_HI - BYTES).contains(&va)
+        || va % core::mem::align_of::<u64>() != 0
+        || !can_copy(pid, va, BYTES, true)
+    {
+        return None;
+    }
+    // Preflight covered every page. The sole CPU stays IRQ-masked throughout
+    // these loads, including when the result spans two private image pages.
+    let words = va as *const u64;
+    Some(core::array::from_fn(|i| {
+        u64::from_le(unsafe { words.add(i).read_volatile() })
+    }))
+}
+
 pub(crate) fn copy_to_user(pid: usize, va: usize, src: &[u8]) -> bool {
     if !can_copy(pid, va, src.len(), true) {
         return false;

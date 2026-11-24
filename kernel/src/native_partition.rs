@@ -169,11 +169,7 @@ impl State {
     }
 
     fn result(&self) -> [u64; RESULT_WORDS] {
-        let mut bytes = [0u8; RESULT_WORDS * 8];
-        if !mmu::copy_from_user(self.pid, self.result, &mut bytes) {
-            fail(57)
-        }
-        core::array::from_fn(|i| u64::from_le_bytes(bytes[i * 8..i * 8 + 8].try_into().unwrap()))
+        mmu::partition_result(self.pid, self.result).unwrap_or_else(|| fail(57))
     }
 
     fn trap(&mut self, f: &UserFrame, vector: u64, entry: u64) -> *const UserFrame {
