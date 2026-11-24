@@ -31,7 +31,7 @@ The existing EDF admission visits each release/deadline interval in table order.
 
 The normal supply interface uses the four JNOX_APP selectors below, raw UART and the supply replay. The separate independent deadline benchmark has its own fixed transcript in `tools/qemu_boot.py --profile deadline` beginning with `DEADLINE EDF A FIRST`.
 
-Run this Bash block from the repository root on Linux with GNU timeout, sha256sum, Python 3, the Rust aarch64-unknown-none target and qemu-system-aarch64 available. Start with the other JNOX selectors unset. Each invocation creates a fresh attempt directory, and each selector builds its plain and diagnostic ELF separately. The plain run uses an unset JNOX_DEADLINE_TRACE; the trace run sets it to 1.
+Run this Bash block from the repository root on Linux with GNU timeout, sha256sum, Python 3, the Rust aarch64-unknown-none target and qemu-system-aarch64 available. Start with the other JNOX selectors unset. For evidence runs, set `export TMPDIR="$HOME/jnox-evidence"` and run `mkdir -p "$TMPDIR"` on persistent storage before starting. Archive each attempt and verify its SHA-256 before ending the session or restarting WSL. If first raw files are lost, retain the observation as such and label any new launch separately. 검증 시 TMPDIR은 영속 저장소로 지정하고 세션 종료 전 원본과 해시를 확인한다. Each invocation creates a fresh attempt directory, and each selector builds its plain and diagnostic ELF separately. The plain run uses an unset JNOX_DEADLINE_TRACE; the trace run sets it to 1.
 
 ```bash
 (
