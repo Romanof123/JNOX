@@ -131,7 +131,12 @@ fn arm(target: u64, index: u64) {
 }
 
 fn fresh(id: usize) -> *mut Frame {
+    #[cfg(not(jnox_control_descriptor))]
     let entries: [extern "C" fn() -> !; 3] = [control, sender, idle];
+    // Only the descriptor arm changes the control entry ABI; the CPU enters
+    // through ERET, so this table holds code addresses, never a mismatched call.
+    #[cfg(jnox_control_descriptor)]
+    let entries = [control as *const (), sender as *const (), idle as *const ()];
     unsafe {
         let frame = (&raw mut STACKS)
             .cast::<u8>()
@@ -171,6 +176,27 @@ impl Runtime {
             ..DispatchJob::fixed_priority(0)
         });
         self.frames[id] = fresh(id);
+        #[cfg(jnox_control_descriptor)]
+        if id == 0 && self.missed.is_none() {
+            // IRQ has advanced next from the release's measured phase index.
+            // The overlap guard above ensures the previous private frame is dead.
+            let second = self.next;
+            let first = second.checked_sub(1).unwrap_or_else(|| fail());
+            if first % 2 != 0 || second > LAST {
+                fail()
+            }
+            let second_target = at.checked_add(self.step).unwrap_or_else(|| fail());
+            // AAPCS64 x0..x4. Initialize once, before making this job runnable.
+            unsafe {
+                (&mut (*self.frames[id]).gpr)[..5].copy_from_slice(&[
+                    first,
+                    at,
+                    second,
+                    second_target,
+                    self.step,
+                ]);
+            }
+        }
         self.service[id] = 0;
         log(4, now(), id as u64, at);
         self.enqueue(id);
@@ -329,11 +355,25 @@ extern "C" fn final_check() -> ! {
     unsafe { asm!("svc #2", options(noreturn)) }
 }
 
-extern "C" fn control() -> ! {
+extern "C" fn control(
+    #[cfg(jnox_control_descriptor)] first_index: u64,
+    #[cfg(jnox_control_descriptor)] first_target: u64,
+    #[cfg(jnox_control_descriptor)] second_index: u64,
+    #[cfg(jnox_control_descriptor)] second_target: u64,
+    #[cfg(jnox_control_descriptor)] descriptor_step: u64,
+) -> ! {
+    #[cfg(jnox_control_descriptor)]
+    let phases = [(first_index, first_target), (second_index, second_target)];
     for phase in 0..2 {
         if locked(|| state().missed.is_some()) {
             final_check()
         }
+        #[cfg(jnox_control_descriptor)]
+        let (index, target, step) = {
+            let (index, target) = phases[phase];
+            (index, target, descriptor_step)
+        };
+        #[cfg(not(jnox_control_descriptor))]
         let (index, target, step) = locked(|| {
             let s = state();
             let r = s.jobs[0].unwrap().release;

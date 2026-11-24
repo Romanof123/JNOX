@@ -1029,3 +1029,6 @@ CHG-053,affects,REQ-002
 CHG-053,affects,REQ-003
 CHG-053,affects,REQ-005
 CHG-053,affects,REQ-023
+REQ-002,partially-implemented-by,IMP-051
+REQ-005,partially-implemented-by,IMP-051
+POL-004,partially-implemented-by,IMP-051
