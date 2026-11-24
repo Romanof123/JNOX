@@ -221,7 +221,17 @@ fn main() {
         }
         println!("cargo::rustc-cfg=jnox_mutex_anchor");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_rust_amc)");
     match profile.as_deref() {
+        Some("amc") => {
+            let name = app.as_deref().unwrap_or("");
+            assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none()
+                && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_"))
+                && matches!(name, "exact-lo" | "exact-hi" | "over-hi"),
+                "ordinary AMC requires virt, exact-lo/exact-hi/over-hi and no benchmark features");
+            println!("cargo::rustc-cfg=jnox_rust_amc");
+            println!("cargo::rustc-env=JNOX_AMC_APP={name}");
+        }
         Some("smp") => {
             assert!(board == "pi4" && app.as_deref() == Some("directed-wake")
                 && bench == "boot" && trace.is_none() && scenario.is_none()
