@@ -1,0 +1,28 @@
+# 네이티브 POSIX 소스 API 프로파일 0.1
+
+[English](posix-profile.en.md) · CHG-078 · [확장 사용자 API · #8](https://github.com/Romanof123/JNOX/issues/8)
+
+**AArch64 확장 구성에서 제공할 계획이다.** 버전 0.1은 J-NOX SDK로 다시 빌드하는 C 프로그램에 제공할 소스 인터페이스를 정한다. 각 함수의 초기 상태는 *계획*이다. SDK·이미지·구성별로 타깃 사용자 모드 시험 결과가 확보된 함수만 검증 완료로 표시한다. 커널에 링크한 EL1 작업과 호스트 libc 시험은 각각 다른 인터페이스를 거친다. 인증과 libc 전체 범위에는 별도의 범위 정의 및 근거가 필요하다. [POSIX.1-2024, Issue 8](https://standards.ieee.org/ieee/1003.1/7700/) · [현재 플랫폼 근거](platform-checklist.md)
+
+## 선택 함수와 타깃 검증
+
+별도 EL0 프로그램을 SDK 헤더 `<fcntl.h>`, `<unistd.h>`, `<spawn.h>`, `<sys/wait.h>`, `<time.h>`, `<pthread.h>`, `<signal.h>`, `<poll.h>`, `<sys/socket.h>`와 선택한 주소 체계의 헤더로 컴파일한다. 타깃에서 해당 libc 진입점을 실행한다. 각 함수에 시험한 플래그·옵션, 반환값, 규정된 오류, 실제 상태 변화와 자원 회수 결과를 연결한다. 일반 시스템 호출 형태의 인터페이스는 규정된 실패 반환 뒤에 `errno`를 확인한다. 선택한 `pthread_*`, `posix_spawn*`, `sigwait`, `clock_nanosleep`은 오류 번호를 직접 반환한다. 성공한 호출에는 `errno` 검사가 필요 없다. 두 스레드에서 다른 실패를 유도해 각각 자기 `errno`를 읽는지 확인한다.
+
+| 그룹과 추적 | 선택 인터페이스 | 타깃에서 관측할 결과 |
+| --- | --- | --- |
+| 파일·기술자 · VER-014/020 | `open`, `read`, `write`, `close`, `dup2`, `fcntl` | 허용 파일 생성·잘라내기·재열기, 정확한 바이트, 복제 기술자의 오프셋 공유, 부분 입출력, EOF를 확인한다. 없는 경로에서 `ENOENT`, 읽기 권한 거부에서 `EACCES`, 무효 기술자에서 `EBADF`를 확인한다. `F_GETFL/F_SETFL`로 `O_NONBLOCK`, `F_GETFD/F_SETFD`로 `FD_CLOEXEC`를 시험한다. |
+| 파이프·자식 · VER-014/020 | `pipe`, `posix_spawn`, `posix_spawn_file_actions_init`, `posix_spawn_file_actions_destroy`, `posix_spawn_file_actions_adddup2`, `posix_spawn_file_actions_addclose`, `waitpid`, `_exit` | 파일 동작을 등록 순서대로 적용해 파이프 양 끝을 자식의 표준 입력·출력에 연결한다. 자식 둘과 부모가 쓰지 않는 끝을 닫는다. 버퍼의 데이터를 모두 읽은 뒤 마지막 쓰기 끝이 닫히면 읽기가 0을 반환해야 한다. 두 PID를 회수해 `WIFEXITED/WEXITSTATUS`로 상태를 읽고, 같은 PID를 다시 기다리면 `ECHILD`를 확인한다. 자식에서 close-on-exec 동작을 판정한다. |
+| 시계 · VER-014 | `clock_getres`, `clock_gettime`, `nanosleep`, `clock_nanosleep` | 해상도, 감소하지 않는 단조 시간, 초기화된 달력 시각을 읽는다. 절대 단조 기한 대기 중 달력 시각을 변경해 원래 기한을 지키는지 본다. 핸들러가 있는 신호로 상대 대기를 중단하고 잔여 시간을 확인한다. 잘못된 나노초에서 `nanosleep`의 −1/`EINVAL`, `clock_nanosleep`의 직접 반환 `EINVAL`을 구별한다. [시간 계약](system-time-plan.md) |
+| 스레드 · VER-005/014 | `pthread_create`, `pthread_join`, `pthread_mutex_init`, `pthread_mutex_destroy`, `pthread_mutex_lock`, `pthread_mutex_trylock`, `pthread_mutex_unlock`, `pthread_cond_init`, `pthread_cond_destroy`, `pthread_cond_wait`, `pthread_cond_timedwait`, `pthread_cond_signal`, `pthread_cond_broadcast` | 같은 프로세스의 동기화 객체와 합류 가능한 스레드를 쓴다. 스레드가 돌려준 데이터와 다른 스레드가 잡은 뮤텍스에서 trylock의 직접 반환 `EBUSY`를 확인한다. 조건을 반복 검사하면서 대기하고 한 대기자에게 signal, 여러 대기자에게 broadcast한다. 깨움 또는 직접 반환 `ETIMEDOUT` 후 뮤텍스 재획득을 확인하고 모든 사용이 끝난 객체를 폐기한다. |
+| 기본 신호 · VER-005/014 | `sigemptyset`, `sigaddset`, `sigaction`, `pthread_sigmask`, `sigwait`, `getpid`, `kill` | 스레드 시작 전에 `SIGUSR1`을 차단하고 프로세스로 보낸 뒤 보류 신호를 `sigwait`로 한 번 소비한다. 별도 사례에서 차단하지 않은 신호를 핸들러로 전달한다. `SIGPIPE`를 무시한 상태로 읽기 끝 없는 파이프에 쓰면 `EPIPE`로 실패해야 한다. 기본 처리 `SIGTERM`에 의한 종료를 `waitpid`와 `WIFSIGNALED/WTERMSIG`로 관측한다. |
+| 준비 알림·소켓 · VER-006/014 | `poll`, `socket`, `bind`, `listen`, `accept`, `connect`, `send`, `recv`, `sendto`, `recvfrom`, `shutdown`, `close` | AF_UNIX 스트림과 IPv4·IPv6의 TCP 스트림 및 UDP 데이터그램에서 시험한다. `poll` 시간 초과·읽기 준비·닫힌 0 이상의 기술자(`POLLNVAL`), 스트림 부분 전송, 상대 종료 후 버퍼를 비웠을 때의 EOF, 비차단 would-block 결과를 본다. UDP 메시지 경계, 여러 클라이언트의 동시 실행, 부하 중 닫기, 포화 후 기술자·버퍼 회수를 검증한다. |
+
+자원 시험에는 프로세스·스레드·기술자 수, 파이프 저장 공간, 소켓·큐·대기 요청 한도를 구성 명세로 고정한다. 하나씩 소진해 규정된 오류 또는 상한 있는 역압을 확인하고, 회수 후 같은 동작이 성공하는지 본다. 예를 들어 프로세스의 기술자 한도에 도달하면 `open`은 `EMFILE`로 실패한다. 설정별 한도와 회수 결과를 남긴다. 네이티브 IPC 소유권·취소·상대 종료는 REQ-024를 따른다. PM이 #21의 스케줄링 승인 근거를 연결한 뒤 #24에서 IPC 구현을 시작한다. [IPC 프로파일](ipc-mechanisms.md) · [개발 순서](product-plan.md)
+
+## 애플리케이션 인수와 적용 범위
+
+- **네이티브 C · VER-020.** 외부 정적 프로그램 `cat`, `wc`를 SDK로 각각 빌드한다. 타깃 셸에서 `61 0a 62 0a` 바이트에 `cat sample.txt | wc -l`을 실행해 줄 수 2, 빈 stderr, EOF, 자식 각각의 종료 상태 0을 확인한다. 파일이 없으면 생산자는 진단과 0이 아닌 상태를 내고 소비자는 EOF를 받아 종료해야 한다.
+- **네이티브 Rust · VER-022.** 별도 Cargo 프로젝트에서 `core` 기반 정적 앱을 빌드한다. 공개 안전 SDK로 인자에 지정한 파일을 stdout에 복사해 상태 0으로 종료한다. 바이트 일치, 빈 stderr와 함께 비인가 파일의 거부, 0이 아닌 상태, 내용 미노출을 확인한다. `alloc`과 `std`는 별도 지원 상태를 공개한다.
+- **기존 Linux ELF · VER-021.** 검증 계획에 고정한 Debian arm64 정적 BusyBox를 변경 없이 쓰며 Linux 게스트를 끈다. 정상 파일과 접근 거부 파일로 `wc -l sample.txt`의 출력·stderr·상태를 기준 Linux와 비교한다. 원시 Linux `-ENOSYS`와 잘못된 ISA 또는 인터프리터의 진입 전 거부도 시험한다. [정확한 표본·해시·판정 규칙](verification-plan.md)
+
+프로세스 간 공유 동기화, robust 뮤텍스, 큐잉되는 실시간 신호, `fork`, 동적 링크, 셸·유틸리티 전체 범위는 이후 프로파일에서 채택 여부를 정한다. 생략한 옵션과 미지원 플래그를 SDK에 명시한다. 헤더, 공개 심볼, 링크된 실행 파일 단계에서는 타깃 검증을 대기로 기록한다. [요구사항](requirements.md) · [사용자 서비스와 ABI 설계](architecture.md)
