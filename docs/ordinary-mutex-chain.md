@@ -24,3 +24,5 @@ CHAIN RAW 1 retains the original mutex E field order plus remaining ready and wa
 [Independent verification of the first six QEMU boots](evidence/ordinary-timed-chain-first.en-ko.md).
 
 [First combined-main trial and held control results / 최초 통합 기록](evidence/ordinary-timed-chain-integration.en-ko.md).
+
+[Instruction and comparator analysis of the two held controls](evidence/ordinary-timed-chain-control-attribution.en-ko.md).
