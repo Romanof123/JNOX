@@ -33,7 +33,10 @@ mod periodic_overrun;
 mod cbs_wake;
 #[cfg(jnox_fixed)]
 #[cfg_attr(any(jnox_app = "fixed-ties", jnox_app = "fixed-late"), path = "fixed_edge_apps.rs")]
+#[cfg_attr(any(jnox_app = "coop-events", jnox_app = "coop-single"), path = "coop_app.rs")]
 mod fixed_apps;
+#[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single"))]
+mod coop_service;
 #[cfg(jnox_fixed)]
 mod fixed_policy;
 #[cfg(jnox_fixed)]
@@ -58,18 +61,18 @@ mod dispatch_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
 #[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"), allow(dead_code))]
 mod domain_policy;
-#[cfg(jnox_bench = "eevdf")]
+#[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
 mod eevdf;
-#[cfg(jnox_bench = "eevdf")]
+#[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
 mod eevdf_policy;
-#[cfg(jnox_bench = "coop")]
+#[cfg(any(jnox_bench = "coop", jnox_app = "coop-events", jnox_app = "coop-single"))]
 mod event_loop;
 #[cfg(jnox_bench = "extension")]
 mod extension;
 #[cfg(jnox_bench = "extension")]
 mod extension_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf"))]
-#[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf"), allow(dead_code))]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
+#[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake"), allow(dead_code))]
 mod fair_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
@@ -187,7 +190,7 @@ fn run_bench() -> ! {
     mutex::run();
     #[cfg(any(jnox_bench = "smp", jnox_bench = "power"))]
     smp_boot::boot();
-    #[cfg(jnox_bench = "eevdf")]
+    #[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
     eevdf::run();
     #[cfg(jnox_bench = "hierarchy")]
     hierarchy::run();

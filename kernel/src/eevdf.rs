@@ -1,6 +1,6 @@
 //! A finite live EEVDF workload. Each timer enforces one declared dispatch
 //! interval. Whole physical-timer quanta charge the executing request. The
-//! two sleep syscalls run in a separate, untimed control interval after its
+//! sleep syscalls run in a separate, untimed control interval after its
 //! preceding service has retired. Each wake latency ends in task code.
 use super::context::*;
 use super::eevdf_policy::Eevdf;
@@ -10,6 +10,9 @@ use core::mem::{offset_of, size_of};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, Ordering};
 
+const DISTRIBUTION: bool = cfg!(jnox_bench = "eevdf_wake");
+const ROWS: usize = if DISTRIBUTION { 128 } else { 12 };
+const WAKES: usize = if DISTRIBUTION { 16 } else { 2 };
 const C: usize = 2;
 const OWNERS: [usize; 12] = [0, 1, 2, 1, 0, 0, 2, 1, 1, 0, 1, 2];
 const GRANTS: [u64; 12] = [1, 1, 1, 3, 2, 2, 1, 1, 1, 2, 2, 1];
@@ -80,11 +83,13 @@ struct Wake {
 #[repr(C)]
 struct Witness {
     header: [u64; 8],
-    rows: [Row; 12],
-    wakes: [Wake; 2],
+    rows: [Row; ROWS],
+    wakes: [Wake; WAKES],
 }
 const _: () = assert!(
-    size_of::<Row>() == 39 * 8 && size_of::<Wake>() == 12 * 8 && size_of::<Witness>() == 4000
+    size_of::<Row>() == 39 * 8
+        && size_of::<Wake>() == 12 * 8
+        && size_of::<Witness>() == 64 + ROWS * 312 + WAKES * 96
 );
 #[unsafe(no_mangle)]
 static mut eevdf_witness: Witness = unsafe { core::mem::zeroed() };
@@ -101,7 +106,7 @@ struct Bench {
     snapshot: Row,
     error20: [i64; 3],
     peak: u64,
-    wakes: [Wake; 2],
+    wakes: [Wake; WAKES],
     sleeps: usize,
     responses: usize,
 }
@@ -151,7 +156,12 @@ impl Bench {
             (*f).gpr[21] = id as u64;
             f
         });
-        let mut policy = Eevdf::new([1, 2, 1], [1, 8, 4]).unwrap_or_else(|| fail());
+        let mut policy = if DISTRIBUTION {
+            Eevdf::new([2, 2, 1], [1; 3])
+        } else {
+            Eevdf::new([1, 2, 1], [1, 8, 4])
+        }
+        .unwrap_or_else(|| fail());
         for id in 0..3 {
             require(policy.wake(id));
         }
@@ -168,7 +178,7 @@ impl Bench {
             snapshot: Row::default(),
             error20: [0; 3],
             peak: 0,
-            wakes: [Wake::default(); 2],
+            wakes: [Wake::default(); WAKES],
             sleeps: 0,
             responses: 0,
         }
@@ -186,6 +196,14 @@ impl Bench {
         })
     }
 
+    fn is_response(&self, id: usize) -> bool {
+        if DISTRIBUTION {
+            id == C && self.responses < self.sleeps
+        } else {
+            matches!(self.row, 6 | 11)
+        }
+    }
+
     fn wake_c(&mut self, index: usize) {
         let (n, d) = self.policy.reference().unwrap_or_else(|| fail());
         require(self.sleeps == index + 1 && self.responses == index && self.ready == 3);
@@ -194,9 +212,9 @@ impl Bench {
         require(self.policy.wake(C));
         self.ready |= 1 << C;
         let after = self.tasks()[C];
-        if index == 0 {
+        if !DISTRIBUTION && index == 0 {
             require((n, d) == (6, 4) && before == [1, 2, 1, 1] && after == [2, 3, 1, 1]);
-        } else {
+        } else if !DISTRIBUTION {
             require((n, d) == (11, 4) && before == [3, 5, 1, 2] && after == before);
         }
         let wake = &mut self.wakes[index];
@@ -206,29 +224,39 @@ impl Bench {
     }
 
     fn dispatch(&mut self) -> *mut Frame {
-        match self.row {
-            2 => {
-                require(self.policy.configure(C, 1, 2) && self.tasks()[C] == [0, 2, 1, 2]);
-                uart_write(b"EEVDF SLICE CHANGE\n");
+        if DISTRIBUTION {
+            if self.ready == 3 {
+                let index = self.sleeps - 1;
+                let due = self.wakes[index].sleep_after as usize + 2 + index % 4;
+                if self.row == due {
+                    self.wake_c(index);
+                }
             }
-            3 => {
-                require(self.policy.reference() == Some((2, 3)));
-                require(self.policy.configure(0, 2, 2) && self.tasks()[0] == [2, 4, 2, 2]);
-                uart_write(b"EEVDF WEIGHT CHANGE\n");
+        } else {
+            match self.row {
+                2 => {
+                    require(self.policy.configure(C, 1, 2) && self.tasks()[C] == [0, 2, 1, 2]);
+                    uart_write(b"EEVDF SLICE CHANGE\n");
+                }
+                3 => {
+                    require(self.policy.reference() == Some((2, 3)));
+                    require(self.policy.configure(0, 2, 2) && self.tasks()[0] == [2, 4, 2, 2]);
+                    uart_write(b"EEVDF WEIGHT CHANGE\n");
+                }
+                4 => self.wake_c(0),
+                8 => self.wake_c(1),
+                _ => {}
             }
-            4 => self.wake_c(0),
-            8 => self.wake_c(1),
-            _ => {}
         }
         let (n, d) = self.policy.reference().unwrap_or_else(|| fail());
         let before = self.tasks();
         let id = self.policy.dispatch().unwrap_or_else(|| fail());
-        require(id == OWNERS[self.row] && self.ready & (1 << id) != 0);
-        if self.row == 1 {
+        require((DISTRIBUTION || id == OWNERS[self.row]) && self.ready & (1 << id) != 0);
+        if !DISTRIBUTION && self.row == 1 {
             require((n, d) == (1, 4) && before == [[1, 2, 1, 1], [0, 8, 2, 8], [0, 4, 1, 4]]);
             uart_write(b"EEVDF EARLY INELIGIBLE\n");
         }
-        let quota = GRANTS[self.row];
+        let quota = if DISTRIBUTION { 1 } else { GRANTS[self.row] };
         require(quota <= before[id][3]);
         let f = core::mem::replace(&mut self.frames[id], ptr::null_mut());
         require(!f.is_null());
@@ -239,7 +267,7 @@ impl Bench {
                     && unsafe { (*f).gpr[20] } == self.progress[id],
             );
         }
-        if self.row == 6 || self.row == 11 {
+        if self.is_response(id) {
             require(id == C && restore == (&raw const ee_c_wake).addr() as u64);
             let wake = &mut self.wakes[self.responses];
             wake.first_row = self.row as u64;
@@ -313,10 +341,10 @@ impl Bench {
         for e in self.error20 {
             self.peak = self.peak.max(e.unsigned_abs());
         }
-        require(self.peak <= 25);
+        require(self.peak <= if DISTRIBUTION { 400 } else { 25 });
         // The QMP observer reads the symbol only after the terminal marker.
         unsafe { ptr::write_volatile(&raw mut eevdf_witness.rows[self.row], self.snapshot) };
-        if self.row == 6 || self.row == 11 {
+        if self.is_response(id) {
             let ran = OBSERVED[C].load(Ordering::Acquire);
             let index = self.responses;
             let wake = &mut self.wakes[index];
@@ -325,24 +353,43 @@ impl Bench {
                     && (self.snapshot.start..compare).contains(&ran),
             );
             wake.first_work = ran;
-            let wake_tick = GRANTS[..wake.wake_before as usize].iter().sum::<u64>();
+            let wake_tick = if DISTRIBUTION {
+                wake.wake_before
+            } else {
+                GRANTS[..wake.wake_before as usize].iter().sum::<u64>()
+            };
             wake.wait_units = self.total - wake_tick;
-            require(wake.wait_units == [4, 5][index]);
+            if DISTRIBUTION {
+                require(wake.wait_units <= 6 && ran - wake.wake_at <= 8 * self.quantum);
+            } else {
+                require(wake.wait_units == [4, 5][index]);
+            }
             self.responses += 1;
         }
         self.row += 1;
         self.total += units;
-        if self.row == 3 || self.row == 7 {
+        let should_block = if DISTRIBUTION {
+            id == C && self.sleeps < WAKES
+        } else {
+            self.row == 3 || self.row == 7
+        };
+        if should_block {
             // Return to the just-interrupted C without a compute grant. Its
             // next loop observation requests blocking using the real SVC vector.
             require(id == C);
             COMMAND[C].store(1, Ordering::Release);
             return core::mem::replace(&mut self.frames[C], ptr::null_mut());
         }
-        if self.row == GRANTS.len() {
-            require(self.total == 18 && self.peak == 25 && self.error20 == [-3, 2, 1]);
+        if self.row == ROWS {
+            if DISTRIBUTION {
+                require(self.total == ROWS as u64);
+            } else {
+                require(self.total == 18 && self.peak == 25 && self.error20 == [-3, 2, 1]);
+            }
             require(
-                self.sleeps == 2 && self.responses == 2 && self.frames.iter().all(|f| !f.is_null()),
+                self.sleeps == WAKES
+                    && self.responses == WAKES
+                    && self.frames.iter().all(|f| !f.is_null()),
             );
             let header = [
                 1,
@@ -359,14 +406,18 @@ impl Bench {
                 ptr::write_volatile(&raw mut eevdf_witness.header, header);
                 asm!("dsb sy", options(nostack, preserves_flags));
             }
-            uart_write(b"EEVDF TWO WAKES\nEEVDF STOP\nEEVDF PASS\n");
+            if DISTRIBUTION {
+                uart_write(b"EEVDF WAKE STOP\nEEVDF WAKE PASS\n");
+            } else {
+                uart_write(b"EEVDF TWO WAKES\nEEVDF STOP\nEEVDF PASS\n");
+            }
             park()
         }
         self.dispatch()
     }
 
     fn block_c(&mut self, frame: *mut Frame, now: u64) -> *mut Frame {
-        require(self.sleeps < 2 && self.row == [3, 7][self.sleeps]);
+        require(self.sleeps < WAKES && (DISTRIBUTION || self.row == [3, 7][self.sleeps]));
         self.check_frame(C, frame);
         let saved = unsafe { &*frame };
         require(saved.elr == (&raw const ee_c_wake).addr() as u64);

@@ -39,7 +39,7 @@ global_asm!(
     frame_size = const size_of::<Frame>(), elr = const offset_of!(Frame, elr),
     fpcr = const offset_of!(Frame, fpcr), tpidr_el1 = const offset_of!(Frame, tpidr_el1),
     tpidr_el0 = const offset_of!(Frame, tpidr_el0), simd = const offset_of!(Frame, simd),
-    irq = sym timer_irq, svc = sym yield_call, fail = sym fail, counter_target = sym COUNTER_TARGET,
+    irq = sym timer_irq, svc = sym yield_call, fail = sym vector_fail, counter_target = sym COUNTER_TARGET,
 );
 
 #[repr(C)]
@@ -116,15 +116,69 @@ static COUNTER_TARGET: AtomicU64 = AtomicU64::new(0);
 static mut STACKS: [Stack; 12] = [const { Stack([0; STACK_BYTES]) }; 12];
 static mut ACTIVE: Option<Bench> = None;
 
-extern "C" fn fail() -> ! {
+// Little-endian words: source line (commit marker), epoch, slot, actual, expected.
+#[cfg(feature = "proportional-diagnostic")]
+#[unsafe(no_mangle)]
+static mut proportional_failure: [u64; 5] = [0, u64::MAX, u64::MAX, 0, 0];
+
+#[inline]
+fn mark_slot(_epoch: usize, _slot: usize) {
+    #[cfg(feature = "proportional-diagnostic")]
+    unsafe {
+        ptr::write_volatile(&raw mut proportional_failure[1], _epoch as u64);
+        ptr::write_volatile(&raw mut proportional_failure[2], _slot as u64);
+    }
+}
+
+#[cold]
+#[track_caller]
+fn mismatch(_actual: u64, _expected: u64) -> ! {
     unsafe { asm!("msr daifset, #0xf", options(nostack, preserves_flags)) };
+    #[cfg(feature = "proportional-diagnostic")]
+    unsafe {
+        if ptr::read_volatile(&raw const proportional_failure[0]) == 0 {
+            ptr::write_volatile(&raw mut proportional_failure[3], _actual);
+            ptr::write_volatile(&raw mut proportional_failure[4], _expected);
+            ptr::write_volatile(&raw mut proportional_failure[0],
+                core::panic::Location::caller().line() as u64);
+        }
+    }
     uart_write(b"PROPORTIONAL FAIL\n");
     park()
 }
 
+#[track_caller]
+fn fail() -> ! {
+    mismatch(0, 1)
+}
+
+extern "C" fn vector_fail() -> ! {
+    fail()
+}
+
+#[track_caller]
 fn require(ok: bool) {
     if !ok {
         fail()
+    }
+}
+
+macro_rules! check {
+    ($actual:expr, $op:tt, $expected:expr) => {{
+        let actual = $actual;
+        let expected = $expected;
+        if !(actual $op expected) {
+            mismatch(actual as u64, expected as u64);
+        }
+    }};
+}
+
+#[track_caller]
+fn check_counts(actual: [u64; 3], expected: [u64; 3]) {
+    for (observed, target) in actual.into_iter().zip(expected) {
+        if observed != target {
+            mismatch(observed, target);
+        }
     }
 }
 
@@ -163,7 +217,7 @@ struct Bench {
 fn with_bench<R>(operation: impl FnOnce(&mut Bench) -> R) -> R {
     let daif: u64;
     unsafe { asm!("mrs {}, daif", out(reg) daif, options(nostack, preserves_flags)) };
-    require(daif & 0x80 != 0);
+    check!(daif & 0x80, !=, 0);
     // Only the masked CPU in boot or in one of the exception handlers borrows ACTIVE.
     unsafe { operation((*(&raw mut ACTIVE)).as_mut().unwrap_or_else(|| fail())) }
 }
@@ -207,6 +261,7 @@ impl Bench {
     }
 
     fn begin(&mut self) -> *mut Frame {
+        mark_slot(self.epoch, 0);
         let first: unsafe extern "C" fn() = if self.epoch == DELAY_EPOCH {
             prop_delayed
         } else if self.stride() {
@@ -237,10 +292,10 @@ impl Bench {
             // Checking the inclusive first and last ticket of every interval
             // must leave the generator untouched for the published seed.
             for (id, (lo, hi)) in [(0, 1), (1, 3), (3, 7)].into_iter().enumerate() {
-                require(self.policy.winner_for_draw(lo) == Some(id));
-                require(self.policy.winner_for_draw(hi - 1) == Some(id));
+                check!(self.policy.winner_for_draw(lo).unwrap_or(usize::MAX), ==, id);
+                check!(self.policy.winner_for_draw(hi - 1).unwrap_or(usize::MAX), ==, id);
             }
-            require(self.policy.winner_for_draw(7).is_none());
+            check!(self.policy.winner_for_draw(7).unwrap_or(usize::MAX), ==, usize::MAX);
         }
         self.dispatch()
     }
@@ -258,15 +313,18 @@ impl Bench {
     }
 
     fn dispatch(&mut self) -> *mut Frame {
-        require(self.current.is_none());
+        mark_slot(self.epoch, self.slot);
+        check!(self.current.unwrap_or(usize::MAX), ==, usize::MAX);
         let id = self.policy.dispatch().unwrap_or_else(|| fail());
-        require(self.policy.ready_mask() & (1 << id) != 0);
+        check!(self.policy.ready_mask() & (1 << id), !=, 0);
         self.pass_start = self.passes();
         self.current = Some(id);
         let frame = core::mem::replace(&mut self.frames[id], ptr::null_mut());
-        require(!frame.is_null());
+        check!(frame.addr(), !=, 0);
         let tick = self.tick();
         let grant = if self.stride() { 2 } else { 1 };
+        #[cfg(feature = "proportional-fixture-miss")]
+        let grant = if self.epoch == 0 && self.slot == 0 { 2 } else { grant };
         self.start = counter();
         self.deadline = self.start + grant * tick;
         let target_ticks = if self.epoch == DELAY_EPOCH { 3 } else { 1 };
@@ -280,19 +338,20 @@ impl Bench {
 
     fn end_slot(&mut self, frame: *mut Frame, stopped: u64, ppi: u8) -> *mut Frame {
         let id = self.current.take().unwrap_or_else(|| fail());
-        require(
-            self.frames[id].is_null()
-                && frame.addr() == self.top(id).addr() - 16 - size_of::<Frame>(),
-        );
+        check!(self.frames[id].addr(), ==, 0);
+        check!(frame.addr(), ==, self.top(id).addr() - 16 - size_of::<Frame>());
         let f = unsafe { &*frame };
         let cookie = self.cookie(id);
-        require(f.spsr & 0x8f == 5 && f.gpr[23] == id as u64);
-        require(f.gpr[19] == cookie && f.tpidr_el1 == cookie);
-        require(unsafe { ptr::read_volatile(self.top(id).sub(16).cast::<u64>()) } == cookie);
+        check!(f.spsr & 0x8f, ==, 5);
+        check!(f.gpr[23], ==, id as u64);
+        check!(f.gpr[19], ==, cookie);
+        check!(f.tpidr_el1, ==, cookie);
+        check!(unsafe { ptr::read_volatile(self.top(id).sub(16).cast::<u64>()) }, ==, cookie);
         let pc = f.elr;
         let progress = f.gpr[20];
         self.frames[id] = frame;
-        let elapsed = stopped.checked_sub(self.start).unwrap_or_else(|| fail()) / self.tick();
+        check!(stopped, >=, self.start);
+        let elapsed = (stopped - self.start) / self.tick();
         let ready = self.policy.ready_mask() as u8;
         let (draw, total, low, high, normalization) = if self.stride() {
             let offset = self.policy.last_normalization().unwrap_or_else(|| fail());
@@ -301,7 +360,9 @@ impl Bench {
             let (draw, total) = self.policy.last_draw().unwrap_or_else(|| fail());
             let low: u32 = WEIGHTS[..id].iter().copied().map(u32::from).sum();
             let high = low + u32::from(WEIGHTS[id]);
-            require(total == 7 && (low..high).contains(&draw));
+            check!(total, ==, 7);
+            check!(draw, >=, low);
+            check!(draw, <, high);
             (draw as u8, total as u8, low as u8, high as u8, 0)
         };
         // Charge physical residency, including any interrupt-delivery delay.
@@ -334,11 +395,12 @@ impl Bench {
         };
         unsafe {
             let index = ptr::read_volatile(&raw const proportional_witness.count) as usize;
-            require(index < ROWS);
+            check!(index, <, ROWS);
             ptr::write_volatile(&raw mut proportional_witness.rows[index], row);
             ptr::write_volatile(&raw mut proportional_witness.count, index as u64 + 1);
         }
-        require(applied && progress > self.progress[id]);
+        require(applied);
+        check!(progress, >, self.progress[id]);
         self.progress[id] = progress;
         self.check_interval(&row);
         self.served[id] += elapsed;
@@ -346,15 +408,19 @@ impl Bench {
         self.slot += 1;
         if self.epoch == DELAY_EPOCH {
             let target = self.start + 3 * self.tick();
-            require(f.gpr[10] == target && f.gpr[11] >= target && f.gpr[11] <= stopped);
-            require(row.ready == 1 && self.slot == 1 && row.pass_start == [0; 3]);
-            require(row.pass_stop == [SCALE * elapsed, 0, 0]);
+            check!(f.gpr[10], ==, target);
+            check!(f.gpr[11], >=, target);
+            check!(f.gpr[11], <=, stopped);
+            check!(row.ready, ==, 1);
+            check!(self.slot, ==, 1);
+            check_counts(row.pass_start, [0; 3]);
+            check_counts(row.pass_stop, [SCALE * elapsed, 0, 0]);
             uart_write(b"STRIDE DELAY CHARGED\nPROPORTIONAL PASS\n");
             park()
         } else if self.stride() {
             self.check_stride(row);
             if self.slot == STRIDE_SLOTS {
-                require(self.served == [2, 4, 8]);
+                check_counts(self.served, [2, 4, 8]);
                 uart_write(b"STRIDE SERVICE JOIN\n");
                 *self = Self::new(DELAY_EPOCH, self.ticks);
                 return self.begin();
@@ -362,12 +428,10 @@ impl Bench {
         } else if self.slot == WINDOW {
             // Compare exact integer fractions. The two independent 32-quantum
             // windows each allow an absolute count deviation of eight quanta.
-            require(self.served == self.selections.map(u64::from));
+            check_counts(self.served, self.selections.map(u64::from));
             for (observed, weight) in self.selections.into_iter().zip(WEIGHTS) {
-                require(
-                    observed > 0
-                        && (observed * 7).abs_diff(WINDOW as u32 * u32::from(weight)) <= 8 * 7,
-                );
+                check!(observed, >, 0);
+                check!((observed * 7).abs_diff(WINDOW as u32 * u32::from(weight)), <=, 8 * 7);
             }
             uart_write(if self.epoch == 0 {
                 b"LOTTERY SEED A\n"
@@ -382,15 +446,15 @@ impl Bench {
 
     fn check_interval(&self, row: &Row) {
         if row.ppi == NONE {
-            require(
-                self.epoch == 2
-                    && row.task == 0
-                    && row.pc == (&raw const prop_yield_return).addr() as u64,
-            );
-            require(row.stop < row.deadline && row.elapsed == 1);
+            check!(self.epoch, ==, 2);
+            check!(row.task, ==, 0);
+            check!(row.pc, ==, (&raw const prop_yield_return).addr() as u64);
+            check!(row.stop, <, row.deadline);
+            check!(row.elapsed, ==, 1);
             return;
         }
-        require(u32::from(row.ppi) == TIMER_IRQ && row.stop >= row.deadline);
+        check!(u32::from(row.ppi), ==, TIMER_IRQ);
+        check!(row.stop, >=, row.deadline);
         let (lo, hi) = match (self.epoch, row.task) {
             (DELAY_EPOCH, 0) => (&raw const prop_delayed_work, &raw const prop_delayed_end),
             (0 | 1, 0) => (&raw const prop_cpu_a_work, &raw const prop_cpu_a_end),
@@ -398,13 +462,14 @@ impl Bench {
             (_, 2) => (&raw const prop_cpu_c_work, &raw const prop_cpu_c_end),
             _ => fail(),
         };
-        require((lo.addr()..hi.addr()).contains(&(row.pc as usize)));
-        require(match self.epoch {
-            0 | 1 => row.elapsed == 1,
-            2 => row.elapsed == 2,
-            DELAY_EPOCH => row.elapsed >= 3,
-            _ => false,
-        });
+        check!(row.pc as usize, >=, lo.addr());
+        check!(row.pc as usize, <, hi.addr());
+        match self.epoch {
+            0 | 1 => check!(row.elapsed, ==, 1),
+            2 => check!(row.elapsed, ==, 2),
+            DELAY_EPOCH => check!(row.elapsed, >=, 3),
+            _ => fail(),
+        }
     }
 
     fn check_stride(&mut self, row: Row) {
@@ -415,21 +480,24 @@ impl Bench {
         } else {
             [0, 1, 2, 2][slot % 4]
         };
-        require(row.task == expected && row.ready == if slot < 8 { 3 } else { 7 });
+        check!(row.task, ==, expected);
+        check!(row.ready, ==, if slot < 8 { 3 } else { 7 });
         let mut charged = row.pass_start;
         charged[usize::from(expected)] +=
             row.elapsed * (SCALE / u64::from(WEIGHTS[usize::from(expected)]));
-        require(row.pass_stop == charged);
+        check_counts(row.pass_stop, charged);
         if slot == 8 {
-            require(row.normalization == SCALE && row.pass_start == [0; 3])
+            check!(row.normalization, ==, SCALE);
+            check_counts(row.pass_start, [0; 3]);
         }
         if self.slot == 8 {
             // Before normalization at the next dispatch, the new entrant must
             // join the current floor. A stale zero would put C ahead of A/B.
-            require(self.served == [4, 8, 0] && row.pass_stop == [SCALE, SCALE, 0]);
+            check_counts(self.served, [4, 8, 0]);
+            check_counts(row.pass_stop, [SCALE, SCALE, 0]);
             require(self.policy.set_ready_mask(7));
             let joined = self.passes();
-            require(joined == [SCALE; 3]);
+            check_counts(joined, [SCALE; 3]);
             unsafe {
                 ptr::write_volatile(
                     &raw mut proportional_witness.join_before,
@@ -451,7 +519,8 @@ pub(super) fn run() -> ! {
     let freq: u64;
     unsafe { asm!("mrs {}, cntfrq_el0", out(reg) freq, options(nostack, preserves_flags)) };
     let ticks = [freq / 100, freq / 25];
-    require(ticks[0] != 0 && ticks[1] != 0);
+    check!(ticks[0], !=, 0);
+    check!(ticks[1], !=, 0);
     unsafe {
         ptr::write_volatile(&raw mut proportional_witness.ticks, ticks);
         ACTIVE = Some(Bench::new(0, ticks));
@@ -464,7 +533,8 @@ extern "C" fn yield_call(frame: *mut Frame) -> *mut Frame {
     disable_timer();
     let esr: u64;
     unsafe { asm!("mrs {}, esr_el1", out(reg) esr, options(nostack, preserves_flags)) };
-    require(esr >> 26 == 0x15 && esr & 0xffff == 1);
+    check!(esr >> 26, ==, 0x15);
+    check!(esr & 0xffff, ==, 1);
     with_bench(|b| b.end_slot(frame, stopped, NONE))
 }
 
@@ -473,7 +543,8 @@ extern "C" fn timer_irq(frame: *mut Frame) -> *mut Frame {
     let iar = gic_read(GICC + 0x0c);
     let control: u64;
     unsafe { asm!("mrs {}, cntp_ctl_el0", out(reg) control, options(nostack, preserves_flags)) };
-    require(iar & 0x3ff == TIMER_IRQ && control & 7 == 5);
+    check!(iar & 0x3ff, ==, TIMER_IRQ);
+    check!(control & 7, ==, 5);
     disable_timer();
     gic_write(GICC + 0x10, iar);
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };

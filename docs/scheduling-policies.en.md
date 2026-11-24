@@ -19,6 +19,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Verified running-job preemption | IMP-009, POL-004 | A timer interrupted A. RM immediately returned to A. DM returned to the same A instruction after B completed. [EVD-009](evidence/evd-009.en.md) |
 | Verified static time partitions | IMP-010, POL-006 | Reclaimed the CPU at window boundaries with blocked-owner and explicit idle windows. [EVD-010](evidence/evd-010.en.md) |
 | Verified cooperative dispatch | IMP-012, POL-001 | A retained its CPU until voluntary yield after B became ready. A handler-enqueued event ran after the older queued event. [EVD-012](evidence/evd-012.en.md) |
+| Linked cooperative events | IMP-036, POL-001 | Two ordinary images exercised full/invalid refusals, FIFO append, measured handler time and owner reactions. [EVD-036](evidence/evd-036.en.md) |
 | Verified burst scheduling | IMP-013, POL-003 | Compared SJF retention with SRTF preemption and restoration. HRRN selected an older waiting job ahead of a shorter newcomer. [EVD-013](evidence/evd-013.en.md) |
 | Verified Pi 4 model preemption | IMP-014, POL-002 fixed priority | The Pi timer interrupted LOW and the scheduler restored its exact PC after HIGH exited. [EVD-014](evidence/evd-014.en.md) |
 | Verified sampled EDF and LLF | IMP-015, POL-005 | Recorded tie retention, preemption on a laxity crossover, negative slack, and exact restoration on one CPU. [EVD-015](evidence/evd-015.en.md) |
@@ -30,6 +31,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Ticket lottery and measured stride | IMP-021, POL-010 | Two seeds, late admission, unequal service and a deliberately late IRQ were checked against all 81 grants. [EVD-021](evidence/evd-021.en.md) |
 | Weighted virtual runtime | IMP-022, POL-011 | All 21 dispatches and their service charges matched a separate counter-based replay through sleep and wake. [EVD-022](evidence/evd-022.en.md) |
 | EEVDF | IMP-023, POL-012 | Twelve dispatches and two wake-to-work intervals matched the eligible set, virtual deadlines and requested slices. [EVD-023](evidence/evd-023.en.md) |
+| Repeated EEVDF wakes | IMP-034, POL-012 | Reconstructed 128 grants and 16 wake responses with fixed weights and slices. [EVD-034](evidence/evd-034.en.md) |
 | Hierarchical scheduling | IMP-024, POL-016 | Parent exhaustion stopped a funded, runnable descendant. The sibling ran and the original branch resumed after refill across two windows. [EVD-024](evidence/evd-024.en.md) |
 | Energy- and deadline-aware placement | IMP-025, POL-017 | Six modeled placement cases used two guest CPUs. A separate debugger replay identified all seven actual work-loop entries by vCPU, PC and stack. [EVD-025](evidence/evd-025.en.md) |
 | Bounded policy extension | IMP-026, POL-018 | Nine slots covered accepted proposals, fallback, idle and three protected reservations. Fifteen interrupt PCs matched the running contexts. [EVD-026](evidence/evd-026.en.md) |
@@ -97,5 +99,9 @@ The cited mechanisms supply design references. Compatibility with another schedu
 ## Linked Rust task configuration
 
 CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at build time. The same kernel interface accepts FIFO and RR applications with different priorities and initial releases. EVD-030 calls for the first guest captures, task exception and stack checks, and terminal idle for each application configuration. [Fixed-priority runtime](fixed-runtime.en.md)
+
+POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under DM, then repeated A at tick 10 and B at tick 12 in both epochs. [EVD-033](evidence/evd-033.en.md)
+
+POL-010 · Forced first-grant rejection and two passing controls. [EVD-035](evidence/evd-035.en.md)
 
 POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)

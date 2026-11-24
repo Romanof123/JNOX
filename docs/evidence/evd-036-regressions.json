@@ -1,0 +1,151 @@
+{
+  "tree": "1bf99d4d0244dca0be2925e89e2fe22a4a2a92d9",
+  "kernel_tree": "b32d2a29fea64cc863b471883807915c6a07b377",
+  "tools_tree": "0ce8c667905f487ef8c6800d62996cc26ae76072",
+  "pinned_main": "ea7bbe39d3f024f25895300a0a2b92297c0a27cc",
+  "host": {
+    "scheduling": 126,
+    "coop_service": 2,
+    "python": 32
+  },
+  "outputs": {
+    "proportional-bench": {
+      "elf_sha256": "3f52f2b9e34a181a626769f3a2357398e34619ce72407a8276f69a4b2e73149a",
+      "raw_sha256": "2845484738e9843a2ccf2186a84139622e3aededd6b35448ecedcfb965a17794",
+      "independent_elf_sha256": "240f126dbc46328e0b1644d7e06d97e8b9accd2b5ff04187461bbd8dff1a41b9",
+      "independent_raw_sha256": "2845484738e9843a2ccf2186a84139622e3aededd6b35448ecedcfb965a17794",
+      "identical": true
+    },
+    "proportional-diagnostic": {
+      "elf_sha256": "f882c7a40d49b33b6d9544107dc118cae0369647a7cdf8c6c32ca49fc6f9ffdc",
+      "raw_sha256": "acd32514f9f9d26dd7d4ffd1482a08231e9dcb46f932ce1bbf8910ae8d1bc0c8",
+      "independent_elf_sha256": "c6a51c5996d5141124500123b5532599c8c0dd7c855134c144581fd24746fe75",
+      "independent_raw_sha256": "acd32514f9f9d26dd7d4ffd1482a08231e9dcb46f932ce1bbf8910ae8d1bc0c8",
+      "identical": true
+    },
+    "proportional-fixture-miss": {
+      "elf_sha256": "2961d887bfbc3ee0602f1ad0ca83a3d3bce3c7f82aee50c0d05ba76eb38892a3",
+      "raw_sha256": "bcd83c244120bf60797bf94805e6f9d0251b19fce70a131e16a5f0c10f7c5be7",
+      "independent_elf_sha256": "47b68f8e063226aa612449616bb7cb24d1b1b157ee665a207d2db1ec651d33f7",
+      "independent_raw_sha256": "bcd83c244120bf60797bf94805e6f9d0251b19fce70a131e16a5f0c10f7c5be7",
+      "identical": true
+    },
+    "coop-events": {
+      "elf_sha256": "a6fbd82f3083b7ca896cc638f9dac2e1208b621b5d50934e7bd979be610ad65a",
+      "raw_sha256": "cf03bc73f485c0aefd9493056a2c8c2752bf92f8f051e0f5146d7273e6dc066e",
+      "independent_elf_sha256": "0625e2f5a3e3b817f1cb106708fc767c2545c08b4c83e790f62d68a4764102ea",
+      "independent_raw_sha256": "cf03bc73f485c0aefd9493056a2c8c2752bf92f8f051e0f5146d7273e6dc066e",
+      "identical": true
+    },
+    "coop-single": {
+      "elf_sha256": "2c1ec5a289abeff941ac95576888ecd525d4f3f8ec253cf3b99ffb88d5deac92",
+      "raw_sha256": "550d40ac6ac695963d7285cb41edf1e6fa224ddcffca5523b256d71915a09576",
+      "independent_elf_sha256": "a7aee5e06c6d93ad9faf0b51ef5163a79c0b40ff473f64d11c568c7ac384ccd2",
+      "independent_raw_sha256": "550d40ac6ac695963d7285cb41edf1e6fa224ddcffca5523b256d71915a09576",
+      "identical": true
+    },
+    "boot": {
+      "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "raw_sha256": "e4cf03f8b33cfd95e0f1ab36618eed96608893bfbbd4ceecb312be014a6adf40"
+    },
+    "coop": {
+      "elf_sha256": "b1aa18ea8bf4589037f7c682b837a8b70a277ce3587f21ab24120a0df0375cfe",
+      "raw_sha256": "7089b50d5a6bcda6b78a3b46aed80316cde7d75814bbfbd76265780691dbfc1c"
+    },
+    "fixed-fifo": {
+      "elf_sha256": "3f5fa740183ee9f4daac815762be6814dbb6de59b652139b8d5b42462281a34d",
+      "raw_sha256": "1c4a22e344b0bef6a571c0fcca8cb511cde982531a62ab3a68e9a0fcdee0ae30"
+    },
+    "all": {
+      "elf_sha256": "b43f0f79d44becf2ce751d40e5b4b3164bb54eaba1af167847f0a4928ba4b36e",
+      "raw_sha256": "7089b50d5a6bcda6b78a3b46aed80316cde7d75814bbfbd76265780691dbfc1c"
+    }
+  },
+  "proportional": {
+    "bench": {
+      "observer_exit": 0,
+      "qemu_exit": 0,
+      "failure": null,
+      "irq": 75,
+      "svc_count": 6,
+      "row_count": 81
+    },
+    "diagnostic": {
+      "observer_exit": 0,
+      "qemu_exit": 0,
+      "failure": [
+        0,
+        3,
+        0,
+        0,
+        0
+      ],
+      "irq": 75,
+      "svc_count": 6,
+      "row_count": 81
+    },
+    "fixture-miss": {
+      "observer_exit": 1,
+      "qemu_exit": 0,
+      "failure": [
+        468,
+        0,
+        0,
+        2,
+        1
+      ],
+      "irq": 1,
+      "svc_count": 0,
+      "row_count": 1,
+      "row": {
+        "row": 0,
+        "epoch": 0,
+        "slot": 0,
+        "owner": 1,
+        "draw": 2,
+        "frame": 1075906208,
+        "return_pc": 1075843688,
+        "elr": 1075843708,
+        "start": 80811,
+        "stop": 1459005,
+        "compare": 1330811,
+        "elapsed": 1378194,
+        "ticks": 2,
+        "progress": 71792183,
+        "floor": 0,
+        "pre": [
+          0,
+          0,
+          0
+        ],
+        "post": [
+          0,
+          0,
+          0
+        ]
+      },
+      "predicate": "0 | 1 => check!(row.elapsed, ==, 1),"
+    }
+  },
+  "unexpected_failures": [],
+  "expected_build_rejections": [
+    "coop-events-trace-build",
+    "coop-events-pi4-build",
+    "coop-single-trace-build",
+    "coop-single-pi4-build",
+    "proportional-diagnostic-pi4-build",
+    "proportional-fixture-miss-pi4-build"
+  ],
+  "passing_boots": [
+    "proportional-bench-boot",
+    "proportional-diagnostic-boot",
+    "coop-events-boot",
+    "coop-single-boot",
+    "boot-boot",
+    "coop-boot",
+    "fixed-fifo-boot",
+    "all-boot"
+  ],
+  "command_log_sha256": "7c38f55654516b67fde7596bff6a18716be4df0673b17745afb24e54106830d0",
+  "scope": "Host and QEMU virt. No physical hardware or deadline claim."
+}
