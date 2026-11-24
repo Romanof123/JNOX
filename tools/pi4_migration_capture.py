@@ -52,7 +52,7 @@ def freeze(args):
     print(sha(root / "freeze.json"))
 
 
-def acquire(args):
+def acquire(args, terminal_observer=None):
     root = args.directory.resolve()
     if sha(root / "freeze.json") != args.digest:
         raise ValueError("freeze digest mismatch")
@@ -65,14 +65,19 @@ def acquire(args):
     dest.mkdir()
     cmd = [record["qemu"], *FLAGS, "-kernel", str(root / "kernel8.img"), "-d", "int,tid",
            "-D", str(dest / "observer-%d.log")]
+    if terminal_observer is not None:
+        cmd[1+len(FLAGS):1+len(FLAGS)] = terminal_observer.argv()
     session = dict(freeze_sha256=args.digest, case=record["case"], ordinal=args.ordinal,
                    platform="raspi4b-tcg", argv=cmd, wall_start_ns=time.time_ns())
+    if terminal_observer is not None:
+        session["diagnostic"] = "mg2-post-terminal-ram-v1"
     save(dest / "attempt.json", session)
     proc = None
     tids = {}
     start = last = time.monotonic_ns()
     terminal = None
     reason = "deadline"
+    observed_end = None
     try:
         if not Path("/proc/self/task").is_dir():
             raise ValueError("native Linux procfs is required for thread attribution")
@@ -114,10 +119,20 @@ def acquire(args):
                     for line in lines:
                         if line.startswith((b"MG END ", b"MG FAIL ", b"PI4 MIG FAIL", b"PI4 SMP BSP FAIL")):
                             terminal = line.decode("ascii", errors="replace")
+        if terminal_observer is not None:
+            observed_end = time.monotonic_ns()
+            session["observation_monotonic_ns"] = dict(start=start,last_uart=last,end=observed_end)
+            session["post_terminal"] = {"status": "unobserved", "reason": reason}
+            if reason == "terminal_quiet":
+                try:
+                    terminal_observer.capture(dest, record, tids)
+                    session["post_terminal"] = {"status": "captured"}
+                except (OSError, ValueError, RuntimeError, EOFError, KeyError, TypeError) as error:
+                    session["post_terminal"] = {"status": "failed", "reason": str(error)}
     except (OSError, ValueError) as error:
         reason = str(error)
     finally:
-        end = time.monotonic_ns()
+        end = observed_end if observed_end is not None else time.monotonic_ns()
         if proc is not None:
             if proc.poll() is None:
                 proc.terminate()
@@ -126,6 +141,7 @@ def acquire(args):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
+            proc.stdout.close()
         save(dest / "threads.json", tids)
         session.update(reason=reason, terminal=terminal, wall_end_ns=time.time_ns(),
                        elapsed_ns=end-start, quiet_ns=end-last,
@@ -133,7 +149,8 @@ def acquire(args):
                        hashes={f.name: sha(f) for f in sorted(dest.iterdir()) if f.is_file()})
         save(dest / "session.json", session)
         print(sha(dest / "session.json"))
-    return int(reason != "terminal_quiet")
+    return int(reason != "terminal_quiet" or
+               (terminal_observer is not None and session.get("post_terminal", {}).get("status") != "captured"))
 
 
 def main():
