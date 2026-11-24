@@ -1,0 +1,27 @@
+{
+  "revision": "62c7fa7ba7c2038a271b141ec24ae5fb924534d8",
+  "sequential_boots": [
+    {
+      "features": "periodic-bench,rr-bench",
+      "profile": "periodic",
+      "elf_sha256": "22e0af735242ac60dbb1bd013b0653062529dda1ad333ab39b9eb0597a4ab4be",
+      "uart": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 2 A\nRM 3 B\nRM 4 A\nDM 0 B\nDM 0 A\nDM 2 A\nDM 3 B\nDM 4 A\nPERIODIC PASS\n",
+      "runner_exit": 0
+    },
+    {
+      "features": "periodic-bench,cbs-bench",
+      "profile": "cbs",
+      "elf_sha256": "a90676b51afbfde60d1936f030b559b07f3a6f1a52a8cdf48822622ff7999622",
+      "uart": "JNOX M1 BOOT\nJNOX M1 READY\nCBS A FIRST\nCBS B FIRST\nCBS IDLE\nCBS A RESUMED\nCBS B RESUMED\nCBS TIMER STOP\nCBS PASS\n",
+      "runner_exit": 0
+    }
+  ],
+  "release_checks": [
+    "default",
+    "sched-bench",
+    "fifo-bench",
+    "rr-bench",
+    "edf-bench",
+    "all-features"
+  ]
+}

@@ -415,3 +415,13 @@ DES-012,implemented-by,IMP-008
 POL-004,partially-implemented-by,IMP-008
 IMP-008,partially-verified-by,VER-002
 IMP-008,partially-verified-by,VER-023
+IMP-007,tested-in,EVD-007
+POL-004,has-switch-evidence,EVD-007
+IMP-008,tested-in,EVD-008
+POL-004,has-analysis-evidence,EVD-008
+CAP-001,has-partial-evidence,EVD-007
+VER-023,has-partial-evidence,EVD-007
+VER-002,has-partial-evidence,EVD-007
+VER-005,has-partial-evidence,EVD-007
+VER-023,has-partial-evidence,EVD-008
+VER-002,has-partial-evidence,EVD-008

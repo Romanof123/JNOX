@@ -2,7 +2,9 @@
 
 [한국어](fp-response.md) · English
 
-CHG-010 allocates IMP-008 to POL-004, REQ-002 and REQ-023 under DES-003 and DES-012. VER-002 and VER-023 check the analysis separately from the guest that demonstrates periodic job dispatch. Functional-safety and platform teams supply the bounds for a specified board, clock, build and workload. The tool runs on the development host. [Live RM/DM contract](m1-periodic.en.md) · [Scheduling release cases](scheduling-policies.en.md)
+[EVD-008 independent verification](evidence/evd-008.en.md)
+
+CHG-010 addresses POL-004, REQ-002 and REQ-023 with the IMP-008 analysis tool under DES-003 and DES-012. VER-002 and VER-023 check the analysis separately from the guest that demonstrates periodic job dispatch. Functional-safety and platform teams supply the bounds for a specified board, clock, build and workload. The tool runs on the development host. [Live RM/DM contract](m1-periodic.en.md) · [Scheduling release cases](scheduling-policies.en.md)
 
 Run `python tools/fp_response.py docs/examples/rm-dm-workload.json` from the repository root. The example fixes the execution costs and deadlines of two tasks and selects DM. Changing only `policy` to `rm` makes the shorter-period task run first. [Example input](examples/rm-dm-workload.json) · [Python tool](../tools/fp_response.py)
 
@@ -15,7 +17,7 @@ Run `python tools/fp_response.py docs/examples/rm-dm-workload.json` from the rep
 
 ## Calculation and interpretation
 
-For task *i*, start with *w = Cᵢ + Bᵢ*, where *Cᵢ* includes the per-job dispatch cost. At each iteration add the interference of all higher-priority tasks and all IRQ sources to that same base. Source *h* contributes *ceil((w + Jₕ) / Tₕ) × Cₕ*. When the window stops growing, *Jᵢ + w* bounds response from nominal release. Equality with the deadline passes. The limit defaults to 1,024 updates per task. [Fixed-priority response-time bounds](https://www.cs.york.ac.uk/rts/publications/Davis2008a.html)
+For task *i*, start with *w = Cᵢ + Bᵢ*, where *Cᵢ* includes the per-job dispatch cost. At each iteration add the interference of all higher-priority tasks and all IRQ sources to that same base. Source *h* contributes *ceil((w + Jₕ) / Tₕ) × Cₕ*. When the window stops growing, *Jᵢ + w* bounds response from nominal release. Equality with the deadline passes. The optional JSON field `iteration_limit` defaults to 1,024 updates per task. [Fixed-priority response-time bounds](https://www.cs.york.ac.uk/rts/publications/Davis2008a.html)
 
 | CLI exit | Result | Interpretation |
 | --- | --- | --- |

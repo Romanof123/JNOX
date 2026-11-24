@@ -1,0 +1,247 @@
+{
+  "verdict": "PASS",
+  "first_verdict": "PASS recorded before source, disassembly or trace inspection",
+  "revision": "62c7fa7ba7c2038a271b141ec24ae5fb924534d8",
+  "tree": "d502aa55082b8c3264b5d42a091185c5a71fb89d",
+  "clean": true,
+  "guest_launch_count": 1,
+  "host_exit": 0,
+  "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 2 A\nRM 3 B\nRM 4 A\nDM 0 B\nDM 0 A\nDM 2 A\nDM 3 B\nDM 4 A\nPERIODIC PASS\n",
+  "runner": "Run 1/1  ELF SHA-256 = f2964256be663342b7e92b9dcd7208399bcf9802e9b5a9b258a7edfd6d2c9df6\n  argv = [\"/tmp/tmp.o2BKRnz58O/qemu-int\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/tmp/tmp.o2BKRnz58O/kernel.elf\"]\n  QEMU PID = 491\n  UART (111 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nRM 0 A\\nRM 0 B\\nRM 2 A\\nRM 3 B\\nRM 4 A\\nDM 0 B\\nDM 0 A\\nDM 2 A\\nDM 3 B\\nDM 4 A\\nPERIODIC PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 489 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x4020124c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201268\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201278\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020128c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201268\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201278\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020128c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201268\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201278\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020128c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201268\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201278\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201268\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201278\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x4020127c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x4020128c\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201268\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201278\n...to EL1 PC 0x40200a00 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201260\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201260\n...to EL1 PC 0x40200a80 PSTATE 0x3c5\n",
+  "hashes": {
+    "kernel.elf": "f2964256be663342b7e92b9dcd7208399bcf9802e9b5a9b258a7edfd6d2c9df6",
+    "uart": "8edcd84ef75b5f4ba9aff77a1efb6acab6fcdf72cee3ea8f57f641db89f1274d",
+    "runner.log": "e99ab41cb4e7511c662608bf19573f9260e03cff89f0a95d4b62da2fd7842ac9",
+    "int.log": "ec71006d76829396a24af638fc3f0c3f575c19ea39abe99699545c679ec08ebe"
+  },
+  "events": [
+    {
+      "event": "IRQ",
+      "epoch": "RM",
+      "tick": 0,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201268",
+      "next": "A"
+    },
+    {
+      "event": "SVC",
+      "epoch": "RM",
+      "tick": 0,
+      "interrupted": "A",
+      "elr": "0x40201278",
+      "eret": "0x4020127c",
+      "next": "B"
+    },
+    {
+      "event": "SVC",
+      "epoch": "RM",
+      "tick": 0,
+      "interrupted": "B",
+      "elr": "0x4020128c",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "RM",
+      "tick": 1,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "RM",
+      "tick": 2,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201268",
+      "next": "A"
+    },
+    {
+      "event": "SVC",
+      "epoch": "RM",
+      "tick": 2,
+      "interrupted": "A",
+      "elr": "0x40201278",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "RM",
+      "tick": 3,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x4020127c",
+      "next": "B"
+    },
+    {
+      "event": "SVC",
+      "epoch": "RM",
+      "tick": 3,
+      "interrupted": "B",
+      "elr": "0x4020128c",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "RM",
+      "tick": 4,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201268",
+      "next": "A"
+    },
+    {
+      "event": "SVC",
+      "epoch": "RM",
+      "tick": 4,
+      "interrupted": "A",
+      "elr": "0x40201278",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "RM",
+      "tick": 5,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "DM",
+      "tick": 0,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x4020127c",
+      "next": "B"
+    },
+    {
+      "event": "SVC",
+      "epoch": "DM",
+      "tick": 0,
+      "interrupted": "B",
+      "elr": "0x4020128c",
+      "eret": "0x40201268",
+      "next": "A"
+    },
+    {
+      "event": "SVC",
+      "epoch": "DM",
+      "tick": 0,
+      "interrupted": "A",
+      "elr": "0x40201278",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "DM",
+      "tick": 1,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "DM",
+      "tick": 2,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201268",
+      "next": "A"
+    },
+    {
+      "event": "SVC",
+      "epoch": "DM",
+      "tick": 2,
+      "interrupted": "A",
+      "elr": "0x40201278",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "DM",
+      "tick": 3,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x4020127c",
+      "next": "B"
+    },
+    {
+      "event": "SVC",
+      "epoch": "DM",
+      "tick": 3,
+      "interrupted": "B",
+      "elr": "0x4020128c",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "DM",
+      "tick": 4,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": "0x40201268",
+      "next": "A"
+    },
+    {
+      "event": "SVC",
+      "epoch": "DM",
+      "tick": 4,
+      "interrupted": "A",
+      "elr": "0x40201278",
+      "eret": "0x40201260",
+      "next": "controller"
+    },
+    {
+      "event": "IRQ",
+      "epoch": "DM",
+      "tick": 5,
+      "interrupted": "controller",
+      "elr": "0x40201260",
+      "eret": null,
+      "next": "terminal park"
+    }
+  ],
+  "negative_host_only": {
+    "missing release": {
+      "input": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 3 B\nRM 4 A\nDM 0 B\nDM 0 A\nDM 2 A\nDM 3 B\nDM 4 A\nPERIODIC PASS\n",
+      "result": "unexpected UART bytes or marker order"
+    },
+    "reversed dispatch": {
+      "input": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 2 A\nRM 3 B\nRM 4 A\nDM 0 A\nDM 0 B\nDM 2 A\nDM 3 B\nDM 4 A\nPERIODIC PASS\n",
+      "result": "unexpected UART bytes or marker order"
+    },
+    "trailing bytes": {
+      "input": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 2 A\nRM 3 B\nRM 4 A\nDM 0 B\nDM 0 A\nDM 2 A\nDM 3 B\nDM 4 A\nPERIODIC PASS\n!",
+      "result": "unexpected UART bytes or marker order"
+    }
+  },
+  "linked_checks": [
+    "IRQ 0x40201334-60 checks GIC IAR ID 30, CNTP_CTL status 5, disables timer with 2 and EOIs. 0x40201390-b0 derives next from previous compare plus quantum, checks counter window. 0x402015e8-ec rearms absolute CVAL.",
+    "0x40201514-18 writes IDs [1,0] for both epochs, then 0x40201540-58 checks tick modulo period and 0x40201598/b4 appends and stores parameters. Period table at 0x40202d50 = [2,3], deadline at 0x40202d40 = [2,1], both static priorities zero.",
+    "0x40201848-80 uses IRQ count >=7 to choose relative deadline cmp at 0x40201860 or period cmp at 0x40201868. Winning queue index x0 loaded at 0x402018ac determines both ID and fresh ELR at 0x40201920-24.",
+    "STACKS 0x402030c0 stride 0x4000. A and B entry stack tops 0x402070c0 and 0x4020b0c0; fresh masked SPSR 0x3c5; marker checks SP and current ID. SVC frames top minus 0x340 checked at 0x40201b20-34; svc instructions at 0x40201274/88.",
+    "IRQ checks saved controller frame 0x4020ed70, ELR range, PSTATE, x19, stack witness, advancing x20. Dispatch consumes saved pointer at 0x4020195c-68. All eleven nonterminal ticks return to interrupted PC 0x40201260 when ready queue drains.",
+    "Twelfth IRQ tick 5 validates ten completions and parks at 0x402014f8 without rearming; terminal trace has no eret."
+  ],
+  "capture_provenance": "WSL restarted and cleared /tmp. Full 4282 byte trace and 677 byte runner log recovered from contemporaneous tool outputs. UART decoded from exact Python bytes literal, ELF recopied from verified frozen target. No rerun.",
+  "limits": [
+    "One Cortex-A72 single-core TCG/GICv2 QEMU guest. No physical-board timing or analytical admission result.",
+    "Workers are finite, IRQ-masked until SVC. Counter < next compare checked at 0x40201b08-18; new release preemption of a running worker remains untested.",
+    "Exception trace reports ELRs and returns. Stack witnesses, enqueue and ranking are corroborated by linked instructions and in-guest assertions."
+  ]
+}

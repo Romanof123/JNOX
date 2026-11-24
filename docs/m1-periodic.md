@@ -2,6 +2,8 @@
 
 한국어 · [English](m1-periodic.en.md)
 
+[EVD-007 독립 검증 결과](evidence/evd-007.md)
+
 CHG-009는 POL-004의 구현 IMP-007에 대한 합격 조건과 독립 실행 기록 EVD-007을 정의한다.
 
 | 추적 항목 | 합격 조건 |

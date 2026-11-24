@@ -2,7 +2,9 @@
 
 [한국어](m1-periodic.md) · English
 
-CHG-009 defines the IMP-007 acceptance contract and independent execution record EVD-007 for POL-004.
+[EVD-007 independent verification](evidence/evd-007.en.md)
+
+CHG-009 extends POL-004 with the IMP-007 acceptance contract and independent execution record EVD-007.
 
 | Trace | Acceptance condition |
 | --- | --- |

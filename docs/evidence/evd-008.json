@@ -1,0 +1,336 @@
+{
+  "expected_derivation": {
+    "dm": "urgent 1; short 2->3->3",
+    "rm": "short 2; urgent 1->3 exceeds 2",
+    "combined": "h 2->3->3 plus 1 = 4; l 3->6->8->8 plus 1 = 9",
+    "exhausted": "one update for short gives 3, convergence still unknown"
+  },
+  "cases": [
+    {
+      "name": "dm",
+      "input": {
+        "policy": "dm",
+        "tasks": [
+          {
+            "id": "short",
+            "period": 4,
+            "deadline": 4,
+            "wcet": 2
+          },
+          {
+            "id": "urgent",
+            "period": 8,
+            "deadline": 2,
+            "wcet": 1
+          }
+        ]
+      },
+      "expected": {
+        "exit": 0,
+        "status": "within_bounds",
+        "bounds": {
+          "urgent": 1,
+          "short": 3
+        }
+      },
+      "observed": {
+        "argv": [
+          "python",
+          "-B",
+          "tools/fp_response.py",
+          "docs/examples/rm-dm-workload.json"
+        ],
+        "exit": 0,
+        "stdout": "{\r\n  \"status\": \"within_bounds\",\r\n  \"tasks\": [\r\n    {\r\n      \"id\": \"urgent\",\r\n      \"bound\": 1,\r\n      \"status\": \"within_bounds\"\r\n    },\r\n    {\r\n      \"id\": \"short\",\r\n      \"bound\": 3,\r\n      \"status\": \"within_bounds\"\r\n    }\r\n  ]\r\n}\r\n",
+        "stderr": "",
+        "stdout_base64": "ew0KICAic3RhdHVzIjogIndpdGhpbl9ib3VuZHMiLA0KICAidGFza3MiOiBbDQogICAgew0KICAgICAgImlkIjogInVyZ2VudCIsDQogICAgICAiYm91bmQiOiAxLA0KICAgICAgInN0YXR1cyI6ICJ3aXRoaW5fYm91bmRzIg0KICAgIH0sDQogICAgew0KICAgICAgImlkIjogInNob3J0IiwNCiAgICAgICJib3VuZCI6IDMsDQogICAgICAic3RhdHVzIjogIndpdGhpbl9ib3VuZHMiDQogICAgfQ0KICBdDQp9DQo=",
+        "stderr_base64": ""
+      }
+    },
+    {
+      "name": "rm",
+      "input": {
+        "policy": "rm",
+        "tasks": [
+          {
+            "id": "short",
+            "period": 4,
+            "deadline": 4,
+            "wcet": 2
+          },
+          {
+            "id": "urgent",
+            "period": 8,
+            "deadline": 2,
+            "wcet": 1
+          }
+        ]
+      },
+      "expected": {
+        "exit": 1,
+        "status": "deadline_exceeded",
+        "bounds": {
+          "short": 2,
+          "urgent": null
+        }
+      },
+      "observed": {
+        "argv": [
+          "python",
+          "-B",
+          "tools/fp_response.py",
+          "<scratch>\\rm.json"
+        ],
+        "exit": 1,
+        "stdout": "{\r\n  \"status\": \"deadline_exceeded\",\r\n  \"tasks\": [\r\n    {\r\n      \"id\": \"short\",\r\n      \"bound\": 2,\r\n      \"status\": \"within_bounds\"\r\n    },\r\n    {\r\n      \"id\": \"urgent\",\r\n      \"bound\": null,\r\n      \"status\": \"deadline_exceeded\",\r\n      \"witness_iterate\": 3\r\n    }\r\n  ]\r\n}\r\n",
+        "stderr": "",
+        "stdout_base64": "ew0KICAic3RhdHVzIjogImRlYWRsaW5lX2V4Y2VlZGVkIiwNCiAgInRhc2tzIjogWw0KICAgIHsNCiAgICAgICJpZCI6ICJzaG9ydCIsDQogICAgICAiYm91bmQiOiAyLA0KICAgICAgInN0YXR1cyI6ICJ3aXRoaW5fYm91bmRzIg0KICAgIH0sDQogICAgew0KICAgICAgImlkIjogInVyZ2VudCIsDQogICAgICAiYm91bmQiOiBudWxsLA0KICAgICAgInN0YXR1cyI6ICJkZWFkbGluZV9leGNlZWRlZCIsDQogICAgICAid2l0bmVzc19pdGVyYXRlIjogMw0KICAgIH0NCiAgXQ0KfQ0K",
+        "stderr_base64": ""
+      }
+    },
+    {
+      "name": "combined",
+      "input": {
+        "policy": "rm",
+        "tasks": [
+          {
+            "id": "h",
+            "period": 6,
+            "deadline": 5,
+            "wcet": 1,
+            "dispatch": 1,
+            "jitter": 1
+          },
+          {
+            "id": "l",
+            "period": 14,
+            "deadline": 9,
+            "wcet": 2,
+            "blocking": 1,
+            "jitter": 1
+          }
+        ],
+        "irqs": [
+          {
+            "id": "q",
+            "period": 10,
+            "wcet": 1,
+            "jitter": 1
+          }
+        ]
+      },
+      "expected": {
+        "exit": 0,
+        "status": "within_bounds",
+        "bounds": {
+          "h": 4,
+          "l": 9
+        }
+      },
+      "observed": {
+        "argv": [
+          "python",
+          "-B",
+          "tools/fp_response.py",
+          "<scratch>\\combined.json"
+        ],
+        "exit": 0,
+        "stdout": "{\r\n  \"status\": \"within_bounds\",\r\n  \"tasks\": [\r\n    {\r\n      \"id\": \"h\",\r\n      \"bound\": 4,\r\n      \"status\": \"within_bounds\"\r\n    },\r\n    {\r\n      \"id\": \"l\",\r\n      \"bound\": 9,\r\n      \"status\": \"within_bounds\"\r\n    }\r\n  ]\r\n}\r\n",
+        "stderr": "",
+        "stdout_base64": "ew0KICAic3RhdHVzIjogIndpdGhpbl9ib3VuZHMiLA0KICAidGFza3MiOiBbDQogICAgew0KICAgICAgImlkIjogImgiLA0KICAgICAgImJvdW5kIjogNCwNCiAgICAgICJzdGF0dXMiOiAid2l0aGluX2JvdW5kcyINCiAgICB9LA0KICAgIHsNCiAgICAgICJpZCI6ICJsIiwNCiAgICAgICJib3VuZCI6IDksDQogICAgICAic3RhdHVzIjogIndpdGhpbl9ib3VuZHMiDQogICAgfQ0KICBdDQp9DQo=",
+        "stderr_base64": ""
+      }
+    },
+    {
+      "name": "duplicate",
+      "input": {
+        "policy": "dm",
+        "tasks": [
+          {
+            "id": "short",
+            "period": 4,
+            "deadline": 4,
+            "wcet": 2
+          },
+          {
+            "id": "short",
+            "period": 4,
+            "deadline": 4,
+            "wcet": 2
+          }
+        ]
+      },
+      "expected": {
+        "exit": 2,
+        "status": "invalid",
+        "bounds": {}
+      },
+      "observed": {
+        "argv": [
+          "python",
+          "-B",
+          "tools/fp_response.py",
+          "<scratch>\\duplicate.json"
+        ],
+        "exit": 2,
+        "stdout": "",
+        "stderr": "Invalid configuration: tasks[1].id must be a unique nonempty string\r\n",
+        "stdout_base64": "",
+        "stderr_base64": "SW52YWxpZCBjb25maWd1cmF0aW9uOiB0YXNrc1sxXS5pZCBtdXN0IGJlIGEgdW5pcXVlIG5vbmVtcHR5IHN0cmluZw0K"
+      }
+    },
+    {
+      "name": "exhausted",
+      "input": {
+        "policy": "dm",
+        "tasks": [
+          {
+            "id": "short",
+            "period": 4,
+            "deadline": 4,
+            "wcet": 2
+          },
+          {
+            "id": "urgent",
+            "period": 8,
+            "deadline": 2,
+            "wcet": 1
+          }
+        ],
+        "iteration_limit": 1
+      },
+      "expected": {
+        "exit": 2,
+        "status": "inconclusive",
+        "bounds": {
+          "urgent": 1,
+          "short": null
+        }
+      },
+      "observed": {
+        "argv": [
+          "python",
+          "-B",
+          "tools/fp_response.py",
+          "<scratch>\\limit.json"
+        ],
+        "exit": 2,
+        "stdout": "{\r\n  \"status\": \"inconclusive\",\r\n  \"tasks\": [\r\n    {\r\n      \"id\": \"urgent\",\r\n      \"bound\": 1,\r\n      \"status\": \"within_bounds\"\r\n    },\r\n    {\r\n      \"id\": \"short\",\r\n      \"bound\": null,\r\n      \"status\": \"inconclusive\"\r\n    }\r\n  ]\r\n}\r\n",
+        "stderr": "",
+        "stdout_base64": "ew0KICAic3RhdHVzIjogImluY29uY2x1c2l2ZSIsDQogICJ0YXNrcyI6IFsNCiAgICB7DQogICAgICAiaWQiOiAidXJnZW50IiwNCiAgICAgICJib3VuZCI6IDEsDQogICAgICAic3RhdHVzIjogIndpdGhpbl9ib3VuZHMiDQogICAgfSwNCiAgICB7DQogICAgICAiaWQiOiAic2hvcnQiLA0KICAgICAgImJvdW5kIjogbnVsbCwNCiAgICAgICJzdGF0dXMiOiAiaW5jb25jbHVzaXZlIg0KICAgIH0NCiAgXQ0KfQ0K",
+        "stderr_base64": ""
+      }
+    }
+  ],
+  "cli_option_probe": {
+    "name": "exhausted",
+    "input": {
+      "policy": "dm",
+      "tasks": [
+        {
+          "id": "short",
+          "period": 4,
+          "deadline": 4,
+          "wcet": 2
+        },
+        {
+          "id": "urgent",
+          "period": 8,
+          "deadline": 2,
+          "wcet": 1
+        }
+      ]
+    },
+    "expected": {
+      "exit": 2,
+      "status": "inconclusive",
+      "bounds": {
+        "urgent": 1,
+        "short": null
+      }
+    },
+    "observed": {
+      "argv": [
+        "python",
+        "-B",
+        "tools/fp_response.py",
+        "<scratch>\\exhausted.json",
+        "--max-iterations",
+        "1"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: fp_response.py [-h] config\r\nfp_response.py: error: unrecognized arguments: --max-iterations 1\r\n",
+      "stdout_base64": "",
+      "stderr_base64": "dXNhZ2U6IGZwX3Jlc3BvbnNlLnB5IFstaF0gY29uZmlnDQpmcF9yZXNwb25zZS5weTogZXJyb3I6IHVucmVjb2duaXplZCBhcmd1bWVudHM6IC0tbWF4LWl0ZXJhdGlvbnMgMQ0K"
+    }
+  },
+  "limit_probes": [
+    {
+      "input": {
+        "policy": "dm",
+        "tasks": [
+          {
+            "id": "short",
+            "period": 4,
+            "deadline": 4,
+            "wcet": 2
+          },
+          {
+            "id": "urgent",
+            "period": 8,
+            "deadline": 2,
+            "wcet": 1
+          }
+        ],
+        "iteration_limit": 1
+      },
+      "observed": {
+        "argv": [
+          "python",
+          "-B",
+          "tools/fp_response.py",
+          "<scratch>\\limit.json"
+        ],
+        "exit": 2,
+        "stdout": "{\r\n  \"status\": \"inconclusive\",\r\n  \"tasks\": [\r\n    {\r\n      \"id\": \"urgent\",\r\n      \"bound\": 1,\r\n      \"status\": \"within_bounds\"\r\n    },\r\n    {\r\n      \"id\": \"short\",\r\n      \"bound\": null,\r\n      \"status\": \"inconclusive\"\r\n    }\r\n  ]\r\n}\r\n",
+        "stderr": "",
+        "stdout_base64": "ew0KICAic3RhdHVzIjogImluY29uY2x1c2l2ZSIsDQogICJ0YXNrcyI6IFsNCiAgICB7DQogICAgICAiaWQiOiAidXJnZW50IiwNCiAgICAgICJib3VuZCI6IDEsDQogICAgICAic3RhdHVzIjogIndpdGhpbl9ib3VuZHMiDQogICAgfSwNCiAgICB7DQogICAgICAiaWQiOiAic2hvcnQiLA0KICAgICAgImJvdW5kIjogbnVsbCwNCiAgICAgICJzdGF0dXMiOiAiaW5jb25jbHVzaXZlIg0KICAgIH0NCiAgXQ0KfQ0K",
+        "stderr_base64": ""
+      }
+    }
+  ],
+  "first_verdict": "PASS for published DM/RM, combined hand example, duplicate rejection, and iteration exhaustion",
+  "suite": {
+    "argv": [
+      "python",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "test_fp_response.py",
+      "-v"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": "test_cli_exit_codes (test_fp_response.ResponseTests) ... ok\r\ntest_cli_rejects_duplicate_wcet (test_fp_response.ResponseTests) ... ok\r\ntest_combined_interference (test_fp_response.ResponseTests) ... ok\r\ntest_inclusive_deadline_and_release_boundary (test_fp_response.ResponseTests) ... ok\r\ntest_invalid (test_fp_response.ResponseTests) ... ok\r\ntest_iteration_limit (test_fp_response.ResponseTests) ... ok\r\ntest_policy_changes_feasibility (test_fp_response.ResponseTests) ... ok\r\ntest_tick_simulation (test_fp_response.ResponseTests) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 8 tests in 0.499s\r\n\r\nOK\r\n",
+    "stdout_base64": "",
+    "stderr_base64": "dGVzdF9jbGlfZXhpdF9jb2RlcyAodGVzdF9mcF9yZXNwb25zZS5SZXNwb25zZVRlc3RzKSAuLi4gb2sNCnRlc3RfY2xpX3JlamVjdHNfZHVwbGljYXRlX3djZXQgKHRlc3RfZnBfcmVzcG9uc2UuUmVzcG9uc2VUZXN0cykgLi4uIG9rDQp0ZXN0X2NvbWJpbmVkX2ludGVyZmVyZW5jZSAodGVzdF9mcF9yZXNwb25zZS5SZXNwb25zZVRlc3RzKSAuLi4gb2sNCnRlc3RfaW5jbHVzaXZlX2RlYWRsaW5lX2FuZF9yZWxlYXNlX2JvdW5kYXJ5ICh0ZXN0X2ZwX3Jlc3BvbnNlLlJlc3BvbnNlVGVzdHMpIC4uLiBvaw0KdGVzdF9pbnZhbGlkICh0ZXN0X2ZwX3Jlc3BvbnNlLlJlc3BvbnNlVGVzdHMpIC4uLiBvaw0KdGVzdF9pdGVyYXRpb25fbGltaXQgKHRlc3RfZnBfcmVzcG9uc2UuUmVzcG9uc2VUZXN0cykgLi4uIG9rDQp0ZXN0X3BvbGljeV9jaGFuZ2VzX2ZlYXNpYmlsaXR5ICh0ZXN0X2ZwX3Jlc3BvbnNlLlJlc3BvbnNlVGVzdHMpIC4uLiBvaw0KdGVzdF90aWNrX3NpbXVsYXRpb24gKHRlc3RfZnBfcmVzcG9uc2UuUmVzcG9uc2VUZXN0cykgLi4uIG9rDQoNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NClJhbiA4IHRlc3RzIGluIDAuNDk5cw0KDQpPSw0K"
+  },
+  "revision": "c941c61da048eff87bf2b3c3fd27a2b099da9cbd",
+  "tree": "851affe7927868ffdf86e5fdcf1b4edc88de5f16",
+  "checkout_status": "",
+  "python": "3.9.16 (main, Jan 11 2023, 16:16:36) [MSC v.1916 64 bit (AMD64)]",
+  "source_sha256": {
+    "docs/fp-response.en.md": "85b659f504ab085268d38cf10263223e9e11bb1ec67e6e4e66c760e481d4cfae",
+    "docs/examples/rm-dm-workload.json": "e86947e8004a446ef06d7454d0db2d281737474c5c28938fe5bce12e57fc984b",
+    "tools/fp_response.py": "5e0f9b62d7ba1966e7567b16404d0c6e8b42f625d06ebfa4bd25b2987d7a57da",
+    "tools/test_fp_response.py": "d1b33474386751bf9b8ee290985c90162cad9744c812598d3f9b40628e2e84c2"
+  },
+  "final_verdict": "PASS for the frozen host model and declared cases",
+  "review": "Integer ceiling and inclusive deadlines match recurrence. Release jitter and dispatch are charged to each interfering job, task blocking is charged once. Supplied independent synchronous tick simulator checks eight feasible configurations over two hyperperiods by comparing observed response <= bound.",
+  "limitations": "Host evidence only. Simulation covers zero jitter, blocking, dispatch and IRQs. Safety depends on externally justified execution and interference budgets. Public document gives the iteration default but omits the JSON option name iteration_limit."
+}

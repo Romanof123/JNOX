@@ -2,6 +2,8 @@
 
 한국어 · [English](fp-response.en.md)
 
+[EVD-008 독립 검증 결과](evidence/evd-008.md)
+
 CHG-010은 POL-004, REQ-002, REQ-023의 분석 도구 IMP-008을 DES-003, DES-012에 배정한다. VER-002와 VER-023은 실제 주기 태스크를 실행하는 게스트와 별도로 계산 결과를 확인한다. 기능안전팀과 플랫폼팀은 적용할 보드·클록·빌드·부하의 상한값을 제공한다. 도구는 개발 호스트에서 실행한다. [RM·DM 실행 계약](m1-periodic.md) · [스케줄링 출시 기준](scheduling-policies.md)
 
 저장소 루트에서 `python tools/fp_response.py docs/examples/rm-dm-workload.json`을 실행한다. 예제는 두 태스크의 실행 비용과 기한을 고정하고 DM을 선택한다. `policy`만 `rm`으로 바꾸면 주기가 짧은 태스크가 먼저 실행된다. [입력 예제](examples/rm-dm-workload.json) · [Python 도구](../tools/fp_response.py)
@@ -15,7 +17,7 @@ CHG-010은 POL-004, REQ-002, REQ-023의 분석 도구 IMP-008을 DES-003, DES-01
 
 ## 계산 및 판정
 
-태스크 *i*의 첫 계산 구간은 *w = Cᵢ + Bᵢ*다. *Cᵢ*에는 작업당 디스패치 비용이 들어간다. 반복할 때마다 같은 기본 구간에 상위 우선순위 태스크와 모든 IRQ의 간섭을 더한다. 간섭원 *h*의 기여는 *ceil((w + Jₕ) / Tₕ) × Cₕ*다. 구간이 더 늘지 않으면 *Jᵢ + w*가 명목 도착부터 완료까지의 상한이다. 기한과 같으면 통과한다. 태스크당 기본 반복 한도는 1,024회다. [정적 우선순위 응답 시간 상한 연구](https://www.cs.york.ac.uk/rts/publications/Davis2008a.html)
+태스크 *i*의 첫 계산 구간은 *w = Cᵢ + Bᵢ*다. *Cᵢ*에는 작업당 디스패치 비용이 들어간다. 반복할 때마다 같은 기본 구간에 상위 우선순위 태스크와 모든 IRQ의 간섭을 더한다. 간섭원 *h*의 기여는 *ceil((w + Jₕ) / Tₕ) × Cₕ*다. 구간이 더 늘지 않으면 *Jᵢ + w*가 명목 도착부터 완료까지의 상한이다. 기한과 같으면 통과한다. 선택 JSON 입력 `iteration_limit`의 기본값은 태스크당 1,024회다. [정적 우선순위 응답 시간 상한 연구](https://www.cs.york.ac.uk/rts/publications/Davis2008a.html)
 
 | CLI 종료 코드 | 결과 | 의미 |
 | --- | --- | --- |
