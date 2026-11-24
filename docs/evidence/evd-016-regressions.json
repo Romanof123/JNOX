@@ -1,0 +1,41 @@
+[
+  {
+    "profile": "aperiodic",
+    "features": [
+      "--features",
+      "partition-bench,aperiodic-bench"
+    ],
+    "elf_sha256": "0ebf2214f9e06488a53ffb1fc955565acf813435ae172d449eb0455d824ef1a7",
+    "observer_exit": 0,
+    "uart": "UART (1659 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nAPER BEGIN PS\\nAPER t=0 id=0 budget=0 credits=-\\nAPER t=1 id=0 budget=0 credits=-\\nAPER t=2 id=0 budget=0 credits=-\\nAPER t=3 id=0 budget=0 credits=-\\nAPER t=4 id=1 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=2 budget=1 credits=-\\nAPER t=9 id=2 budget=0 credits=-\\nAPER END pending=2 charged=4 completed=4\\nAPER BEGIN DS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=-\\nAPER t=2 id=0 budget=1 credits=-\\nAPER t=3 id=2 budget=0 credits=-\\nAPER t=4 id=2 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=3 budget=1 credits=-\\nAPER t=9 id=4 budget=0 credits=-\\nAPER END pending=0 charged=6 completed=6\\nAPER BEGIN SS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=5:1,7:1\\nAPER t=4 id=0 budget=0 credits=5:1,7:1\\nAPER t=5 id=2 budget=0 credits=7:1,9:1\\nAPER t=6 id=0 budget=0 credits=7:1,9:1\\nAPER t=7 id=2 budget=0 credits=9:1,11:1\\nAPER t=8 id=0 budget=0 credits=9:1,11:1\\nAPER t=9 id=3 budget=0 credits=11:1,13:1\\nAPER END pending=1 charged=5 completed=5\\nAPER BEGIN SS1\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=7:2\\nAPER t=4 id=0 budget=0 credits=7:2\\nAPER t=5 id=0 budget=0 credits=7:2\\nAPER t=6 id=0 budget=0 credits=7:2\\nAPER t=7 id=2 budget=1 credits=11:1\\nAPER t=8 id=2 budget=0 credits=12:2\\nAPER t=9 id=0 budget=0 credits=12:2\\nAPER END pending=2 charged=4 completed=4\\nAPER STOP\\nAPER PASS\\n'"
+  },
+  {
+    "profile": "deadline",
+    "features": [
+      "--features",
+      "deadline-bench,aperiodic-bench"
+    ],
+    "elf_sha256": "43f6ca6616e003fe297e9046fa3a9246d184a6e71b46185c68af6a629c3a4439",
+    "observer_exit": 0,
+    "uart": "UART (346 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nDEADLINE EDF A FIRST\\nDEADLINE EDF IRQ C READY\\nDEADLINE EDF C FIRST\\nDEADLINE EDF A RESUMED\\nDEADLINE EDF B FIRST\\nDEADLINE LLF B FIRST\\nDEADLINE LLF B TIE RETAINED\\nDEADLINE LLF T6 CROSSOVER\\nDEADLINE LLF A FIRST\\nDEADLINE LLF B RESUMED T6\\nDEADLINE LLF IRQ C READY\\nDEADLINE LLF C FIRST\\nDEADLINE LLF B RESUMED T7\\nDEADLINE PASS\\n'"
+  },
+  {
+    "profile": "rr",
+    "features": [
+      "--features",
+      "rr-bench"
+    ],
+    "elf_sha256": "c3165773c179fa32c5746ee0dfc7cb781ddac0f2cb6c86aed8d26ffcb16eabff",
+    "observer_exit": 0,
+    "uart": "UART (171 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nPOLICY RANK PASS\\nPOLICY SERVICE PASS\\nSCHED LOW RUN\\nSCHED TIMER IRQ\\nRR A FIRST\\nRR B FIRST\\nRR A RESUMED\\nRR B RESUMED\\nSCHED LOW RESUMED\\nSCHED PASS\\n'"
+  },
+  {
+    "profile": "coop",
+    "features": [
+      "--all-features"
+    ],
+    "elf_sha256": "0d54365be7744dcae60aa8d5dc638eb5bc97b133b2426ed0f364fc6772262f6e",
+    "observer_exit": 0,
+    "uart": "UART (163 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nCOOP A FIRST\\nCOOP IRQ B READY\\nCOOP A RETAINED\\nCOOP B FIRST\\nCOOP A RESUMED\\nCOOP B WOKEN\\nCOOP B RESUMED\\nEVENT 1\\nEVENT 2\\nEVENT 3\\nCOOP PASS\\n'"
+  }
+]

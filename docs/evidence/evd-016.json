@@ -1,0 +1,1075 @@
+{
+  "first_verdict": "PASS",
+  "first_review": "Public contract and git/ELF digests only before first verdict. No rerun.",
+  "commit": "f38e64c984f40c4606e16b69e198ad550ae0fc53",
+  "tree": "16083e6a3e3f1dc2c3ec8331d903e26370436665",
+  "elf_sha256": "23fc3667c8fda5030c05000918a6d2bd0d7f57ad15fc72d24ae0343e11c89522",
+  "launch": "/usr/bin/qemu-system-aarch64 -d int -D /mnt/d/codex/.jnox-work/deadline-2d59261b56/server-raw/int.trace -machine virt\\,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg -m 128M -nodefaults -display none -monitor none -serial stdio -kernel /mnt/d/codex/.jnox-work/deadline-2d59261b56/server-target/aarch64-unknown-none/release/jnox-kernel ",
+  "observer_status": 0,
+  "observer_stdout": "Run 1/1  ELF SHA-256 = 23fc3667c8fda5030c05000918a6d2bd0d7f57ad15fc72d24ae0343e11c89522\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt,gic-version=2\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/deadline-2d59261b56/server-target/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 480\n  UART (1659 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\nAPER BEGIN PS\\nAPER t=0 id=0 budget=0 credits=-\\nAPER t=1 id=0 budget=0 credits=-\\nAPER t=2 id=0 budget=0 credits=-\\nAPER t=3 id=0 budget=0 credits=-\\nAPER t=4 id=1 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=2 budget=1 credits=-\\nAPER t=9 id=2 budget=0 credits=-\\nAPER END pending=2 charged=4 completed=4\\nAPER BEGIN DS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=-\\nAPER t=2 id=0 budget=1 credits=-\\nAPER t=3 id=2 budget=0 credits=-\\nAPER t=4 id=2 budget=1 credits=-\\nAPER t=5 id=2 budget=0 credits=-\\nAPER t=6 id=0 budget=0 credits=-\\nAPER t=7 id=0 budget=0 credits=-\\nAPER t=8 id=3 budget=1 credits=-\\nAPER t=9 id=4 budget=0 credits=-\\nAPER END pending=0 charged=6 completed=6\\nAPER BEGIN SS\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=5:1,7:1\\nAPER t=4 id=0 budget=0 credits=5:1,7:1\\nAPER t=5 id=2 budget=0 credits=7:1,9:1\\nAPER t=6 id=0 budget=0 credits=7:1,9:1\\nAPER t=7 id=2 budget=0 credits=9:1,11:1\\nAPER t=8 id=0 budget=0 credits=9:1,11:1\\nAPER t=9 id=3 budget=0 credits=11:1,13:1\\nAPER END pending=1 charged=5 completed=5\\nAPER BEGIN SS1\\nAPER t=0 id=0 budget=2 credits=-\\nAPER t=1 id=1 budget=1 credits=5:1\\nAPER t=2 id=0 budget=1 credits=5:1\\nAPER t=3 id=2 budget=0 credits=7:2\\nAPER t=4 id=0 budget=0 credits=7:2\\nAPER t=5 id=0 budget=0 credits=7:2\\nAPER t=6 id=0 budget=0 credits=7:2\\nAPER t=7 id=2 budget=1 credits=11:1\\nAPER t=8 id=2 budget=0 credits=12:2\\nAPER t=9 id=0 budget=0 credits=12:2\\nAPER END pending=2 charged=4 completed=4\\nAPER STOP\\nAPER PASS\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 474 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "quiet_seconds": 0.1,
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nAPER BEGIN PS\nAPER t=0 id=0 budget=0 credits=-\nAPER t=1 id=0 budget=0 credits=-\nAPER t=2 id=0 budget=0 credits=-\nAPER t=3 id=0 budget=0 credits=-\nAPER t=4 id=1 budget=1 credits=-\nAPER t=5 id=2 budget=0 credits=-\nAPER t=6 id=0 budget=0 credits=-\nAPER t=7 id=0 budget=0 credits=-\nAPER t=8 id=2 budget=1 credits=-\nAPER t=9 id=2 budget=0 credits=-\nAPER END pending=2 charged=4 completed=4\nAPER BEGIN DS\nAPER t=0 id=0 budget=2 credits=-\nAPER t=1 id=1 budget=1 credits=-\nAPER t=2 id=0 budget=1 credits=-\nAPER t=3 id=2 budget=0 credits=-\nAPER t=4 id=2 budget=1 credits=-\nAPER t=5 id=2 budget=0 credits=-\nAPER t=6 id=0 budget=0 credits=-\nAPER t=7 id=0 budget=0 credits=-\nAPER t=8 id=3 budget=1 credits=-\nAPER t=9 id=4 budget=0 credits=-\nAPER END pending=0 charged=6 completed=6\nAPER BEGIN SS\nAPER t=0 id=0 budget=2 credits=-\nAPER t=1 id=1 budget=1 credits=5:1\nAPER t=2 id=0 budget=1 credits=5:1\nAPER t=3 id=2 budget=0 credits=5:1,7:1\nAPER t=4 id=0 budget=0 credits=5:1,7:1\nAPER t=5 id=2 budget=0 credits=7:1,9:1\nAPER t=6 id=0 budget=0 credits=7:1,9:1\nAPER t=7 id=2 budget=0 credits=9:1,11:1\nAPER t=8 id=0 budget=0 credits=9:1,11:1\nAPER t=9 id=3 budget=0 credits=11:1,13:1\nAPER END pending=1 charged=5 completed=5\nAPER BEGIN SS1\nAPER t=0 id=0 budget=2 credits=-\nAPER t=1 id=1 budget=1 credits=5:1\nAPER t=2 id=0 budget=1 credits=5:1\nAPER t=3 id=2 budget=0 credits=7:2\nAPER t=4 id=0 budget=0 credits=7:2\nAPER t=5 id=0 budget=0 credits=7:2\nAPER t=6 id=0 budget=0 credits=7:2\nAPER t=7 id=2 budget=1 credits=11:1\nAPER t=8 id=2 budget=0 credits=12:2\nAPER t=9 id=0 budget=0 credits=12:2\nAPER END pending=2 charged=4 completed=4\nAPER STOP\nAPER PASS\n",
+  "int_trace": "Exception return from AArch64 EL1 to AArch64 EL1 PC 0x40201a84\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x0/0x0\n...with ELR 0x40201ab8\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201abc\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201ad4\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ad4\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201ae0\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ab8\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ae0\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201aec\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aec\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201af8\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201af8\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b04\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b04\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b10\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a4c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b10\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b1c\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b1c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b28\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a84\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201abc\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201ad4\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ad4\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201ae0\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a4c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ae0\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201aec\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aec\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201af8\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201af8\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b04\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b04\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b10\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b10\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b1c\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b1c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b28\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a60\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a60\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a84\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201abc\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201ad4\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ad4\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201ae0\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a4c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a60\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a98\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ae0\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201aec\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aec\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201af8\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a60\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201af8\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b04\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b04\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b10\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a98\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b10\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b1c\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b1c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b28\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a98\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a84\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201ab8\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201abc\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201ad4\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ad4\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201ae0\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a4c\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ab8\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201ae0\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201aec\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aec\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201af8\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a60\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201af8\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b04\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b04\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b10\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a98\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a98\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201aac\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b10\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000001\n...with ELR 0x40201b1c\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201b1c\nTaking exception 2 [SVC]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201b28\n...to EL1 PC 0x40201200 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a60\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201a74\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a74\n...to EL1 PC 0x40201280 PSTATE 0x3c5\nException return from AArch64 EL1 to AArch64 EL1 PC 0x40201aac\nTaking exception 5 [IRQ]\n...from EL1 to EL1\n...with ESR 0x15/0x56000002\n...with ELR 0x40201a98\n...to EL1 PC 0x40201280 PSTATE 0x3c5\n",
+  "events": [
+    {
+      "type": "IRQ",
+      "elr": 1075845816,
+      "esr": 0,
+      "vector": 1075843712,
+      "eret": 1075845820,
+      "epoch": "PS",
+      "slot": 0,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845844,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845844,
+      "epoch": "PS",
+      "release": 1,
+      "request": 1,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845856,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845816,
+      "epoch": "PS",
+      "release": 1,
+      "request": 1,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "PS",
+      "slot": 1,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845856,
+      "epoch": "PS",
+      "slot": 2,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845868,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845868,
+      "epoch": "PS",
+      "release": 3,
+      "request": 2,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845880,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845804,
+      "epoch": "PS",
+      "release": 3,
+      "request": 2,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845880,
+      "epoch": "PS",
+      "slot": 3,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845892,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845892,
+      "epoch": "PS",
+      "release": 4,
+      "request": 3,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845904,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845708,
+      "epoch": "PS",
+      "release": 4,
+      "request": 3,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "PS",
+      "slot": 4,
+      "interrupted": "worker",
+      "uart_request": 1
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "PS",
+      "slot": 5,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845904,
+      "epoch": "PS",
+      "slot": 6,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845916,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845916,
+      "epoch": "PS",
+      "release": 7,
+      "request": 4,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845928,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845804,
+      "epoch": "PS",
+      "release": 7,
+      "request": 4,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "PS",
+      "slot": 7,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "PS",
+      "slot": 8,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845764,
+      "epoch": "PS",
+      "slot": 9,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845820,
+      "epoch": "DS",
+      "slot": 0,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845844,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845844,
+      "epoch": "DS",
+      "release": 1,
+      "request": 1,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845856,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845708,
+      "epoch": "DS",
+      "release": 1,
+      "request": 1,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "DS",
+      "slot": 1,
+      "interrupted": "worker",
+      "uart_request": 1
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845856,
+      "epoch": "DS",
+      "slot": 2,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845868,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845868,
+      "epoch": "DS",
+      "release": 3,
+      "request": 2,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845880,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845748,
+      "epoch": "DS",
+      "release": 3,
+      "request": 2,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845880,
+      "epoch": "DS",
+      "slot": 3,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845892,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845892,
+      "epoch": "DS",
+      "release": 4,
+      "request": 3,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845904,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845748,
+      "epoch": "DS",
+      "release": 4,
+      "request": 3,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "DS",
+      "slot": 4,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "DS",
+      "slot": 5,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845904,
+      "epoch": "DS",
+      "slot": 6,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845916,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845916,
+      "epoch": "DS",
+      "release": 7,
+      "request": 4,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845928,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845804,
+      "epoch": "DS",
+      "release": 7,
+      "request": 4,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "DS",
+      "slot": 7,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845728,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845728,
+      "epoch": "DS",
+      "slot": 8,
+      "interrupted": "worker",
+      "uart_request": 3
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845764,
+      "epoch": "DS",
+      "slot": 9,
+      "interrupted": "worker",
+      "uart_request": 4
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845820,
+      "epoch": "SS",
+      "slot": 0,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845844,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845844,
+      "epoch": "SS",
+      "release": 1,
+      "request": 1,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845856,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845708,
+      "epoch": "SS",
+      "release": 1,
+      "request": 1,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845728,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "SS",
+      "slot": 1,
+      "interrupted": "worker",
+      "uart_request": 1
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845784,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845856,
+      "epoch": "SS",
+      "slot": 2,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845868,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845868,
+      "epoch": "SS",
+      "release": 3,
+      "request": 2,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845880,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845728,
+      "epoch": "SS",
+      "release": 3,
+      "request": 2,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845880,
+      "epoch": "SS",
+      "slot": 3,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845892,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845892,
+      "epoch": "SS",
+      "release": 4,
+      "request": 3,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845904,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845784,
+      "epoch": "SS",
+      "release": 4,
+      "request": 3,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "SS",
+      "slot": 4,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "SS",
+      "slot": 5,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845904,
+      "epoch": "SS",
+      "slot": 6,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845916,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845916,
+      "epoch": "SS",
+      "release": 7,
+      "request": 4,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845928,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845748,
+      "epoch": "SS",
+      "release": 7,
+      "request": 4,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "SS",
+      "slot": 7,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845784,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "SS",
+      "slot": 8,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845764,
+      "epoch": "SS",
+      "slot": 9,
+      "interrupted": "worker",
+      "uart_request": 3
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845816,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845820,
+      "epoch": "SS1",
+      "slot": 0,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845844,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845844,
+      "epoch": "SS1",
+      "release": 1,
+      "request": 1,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845856,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845708,
+      "epoch": "SS1",
+      "release": 1,
+      "request": 1,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845816,
+      "epoch": "SS1",
+      "slot": 1,
+      "interrupted": "worker",
+      "uart_request": 1
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845856,
+      "epoch": "SS1",
+      "slot": 2,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845868,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845868,
+      "epoch": "SS1",
+      "release": 3,
+      "request": 2,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845880,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845748,
+      "epoch": "SS1",
+      "release": 3,
+      "request": 2,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845728,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845880,
+      "epoch": "SS1",
+      "slot": 3,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845892,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845892,
+      "epoch": "SS1",
+      "release": 4,
+      "request": 3,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845904,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845804,
+      "epoch": "SS1",
+      "release": 4,
+      "request": 3,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845784,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845784,
+      "epoch": "SS1",
+      "slot": 4,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "SS1",
+      "slot": 5,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845804,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845904,
+      "epoch": "SS1",
+      "slot": 6,
+      "interrupted": "idle",
+      "uart_request": 0
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845916,
+      "esr": 1442840577,
+      "vector": 1075843584,
+      "eret": 1075845916,
+      "epoch": "SS1",
+      "release": 7,
+      "request": 4,
+      "svc": 1
+    },
+    {
+      "type": "SVC",
+      "elr": 1075845928,
+      "esr": 1442840578,
+      "vector": 1075843584,
+      "eret": 1075845728,
+      "epoch": "SS1",
+      "release": 7,
+      "request": 4,
+      "svc": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845748,
+      "epoch": "SS1",
+      "slot": 7,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845748,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": 1075845804,
+      "epoch": "SS1",
+      "slot": 8,
+      "interrupted": "worker",
+      "uart_request": 2
+    },
+    {
+      "type": "IRQ",
+      "elr": 1075845784,
+      "esr": 1442840578,
+      "vector": 1075843712,
+      "eret": null,
+      "epoch": "SS1",
+      "slot": 9,
+      "interrupted": "idle",
+      "uart_request": 0
+    }
+  ],
+  "initial_eret": 1075845764,
+  "independent_fifo_calendar": {
+    "PS": [
+      {
+        "slot": 0,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 1,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 2,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 3,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 4,
+        "id": 1,
+        "budget": 1,
+        "credits": "-"
+      },
+      {
+        "slot": 5,
+        "id": 2,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 6,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 7,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 8,
+        "id": 2,
+        "budget": 1,
+        "credits": "-"
+      },
+      {
+        "slot": 9,
+        "id": 2,
+        "budget": 0,
+        "credits": "-"
+      }
+    ],
+    "DS": [
+      {
+        "slot": 0,
+        "id": 0,
+        "budget": 2,
+        "credits": "-"
+      },
+      {
+        "slot": 1,
+        "id": 1,
+        "budget": 1,
+        "credits": "-"
+      },
+      {
+        "slot": 2,
+        "id": 0,
+        "budget": 1,
+        "credits": "-"
+      },
+      {
+        "slot": 3,
+        "id": 2,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 4,
+        "id": 2,
+        "budget": 1,
+        "credits": "-"
+      },
+      {
+        "slot": 5,
+        "id": 2,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 6,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 7,
+        "id": 0,
+        "budget": 0,
+        "credits": "-"
+      },
+      {
+        "slot": 8,
+        "id": 3,
+        "budget": 1,
+        "credits": "-"
+      },
+      {
+        "slot": 9,
+        "id": 4,
+        "budget": 0,
+        "credits": "-"
+      }
+    ],
+    "SS": [
+      {
+        "slot": 0,
+        "id": 0,
+        "budget": 2,
+        "credits": "-"
+      },
+      {
+        "slot": 1,
+        "id": 1,
+        "budget": 1,
+        "credits": "5:1"
+      },
+      {
+        "slot": 2,
+        "id": 0,
+        "budget": 1,
+        "credits": "5:1"
+      },
+      {
+        "slot": 3,
+        "id": 2,
+        "budget": 0,
+        "credits": "5:1,7:1"
+      },
+      {
+        "slot": 4,
+        "id": 0,
+        "budget": 0,
+        "credits": "5:1,7:1"
+      },
+      {
+        "slot": 5,
+        "id": 2,
+        "budget": 0,
+        "credits": "7:1,9:1"
+      },
+      {
+        "slot": 6,
+        "id": 0,
+        "budget": 0,
+        "credits": "7:1,9:1"
+      },
+      {
+        "slot": 7,
+        "id": 2,
+        "budget": 0,
+        "credits": "9:1,11:1"
+      },
+      {
+        "slot": 8,
+        "id": 0,
+        "budget": 0,
+        "credits": "9:1,11:1"
+      },
+      {
+        "slot": 9,
+        "id": 3,
+        "budget": 0,
+        "credits": "11:1,13:1"
+      }
+    ],
+    "SS1": [
+      {
+        "slot": 0,
+        "id": 0,
+        "budget": 2,
+        "credits": "-"
+      },
+      {
+        "slot": 1,
+        "id": 1,
+        "budget": 1,
+        "credits": "5:1"
+      },
+      {
+        "slot": 2,
+        "id": 0,
+        "budget": 1,
+        "credits": "5:1"
+      },
+      {
+        "slot": 3,
+        "id": 2,
+        "budget": 0,
+        "credits": "7:2"
+      },
+      {
+        "slot": 4,
+        "id": 0,
+        "budget": 0,
+        "credits": "7:2"
+      },
+      {
+        "slot": 5,
+        "id": 0,
+        "budget": 0,
+        "credits": "7:2"
+      },
+      {
+        "slot": 6,
+        "id": 0,
+        "budget": 0,
+        "credits": "7:2"
+      },
+      {
+        "slot": 7,
+        "id": 2,
+        "budget": 1,
+        "credits": "11:1"
+      },
+      {
+        "slot": 8,
+        "id": 2,
+        "budget": 0,
+        "credits": "12:2"
+      },
+      {
+        "slot": 9,
+        "id": 0,
+        "budget": 0,
+        "credits": "12:2"
+      }
+    ]
+  },
+  "controls": {
+    "missing": "UART deadline exceeded (0.05s)",
+    "altered-credit": "unexpected UART bytes or marker order",
+    "trailing": "unexpected UART bytes or marker order"
+  },
+  "host_tests": "\nrunning 55 tests\ntest aperiodic_policy::tests::full_replenishment_queue_delays_credit_and_preserves_budget ... ok\ntest aperiodic_policy::tests::identical_releases_distinguish_the_three_servers ... ok\ntest aperiodic_policy::tests::invalid_parameters_and_overflows_preserve_state ... ok\ntest aperiodic_policy::tests::periodic_servers_handle_preemption_drain_and_boundary ... ok\ntest batch_tests::all_small_arrivals_estimates_and_id_orders_match_a_tick_calendar ... ok\ntest batch_tests::clock_sized_charge_preserves_one_tick_until_explicit_completion ... ok\ntest batch_tests::empty_capacity_remains_idle_through_clock_limit ... ok\ntest batch_tests::failed_operations_preserve_clock_budgets_runner_and_fifo_order ... ok\ntest batch_tests::hrrn_resolves_a_unit_difference_between_full_width_products ... ok\ntest batch_tests::release_and_completion_charge_elapsed_time_without_dispatch ... ok\ntest cbs_admission_and_service_match_demand_over_common_frame ... ok\ntest cooperative_events_can_repeat_and_enqueue_multiple_successors ... ok\ntest cooperative_turns_preserve_fifo_across_wraparound ... ok\ntest cyclic_decisions_match_expanded_slots ... ok\ntest cyclic_window_end_at_clock_limit ... ok\ntest deadline_tests::a_switch_consumes_the_boundary_and_skipped_boundaries_are_not_replayed ... ok\ntest deadline_tests::epoch_near_clock_limit_keeps_only_representable_boundaries ... ok\ntest deadline_tests::laxity_retains_full_signed_range_for_waiting_jobs ... ok\ntest deadline_tests::llf_retains_the_incumbent_at_equal_slack_then_reverses ... ok\ntest deadline_tests::one_consideration_per_boundary_including_retention_and_idle_dispatch ... ok\ntest deadline_tests::ordered_arrivals_on_small_tick_calendars ... ok\ntest deadline_tests::preempted_runner_resumes_ahead_of_an_equal_waiter ... ok\ntest deadline_tests::rejected_calls_preserve_time_service_queue_and_boundary ... ok\ntest deadline_tests::zero_capacity_and_zero_quantum ... ok\ntest dispatch_matches_stable_sort_for_all_ordered_triples ... ok\ntest fair_policy::tests::weighted_service_and_eligible_deadlines ... ok\ntest guest_checks::aperiodic_policy ... ok\ntest guest_checks::dispatch_policy ... ok\ntest guest_checks::domain_policy ... ok\ntest guest_checks::fair_policy ... ok\ntest guest_checks::feedback_policy ... ok\ntest guest_checks::group_policy ... ok\ntest guest_checks::service_policy ... ok\ntest guest_checks::temporal_policy ... ok\ntest hrrn_distinguishes_adjacent_ratios_at_the_clock_limit ... ok\ntest ready_queue::tests::preempted_task_precedes_peers_and_higher_priorities_still_win ... ok\ntest ready_queue::tests::rejected_insertions_preserve_contents_and_order ... ok\ntest ready_queue::tests::yield_moves_to_tail_even_when_ids_arrive_in_reverse_order ... ok\ntest request_server_tests::capacity_validation_and_clock_overflows_leave_the_previous_state_available ... ok\ntest request_server_tests::foreign_receipts_and_receipts_from_before_restart_cannot_complete_matching_ids ... ok\ntest request_server_tests::full_sporadic_queue_keeps_the_oldest_credit_at_its_original_due_tick ... ok\ntest request_server_tests::queue_and_aggregate_work_limits_are_atomic_even_with_an_outstanding_receipt ... ok\ntest request_server_tests::small_arrival_and_cpu_availability_masks_match_individual_credits ... ok\ntest request_server_tests::submitting_during_a_grant_preserves_identity_and_service_order ... ok\ntest request_server_tests::ten_interval_fifo_service_and_conservative_credit_merging ... ok\ntest saturated_hard_server_runs_only_its_quota_each_period ... ok\ntest service_policy::tests::aligned_budget_throttles_and_replenishes ... ok\ntest service_policy::tests::stride_shares_service_and_accounts_for_wakeups ... ok\ntest temporal_policy::tests::cyclic_frame_boundaries_and_configuration ... ok\ntest temporal_policy::tests::hard_cbs_activation_and_throttling ... ok\ntest temporal_policy::tests::hard_cbs_admission_boundaries ... ok\ntest temporal_policy::tests::hard_cbs_preemption_and_replenishment ... ok\ntest temporal_policy::tests::hard_cbs_rejects_invalid_transitions ... ok\ntest weighted_and_eligible_deadline_selection_in_twelfths ... ok\ntest zero_capacity_returns_owned_event ... ok\n\ntest result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s\n\n",
+  "calendar_coverage": "3 policies x 16 arrival masks x 64 CPU masks x 2 credit capacities, nine intervals each. Seven request_server_tests passed.",
+  "evidence_limits": "Interrupt trace directly identifies interrupted and resumed PCs, SVC immediates/vectors and all exception returns. Final IRQ enters shutdown without ERET. Worker PC is shared across IDs. ID attribution comes from independent FIFO model + UART and guest checks on x0/x22. Producer reply CMP x0,#(0x100+id), branch-to-failure then observed SVC #2 establishes acknowledgement by control flow. Registers are not independently sampled. x20 progress, stack/register witnesses, GIC IAR/physical timer status, epoch-relative counter timing and matching receipt identity/one-unit retirement are guest assertions. No independently sampled counters, memory, hardware or product deadlines.",
+  "hashes": {
+    "uart.bin": "728e2781bc8a84b8593406bac8917292598eeb4c5d41973c82b1d039f5711cea",
+    "int.trace": "4f6272734399b004a37bebf0f3b4e5f4aef7c7c00e9ba2a3a18231f3c359ceb2",
+    "observer.stdout": "dbb83336ad56d3df29b744a1506f74f9b677ae5db6c7399b9a07e53e0c86452a",
+    "observer.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "observer.status": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "launch.txt": "23c54f40ad6965288435969b8c084336bb8e4218e46d5589c49c6bd698a3175c",
+    "tests.log": "d336320bc82d0f3229cadeeca61060881848662a711a620c3bbbf92f82ceeaf9"
+  }
+}

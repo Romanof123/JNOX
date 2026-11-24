@@ -101,6 +101,8 @@ The kernel owns the ready queue and execution contexts. Selectors order eligible
 
 The sampled EDF/LLF profile accounts elapsed service to the designated incumbent and permits at most one involuntary switch at a grid boundary. Its evidence separates dispatch after completion from preemption of an active context. [Decision grid and tie rules](m1-deadline.en.md)
 
+An aperiodic grant reserves a slot. Only a matching completion retires request work. Bounded FIFO and replenishment capacity have separate overload rules. [Server contract](m2-aperiodic.en.md)
+
 ## DES-013 IPC ownership and service boundaries
 
 The kernel owns endpoint authority, wait and wake transitions, and bounded cross-domain transfer. User services own socket transports, publish/subscribe delivery and protocol-specific queues. The safety receiver checks protected data and controls expiry under DES-010. Each profile binds pool sizes, resource accounting, timeouts and restart generations before implementation. [IPC design and acceptance](ipc-mechanisms.en.md)
