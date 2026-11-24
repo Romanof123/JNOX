@@ -3,6 +3,10 @@
 #[path = "fixed_runtime_trace.rs"]
 mod trace;
 
+#[cfg(jnox_fixed_cost)]
+#[path = "fixed_cost.rs"]
+mod cost;
+
 use super::context::*;
 pub use super::fixed_policy::Mode;
 use super::fixed_policy::{Action, Config, Fixed, MAX_TASKS};
@@ -17,6 +21,7 @@ pub struct Task {
 }
 
 const IDLE: usize = MAX_TASKS;
+#[cfg_attr(jnox_fixed_cost, unsafe(export_name = "fixed_cost_stacks"))]
 static mut STACKS: [Stack; MAX_TASKS + 1] = [const { Stack([0; STACK_BYTES]) }; MAX_TASKS + 1];
 static mut STATE: Option<Runtime> = None;
 
@@ -97,6 +102,11 @@ fn initial_frame(slot: usize, pc: usize, argument: usize) -> *mut Frame {
         .cast::<Frame>();
     // Boot owns these distinct BSS-zeroed stacks until the first ERET.
     unsafe {
+        #[cfg(jnox_fixed_cost)]
+        {
+            ptr::write_bytes(stack_base(slot), 0xa5, STACK_BYTES);
+            ptr::write_bytes(fp, 0, 1);
+        }
         (*fp).elr = pc as u64;
         (*fp).spsr = 0x345; // EL1h, IRQ enabled, D/A/F masked.
         (*fp).gpr[0] = argument as u64;
@@ -136,6 +146,8 @@ pub fn run(tasks: &'static [Task], mode: Mode) -> ! {
     frames[IDLE] = initial_frame(IDLE, fixed_runtime_idle as *const () as usize, 0);
     #[cfg(jnox_fixed_trace)]
     trace::init(frequency());
+    #[cfg(jnox_fixed_cost)]
+    cost::init();
     let now = counter();
     let policy = Fixed::new(&configs[..tasks.len()], mode, now).unwrap_or_else(|| fail());
     let state = unsafe { (&mut *(&raw mut STATE)).insert(Runtime { policy, frames }) };
@@ -190,6 +202,8 @@ unsafe fn state() -> &'static mut Runtime {
 }
 
 extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
+    #[cfg(jnox_fixed_cost)]
+    let start = cost::stamp();
     let iar = gic_read(GICC + 0x0c);
     let id = iar & 0x3ff;
     if id >= 1020 {
@@ -209,11 +223,15 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     #[cfg(jnox_fixed_trace)]
     let owner = state.policy.current().unwrap_or(IDLE) as u64;
     let now = counter();
+    #[cfg(jnox_fixed_cost)]
+    let event_start = cost::stamp();
     state
         .policy
         .event(now, Action::Poll)
         .unwrap_or_else(|| fail());
-    state.dispatch(
+    #[cfg(jnox_fixed_cost)]
+    let event_end = cost::stamp();
+    let next = state.dispatch(
         #[cfg(jnox_fixed_trace)]
         trace::Event {
             kind: 1,
@@ -225,10 +243,15 @@ extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
             result: 0,
             pre_ctl,
         },
-    )
+    );
+    #[cfg(jnox_fixed_cost)]
+    cost::record(3, frame, next, [start, event_start, event_end, cost::stamp()]);
+    next
 }
 
 extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
+    #[cfg(jnox_fixed_cost)]
+    let start = cost::stamp();
     let syndrome: u64;
     unsafe { asm!("mrs {}, esr_el1", out(reg) syndrome, options(nostack, preserves_flags)) }
     if syndrome >> 26 != 0x15 {
@@ -252,11 +275,15 @@ extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
         0
     };
     let now = counter();
+    #[cfg(jnox_fixed_cost)]
+    let event_start = cost::stamp();
     let accepted = state.policy.event(now, action).unwrap_or_else(|| fail());
+    #[cfg(jnox_fixed_cost)]
+    let event_end = cost::stamp();
     if imm == 2 {
         unsafe { (*frame).gpr[0] = u64::from(accepted) }
     }
-    state.dispatch(
+    let next = state.dispatch(
         #[cfg(jnox_fixed_trace)]
         trace::Event {
             kind: 2,
@@ -268,5 +295,8 @@ extern "C" fn syscall(frame: *mut Frame) -> *mut Frame {
             result: u64::from(imm == 2 && accepted),
             pre_ctl: u64::MAX,
         },
-    )
+    );
+    #[cfg(jnox_fixed_cost)]
+    cost::record(imm, frame, next, [start, event_start, event_end, cost::stamp()]);
+    next
 }

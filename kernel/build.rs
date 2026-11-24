@@ -88,6 +88,13 @@ fn main() {
     };
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_fixed_cost)");
+    if let Some(value) = selector("JNOX_FIXED_COST") {
+        assert!(value == "1" && board == "virt" && profile.as_deref() == Some("fixed")
+            && matches!(app.as_deref(), Some("fixed-fifo" | "fixed-rr")),
+            "JNOX_FIXED_COST requires 1, virt and fixed FIFO/RR");
+        println!("cargo::rustc-cfg=jnox_fixed_cost");
+    }
     match profile.as_deref() {
         Some("groups") => {
             assert!(board == "virt" && bench == "boot" && matches!(app.as_deref(), Some("ordinary-groups" | "ordinary-groups-late")),

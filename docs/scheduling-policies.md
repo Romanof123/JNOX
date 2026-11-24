@@ -110,3 +110,5 @@ POL-003 / IMP-037. SJF·SRTF·HRRN에서 일반 부팅 6회와 진단 부팅 3�
 POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한국어) · [실행 부채와 회복 EVD-038](evidence/evd-038.md)
 
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
+
+POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [EVD-041](evidence/evd-041.md)
