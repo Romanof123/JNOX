@@ -235,6 +235,7 @@ def coop_transcript(selector):
 TRANSCRIPTS = {
     "coop-events": coop_transcript(b"EVENTS"),
     "coop-single": coop_transcript(b"SINGLE"),
+    "coop-bounded": BOOT_TRANSCRIPT + b"COOP BOUNDED START\nCOOP OWNER START\nCOOP OWNER YIELD\nCOOP PEER 2\nCOOP PEER 0\nCOOP OWNER RESUME\nCOOP DONE\n",
     "ordinary-groups-late": BOOT_TRANSCRIPT + b"GROUP LATE\nGROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "ordinary-groups": BOOT_TRANSCRIPT + b"GROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "ordinary-groups-recurring": BOOT_TRANSCRIPT + b"GROUP RECURRING\nGROUP BLOCK\nGROUP WAKE\n"
