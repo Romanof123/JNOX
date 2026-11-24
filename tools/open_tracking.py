@@ -9,8 +9,7 @@ REPO = "romanof123/jnox"
 ROLES = {"team:" + name for name in
          ("development", "functional-safety", "integration", "pm", "release", "systems", "verification")}
 URL = re.compile(r"https://github\.com/" + REPO + r"/(issues|pull)/([1-9][0-9]*)/?", re.I)
-TOKEN = re.compile(r"https?://[^\s<>\[\]()]+|(?<![^\s(,;])"
-                   r"(?:(?P<repo>[\w.-]+/[\w.-]+))?#(?P<num>[1-9][0-9]*)(?![A-Za-z0-9_])", re.I)
+SHORTHAND = re.compile(r"(?:" + REPO + r")?#([1-9][0-9]*)[가-힣]*", re.I)
 
 
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
@@ -88,14 +87,17 @@ def references(body):
             lines.append(line)
     prose = "\n".join(lines)
     refs = set()
-    for token in TOKEN.finditer(prose):
-        if token["num"]:
-            if not token["repo"] or token["repo"].lower() == REPO:
-                refs.add((int(token["num"]), None))
-        else:
-            url = URL.fullmatch(token[0].rstrip(".,;:!?"))
-            if url:
-                refs.add((int(url[2]), url[1].lower()))
+    for word in prose.split():
+        token = word.lstrip("('\"‘“").rstrip(").,;:!?\"'’”")
+        url = URL.fullmatch(token)
+        if url:
+            refs.add((int(url[2]), url[1].lower()))
+            continue
+        # Accept compact prose lists only when every part is local shorthand.
+        # A URL or unknown token therefore never exposes an embedded fragment.
+        parts = [SHORTHAND.fullmatch(part) for part in re.split(r"[,;]", token)]
+        if all(parts):
+            refs.update((int(match[1]), None) for match in parts)
     return refs
 
 

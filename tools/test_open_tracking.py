@@ -61,6 +61,24 @@ class TrackingTests(unittest.TestCase):
             with self.subTest(opener=opener):
                 self.assertEqual(references(body), {(6, None)})
 
+    def test_urls_never_supply_embedded_shorthand(self):
+        for token in ("https://github.com/other/JNOX/wiki/Related(#193)",
+                      "https://github.com/other/JNOX/wiki/Related(a(#193))",
+                      "https://example.org/p?q=(#193)", "https://example.org/p,#193",
+                      "https://example.org/%28%23193%29", "ftp://host/path(#193)",
+                      "mailto:person@example.org(#193)", "//other.example/wiki(#193)",
+                      "www.example.org/page;#193", "relative/path(#193)",
+                      "https://github.com/Romanof123/JNOX/issues/1#193"):
+            with self.subTest(token=token):
+                self.assertEqual(references(f"See ({token}), then #6."), {(6, None)})
+
+    def test_whole_prose_references_and_canonical_urls(self):
+        body = ("See (#193), Romanof123/JNOX#7; #6,#8! #47의 기록. "
+                "(https://github.com/Romanof123/JNOX/pull/4). "
+                "[details](https://github.com/Romanof123/JNOX/issues/9)")
+        self.assertEqual(references(body), {(193, None), (7, None), (6, None),
+                         (8, None), (47, None), (4, "pull"), (9, "issues")})
+
     def test_invalid_team_assignments(self):
         for roles in ((), ("team:fiction",), ("team:pm", "team:systems")):
             self.assertTrue(audit([item(1, None, roles=roles)])[1])
