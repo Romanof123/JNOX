@@ -153,8 +153,13 @@ impl<const P: usize, const C: usize, const L: usize> Hierarchy<P, C, L> {
         Some((elapsed, elapsed.saturating_sub(reserved), debts))
     }
 
+    /// Earliest start of a positive-duration grant for this ready mask.
+    /// A query before the committed end cannot describe idle recovery.
     pub(crate) fn next_actionable(&self, now: u64, ready: &[bool; L]) -> Option<u64> {
-        let elapsed = now.checked_sub(self.start)?;
+        if now < self.committed_end || now == u64::MAX {
+            return None;
+        }
+        let elapsed = now - self.start;
         let window = elapsed / self.period;
         let wait = self
             .leaves
@@ -168,8 +173,12 @@ impl<const P: usize, const C: usize, const L: usize> Hierarchy<P, C, L> {
                     .max(self.parents[parent].wait_windows(window))
             })
             .min()?;
-        let target = window.checked_add(wait)?.checked_mul(self.period)?;
-        self.start.checked_add(target)
+        if wait == 0 {
+            return Some(now);
+        }
+        let offset = window.checked_add(wait)?.checked_mul(self.period)?;
+        let target = self.start.checked_add(offset)?;
+        (target < u64::MAX).then_some(target)
     }
 
     /// Reserve one contiguous interval. A denied request changes no balance

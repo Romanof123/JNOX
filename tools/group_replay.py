@@ -7,6 +7,7 @@ ROW = struct.Struct("<15Q")
 # Source, previous, next, ready mask. Idle has index 3.
 FLOW = [(0,3,0,7), (2,0,1,6), (3,1,0,7), (1,0,2,7),
         (4,2,3,3), (1,3,0,3), (4,0,1,2), (4,1,3,0)]
+RECURRING_FLOW = FLOW[:3] + [(1,0,2,7), (1,2,3,7), (1,3,0,7)] * 2 + FLOW[3:]
 
 
 def require(condition, message):
@@ -14,11 +15,12 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def replay(data, late=False):
+def replay(data, late=False, recurring=False):
     require(len(data) == 65 * ROW.size, "journal size")
     header, *rows = list(ROW.iter_unpack(data))
     count, period = header[:2]
-    require(count == len(FLOW) and period >= 4, "header")
+    flow = RECURRING_FLOW if recurring else FLOW
+    require(count == len(flow) and period >= 4, "header")
     origin = rows[0][0]
     previous_time = origin
     previous_due = 0
@@ -26,7 +28,8 @@ def replay(data, late=False):
     owners = [(0,2,5), (0,3,6), (1,4,7)]
     limits = [period//4, period//2] + [period]*6
     left = limits.copy()
-    for idx, expected in enumerate(FLOW):
+    parent_stops = {}
+    for idx, expected in enumerate(flow):
         now, source, prev, charged, arg, nxt, due, mask, restored, saved, old_due, overrun, *debts = rows[idx]
         require((source,prev,nxt,mask) == expected and arg == 0, f"flow {idx}")
         require(now >= previous_time, "clock regressed")
@@ -65,8 +68,9 @@ def replay(data, late=False):
             else:
                 raise ValueError("bounded recovery")
         require(due == end, "absolute compare")
-        if idx == 3:
+        if source == 1 and prev == 0:
             require(left[0] <= 0 and all(left[n] > 0 for n in (2,3,5,6)), "ancestor exhaustion")
+            parent_stops[window] = debts[0]
             if late:
                 require(period <= now-origin < 2*period and now-previous_time >= period
                         and debts[0] >= period//2, "controlled delayed IRQ")
@@ -75,6 +79,9 @@ def replay(data, late=False):
             frames[prev] = saved
         require(restored and restored % 16 == 0 and restored == frames.get(nxt,restored), "restore")
         previous_time, previous_due = now, due
+    if recurring:
+        require(len(parent_stops) == 3 and sum(debt > 0 for debt in parent_stops.values()) >= 2,
+                "three distinct exhaustion windows and at least two positive parent debts")
 
 
 def fixture(late):
@@ -96,14 +103,38 @@ def fixture(late):
     return b"".join(ROW.pack(*r) for r in rows).ljust(65*ROW.size,b"\0")
 
 
+def recurring_fixture():
+    times = [100,102,105,128,180,200,225,275,300,325,326,400,401,402]
+    ends = [125,125,125,178,200,222,273,300,322,373,400,422,422,0]
+    debts = [0,0,0,3,2,0,3,2,0,3,0,0,0,0]
+    rows = [(len(RECURRING_FLOW), 100, *([0] * 13))]
+    for i, (source, prev, nxt, mask) in enumerate(RECURRING_FLOW):
+        charged = times[i] - times[i-1] if prev != 3 else 0
+        rows.append((times[i], source, prev, charged, 0, nxt, ends[i], mask, 16*(nxt+1),
+                     16*(prev+1) if i else 0, ends[i-1] if i else 0, debts[i], debts[i], 0, 0))
+    return b"".join(ROW.pack(*r) for r in rows).ljust(65*ROW.size, b"\0")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--late", action="store_true", help="require crossed-window delayed IRQ")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--late", action="store_true", help="require crossed-window delayed IRQ")
+    mode.add_argument("--recurring", action="store_true", help="require three real parent recoveries")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--audit", type=Path)
     group.add_argument("--fixture", action="store_true")
     args = parser.parse_args()
     if args.fixture:
+        repeated = recurring_fixture()
+        replay(repeated, recurring=True)
+        for row, column in [(7, 3), (8, 12), (9, 6), (10, 5)]:
+            bad = bytearray(repeated)
+            bad[ROW.size*row + 8*column] ^= 1
+            try:
+                replay(bad, recurring=True)
+            except ValueError:
+                continue
+            raise ValueError("accepted corrupted recurring row")
         for late in (False, True):
             good = fixture(late)
             replay(good, late)
@@ -115,7 +146,7 @@ if __name__ == "__main__":
                 except ValueError:
                     continue
                 raise ValueError("accepted corrupted synthetic row")
-        print("synthetic normal and late fixtures accepted with rejection controls")
+        print("synthetic normal, late and recurring fixtures accepted with rejection controls")
     else:
-        replay(args.audit.read_bytes(), args.late)
+        replay(args.audit.read_bytes(), args.late, args.recurring)
         print("raw group journal accepted")
