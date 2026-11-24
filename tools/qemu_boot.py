@@ -211,6 +211,7 @@ TRANSCRIPTS = {
     "periodic": PERIODIC_TRANSCRIPT,
     "periodic-preempt": PERIODIC_PREEMPT_TRANSCRIPT,
 }
+TRANSCRIPTS["smp-single"] = TRANSCRIPTS["smp"]
 QUIET_SECONDS = 0.1
 
 
@@ -336,12 +337,13 @@ def main():
             command = [args.qemu, "-machine", "raspi4b", "-accel", "tcg"]
         else:
             machine = "virt" if boot else "virt,gic-version=2"
-            smp = args.profile == "smp"
+            smp = args.profile in ("smp", "smp-single")
+            accelerator = {"smp": "tcg,thread=multi", "smp-single": "tcg,thread=single"}.get(args.profile, "tcg")
             if smp:
                 machine += ",secure=off,virtualization=off"
             command = [
                 args.qemu, "-machine", machine, "-cpu", "cortex-a72", "-smp", "2" if smp else "1",
-                "-accel", "tcg,thread=multi" if smp else "tcg", "-m", "128M", "-nodefaults",
+                "-accel", accelerator, "-m", "128M", "-nodefaults",
             ]
         command.extend(["-display", "none", "-monitor", "none", "-serial", "stdio", "-kernel", str(kernel)])
         for run in range(1, runs + 1):

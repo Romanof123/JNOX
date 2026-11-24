@@ -127,7 +127,7 @@ fn locked<R>(f: impl FnOnce() -> R) -> R {
         .is_err()
     {
         while LOCK.load(Ordering::Relaxed) {
-            core::hint::spin_loop();
+            super::smp_boot::wait_for_peer();
         }
     }
     let result = f();
@@ -147,7 +147,7 @@ fn with_runtime<R>(f: impl FnOnce(&mut Runtime, &mut Audit) -> R) -> R {
 
 fn wait_bits(value: &AtomicU64, bits: u64) {
     while value.load(Ordering::Acquire) & bits != bits {
-        core::hint::spin_loop();
+        super::smp_boot::wait_for_peer();
     }
 }
 
@@ -365,7 +365,7 @@ fn dispatch(cpu: usize) -> *mut Frame {
         if terminal {
             park();
         }
-        core::hint::spin_loop();
+        super::smp_boot::wait_for_peer();
     }
 }
 
@@ -401,7 +401,7 @@ pub(super) fn cpu_main(cpu: usize) -> ! {
         INITIALIZED.store(true, Ordering::Release);
     } else {
         while !INITIALIZED.load(Ordering::Acquire) {
-            core::hint::spin_loop();
+            super::smp_boot::wait_for_peer();
         }
     }
     unsafe { sched_start_frame(dispatch(cpu)) }

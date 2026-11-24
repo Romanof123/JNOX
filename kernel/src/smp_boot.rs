@@ -17,6 +17,12 @@ unsafe extern "C" {
     fn smp_secondary_entry();
 }
 
+// The waiting PE has no runnable work at this point. On serialized TCG
+// an explicit AArch64 YIELD also allows the other emulated PE to advance.
+pub(super) fn wait_for_peer() {
+    unsafe { asm!("yield", options(nomem, nostack, preserves_flags)) };
+}
+
 fn ticks() -> u64 {
     let count;
     unsafe { asm!("isb", "mrs {}, cntpct_el0", out(reg) count, options(nostack, preserves_flags)) };
@@ -63,7 +69,7 @@ pub(super) fn boot() -> ! {
         if ticks().wrapping_sub(start) >= frequency * 3 {
             fail(b"SMP BOOT FAIL SECONDARY TIMEOUT\n");
         }
-        core::hint::spin_loop();
+        wait_for_peer();
     }
     HANDOFF.store(START, Ordering::Release);
     super::smp::cpu_main(0)
@@ -79,7 +85,7 @@ extern "C" fn secondary() -> ! {
         park(); // CPU0 reports its timeout.
     }
     while HANDOFF.load(Ordering::Acquire) != START {
-        core::hint::spin_loop();
+        wait_for_peer();
     }
     super::smp::cpu_main(1)
 }
