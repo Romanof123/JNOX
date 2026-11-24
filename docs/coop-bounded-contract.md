@@ -19,3 +19,13 @@ First run: the owner observes a ready equal-priority peer held until voluntary y
 | Guest journal / 관측 | 79 unsigned 64-bit words, little-endian, ELF symbol coop_bounded_observations |
 
 Use one monotonic counter source for admission and dispatch. After the owner yields, the ready peer stores 2, the delayed peer multiplies that by 10, and both return. Capture header must show 0 before yield and 20 after. Runtime row deadlines and samples use that same guest counter. 서명 없는 카운터의 동일 구간에서 판정하며 양보 전 0, 두 작업 복귀 후 20을 확인한다.
+
+### Prospective correction after the first independent replay (#253)
+
+A burst starts at its first accepted request and ends when the last callback returns with an empty queue. An empty turn and a refused first request establish no epoch. During a burst every post samples the same counter, including requests refused for an invalid ID, full queue, zero cost, deadline, overflow or interval. Keep the greatest observed sample including callback entry and return. A refusal changes no FIFO slot, depth, cost, peak or reservation. The observation watermark may advance. Equal timestamps are valid, including zero in a new epoch. A lower post sample (including wrap to zero) fails temporal validation and leaves the watermark in place. A later sample at or above the watermark may pass again if the burst remains valid.
+
+Preserve decision precedence: invalid ID, full queue, zero cost, invalid interval, then the first FIFO-prefix failure (checked addition overflow before its deadline comparison). Structural refusals still observe the timestamp. A regressed callback boundary, unrepresentable or already infeasible running reservation, or callback return past its reservation invalidates admissions through drain. An active post past the reservation advances the watermark and fails interval validation; lower retries cannot erase the observation. The two ordinary selectors and bounded journal layout retain their original contracts.
+
+구간은 빈 상태의 첫 수용으로 시작하고 마지막 콜백이 반환하여 큐가 비면 끝난다. 빈 큐에서의 거부나 빈 디스패치는 구간을 열지 않는다. 활성 구간에서는 모든 게시(잘못된 ID, 용량·비용·마감·산술·시간 오류 포함)와 콜백 시작·반환 시각의 최댓값을 보관한다. 거부 시 FIFO, 깊이, 비용, 최대 깊이, 실행 예약은 유지되지만 관측 최댓값은 증가할 수 있다. 같은 시각은 유효하다. 최댓값보다 낮은 게시 시각(0으로 순환 포함)은 시간 검사에서 거부한다. 유효한 구간에서는 최댓값 이상으로 재시도할 수 있으며, 새 구간은 0에서도 시작할 수 있다.
+
+사유 우선순위는 잘못된 ID, 큐 포화, 0 비용, 시간 구간 오류, FIFO 순서의 첫 산술 초과 또는 마감 위반이다. 구조적 거부도 시각을 관측한다. 콜백 경계에서의 역행, 실행 예약의 산술 초과나 마감 위반, 예약을 넘긴 반환은 큐가 빌 때까지 수용을 막는다. 실행 예약이 지난 뒤 게시하면 최댓값을 갱신하고 시간 오류로 거부하므로 더 이른 시각으로 이를 되돌릴 수 없다. 기존 일반 구성 두 개와 관측 ABI는 그대로다.
