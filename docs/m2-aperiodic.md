@@ -22,3 +22,5 @@ kernel 디렉터리에서 `cargo build --release --locked --features aperiodic-b
 독립 호스트 모델은 도착 패턴과 CPU 가용성을 바꾸며 완료 전후의 회계를 대조한다. 가득 찬 큐·잘못된 요청·ID 재사용·오래되거나 다른 인스턴스의 완료 표식·산술 범위·크레딧 병합을 포함한다. 실보드 간섭 시간, 제품 기한, 일반 서비스 과부하 대응과 물리 메모리 격리는 별도 검증 항목이다.
 
 [EVD-016](evidence/evd-016.md)
+
+CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)

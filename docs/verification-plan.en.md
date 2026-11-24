@@ -98,7 +98,7 @@ POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#eng
 
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
 
-[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. The virtual runtime and its independent guest evidence are pending.
+[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. The first runtime review is partial.
 
 CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel.en.md) · [EVD-040](evidence/evd-040.en.md)
 
@@ -107,5 +107,11 @@ CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel
 [Host segmented admission method](fs-m3-admission.md) · CHG-045 / IMP-043, POL-004 #94. The conditional host arithmetic and CLI passed independent replay. Runtime traces and measured budget provenance remain open. [EVD-043](evidence/evd-043.en.md)
 
 CHG-046 · [Two virtual window tables and recovery criteria for ordinary Rust tasks](pol-006-rust-partition-plan.en.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+CHG-047 · [Ordinary Rust server workload and admission criteria](pol-007-rust-server-plan.md#english) · [#101](https://github.com/Romanof123/JNOX/issues/101)
+
+For CHG-046, record P/Q controlled delayed-compare cases as separate planned tests under VER-002/005/023. Preserve actual timer readback, IRQ entry, exception return, worker/idle observations and elapsed attribution. The worker-masked cases retain their independent evidence requirement. [Timing criteria](pol-006-rust-partition-plan.en.md#additional-virtual-delayed-notice-cases)
+
+POL-004 / IMP-042. v3 remains partial. Both deterministic exact boundaries qualified. Fourteen of 23 primary cases qualified on the first attempt and 15 including one cold retry. Eight default-clock ordinary cases and four separate default-clock handoff diagnostics remained unqualified. [EVD-042](evidence/evd-042.en.md)
 
 POL-009 / IMP-046. Six finite workloads passed in ordinary and diagnostic builds. [EVD-046](evidence/evd-046.en.md)

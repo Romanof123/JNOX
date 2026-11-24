@@ -152,7 +152,7 @@ POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한�
 
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
 
-[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 가상 런타임 구현과 독립 게스트 검증은 미완료다.
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. v3 게스트 판정은 부분 통과다. 조건을 맞춘 콜드 시작 비교 실험은 계획 단계다. [EVD-042](evidence/evd-042.md) · [콜드 시작 실험 계획](control-cold-plan.md)
 
 CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md) · [EVD-040](evidence/evd-040.md)
 
@@ -163,5 +163,7 @@ POL-002 · FIFO/RR 핸들러 구간, 링크 크기와 관측된 스택 깊이. [
 [호스트 위상별 수용 분석](fs-m3-admission.md) · POL-004 #94의 CHG-045 / IMP-043. 조건부 호스트 산술과 CLI는 독립 재현을 통과했다. 런타임 추적 및 실측 예산 근거는 미확보다. [EVD-043](evidence/evd-043.md)
 
 CHG-046 · [일반 Rust 작업의 두 가상 창 배치와 복구 기준](pol-006-rust-partition-plan.md) · [#99](https://github.com/Romanof123/JNOX/issues/99)
+
+CHG-047 · [일반 Rust 서버 작업과 수용 기준](pol-007-rust-server-plan.md#korean) · [#101](https://github.com/Romanof123/JNOX/issues/101)
 
 POL-009 / IMP-046. 유한 작업 6종을 일반·진단 이미지에서 통과했다. [EVD-046](evidence/evd-046.md)
