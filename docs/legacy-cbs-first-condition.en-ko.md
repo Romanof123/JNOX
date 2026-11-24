@@ -24,6 +24,12 @@ The two original source revisions share the basic fixture, task assembly and exc
 
 ## 한국어
 
+### Image and replay selection / 이미지·재생 선택
+
+Use the unchanged `cbs-bench` selector for the plain image. Add `JNOX_CBS_CONDITION=1` only for the diagnostic build on AArch64 virt. On the first failed guard that image emits one `CBS DIAG1` row with its site, presence mask and three operands, followed by the existing failure marker. The [site dictionary](../kernel/src/cbs_condition_v1.csv) names the original comparisons. Retain each distinct ELF, UART, exception trace, runner log and the SHA-256 of the independent receipt. Replay the basic images with `python tools/cbs_condition_observer.py BUNDLE RECEIPT_SHA256`. The wake image uses its original EVD-029 observer.
+
+일반 기본 이미지는 기존 선택자로 빌드하고, 진단 기본에만 `JNOX_CBS_CONDITION=1`을 부여한다. 진단 실행은 첫 실패 조건의 ID·유효 비트·피연산자 세 개를 한 행에 기록한 뒤 기존 실패 표식을 출력한다. 각 이미지와 같은 실행의 직렬·예외 기록 및 인수증 해시를 보존한다. 기본 이미지의 판독과 기존 깨우기 검증은 각각의 원래 합격 기준을 적용한다.
+
 이 계획은 #172의 위 커밋에서 기존 CBS 벤치의 첫 실패 조건을 관측하기 위한 제안이다. 최초 후보는 A가 재개된 뒤 네 번째 IRQ를 받았고, 보존된 대조 실행과 같은 A 명령 `0x402012c8`에서 같은 벡터로 진입했다. 대조 실행은 곧바로 B의 저장 PC `0x402012fc`로 복귀했으나 후보는 그 전에 실패했다. B의 재개 표식은 실행되지 않았다. 당시 기록에는 실제 IAR, 카운터, 저장 프레임 피연산자가 없다. 두 버전의 수식을 4번 슬롯에 적용하면 A는 6까지 예산이 없고 B는 기한 8에 예산 1을 받아 선택된다. 디스패치 함수 크기와 스택 절대주소가 다른 두 ELF의 기록에서 원래 실패 원인을 하나로 특정할 수 없다. 별도 깨우기 벤치는 34행 및 78개 PC 이벤트 기준을 충족했다. [최초 기록](evidence/ordinary-cbs-integrated-compat.en-ko.md) · [기본 근거](evidence/evd-006.md) · [깨우기 근거](evidence/evd-029.md)
 
 1. **커널 개발팀**은 기존 기본 CBS 전용 선택형 진단을 준비한다. 기존 검사 중 최초 실패한 비교의 고정 ID와 그때 실제 비교에 사용한 값을 한 번 보관하고, 원래 실패 표식 직전에 유한한 한 행으로 출력한다. 복합 조건과 정책 오류를 구분하고 사용할 수 없는 값은 유효성 비트로 표시한다. IAR, 카운터와 스택의 휘발성 값은 원래 읽은 값을 이용한다. 일반 이미지의 결정, 타이머, EOI, UART 및 시간 기준을 유지한다. 진단 이미지에서는 코드 배치나 레지스터 저장 비용이 달라질 수 있다.

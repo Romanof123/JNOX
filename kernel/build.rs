@@ -171,6 +171,17 @@ fn main() {
         }
     }
     println!("cargo::rustc-cfg=jnox_bench=\"{bench}\"");
+    println!("cargo::rustc-check-cfg=cfg(jnox_cbs_condition)");
+    if let Some(value) = selector("JNOX_CBS_CONDITION") {
+        let standalone = env::vars_os()
+            .filter(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_"))
+            .all(|(key, _)| key == "CARGO_FEATURE_CBS_BENCH");
+        assert!(value == "1" && board == "virt" && bench == "cbs" && standalone
+            && profile.is_none() && app.is_none() && scenario.is_none()
+            && env::var("TARGET").as_deref() == Ok("aarch64-unknown-none"),
+            "JNOX_CBS_CONDITION=1 requires only cbs-bench on AArch64 virt");
+        println!("cargo::rustc-cfg=jnox_cbs_condition");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_groups)");
     println!("cargo::rustc-check-cfg=cfg(jnox_groups_late)");
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_witness)");

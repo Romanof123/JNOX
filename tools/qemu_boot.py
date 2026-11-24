@@ -380,7 +380,7 @@ def observe_pi(process, serial, timeout, profile, *, allow_crlf, quiet_seconds):
         time.sleep(max(0, min(0.01, (quiet_until if accepted is not None else deadline) - now)))
 
 
-def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS):
+def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, cbs_diagnostic=False):
     if expected == TRANSCRIPTS["pi4-scheduler"]:
         return observe_pi(process, serial, timeout, "pi4-scheduler", allow_crlf=allow_crlf,
                           quiet_seconds=quiet_seconds)[0]
@@ -394,14 +394,29 @@ def observe(process, serial, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=Tr
     while True:
         if process.poll() is not None:
             return f"QEMU exited before host stop (status {process.returncode})"
-        received = read_uart(serial, expected)
+        if cbs_diagnostic:
+            # Preserve a complete failure record even across partial UART writes.
+            # It never substitutes for the ordinary successful transcript.
+            serial.seek(0)
+            received = serial.read(513)
+            if len(received) > 512:
+                return "CBS diagnostic UART exceeds capture limit"
+        else:
+            received = read_uart(serial, expected)
         if allow_crlf:
             received = received.replace(b"\r\n", b"\n")
         # A trailing CR can be the first byte of the next line ending.
         prefix = received[:-1] + b"\n" if allow_crlf and received.endswith(b"\r") else received
         now = time.monotonic()
         if not expected.startswith(prefix):
-            return "unexpected UART bytes or marker order"
+            if not cbs_diagnostic or quiet_until is not None:
+                return "unexpected UART bytes or marker order"
+            if received.endswith(b"CBS FAIL\n"):
+                return "ordinary CBS failure"
+            if now >= deadline:
+                return f"UART deadline exceeded ({timeout:g}s)"
+            time.sleep(min(0.01, deadline-now))
+            continue
         if quiet_until is None:
             if now >= deadline:
                 return f"UART deadline exceeded ({timeout:g}s)"
@@ -483,7 +498,7 @@ def stop(process):
     return None
 
 
-def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, capture_dir=None, env=None):
+def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, capture_dir=None, env=None, cbs_diagnostic=False):
     profile = dynamic_profile(expected)
     with tempfile.TemporaryDirectory(prefix="jnox-qemu-") as folder:
         output_dir = capture_dir or Path(folder)
@@ -501,11 +516,11 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
                                                             allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
                     else:
                         problem = observe(process, serial, timeout, expected,
-                                          allow_crlf=allow_crlf, quiet_seconds=quiet_seconds)
+                                          allow_crlf=allow_crlf, quiet_seconds=quiet_seconds, cbs_diagnostic=cbs_diagnostic)
             finally:
                 shutdown_problem = stop(process)
         with uart_path.open("rb") as serial:
-            uart = read_uart(serial, expected)
+            uart = serial.read(513) if cbs_diagnostic else read_uart(serial, expected)
         uart_size = uart_path.stat().st_size
         uart_suffix = " (truncated)" if len(uart) < uart_size else ""
         print(f"  UART ({uart_size} bytes) = {uart!r}{uart_suffix}")
@@ -536,7 +551,11 @@ def main():
     parser.add_argument("--timeout", type=float, metavar="SECONDS",
                         help="UART deadline per boot (pi4: 30s plus 1s quiet, others: 5s plus 0.1s quiet)")
     parser.add_argument("--capture-dir", type=Path, help="new directory for each run's raw uart, stderr and QEMU -d int trace")
+    parser.add_argument("--cbs-diagnostic", action="store_true",
+                        help="retain diagnostic bytes on a failed basic CBS boot; the pass criteria stay unchanged")
     args = parser.parse_args()
+    if args.cbs_diagnostic and (args.profile != "cbs" or not args.capture_dir or args.runs not in (None,1)):
+        parser.error("--cbs-diagnostic requires --profile cbs, --capture-dir and one first boot")
     boot = args.profile == "boot"
     pi4 = args.profile == "pi4" or args.profile.startswith("pi4-")
     timeout = args.timeout if args.timeout is not None else (30 if pi4 else 5)
@@ -583,7 +602,7 @@ def main():
                 run_command = [*command, "-d", "int", "-D", str(capture_dir / "exceptions.log")]
             print(f"Run {run}/{runs}  {image_type} SHA-256 = {expected_hash}")
             print(f"  argv = {json.dumps(run_command, ensure_ascii=True)}", flush=True)
-            run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir, env=launch_env,
+            run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir, env=launch_env, cbs_diagnostic=args.cbs_diagnostic,
                      quiet_seconds=1 if pi4 or args.profile in ("mlq-blocked", "mlq-exited", "mlq-saturated", "mlfq-delayed") else QUIET_SECONDS)
             if kernel_sha256(kernel, raw=pi4) != expected_hash:
                 raise ValueError(f"kernel {image_type} changed during testing")

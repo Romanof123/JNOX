@@ -1,0 +1,45 @@
+site,mask,name,a,b,c,condition_en,condition_ko
+1,0,unexpected_vector,,,,Unexpected vector,예상하지 않은 벡터
+2,0,unexpected_sync,,,,Unexpected synchronous exception,예상하지 않은 동기 예외
+3,3,stack_id,id,max_id,,a <= b,스택 ID가 최댓값 이하
+4,3,irq_masked,daif,irq_mask,,(a & b) != 0,DAIF의 IRQ 차단 비트 설정
+5,0,bench_present,,,,Bench initialized,벤치 상태 초기화
+6,0,admission,,,,Static 1/3 and 1/4 reservations admitted,고정 예약 1/3 및 1/4 수용
+7,7,release_error,server,error,work,release returns success,서버 작업 해제 오류
+8,3,positive_quantum,quantum,zero,,a > b,시간 단위가 0 초과
+9,3,boundary_multiply,quantum,index,,a * b fits u64,시간 단위 곱셈이 u64에 표현됨
+10,3,boundary_add,epoch,delta,,a + b fits u64,절대 시각 합이 u64에 표현됨
+11,7,release_missed_deadline,server,error,reported_server,release returned missed deadline,작업 해제에서 보고된 기한 경과 서버
+20,3,interrupt_id,iar,ppi,,(a & 1023) == b,IAR 하위 10비트가 타이머 PPI
+21,3,timer_control,ctl,bits,,(a & 7) == b,타이머 상태 하위 3비트
+22,7,irq_window,counter,begin,end,b <= a < c,IRQ 관측이 반열린 시간 창 안
+23,3,outgoing_ownership,saved_slot,zero,,a == b,실행 중인 작업의 저장 슬롯은 비어 있음
+24,3,marker_boundary,markers,policy_now,,a == b,표식 수와 논리 시각 일치
+25,3,outgoing_frame,frame,expected_frame,,a == b,나가는 프레임 주소 일치
+26,7,outgoing_pc,elr,begin,end,b <= a < c,나가는 PC가 작업 범위 안
+27,3,outgoing_pstate,spsr,expected_bits,,(a & 143) == b,복귀 PSTATE 하위 모드 및 IRQ 비트
+28,3,outgoing_x19,x19,witness,,a == b,x19 작업 표식 일치
+29,3,outgoing_tpidr,tpidr,witness,,a == b,TPIDR 작업 표식 일치
+30,3,progress_owner,x20,witness,,(a >> 32) == b,진행값 상위 32비트가 소유자 표식
+31,3,progress_nonzero,x20,zero,,low32(a) > b,진행값 하위 32비트가 양수
+32,3,progress_advanced,x20,previous,,a > b,이전 실행보다 진행값 증가
+33,3,stack_witness,word0,witness,,a == b,스택 첫 워드가 작업 표식
+34,3,stack_previous,word1,previous,,a == b,스택 둘째 워드가 이전 진행값
+35,3,tick_error,slot,error,,tick returns a grant or idle,정책 한 틱의 오류 코드와 서버
+36,3,selected_owner,selected,expected,,a == b,선택된 작업이 기대값
+37,1,incoming_frame,frame,,,a != 0,들어오는 프레임이 존재
+38,3,incoming_pc,elr,saved_elr,,a == b,들어오는 PC가 저장된 PC
+39,3,arm_deadline,counter,deadline,,a < b,타이머 설정 전 다음 기한 미도달
+40,3,all_frames,slot,frame,,b != 0,종료 시 슬롯별 프레임 존재
+41,3,all_progress,slot,progress,,b != 0,종료 시 슬롯별 진행값 존재
+42,7,tick_missed_deadline,slot,error,server,tick returned missed deadline,한 틱 처리 중 서버 기한 경과
+50,3,marker_slot,slot,slot_count,,a < b,표식 슬롯이 범위 안
+51,3,marker_owner,id,expected,,a == b,표식 소유자가 예상 작업
+52,3,marker_current,current,id,,a == b,표식 작업이 현재 작업
+53,3,marker_resume,resume,expected,,a == b,재개 표식 일치
+54,3,marker_sp,sp,expected_sp,,a == b,작업 표식 SP 일치
+55,3,marker_kind,id,resume,,supported marker pair,지원되는 작업과 표식 조합
+60,7,restore_distance,delta,one,worker,a <= b,재개 시 진행값 차이 1 이하
+61,7,restore_stack,word0,x19,worker,a == b,재개 시 스택과 x19 일치
+62,7,restore_tpidr,tpidr,x19,worker,a == b,재개 시 TPIDR과 x19 일치
+63,7,restore_register,x19,witness,worker,a == b,재개 시 x19가 작업 표식
