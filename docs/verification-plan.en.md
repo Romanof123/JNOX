@@ -78,3 +78,7 @@ CHG-033 and IMP-031 select the ordinary FIFO/RR task tables on the P1 BCM2711 pr
 CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry and overdue wakes after a bounded masked IRQ. Use ordinary execution and the optional diagnostic trace to reconstruct actual charged service. [Simultaneous and late timer events](fixed-runtime-edges.en.md)
 
 [EVD-032](evidence/evd-032.en.md)
+
+## CHG-039 ordinary batch release gate
+
+Planned EVD-037 must identify the source and exact selector, record raw task-side output from all three linked images, and check the interrupted caller resumes with its local result intact. Compare equal arrivals, estimate rejection, capacity, stale handles, overflow and underestimated service against independent host expectations. Preserve previous selectors and report physical timing and product capacity separately.
