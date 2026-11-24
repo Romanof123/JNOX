@@ -3,3 +3,4 @@ docs/evidence/evd-036-regressions.json -text whitespace=cr-at-eol
 docs/evidence/evd-039-regressions.json -text whitespace=cr-at-eol
 docs/evidence/evd-039-footprint.json -text whitespace=cr-at-eol
 docs/evidence/evd-041-regressions.json -text whitespace=cr-at-eol
+docs/evidence/evd-042-regressions.json -text whitespace=cr-at-eol

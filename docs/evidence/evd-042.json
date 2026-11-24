@@ -1,0 +1,64 @@
+{
+  "evidence_id": "EVD-042",
+  "issue": 94,
+  "implementation": "IMP-042",
+  "policy": "POL-004",
+  "verdict": "PARTIAL",
+  "versions": [
+    {
+      "version": 1,
+      "verdict": "PARTIAL",
+      "source": "d17ce2d36c7c9bc4db40dc60fccec4f0ebfc8d29",
+      "captures": 23,
+      "scope": "Single-core QEMU virt, PL061 register readback, local Rust sender",
+      "summary": {
+        "deterministic_handoffs_passed": 4,
+        "deterministic_state_scripts_passed": 9,
+        "default_clock_cases_inhibited_before_enable": 8,
+        "exact_boundaries_unqualified": 2
+      },
+      "english": "evd-042-v1.en.md",
+      "korean": "evd-042-v1.md",
+      "evidence": "evd-042-v1.json",
+      "evidence_sha256": "4a1ebc573b69f9111997e0d6d05a859301ca79edafccb8ce9ad48b82deecbd7f",
+      "reviewer_manifest_sha256": "f2b3b666fb4d5d876b605307d56dd0a59ba02d690f7ec1190ba58f21cd04f8b4"
+    },
+    {
+      "version": 2,
+      "verdict": "PARTIAL",
+      "source": "e0f0ce623aa170a8daff600515b0c76e0b20405f",
+      "primary_cases": 23,
+      "diagnostic_cases": 10,
+      "qualified_complete_primary_cases": 14,
+      "first_incomplete_guest": "booted-primary-rm-handoff-healthy",
+      "english": "evd-042-v2.en.md",
+      "korean": "evd-042-v2.md",
+      "evidence": "evd-042-v2.json",
+      "independent_report_sha256": "cf29a8018c15b4a4ed30de95003ef6128dbea1e58da638acce6c8b7e722d0c7e",
+      "evidence_sha256": "51d6c27d4cfd3017dbb610db6675fa1bebc0dc4f57e5689acf789c9311bf7cc8"
+    },
+    {
+      "version": 3,
+      "source": "ddbc13b5587148f36dafc386d5405f61b63942e4",
+      "verdict": "PARTIAL",
+      "primary_configurations": 23,
+      "diagnostic_configurations": 10,
+      "guest_attempts": 34,
+      "first_primary_qualified": 14,
+      "retry_inclusive_primary_qualified": 15,
+      "complete_primary_default_qualified": 0,
+      "diagnostic_qualified": 6,
+      "english": "evd-042-v3.en.md",
+      "korean": "evd-042-v3.md",
+      "evidence": "evd-042-v3.json",
+      "reviewer_manifest_sha256": "0fd9a38e13d0f6db14f36b2da0a43e81f656f091fa060fac3a7a910253643cd1",
+      "evidence_sha256": "fefc511fc5edf14a1c237566ef648bfa66b42c17dca35c1f3fe5160425aeab92"
+    }
+  ],
+  "limits": [
+    "External board and electrical signal",
+    "Safety IPC transport",
+    "Measured admission-budget provenance and general timing bounds",
+    "Full #94 release qualification"
+  ]
+}
