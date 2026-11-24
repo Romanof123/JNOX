@@ -134,4 +134,18 @@ CHG-033 and IMP-031 select the ordinary FIFO/RR task tables on the P1 BCM2711 pr
 
 CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry and overdue wakes after a bounded masked IRQ. Use ordinary execution and the optional diagnostic trace to reconstruct actual charged service. [Simultaneous and late timer events](fixed-runtime-edges.en.md)
 
+The opt-in POL-012 workload repeatedly blocks and wakes a linked worker through SVC and timer IRQ scheduling on one EEVDF instance. [Repeated-wake design](m4-eevdf-wake-design.md) [EVD-034](evidence/evd-034.en.md)
+
+CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
+
+[Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
+
+## CHG-039 / IMP-037 — ordinary batch submission
+
+On one virt EL1 CPU a trusted Rust task submits a function, argument and estimated service through a synchronous exception. Each admitted job owns one of four private stacks, an opaque generation handle and a slot in the existing batch scheduler. Elapsed CNTPCT ticks charge the incumbent between decision samples, including interrupt and dispatch overhead in that interval. A task supplies its estimate and relative release delay in the same ticks. CNTP_CVAL targets the earliest outstanding release. At service time all due jobs enter in deadline/admission order and waiting age includes time since the contractual deadline. A delayed IRQ can increase charged service and delay the observed release. New arrivals trigger an immediate decision. SRTF can suspend the caller at an immediate submission or timer IRQ during ordinary task work and restore its exception frame after a shorter job completes. SJF and HRRN retain the incumbent. Equal waiting ranks follow admission order. An unfinished job retains at least one remaining unit even after exceeding its estimate. The application reports its own activity independently of selection.
+
+The application profile selects batch-sjf, batch-srtf or batch-hrrn. Admission accepts positive u32-sized service estimates. Full capacity, invalid estimates, stale completion and time overflow must leave live work intact. Four 16 KiB task stacks plus a dedicated 16 KiB idle stack bound this configuration. Physical timing, hardware measurements, WCET and product capacity limits require separate evidence.
+
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
 POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)

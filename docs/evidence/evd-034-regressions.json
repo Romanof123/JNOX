@@ -1,0 +1,142 @@
+{
+  "tree": "5c399c122ce5cd9675d2dd79fa7801bbd430cccb",
+  "baseline": "88fbadafa90f922558e8f324774fcb4c82473ee3",
+  "kernel_tree": "ae2b09ca4a1731aebe8caf078de94d0c6367a02a",
+  "tools_tree": "3434545a8de8d290bec94f4614fcb5ca873b42f0",
+  "rust_tests": 126,
+  "python_tests": 32,
+  "expected_rejections": 4,
+  "successful_guests": [
+    "combined-boot-boot",
+    "combined-periodic-boot",
+    "combined-periodic-preempt-boot",
+    "combined-eevdf-boot",
+    "combined-periodic-exact-boot",
+    "combined-eevdf-wake-boot",
+    "combined-all-boot"
+  ],
+  "first_unexpected_failure": null,
+  "digests": {
+    "combined-boot": {
+      "elf_sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861",
+      "raw_sha256": "e4cf03f8b33cfd95e0f1ab36618eed96608893bfbbd4ceecb312be014a6adf40"
+    },
+    "combined-periodic": {
+      "elf_sha256": "c4d502277468b89fb22aff30bdd166f44b8ea3ed28ebb7c28f9eab4f78392c4d",
+      "raw_sha256": "9739aaef0ec8792a1fc0807bf35eba60ef5bcbd4d4a4eedfff249e4182edd586"
+    },
+    "combined-periodic-preempt": {
+      "elf_sha256": "f4e03cd1e8d71837457300f716ad297c39f43608439f98c79ccda6c11b82df88",
+      "raw_sha256": "7f5ba6425a34dcf63690943c98a2f23f705b5e681d382cc2e1c321afb57ad113"
+    },
+    "combined-eevdf": {
+      "elf_sha256": "a1a54a085dfdb5cc01c066319aecbcd3fe14c761c9e8fea14c1d8363e34bd6d3",
+      "raw_sha256": "6bfc671b1aea26870d62847308d8861cb65de88c8b7d2d9b7eeb278bacdabf0c"
+    },
+    "combined-periodic-exact": {
+      "elf_sha256": "de6998f732dd148517f04a9087ae096ec24ddca7d0e37aeb170190e12e06afac",
+      "raw_sha256": "0bf2128735f85e2689fd4e0a3c4e7888adb32290ec0337c59d20a0e48b937b7d",
+      "independent_elf_sha256": "de6998f732dd148517f04a9087ae096ec24ddca7d0e37aeb170190e12e06afac",
+      "independent_raw_sha256": "0bf2128735f85e2689fd4e0a3c4e7888adb32290ec0337c59d20a0e48b937b7d",
+      "identical": true
+    },
+    "combined-eevdf-wake": {
+      "elf_sha256": "b011ad7e48e1502ed086b3681f6aff1255edc0552baaea7f0540b2c4d6b3d4b1",
+      "raw_sha256": "744bb4eb9508a4fc827d6632fc6721b1edeaaf17900082b07cf60983963619b9",
+      "independent_elf_sha256": "96559d61149eb88c10c03d857bd817b17c5e9eaa61d4a5a90830a827e894d860",
+      "independent_raw_sha256": "744bb4eb9508a4fc827d6632fc6721b1edeaaf17900082b07cf60983963619b9",
+      "identical": true
+    },
+    "combined-all": {
+      "elf_sha256": "ef2cfe21d5dbfdc61bd08ee4f68a44ee66650c5596c82747f74520f21a639e36",
+      "raw_sha256": "a50f17c120e34f15355c5743f665b983879d1b0224236a4afacfaa9479746ea9"
+    },
+    "baseline-periodic": {
+      "elf_sha256": "5c5d9813b3fc867e7d42b452425decb24d8259241df2e515eb19e38ffa4685cb",
+      "raw_sha256": "157033dec163260ee9ac49c83f701a62a76dd2ce189f6939a119a7b1be444eee"
+    },
+    "baseline-periodic-preempt": {
+      "elf_sha256": "46d306d9600dca960a5c0b8f7d575f633f097bc3d7f863d32b6900edcde6646d",
+      "raw_sha256": "fe80877bf27e41688c23233882e79f4899f728fd3a673b130a2f8f2bc2b9137c"
+    },
+    "baseline-eevdf": {
+      "elf_sha256": "1f97048f437df83d34e20051f1d2901e481655e1aa2ce15fc7b2a8b2131a86ea",
+      "raw_sha256": "f080c6243aa096a07f29bd8470365d2d7b895baed43e351debba2958908c8d8a"
+    }
+  },
+  "legacy_loadable_equality": {
+    "periodic": false,
+    "periodic-preempt": false,
+    "eevdf": false
+  },
+  "commands_sha256": "0fef0199558d0723286ecd49fe05945b7ff28bb7e2a4529d6967a6fd69cb5444",
+  "scope": "Serial QEMU virt and host checks. Physical hardware and deadlines unverified.",
+  "legacy_observations": {
+    "periodic": {
+      "raw_sizes_baseline_combined": [
+        12480,
+        12480
+      ],
+      "text_sizes_baseline_combined": [
+        11284,
+        11348
+      ],
+      "uart_identical": true,
+      "uart_combined": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 2 A\nRM 3 B\nRM 4 A\nDM 0 B\nDM 0 A\nDM 2 A\nDM 3 B\nDM 4 A\nPERIODIC PASS\n",
+      "symbolic_sequence_identical": true,
+      "combined_event_counts": {
+        "return": 22,
+        "IRQ": 12,
+        "elr": 22,
+        "vector": 22,
+        "SVC": 10
+      }
+    },
+    "periodic-preempt": {
+      "raw_sizes_baseline_combined": [
+        16608,
+        16608
+      ],
+      "text_sizes_baseline_combined": [
+        13204,
+        13264
+      ],
+      "uart_identical": true,
+      "uart_combined": "JNOX M1 BOOT\nJNOX M1 READY\nRM 0 A\nRM 0 B\nRM 2 A\nRM 3 B\nRM 4 A\nDM 0 B\nDM 0 A\nDM 2 A\nDM 3 B\nDM 4 A\nRM A START\nRM A CONTINUE\nRM B RUN\nDM A START\nDM B RUN\nDM A CONTINUE\nPREEMPT PASS\n",
+      "symbolic_sequence_identical": true,
+      "combined_event_counts": {
+        "return": 32,
+        "IRQ": 18,
+        "elr": 32,
+        "vector": 32,
+        "SVC": 14
+      }
+    },
+    "eevdf": {
+      "raw_sizes_baseline_combined": [
+        21224,
+        21224
+      ],
+      "text_sizes_baseline_combined": [
+        17156,
+        17152
+      ],
+      "uart_identical": true,
+      "uart_combined": "JNOX M1 BOOT\nJNOX M1 READY\nEEVDF BEGIN\nEEVDF EARLY INELIGIBLE\nEEVDF SLICE CHANGE\nEEVDF WEIGHT CHANGE\nEEVDF TWO WAKES\nEEVDF STOP\nEEVDF PASS\n",
+      "symbolic_sequence_identical": true,
+      "combined_event_counts": {
+        "return": 14,
+        "IRQ": 12,
+        "elr": 14,
+        "vector": 14,
+        "SVC": 2
+      }
+    }
+  },
+  "legacy_source_changes": "The periodic marker now constructs two-digit ticks and strips the tens column in legacy mode. Epoch-end validation also requires an empty job array. Legacy EEVDF retains its 12 grants, two wakes and fixed owner and waiting-time checks in the shared wake workload implementation.",
+  "baseline_successful_guests": [
+    "baseline-periodic-boot",
+    "baseline-periodic-preempt-boot",
+    "baseline-eevdf-boot"
+  ]
+}

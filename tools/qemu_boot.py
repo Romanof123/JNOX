@@ -198,6 +198,9 @@ class DynamicTranscript(Enum):
     FIXED_RR = ("FIXED RR", "fixed_runtime_observer")
     PI4_FIXED_FIFO = ("FIXED FIFO", "fixed_runtime_observer", "PI4")
     PI4_FIXED_RR = ("FIXED RR", "fixed_runtime_observer", "PI4")
+    BATCH_SJF = ("batch-sjf", "batch_runtime_observer")
+    BATCH_SRTF = ("batch-srtf", "batch_runtime_observer")
+    BATCH_HRRN = ("batch-hrrn", "batch_runtime_observer")
     AMC = ("AMC", "amc_observer")
     VRUNTIME = ("VR", "vruntime_observer")
 
@@ -218,7 +221,15 @@ def fixed_edge_transcript(prefix):
     return BOOT_TRANSCRIPT + b"".join(prefix + b" " + marker + b"\n" for marker in markers)
 
 
+def coop_transcript(selector):
+    markers = (selector + b" START", b"OWNER START", b"OWNER YIELD", b"PEER 2", b"PEER 0",
+               b"OWNER RESUME", b"OWNER OVERRUN", b"OWNER OVERRUN", b"DONE")
+    return BOOT_TRANSCRIPT + b"".join(b"COOP " + marker + b"\n" for marker in markers)
+
+
 TRANSCRIPTS = {
+    "coop-events": coop_transcript(b"EVENTS"),
+    "coop-single": coop_transcript(b"SINGLE"),
     "ordinary-groups-late": BOOT_TRANSCRIPT + b"GROUP LATE\nGROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "ordinary-groups": BOOT_TRANSCRIPT + b"GROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
@@ -256,6 +267,7 @@ TRANSCRIPTS = {
     "pi4-fixed-fifo": DynamicTranscript.PI4_FIXED_FIFO,
     "pi4-fixed-rr": DynamicTranscript.PI4_FIXED_RR,
     "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
+    "eevdf-wake": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF WAKE STOP\nEEVDF WAKE PASS\n",
     "eevdf": BOOT_TRANSCRIPT + (
         b"EEVDF BEGIN\nEEVDF EARLY INELIGIBLE\nEEVDF SLICE CHANGE\n"
         b"EEVDF WEIGHT CHANGE\nEEVDF TWO WAKES\nEEVDF STOP\nEEVDF PASS\n"
@@ -285,6 +297,9 @@ TRANSCRIPTS = {
     ),
     "periodic-preempt": PERIODIC_PREEMPT_TRANSCRIPT,
 }
+for profile in (DynamicTranscript.BATCH_SJF, DynamicTranscript.BATCH_SRTF, DynamicTranscript.BATCH_HRRN):
+    TRANSCRIPTS[profile.label] = profile.observer().ordinary(profile.prefix)
+    TRANSCRIPTS[profile.label + "-trace"] = profile
 TRANSCRIPTS["smp-single"] = TRANSCRIPTS["smp"]
 QUIET_SECONDS = 0.1
 
@@ -360,6 +375,9 @@ def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet
     contract = profile.observer()
     workload = profile.module == "fixed_runtime_observer"
     passed = profile.prefix + (b" B DONE\n" if workload else b" PASS\n")
+    batch = profile.module == "batch_runtime_observer"
+    if batch:
+        passed = b"BATCH TRACE END\n"
     failed = profile.prefix + b" FAIL\n"
     stop_line = b"\n" + profile.prefix + b" STOP\n"
     deadline = time.monotonic() + timeout
@@ -388,7 +406,7 @@ def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet
             if passed in data or failed in data or b"\n" in after_stop:
                 if not data.endswith(b"\n" + passed):
                     return f"unexpected {profile.label} UART transcript", None
-                valid = contract.validate(data, profile.prefix, profile.board) if workload else contract.validate(data)
+                valid = contract.validate(data, profile.prefix, profile.board) if workload or batch else contract.validate(data)
                 if not valid:
                     return f"unexpected {profile.label} UART transcript", None
                 accepted = raw

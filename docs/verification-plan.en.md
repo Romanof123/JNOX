@@ -82,4 +82,16 @@ CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry 
 
 POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under DM, then repeated A at tick 10 and B at tick 12 in both epochs. [EVD-033](evidence/evd-033.en.md)
 
+[EVD-034](evidence/evd-034.en.md) reconstructs service error across 128 grants and 16 wake delays at fixed weights and slices. [Repeated-wake design](m4-eevdf-wake-design.md)
+
+CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
+
+[Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
+
+## CHG-039 ordinary batch release gate
+
+The acceptance contract requires the evidence to identify the source and exact selector, record raw task-side output from all three linked images, and check the interrupted caller resumes with its local result intact. Compare equal arrivals, estimate rejection, capacity, stale handles, overflow and underestimated service against independent host expectations. Preserve previous selectors and report physical timing and product capacity separately.
+
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
 POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)
