@@ -57,3 +57,5 @@ A0는 기존 기술자 실행이며 허가 위상 선택자를 설정하지 않�
 Hostile-input and one-tick-over controls still require independently retained replay or synthetic oracle fixtures with explicit provenance. The historical scripted boundary fixtures retain their own identity. This healthy-only source and the single transient-ON observer input do not establish those case verdicts.
 
 [First virtual observations](evidence/evd-054.en.md) · [최초 가상 실행](evidence/evd-054.md)
+
+CHG-061 · [OFF-only observer-cost plan / OFF 전용 관측 비용 계획](permit-observer-cost-plan.md)

@@ -41,3 +41,5 @@
 [IMP-054 runtime, selectors and raw events / 실행 구성 및 원시 이벤트](ordinary-permit-phase-runtime.md)
 
 [First virtual observations](evidence/evd-054.en.md) · [최초 가상 실행](evidence/evd-054.md)
+
+CHG-061 · [OFF-only observer-cost plan / OFF 전용 관측 비용 계획](permit-observer-cost-plan.md)
