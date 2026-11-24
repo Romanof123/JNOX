@@ -107,6 +107,46 @@ def read_evidence(root, evd, findings):
     }
 
 
+RELEASE_HEADERS = {
+    ("Policy", "Subcases and existing records", "Remaining execution or approval"),
+    ("정책", "하위 사례와 기존 근거", "남은 실행 또는 승인"),
+}
+
+
+def release_rows(text):
+    """Yield rows from the declared release table outside Markdown fences."""
+    header = active = False
+    fence = ""
+    for line in text.splitlines():
+        if fence:
+            if re.fullmatch(r" {0,3}" + fence[0] + "{%d,}" % len(fence) + r"[ \t]*", line):
+                fence = ""
+            continue
+        opening = re.match(r"^ {0,3}(\x60{3,}|~{3,})", line)
+        if opening:
+            fence = opening[1]
+            header = active = False
+            continue
+        # A backslash escapes the following character, including a pipe or
+        # another backslash. Consume each pair before recognizing separators.
+        row = line.lstrip(" ")
+        if len(line) - len(row) > 3 or not row.startswith("|"):
+            header = active = False
+            continue
+        cells = [match[1].strip() for match in re.finditer(r"\|((?:\\.|[^\\|]|\\$)*)", row)]
+        if cells and not cells[-1] and row.rstrip().endswith("|"):
+            cells.pop()
+        if header:
+            active = len(cells) == 3 and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
+            header = False
+        elif active and len(cells) == 3:
+            if cells[0] in POLICIES:
+                yield cells[0], cells[1]
+        else:
+            header = tuple(cells) in RELEASE_HEADERS
+            active = False
+
+
 def catalogs(root, findings):
     definitions = {}
     cited = defaultdict(set)
@@ -130,12 +170,8 @@ def catalogs(root, findings):
     release_citations = defaultdict(set)
     for suffix in (".md", ".en.md"):
         matrix = root / "docs" / ("scheduling-release-cases" + suffix)
-        for line in matrix.read_text(encoding="utf-8-sig").splitlines():
-            cells = line.split("|", 3)
-            if len(cells) == 4 and not cells[0].strip():
-                policy = cells[1].strip()
-                if policy in POLICIES:
-                    release_citations[policy].update(EVD_LINK.findall(cells[2]))
+        for policy, recorded in release_rows(matrix.read_text(encoding="utf-8-sig")):
+            release_citations[policy].update(EVD_LINK.findall(recorded))
     return definitions, cited, release_citations
 
 
