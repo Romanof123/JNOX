@@ -6,10 +6,10 @@ On 2026-11-25, [#239](https://github.com/Romanof123/JNOX/issues/239) requested r
 
 | Policy and contract / 정책·사전 계약 | Origin / 이슈·병합 요청 | Index / 사후 색인 |
 |---|---|---|
-| POL-003 [Admitted telemetry / 텔레메트리 배치](batch-telemetry-profile.en-ko.md) | [#211](https://github.com/Romanof123/JNOX/issues/211) · [#214](https://github.com/Romanof123/JNOX/pull/214) | CHG-091 · IMP-091 · EVD-091 |
-| POL-016 [Recurring hierarchy / 반복 계층 서비스](nested-group-recurring-service.en-ko.md) | [#212](https://github.com/Romanof123/JNOX/issues/212) · [#215](https://github.com/Romanof123/JNOX/pull/215) | CHG-092 · existing / 기존 IMP-038 · EVD-092 |
-| POL-018 [Ordinary extension jobs / 일반 확장 작업](extension-normal-jobs.md) | [#221](https://github.com/Romanof123/JNOX/issues/221) · [#223](https://github.com/Romanof123/JNOX/pull/223) | CHG-093 · IMP-093 · EVD-093 |
-| POL-013 [Pi 4 model CRC stream / Pi 4 모델 CRC 스트림](boards/pi4-stream-main.en-ko.md) | [#228](https://github.com/Romanof123/JNOX/issues/228) · [#229](https://github.com/Romanof123/JNOX/pull/229) | CHG-094 · IMP-094 · EVD-094 |
+| POL-003 [Admitted telemetry / 텔레메트리 배치](batch-telemetry-profile.en-ko.md) | [#211](https://github.com/Romanof123/JNOX/issues/211) · [#214](https://github.com/Romanof123/JNOX/pull/214) | CHG-091 · IMP-091 · [EVD-091 EN](evidence/evd-091.en.md) · [한국어](evidence/evd-091.md) |
+| POL-016 [Recurring hierarchy / 반복 계층 서비스](nested-group-recurring-service.en-ko.md) | [#212](https://github.com/Romanof123/JNOX/issues/212) · [#215](https://github.com/Romanof123/JNOX/pull/215) | CHG-092 · existing / 기존 IMP-038 · [EVD-092 EN](evidence/evd-092.en.md) · [한국어](evidence/evd-092.md) |
+| POL-018 [Ordinary extension jobs / 일반 확장 작업](extension-normal-jobs.md) | [#221](https://github.com/Romanof123/JNOX/issues/221) · [#223](https://github.com/Romanof123/JNOX/pull/223) | CHG-093 · IMP-093 · [EVD-093 EN](evidence/evd-093.en.md) · [한국어](evidence/evd-093.md) |
+| POL-013 [Pi 4 model CRC stream / Pi 4 모델 CRC 스트림](boards/pi4-stream-main.en-ko.md) | [#228](https://github.com/Romanof123/JNOX/issues/228) · [#229](https://github.com/Romanof123/JNOX/pull/229) | CHG-094 · IMP-094 · [EVD-094 EN](evidence/evd-094.en.md) · [한국어](evidence/evd-094.md) |
 
 Use existing REQ-002/005/023, DES-003/012 and partial VER-002/005/023 for the three single-core cases. Include REQ-008, DES-004 and partial VER-008 for the Pi 4 model's CPU placement and saved context. Join each change to its requirements and each measured implementation to its design, policy, verification and canonical bilingual evidence. Use live-switch evidence only for captured guest dispatch and restored frames. Link each language record directly to the original report and ZIP. [#6](https://github.com/Romanof123/JNOX/issues/6) tracks independent graph/matrix replay. [#21](https://github.com/Romanof123/JNOX/issues/21) retains deployment acceptance and [#34](https://github.com/Romanof123/JNOX/issues/34) physical board qualification.
 

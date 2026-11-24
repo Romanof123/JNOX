@@ -21,3 +21,5 @@ Freeze all three stream ELFs, images, disassemblies, source and stock QEMU (SHA-
 [Original workload and corrected selector plan / 원 설계](https://github.com/Romanof123/JNOX/blob/b14b044f1e548f13ddf48bd5bfa5f91001cabcca/docs/boards/pi4-stream-v1.en-ko.md) · [First failed build receipt / 최초 실패 기록](https://github.com/Romanof123/JNOX/blob/b14b044f1e548f13ddf48bd5bfa5f91001cabcca/docs/evidence/pi4-crc-stream-first-builds.en-ko.md)
 
 [Independent mainline first results and original artifacts / 본선 최초 독립 판정과 원본](../evidence/pi4-crc-mainline-first.en-ko.md).
+
+2026-11-25 · Retrospective trace / 사후 추적 · [#228](https://github.com/Romanof123/JNOX/issues/228) · [#229](https://github.com/Romanof123/JNOX/pull/229) · [EVD-094 (EN)](../evidence/evd-094.en.md) · [EVD-094 (한국어)](../evidence/evd-094.md) · [#239](../finite-scheduling-index.en-ko.md)
