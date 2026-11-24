@@ -3,7 +3,7 @@ import argparse
 import hashlib
 from pathlib import Path
 
-from pi4_fixed_witness import HANDOFF, PROFILES, decode,evidence,fold,ranges,score,symbol_map
+from pi4_fixed_witness import HANDOFF_PROFILES, INNER_HANDOFF, PROFILES, inner_site, decode,evidence,fold,ranges,score,symbol_map
 
 
 def controls(uart,elf,profile,image_id):
@@ -71,7 +71,7 @@ def controls(uart,elf,profile,image_id):
         partial = inspect(missing)
         assert not partial["higher_priority_preempt_resume"] and not partial["complete"]
 
-    if profile == HANDOFF:
+    if profile in HANDOFF_PROFILES:
         # Re-seal malformed rows so each reaches semantic validation.
         cells = [r for k,r in original if k == 5]
         reject(lambda:inspect(original[:-2]+[(5,cells[0])]+original[-2:]))
@@ -87,6 +87,43 @@ def controls(uart,elf,profile,image_id):
                 reject(lambda:inspect(forged))
         if all(r[1] for r in cells):
             reject(lambda:inspect(mutated(5,7,cells[1][7]^1)))
+
+    if profile == INNER_HANDOFF:
+        inner = [r for k,r in original if k == 6]
+        reject(lambda:inspect([(k,r) for k,r in original if k != 6]))
+        reject(lambda:inspect(mutated(6,0,1)))
+        reject(lambda:inspect(mutated(6,1,3)))
+        for role,cell in enumerate(inner):
+            def inner_mutation(field, value):
+                rows = [(k,r.copy()) for k,r in original]
+                [r for k,r in rows if k == 6][role][field] = value
+                return rows
+            reject(lambda:inspect(inner_mutation(4, cell[4]+4)))
+            reject(lambda:inspect(inner_mutation(5,cell[5]^8)))
+            if cell[1]:
+                reject(lambda:inspect(inner_mutation(3,cells[role][3]+1)))
+                reject(lambda:inspect(inner_mutation(1,3-cell[1])))
+        assert result["complete"] == (result["higher_priority_preempt_resume"]
+                                       and result["inner_rr_data_handoff"])
+        assert result["outer_complete"] == (result["higher_priority_preempt_resume"]
+                                             and result["outer_rr_data_handoff"])
+        # Mutate linked instruction operands independently of UART integrity.
+        # Synthetic addresses here exercise the instruction predicate only.
+        pc = 0x1000
+        gen = pc-20
+        for opcode in (0xc89ffc00, 0xc8dffc00):
+            words = [0xd503201f, 0x10000001, 0xaa0503e8, 0x10000062, 0x910003e3,
+                     0xc8dffc24, opcode | (5 << 5) | 6, 0xc8dffc27]
+            assert inner_site(words, pc, opcode, gen)
+            for index,mask in ((1,32),(2,1 << 16),(3,32),(5,32),(6,0x400000),(7,32)):
+                forged = words.copy()
+                forged[index] ^= mask
+                assert not inner_site(forged, pc, opcode, gen)
+            for index,value in ((6,opcode | (1 << 5) | 6),(7,0xc8dffc24),
+                                (5,0xc8dffc25),(7,0xc8dffc3f)):
+                forged = words.copy()
+                forged[index] = value
+                assert not inner_site(forged, pc, opcode, gen)
 
     blob=serialize(original)
     reject(lambda:decode(blob[:-1]))

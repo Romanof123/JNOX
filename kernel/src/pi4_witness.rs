@@ -8,6 +8,7 @@ use core::sync::atomic::{
 };
 
 const CAP: usize = 64;
+#[cfg_attr(jnox_rr_inner, unsafe(export_name = "pi4_rr_dispatch_generation"))]
 static GEN: AtomicU64 = AtomicU64::new(0);
 static mut BOOT: u64 = 0;
 static mut ENTRIES: [u64; 3] = [0; 3];
@@ -153,7 +154,7 @@ pub(super) extern "C" fn pi4_witness_terminal() -> ! {
     out.row(
         0,
         &[
-            if cfg!(jnox_rr_handoff) { 2 } else { 1 },
+            if cfg!(jnox_rr_inner) { 3 } else if cfg!(jnox_rr_handoff) { 2 } else { 1 },
             id,
             unsafe { BOOT },
             u64::from(cfg!(jnox_app = "fixed-rr")),
@@ -223,6 +224,8 @@ pub(crate) mod handoff {
     use super::*;
     static STATE: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
     static mut DATA: [[u64; 10]; 2] = [[0; 10]; 2];
+    #[cfg(jnox_rr_inner)]
+    static mut INNER: [[u64; 3]; 2] = [[0; 3]; 2];
 
     #[inline(always)]
     fn ticks() -> u64 {
@@ -232,7 +235,7 @@ pub(crate) mod handoff {
     }
 
     #[inline(always)]
-    fn finish(role: usize, begin: u64, lo: u64, mailbox: &AtomicU64, value: u64, pc: u64, sp: u64) {
+    fn finish(role: usize, begin: u64, lo: u64, mailbox: &AtomicU64, value: u64, pc: u64, sp: u64, #[cfg(jnox_rr_inner)] inner: [u64; 3]) {
         let cpu = affinity();
         let hi = ticks();
         let end = generation();
@@ -240,6 +243,8 @@ pub(crate) mod handoff {
             STATE[role].store(3, Release);
             return;
         }
+        #[cfg(jnox_rr_inner)]
+        unsafe { INNER[role] = inner };
         unsafe { DATA[role] = [begin,end,lo,hi,mailbox.as_ptr() as u64,value,pc,sp,cpu,role as u64] };
         STATE[role].store(if begin != 0 && begin == end { 1 } else { 2 }, Release);
     }
@@ -250,10 +255,22 @@ pub(crate) mod handoff {
         let begin = generation();
         let lo = ticks();
         let (pc, sp): (u64, u64);
+        #[cfg(not(jnox_rr_inner))]
         unsafe { asm!("adr {pc},2f","mov {sp},sp","2:","stlr {v},[{m}]",
             pc=out(reg)pc,sp=out(reg)sp,v=in(reg)value,m=in(reg)mailbox.as_ptr(),
             options(nostack,preserves_flags)) };
-        finish(0,begin,lo,mailbox,value,pc,sp);
+        #[cfg(jnox_rr_inner)]
+        let (before, after, actual_mail): (u64, u64, u64);
+        #[cfg(jnox_rr_inner)]
+        unsafe {
+            asm!("adrp {generation},{gen_word}", "add {generation},{generation},:lo12:{gen_word}",
+                 "mov {actual_mail},{mail}", "adr {pc},2f", "mov {sp},sp",
+                 "ldar {before},[{generation}]", "2:", "stlr {v},[{mail}]", "ldar {after},[{generation}]",
+                 pc=out(reg)pc, sp=out(reg)sp, before=out(reg)before, after=out(reg)after,
+                 generation=out(reg)_, gen_word=sym GEN, actual_mail=out(reg)actual_mail, mail=in(reg)mailbox.as_ptr(), v=in(reg)value,
+                 options(nostack,preserves_flags));
+        }
+        finish(0,begin,lo,mailbox,value,pc,sp, #[cfg(jnox_rr_inner)] [before,after,actual_mail]);
     }
 
     #[inline(never)]
@@ -262,10 +279,22 @@ pub(crate) mod handoff {
         let begin = generation();
         let lo = ticks();
         let (value, pc, sp): (u64, u64, u64);
+        #[cfg(not(jnox_rr_inner))]
         unsafe { asm!("adr {pc},2f","mov {sp},sp","2:","ldar {v},[{m}]",
             pc=out(reg)pc,sp=out(reg)sp,v=out(reg)value,m=in(reg)mailbox.as_ptr(),
             options(nostack,preserves_flags)) };
-        if value != 0 { finish(1,begin,lo,mailbox,value,pc,sp); }
+        #[cfg(jnox_rr_inner)]
+        let (before, after, actual_mail): (u64, u64, u64);
+        #[cfg(jnox_rr_inner)]
+        unsafe {
+            asm!("adrp {generation},{gen_word}", "add {generation},{generation},:lo12:{gen_word}",
+                 "mov {actual_mail},{mail}", "adr {pc},2f", "mov {sp},sp",
+                 "ldar {before},[{generation}]", "2:", "ldar {v},[{mail}]", "ldar {after},[{generation}]",
+                 pc=out(reg)pc, sp=out(reg)sp, before=out(reg)before, after=out(reg)after,
+                 generation=out(reg)_, gen_word=sym GEN, actual_mail=out(reg)actual_mail, mail=in(reg)mailbox.as_ptr(), v=out(reg)value,
+                 options(nostack,preserves_flags));
+        }
+        if value != 0 { finish(1,begin,lo,mailbox,value,pc,sp, #[cfg(jnox_rr_inner)] [before,after,actual_mail]); }
         value
     }
 
@@ -280,6 +309,18 @@ pub(crate) mod handoff {
             fields[1] = status;
             fields[2..].copy_from_slice(&unsafe { DATA[role] });
             out.row(5, &fields);
+        }
+        #[cfg(jnox_rr_inner)]
+        for (role, state) in STATE.iter().enumerate() {
+            let outer_status = state.load(Acquire);
+            let [before, after, actual_mail] = unsafe { INNER[role] };
+            let status = match outer_status {
+                0 | 3 => outer_status,
+                _ if before != 0 && before == after => 1,
+                _ => 2,
+            };
+            let operation_pc = unsafe { DATA[role][6] };
+            out.row(6, &[role as u64, status, before, after, operation_pc, actual_mail]);
         }
     }
 }

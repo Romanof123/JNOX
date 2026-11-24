@@ -9,9 +9,11 @@ import shutil
 import subprocess
 
 MASK = (1 << 64)-1
-WIDTH = {0:13, 1:5, 2:25, 3:8, 4:6, 5:12}
+WIDTH = {0:13, 1:5, 2:25, 3:8, 4:6, 5:12, 6:6}
 HANDOFF = "pi4-fixed-rr-handoff"
-PROFILES = ("pi4-fixed-fifo-witness", "pi4-fixed-rr-witness", HANDOFF)
+INNER_HANDOFF = "pi4-fixed-rr-handoff-v3"
+HANDOFF_PROFILES = (HANDOFF, INNER_HANDOFF)
+PROFILES = ("pi4-fixed-fifo-witness", "pi4-fixed-rr-witness", *HANDOFF_PROFILES)
 
 
 def check(ok, why):
@@ -53,7 +55,7 @@ def decode(data):
 def evidence(rows, profile, image_id, executable, symbols):
     header=rows[0][1]
     version,tag,boot,rr,core,el,freq,cap,scap,frame_size,n,lost,worker_lost=header
-    check((version,tag,rr,el,cap,scap)==(2 if profile==HANDOFF else 1,image_id,int("rr-" in profile),1,64,128)
+    check((version,tag,rr,el,cap,scap)==({HANDOFF: 2, INNER_HANDOFF: 3}.get(profile,1),image_id,int("rr-" in profile),1,64,128)
           and freq>0 and frame_size>0 and 1<=n<=cap and lost==worker_lost==0,"invalid header or capture loss")
     check(core & 0xff00ffffff == 0, "unexpected MPIDR affinity")
     slots={}
@@ -73,10 +75,12 @@ def evidence(rows, profile, image_id, executable, symbols):
     samples={}
     terminal=rows[-1][1]
     body = rows[5:-1]
-    if profile == HANDOFF:
-        check(len(body) >= 2 and [tag for tag,_ in body[-2:]] == [5,5], "missing handoff cells")
-        cells = [r for _,r in body[-2:]]
-        body = body[:-2]
+    if profile in HANDOFF_PROFILES:
+        tail = [5,5,6,6] if profile == INNER_HANDOFF else [5,5]
+        check([kind for kind,_ in body[-len(tail):]] == tail, "missing or misordered handoff cells")
+        cells = [r for _,r in body[-len(tail):][:2]]
+        inner_cells = [r for _,r in body[-2:]] if profile == INNER_HANDOFF else []
+        body = body[:-len(tail)]
     for kind,r in body:
         if kind==2:
             gen,reason,source,t,owner,chosen,fp,ipc,isp,nfp,npc,nsp,arg,res,armed,due,ctl,cval,pre,service,old_cval,cpu,pa,pb,pub=r
@@ -164,13 +168,19 @@ def evidence(rows, profile, image_id, executable, symbols):
                     observed_stack_bytes=slots[events[seq-1][5]][1]-s[5]) for (seq,k),s in samples.items()],
                 external_instruction_history_checked=False)
 
-    if profile == HANDOFF:
+    if profile in HANDOFF_PROFILES:
         details = handoff_evidence(cells, slots, events, samples, symbols, core, preemptions)
         result.update(structural_valid=True, legacy_loop_complete=result["complete"],
                       peer_dispatch_work=[dict(generation=e[0], reason=e[1], incoming=role(e[5]),
                                                arithmetic_observed=(e[0],1) in samples)
                                           for e in events if role(e[5]) in (0,1)], **details)
         result["complete"] = witnessed and details["rr_data_handoff"]
+        if profile == INNER_HANDOFF:
+            inner = inner_evidence(inner_cells, cells, slots, events, samples, preemptions, symbols)
+            result.update(wire_version=3, outer_rr_data_handoff=details["rr_data_handoff"],
+                          outer_complete=result["complete"], **inner)
+            result["rr_data_handoff"] = inner["inner_rr_data_handoff"]
+            result["complete"] = witnessed and inner["inner_rr_data_handoff"]
     return result
 
 
@@ -199,18 +209,47 @@ def handoff_evidence(cells, slots, events, samples, symbols, core, preemptions):
     observed = False
     if a[1] == b[1] == 1:
         check(a[3] < b[2] and a[5] <= b[4], "overlapping attributed handoff")
-        returned = events[a[2]-1]
-        for e in events[:a[2]-1]:
-            g = e[0]
-            work = samples.get((g,1))
-            if (e[1] == 1 and (e[4],e[5]) == (0,2) and work
-                    and returned[1] == 1 and (returned[4],returned[5]) == (2,0)
-                    and any(p["continued"] and p["resume_generation"] < g for p in preemptions)):
-                check(work[7] <= a[7], "handoff payload precedes B work")
-                observed = True
+        observed = rotation_handoff(a[2], a[7], events, samples, preemptions)
     return dict(rr_data_handoff=observed, handoff_cells=cells,
                 handoff_status=["absent" if r[1]==0 else "ambiguous" if r[1]==2
                                 else "attributed" for r in cells])
+
+
+def rotation_handoff(generation, payload, events, samples, preemptions):
+    returned = events[generation-1]
+    if returned[1] != 1 or (returned[4], returned[5]) != (2, 0):
+        return False
+    for event in events[:generation-1]:
+        g = event[0]
+        work = samples.get((g, 1))
+        if (event[1] == 1 and (event[4], event[5]) == (0, 2) and work
+                and any(p["continued"] and p["resume_generation"] < g for p in preemptions)):
+            check(work[7] <= payload, "handoff payload precedes B work")
+            return True
+    return False
+
+
+def inner_evidence(inner, outer, slots, events, samples, preemptions, symbols):
+    for role, (row, cell) in enumerate(zip(inner, outer)):
+        owner, status, begin, end, pc, actual_address = row
+        check(owner == role and status in (0, 1, 2), "invalid inner role or status")
+        check(bool(status) == bool(cell[1]), "inner/outer presence differs")
+        if not status:
+            check(not any(row[2:]), "partial empty inner cell")
+            continue
+        check(actual_address == cell[6], "actual mailbox operand differs from outer cell")
+        check(pc == cell[8] and pc in symbols["operation_pcs"][role], "wrong inner operation PC")
+        check(cell[2] <= begin <= end <= cell[3], "inner generations outside outer bracket")
+        check((status == 1) == (begin == end and begin != 0), "incorrect inner generation status")
+        check(slots[events[begin-1][5]][2] == slots[events[end-1][5]][2] == role,
+              "inner endpoint belongs to another owner")
+    a, b = inner
+    observed = False
+    if a[1] == b[1] == 1:
+        check(a[3] < b[2], "inner mailbox load did not follow store")
+        observed = rotation_handoff(a[2], outer[0][7], events, samples, preemptions)
+    return dict(inner_rr_data_handoff=observed, inner_handoff_cells=inner,
+                inner_handoff_status=[("absent", "attributed", "ambiguous")[r[1]] for r in inner])
 
 
 def ranges(elf):
@@ -223,6 +262,39 @@ def ranges(elf):
         if typ==1 and flags&1: result.append((va,va+filesz))
     check(result,"ELF lacks executable ranges")
     return result
+
+
+def address_pair(pc, first, second, reg):
+    """Resolve an ADRP/ADD pair or the linker's NOP/ADR relaxation."""
+    def displacement(word):
+        imm = ((word >> 5 & 0x7ffff) << 2) | (word >> 29 & 3)
+        return imm - (1 << 21) if imm & (1 << 20) else imm
+    if first == 0xd503201f and (second & 0x9f00001f) == (0x10000000 | reg):
+        return pc + 4 + displacement(second)
+    if ((first & 0x9f00001f) == (0x90000000 | reg)
+            and (second & 0xffc003ff) == (0x91000000 | (reg << 5) | reg)):
+        return (pc & ~0xfff) + (displacement(first) << 12) + (second >> 10 & 0xfff)
+    return None
+
+
+def inner_site(words, pc, opcode, generation):
+    high, low, actual_mail, adr, sp, before, operation, after = words
+    if not (adr & 0xffffffe0 == 0x10000060 and sp & 0xffffffe0 == 0x910003e0
+            and before & 0xfffffc00 == after & 0xfffffc00 == 0xc8dffc00
+            and operation & 0xfffffc00 == opcode):
+        return False
+    gen_reg = before >> 5 & 31
+    mail_reg = operation >> 5 & 31
+    # MOV Xd,Xm is ORR Xd,XZR,Xm. Bind the address exported by tag 6.
+    if (actual_mail & 0xffe0ffe0) != 0xaa0003e0 or (actual_mail >> 16 & 31) != mail_reg:
+        return False
+    # All inputs and outputs remain live through the bracket. SP/ZR cannot
+    # stand in for any of them. Preserve the loaded payload and both samples.
+    operands = [gen_reg, mail_reg, actual_mail & 31, adr & 31, sp & 31, before & 31,
+                operation & 31, after & 31]
+    return (after >> 5 & 31 == gen_reg and 31 not in operands
+            and len(set(operands)) == len(operands)
+            and address_pair(pc-24, high, low, gen_reg) == generation)
 
 
 def symbol_map(path,profile):
@@ -242,8 +314,13 @@ def symbol_map(path,profile):
                                     "fixed_runtime_idle","fixed_runtime_enter")}
     roles=("worker_a","worker_b","alarm") if "rr-" in profile else ("producer","sleeper","alarm")
     out["entries"]=[sym("fixed_apps::selected::"+role)[0] for role in roles]+[out["fixed_runtime_idle"][0]]
-    if profile == HANDOFF:
+    if profile in HANDOFF_PROFILES:
         out["fixed_app_observations"] = sym("fixed_app_observations")
+        if profile == INNER_HANDOFF:
+            generation, size = sym("pi4_rr_dispatch_generation")
+            mailbox = out["fixed_app_observations"][0] + 56
+            check(size == 8 and generation % 8 == mailbox % 8 == 0
+                  and generation != mailbox, "generation and mailbox overlap or are misaligned")
         elf = path.read_bytes()
         pos = struct.unpack_from("<Q",elf,32)[0]
         stride,count = struct.unpack_from("<HH",elf,54)
@@ -254,6 +331,12 @@ def symbol_map(path,profile):
             for i in range(count):
                 typ,flags,off,va,_,filesz,_,_ = struct.unpack_from("<IIQQQQQQ",elf,pos+i*stride)
                 if typ==1 and flags&1 and va<=start and start+length<=va+filesz:
+                    if profile == INNER_HANDOFF:
+                        for pc in range(start+24,start+length-4,4):
+                            words = struct.unpack_from("<8I",elf,off+pc-va-24)
+                            if inner_site(words, pc, opcode, generation):
+                                sites.add(pc)
+                        continue
                     for pc in range(start+8,start+length,4):
                         adr,sp,word = struct.unpack_from("<III",elf,off+pc-va-8)
                         # The producer captures this PC with ADR +8 and MOV Xd,SP.
