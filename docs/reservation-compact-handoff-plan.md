@@ -62,3 +62,7 @@ Descriptor IDs 1–4 identify aligned W/S then CBS W/S. The sole writer switches
 The original offline decoder rejected a complete RAW 3 capture because it counted both tag 24 roles as one. Retain that first result with its decoder revision. The corrected decoder checks the boot anchor against clock setup and reports actual stage bits on complete failure streams. Only an explicit pre-anchor setup abort with empty stages may omit the anchor. RAW 1 summarizes the archived terminal payload including refusals. An incomplete UART cannot establish a guest result. The normalized regression input preserves the row order and fields of the aligned-saturated traced failure (status 2, reason 5).
 
 초판 판독기는 완전한 RAW 3 기록의 24행 두 역할을 하나로 세어 거부했다. 첫 결과와 당시 리비전을 보존한다. 수정판은 부팅 기준과 시계 설정을 대조하고 실패로 종료된 기록에서도 관측한 단계를 보고한다. 부팅 기준 이전 중단은 빈 단계와 명시적인 설정 실패일 때만 인정한다. RAW 1은 거부를 포함한 종료값을 요약한다. 종료가 잘린 UART로 게스트 결과를 판정할 수 없다. 회귀 입력에는 aligned-saturated 추적 실패의 행 순서와 수치를 보존했다.
+
+Four of eight ordinary candidate boots completed, compared with five of eight paired predecessor boots and one of eight historical predecessor boots. Both overload refusals in each paired cohort succeeded. Full-profile qualification remains on hold. [EVD-053 v3](evidence/evd-053-v3.en.md)
+
+후보 일반 실행 8건 중 4건, 같은 실험의 선행 버전 8건 중 5건, 과거 선행 버전 8건 중 1건이 완료됐다. 후보와 동시 비교군은 각각 과부하 2건을 모두 거절했다. 전체 프로필 적격 판정은 보류한다. [EVD-053 v3](evidence/evd-053-v3.md)

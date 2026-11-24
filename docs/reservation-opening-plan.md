@@ -52,3 +52,7 @@ Raw row 24 timestamp is sampled after admission, with fields (first runtime coun
 [EVD-053 v2](evidence/evd-053-v2.en.md) · [한국어](evidence/evd-053-v2.md)
 
 CHG-059 · [Compact first-boundary handoff / 첫 경계 인계 비용 축소](reservation-compact-handoff-plan.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+Four of eight ordinary candidate boots completed, compared with five of eight paired predecessor boots and one of eight historical predecessor boots. Both overload refusals in each paired cohort succeeded. Full-profile qualification remains on hold. [EVD-053 v3](evidence/evd-053-v3.en.md)
+
+후보 일반 실행 8건 중 4건, 같은 실험의 선행 버전 8건 중 5건, 과거 선행 버전 8건 중 1건이 완료됐다. 후보와 동시 비교군은 각각 과부하 2건을 모두 거절했다. 전체 프로필 적격 판정은 보류한다. [EVD-053 v3](evidence/evd-053-v3.md)
