@@ -13,7 +13,24 @@ use core::{
     sync::atomic::{AtomicU64, Ordering::SeqCst},
 };
 
-global_asm!(".set JNOX_AP,1", include_str!("context.S"),
+#[cfg(jnox_mutex_anchor)]
+#[path = "ordinary_mutex_anchor.rs"]
+mod anchor;
+
+#[cfg(jnox_mutex_return)]
+macro_rules! mutex_preamble {
+    () => { concat!(".set JNOX_MUTEX_RETURN,1\n", include_str!("ordinary_mutex_return.S")) };
+}
+#[cfg(jnox_mutex_stages)]
+macro_rules! mutex_preamble {
+    () => { ".set JNOX_MUTEX_STAGES,1" };
+}
+#[cfg(not(any(jnox_mutex_return, jnox_mutex_stages)))]
+macro_rules! mutex_preamble {
+    () => { "" };
+}
+
+global_asm!(mutex_preamble!(), ".set JNOX_AP,1", include_str!("context.S"),
     frame_size=const size_of::<Frame>(), elr=const offset_of!(Frame,elr),
     fpcr=const offset_of!(Frame,fpcr), tpidr_el1=const offset_of!(Frame,tpidr_el1),
     tpidr_el0=const offset_of!(Frame,tpidr_el0), simd=const offset_of!(Frame,simd),
@@ -38,6 +55,7 @@ static mut STACKS: [Stack; 4] = [const { Stack([0; STACK_BYTES]) }; 4];
 #[unsafe(export_name = "jnox_ap_returns")]
 static mut RETURNS: [u64; 193] = [0; 193];
 static mut JOURNAL: [[u64; 26]; ROWS] = [[0; 26]; ROWS];
+#[cfg_attr(jnox_mutex_anchor, unsafe(export_name = "jnox_mutex_generation"))]
 static mut USED: usize = 0;
 static mut TIMER: [u64; 8] = [0; 8];
 static mut ACTIVE: Option<Runtime> = None;
@@ -351,6 +369,14 @@ extern "C" fn request(f: *mut Frame) -> *mut Frame {
         }
         stop(0)
     }
+    #[cfg(jnox_mutex_anchor)]
+    if arm {
+        anchor::prepare(r, id, arg, f, next, result);
+        r.armed = true;
+        #[cfg(not(jnox_mutex_return))]
+        anchor::arm_in_rust();
+    }
+    #[cfg(not(jnox_mutex_anchor))]
     if arm {
         if r.current != LOW || r.freq % 10000 != 0 || r.freq == 0 {
             stop(13)
@@ -392,11 +418,18 @@ extern "C" fn interrupt(f: *mut Frame) -> *mut Frame {
     }
     gic_write(GICC + 0x10, iar);
     unsafe { asm!("dsb sy", "isb", options(nostack)) }
+    #[cfg(jnox_mutex_anchor)]
+    let expected_compare = anchor::correlate().unwrap_or_else(|| stop(22));
     if !r.armed
         || r.released
         || iar & 1023 != TIMER_IRQ
         || ctl & 7 != 5
-        || cval != unsafe { TIMER[2] }
+        || cval != {
+            #[cfg(jnox_mutex_anchor)]
+            { expected_compare }
+            #[cfg(not(jnox_mutex_anchor))]
+            { unsafe { TIMER[2] } }
+        }
     {
         stop(14)
     }
@@ -441,6 +474,9 @@ fn stop(reason: u64) -> ! {
             options(nostack)
         )
     }
+    #[cfg(jnox_mutex_anchor)]
+    uart_write(b"MUTEX RAW 2\n");
+    #[cfg(not(jnox_mutex_anchor))]
     uart_write(b"MUTEX RAW 1\n");
     unsafe {
         let used = USED.min(ROWS);
@@ -455,6 +491,9 @@ fn stop(reason: u64) -> ! {
                 CHUNKS.load(SeqCst),
             ],
         );
+        #[cfg(jnox_mutex_anchor)]
+        anchor::dump();
+        #[cfg(not(jnox_mutex_anchor))]
         line(b"T", &*(&raw const TIMER));
         for id in 0..4 {
             line(
@@ -492,6 +531,8 @@ pub(super) fn run() -> ! {
     init_timer_irq();
     let freq: u64;
     unsafe { asm!("mrs {},cntfrq_el0",out(reg)freq,options(nostack)) }
+    #[cfg(jnox_mutex_anchor)]
+    anchor::initialize(freq);
     let mut r = Runtime {
         locks: locks(CEILING).unwrap_or_else(|| stop(1)),
         ready: ReadyQueue::new(),

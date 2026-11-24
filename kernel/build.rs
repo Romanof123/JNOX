@@ -203,6 +203,22 @@ fn main() {
     println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_anchor)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_return)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_stages)");
+    if let Some(anchor) = selector("JNOX_MUTEX_ANCHOR") {
+        assert!(profile.as_deref() == Some("mutex") && board == "virt" && bench == "boot"
+            && matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling"))
+            && trace.is_none() && scenario.is_none(),
+            "JNOX_MUTEX_ANCHOR requires the ordinary virt mutex PI or ceiling app");
+        match anchor.as_str() {
+            "rust-prepared" => {},
+            "rust-stages" => println!("cargo::rustc-cfg=jnox_mutex_stages"),
+            "selected-return" => println!("cargo::rustc-cfg=jnox_mutex_return"),
+            _ => panic!("JNOX_MUTEX_ANCHOR requires rust-prepared, rust-stages or selected-return"),
+        }
+        println!("cargo::rustc-cfg=jnox_mutex_anchor");
+    }
     match profile.as_deref() {
         Some("mutex") => {
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),

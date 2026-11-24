@@ -10,6 +10,8 @@ mod ready_queue;
 mod smp_policy;
 #[path = "smp_tests.rs"]
 mod smp_tests;
+#[path = "../kernel/src/mutex_anchor_policy.rs"]
+mod mutex_anchor_policy;
 #[path = "../kernel/src/mutex_policy.rs"]
 mod mutex_policy;
 #[path = "mutex_tests.rs"]
