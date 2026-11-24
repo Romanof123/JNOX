@@ -27,3 +27,5 @@ F는 전체 PL061 추적, R은 읽기 이벤트를 제외한 추적이다. 단�
 unzip permit-observer-cost-v3.zip -d v3-record
 (cd v3-record && sha256sum -c SHA256SUMS)
 ```
+
+[통합 호스트 원본 대조](permit-observer-cost-v3-integration.md)

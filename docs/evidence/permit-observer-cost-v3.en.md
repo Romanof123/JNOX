@@ -27,3 +27,5 @@ For privacy the public metadata replaces the native and replica cohort path pref
 unzip permit-observer-cost-v3.zip -d v3-record
 (cd v3-record && sha256sum -c SHA256SUMS)
 ```
+
+[Integrated host readback](permit-observer-cost-v3-integration.en.md)
