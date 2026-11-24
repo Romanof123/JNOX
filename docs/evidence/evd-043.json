@@ -1,0 +1,61 @@
+{
+  "initial": {
+    "source": "0805534a39ca58b55a23c25aca6da17258e0a727",
+    "verdict": "PARTIAL",
+    "summary": "PARTIAL, frozen 0805534a39ca58b55a23c25aca6da17258e0a727.\nFrom this evidence directory run python -B replay.py and python -B edges.py. Child commands appear verbatim in raw.jsonl. Python 3 on Windows, host only.\n14 upstream regression methods across two scripts passed. 1056 half-open arrival envelope enumerations with fractional placements passed. 184 policy comparisons matched an independent scan for first feasible window, including delayed IRQ bursts, masking/blocking budgets and sender carry-in. Edges.py separately checked ten exact sender/spacing assertions; its sender cases supersede the imprecise sender-edge labels in replay.py.\nSix ordinary malformed CLI inputs returned unknown/2. Unsupported policy returned argparse exit 2. Depth-1500 nested JSON returned 1 with an uncaught RecursionError and no structured status. Preserved first failure is an analyzer CLI defect, reproducible independently of analytical oracle. No false conditional admission found.\nBoth 5ms phases have individual 1ms decision limits by conservatively bounding segment completion. Opposite phase A/B and cross-job gaps use maximum later latency and no early starts. Single-core inductive exclusion of previous phase, independent IRQ target-to-finish assumptions, finite aggregate interference, no unmodeled equal or higher priority work and initially idle scheduler are essential. The fixture assumes exact time and complete service accounting. Estimates are conditional. No runtime/board evidence or measured budget provenance was examined or claimed.\n",
+    "first_failure": {
+      "group": "malformed",
+      "ok": false,
+      "label": "deeply nested",
+      "command": [
+        "C:\\Users\\jonki\\anaconda3\\python.exe",
+        "-B",
+        "tools/fs_m3_admission.py",
+        "D:\\codex\\.jnox-work\\next-fixed\\admission-fresh\\deeply-nested.json",
+        "rm"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"D:\\codex\\.jnox-work\\next-fixed\\admission-src\\tools\\fs_m3_admission.py\", line 111, in <module>\n    raise SystemExit(main())\n  File \"D:\\codex\\.jnox-work\\next-fixed\\admission-src\\tools\\fs_m3_admission.py\", line 102, in main\n    config = json.loads(args.config.read_text(encoding=\"utf-8\"), object_pairs_hook=_unique_fields)\n  File \"C:\\Users\\jonki\\anaconda3\\lib\\json\\__init__.py\", line 359, in loads\n    return cls(**kw).decode(s)\n  File \"C:\\Users\\jonki\\anaconda3\\lib\\json\\decoder.py\", line 337, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n  File \"C:\\Users\\jonki\\anaconda3\\lib\\json\\decoder.py\", line 353, in raw_decode\n    obj, end = self.scan_once(s, idx)\nRecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string\n"
+    }
+  },
+  "repaired": {
+    "source": "83cbe57049fb0428de507a03184dc423140715e1",
+    "python": "3.9.16 (main, Jan 11 2023, 16:16:36) [MSC v.1916 64 bit (AMD64)]",
+    "scope": "Conditional host arithmetic and CLI only. No runtime or board verification.",
+    "method": "Enumerate integer busy-window lengths from own demand through deadline. Choose the first satisfying total demand <= window. Monotonic demand ensures it is the least feasible bound. Phase carry-in contributes each raw finish. Add uncertainty only to reported intervals.",
+    "cli_counts": {
+      "refused": 64,
+      "conditional": 80,
+      "unknown": 24
+    },
+    "regression_tests": {
+      "FP": 8,
+      "FS-M3": 9
+    },
+    "first_failures": [],
+    "verdict": "PASS"
+  },
+  "source_hashes": {
+    "docs/fs-m3-admission.md": "dc547accfe42b6b2fbec0ba069ea4156946a0c42fe4c34684009058f8d1b6962",
+    "docs/pol-004-m3-control-plan.md": "730e6d3e8bbbba3f9fdeef86ca2dd2f9f8f11f8acd4bd710a6dd2f0ea4163cf4",
+    "tools/fs_m3_admission.py": "6185e5b8c90e5673934fab0eff8bdac6a06f28b1d22b7fe76e99cced2c3e4af7",
+    "tools/fp_response.py": "5e0f9b62d7ba1966e7567b16404d0c6e8b42f625d06ebfa4bd25b2987d7a57da",
+    "tools/fs_m3_example.json": "f867c6d8742f41c1e7bb75d8b23cacc52b365fbd6d530098312345f1c2a4d4e4",
+    "tools/test_fs_m3_admission.py": "9e3c2d1104da36c882bc67a7e3b01893a589acce8627f0126ae42b0e0d361083",
+    "tools/test_fp_response.py": "d1b33474386751bf9b8ee290985c90162cad9744c812598d3f9b40628e2e84c2"
+  },
+  "archives": {
+    "admission-fresh": {
+      "file": "evd-043-initial.json",
+      "sha256": "b10b716040d63384b6033376dced83b70540ffe1d901210d2c8af2194bab9137"
+    },
+    "admission-repaired-fresh": {
+      "file": "evd-043-repaired.json",
+      "sha256": "4fdedec6adaed4b9f1a5c91ec8126fc5abf82b731cb88fcd6a2fd15dad38996a"
+    }
+  },
+  "restore_python": "from pathlib import Path\nimport json,hashlib,base64,tarfile,io\nfor folder,item in json.loads(Path('evd-043.json').read_bytes())['archives'].items():\n    obj=json.loads(Path(item['file']).read_bytes())\n    data=base64.b64decode(obj['data'],validate=True)\n    assert hashlib.sha256(data).hexdigest()==item['sha256']==obj['sha256']\n    with tarfile.open(fileobj=io.BytesIO(data),mode='r:gz') as t:\n        ledger=json.load(t.extractfile('archive-file-digests.json'))\n        for name,expected in ledger.items():\n            path=Path(folder)/name\n            assert path.resolve().is_relative_to(Path(folder).resolve())\n            b=t.extractfile(name).read()\n            assert hashlib.sha256(b).hexdigest()==expected\n            path.parent.mkdir(parents=True,exist_ok=True)\n            path.write_bytes(b)",
+  "reproduction": "Restore into a fresh directory. Place clean checkouts at admission-src (initial source) and admission-repaired-src (repaired source), siblings of the two evidence directories. Use Python 3.9.16 as recorded for the repaired run. In a disposable copy run initial replay.py then edges.py with python -B. For the repaired replay run verify.py, extra.py and finish.py in order with python -B; they regenerate outputs. Initial failure and repaired observations remain in the original archives.",
+  "repaired_manifest_sha256": "8869adedce57c6670d6401e0e4a76dc572b31a171fe23a5396028f0043bfc437"
+}
