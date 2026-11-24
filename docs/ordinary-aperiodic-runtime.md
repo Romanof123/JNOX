@@ -30,3 +30,27 @@ All UART numbers are hexadecimal CNTPCT ticks or unsigned integers. Storage rese
 유휴·생산자·서버·주기 작업은 각각 16 KiB 전용 스택을 쓴다. 표의 원시 레코드를 실제 예외 복귀와 대조하고, 제출부터 단위 완료까지의 시간 및 주기 작업의 명목 릴리스 기준 지연을 계산한다. 작업 단위마다 256회 진행 상태와 카운터를 기록한다. 1 ms IRQ, 5 ms 준비, 잔여 45 ms 실행은 수용 한계다. 저장·복원 및 계측 비용을 포함한 독립 시간 상한과 실제 M3 간섭 근거는 별도로 확보해야 한다.
 
 First runtime verdict: PARTIAL. [EVD-045](evidence/evd-045.en.md) · 최초 런타임 판정은 부분 통과다. [한국어](evidence/evd-045.md)
+
+The standalone default-clock cohort stopped all ten images at the first IRQ with zero charge. The integrated default-clock cohort completed all eight ordinary schedules; both late controls stopped after one charge and zero retirements. The reason for the difference remains unresolved. These are previously published observations. Independent host QA of the replay tool below is pending. [First cohort](evidence/evd-045-v1.en.md) · [Integrated cohort](evidence/evd-045-v2.en.md)
+
+최초 단독 기본 시계 실행에서는 10개 이미지 모두 첫 IRQ에서 차감 없이 멈췄다. 통합 기본 시계 실행에서는 일반 작업 8개가 모두 완료됐고 지연 대조군 2개는 한 단위를 차감한 뒤 완료 처리 없이 멈췄다. 차이의 원인은 미확정이다. 이는 이미 공개한 관측 결과이며 아래 재현 도구의 독립 호스트 검증은 미완료다. [최초 실행](evidence/evd-045-v1.md) · [통합 실행](evidence/evd-045-v2.md)
+
+## Offline replay / 오프라인 재현
+
+From the repository root, run the standard-library checker on one cold boot. Paths below are relative to your working directory. Supply the case actually built, including the suffix `-late` for an injected image, and the selected clock (`default` or `icount`). New captures can use the same UART and QEMU `-d int -D capture/int` streams. An explicit clock alone is a caller declaration. Optional retained metadata checks clock argv, machine settings, capture digests and, if supplied, ELF digest. The checker never opens paths embedded in metadata.
+
+```sh
+python tools/ordinary_aperiodic_check.py --case a-ss2 --clock default --uart capture/uart --exceptions capture/int --elf capture/kernel.elf --meta capture/meta.json
+python tools/ordinary_aperiodic_check.py --case a-ss2-late --clock icount --uart fault/uart --exceptions fault/int
+python tools/ordinary_aperiodic_controls.py --case a-ss2 --complete positive/uart --injected fault/uart
+```
+
+Exit 0 means a completed workload or an exercised prescribed fault, named separately in JSON. Exit 1 means an evidenced inhibition, including an early stop before a requested injection. Exit 2 means missing, inconsistent or unsupported evidence. A preparation fault whose last recorded sample precedes the limit cannot independently establish that timing reason. Both clocks use the same FIFO, credit, dispatch, progress and counter rules. A chronology check joins preparation with the assembly return sample and validates each worker's 256 counter/checksum pairs, nominal periodic deadline, server latency and actual receipt. Partial progress survives a failed boundary. An inhibited run can leave observed work in flight.
+
+Supplying `--exceptions` correlates the entire QEMU EL1 IRQ/SVC/ERET sequence with guest records. Without it, the result describes guest return samples. Supplying `--elf` checks file-backed executable PC ranges and reports the ELF hash. Authenticate and map that hash to the selected build independently. A first-boundary inhibition can have identical observable behavior across several applications. The checker cannot infer the compiled case or clock from that UART.
+
+저장소 루트에서 위 명령을 실행한다. 실제 빌드한 케이스와 시계, UART 경로를 지정한다. 결함 이미지에는 `-late`를 붙인다. 정상 완료와 지정 마스킹 결함 관측은 JSON으로 구분하며 종료 코드는 0이다. 시간 초과나 미완료 작업에 따른 억제는 1, 증거 누락·불일치·지원하지 않는 판정은 2다. 결함 주입 전 억제는 미실행으로 표시한다. 선택한 시계와 무관하게 같은 FIFO·예산·상환·단계별 계산·주기 마감을 재현한다. `--exceptions`는 실제 외부 예외 순서를 대조하고, 미지정 시 게스트 복귀 표본만 확인한다. `--elf`는 실행 구간과 해시를 확인한다. 별도 빌드 기록으로 ELF와 케이스의 대응 관계를 확인해야 한다. `--meta`가 없으면 시계는 호출자가 신고한 값이다.
+
+CHG-047 / IMP-045 ties this checker to REQ-002 (dispatch), REQ-005 (temporal behavior) and REQ-023 (resource bounds), DES-003/012 and VER-002/005/023. Raw replay covers the frozen virtual workload and the captured intervals. Product admission, M3 interference and additional execution evidence remain separate. [Frozen acceptance plan](pol-007-rust-server-plan.md)
+
+[Independent host replay of 44 archived captures and 26 controls](evidence/evd-045-host-replay.en.md) · [보관 기록 44건 및 대조 26건의 독립 호스트 재생](evidence/evd-045-host-replay.md) · [Replay index](evidence/evd-045-host-replay.json)

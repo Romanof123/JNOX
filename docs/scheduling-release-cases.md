@@ -59,4 +59,6 @@ CHG-049 / `IMP-050`. 최초 콜드 행렬에서는 진단 모드 96건 모두 �
 
 CHG-053 · [Ordinary control service and first dispatch / 일반 제어 서비스와 최초 디스패치](control-service-plan.md)
 
+CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예약 작업·수용·실행 시간 검증](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
 POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에서 1 ms를 충족했다. v1은 P 9/10, Q 11/12 경계가 초과했고 Q가 준비된 B 구간을 건너뛰었다. 실제 지연 주입과 IRQ 마스킹은 미검증이다. [EVD-044 v2](evidence/evd-044-v2.md)
