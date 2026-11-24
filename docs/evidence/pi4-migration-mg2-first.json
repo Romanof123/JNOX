@@ -1,0 +1,334 @@
+{
+  "candidate": "559449c673ac55a0a2bf34f3e8ae680d99e72f09",
+  "MG2": {
+    "qualifying_first_positions": 0,
+    "positions": 6,
+    "physical_runs": 0,
+    "reason": "M terminal SVC before migration IRQ",
+    "cases": [
+      {
+        "case": "global",
+        "position": 1,
+        "strict_loop": [
+          [
+            532224,
+            532260
+          ]
+        ],
+        "M_extent": [
+          532268,
+          532384
+        ],
+        "trace": {
+          "CPU 0/TCG": {
+            "erets": [
+              "0x80078",
+              "0x81f2c"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "0",
+                "0x81f9c"
+              ]
+            ]
+          },
+          "CPU 1/TCG": {
+            "erets": [
+              "0x82110",
+              "0x82008",
+              "0x809a8"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "1",
+                "0x82098"
+              ]
+            ]
+          }
+        },
+        "verdict": "M finished before IRQ; missing MG2 journal and continuation",
+        "original_session_sha256": "96f99495a26040665aee8d35a7d6616d5c368300e86f78f93546e7d71f3a37d9",
+        "public_session_sha256": "7fced2b5759f47bc16094b8916b0754354cf80e7ec73dd424a3da854039dd5b0"
+      },
+      {
+        "case": "global",
+        "position": 2,
+        "strict_loop": [
+          [
+            532224,
+            532260
+          ]
+        ],
+        "M_extent": [
+          532268,
+          532384
+        ],
+        "trace": {
+          "CPU 0/TCG": {
+            "erets": [
+              "0x80078",
+              "0x81f2c"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "0",
+                "0x81f9c"
+              ]
+            ]
+          },
+          "CPU 1/TCG": {
+            "erets": [
+              "0x82110",
+              "0x82008",
+              "0x809a8"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "1",
+                "0x82098"
+              ]
+            ]
+          }
+        },
+        "verdict": "M finished before IRQ; missing MG2 journal and continuation",
+        "original_session_sha256": "8d5b1219f1d8b8f191acf7331ac72de797f104c4260e0a3cc8f245207289640c",
+        "public_session_sha256": "69900659d8fdeedbd6bfbed6188abb66be0841990898e94b4447e7268c7cad20"
+      },
+      {
+        "case": "partitioned",
+        "position": 1,
+        "strict_loop": [
+          [
+            532228,
+            532264
+          ]
+        ],
+        "M_extent": [
+          532272,
+          532388
+        ],
+        "trace": {
+          "CPU 0/TCG": {
+            "erets": [
+              "0x80078",
+              "0x81f30"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "0",
+                "0x81fa0"
+              ]
+            ]
+          },
+          "CPU 1/TCG": {
+            "erets": [
+              "0x82118",
+              "0x8200c",
+              "0x809ac"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "1",
+                "0x8209c"
+              ]
+            ]
+          }
+        },
+        "verdict": "M finished before IRQ; missing MG2 journal and continuation",
+        "original_session_sha256": "e0e92755e2c1034ff7bb71589879f1079e4044944272aca8fafd4e49cd2c41df",
+        "public_session_sha256": "b4d705c4627ff97d7084beacf07d278fa735e0fb60757bdae77794950561ca08"
+      },
+      {
+        "case": "partitioned",
+        "position": 2,
+        "strict_loop": [
+          [
+            532228,
+            532264
+          ]
+        ],
+        "M_extent": [
+          532272,
+          532388
+        ],
+        "trace": {
+          "CPU 0/TCG": {
+            "erets": [
+              "0x80078",
+              "0x81f30"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "0",
+                "0x81fa0"
+              ]
+            ]
+          },
+          "CPU 1/TCG": {
+            "erets": [
+              "0x82118",
+              "0x8200c",
+              "0x809ac"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "1",
+                "0x8209c"
+              ]
+            ]
+          }
+        },
+        "verdict": "M finished before IRQ; missing MG2 journal and continuation",
+        "original_session_sha256": "3a6a28e1826e3fab4bb1eced92d441ea268ff41189fcb8e280aa62c3a233f44b",
+        "public_session_sha256": "0e6b11f55fe8d13f25e3fca6184a32ee25522553093f1fbc7882768a5d284bb7"
+      },
+      {
+        "case": "clustered",
+        "position": 1,
+        "strict_loop": [
+          [
+            532400,
+            532436
+          ]
+        ],
+        "M_extent": [
+          532444,
+          532560
+        ],
+        "trace": {
+          "CPU 0/TCG": {
+            "erets": [
+              "0x80078",
+              "0x81fdc"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "0",
+                "0x8204c"
+              ]
+            ]
+          },
+          "CPU 1/TCG": {
+            "erets": [
+              "0x821c0",
+              "0x820b8",
+              "0x809ac"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "1",
+                "0x82148"
+              ]
+            ]
+          }
+        },
+        "verdict": "M finished before IRQ; missing MG2 journal and continuation",
+        "original_session_sha256": "52fc05947f946dfb41410dbf732d7e5c53bd9a2db491a76078e03afa0ef46f6d",
+        "public_session_sha256": "e978e2da2f3d2e1c93c49b5a14a0e0f9ab14882f7ee994be16ffa66d31b47a65"
+      },
+      {
+        "case": "clustered",
+        "position": 2,
+        "strict_loop": [
+          [
+            532400,
+            532436
+          ]
+        ],
+        "M_extent": [
+          532444,
+          532560
+        ],
+        "trace": {
+          "CPU 0/TCG": {
+            "erets": [
+              "0x80078",
+              "0x81fdc"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "0",
+                "0x8204c"
+              ]
+            ]
+          },
+          "CPU 1/TCG": {
+            "erets": [
+              "0x821c0",
+              "0x820b8",
+              "0x809ac"
+            ],
+            "traps": [
+              [
+                "SVC",
+                "1",
+                "0x82148"
+              ]
+            ]
+          }
+        },
+        "verdict": "M finished before IRQ; missing MG2 journal and continuation",
+        "original_session_sha256": "87ae3b0d6f43681855d50ef45ef1bd66d3d2aaa732efc7817d229e6d8d5c3cd9",
+        "public_session_sha256": "441fcb84a751d7c45302431e81fd9b117782d938fc99970585e1781c6c8b568c"
+      }
+    ]
+  },
+  "MG1": {
+    "qualifying_first_positions": 1,
+    "positions": 6,
+    "qualifier": "partitioned 1",
+    "archive": "pi4-migration-first.zip"
+  },
+  "expected_checkpoint_rows": {
+    "M": [
+      4096,
+      "faebf355248f7e09",
+      65536,
+      2147516416
+    ],
+    "P0": [
+      2,
+      "4e30",
+      32,
+      528
+    ],
+    "P1_open": [
+      1,
+      "98",
+      16,
+      136
+    ],
+    "P1_second": [
+      1,
+      "1a8",
+      32,
+      392
+    ]
+  },
+  "controls": {
+    "synthetic-valid": "accepted",
+    "count": "arithmetic checkpoint count/digest/final value mismatch",
+    "digest": "arithmetic checkpoint count/digest/final value mismatch",
+    "index": "arithmetic checkpoint count/digest/final value mismatch",
+    "sum": "arithmetic checkpoint count/digest/final value mismatch",
+    "lease": "summary not bound to actual finish",
+    "reserved": "arithmetic checkpoint count/digest/final value mismatch",
+    "missing": "incomplete activation summaries"
+  },
+  "archive": {
+    "filename": "pi4-migration-mg2-first.zip",
+    "sha256": "287b2893a6ee8bda2a693789e42c02adf44878f5075ef54da00464fcbc0d2005",
+    "bytes": 304089
+  }
+}
