@@ -10,7 +10,11 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scheduling_evidence import POLICIES, audit, main
+from scheduling_evidence import POLICIES, audit, main, release_citation_links
+
+
+RELEASE_HEADER = ("| Policy | Subcases and existing records | Remaining execution or approval |\n"
+                  "|---|---|---|\n")
 
 
 class SchedulingEvidenceTests(unittest.TestCase):
@@ -39,6 +43,8 @@ class SchedulingEvidenceTests(unittest.TestCase):
             self.rows.append((policy, "has-partial-policy-evidence", "EVD-004"))
         self.bilingual(self.docs / "scheduling-policies",
                        "\n".join("| %s · family | rule |" % p for p in POLICIES))
+        self.bilingual(self.docs / "scheduling-release-cases",
+                       RELEASE_HEADER)
         self.bilingual(self.docs / "requirements", "| REQ-023 | policy selection |")
         self.bilingual(self.docs / "architecture", "## DES-012 policy layers")
         self.bilingual(self.docs / "verification-plan", "| VER-023 | tests |")
@@ -93,6 +99,54 @@ class SchedulingEvidenceTests(unittest.TestCase):
         self.assertEqual(result["policies"]["POL-010"]["catalog_citations_without_policy_edge"],
                          ["EVD-005"])
         self.assertEqual(result["policies"]["POL-003"]["classification"], "analysis_recorded")
+
+    def test_removing_amc_policy_claim_leaves_directly_tested_release_citation(self):
+        claim = ("POL-015", "has-partial-policy-evidence", "EVD-058")
+        self.rows.extend([claim, ("POL-015", "partially-implemented-by", "IMP-058"),
+                          ("IMP-058", "tested-in", "EVD-058"),
+                          ("IMP-058", "partially-verified-by", "VER-023"),
+                          ("VER-023", "has-partial-evidence", "EVD-058")])
+        self.bilingual(self.records / "evd-058", "# EVD-058\nIMP-058")
+        self.bilingual(self.docs / "scheduling-release-cases",
+                       RELEASE_HEADER + r"| POL-015 | LO \| HI [EVD-058](finite.md) | M5 |")
+        self.assertEqual(self.report()["findings"], [])
+        self.rows.remove(claim)
+        self.assertEqual(self.report()["findings"], [
+            "catalog and direct implementation cite EVD-058 without a typed POL-015 evidence link"])
+
+    def test_release_context_and_pending_work_do_not_assign_ownership(self):
+        self.rows.remove(("POL-002", "has-switch-evidence", "EVD-004"))
+        self.rows.remove(("POL-002", "has-partial-policy-evidence", "EVD-004"))
+        self.rows.remove(("POL-010", "has-partial-policy-evidence", "EVD-004"))
+        self.bilingual(self.docs / "scheduling-release-cases",
+                       RELEASE_HEADER + "| POL-002 | [EVD-090](static.md) | [EVD-004](board-plan.md) |\n"
+                       "| POL-010 | [EVD-004](shared.md) | product workload |")
+        result = self.report()
+        self.assertEqual(result["findings"], [])
+        self.assertNotIn("EVD-090", result["evidence"])
+        self.assertEqual(result["policies"]["POL-010"]["classification"], "no_classified_record")
+
+    def test_only_declared_table_rows_outside_fences_are_read(self):
+        row = "| POL-015 | [EVD-058](record.md) | approval |\n"
+        korean = "| 정책 | 하위 사례와 기존 근거 | 남은 실행 또는 승인 |\n|:---|---|---:|\n"
+        for fence in ("~~~", "\x60" * 4):
+            text = (row + fence + "md\n" + RELEASE_HEADER + row + fence + "\n\n"
+                    + "| Policy | Examples | Remaining work |\n|---|---|---|\n" + row
+                    + "\n" + korean + row + "\nSome additional prose.\n" + row)
+            self.assertEqual(list(release_citation_links(text)), [("POL-015", "EVD-058")])
+
+    def test_release_matrix_counts_only_links_with_plain_evidence_labels(self):
+        korean = "| 정책 | 하위 사례와 기존 근거 | 남은 실행 또는 승인 |\n|---|---|---|\n"
+        cells = (r"LO \| HI [EVD-058](inline.md) [EVD-057][mutex] "
+                 r"![EVD-051](image.png) \[EVD-052](escaped.md) EVD-053 "
+                 r"<!-- [EVD-054](hidden.md) --> [EVD-055][undefined] "
+                 + chr(96) + "[EVD-056](code.md)" + chr(96))
+        for header in (RELEASE_HEADER, korean):
+            with self.subTest(header=header):
+                text = header + "| POL-015 | " + cells + " | [EVD-090](approval.md) |\n"
+                text += "\n[mutex]: ../evidence/mutex.md\n"
+                self.assertEqual(list(release_citation_links(text)),
+                                 [("POL-015", "EVD-058"), ("POL-015", "EVD-057")])
 
     def test_unrelated_verification_evidence_cannot_complete_path(self):
         self.rows.remove(("VER-023", "has-partial-evidence", "EVD-004"))

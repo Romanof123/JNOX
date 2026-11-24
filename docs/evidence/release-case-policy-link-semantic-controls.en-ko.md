@@ -1,0 +1,14 @@
+# #209 review / 재검증
+Hold for Markdown link recognition under #208 and parent #6. In disposable checkouts the untouched baseline 07fe7ef3c444a207f9ce4e013eff06aeb7b7cdc1 returned 0, first b129f1fde2bbe54ccf8521bdbd9b67bb1c407f85 returned 1 on POL-014/EVD-057, and final 08219c9eb8f52172194df45ccc9f7dd6a6596499 returned 0. Criterion 34cdc874d34b2b28c135d60461793f941f9ef198 and correction 2c05d63b1e5cba5916369e19dda20a1909abb5aa predate the final changes. The historical first report and ZIP retain the original false green for an escaped pipe and real missing mutex claim (archive SHA-256 efbe4feb2da63d033693e5e0b23d5eab75c9452711eeb48e0a966bb314730e4a).
+
+기준판은 정상 종료했지만 최초 후보는 기존 표의 뮤텍스 근거 연결 누락을 검출했다. 최종 후보는 이를 수정했다. 이전 검사기에 동일한 CSV 연결 하나만 추가했을 때 최종판과 전체 JSON(정책 18개, 근거 54개)이 일치했다. 세 판 모두 전체 요구사항 그래프의 출력 해시가 같고 그래프 시험 여섯 건을 통과했다. 일정 근거 시험도 각각 6·8·9건 통과했다.
+
+Both release matrices cite EVD-057 for POL-014. trace/links.csv links that policy to IMP-057 and that implementation to EVD-057. The one added has-switch-evidence edge agrees with docs/evidence/evd-057.en.md and its Korean edition, and ordinary-mutex-anchor-integrated/{README.md,results.json}. Original LOW/HIGH protected-data handoffs ran with MEDIUM ready on one emulated Cortex-A72. The initial cohort covered 3/4. The integrated e716871c7c9e25ad1b3fa28dc19f73af2944862c cohorts covered 3/4, 2/4 and 4/4 with six traced boots. The earlier staged cohorts covered 3/4, 3/4 and 4/4. Those historical files are unchanged. Product blocking bounds and physical timing remain open.
+
+단일 에뮬레이션 코어에서 관찰된 보호 데이터 인계는 POL-014의 실제 전환 연결을 뒷받침한다. 초기 네 번 중 세 번, 통합 세 집단은 각각 네 번 중 세 번·두 번·네 번이었고 추적 여섯 건이 있었다. 제품 차단 시간과 실기 타이밍은 미결이다. 이번에는 호스트 정적 자료와 단위 시험만 검토했다.
+
+Removing either real typed claim again yields the exact missing edge. With the POL-015 claim removed, each language alone detected an ordinary link and one following an escaped pipe. Approval cells, shared context, detached rows and fenced examples stayed clean. Independently in each edition, inline code, an HTML comment and an escaped opening bracket around the link-shaped text falsely produced the missing-edge finding. A valid reference-style link silently missed the same missing edge. Reproduce with python replay.py PATH_TO_DISPOSABLE_CLONE containing the three commits; it switches checkouts and modifies tracked fixtures there. results.json records RC, findings, counts and full output digests.
+
+영문·국문을 각각 단독으로 검사했다. 일반 링크와 이스케이프된 세로줄 뒤의 링크는 정확히 검출했고 승인 칸·공유 근거·표 밖의 행·코드 블록은 제외했다. 그러나 표 안의 인라인 코드, HTML 주석, 여는 대괄호를 이스케이프한 예시를 각각 실제 인용으로 오인했다. 반대로 유효한 참조형 링크를 사용하면 누락을 놓쳤다. 두 언어 모두 동일하므로 명시된 링크 의미를 충족할 때까지 병합 보류를 권한다. 원본 저장소와 원격에는 쓰지 않았고 게스트 실행과 빌드는 수행하지 않았다.
+
+[Reproduction and immutable second result / 재현 절차와 두 번째 독립 결과](release-case-policy-link-semantic-controls.zip) · SHA-256 f3b9d6eb186bea79609c5de4da2f828939940c9d17e72997db20c9df4ea4fdf9.

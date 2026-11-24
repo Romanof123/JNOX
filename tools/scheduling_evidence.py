@@ -14,9 +14,22 @@ import argparse
 import csv
 import json
 import re
+import sys
 from collections import defaultdict
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
+
+
+# Load the original pure-Python wheels without installation or network access.
+_VENDOR = Path(__file__).resolve().parent / "vendor" / "scheduling_markdown"
+_WHEELS = [str(_VENDOR / name) for name in (
+    "markdown_it_py-3.0.0-py3-none-any.whl", "mdurl-0.1.2-py3-none-any.whl")]
+sys.path[:0] = _WHEELS
+try:
+    from markdown_it import MarkdownIt
+    from markdown_it.tree import SyntaxTreeNode
+finally:
+    del sys.path[:len(_WHEELS)]
 
 
 POLICIES = tuple("POL-%03d" % i for i in range(1, 19))
@@ -107,6 +120,33 @@ def read_evidence(root, evd, findings):
     }
 
 
+RELEASE_HEADERS = {
+    ("Policy", "Subcases and existing records", "Remaining execution or approval"),
+    ("정책", "하위 사례와 기존 근거", "남은 실행 또는 승인"),
+}
+
+
+def release_citation_links(text):
+    """Read actual Markdown links in the declared top-level release table."""
+    parser = MarkdownIt("commonmark").enable("table")
+    for table in SyntaxTreeNode(parser.parse(text)).children:
+        if table.type != "table" or len(table.children) != 2:
+            continue  # A header without a body has no policy rows.
+        head, body = table.children
+        headers = tuple(cell[0].content for cell in head[0].children)
+        if headers not in RELEASE_HEADERS:
+            continue
+        for row in body.children:
+            policy = row[0][0].content
+            if policy not in POLICIES:
+                continue
+            for node in row[1].walk():
+                if node.type == "link" and len(node.children) == 1:
+                    label = node[0]
+                    if label.type == "text" and re.fullmatch(r"EVD-[0-9]{3}", label.content):
+                        yield policy, label.content
+
+
 def catalogs(root, findings):
     definitions = {}
     cited = defaultdict(set)
@@ -127,7 +167,12 @@ def catalogs(root, findings):
     for policy in POLICIES:
         if policy not in definitions["POL"]:
             findings.add("missing bilingual scheduling catalog definition for " + policy)
-    return definitions, cited
+    release_citations = defaultdict(set)
+    for suffix in (".md", ".en.md"):
+        matrix = root / "docs" / ("scheduling-release-cases" + suffix)
+        for policy, evd in release_citation_links(matrix.read_text(encoding="utf-8-sig")):
+            release_citations[policy].add(evd)
+    return definitions, cited, release_citations
 
 
 def check_graph(trace, scope, findings):
@@ -191,7 +236,7 @@ def audit(root):
     trace = Trace(root / "trace/links.csv")
     outgoing, incoming = trace.outgoing, trace.incoming
     findings = set()
-    definitions, cited = catalogs(root, findings)
+    definitions, cited, release_citations = catalogs(root, findings)
     scope = set(POLICIES)
     policies, evidence = {}, {}
     for policy in POLICIES:
@@ -220,7 +265,10 @@ def audit(root):
                 direct_paths[imp][ver] = sorted(matched)
                 if not matched:
                     findings.add("no matching evidence for %s %s %s" % (policy, imp, ver))
-        for evd in sorted(cited_only & directly_tested):
+        # Release rows also cite contextual records. Only a direct tested-in
+        # path puts such a citation within this policy's ownership check.
+        missing_claims = (cited_only | (release_citations[policy] - claimed)) & directly_tested
+        for evd in sorted(missing_claims):
             findings.add("catalog and direct implementation cite %s without a typed %s evidence link"
                          % (evd, policy))
         for evd in sorted(claimed | cited_only | directly_tested):
