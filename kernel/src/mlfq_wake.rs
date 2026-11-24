@@ -52,7 +52,10 @@ fn target() {
     svc::block();
     let receipt = packet(hash ^ get(19), add(count, 1));
     put(28, receipt);
-    put(9, svc::counter());
+    let end = svc::counter();
+    put(9, end);
+    #[cfg(jnox_sched_app_trace)]
+    super::sched_app_trace::receipt(receipt, end);
 }
 
 fn stream(id: usize) {
@@ -86,7 +89,8 @@ const TASKS: [Task; 4] = [
 ];
 
 pub fn run() -> ! {
-    let u = svc::frequency() / 100;
+    let frequency = svc::frequency();
+    let u = frequency / 100;
     let limit = u.checked_mul(23).and_then(|v|
         v.checked_sub(u64::from(cfg!(jnox_app = "mlfq-wake-refuse"))));
     let bound = wake_bound::bound(u, TASKS.len());
@@ -100,6 +104,8 @@ pub fn run() -> ! {
     }
     put(0, 1);
     super::uart_write(b"MLFQ WAKE ADMIT\n");
+    #[cfg(jnox_sched_app_trace)]
+    super::sched_app_trace::start(frequency);
     svc::run(&TASKS, Mode::Feedback { allotments: [2*u, 4*u, 6*u], period: 10*u })
 }
 

@@ -138,6 +138,8 @@ mod mlq_admission;
 mod mlq_bound;
 #[cfg(jnox_mlfq_wake)]
 mod mlfq_wake;
+#[cfg(jnox_sched_app_trace)]
+mod sched_app_trace;
 #[cfg(jnox_mlfq_wake)]
 mod wake_bound;
 #[cfg(jnox_multilevel)]
