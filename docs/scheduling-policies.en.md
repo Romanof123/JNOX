@@ -19,6 +19,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Verified running-job preemption | IMP-009, POL-004 | A timer interrupted A. RM immediately returned to A. DM returned to the same A instruction after B completed. [EVD-009](evidence/evd-009.en.md) |
 | Verified static time partitions | IMP-010, POL-006 | Reclaimed the CPU at window boundaries with blocked-owner and explicit idle windows. [EVD-010](evidence/evd-010.en.md) |
 | Verified cooperative dispatch | IMP-012, POL-001 | A retained its CPU until voluntary yield after B became ready. A handler-enqueued event ran after the older queued event. [EVD-012](evidence/evd-012.en.md) |
+| Linked cooperative events | IMP-036, POL-001 | Two ordinary images exercised full/invalid refusals, FIFO append, measured handler time and owner reactions. [EVD-036](evidence/evd-036.en.md) |
 | Verified burst scheduling | IMP-013, POL-003 | Compared SJF retention with SRTF preemption and restoration. HRRN selected an older waiting job ahead of a shorter newcomer. [EVD-013](evidence/evd-013.en.md) |
 | Verified Pi 4 model preemption | IMP-014, POL-002 fixed priority | The Pi timer interrupted LOW and the scheduler restored its exact PC after HIGH exited. [EVD-014](evidence/evd-014.en.md) |
 | Verified sampled EDF and LLF | IMP-015, POL-005 | Recorded tie retention, preemption on a laxity crossover, negative slack, and exact restoration on one CPU. [EVD-015](evidence/evd-015.en.md) |

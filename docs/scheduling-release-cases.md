@@ -6,7 +6,7 @@
 
 | 정책 | 하위 사례와 기존 근거 | 남은 실행 또는 승인 |
 |---|---|---|
-| POL-001 | 높은 ID의 선착순, 타이머 도착, 양보·차단·깨움·종료, 처리기 내부 등록 순서, 깊이 2와 초과 거부. [EVD-004](evidence/evd-004.md) · [EVD-012](evidence/evd-012.md) | 응용 처리기 소요 시간과 최대 큐 점유를 측정하고 시간 한계를 승인한다. |
+| POL-001 | 높은 ID의 선착순, 타이머 도착, 양보·차단·깨움·종료, 처리기 내부 등록 순서, 깊이 2와 초과 거부. [EVD-004](evidence/evd-004.md) · [EVD-012](evidence/evd-012.md) 연결된 서비스 두 종류에서 큐 점유량은 각각 최대 2와 1이었다. 가득 찬 큐와 미등록 핸들러 요청을 거부했고 핸들러가 새 이벤트를 넣어도 FIFO 순서를 유지했다. 두 소유 작업 모두 핸들러 복귀 후 예산 초과를 두 번 기록하고 실행을 계속했다. [EVD-036](evidence/evd-036.md) · [#80](https://github.com/Romanof123/JNOX/issues/80) | 실기기에서 핸들러 최악 실행 시간을 검증하고 제품의 큐·핸들러·부하 한계를 승인한다. |
 | POL-002 | HIGH 즉시·지연 실행, 동순위 도착·양보·종료, 상위 선점, RR 잔여량 만료, Rust 작업 및 Pi 모델. [EVD-002](evidence/evd-002.md) · [EVD-003](evidence/evd-003.md) · [EVD-004](evidence/evd-004.md) · [EVD-014](evidence/evd-014.md) · [EVD-027](evidence/evd-027.md) · [EVD-030](evidence/evd-030.md) QEMU Pi 4 모델에서는 FIFO·RR 작업의 선점과 RR 동순위 교대를 확인했다(#71). QEMU virt에서는 RR 만료와 깨움이 겹친 경우 및 IRQ 마스킹으로 깨움이 지연된 경우를 확인했다(#72). [EVD-031](evidence/evd-031.md) · [EVD-032](evidence/evd-032.md) | 실보드 검증과 승인은 #34에서 계속 추적한다. |
 | POL-003 | SJF/SRTF의 4 대 2, HRRN의 10 대기한 5와 새 1, 과소 추정 작업. 순위 대조는 동점과 무효 추정을 다룬다. [EVD-004](evidence/evd-004.md) · [EVD-013](evidence/evd-013.md) | M4 제출 인터페이스에서 동점 처리와 잘못된 추정 거부를 관찰한다. |
 | POL-004 | 동시·후속 주기 릴리스, 실행 중 선점, 중첩·기한 위반. EVD-008은 지터·차단·IRQ·디스패치가 있는 조건부 호스트 상한 계산. QEMU virt에서 (10,9)/(12,4) 작업 쌍은 틱 0에 RM에서 A·B, DM에서 B·A 순서로 실행됐다. 두 정책 모두 틱 10에 A, 틱 12에 B를 실행했다. [EVD-004](evidence/evd-004.md) · [EVD-007](evidence/evd-007.md) · [EVD-008](evidence/evd-008.md) · [EVD-009](evidence/evd-009.md) · [EVD-028](evidence/evd-028.md) · [EVD-033](evidence/evd-033.md) | 승인 대상 작업 집합과 검증된 비용 자료로 분석한다. |
@@ -29,8 +29,8 @@
 
 ## 다음 실행 단위
 
-1. **POL-012 동적 설정.** 반복 깨움 도중 가중치와 슬라이스를 바꾸고, 서비스 오차와 깨움부터 첫 실행까지의 지연을 재구성해 승인 대상 부하의 명시된 한계와 대조한다.
-2. 연결된 협력형 작업을 유한 이벤트 디스패처로 실행한다. [#80](https://github.com/Romanof123/JNOX/issues/80)
+1. **POL-012 동적 설정.** 반복 깨움 도중 가중치와 슬라이스를 바꾸고, 서비스 오차와 깨움부터 첫 실행까지의 지연을 재구성해 승인 대상 부하의 명시된 한계와 대조한다. [#85](https://github.com/Romanof123/JNOX/issues/85)
+2. 응용 작업의 차단과 깨움으로 중첩된 그룹 예산을 검증한다. [#84](https://github.com/Romanof123/JNOX/issues/84)
 3. 유한 배치 제출 경로에서 SJF·SRTF·HRRN 디스패치를 실행한다. [#81](https://github.com/Romanof123/JNOX/issues/81)
 
 고정 우선순위 Rust 런타임 작업 [#71](https://github.com/Romanof123/JNOX/issues/71)과 [#72](https://github.com/Romanof123/JNOX/issues/72)는 병합됐다. 이 런타임의 SVC #1은 작업을 종료한다. 주기 프로파일은 같은 번호로 작업 인스턴스 완료를, EEVDF는 차단을 요청한다.

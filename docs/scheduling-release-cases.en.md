@@ -6,7 +6,7 @@ Baseline `19d2154`. Each row allocates the existing release criteria to recorded
 
 | Policy | Subcases and existing records | Remaining execution or approval |
 |---|---|---|
-| POL-001 | Oldest higher ID; timer arrival; yield/block/wake/exit; handler enqueues behind older event; depth two and excess rejection. [EVD-004](evidence/evd-004.en.md) · [EVD-012](evidence/evd-012.en.md) | Measure application handler duration and queue high-water; approve the handler bound. |
+| POL-001 | Oldest higher ID; timer arrival; yield/block/wake/exit; handler enqueues behind older event; depth two and excess rejection. [EVD-004](evidence/evd-004.en.md) · [EVD-012](evidence/evd-012.en.md) The two linked services reached queue peaks of two and one, rejected full queues and invalid handlers, and preserved FIFO order when a handler posted another event. Each owner logged two budget overruns after return and continued. [EVD-036](evidence/evd-036.en.md) · [#80](https://github.com/Romanof123/JNOX/issues/80) | Establish physical handler WCET and approve queue, handler and workload limits for the product. |
 | POL-002 | Immediate/deferred HIGH; peer arrival, FIFO yield/exit, higher-priority interruption, residual RR expiry; configured Rust tasks and Pi model. [EVD-002](evidence/evd-002.en.md) · [EVD-003](evidence/evd-003.en.md) · [EVD-004](evidence/evd-004.en.md) · [EVD-014](evidence/evd-014.en.md) · [EVD-027](evidence/evd-027.en.md) · [EVD-030](evidence/evd-030.en.md) On the QEMU Pi 4 model, linked FIFO and RR tasks preempted and RR peers rotated (#71). On QEMU virt, linked RR tasks handled coincident expiry and release, and overdue releases after a masked IRQ (#72). [EVD-031](evidence/evd-031.en.md) · [EVD-032](evidence/evd-032.en.md) | Physical board verification and approval remain open under #34. |
 | POL-003 | 4 versus 2 under SJF/SRTF; HRRN 5 after waiting 10 versus fresh 1; underestimated runner. Ranking controls cover ties and invalid estimates. [EVD-004](evidence/evd-004.en.md) · [EVD-013](evidence/evd-013.en.md) | Exercise tie policy and invalid estimate through the M4 submission interface when available. |
 | POL-004 | Simultaneous and later periodic releases; running-job preemption; overlap and deadline misses. EVD-008 computes conditional host bounds with jitter, blocking, IRQ and dispatch. On QEMU virt, the (10,9)/(12,4) pair ran A then B under RM and B then A under DM at tick 0. Both ran A at tick 10 and B at tick 12. [EVD-004](evidence/evd-004.en.md) · [EVD-007](evidence/evd-007.en.md) · [EVD-008](evidence/evd-008.en.md) · [EVD-009](evidence/evd-009.en.md) · [EVD-028](evidence/evd-028.en.md) · [EVD-033](evidence/evd-033.en.md) | Supply the admitted task set and qualified costs for analysis. |
@@ -29,8 +29,8 @@ Baseline `19d2154`. Each row allocates the existing release criteria to recorded
 
 ## Next executable cases
 
-1. **POL-012 dynamic settings.** Vary weights and slices during repeated wakes. Reconstruct service error and wake-to-work delay against the declared limits for the admitted workload.
-2. Exercise linked cooperative tasks through the bounded event dispatcher. [#80](https://github.com/Romanof123/JNOX/issues/80)
+1. **POL-012 dynamic settings.** Vary weights and slices during repeated wakes. Reconstruct service error and wake-to-work delay against the declared limits for the admitted workload. [#85](https://github.com/Romanof123/JNOX/issues/85)
+2. Exercise nested group budgets with application-driven block and wake. [#84](https://github.com/Romanof123/JNOX/issues/84)
 3. Exercise bounded batch submission through SJF, SRTF and HRRN dispatch. [#81](https://github.com/Romanof123/JNOX/issues/81)
 
 The fixed-priority Rust runtime work shipped in [#71](https://github.com/Romanof123/JNOX/issues/71) and [#72](https://github.com/Romanof123/JNOX/issues/72). Its SVC #1 exits a task. The periodic profile uses SVC #1 for job completion and EEVDF uses it to block.

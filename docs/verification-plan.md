@@ -85,3 +85,5 @@ POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택�
 [EVD-034](evidence/evd-034.md) 에서 고정 가중치·슬라이스의 할당 128회와 기상 지연 16회를 독립 재구성했다. [반복 기상 설계](m4-eevdf-wake-design.md)
 
 CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd-035.md)를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)
+
+[#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).

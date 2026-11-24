@@ -27,7 +27,10 @@ mod periodic_overrun;
 mod cbs_wake;
 #[cfg(jnox_fixed)]
 #[cfg_attr(any(jnox_app = "fixed-ties", jnox_app = "fixed-late"), path = "fixed_edge_apps.rs")]
+#[cfg_attr(any(jnox_app = "coop-events", jnox_app = "coop-single"), path = "coop_app.rs")]
 mod fixed_apps;
+#[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single"))]
+mod coop_service;
 #[cfg(jnox_fixed)]
 mod fixed_policy;
 #[cfg(jnox_fixed)]
@@ -55,7 +58,7 @@ mod domain_policy;
 mod eevdf;
 #[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
 mod eevdf_policy;
-#[cfg(jnox_bench = "coop")]
+#[cfg(any(jnox_bench = "coop", jnox_app = "coop-events", jnox_app = "coop-single"))]
 mod event_loop;
 #[cfg(jnox_bench = "extension")]
 mod extension;

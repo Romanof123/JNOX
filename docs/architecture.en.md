@@ -137,3 +137,5 @@ CHG-034 and IMP-032 define two linked workloads for simultaneous release/expiry 
 The opt-in POL-012 workload repeatedly blocks and wakes a linked worker through SVC and timer IRQ scheduling on one EEVDF instance. [Repeated-wake design](m4-eevdf-wake-design.md) [EVD-034](evidence/evd-034.en.md)
 
 CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-002/005/023. [Proportional failure observation](m4-proportional.en.md#first-failure-observation-79)
+
+[Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
