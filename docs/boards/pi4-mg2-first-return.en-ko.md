@@ -13,3 +13,5 @@ Before the six launches, independently check both RAM layouts and protect the or
 CPU0의 기존 부팅 대기 조건을 CPU1의 실제 복귀 준비 표본으로 정의한다. CPU별 64비트 카운터는 0에서 시작하고, 기존 리스 과금도 0이 아닌 시작 표본을 요구한다. SP 전환, 예외·시스템 레지스터 및 SIMD 복원 후 최종 정수 레지스터와 ERET에 앞서 정렬된 카운터를 release 저장한다. CPU0은 CPU1 표본을 acquire로 읽는다. P1은 M의 첫 마일스톤을 읽어야 종료하므로 M의 시작 전에는 정상 은퇴로 최초 표본을 덮어쓸 수 없다. 실제 양쪽 ERET는 별도의 관측 대상이다. 최초 동시 작업 해제·배정, 작업량, 기존 4초 기한, P1 은퇴 뒤 SGIR 및 중단 PC 기준을 유지한다.
 
 ELF 심벌로 구·신 RAM 배치를 식별한다. 과거 캡처에는 원래 플래그 값을, 새 캡처에는 원래 CPU별 카운터를 제공한다. 최종 RAM에서는 후속 복귀가 같은 칸을 갱신할 수 있다. 검증팀은 최초 실행 전에 기존 이미지 판독 결과와 새 배열의 주소·정렬·초깃값, CPU1 슬롯과 복원 명령 순서, 0·실패·시간 초과 경로, 기존 SMP 이미지 호환성을 대조한다. 원래 모델에서 전역·고정·클러스터 배치를 순서대로 각 두 번 실행하여 모든 최초 결과를 남긴다. 지정 코어 IRQ·ERET, 스택·X21·리스·산술 결과를 모두 만족한 위치만 인정한다. 실보드 지연과 제품 판정은 미결이다.
+
+[First six cases and independent raw records / 최초 여섯 건과 독립 원본 판정](../evidence/pi4-mg2-first-restore-six.en-ko.md).
