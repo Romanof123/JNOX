@@ -7,3 +7,5 @@ Against measured #159 source f1e2a730614f9313e711b89dcc5a1a9f0b96e760, ordinary 
 Against #157 main, the eight ordinary mutex images (PI/ceiling with default, prepared, stages or selected-return), legacy mutex, virt/Pi default and Pi directed-wake matched as whole ELFs. In 18 other fixed-priority/cooperative comparisons, entry and executable text matched. Each load image differed at exactly two source-line bytes. For each differing byte the receipt records virtual address, filename, line, and unchanged column. Cases cover Pi and virt FIFO/RR, virt empty/delayed/ties/late, cooperative events/single, virt fixed traces and FIFO/RR cost. The result retains the scope of the earlier mutex first boots and SMP build comparison. Physical-board behavior remains unmeasured.
 
 [ZIP](pi4-rr-handoff-combined.zip) · [CHG-073](pi4-rr-handoff-integration.en.md) · [CHG-072](ordinary-mutex-anchor-integrated/README.md)
+
+[Finite AMC integration / 유한 AMC 통합](pi4-rr-after-amc.en-ko.md)

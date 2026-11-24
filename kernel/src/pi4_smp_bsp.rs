@@ -2,8 +2,12 @@
 //! Banked register snapshots become visible only after the per-core release.
 use super::{
     context::{Frame, GICC, GICD, gic_read, gic_write},
-    park, pi4_smp_workload as work, uart_write,
+    park, uart_write,
 };
+#[cfg(not(jnox_pi4_migration))]
+use super::pi4_smp_workload as work;
+#[cfg(jnox_pi4_migration)]
+use super::pi4_migration as work;
 use core::{
     arch::{asm, global_asm},
     mem::{offset_of, size_of},
@@ -12,6 +16,13 @@ use core::{
 };
 
 global_asm!(include_str!("pi4_smp_boot.S"),secondary=sym secondary);
+#[cfg(jnox_pi4_migration)]
+global_asm!(".set JNOX_SMP,1", ".set JNOX_PI4_MIG,1", ".set JNOX_STAMP_X9,1", include_str!("context.S"),
+    frame_size=const size_of::<Frame>(),elr=const offset_of!(Frame,elr),
+    fpcr=const offset_of!(Frame,fpcr),tpidr_el1=const offset_of!(Frame,tpidr_el1),
+    tpidr_el0=const offset_of!(Frame,tpidr_el0),simd=const offset_of!(Frame,simd),
+    irq=sym interrupt,svc=sym service,fail=sym exception_fault);
+#[cfg(not(jnox_pi4_migration))]
 global_asm!(include_str!("context.S"),
     frame_size=const size_of::<Frame>(),elr=const offset_of!(Frame,elr),
     fpcr=const offset_of!(Frame,fpcr),tpidr_el1=const offset_of!(Frame,tpidr_el1),
@@ -202,6 +213,7 @@ pub(super) fn release_cpu1() -> bool {
     }
     true
 }
+#[cfg(not(jnox_pi4_migration))]
 pub(super) fn send_sgi1() -> u32 {
     let dest = target(1);
     if local() != 0 || !guards_ok() || dest.count_ones() != 1 || dest == target(0) {
@@ -215,13 +227,30 @@ pub(super) fn send_sgi1() -> u32 {
     dsb();
     value
 }
+#[cfg(jnox_pi4_migration)]
+pub(super) fn signal(destination: usize) -> u32 {
+    let mask = target(destination);
+    if destination > 1 || destination == local() || mask.count_ones() != 1 || !guards_ok() {
+        fail(0x23)
+    }
+    let value = (u32::from(mask) << 16) | (1 << 15) | 1;
+    unsafe { asm!("dsb ishst", options(nostack)) };
+    gic_write(GICD + 0xf00, value);
+    dsb();
+    value
+}
 extern "C" fn interrupt(frame: *mut Frame) -> *mut Frame {
     let core = local();
     let iar = gic_read(GICC + 0xc);
-    if core != 1
-        || iar & 1023 != 1
-        || target(0) == 0
-        || (iar >> 10) & 7 != target(0).trailing_zeros()
+    #[cfg(jnox_pi4_migration)]
+    let source = 1usize.checked_sub(core).unwrap_or_else(|| fail(0x24));
+    #[cfg(jnox_pi4_migration)]
+    let invalid = iar & 1023 != 1 || target(source) == 0
+        || (iar >> 10) & 7 != target(source).trailing_zeros();
+    #[cfg(not(jnox_pi4_migration))]
+    let invalid = core != 1 || iar & 1023 != 1 || target(0) == 0
+        || (iar >> 10) & 7 != target(0).trailing_zeros();
+    if invalid
         || !guards_ok()
     {
         ERROR_IAR.store(iar, Ordering::Release);

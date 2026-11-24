@@ -7,3 +7,5 @@
 #157 main과 비교해 일반 뮤텍스 여덟 구성(PI/ceiling별 기본·prepared·stages·selected-return), 기존 뮤텍스, virt/Pi 기본과 Pi directed-wake는 전체 ELF가 일치했다. 나머지 고정 우선순위·협력형 비교 18건은 진입점과 실행 코드가 같았고, 적재 이미지마다 소스 행 번호 2바이트만 달랐다. 기록에 각 가상 주소, 파일명, 행 및 같은 열 번호를 남겼다. Pi·virt FIFO/RR, virt empty/delayed/ties/late, 협력형 events/single, virt 고정 추적과 FIFO/RR 비용 계측을 비교했다. 앞선 뮤텍스 첫 부팅과 SMP 정적 검증의 범위는 그대로다. 물리 보드 동작은 미측정이다.
 
 [ZIP](pi4-rr-handoff-combined.zip) · [CHG-073](pi4-rr-handoff-integration.md) · [CHG-072](ordinary-mutex-anchor-integrated/README.md)
+
+[Finite AMC integration / 유한 AMC 통합](pi4-rr-after-amc.en-ko.md)
