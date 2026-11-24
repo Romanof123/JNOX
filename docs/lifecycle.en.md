@@ -80,3 +80,5 @@ Correction scope for #191. The recognized lifecycle roles are pm, systems, funct
 The parser will interpret delimiters in their surrounding context. An HTML opener shown inside a quote or code example cannot hide the next prose paragraph. Actual HTML comments and code/pre elements may span lines.
 
 For #193, each whitespace-delimited prose token will be checked as a whole after removing surrounding prose punctuation. A foreign or unsupported URI, including its parentheses, query, fragment and percent escapes, contributes no issue number. Put an independent reference after a space. Simple canonical Markdown link destinations and URL autolinks remain supported.
+
+A standalone raw HTTP(S) URL will be treated as one token before Markdown brackets are interpreted. Brackets in an IPv6 address belong to that URL. A separate prose reference on the same line remains eligible. Combinations of URLs and Markdown inside one ambiguous token require PM inspection.
