@@ -73,9 +73,21 @@ fn sum(a: u64, b: u64) -> u64 {
 fn audit_frame(tag: u64, tick: u64, pid: usize, frame: &UserFrame) {
     const _: () = assert!(core::mem::size_of::<UserFrame>() == 104 * 8);
     let words = unsafe { &*(core::ptr::from_ref(frame).cast::<[u64; 104]>()) };
-    for chunk in words.chunks_exact(13) {
-        row(tag, tick, pid, chunk);
+    // Only the IRQ-masked partition writer appends. Publish the cursor after
+    // the complete bank so replay sees the same eight adjacent journal rows.
+    let journal = unsafe { &mut *(&raw mut super::native_vruntime_journal) };
+    let start = journal.header[6] as usize;
+    let count = words.len() / 13;
+    if start > journal.rows.len() - count {
+        header(7, 1);
+        fail(1)
     }
+    let end = start + count;
+    for (record, chunk) in journal.rows[start..end].iter_mut().zip(words.chunks_exact(13)) {
+        record[..3].copy_from_slice(&[tag, tick, pid as u64]);
+        record[3..].copy_from_slice(chunk);
+    }
+    header(6, end as u64);
 }
 
 impl State {
