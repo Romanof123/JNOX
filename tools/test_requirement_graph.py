@@ -47,6 +47,29 @@ class GraphTest(unittest.TestCase):
                         "undefined endpoint REQ-999"):
             self.assertTrue(any(message in error for error in errors), errors)
 
+    def test_extra_invalid_edges_fail_even_with_complete_coverage(self):
+        with self.csv.open("a") as stream:
+            stream.write("REQ-001,derives,OBJ-001\nDES-001,implemented-by-design,REQ-001\n"
+                         "REQ-001,implemented-by-design,VER-001\nREQ-001,derives,REQ-001\n")
+        _, errors = inspect(self.root, "ASM-001")
+        self.assertEqual(len(errors), 4)
+        for line, detail in enumerate((
+            "REQ-001 derives OBJ-001: expected OBJ-001 derives REQ-001",
+            "DES-001 implemented-by-design REQ-001: expected REQ-001 implemented-by-design DES-001",
+            "REQ-001 implemented-by-design VER-001: expected REQ-001 verified-by VER-001",
+            "REQ-001 derives REQ-001: no REQ-to-REQ allocation",
+        ), 5):
+            self.assertIn(f"trace/links.csv:{line} invalid requirement edge {detail}", errors)
+
+    def test_other_class_pairs_keep_existing_output(self):
+        baseline, errors = inspect(self.root)
+        self.assertEqual(errors, [])
+        with self.csv.open("a") as stream:
+            stream.write("OBJ-001,derives,HAZ-001\nOBJ-001,derives,THR-001\n"
+                         "OBJ-001,derives,ASM-001\nCHG-075,affects,REQ-001\n"
+                         "VER-001,has-partial-evidence,EVD-001\n")
+        self.assertEqual(inspect(self.root), (baseline, []))
+
     def test_duplicate_and_malformed_rows(self):
         with self.csv.open("a") as stream:
             stream.write("OBJ-001,derives,REQ-001\nOBJ-001,derives\n")

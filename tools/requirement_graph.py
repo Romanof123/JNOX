@@ -119,6 +119,19 @@ def inspect(root, query=None):
             if kind(endpoint) in KINDS and endpoint not in all_ids:
                 errors.append(f"{location} undefined endpoint {endpoint}")
 
+        source, _, target = edge
+        if kind(source) == kind(target) == "REQ":
+            errors.append(f"{location} invalid requirement edge {' '.join(edge)}: no REQ-to-REQ allocation")
+            continue
+        if kind(source) == "REQ" and kind(target) in RELATION:
+            expected = allocation(source, target)
+        elif kind(target) == "REQ" and kind(source) in RELATION:
+            expected = allocation(target, source)
+        else:
+            continue
+        if edge != expected:
+            errors.append(f"{location} invalid requirement edge {' '.join(edge)}: expected {' '.join(expected)}")
+
     report = []
     if query and query not in all_ids:
         errors.append(f"unknown declaration {query}")
