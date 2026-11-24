@@ -1,0 +1,516 @@
+{
+  "cases": {
+    "O1": {
+      "rc": 0,
+      "linked_worker_blocks": [
+        "worker_a",
+        "alarm",
+        "worker_b",
+        "worker_a",
+        "worker_b"
+      ]
+    },
+    "E1": {
+      "rc": 0,
+      "payload": 1867983,
+      "operations": [
+        [
+          0,
+          1,
+          5,
+          5,
+          530352,
+          564904
+        ],
+        [
+          1,
+          1,
+          6,
+          6,
+          530172,
+          564904
+        ]
+      ],
+      "outer_ticks": [
+        [
+          28718170,
+          28719106
+        ],
+        [
+          28703270,
+          28727595
+        ]
+      ],
+      "outer_generations": [
+        [
+          5,
+          5
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      "wide_rc": 2,
+      "loop_rc": 2,
+      "progress_by_generation": {
+        "1": 1,
+        "3": 15594812,
+        "4": 1,
+        "5": 31133900
+      },
+      "high_preempted_at": 15594811,
+      "saved_resumed_B_elr": "0x816e0",
+      "stacks": [
+        [
+          0,
+          0,
+          564912,
+          581296,
+          535696
+        ],
+        [
+          1,
+          2,
+          581296,
+          597680,
+          535504
+        ],
+        [
+          2,
+          1,
+          597680,
+          614064,
+          535872
+        ],
+        [
+          4,
+          3,
+          630448,
+          646832,
+          535128
+        ]
+      ],
+      "operation_sps": [
+        581296,
+        613872
+      ],
+      "postrotation_arithmetic_A": true,
+      "postrotation_arithmetic_B": false
+    },
+    "E2": {
+      "rc": 0,
+      "payload": 1800445,
+      "operations": [
+        [
+          0,
+          1,
+          5,
+          5,
+          530352,
+          564904
+        ],
+        [
+          1,
+          1,
+          6,
+          6,
+          530172,
+          564904
+        ]
+      ],
+      "outer_ticks": [
+        [
+          28789800,
+          28790754
+        ],
+        [
+          28774423,
+          28799400
+        ]
+      ],
+      "outer_generations": [
+        [
+          5,
+          5
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      "wide_rc": 2,
+      "loop_rc": 2,
+      "progress_by_generation": {
+        "1": 1,
+        "3": 15578709,
+        "4": 1
+      },
+      "high_preempted_at": 15578708,
+      "saved_resumed_B_elr": "0x816e0",
+      "stacks": [
+        [
+          0,
+          0,
+          564912,
+          581296,
+          535696
+        ],
+        [
+          1,
+          2,
+          581296,
+          597680,
+          535504
+        ],
+        [
+          2,
+          1,
+          597680,
+          614064,
+          535872
+        ],
+        [
+          4,
+          3,
+          630448,
+          646832,
+          535128
+        ]
+      ],
+      "operation_sps": [
+        581296,
+        613872
+      ],
+      "postrotation_arithmetic_A": false,
+      "postrotation_arithmetic_B": false
+    },
+    "O2": {
+      "rc": 0,
+      "linked_worker_blocks": [
+        "worker_a",
+        "alarm",
+        "worker_b",
+        "worker_a",
+        "worker_b"
+      ]
+    }
+  },
+  "sections": {
+    "fifo-v1": {
+      "text": 17340,
+      "rodata": 1736,
+      "data": 288,
+      "bss": 101560,
+      "stack": 16384
+    },
+    "rr-eng": {
+      "text": 18236,
+      "rodata": 1640,
+      "data": 288,
+      "bss": 101776,
+      "stack": 16384
+    },
+    "rr-normal": {
+      "text": 13472,
+      "rodata": 1360,
+      "data": 288,
+      "bss": 81992,
+      "stack": 16384
+    },
+    "rr-v1": {
+      "text": 17304,
+      "rodata": 1630,
+      "data": 288,
+      "bss": 101560,
+      "stack": 16384
+    },
+    "rr-v2": {
+      "text": 17756,
+      "rodata": 1630,
+      "data": 288,
+      "bss": 101736,
+      "stack": 16384
+    }
+  },
+  "legacy_comparison": {
+    "rr-normal": {
+      "image_same": true,
+      "elf_same": true,
+      "text_same": true,
+      "image_diff_bytes": 0
+    },
+    "rr-v1": {
+      "image_same": true,
+      "elf_same": false,
+      "text_same": true,
+      "image_diff_bytes": 0
+    },
+    "fifo-v1": {
+      "image_same": true,
+      "elf_same": false,
+      "text_same": true,
+      "image_diff_bytes": 0
+    },
+    "rr-v2": {
+      "image_same": true,
+      "elf_same": false,
+      "text_same": true,
+      "image_diff_bytes": 0
+    },
+    "default": {
+      "elf_same": true,
+      "load_same": true
+    },
+    "smp": {
+      "elf_same": true,
+      "load_same": true
+    }
+  },
+  "source": "b6222fd741b5696ddcb92e82d2e3aeebfbb29f22",
+  "source_tree": "44bf7ee10756dfc9c37d4a7cb5fee1e545b01f15",
+  "parent": "0de61824f61866247e28a8e27af3af7502d46f1d",
+  "protocol_sha256": "1bd8e051c14d7abfb67506bdbd042e8c62cb19ec20ff672c0a3b55b6f04eba2d",
+  "first_order": [
+    "O1",
+    "E1",
+    "E2",
+    "O2"
+  ],
+  "qemu": "QEMU 11.1.3 raspi4b, TCG direct-load",
+  "frequency_hz": 62500000,
+  "raw": {
+    "O1": {
+      "uart_sha256": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+      "exceptions_sha256": "91b64303e3548102c6b2e42ae0606ad5d41259f03b6407a26c84e8b6df6fb99d",
+      "manifest": {
+        "elf_sha256": "69a9d9a78ce3969480f6e90cb72d15e59cea7bbd905e764efd9abe6d4b55f58b",
+        "image_sha256": "69db6275a2f6b2dbab0893e92495ce4d6bd3a7480027b1b16ddd5acf9c64beee",
+        "image_id": null,
+        "profile": "pi4-fixed-rr",
+        "source": "b6222fd741b5696ddcb92e82d2e3aeebfbb29f22",
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1"
+        ],
+        "selectors": {
+          "JNOX_BOARD": "pi4",
+          "JNOX_PROFILE": "fixed",
+          "JNOX_APP": "fixed-rr"
+        }
+      }
+    },
+    "E1": {
+      "uart_sha256": "ec66aed194794219c88618beb9ecd348ac3fd8d11b4ea9e8fc1caabbe3fe0cea",
+      "exceptions_sha256": "920dbe8b1ac3ad67b27b617df3fab67c39a43b3c0d92647795f5dc9e7b800959",
+      "manifest": {
+        "elf_sha256": "f779daa04ebf518555f05b95f0df32829d38f12cceb19ac52aba9a54784d2172",
+        "image_sha256": "4bb4f68e4a5170140bdfc55349f5a004e8905ded4a0f567d08f1c02a9c9a693b",
+        "image_id": 159073,
+        "profile": "pi4-fixed-rr-handoff-v3",
+        "source": "b6222fd741b5696ddcb92e82d2e3aeebfbb29f22",
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1"
+        ],
+        "selectors": {
+          "JNOX_BOARD": "pi4",
+          "JNOX_PROFILE": "fixed",
+          "JNOX_APP": "fixed-rr",
+          "JNOX_PI4_WITNESS": "1",
+          "JNOX_PI4_WITNESS_ID": "159073",
+          "JNOX_RR_HANDOFF": "2"
+        }
+      }
+    },
+    "E2": {
+      "uart_sha256": "23df88f94e0ca007d2135d80d38c481feb28302c0f03333b1f68c07d1392f2c1",
+      "exceptions_sha256": "00678298778da2df6d654c30f72d1427179e7b175b9cadd91ea3e3e41b73deb7",
+      "manifest": {
+        "elf_sha256": "f779daa04ebf518555f05b95f0df32829d38f12cceb19ac52aba9a54784d2172",
+        "image_sha256": "4bb4f68e4a5170140bdfc55349f5a004e8905ded4a0f567d08f1c02a9c9a693b",
+        "image_id": 159073,
+        "profile": "pi4-fixed-rr-handoff-v3",
+        "source": "b6222fd741b5696ddcb92e82d2e3aeebfbb29f22",
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1"
+        ],
+        "selectors": {
+          "JNOX_BOARD": "pi4",
+          "JNOX_PROFILE": "fixed",
+          "JNOX_APP": "fixed-rr",
+          "JNOX_PI4_WITNESS": "1",
+          "JNOX_PI4_WITNESS_ID": "159073",
+          "JNOX_RR_HANDOFF": "2"
+        }
+      }
+    },
+    "O2": {
+      "uart_sha256": "6af2c7e5c3f252e832ecd813fa3830a441efe1aee33282403135094ecd87fcd0",
+      "exceptions_sha256": "2ee8383e826b902c557fb479f268b2a4c6f198bdcf2d31e27638385948d037d4",
+      "manifest": {
+        "elf_sha256": "69a9d9a78ce3969480f6e90cb72d15e59cea7bbd905e764efd9abe6d4b55f58b",
+        "image_sha256": "69db6275a2f6b2dbab0893e92495ce4d6bd3a7480027b1b16ddd5acf9c64beee",
+        "image_id": null,
+        "profile": "pi4-fixed-rr",
+        "source": "b6222fd741b5696ddcb92e82d2e3aeebfbb29f22",
+        "command": [
+          "cargo",
+          "+1.95.0",
+          "build",
+          "--locked",
+          "--release",
+          "-j1"
+        ],
+        "selectors": {
+          "JNOX_BOARD": "pi4",
+          "JNOX_PROFILE": "fixed",
+          "JNOX_APP": "fixed-rr"
+        }
+      }
+    }
+  },
+  "legacy_archive_sha256": "e9461d12fd1e816002f5cb689ddf914abe9fcf2542e3de9e62ae305544d1534d",
+  "archive_replays": {
+    "v2-E1-parent": {
+      "rc": 2,
+      "stderr": "",
+      "uart_sha256": "027d501f17574138a91ddc84bcf7ced7597a1fe47579b79e6afb522fe5c9f631",
+      "profile": "pi4-fixed-rr-handoff",
+      "complete": false
+    },
+    "v2-E1-source": {
+      "rc": 2,
+      "stderr": "",
+      "uart_sha256": "027d501f17574138a91ddc84bcf7ced7597a1fe47579b79e6afb522fe5c9f631",
+      "profile": "pi4-fixed-rr-handoff",
+      "complete": false
+    },
+    "v2-E2-parent": {
+      "rc": 2,
+      "stderr": "",
+      "uart_sha256": "839c55dafe99ba5002c8a920a6146a40611943aef0dfb2bf7003a9fc42c67a9c",
+      "profile": "pi4-fixed-rr-handoff",
+      "complete": false
+    },
+    "v2-E2-source": {
+      "rc": 2,
+      "stderr": "",
+      "uart_sha256": "839c55dafe99ba5002c8a920a6146a40611943aef0dfb2bf7003a9fc42c67a9c",
+      "profile": "pi4-fixed-rr-handoff",
+      "complete": false
+    },
+    "original-fifo": {
+      "rc": 0,
+      "stderr": "",
+      "uart_sha256": "3c0977fc5875d5bc35852ba79dd499077795a2356ef73975d3dee280bc2c09bc",
+      "profile": "pi4-fixed-fifo-witness",
+      "complete": true
+    },
+    "original-rr": {
+      "rc": 0,
+      "stderr": "",
+      "uart_sha256": "eeccb78bea27a54126b8abc0ff0899a1caaf24d2f6359b60f5ddf0b4da5c9c8d",
+      "profile": "pi4-fixed-rr-witness",
+      "complete": true
+    },
+    "integration-fifo": {
+      "rc": 0,
+      "stderr": "",
+      "uart_sha256": "166fb38555ff4750ee0cc4c0bd2b01738afe390fb3d9cc653958f5c48bd498c2",
+      "profile": "pi4-fixed-fifo-witness",
+      "complete": true
+    },
+    "integration-rr": {
+      "rc": 2,
+      "stderr": "",
+      "uart_sha256": "2354712bcc0734a4a7065a1e28e432d6535dd1cc21b3cbb0b4cc7d895a863aa2",
+      "profile": "pi4-fixed-rr-witness",
+      "complete": false
+    }
+  },
+  "negative_controls": {
+    "bad-mail": {
+      "rc": 1,
+      "stderr": "incomplete evidence: actual mailbox operand differs from outer cell\n",
+      "uart_sha256": "7a4747a827ebad77378f4bcb59826ee1c307c4422b2c44ac5453a7edb12fcc75",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "bad-site": {
+      "rc": 1,
+      "stderr": "incomplete evidence: wrong inner operation PC\n",
+      "uart_sha256": "8959da44b7430b7de6f0d482b60c8b188a8bb550a1e695dee81e14abc60a3ebd",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "bad-owner": {
+      "rc": 1,
+      "stderr": "incomplete evidence: invalid inner role or status\n",
+      "uart_sha256": "9d2f353daebd9b2d71e88a73ae7eb1a8eb5bb0c69213e7fa4574e07ac0e16373",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "bad-value": {
+      "rc": 1,
+      "stderr": "incomplete evidence: conflicting mailbox values or chronology\n",
+      "uart_sha256": "42cce55dda01bc2df8adf87d3fb56cf70b80945348f7d6385b17099e029f5c97",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "bad-gen": {
+      "rc": 1,
+      "stderr": "incomplete evidence: incorrect inner generation status\n",
+      "uart_sha256": "b60504906b813e90ec5b9f8572776ba944c98467d28b10501f7b1a4f8d434edd",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "duplicate": {
+      "rc": 1,
+      "stderr": "incomplete evidence: missing or misordered handoff cells\n",
+      "uart_sha256": "4a5362cf7d2b8ced65614a0d46005bd148933612203fdab46d4636e9230456b9",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "missing": {
+      "rc": 1,
+      "stderr": "incomplete evidence: missing or misordered handoff cells\n",
+      "uart_sha256": "e70218b2213494fd5ab67144a2b696bdfaeb3cb69c8938614bca12d00b6b83cb",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "bad-order": {
+      "rc": 1,
+      "stderr": "incomplete evidence: invalid inner role or status\n",
+      "uart_sha256": "9624769f0c94589f4c2e5d1c61ecf052872deb836b637df0ca479028798b2ed8",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": null
+    },
+    "ambiguous-inner": {
+      "rc": 2,
+      "stderr": "",
+      "uart_sha256": "592c4818c2753a3ec123c1b924ec29cdc8c1a5b165e17de6ad565f2d3aff7deb",
+      "profile": "pi4-fixed-rr-handoff-v3",
+      "complete": false
+    }
+  },
+  "archive": {
+    "file": "pi4-rr-inner-first.zip",
+    "bytes": 634576,
+    "sha256": "15bc27f54aa4bd648763b44876d3692efa31103c1a2e53e6a5e00f4cb3d87c6b",
+    "members": 120
+  }
+}
