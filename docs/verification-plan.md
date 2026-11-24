@@ -129,3 +129,5 @@ CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [일반 Rust 예
 POL-006 / IMP-044. v2의 새 정상 콜드 실행은 P 10/10, Q 13/13 경계에서 1 ms를 충족했다. v1은 P 9/10, Q 11/12 경계가 초과했고 Q가 준비된 B 구간을 건너뛰었다. 가상 타이머 통지를 지연한 네 콜드 실행은 주입 경계에서 원래 1 ms 기준에 실패하고 지정된 창으로 복구했다. 그 밖의 지연 초과는 없었다. 실제 작업 마스킹은 미검증이다. [EVD-044 · 통지 지연](evidence/evd-044-notice.md) [EVD-044 v2](evidence/evd-044-v2.md)
 
 POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 번의 콜드 부팅에서 IRQ 6회 후 PASS에 도달했다. 의도적 음성 대조군은 첫 A 마커에서 조건 99, 실제값 0, 기대값 1을 기록했다. 기존 PART FAIL의 원인은 미확정이다. [EVD-047](evidence/evd-047.md)
+
+CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)

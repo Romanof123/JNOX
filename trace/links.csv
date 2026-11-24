@@ -1087,3 +1087,6 @@ IMP-047,tested-in,EVD-047
 POL-006,has-switch-evidence,EVD-047
 IMP-047,partially-verified-by,VER-023
 VER-023,has-partial-evidence,EVD-047
+CHG-057,affects,REQ-002
+CHG-057,affects,REQ-005
+CHG-057,affects,REQ-023
