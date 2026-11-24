@@ -1,0 +1,227 @@
+{
+  "record": "CHG-061 aborted first cohort",
+  "source": "dc9f25897e661dae84be09d91c92dd713743d3a0",
+  "archive": "permit-observer-first-partial.zip",
+  "archive_sha256": "1013c045811c491ee878788e393c9aea1112145a824107e74425d5eb02d0449c",
+  "archive_ledger_sha256": "cb400ae811c6a1c98dafbbe57e68831cf875febb599756975a4db6bd53497edc",
+  "cohort": {
+    "intended": 16,
+    "observed": [
+      {
+        "position": "01-rm-off-1-F",
+        "start_ns": 34093871639,
+        "first_seen_ns": {
+          "mechanism": 34132364811,
+          "uart": 34133887956
+        },
+        "disposition": "incomplete",
+        "terminal_seen_ns": 34138820607,
+        "first_failure": "ValueError: unexpected emulator stderr",
+        "alarm_ns": 34142191353,
+        "stop_ns": 34142198547,
+        "host_status": 0,
+        "consumed": {
+          "uart": 884,
+          "mechanism": 75321
+        },
+        "files": {
+          "stderr": {
+            "bytes": 69,
+            "sha256": "bd17ff5d7d1a2061850aea97cbd32fd1ad7ae1747858792cc9fb7a7029c0530d"
+          },
+          "uart": {
+            "bytes": 884,
+            "sha256": "ee5c5eef236d452dc545c37465affe91f372d23da5fc2be5f965a6af2b3706eb"
+          },
+          "stdout": {
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "mechanism": {
+            "bytes": 75321,
+            "sha256": "23ecdf8590a9a0a137e59fa9b1b705ef44a7b139334411d4f7d02bd26f9823db"
+          }
+        }
+      }
+    ],
+    "pairs": [
+      {
+        "positions": [
+          "01-rm-off-1-F",
+          "02-rm-off-1-R"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      },
+      {
+        "positions": [
+          "03-rm-off-1-R",
+          "04-rm-off-1-F"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      },
+      {
+        "positions": [
+          "05-rm-off-2-R",
+          "06-rm-off-2-F"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      },
+      {
+        "positions": [
+          "07-rm-off-2-F",
+          "08-rm-off-2-R"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      },
+      {
+        "positions": [
+          "09-dm-off-1-F",
+          "10-dm-off-1-R"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      },
+      {
+        "positions": [
+          "11-dm-off-1-R",
+          "12-dm-off-1-F"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      },
+      {
+        "positions": [
+          "13-dm-off-2-R",
+          "14-dm-off-2-F"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      },
+      {
+        "positions": [
+          "15-dm-off-2-F",
+          "16-dm-off-2-R"
+        ],
+        "R_minus_F_ticks": {
+          "first_service": null,
+          "first_phase_delay": null,
+          "first_irq_delay": null
+        }
+      }
+    ],
+    "unlaunched": [
+      "02-rm-off-1-R",
+      "03-rm-off-1-R",
+      "04-rm-off-1-F",
+      "05-rm-off-2-R",
+      "06-rm-off-2-F",
+      "07-rm-off-2-F",
+      "08-rm-off-2-R",
+      "09-dm-off-1-F",
+      "10-dm-off-1-R",
+      "11-dm-off-1-R",
+      "12-dm-off-1-F",
+      "13-dm-off-2-R",
+      "14-dm-off-2-F",
+      "15-dm-off-2-F",
+      "16-dm-off-2-R"
+    ],
+    "operational_credit": false
+  },
+  "partial_replay": {
+    "origin": "SHA-verified first-position UART only",
+    "service_ticks": 20707,
+    "phase_delay_ticks": 55167,
+    "irq_delay_ticks": [
+      13171
+    ],
+    "first_fault": [
+      [
+        66,
+        300107,
+        103,
+        0
+      ]
+    ],
+    "write_ordinals": [
+      [
+        80,
+        32175,
+        1,
+        0
+      ],
+      [
+        80,
+        298602,
+        2,
+        0
+      ]
+    ],
+    "before_samples": [
+      [
+        81,
+        33911,
+        1,
+        0
+      ],
+      [
+        81,
+        298833,
+        2,
+        0
+      ]
+    ],
+    "after_samples": [
+      [
+        82,
+        35484,
+        1,
+        0
+      ],
+      [
+        82,
+        299177,
+        2,
+        0
+      ]
+    ],
+    "matched_pairs": 0,
+    "external_exhaustive_counts": null,
+    "host_edge_guest_tick": null,
+    "missing": [
+      "freeze.json",
+      "full mechanism"
+    ],
+    "mechanism_excerpt": "Concatenation of original first 25 lines and last 10 lines; middle omitted."
+  },
+  "surviving_excerpt": {
+    "bytes": 2302,
+    "sha256": "528be28e0c7fd657987fb8e5fa37a2bb4acb98f4a0078b42cced11c6e9c6b097"
+  },
+  "cli_incomplete_cohort_exit_by_source": 1
+}
