@@ -110,3 +110,5 @@ EDF·LLF 시간 격자 구성은 실행 중인 작업에 경과 시간을 차감
 [요구사항](requirements.md) · [검증 계획](verification-plan.md) · [개발 수명주기](lifecycle.md)
 
 두 CPU QEMU 구성에서 고정 배치, 전역 이동, 단일 CPU 클러스터 제한을 검증한다. [두 CPU 스케줄링](m3-smp.md)
+
+뮤텍스 구성은 실제 차단·타이머 만료·소유권 양도 때 유효 우선순위를 대조한다. [뮤텍스 합격 기준](m1-mutex.md)
