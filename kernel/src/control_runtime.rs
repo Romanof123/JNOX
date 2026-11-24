@@ -359,6 +359,10 @@ extern "C" fn control() -> ! {
 }
 
 extern "C" fn sender() -> ! {
+    if !locked(app::sender_owns) {
+        locked(|| log(37, now(), 1, state().next));
+        unsafe { asm!("svc #2", options(noreturn)) }
+    }
     let (index, target, step) = locked(|| {
         let s = state();
         let r = s.jobs[1].unwrap().release;
@@ -395,7 +399,9 @@ extern "C" fn idle() -> ! {
                 log(18, now(), app::read_output() as u64, s.fault as u64);
                 dump()
             }
-            if let Some(target) = app::command_target(s.step) {
+            if app::HANDOFF {
+                app::supervise(s.epoch, s.step);
+            } else if let Some(target) = app::command_target(s.step) {
                 if s.next == 7 {
                     if now().saturating_add(s.step / 200) < target {
                         return;

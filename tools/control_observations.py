@@ -23,6 +23,10 @@ def ordinary(rows, case):
     def events(code):
         return [(t, a, b) for tag, t, a, b in rows if tag == code]
 
+    selected_case = case
+    handoff = case.startswith("handoff-")
+    if handoff:
+        case = case.removeprefix("handoff-")
     failures = []
 
     def require(condition, name):
@@ -97,7 +101,70 @@ def ordinary(rows, case):
             require(slices[task] == delta, "worker slice accounting")
             slices[task] = 0
     issues, delivered, commands = events(11), events(12), events(17)
-    require(len(issues) == (4 if case == "loss" else 7), "sender issue count")
+    if handoff:
+        injector = events(41)
+        injector_deliveries = events(42)
+        transfers = events(39)
+        attempts = events(40)
+        if events(38) or not transfers:
+            return {
+                "case": selected_case,
+                "scope": "exact injector setup",
+                "failures": failures + ["initial condition unqualified"],
+                "attempts": attempts,
+                "injector_issues": injector,
+                "injector_deliveries": injector_deliveries,
+                "disqualifications": events(38),
+                "transfers": transfers,
+                "ordinary_issues": issues,
+                "final_device": events(18),
+            }
+        expected = [epoch + step // 5 + n * step for n in (0, 4, 6)]
+        require(
+            attempts == [(t, i, t) for i, t in enumerate(expected, 1)],
+            "actual injector targets",
+        )
+        require(
+            injector == [(t, i, 1) for i, t in enumerate(expected[:2], 1)],
+            "exact injector issues",
+        )
+        require(
+            injector_deliveries == [(t, i, t) for i, t in enumerate(expected[:2], 1)],
+            "exact injector deliveries",
+        )
+        require(
+            len(transfers) == 1 and transfers[0][1:] == (1, 3), "single owner handoff"
+        )
+        require(len(events(37)) == 2, "sender withheld before handoff")
+        require(
+            len(events(14)) >= 1
+            and events(14)[0][1:] == (0, 1)
+            and issues
+            and events(14)[0][0] <= transfers[0][0] <= issues[0][0],
+            "readback before ordinary owner",
+        )
+        if transfers and events(14) and issues:
+            require(
+                rows.index([14, *events(14)[0]])
+                < rows.index([39, *transfers[0]])
+                < rows.index([11, *issues[0]]),
+                "ordered device, handoff and first ordinary issue",
+            )
+        require(
+            all(
+                generation == 1 and seq == n
+                for n, (_, seq, generation) in enumerate(issues, 3)
+            ),
+            "ordinary generation and next sequence",
+        )
+        require(
+            len(issues) == (2 if case == "loss" else 5),
+            "post-handoff ordinary issue count",
+        )
+        ordinary_issues = issues
+        issues = injector + issues
+        delivered = injector_deliveries + delivered
+    require(len(issues) == (4 if case == "loss" else 7), "total issue count")
     require(
         len(issues) == len(delivered)
         and all(
@@ -195,7 +262,11 @@ def ordinary(rows, case):
             budget[name]["within"] &= worst * 1000 <= budget[name]["limit_ms"] * hz
         require(all(v["within"] for v in budget.values()), "fault response budgets")
     return {
-        "case": case,
+        "case": selected_case,
+        "issue_ownership": {
+            "injector": injector if handoff else [],
+            "ordinary": ordinary_issues if handoff else issues,
+        },
         "failures": failures,
         "fault_budgets": budget,
         "recurring_windows": groups,
@@ -359,6 +430,8 @@ if __name__ == "__main__":
         choices=[
             "healthy",
             "loss",
+            "handoff-loss",
+            "handoff-healthy",
             "late",
             "demand",
             "worst",
@@ -394,7 +467,8 @@ if __name__ == "__main__":
     rows = [list(map(int, line.split())) for line in data[start:end]]
     score = (
         ordinary
-        if args.case in ("healthy", "loss", "late", "demand")
+        if args.case
+        in ("healthy", "loss", "late", "demand", "handoff-loss", "handoff-healthy")
         else script_observations
     )
     result = score(rows, args.case)

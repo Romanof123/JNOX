@@ -22,7 +22,21 @@ struct Permit {
     issued: u64,
     set: bool,
 }
+pub(super) const HANDOFF: bool = cfg!(any(
+    jnox_control_case = "handoff-loss",
+    jnox_control_case = "handoff-healthy"
+));
+
+#[derive(Clone, Copy)]
+enum Owner {
+    Injector { next: u64 },
+    AwaitReadback,
+    Sender { next: u64 },
+    Disqualified,
+}
+
 struct App {
+    owner: Owner,
     previous: Option<Permit>,
     last: Option<Permit>,
     queued: Option<Permit>,
@@ -38,6 +52,7 @@ struct App {
     previous_check: Option<u64>,
 }
 static mut APP: App = App {
+    owner: Owner::Injector { next: 1 },
     previous: None,
     last: None,
     queued: None,
@@ -94,15 +109,99 @@ pub(super) fn inhibit(reason: u64) {
     write_output(false);
 }
 
+pub(super) fn sender_owns() -> bool {
+    !HANDOFF || matches!(app().owner, Owner::Sender { .. })
+}
+
+// IRQ masking keeps the prevalidated slot private until the sampled store.
+// The injector records and checks actual issue and post-publication ticks.
+pub(super) fn supervise(epoch: u64, step: u64) {
+    let a = app();
+    let seq = match a.owner {
+        Owner::Injector { next } => next,
+        Owner::AwaitReadback if a.observed && a.enabled => {
+            let p = a.last.unwrap();
+            a.owner = Owner::Sender { next: p.seq + 1 };
+            log(39, now(), p.generation, p.seq + 1);
+            return;
+        }
+        _ => return,
+    };
+    let target = epoch
+        + step / 5
+        + match seq {
+            1 => 0,
+            2 => 4 * step,
+            3 => 6 * step,
+            _ => unreachable!(),
+        };
+    if now().saturating_add(step / 200) < target {
+        return;
+    }
+    if seq == 3 {
+        let issued = sample_at(target);
+        log(40, issued, seq, target);
+        if issued == target {
+            command(issued);
+            app().owner = Owner::AwaitReadback
+        } else {
+            disqualify(seq, target)
+        }
+        return;
+    }
+    a.previous = a.last;
+    a.last = Some(Permit {
+        generation: a.generation,
+        seq,
+        issued: 0,
+        set: true,
+    });
+    let slot = &raw mut a.last.as_mut().unwrap().issued;
+    let issue: u64;
+    let delivered: u64;
+    unsafe {
+        core::arch::asm!("2:","isb","mrs {issue},cntpct_el0","cmp {issue},{target}","b.lo 2b",
+            "str {issue},[{slot}]","dsb sy","isb","mrs {delivered},cntpct_el0",
+            issue=out(reg)issue, delivered=out(reg)delivered,
+            target=in(reg)target,slot=in(reg)slot,options(nostack));
+    }
+    log(40, issue, seq, target);
+    log(41, issue, seq, a.generation);
+    log(42, delivered, seq, issue);
+    if issue != target || delivered != target {
+        disqualify(seq, target);
+        return;
+    }
+    a.first_issue.get_or_insert(issue);
+    a.owner = Owner::Injector { next: seq + 1 };
+}
+
+fn disqualify(seq: u64, target: u64) {
+    let a = app();
+    a.owner = Owner::Disqualified;
+    a.can_rearm = false;
+    a.gate = false;
+    log(38, now(), seq, target);
+}
+
 pub(super) fn send(index: u64, step: u64, issued: u64) {
     let a = app();
     if !a.gate {
         log(23, now(), index, 0);
         return;
     }
+    let seq = if HANDOFF {
+        let Owner::Sender { next } = a.owner else {
+            return;
+        };
+        a.owner = Owner::Sender { next: next + 1 };
+        next
+    } else {
+        index / 4 + 1
+    };
     let p = Permit {
         generation: a.generation,
-        seq: index / 4 + 1,
+        seq,
         issued,
         set: true,
     };
@@ -110,7 +209,11 @@ pub(super) fn send(index: u64, step: u64, issued: u64) {
     if enqueue(p) {
         deliver(step)
     }
-    if cfg!(jnox_control_case = "loss") && index == 12 {
+    if cfg!(any(
+        jnox_control_case = "loss",
+        jnox_control_case = "handoff-loss"
+    )) && index == 12
+    {
         close();
     }
 }
