@@ -175,3 +175,5 @@ CHG-049 / `IMP-050`. In the first cold matrix, none of the 96 diagnostic modes i
 POL-011 · CHG-052 · IMP-049. Two ordinary Rust entries share the exception-return ABI and the weighted virtual-runtime scheduler. See the [approved workload plan](ordinary-vruntime-plan.md) and [build, capture and replay instructions](ordinary-weighted.md). VER-002/005/023 · [EVD-049](evidence/evd-049.en.md).
 
 CHG-054 · REQ-002/005/023 · DES-003/012 · VER-002/005/023 · [Ordinary Rust reservation admission and execution timing](pol-008-rust-reservations.md) · [#123](https://github.com/Romanof123/JNOX/issues/123)
+
+IMP-053 · VER-002/005/023. All eight normal boots stopped on slot-zero timing during A’s first grant. Both refusals behaved as expected. Both late controls recorded progress past nominal end, but an earlier opening fault prevented qualification of the prescribed late branch. Four legacy CBS regressions are separate. Neighbor service isolation remains unverified. [EVD-053](evidence/evd-053.en.md)

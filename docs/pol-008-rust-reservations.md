@@ -1,6 +1,6 @@
 # CHG-054 · Ordinary Rust reservations / 일반 Rust 예약 작업
 
-[#123](https://github.com/Romanof123/JNOX/issues/123) · [#21](https://github.com/Romanof123/JNOX/issues/21) · intended IMP-053 · planned EVD-053
+[#123](https://github.com/Romanof123/JNOX/issues/123) · [#21](https://github.com/Romanof123/JNOX/issues/21) · IMP-053 · [EVD-053](evidence/evd-053.en.md) · [한국어](evidence/evd-053.md)
 
 ## English
 
@@ -42,9 +42,9 @@ Before arming the first timer or enabling a client, use checked arithmetic to va
 
 ## IMP-053 build and capture / 빌드 및 기록
 
-From the repository's `kernel` directory, choose one application for each build. Use a fresh native Linux capture directory for each cold attempt. The board selector is `virt`, the profile is `reservation`, and the application is the policy and case joined by a hyphen. Build without Cargo benchmark features. Both plain and externally traced runs use the same copied ELF for a given application. These commands describe the source interface; independent build, execution and EVD-053 are pending.
+From the repository's `kernel` directory, choose one application for each build. Use a fresh native Linux capture directory for each cold attempt. The board selector is `virt`, the profile is `reservation`, and the application is the policy and case joined by a hyphen. Build without Cargo benchmark features. Both plain and externally traced runs use the same copied ELF for a given application. The first independent boot results are recorded in EVD-053 v1.
 
-저장소의 `kernel` 디렉터리에서 벤치마크 Cargo 기능 없이 애플리케이션 하나씩 빌드한다. 매 콜드 실행에는 Linux 기본 파일시스템의 새 디렉터리를 사용한다. 같은 애플리케이션의 일반·외부 예외 추적 실행은 해시가 같은 ELF를 쓴다. 아래 명령은 소스 사용법이며 독립 빌드·실행·EVD-053은 아직 미완료다.
+저장소의 `kernel` 디렉터리에서 벤치마크 Cargo 기능 없이 애플리케이션 하나씩 빌드한다. 매 콜드 실행에는 Linux 기본 파일시스템의 새 디렉터리를 사용한다. 같은 애플리케이션의 일반·외부 예외 추적 실행은 해시가 같은 ELF를 쓴다. 최초 독립 실행 기록은 EVD-053 v1에 있다.
 
 | Policy / 정책 | Application values / 애플리케이션 값 |
 | --- | --- |
