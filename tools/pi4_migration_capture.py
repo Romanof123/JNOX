@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Freeze one CHG-075 model case, then retain each of two cold launches on Linux.
 
-freeze CASE NEW_DIR ELF RAW DISASSEMBLY QEMU
+freeze CASE NEW_DIR ELF RAW DISASSEMBLY QEMU --source COMMIT
+       [--wire-version {1,2,3}] [--workload {sum-65536,sample-crc32-v1}]
+       [--compiler BUILD_RUSTC_VERSION]
+MG3 freezes both positions for one stock-model image. Select the stream
+workload explicitly and supply the compiler version from the build when the
+linked ELF omits rustc's version comment.
 run FROZEN_DIR TRUSTED_FREEZE_SHA256 ORDINAL
 Physical UART acquisition uses pi4_serial_capture.py with board/card/firmware
 and witnessed power-cycle records. Model thread logs are never physical trace.
 """
 import argparse
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -49,18 +55,41 @@ def freeze(args):
     for name, src in zip(FILES, (args.elf, args.raw, args.disassembly)):
         shutil.copyfile(src, root / name)
     qemu = args.qemu.resolve(strict=True)
-    record = dict(schema=1, wire_version=2, platform="raspi4b-tcg", case=args.case, source=args.source,
+    from pi4_mg3_symbols import declared_wire, mg3_symbols
+    elf, raw, disassembly = [(root / name).read_bytes() for name in FILES]
+    wire = declared_wire(raw)
+    selected = getattr(args, "wire_version", None)
+    if selected is not None and selected != wire:
+        raise ValueError("selected wire version disagrees with linked image")
+    workload = getattr(args, "workload", BASELINE)
+    symbols = mg3_symbols(elf, raw, args.case, workload)
+    record = dict(schema=1, wire_version=wire, platform="raspi4b-tcg", case=args.case, source=args.source,
                   qemu=str(qemu), qemu_sha256=sha(qemu), flags=FLAGS,
                   hashes={name: sha(root / name) for name in FILES},
                   ceiling_ns=30_000_000_000, quiet_ns=1_000_000_000, positions=[1, 2])
-    if getattr(args, "workload", BASELINE) == STREAM:
-        record["workload"] = STREAM
+    if wire == 3 or workload == STREAM:
+        if workload == STREAM and wire < 2:
+            raise ValueError("sample stream requires MG2 or later")
+        record["workload"] = workload
         if record["qemu_sha256"] != STOCK_SHA:
-            raise ValueError("sample stream requires the frozen stock QEMU")
+            raise ValueError("this model profile requires the frozen stock QEMU")
         from pi4_migration_replay import layout
-        bodies, _ = layout(*[(root / name).read_bytes() for name in FILES], STREAM)
+        bodies, _ = layout(elf, raw, disassembly, workload)
         if len(bodies) != 1:
-            raise ValueError("expected one linked sample byte-processing loop")
+            raise ValueError("expected one linked input-processing loop")
+    if wire == 3:
+        from elftools.elf.elffile import ELFFile
+        comment = ELFFile(io.BytesIO(elf)).get_section_by_name(".comment")
+        comments = comment.data().decode().strip("\0").split("\0") if comment else []
+        compiler = getattr(args, "compiler", None) or next(
+            (item for item in comments if "rustc" in item.lower()), None)
+        if not compiler:
+            raise ValueError("provide the build's rustc version with --compiler")
+        names = ("pi4_migration_capture.py", "pi4_migration_replay.py", "pi4_mg3_symbols.py",
+                 "pi4_mg3_replay.py", "pi4_smp_replay.py")
+        record.update(local_symbols=symbols, loop_range=list(bodies[0]), compiler=compiler,
+                      elf_comments=comments,
+                      tool_sha256={name: sha(Path(__file__).with_name(name)) for name in names})
     save(root / "freeze.json", record)
     print(sha(root / "freeze.json"))
 
@@ -175,6 +204,9 @@ def main():
     for name in ("directory", "elf", "raw", "disassembly", "qemu"):
         f.add_argument(name, type=Path)
     f.add_argument("--source", required=True)
+    f.add_argument("--wire-version", type=int, choices=(1, 2, 3),
+                   help="require this version in the linked image")
+    f.add_argument("--compiler", help="build compiler version if absent from ELF comments")
     f.add_argument("--workload", choices=(BASELINE, STREAM), default=BASELINE)
     a = sub.add_parser("run")
     a.add_argument("directory", type=Path)
