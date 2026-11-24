@@ -1,0 +1,361 @@
+{
+  "evidence_id": "EVD-052",
+  "source": "3d314b0a188b1e93f1b2a6ad9ee35a47c30a7c9b",
+  "original_gate_summary_sha256": "cd363ef602798e5cb7bd6bebd0ff8390977864152d79a6cf52fc2e58e0005314",
+  "build_index_sha256": "d3c32e49fe9823376ad00e355089327da4c9fb6114ee393b7fb87bc568a5342d",
+  "boots_index_sha256": "0936293c513a30e6135e8d021ad260593601694b23093cc776150e960055e098",
+  "gate": {
+    "images": 13,
+    "expected_rejections": 4,
+    "all_expected": true,
+    "comparisons": 24,
+    "all_elf_load_text_match": false,
+    "index_sha": "d3c32e49fe9823376ad00e355089327da4c9fb6114ee393b7fb87bc568a5342d",
+    "new_guest_launches": 6,
+    "identical_immediate_references": 13,
+    "cross_branch_changed_loads": 6
+  },
+  "reference_comparisons": [
+    {
+      "image": "descriptor-rm-baseline",
+      "reference": "control53-integrated-gate/markers-rm-baseline/kernel.elf",
+      "reference_member": "descriptor-rm-baseline/kernel.elf",
+      "reference_sha256": "adcc2c107940bbe5f16a0279ea263d1f4c6b552caa73836a1b49436005cee68b",
+      "candidate_sha256": "adcc2c107940bbe5f16a0279ea263d1f4c6b552caa73836a1b49436005cee68b",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "descriptor-rm-baseline",
+      "reference": "descriptor-release-gates/descriptor-rm-baseline/kernel.elf",
+      "reference_member": "cross-branch/descriptor-rm-baseline.elf",
+      "reference_sha256": "770910577922079b10139b060ea3e3b81905df33cdfd636deed77d94fc46c8b5",
+      "candidate_sha256": "adcc2c107940bbe5f16a0279ea263d1f4c6b552caa73836a1b49436005cee68b",
+      "elf_equal": false,
+      "load_equal": false,
+      "text_equal": true,
+      "changed_load_bytes": 9
+    },
+    {
+      "image": "descriptor-rm-descriptor",
+      "reference": "control53-integrated-gate/markers-rm-descriptor/kernel.elf",
+      "reference_member": "descriptor-rm-descriptor/kernel.elf",
+      "reference_sha256": "e84624d2d9a774541f65c20ddea3668fc924fe131647c882b9cee20f3f839876",
+      "candidate_sha256": "e84624d2d9a774541f65c20ddea3668fc924fe131647c882b9cee20f3f839876",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "descriptor-rm-descriptor",
+      "reference": "descriptor-release-gates/descriptor-rm-descriptor/kernel.elf",
+      "reference_member": "cross-branch/descriptor-rm-descriptor.elf",
+      "reference_sha256": "b4ba0f92148d071c36b89aef368c7c59ccc92bd952467337ad0c6414e30df537",
+      "candidate_sha256": "e84624d2d9a774541f65c20ddea3668fc924fe131647c882b9cee20f3f839876",
+      "elf_equal": false,
+      "load_equal": false,
+      "text_equal": true,
+      "changed_load_bytes": 7
+    },
+    {
+      "image": "descriptor-rm-cold",
+      "reference": "control53-integrated-gate/markers-rm-cold/kernel.elf",
+      "reference_member": "descriptor-rm-cold/kernel.elf",
+      "reference_sha256": "0d7449ad3cebfed943bb473482615aa47f5bcaa1fa8cb8e988d5e6f44ad210ec",
+      "candidate_sha256": "0d7449ad3cebfed943bb473482615aa47f5bcaa1fa8cb8e988d5e6f44ad210ec",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "descriptor-rm-cold",
+      "reference": "descriptor-release-gates/descriptor-rm-cold/kernel.elf",
+      "reference_member": "cross-branch/descriptor-rm-cold.elf",
+      "reference_sha256": "3a70050193d3738a22745422ae01dd28e8e1101c477f0412152572159ae9cbb6",
+      "candidate_sha256": "0d7449ad3cebfed943bb473482615aa47f5bcaa1fa8cb8e988d5e6f44ad210ec",
+      "elf_equal": false,
+      "load_equal": false,
+      "text_equal": true,
+      "changed_load_bytes": 9
+    },
+    {
+      "image": "descriptor-dm-baseline",
+      "reference": "control53-integrated-gate/markers-dm-baseline/kernel.elf",
+      "reference_member": "descriptor-dm-baseline/kernel.elf",
+      "reference_sha256": "5f3fabf3e55b428a2ec556ccf5f4d7cf5303615d01be860240be25a7c49bab00",
+      "candidate_sha256": "5f3fabf3e55b428a2ec556ccf5f4d7cf5303615d01be860240be25a7c49bab00",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "descriptor-dm-baseline",
+      "reference": "descriptor-release-gates/descriptor-dm-baseline/kernel.elf",
+      "reference_member": "cross-branch/descriptor-dm-baseline.elf",
+      "reference_sha256": "c62f7329f06fbea48c8b3e7959954bbc33ecc99818cf5896f43a138eea66c173",
+      "candidate_sha256": "5f3fabf3e55b428a2ec556ccf5f4d7cf5303615d01be860240be25a7c49bab00",
+      "elf_equal": false,
+      "load_equal": false,
+      "text_equal": true,
+      "changed_load_bytes": 9
+    },
+    {
+      "image": "descriptor-dm-descriptor",
+      "reference": "control53-integrated-gate/markers-dm-descriptor/kernel.elf",
+      "reference_member": "descriptor-dm-descriptor/kernel.elf",
+      "reference_sha256": "840f93ee41fad0c72958c326e3ce9312e4c9844565f9814037b66ac31609412c",
+      "candidate_sha256": "840f93ee41fad0c72958c326e3ce9312e4c9844565f9814037b66ac31609412c",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "descriptor-dm-descriptor",
+      "reference": "descriptor-release-gates/descriptor-dm-descriptor/kernel.elf",
+      "reference_member": "cross-branch/descriptor-dm-descriptor.elf",
+      "reference_sha256": "6b6e93fec3a3472c3836dc18bf49c1372d57581896353ba35bcbdbce7dacca6b",
+      "candidate_sha256": "840f93ee41fad0c72958c326e3ce9312e4c9844565f9814037b66ac31609412c",
+      "elf_equal": false,
+      "load_equal": false,
+      "text_equal": true,
+      "changed_load_bytes": 7
+    },
+    {
+      "image": "descriptor-dm-cold",
+      "reference": "control53-integrated-gate/markers-dm-cold/kernel.elf",
+      "reference_member": "descriptor-dm-cold/kernel.elf",
+      "reference_sha256": "2cc2eb61710e71402733df5b77835082d16a47c27e91438320e225ea3ea910ba",
+      "candidate_sha256": "2cc2eb61710e71402733df5b77835082d16a47c27e91438320e225ea3ea910ba",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "descriptor-dm-cold",
+      "reference": "descriptor-release-gates/descriptor-dm-cold/kernel.elf",
+      "reference_member": "cross-branch/descriptor-dm-cold.elf",
+      "reference_sha256": "bd64284914663ed341ac234d14bfc77d1b985029e7d5ba0bdc9a6943e97750c2",
+      "candidate_sha256": "2cc2eb61710e71402733df5b77835082d16a47c27e91438320e225ea3ea910ba",
+      "elf_equal": false,
+      "load_equal": false,
+      "text_equal": true,
+      "changed_load_bytes": 9
+    },
+    {
+      "image": "ordinary-partition-p-short",
+      "reference": "partition-notice-release-builds/ordinary-partition-p-short/kernel.elf",
+      "reference_member": "ordinary-partition-p-short/kernel.elf",
+      "reference_sha256": "e6d7420b43d78f49366bcd3aa2d3dd536fb9b4abe09b53f54cc67d7556a81dc5",
+      "candidate_sha256": "e6d7420b43d78f49366bcd3aa2d3dd536fb9b4abe09b53f54cc67d7556a81dc5",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "ordinary-partition-p-short",
+      "reference": "partition-final-builds/127/ordinary-partition-p-short/kernel.elf",
+      "reference_member": "ordinary-partition-p-short/kernel.elf",
+      "reference_sha256": "e6d7420b43d78f49366bcd3aa2d3dd536fb9b4abe09b53f54cc67d7556a81dc5",
+      "candidate_sha256": "e6d7420b43d78f49366bcd3aa2d3dd536fb9b4abe09b53f54cc67d7556a81dc5",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "ordinary-partition-q-long",
+      "reference": "partition-notice-release-builds/ordinary-partition-q-long/kernel.elf",
+      "reference_member": "ordinary-partition-q-long/kernel.elf",
+      "reference_sha256": "2af61771f2900b40ed349907f22ee477836089f33c17f9d26037485ab819a140",
+      "candidate_sha256": "2af61771f2900b40ed349907f22ee477836089f33c17f9d26037485ab819a140",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "ordinary-partition-q-long",
+      "reference": "partition-final-builds/127/ordinary-partition-q-long/kernel.elf",
+      "reference_member": "ordinary-partition-q-long/kernel.elf",
+      "reference_sha256": "2af61771f2900b40ed349907f22ee477836089f33c17f9d26037485ab819a140",
+      "candidate_sha256": "2af61771f2900b40ed349907f22ee477836089f33c17f9d26037485ab819a140",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "partition-bench",
+      "reference": "partition-notice-release-builds/partition-bench/kernel.elf",
+      "reference_member": "partition-bench/kernel.elf",
+      "reference_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+      "candidate_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "partition-bench",
+      "reference": "partition-final-builds/112/partition-bench/kernel.elf",
+      "reference_member": "partition-bench/kernel.elf",
+      "reference_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+      "candidate_sha256": "1075406c96ac2243b637cd9bc349ca0835ef292a461267766dabcf0dfbef7948",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "partition-legacy-diag",
+      "reference": "partition-notice-release-builds/partition-legacy-diag/kernel.elf",
+      "reference_member": "partition-legacy-diag/kernel.elf",
+      "reference_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+      "candidate_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "partition-legacy-diag",
+      "reference": "partition-final-builds/112/partition-legacy-diag/kernel.elf",
+      "reference_member": "partition-legacy-diag/kernel.elf",
+      "reference_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+      "candidate_sha256": "8820fe4aa43c8cab98d29fadff90fb626419d77149d7d50f00c978eb9938a3e0",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "partition-legacy-diag-negative",
+      "reference": "partition-notice-release-builds/partition-legacy-diag-negative/kernel.elf",
+      "reference_member": "partition-legacy-diag-negative/kernel.elf",
+      "reference_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+      "candidate_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "partition-legacy-diag-negative",
+      "reference": "partition-final-builds/112/partition-legacy-diag-negative/kernel.elf",
+      "reference_member": "partition-legacy-diag-negative/kernel.elf",
+      "reference_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+      "candidate_sha256": "3edf8b58a17f4af8af95057ea2cab897c8b2adf9c86c7839ad5b5e07294aa2d9",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "markers-rm-marker",
+      "reference": "control53-integrated-gate/markers-rm-marker/kernel.elf",
+      "reference_member": "markers-rm-marker/kernel.elf",
+      "reference_sha256": "708e3c7f75d3710c558da0606f320973be28931a99939bc73d7eefc327be0b60",
+      "candidate_sha256": "708e3c7f75d3710c558da0606f320973be28931a99939bc73d7eefc327be0b60",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    },
+    {
+      "image": "markers-dm-marker",
+      "reference": "control53-integrated-gate/markers-dm-marker/kernel.elf",
+      "reference_member": "markers-dm-marker/kernel.elf",
+      "reference_sha256": "70c6323f9b9991b072077d4013d6c3890ec196ea1c774ec08828aa4cf9f2de03",
+      "candidate_sha256": "70c6323f9b9991b072077d4013d6c3890ec196ea1c774ec08828aa4cf9f2de03",
+      "elf_equal": true,
+      "load_equal": true,
+      "text_equal": true,
+      "changed_load_bytes": 0
+    }
+  ],
+  "guest_observations": {
+    "descriptor-rm-baseline": {
+      "terminal": true,
+      "score": [
+        "phase envelope"
+      ],
+      "cold_fixed_no_probe": null
+    },
+    "descriptor-rm-descriptor": {
+      "terminal": true,
+      "score": [
+        "actual delivery"
+      ],
+      "cold_fixed_no_probe": null
+    },
+    "descriptor-rm-cold": {
+      "terminal": true,
+      "score": [
+        "unknown event 48 at line 4"
+      ],
+      "cold_fixed_no_probe": true
+    },
+    "descriptor-dm-baseline": {
+      "terminal": true,
+      "score": [
+        "phase envelope"
+      ],
+      "cold_fixed_no_probe": null
+    },
+    "descriptor-dm-descriptor": {
+      "terminal": true,
+      "score": [
+        "actual delivery"
+      ],
+      "cold_fixed_no_probe": null
+    },
+    "descriptor-dm-cold": {
+      "terminal": true,
+      "score": [
+        "unknown event 48 at line 4"
+      ],
+      "cold_fixed_no_probe": true
+    }
+  },
+  "operational_positives": 0,
+  "audit_history": [
+    {
+      "findings": [
+        "dangling implementation for POL-004: IMP-052"
+      ],
+      "exit": 1,
+      "sha256": "38e356920b2f619814516e15f2c9c123a871f65e44f7c336abdf67bcedec97d4",
+      "head": "ab14de00b4e1b61d0e20eb37ef8eafc8d504d306"
+    },
+    {
+      "head": "bf07551c2cf999372e7437315f0358f2145031ee",
+      "exit": 0,
+      "policies": 18,
+      "findings": [],
+      "sha256": "54d455ba7e05cd8d078bd5734356c8151e60d34814a59227f9f3a633ff121176"
+    },
+    {
+      "commit": "3d314b0a188b1e93f1b2a6ad9ee35a47c30a7c9b",
+      "exit": 0,
+      "policies": 18,
+      "findings": [],
+      "audit_sha": "4a6d9b0811dbbda00c80523753517d5280677222dfdc7a340f0edfd15630447c"
+    }
+  ],
+  "archive": {
+    "file": "evd-052-release.zip",
+    "bytes": 454744,
+    "sha256": "4586be497dde1262032cc0cd402105ce30615845fc75819b0a7205f433e0bab9",
+    "entries": 106,
+    "verify": "From a repository checkout use git hash-object docs/evidence/evd-052-release.zip and compare to git rev-parse HEAD:docs/evidence/evd-052-release.zip. Verify the ZIP SHA-256 in this record, extract to a fresh directory and run sha256sum -c FILES.sha256.",
+    "offline_replay": "From the extracted directory run python3 tools/control_observations.py healthy CASE/guest/uart for each of the six guest_observations keys in this record, replacing CASE with that key. Each returns 1. Compare its JSON with CASE/guest/score.stdout. Compare candidate and reference_member ELF SHA-256 for each reference_comparisons entry. builds.json contains segment layouts and byte offsets; summary.json maps changed bytes to source locations."
+  }
+}

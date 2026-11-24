@@ -130,4 +130,12 @@ POL-006 / IMP-044. The fresh healthy boots met 1 ms at all 10 P and 13 Q edges. 
 
 POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQs in one cold boot. The deliberate negative recorded guard 99, observed 0 and expected 1 at the first A marker. The original PART FAIL remains unattributed. [EVD-047](evidence/evd-047.en.md)
 
+VER-002/005/023 · Twenty-two of 24 boots inhibited. Two descriptor DM boots accepted seven permits each and stayed OFF. Healthy sequences: 0/24. [EVD-051](evidence/evd-051.en.md)
+
+CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
+IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journals. None of six integrated control boots qualified operationally. [EVD-052](evidence/evd-052.en.md)
+
+CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
 CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
