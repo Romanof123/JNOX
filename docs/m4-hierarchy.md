@@ -45,4 +45,4 @@ QMP로 실행 ELF의 hierarchy_witness 심벌이 가리키는 물리 메모리 1
 
 독립 가상 게스트 결과와 시험 이미지 식별자는 다음 기록에서 확인할 수 있다. [EVD-024](evidence/evd-024.md)
 
-POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹, EVD-038 계획](ordinary-groups.md#한국어)
+POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한국어) · [실행 부채와 회복 EVD-038](evidence/evd-038.md)

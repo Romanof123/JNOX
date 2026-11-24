@@ -2,7 +2,7 @@
 
 ## English
 
-#84 under #21. CHG-040 / IMP-038. EVD-038 planned. Single-core virt, trusted linked EL1 Rust tasks, physical counter ticks, CNTP absolute compare and GICv2 PPI30. The supported maximum topology has two parents, three child groups and three leaves, with exactly three budgeted levels and one common fixed-grid period P. Each node has a positive quota Q ≤ P. Lower sibling index wins. block suspends the caller. wake(id) immediately readies a blocked leaf, may preempt the caller, and returns false for other states or invalid ids. Returning exits permanently. A system with no ready leaves runs WFI with timer disabled.
+#84 under #21. CHG-040 / IMP-038. [EVD-038 independent execution](evidence/evd-038.en.md). Single-core virt, trusted linked EL1 Rust tasks, physical counter ticks, CNTP absolute compare and GICv2 PPI30. The supported maximum topology has two parents, three child groups and three leaves, with exactly three budgeted levels and one common fixed-grid period P. Each node has a positive quota Q ≤ P. Lower sibling index wins. block suspends the caller. wake(id) immediately readies a blocked leaf, may preempt the caller, and returns false for other states or invalid ids. Returning exits permanently. A system with no ready leaves runs WFI with timer disabled.
 
 At each SVC or timer sample, charge the entire interval since dispatch once to the outgoing leaf, child and parent. Refund unused reservation immediately. Physical elapsed accounting includes switch overhead between samples. The IRQ compare is the scheduled end. Actual occupancy can exceed it until delivery. A late task incurs signed debt across grid boundaries. Each refill adds the quota and discards credit exceeding the quota. Every node on a path needs strictly positive credit before dispatch. The peer and idle incur zero charges for the late owner's service.
 
@@ -12,7 +12,7 @@ The ordinary sample blocks leaf 0. Leaf 1 wakes it from another child under the 
 
 ## 한국어
 
-#21 하위 이슈 #84, CHG-040 / IMP-038, EVD-038 계획. 단일 코어 virt의 신뢰된 EL1 작업에 물리 카운터, CNTP 절대 시각, PPI30을 사용한다. 최대 구성은 부모 2개, 자식 3개, 리프 3개, 할당량 깊이 3이다. 각 노드의 양수 할당량 Q는 공통 고정 주기 P 이하다. 형제 중 작은 인덱스를 우선한다. block은 호출자를 차단하고 wake(id)는 차단된 리프만 깨우며 즉시 선점할 수 있다. 다른 상태나 잘못된 ID이면 false다. 반환은 영구 종료다. 준비 작업이 없으면 타이머를 끄고 WFI에 진입한다.
+#21 하위 이슈 #84, CHG-040 / IMP-038, [EVD-038 독립 실행](evidence/evd-038.md). 단일 코어 virt의 신뢰된 EL1 작업에 물리 카운터, CNTP 절대 시각, PPI30을 사용한다. 최대 구성은 부모 2개, 자식 3개, 리프 3개, 할당량 깊이 3이다. 각 노드의 양수 할당량 Q는 공통 고정 주기 P 이하다. 형제 중 작은 인덱스를 우선한다. block은 호출자를 차단하고 wake(id)는 차단된 리프만 깨우며 즉시 선점할 수 있다. 다른 상태나 잘못된 ID이면 false다. 반환은 영구 종료다. 준비 작업이 없으면 타이머를 끄고 WFI에 진입한다.
 
 SVC나 타이머 IRQ를 관측하면 직전 디스패치부터 실제 관측까지의 시간을 해당 리프·자식·부모에 각각 한 번 부과한다. 조기 차단 시 미사용 예약을 환급한다. 계측 구간에는 전환 오버헤드가 포함된다. 예정 종료 이후의 실제 서비스도 청구하며 음수 잔액은 다음 주기로 넘어간다. 재충전 시 부채를 우선 상환하고 양수 잔액은 할당량을 넘지 않는다. 세 노드 모두 잔액이 양수가 되어야 다시 실행한다. 이전 소유자의 초과 시간을 동료나 유휴 작업에 부과하지 않는다. 첫 경계 이후 완전히 지난 주기당 P−Q를 빼므로 계산량은 누락된 주기 수와 무관하다. 노드 잔액 b≤0이면 양수 복구까지 floor(−b/Q)+1 주기가 필요하다. 각 경로의 최댓값을 구한 뒤 가장 이른 경로의 시각에 CNTP를 설정한다. 표현할 수 없는 미래 시각은 실패 경로로 보낸다. 제품의 반응 시간과 격리 한도는 별도 근거가 필요하다.
 

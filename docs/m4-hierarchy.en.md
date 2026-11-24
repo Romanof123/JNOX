@@ -45,4 +45,4 @@ Replay each reservation using the table. Its post-reservation balances repeat fo
 
 The independent virtual-guest results and frozen image are recorded in [EVD-024](evidence/evd-024.en.md)
 
-POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups, planned EVD-038](ordinary-groups.md#english)
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)
