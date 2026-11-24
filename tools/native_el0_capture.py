@@ -75,6 +75,18 @@ def capture(args):
             probe_sha256=sha(root / "probe.c"),
         ),
     )
+    return observe(
+        root,
+        cmd,
+        base,
+        limit,
+        rb"(?m)^NATIVE EL0 (EXIT -?[0-9]+|FAULT [0-9]+)\r?\n",
+        "EXIT 37",
+    )
+
+
+def observe(root, cmd, base, limit, terminal_pattern, success, observer=None):
+    """Retain one bounded QEMU process, its UART, exception trace and physical RAM."""
     marker = "unobserved"
     proc = None
     try:
@@ -98,13 +110,17 @@ def capture(args):
 
                 pipe = Pipe()
                 request(pipe, "qmp_capabilities")
+                if observer is not None:
+                    observer.start(pipe, proc.pid)
                 while proc.poll() is None:
+                    if observer is not None:
+                        observer.sample()
                     uart = root / "uart.bin"
                     if uart.exists():
                         if uart.stat().st_size > 1 << 20:
                             raise ValueError("oversize UART")
                         terminal = re.search(
-                            rb"(?m)^NATIVE EL0 (EXIT -?[0-9]+|FAULT [0-9]+)\r?\n",
+                            terminal_pattern,
                             uart.read_bytes(),
                         )
                         if terminal:
@@ -133,6 +149,8 @@ def capture(args):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
+        if observer is not None:
+            observer.finish()
         save(
             root / "session.json",
             dict(
@@ -142,7 +160,7 @@ def capture(args):
             ),
         )
         print(sha(root / "session.json"))
-    return int(marker != "EXIT 37")
+    return int(marker != success)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,347 @@
+{
+  "candidate": "af952e34cea8fbe0aef5c7b4cb1f945a2884fff5",
+  "prior_candidate": "56d6e0b7cb7183fdc1b9b06275050ce64254e6f6",
+  "plan": "7549e57614221f4e6f71db32b0b369ef390e97f7",
+  "workload_issue": 177,
+  "correction_pr": 183,
+  "first_irq_issue": 181,
+  "startup_issue": 182,
+  "remaining_timing_issue": 184,
+  "prior_archive_sha256": "063895921d25c7414ec04786871b3ba5be90e112d3c626d2b4a66bc7683aa2ce",
+  "prior_kernel_hashes": {
+    "share-default": {
+      "kernel_sha256": "38b50b9d28226bb05b75e398e5d59c4b41d67eccd1a8b7a3f6713b7a3be7ac27",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    },
+    "share-icount3": {
+      "kernel_sha256": "38b50b9d28226bb05b75e398e5d59c4b41d67eccd1a8b7a3f6713b7a3be7ac27",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    },
+    "wake-default": {
+      "kernel_sha256": "1c9c01593f78404dddb8b68c6a0b9a6670d94b30da4d99a4f6213da741ad974b",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    },
+    "wake-icount3": {
+      "kernel_sha256": "1c9c01593f78404dddb8b68c6a0b9a6670d94b30da4d99a4f6213da741ad974b",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206"
+    }
+  },
+  "prior_original_startup_error_sha256": "4a40f0d472343aa6257cc2f5f288bb172d3d1fbf4061751137f203e681278cf6",
+  "revised_first_order": [
+    "share-default",
+    "wake-default",
+    "share-icount3",
+    "wake-icount3",
+    "startup-default"
+  ],
+  "prior_first_order": [
+    "share-default",
+    "share-icount3",
+    "wake-default",
+    "wake-icount3"
+  ],
+  "revised_firsts": {
+    "share-default": {
+      "session_sha256": "e57ad789ca11fe342b83778a65b2d2e27fd05876fdc04d8731bbc8aa4762794d",
+      "kernel_sha256": "7639609e478d59ffbd769063b19d00c6e08902a6417d943a279ef72ff0c5f4b0",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206",
+      "raw_terminal": "END",
+      "external_counts": {
+        "EL0_returns": 38,
+        "IRQs": 36,
+        "SVCs": 2
+      },
+      "first_irq": {
+        "iar": 30,
+        "control": 5,
+        "compare": 1420133,
+        "entry": 1549072,
+        "interrupted_pc": "0x40056c"
+      },
+      "frequency": 62500000,
+      "quantum": 625000,
+      "H": 781250,
+      "G": 156250,
+      "journal_events": 273,
+      "stop_checks": [
+        {
+          "lease": 7,
+          "gap": 2608,
+          "elapsed": 807801
+        },
+        {
+          "lease": 10,
+          "gap": 2090,
+          "elapsed": 782806
+        }
+      ],
+      "replay_misses": [
+        "lease 7: gap 2608, elapsed 807801",
+        "closure 7: discrepancy 1612999",
+        "lease 10: gap 2090, elapsed 782806"
+      ],
+      "exit_statuses": [
+        42,
+        41
+      ],
+      "final_service": [
+        9017797,
+        17846580
+      ],
+      "share": {
+        "closures": 36,
+        "A": 8893158,
+        "B": 17722813,
+        "terminal_share_bound": true,
+        "prefix_misses": [
+          {
+            "closure": 7,
+            "discrepancy": 1612999
+          }
+        ],
+        "excluded_tail_service": [
+          124639,
+          123767
+        ]
+      }
+    },
+    "wake-default": {
+      "session_sha256": "fcc803742990c47c869ffa04fc063489e4d7070d80fb7417a85f4ea0a1d34f18",
+      "kernel_sha256": "ccc57dd934a44bd742eb79fd323febecdb7d1d9e13903a3fcd7fb5d454177c81",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206",
+      "raw_terminal": "END",
+      "external_counts": {
+        "EL0_returns": 26,
+        "IRQs": 15,
+        "SVCs": 11
+      },
+      "first_irq": {
+        "iar": 30,
+        "control": 5,
+        "compare": 1621505,
+        "entry": 1765012,
+        "interrupted_pc": "0x40056c"
+      },
+      "frequency": 62500000,
+      "quantum": 625000,
+      "H": 781250,
+      "G": 156250,
+      "journal_events": 207,
+      "stop_checks": [],
+      "replay_misses": [],
+      "exit_statuses": [
+        41,
+        42
+      ],
+      "final_service": [
+        9790640,
+        1323687
+      ],
+      "wake_rounds": [
+        {
+          "round": 1,
+          "I_minus_D": 125514,
+          "W_minus_I": 11826,
+          "R_minus_W": 751146,
+          "S_high_minus_R": 139630,
+          "S_high_minus_D": 1028116,
+          "S_low": 5483730,
+          "S_high": 5483730,
+          "A_solo": 2460935,
+          "A_full": 3,
+          "intervening_A": 1
+        },
+        {
+          "round": 2,
+          "I_minus_D": 110928,
+          "W_minus_I": 910,
+          "R_minus_W": 736476,
+          "S_high_minus_R": 105696,
+          "S_high_minus_D": 954010,
+          "S_low": 9066234,
+          "S_high": 9066234,
+          "A_solo": 2478161,
+          "A_full": 3,
+          "intervening_A": 1
+        },
+        {
+          "round": 3,
+          "I_minus_D": 116157,
+          "W_minus_I": 734,
+          "R_minus_W": 147485,
+          "S_high_minus_R": 128215,
+          "S_high_minus_D": 392591,
+          "S_low": 12109297,
+          "S_high": 12109297,
+          "A_solo": 2468746,
+          "A_full": 3,
+          "intervening_A": 1
+        }
+      ]
+    },
+    "share-icount3": {
+      "session_sha256": "28b75180e5c6fd275dbbacfe3337c16d3917773f78cd385c15c23d14f35da80f",
+      "kernel_sha256": "7639609e478d59ffbd769063b19d00c6e08902a6417d943a279ef72ff0c5f4b0",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206",
+      "raw_terminal": "END",
+      "external_counts": {
+        "EL0_returns": 38,
+        "IRQs": 36,
+        "SVCs": 2
+      },
+      "first_irq": {
+        "iar": 30,
+        "control": 5,
+        "compare": 841078,
+        "entry": 841080,
+        "interrupted_pc": "0x40056c"
+      },
+      "frequency": 62500000,
+      "quantum": 625000,
+      "H": 781250,
+      "G": 156250,
+      "journal_events": 273,
+      "stop_checks": [],
+      "replay_misses": [],
+      "exit_statuses": [
+        41,
+        42
+      ],
+      "final_service": [
+        7500425,
+        15000789
+      ],
+      "share": {
+        "closures": 36,
+        "A": 7500024,
+        "B": 15000048,
+        "terminal_share_bound": true,
+        "prefix_misses": [],
+        "excluded_tail_service": [
+          401,
+          741
+        ]
+      }
+    },
+    "wake-icount3": {
+      "session_sha256": "7e8ced7fa2e8c8d604719e3cc801d42f2a4f7b9316ecd3b4509e9ccb739246b1",
+      "kernel_sha256": "ccc57dd934a44bd742eb79fd323febecdb7d1d9e13903a3fcd7fb5d454177c81",
+      "user_sha256": "9d3c6350a04536da091dd7bc77cfdcc81729f8baa431d6315e5258c28da67206",
+      "raw_terminal": "END",
+      "external_counts": {
+        "EL0_returns": 26,
+        "IRQs": 15,
+        "SVCs": 11
+      },
+      "first_irq": {
+        "iar": 30,
+        "control": 5,
+        "compare": 841075,
+        "entry": 841077,
+        "interrupted_pc": "0x400590"
+      },
+      "frequency": 62500000,
+      "quantum": 625000,
+      "H": 781250,
+      "G": 156250,
+      "journal_events": 207,
+      "stop_checks": [],
+      "replay_misses": [],
+      "exit_statuses": [
+        41,
+        42
+      ],
+      "final_service": [
+        9360931,
+        8042
+      ],
+      "wake_rounds": [
+        {
+          "round": 1,
+          "I_minus_D": 2,
+          "W_minus_I": 1031,
+          "R_minus_W": 626308,
+          "S_high_minus_R": 970,
+          "S_high_minus_D": 628311,
+          "S_low": 3972833,
+          "S_high": 3972833,
+          "A_solo": 2495012,
+          "A_full": 3,
+          "intervening_A": 1
+        },
+        {
+          "round": 2,
+          "I_minus_D": 2,
+          "W_minus_I": 1031,
+          "R_minus_W": 626308,
+          "S_high_minus_R": 970,
+          "S_high_minus_D": 628311,
+          "S_low": 7105038,
+          "S_high": 7105038,
+          "A_solo": 2495013,
+          "A_full": 3,
+          "intervening_A": 1
+        },
+        {
+          "round": 3,
+          "I_minus_D": 2,
+          "W_minus_I": 1031,
+          "R_minus_W": 2271,
+          "S_high_minus_R": 963,
+          "S_high_minus_D": 4267,
+          "S_low": 9613199,
+          "S_high": 9613199,
+          "A_solo": 2495013,
+          "A_full": 3,
+          "intervening_A": 1
+        }
+      ]
+    },
+    "startup-default": {
+      "session_sha256": "836e55c102098ee1b3057ff27a17f3b902554c12529a0ea726e54422821f387d",
+      "kernel_sha256": "63344f266974a155ecc9076d9b281ba8dec8aae575612cbd95482b79ad230d37",
+      "user_sha256": "ccf12f0ce4ef7cec47cf6e69945e066c2fdcd63ecf3881d686f7f31ccc8d55b6",
+      "raw_terminal": "EXIT 37",
+      "external_counts": {
+        "EL0_returns": 2,
+        "IRQs": 0,
+        "SVCs": 2
+      },
+      "entry": 4194304,
+      "write": -38,
+      "errno": 38,
+      "stdout_bytes": 0,
+      "exit_status": 37
+    }
+  },
+  "expected_replay_exits": {
+    "share-default": 1,
+    "wake-default": 0,
+    "share-icount3": 0,
+    "wake-icount3": 0,
+    "startup-default": 0
+  },
+  "weighted_full_gate": "FAIL",
+  "weighted_first_irq_pass": 4,
+  "weighted_full_pass": 3,
+  "startup_compatibility": "PASS",
+  "disassembly_pcs": {
+    "share": [
+      "0x40201d1c",
+      "0x40201d28",
+      "0x40201d54"
+    ],
+    "wake": [
+      "0x40201d24",
+      "0x40201d30",
+      "0x40201d5c"
+    ]
+  },
+  "disassembly_pc_fields": [
+    "full_iar_load",
+    "timer_disable",
+    "same_register_eoi"
+  ],
+  "archive_sha256": "73e7fc616210e8fe1500dcd8dda711b476984519a323699635259c000826e492",
+  "archive_bytes": 311021
+}

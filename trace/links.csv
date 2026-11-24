@@ -1262,3 +1262,9 @@ CHG-082,affects,REQ-016
 CHG-082,affects,REQ-023
 CHG-090,affects,REQ-009
 VER-009,has-partial-evidence,EVD-090
+CHG-088,affects,REQ-002
+CHG-088,affects,REQ-005
+CHG-088,affects,REQ-008
+CHG-088,affects,REQ-014
+CHG-088,affects,REQ-020
+CHG-088,affects,REQ-023
