@@ -68,3 +68,5 @@ POL-006 / CHG-050 / IMP-047. 일반 이미지와 진단 이미지는 각각 한 
 CHG-057 · [일반 Rust 복권·스트라이드 작업 기준](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
 
 CHG-067 · [일반 Rust 뮤텍스 작업의 배치·소유권 기준](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)
+
+[POL-013 Pi 4 두 코어 보드 검증 계획](boards/pi4-smp.md)

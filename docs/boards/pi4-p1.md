@@ -58,3 +58,5 @@ python3 tools/qemu_boot.py --profile pi4 --kernel kernel8.img
 [EVD-011](../evidence/evd-011.md)
 
 [타이머 선점 검증 구성](pi4-timer.md)
+
+[Pi 4 두 코어 기동·지정 깨우기 계획](pi4-smp.md)
