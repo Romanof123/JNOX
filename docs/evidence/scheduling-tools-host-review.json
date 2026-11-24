@@ -1,0 +1,294 @@
+{
+  "commit": "7c1f83252bddf417fa06b16571001a2ae77051ea",
+  "tree": "441f46e3d9c34c50bae999fff43ca0d8da033dd2",
+  "first_runs": [
+    {
+      "command": "python -B tools/scheduling_evidence.py --root .",
+      "exit": 0,
+      "output": "host-first-audit.txt"
+    },
+    {
+      "command": "python -B -m unittest discover -s tools -p test_pi4_serial_capture.py",
+      "exit": 0,
+      "tests": 3,
+      "output": "host-first-capture.txt"
+    }
+  ],
+  "auditor_tests": {
+    "command": "python -B -m unittest discover -s tools -p test_scheduling_evidence.py",
+    "exit": 0,
+    "tests": 6,
+    "output": "host-audit-tests.txt"
+  },
+  "policies": {
+    "POL-001": "live_switch_recorded",
+    "POL-002": "live_switch_recorded",
+    "POL-003": "live_switch_recorded",
+    "POL-004": "live_switch_recorded",
+    "POL-005": "live_switch_recorded",
+    "POL-006": "live_switch_recorded",
+    "POL-007": "live_switch_recorded",
+    "POL-008": "live_switch_recorded",
+    "POL-009": "live_switch_recorded",
+    "POL-010": "decision_only",
+    "POL-011": "decision_only",
+    "POL-012": "decision_only",
+    "POL-013": "live_switch_recorded",
+    "POL-014": "live_switch_recorded",
+    "POL-015": "live_switch_recorded",
+    "POL-016": "decision_only",
+    "POL-017": "decision_only",
+    "POL-018": "decision_only"
+  },
+  "pol002": {
+    "allocated_requirements": [
+      "REQ-023"
+    ],
+    "catalog_citations_without_policy_edge": [
+      "EVD-002",
+      "EVD-003"
+    ],
+    "claims": {
+      "analysis": [],
+      "decision": [
+        "EVD-004"
+      ],
+      "live_switch": [
+        "EVD-004",
+        "EVD-014"
+      ]
+    },
+    "classification": "live_switch_recorded",
+    "direct_implementation_verification_paths": {
+      "IMP-014": {
+        "VER-002": [
+          "EVD-014"
+        ],
+        "VER-005": [
+          "EVD-014"
+        ],
+        "VER-008": [
+          "EVD-014"
+        ],
+        "VER-023": [
+          "EVD-014"
+        ]
+      }
+    }
+  },
+  "findings": [],
+  "local_references": [
+    "docs/evidence/evd-002.md",
+    "docs/evidence/evd-002.en.md",
+    "docs/evidence/evd-002.json",
+    "docs/evidence/evd-003.md",
+    "docs/evidence/evd-003.en.md",
+    "docs/evidence/evd-003.json",
+    "docs/evidence/evd-004.md",
+    "docs/evidence/evd-004.en.md",
+    "docs/evidence/evd-004.json",
+    "docs/evidence/evd-005.md",
+    "docs/evidence/evd-005.en.md",
+    "docs/evidence/evd-005.json",
+    "docs/evidence/evd-006.md",
+    "docs/evidence/evd-006.en.md",
+    "docs/evidence/evd-006-regressions.json",
+    "docs/evidence/evd-006.json",
+    "docs/evidence/evd-007.md",
+    "docs/evidence/evd-007.en.md",
+    "docs/evidence/evd-007-combinations.json",
+    "docs/evidence/evd-007.json",
+    "docs/evidence/evd-008.md",
+    "docs/evidence/evd-008.en.md",
+    "docs/evidence/evd-008.json",
+    "docs/evidence/evd-009.md",
+    "docs/evidence/evd-009.en.md",
+    "docs/evidence/evd-009.json",
+    "docs/evidence/evd-010.md",
+    "docs/evidence/evd-010.en.md",
+    "docs/evidence/evd-010.json",
+    "docs/evidence/evd-012.md",
+    "docs/evidence/evd-012.en.md",
+    "docs/evidence/evd-012.json",
+    "docs/evidence/evd-013.md",
+    "docs/evidence/evd-013.en.md",
+    "docs/evidence/evd-013-regressions.json",
+    "docs/evidence/evd-013.json",
+    "docs/evidence/evd-014.md",
+    "docs/evidence/evd-014.en.md",
+    "docs/evidence/evd-014-package.json",
+    "docs/evidence/evd-014.json",
+    "docs/evidence/evd-015.md",
+    "docs/evidence/evd-015.en.md",
+    "docs/evidence/evd-015-first.json",
+    "docs/evidence/evd-015-regressions.json",
+    "docs/evidence/evd-015.json",
+    "docs/evidence/evd-016.md",
+    "docs/evidence/evd-016.en.md",
+    "docs/evidence/evd-016-regressions.json",
+    "docs/evidence/evd-016.json",
+    "docs/evidence/evd-017.md",
+    "docs/evidence/evd-017.en.md",
+    "docs/evidence/evd-017-initial.json",
+    "docs/evidence/evd-017-multi.json",
+    "docs/evidence/evd-017-regressions.json",
+    "docs/evidence/evd-017-single.json",
+    "docs/evidence/evd-018.md",
+    "docs/evidence/evd-018.en.md",
+    "docs/evidence/evd-018-regressions.json",
+    "docs/evidence/evd-018.json",
+    "docs/evidence/evd-019.md",
+    "docs/evidence/evd-019.en.md",
+    "docs/evidence/evd-019-020-regressions.json",
+    "docs/evidence/evd-019.json",
+    "docs/evidence/evd-020.md",
+    "docs/evidence/evd-020.en.md",
+    "docs/evidence/evd-019-020-regressions.json",
+    "docs/evidence/evd-020.json"
+  ],
+  "scope": "Policy classes describe CSV links; findings concern local references and captures. Product qualification and test execution are outside this audit.",
+  "baseline_gaps": [
+    "Six decision-only policy families lack catalogued live-switch claims; live checks are needed before promoting claims.",
+    "EVD-002 and EVD-003 are catalog citations without a POL-002 policy edge."
+  ],
+  "match": {
+    "command": [
+      "C:\\Users\\jonki\\anaconda3\\python.exe",
+      "-B",
+      "tools/pi4_serial_capture.py",
+      "--replay",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\first.bin",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\second.bin",
+      "--boot-dir",
+      "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-sd",
+      "--elf",
+      "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-target\\aarch64-unknown-none\\release\\jnox-kernel",
+      "--board-revision",
+      "REPLAY-unverified-revision",
+      "--eeprom",
+      "REPLAY-unverified-eeprom",
+      "--output",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\match"
+    ],
+    "exit": 0,
+    "stderr": ""
+  },
+  "repeat": {
+    "command": [
+      "C:\\Users\\jonki\\anaconda3\\python.exe",
+      "-B",
+      "tools/pi4_serial_capture.py",
+      "--replay",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\first.bin",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\second.bin",
+      "--boot-dir",
+      "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-sd",
+      "--elf",
+      "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-target\\aarch64-unknown-none\\release\\jnox-kernel",
+      "--board-revision",
+      "REPLAY-unverified-revision",
+      "--eeprom",
+      "REPLAY-unverified-eeprom",
+      "--output",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\match"
+    ],
+    "exit": 2,
+    "stderr": "Capture failed: [WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: 'D:\\\\codex\\\\.jnox-work\\\\ops-trace-capture\\\\host-replay\\\\match'\n"
+  },
+  "unchanged_hashes": {
+    "session.json": "a6daa5b9ee9396c56f51edb96de6d523497c70f53e17e9d2a01479ee8aa4f244",
+    "run-1\\reads.jsonl": "77544398f94d428b1eaaa27e411b6b479da97bab229e026e9feeff4eb74c6437",
+    "run-1\\result.json": "0b922353ca7e6b26e1cf6eeb0eb4f2e67f5e4816f03691ed23b2674464000c21",
+    "run-1\\uart.bin": "12ff9025d63cf327c7a91bc00e337e8d91aef8bf3638da490f9faf48b98c850d",
+    "run-2\\reads.jsonl": "77544398f94d428b1eaaa27e411b6b479da97bab229e026e9feeff4eb74c6437",
+    "run-2\\result.json": "0c9709f0177126dc138be0a0dc1d84fc0a502df969b017160d1036dba61fdd91",
+    "run-2\\uart.bin": "12ff9025d63cf327c7a91bc00e337e8d91aef8bf3638da490f9faf48b98c850d"
+  },
+  "failure": {
+    "command": [
+      "C:\\Users\\jonki\\anaconda3\\python.exe",
+      "-B",
+      "tools/pi4_serial_capture.py",
+      "--replay",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\second.bin",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\extra.bin",
+      "--boot-dir",
+      "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-sd",
+      "--elf",
+      "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-target\\aarch64-unknown-none\\release\\jnox-kernel",
+      "--board-revision",
+      "REPLAY-unverified-revision",
+      "--eeprom",
+      "REPLAY-unverified-eeprom",
+      "--output",
+      "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\extra"
+    ],
+    "exit": 1,
+    "stderr": ""
+  },
+  "metadata": {
+    "boot_dir": "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-sd",
+    "files_sha256": {
+      "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+      "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+      "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+      "config.txt": "4c46aeb43e3e4fae826ad08257abdb31e979b894ed6d1665043d32e032a07601",
+      "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+      "kernel8.img": "991b31d9ef332251aa9f8a1adc3570e11d5823aeb1c34dcaff22c428e83bf5ea",
+      "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+      "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593"
+    },
+    "firmware_commit": "bc7f439c234e19371115e07b57c366df59cc1bc7",
+    "package_manifest_sha256": "793e118b9136e1ab8ae07656b8c5f889ac0a12de043512427cd137da8aacf0e4",
+    "elf": "D:\\codex\\.jnox-work\\batch-bd72722993\\pi-irq-target\\aarch64-unknown-none\\release\\jnox-kernel",
+    "elf_sha256": "253119b904a9296f7f83c5e26a5a674c321bb47c744b8716d4356387b851c164",
+    "mode": "file_replay",
+    "session_id": "eaccf3fa-6569-4421-9bd0-0c46913618b3",
+    "board_revision": "REPLAY-unverified-revision",
+    "eeprom": "REPLAY-unverified-eeprom",
+    "witness_status": "unsigned"
+  },
+  "results": [
+    {
+      "uart_verdict": "matched",
+      "arm_unix_ns": 1795503814348449400,
+      "arm_monotonic_ns": 22722078000000,
+      "elapsed_ns": 1000000000,
+      "final_lf_elapsed_ns": 0,
+      "bytes": 103,
+      "uart_sha256": "12ff9025d63cf327c7a91bc00e337e8d91aef8bf3638da490f9faf48b98c850d",
+      "run_id": "4aeb9528-5f6d-45eb-bb1b-0ef04212c423",
+      "run": 1,
+      "mode": "file_replay",
+      "source": "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\first.bin"
+    },
+    {
+      "uart_verdict": "matched",
+      "arm_unix_ns": 1795503815353575900,
+      "arm_monotonic_ns": 22723078000000,
+      "elapsed_ns": 1000000000,
+      "final_lf_elapsed_ns": 0,
+      "bytes": 103,
+      "uart_sha256": "12ff9025d63cf327c7a91bc00e337e8d91aef8bf3638da490f9faf48b98c850d",
+      "run_id": "7526f7df-603d-4542-9999-2a3a243a6556",
+      "run": 2,
+      "mode": "file_replay",
+      "source": "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\second.bin"
+    }
+  ],
+  "negative": {
+    "uart_verdict": "unexpected_bytes",
+    "arm_unix_ns": 1795503817652997800,
+    "arm_monotonic_ns": 22725390000000,
+    "elapsed_ns": 0,
+    "final_lf_elapsed_ns": null,
+    "bytes": 104,
+    "uart_sha256": "3e915ca329626ad4b48296413be63678e2f8d66d22be8259373d3cbc092455bf",
+    "run_id": "6c9eac99-13a0-4ec3-a339-5f7dcecb93b1",
+    "run": 2,
+    "mode": "file_replay",
+    "source": "D:\\codex\\.jnox-work\\ops-trace-capture\\host-replay\\extra.bin"
+  },
+  "raw_fixture": "Two independent input files containing the archived EVD-014 emulated UART transcript; negative appends NUL.",
+  "limitations": "Hashes identify staged artifacts. Board revision and EEPROM are operator labels. Unsigned host file reads and host timing cannot establish hardware, power cycling, on-card hashes, interrupted PC or target timing."
+}
