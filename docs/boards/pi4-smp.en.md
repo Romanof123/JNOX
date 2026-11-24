@@ -4,7 +4,7 @@
 
 CHG-070 plans a dedicated opt-in Pi 4 raw image. Existing Pi 4 serial boot, timer and fixed FIFO/RR use core zero. EVD-017 already covers placement and contended migration on two QEMU virt CPUs. This milestone adds board-specific secondary startup and a directed cross-core ready transition during useful pinned work. Keep existing image selectors, feature precedence and baseline bytes. The two cold model boots are documented below. [Board](pi4-p1.en.md) · [Existing SMP](../m3-smp.en.md) · [Fixed tasks](pi4-fixed-runtime.en.md)
 
-`JNOX_BOARD=pi4 JNOX_PROFILE=smp JNOX_APP=directed-wake` selects `pi4_smp_boot.S` and `pi4_smp_bsp.rs` for secondary startup and interrupt delivery, and `pi4_smp_workload.rs` for pinned tasks and terminal UART records. Model and physical verification remain pending. [BSP](pi4-smp-bsp.en.md) · [Workload and UART format](pi4-smp-workload.en.md)
+`JNOX_BOARD=pi4 JNOX_PROFILE=smp JNOX_APP=directed-wake` selects `pi4_smp_boot.S` and `pi4_smp_bsp.rs` for secondary startup and interrupt delivery, and `pi4_smp_workload.rs` for pinned tasks and terminal UART records. The two model boots are recorded below. Physical verification remains pending. [BSP](pi4-smp-bsp.en.md) · [Workload and UART format](pi4-smp-workload.en.md)
 
 ## Entry and reserved memory
 
