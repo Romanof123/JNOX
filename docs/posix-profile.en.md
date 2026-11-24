@@ -26,3 +26,5 @@ For resource tests pin the manifest limits for processes, threads, descriptors, 
 - **Prebuilt Linux ELF · VER-021.** Use the verification plan's pinned Debian arm64 static BusyBox unchanged, with the Linux guest disabled. Compare `wc -l sample.txt` output, stderr and status against reference Linux for success and access denial. Exercise raw Linux `-ENOSYS` and reject an incompatible ISA or interpreter before entry. [Exact fixtures, digests and comparison rules](verification-plan.en.md)
 
 Process-shared synchronization, robust mutexes, real-time queued signals, `fork`, dynamic linking and full shell/utility coverage are deferred for separate profile decisions. Publish omitted options and unsupported flags in the SDK. A header, exported symbol or linked executable alone leaves target verification pending. [Requirements](requirements.en.md) · [User services and ABI design](architecture.en.md)
+
+[Native AArch64 C bootstrap ABI and telemetry build](native-c-abi.en.md)

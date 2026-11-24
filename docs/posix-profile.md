@@ -26,3 +26,5 @@
 - **기존 Linux ELF · VER-021.** 검증 계획에 고정한 Debian arm64 정적 BusyBox를 변경 없이 쓰며 Linux 게스트를 끈다. 정상 파일과 접근 거부 파일로 `wc -l sample.txt`의 출력·stderr·상태를 기준 Linux와 비교한다. 원시 Linux `-ENOSYS`와 잘못된 ISA 또는 인터프리터의 진입 전 거부도 시험한다. [정확한 표본·해시·판정 규칙](verification-plan.md)
 
 프로세스 간 공유 동기화, robust 뮤텍스, 큐잉되는 실시간 신호, `fork`, 동적 링크, 셸·유틸리티 전체 범위는 이후 프로파일에서 채택 여부를 정한다. 생략한 옵션과 미지원 플래그를 SDK에 명시한다. 헤더, 공개 심볼, 링크된 실행 파일 단계에서는 타깃 검증을 대기로 기록한다. [요구사항](requirements.md) · [사용자 서비스와 ABI 설계](architecture.md)
+
+[네이티브 AArch64 C 부트스트랩 ABI 및 텔레메트리 빌드](native-c-abi.md)
