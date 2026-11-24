@@ -88,4 +88,18 @@ CHG-037 / IMP-035 links POL-010 to [EVD-035](evidence/evd-035.en.md) under VER-0
 
 [Linked cooperative event contract and acceptance criteria for #80](coop-runtime.en.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.en.md).
 
+## CHG-039 ordinary batch release gate
+
+The acceptance contract requires the evidence to identify the source and exact selector, record raw task-side output from all three linked images, and check the interrupted caller resumes with its local result intact. Compare equal arrivals, estimate rejection, capacity, stale handles, overflow and underestimated service against independent host expectations. Preserve previous selectors and report physical timing and product capacity separately.
+
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)
+
+[POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).
+
+[POL-004 M3 virtual control workload and FS-M3-01](pol-004-m3-control-plan.md#english). CHG-044 records the simulation design. Implementation and independent evidence are pending.
+
+CHG-042 / IMP-040 / POL-009 · [Ordinary MLQ and MLFQ tasks](ordinary-multilevel.en.md) · [EVD-040](evidence/evd-040.en.md)
+
 [EVD-041](evidence/evd-041.en.md) records measurements for the FIFO/RR parts of VER-002/005/009/023. Compare linked footprints and repeated observed handler intervals. VER-016 covers separate review of the diagnostic selector, unsafe access and pinned build inputs. Target timing qualification remains open. [Acceptance and capture procedure](fixed-cost.en.md)
