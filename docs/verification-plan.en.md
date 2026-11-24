@@ -138,6 +138,14 @@ IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journa
 
 CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
 
+IMP-054 · VER-002/003/005. Operational qualification was 0/20. Four deterministic OFF runs accepted 28 permits and remained OFF. [EVD-054](evidence/evd-054.en.md)
+
 CHG-057 · [Ordinary Rust lottery and stride workload criteria](ordinary-proportional-plan.md) · [#54](https://github.com/Romanof123/JNOX/issues/54)
 
+IMP-055 · VER-002/005/023. Three first boots replayed both seeds and C’s stride join. Two diagnostic cases remain unexecuted. [EVD-055](evidence/evd-055.en.md)
+
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
+
 CHG-063 · POL-002 · [Pi 4 FIFO/RR engineering witness](boards/pi4-fixed-runtime.en.md#chg-063)
+
+CHG-067 · [Ordinary Rust mutex workload and batch ownership criteria](ordinary-mutex-plan.md) · [#49](https://github.com/Romanof123/JNOX/issues/49)

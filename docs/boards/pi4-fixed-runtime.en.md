@@ -52,6 +52,8 @@ Retain source revision, raw/ELF hashes, emulator version, raw UART and an except
 
 Two cold boots each of FIFO and RR on the Pi 4 model showed high-priority preemption and RR peer rotation. Separate register captures measured a 62.5 MHz counter. Physical boot and timing remain open. [EVD-031](../evidence/evd-031.en.md)
 
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](pi4-serial-capture.en.md#chg-062)
+
 <a id="chg-063"></a>
 
 ## CHG-063 · Pi 4 engineering witness over UART
@@ -65,6 +67,8 @@ Record a boot/session identifier, selected table, core affinity read from MPIDR,
 **Export and acceptance.** Preserve ordinary workload behavior; add no per-event UART, allocation or formatting on the hot path. Record bounded rows then commit a header, rows and integrity-checked footer for export only after all required work, final exit and actual terminal idle entry. Use a stopped/quiesced producer so export cannot recursively generate trace. Report missing terminal, overflow, truncated/reordered rows, unmatched generations, invalid frame/PC, missing positive progress or uncertain chronology as incomplete evidence. Retain first attempts, failure records and raw serial bytes. Bind source/config, raw kernel8.img and ELF hashes, load address, map/disassembly, firmware/config and actual card/package manifest to the capture. Keep board/revision, EEPROM, adapter, witness and full-power-cycle records. Host USB arrival times measure export transport only.
 
 Rehearse ordinary and engineering FIFO/RR separately on raspi4b. Match the engineering rows to an independent exception/vector/ERET log from the same model boot. Exercise parser controls for wrong image, role, generation, missing/extra rows and loss. On P1 repeat each image/profile with two witnessed independent cold starts on the declared board/package. Compare ordinary and engineering functional order and outcomes on each platform. Measure available device-counter intervals and instrumentation overhead on the engineering image; use only genuinely common reference endpoints for paired deltas. Report footprint/stack, observer placement, variance, changed order or unrecoverable deltas. An ordinary UART without counter endpoints cannot provide a numerical uninstrumented service baseline. Causal software evidence supports executed entry and resumed work; saved ELR and selected ELR are kernel observations. Independent physical instruction/ERET history or exact return-to-first-instruction latency needs an appropriate external trace/debug facility. Physical IRQ routing beyond the observed transaction, product bounds and WCET require separate qualification. [REQ-002/005/008/016/023](../requirements.en.md) · [DES-003/004/012](../architecture.en.md) · [VER-002/005/008/016/023](../verification-plan.en.md)
+
+The integrated host collector passed 566 timed checks, eight observer API checks, four simulated-port cases and seven upstream capture tests. [Pi 4 serial capture tool · Host qualification](../evidence/pi4-fixed-serial-host.en.md)
 
 ### Engineering image and serial protocol
 

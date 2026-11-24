@@ -47,6 +47,20 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_control_descriptor)");
     let descriptor = selector("JNOX_CONTROL_DESCRIPTOR");
     let markers = selector("JNOX_CONTROL_MARKERS");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_phase)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_anchor)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_permit_off)");
+    let permit_arm=selector("JNOX_PERMIT_PHASE");
+    if let Some(mode)=selector("JNOX_PERMIT_PHASE_MODE") {
+        assert!(mode=="characterize-off" && permit_arm.is_some(),"JNOX_PERMIT_PHASE_MODE requires characterize-off and an A1/A2 arm");
+        println!("cargo::rustc-cfg=jnox_permit_off");
+    }
+    if let Some(arm)=permit_arm {
+        assert!(descriptor.as_deref()==Some("1") && matches!(arm.as_str(),"nominal"|"anchor"),
+            "JNOX_PERMIT_PHASE requires nominal or anchor and JNOX_CONTROL_DESCRIPTOR=1");
+        println!("cargo::rustc-cfg=jnox_permit_phase");
+        if arm=="anchor" {println!("cargo::rustc-cfg=jnox_permit_anchor")}
+    }
     if let Some(value) = descriptor.as_deref() {
         assert!(value == "1" && profile.as_deref() == Some("periodic")
             && matches!(app.as_deref(), Some("control-rm" | "control-dm"))
@@ -201,7 +215,18 @@ fn main() {
         assert!(value == "1" && profile.as_deref() == Some("weighted"));
         println!("cargo::rustc-cfg=jnox_weighted_trace");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_prop)");
+    println!(r#"cargo::rustc-check-cfg=cfg(jnox_prop_case, values("lottery1","lottery2","stride","stride-delay","lottery-miss"))"#);
     match profile.as_deref() {
+        Some("proportional") => {
+            assert!(scenario.is_none(), "JNOX_CONTROL_CASE must be unset for JNOX_PROFILE=proportional");
+            assert!(board == "virt" && bench == "boot", "ordinary proportional requires virt and no benchmark features");
+            let case = app.as_deref().unwrap_or("");
+            assert!(matches!(case,"lottery1"|"lottery2"|"stride"|"stride-delay"|"lottery-miss"),
+                    "ordinary proportional requires an explicit lottery, stride or diagnostic app");
+            println!("cargo::rustc-cfg=jnox_ordinary_prop");
+            println!("cargo::rustc-cfg=jnox_prop_case=\"{case}\"");
+        }
         Some("aperiodic") => {
             assert!(board == "virt" && bench == "boot", "ordinary aperiodic requires virt without benchmarks");
             let name = app.as_deref().expect("aperiodic profile requires JNOX_APP");

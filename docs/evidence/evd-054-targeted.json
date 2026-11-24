@@ -1,0 +1,97 @@
+{
+  "record": "EVD-054 targeted integrated comparison",
+  "tested_source": "3b5a9f69034ecc2b7a7b093ddb786ee74f820be6",
+  "tested_tree": "0255fa8787fc9f4c86a5bd5416e397024d58ef71",
+  "archive": "evd-054-targeted.zip",
+  "archive_bytes": 550051,
+  "archive_sha256": "fe1f7b276c54d3b25ffa0fabdc4e2d2a35010ef998164fd0dd86d5e3cab5b3cc",
+  "release_configs": 65,
+  "accepted_ptload_matches": 21,
+  "whole_elf_matches": 0,
+  "selector_rejections": 44,
+  "new_boots": 0,
+  "reused_records": {
+    "phase": 32,
+    "proportional": 3,
+    "controls": 8,
+    "mode_3_probes": 2
+  },
+  "archive_guide": {
+    "REPORT.md": "fcdb090fb92cd01955ec82af656a885a6e7c0cf1917b118eee3d834d92a29a93",
+    "PLAN.md": "82394982c9a6a8ccb9bf005a67533f4a8847c90800549d774b0d00313c822cf4",
+    "index.json": "fe5ed3e942297fe3ab5027b8386ef99f6e2465723c0514f76762d773b95da4a2",
+    "denials.json": "389c04725d729f555da68d59683e1ea4c876fff3acf335ad67ba1531e74b106c",
+    "interfaces.json": "389c12085a66cbdaa1f4ddea490486676d6b4c9f6b618fe422867fbb07d2870b",
+    "historical-runs.json": "179bcdecd1c303befde174c600aa5231d30c348b467d6bd63cb5cb56cd8114ec",
+    "results.json": "1bea20f13d0b808c913d609718de57a5ca8f2aadbd4c3a012c787586ca21639e",
+    "graph-tests.log": "d3f0ef926123ead5b4003a3d2046fc5f1af40615ff1fdc481cda744f310e1312",
+    "graph.json": "511df4583b98cab03fd2587bf9c1efde5cfaf8bf03006e1317fcdf799811f460",
+    "SHA256SUMS": "313a3c00b4e823e788b661bc4f7bfdc807eaf5296be50f2426cfcaa68835b497"
+  },
+  "host_tool_bridge": {
+    "method": "Case-sensitive literal byte search in archived .py and .sh members, including nested phase tarballs. No transitive dependency analysis.",
+    "terms": [
+      "qemu_boot",
+      "fixed_runtime_observer"
+    ],
+    "results": {
+      "evd-054-first.zip": {
+        "scripts": {
+          "permit-phase-independent-observer/observe.py": "ec75ce6ac7b6ab3e03fdefc7ad20ac9de8af1f78659f4bd290dc81bf2a8800f0"
+        },
+        "literal_matches": []
+      },
+      "evd-054-first.zip/permit-phase-first-verification/first-verification.tar.gz": {
+        "scripts": {
+          "build.py": "84791c14793e4c3f514c2eee630dd9558f281b4c26fc4b5576aa3e340099f567",
+          "finish.py": "6492a6fa9dbc98c16d29c61f14e4ef8f7764df3672609e6f854854ebf95b7cf5",
+          "observer/observe.py": "ec75ce6ac7b6ab3e03fdefc7ad20ac9de8af1f78659f4bd290dc81bf2a8800f0",
+          "package.py": "a1158bd2462ee44c23db868d3acf2ca2536fda94b320dcd8b7fae0691bb115d2",
+          "run.py": "f328673d46eeb2e6e91a5651c417a780bd51506ee4eeb110f498c7b2d683fd18",
+          "score.py": "38b534309ba71610a27c2908a0e7ee8d096539e6c34129c0c1993ba009b4aac6"
+        },
+        "literal_matches": []
+      },
+      "evd-054-integration.zip": {
+        "scripts": {},
+        "literal_matches": []
+      },
+      "evd-054-integration.zip/phase131-integrated.tar.gz": {
+        "scripts": {
+          "audit.py": "c6512a038f5bbc2b37c73e1890aebaec7d95cb3bf7b3d2dadb0d4900ad8bdc44",
+          "build.py": "86f8d096040763a1272888471b50ae033865bfd6aef7ba34d59d2b1edf58bca5",
+          "finalize.py": "07888bce068a87a94648294f2da51fd5e23e805bd60d1cd90199aa302717fb5a",
+          "guard.py": "3b7f250a7e8eaef230f42e5f13d3591d9f12bca9f30cc45f97bceda79a73b04d",
+          "integrated_score.py": "2e6bc90bbcb61f84d430d757926f5737b5463d02f62e1588b78d7214fc5133cc",
+          "marker_reg.py": "7da78db2dcc464f86ca0d90190dbb052e19d1e4f2d9540c4a23249f94883ab20",
+          "notice_reg.py": "a79294d35c18748c4e1893559ca1aa3fd646dd380e54c93b82fb83587fb1acfa",
+          "observer-v2/observe.py": "28e07321d4db0c0a0ca3b562fb1903d771cfd7ee893a61ea492383f884efd2bc",
+          "partition_reg.py": "4d52b892e7e8f9b9064274b25ee9c67bed18ed750ddd27f59da3541c004f7470",
+          "partition_score.py": "cd7c5ba8f7c636679ad20b631972cfe54833662139bd5f3da917583fcfa788b2",
+          "probe_reg.py": "281bb576775b206ddb24a6501b8fbe7d38d012e877afa91325b51045559c3624",
+          "reg_build.py": "f234cbd8e913f67a445b818c6cb8421169dfa326d5667191e0e91715d5b51879",
+          "replay.py": "1a28475a2e3a56846b26155145a1d19ff713d5157fd6e175f6a9d011ca9f426f",
+          "run.py": "7db06b9c24d248a2ae3bffe8873ad1d417751781e024e998be27364c15df56d7"
+        },
+        "literal_matches": []
+      },
+      "evd-055-first-three.zip": {
+        "scripts": {
+          "ordinary-136-first-three/launch.py": "63a13e0db25bba3645881b5d673d8a4d1bdc66a43a67ee0821cd20fd245fe450",
+          "ordinary-136-first-three/report.py": "4ba5d167bd35fef2f34f0822b70c8f7d6b0417cb86d239943d0fb2436f5bbfed",
+          "ordinary-proportional-independent/score.py": "6192450488c3d2130decf0171965440c1eb79ad0f6537a9695066f01a34766e8"
+        },
+        "literal_matches": []
+      },
+      "evd-055-integration.zip": {
+        "scripts": {
+          "build.py": "974441387ecbcecc09c16e0f99295c2db4ed2e9fba489d20a2d8768f25fd615b",
+          "finish.py": "8c6aae36d23f553e791939cf5dd8c3734cb2c214a241a3285c4dfaf71175351d",
+          "launch.py": "52fbe9c5a5dc734cb6f167f76e6b23276b809f1e1b73f50ef6d553bee9ab6fab",
+          "scorer/score.py": "6192450488c3d2130decf0171965440c1eb79ad0f6537a9695066f01a34766e8"
+        },
+        "literal_matches": []
+      }
+    }
+  }
+}

@@ -5,9 +5,65 @@ use core::ptr;
 const DATA: *mut u32 = 0x0903_0004 as *mut u32;
 const DIR: *mut u32 = 0x0903_0400 as *mut u32;
 
+#[cfg(jnox_permit_off)]
+static mut WRITE_COUNT: u64 = 0;
+#[cfg(jnox_permit_off)]
+pub(super) fn coverage_stop(why: u64) -> ! {
+    let detected = now();
+    // Fail closed even when the normal trace ring cannot accept another row.
+    unsafe {
+        core::arch::asm!(
+            "msr daifset,#0xf",
+            "msr cntp_ctl_el0,xzr",
+            "isb",
+            options(nostack)
+        );
+        ptr::write_volatile(DATA, 0);
+        core::arch::asm!("dsb sy", options(nostack))
+    };
+    let bit = unsafe { ptr::read_volatile(DATA) & 1 };
+    super::uart_write(b"CONTROL CONTAINMENT FAIL ");
+    super::control_runtime::containment_detail(why, detected, now(), bit as u64)
+}
+#[cfg(jnox_permit_off)]
+pub(super) fn witness_count() -> u64 {
+    unsafe { WRITE_COUNT }
+}
+#[cfg(jnox_permit_off)]
+pub(super) fn read_output() -> bool {
+    let bit = unsafe { ptr::read_volatile(DATA) & 1 };
+    if bit != 0 {
+        coverage_stop(1)
+    }
+    false
+}
+#[cfg(not(jnox_permit_off))]
 pub(super) fn read_output() -> bool {
     unsafe { ptr::read_volatile(DATA) & 1 != 0 }
 }
+#[cfg(jnox_permit_off)]
+pub(super) fn write_output(enabled: bool) {
+    let n = unsafe {
+        WRITE_COUNT += 1;
+        WRITE_COUNT
+    };
+    log(80, now(), n, enabled as u64);
+    let before = unsafe { ptr::read_volatile(DATA) & 1 };
+    log(81, now(), n, before as u64);
+    if before != 0 {
+        coverage_stop(1)
+    }
+    unsafe {
+        ptr::write_volatile(DATA, 0);
+        core::arch::asm!("dsb sy", options(nostack))
+    };
+    let after = unsafe { ptr::read_volatile(DATA) & 1 };
+    log(82, now(), n, after as u64);
+    if after != 0 {
+        coverage_stop(2)
+    }
+}
+#[cfg(not(jnox_permit_off))]
 pub(super) fn write_output(enabled: bool) {
     unsafe {
         ptr::write_volatile(DATA, enabled as u32);
@@ -74,9 +130,16 @@ fn app() -> &'static mut App {
 #[cfg(jnox_control_cold)]
 pub(super) fn begin_operational() -> bool {
     let a = app();
-    if a.gate || a.enabled || a.faulted || a.queued.is_some() || a.last.is_some()
-        || a.previous.is_some() || a.command.is_some() || a.first_issue.is_some()
-        || read_output() {
+    if a.gate
+        || a.enabled
+        || a.faulted
+        || a.queued.is_some()
+        || a.last.is_some()
+        || a.previous.is_some()
+        || a.command.is_some()
+        || a.first_issue.is_some()
+        || read_output()
+    {
         return false;
     }
     a.gate = true;
@@ -254,7 +317,34 @@ fn enqueue(p: Permit) -> bool {
     true
 }
 
+#[cfg(jnox_permit_phase)]
+pub(super) fn input_state() -> (bool, u64, bool) {
+    let a = app();
+    (a.gate, a.generation, a.faulted)
+}
+
+#[cfg(jnox_permit_phase)]
+pub(super) fn receive_publication(generation: u64, seq: u64, issued: u64, step: u64) -> bool {
+    let a = app();
+    if !a.gate || a.faulted || a.queued.is_some() {
+        log(24, now(), seq, 0);
+        return false;
+    }
+    a.queued = Some(Permit {
+        generation,
+        seq,
+        issued,
+        set: true,
+    });
+    deliver(step);
+    app()
+        .last
+        .is_some_and(|p| p.seq == seq && p.issued == issued && p.generation == generation)
+}
+
 fn close() {
+    #[cfg(jnox_permit_phase)]
+    super::control_runtime::permit::invalidate();
     let a = app();
     let before = now();
     a.gate = false;
@@ -312,6 +402,7 @@ pub(super) fn command(issued: u64) {
     log(17, issued, app().generation, 0)
 }
 
+#[cfg(not(jnox_permit_phase))]
 pub(super) fn check(index: u64, step: u64) {
     let decision = now();
     let a = app();
@@ -349,6 +440,52 @@ pub(super) fn check(index: u64, step: u64) {
     app().previous_check = Some(done);
 }
 
+#[cfg(jnox_permit_phase)]
+pub(super) fn check(index: u64, step: u64) {
+    let decision = now();
+    let a = app();
+    let expired = (a.expired_before_delivery.is_some()
+        || a.last.is_some_and(|p| decision - p.issued >= 8 * step))
+        && !a.faulted;
+    if expired {
+        inhibit(0);
+        super::control_runtime::permit::timing_stop(0);
+    }
+    #[cfg(jnox_permit_phase)]
+    super::control_runtime::permit::receive(step);
+    let a = app();
+    if !expired && let Some(command) = a.command.take() {
+        if a.can_rearm
+            && let (Some(first), Some(second)) = (a.previous, a.last)
+            && second.seq == first.seq + 1
+            && second.issued - first.issued == 4 * step
+            && command >= second.issued
+            && command - first.issued < 8 * step
+            && decision - first.issued < 8 * step
+        {
+            a.faulted = false;
+            a.enabled = !cfg!(jnox_permit_off);
+            write_output(true);
+            log(
+                if cfg!(jnox_permit_off) { 84 } else { 20 },
+                now(),
+                first.issued,
+                second.issued,
+            );
+        }
+    }
+    let done = now();
+    let a = app();
+    log(21, done, index, decision);
+    if !SCRIPTED
+        && a.previous_check
+            .is_some_and(|previous| done - previous > 2 * step)
+    {
+        super::control_runtime::spacing_failure()
+    }
+    app().previous_check = Some(done);
+}
+
 pub(super) const SCRIPTED: bool = cfg!(any(
     jnox_control_case = "worst",
     jnox_control_case = "tie",
@@ -371,7 +508,11 @@ fn boundary_anchor(target: u64, step: u64) -> u64 {
     assert!(a.enabled && a.gate && !a.faulted && a.queued.is_none());
     assert!(old.generation == a.generation && old.set && target > old.issued);
     a.previous = Some(old);
-    a.last = Some(Permit { seq: old.seq + 1, issued: 0, ..old });
+    a.last = Some(Permit {
+        seq: old.seq + 1,
+        issued: 0,
+        ..old
+    });
     let p = a.last.as_mut().unwrap();
     let issue: u64;
     let delivery: u64;
@@ -417,7 +558,11 @@ fn boundary_check(target: u64, index: u64, step: u64, arrival: bool) {
     let mut slot = core::ptr::null_mut::<u64>();
     if arrival {
         assert!(a.gate);
-        a.queued = Some(Permit { seq: old.seq + 1, issued: 0, ..old });
+        a.queued = Some(Permit {
+            seq: old.seq + 1,
+            issued: 0,
+            ..old
+        });
         slot = &raw mut a.queued.as_mut().unwrap().issued;
     }
     let started: u64;
