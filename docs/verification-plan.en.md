@@ -133,3 +133,5 @@ POL-006 / CHG-050 / IMP-047. Plain and diagnostic each reached PASS with six IRQ
 VER-002/005/023 · Twenty-two of 24 boots inhibited. Two descriptor DM boots accepted seven permits each and stayed OFF. Healthy sequences: 0/24. [EVD-051](evidence/evd-051.en.md)
 
 CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent command timing plan](ordinary-permit-phase-plan.md) · [#94](https://github.com/Romanof123/JNOX/issues/94)
+
+IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journals. None of six integrated control boots qualified operationally. [EVD-052](evidence/evd-052.en.md)

@@ -21,10 +21,18 @@ const CAPACITY: usize = 1024;
 pub(super) const CONTROL_US: u64 = 250;
 pub(super) const SENDER_US: u64 = 750;
 
-global_asm!(".set JNOX_CONTROL, 1", include_str!("context.S"), frame_size=const size_of::<Frame>(),
+global_asm!(".set JNOX_CONTROL, 1", ".if {markers}", ".set JNOX_CONTROL_MARKERS, 1", ".endif", include_str!("context.S"), markers=const cfg!(jnox_control_markers) as usize, frame_size=const size_of::<Frame>(),
     elr=const offset_of!(Frame, elr), fpcr=const offset_of!(Frame, fpcr),
     tpidr_el1=const offset_of!(Frame, tpidr_el1), tpidr_el0=const offset_of!(Frame,tpidr_el0),
     simd=const offset_of!(Frame,simd), irq=sym irq, svc=sym svc, fail=sym fail);
+
+#[cfg(jnox_control_markers)]
+#[path = "control_markers.rs"]
+pub(super) mod markers;
+#[cfg(not(jnox_control_markers))]
+use self::locked as control_locked;
+#[cfg(jnox_control_markers)]
+use self::markers::control_locked;
 
 static mut STACKS: [Stack; 3] = [const { Stack([0; STACK_BYTES]) }; 3];
 static mut STATE: Option<Runtime> = None;
@@ -92,6 +100,8 @@ fn number(mut n: u64) {
 
 fn dump() -> ! {
     unsafe { asm!("msr cntp_ctl_el0,xzr", "isb", options(nostack)) };
+    #[cfg(jnox_control_markers)]
+    markers::seal();
     uart_write(b"CONTROL RAW v1\n");
     for i in 0..unsafe { USED } {
         let row = unsafe { (&raw const TRACE).cast::<[u64; 4]>().add(i).read() };
@@ -135,12 +145,14 @@ fn arm(target: u64, index: u64) {
 }
 
 fn fresh(id: usize) -> *mut Frame {
-    #[cfg(not(jnox_control_descriptor))]
+    #[cfg(not(any(jnox_control_descriptor, jnox_control_markers)))]
     let entries: [extern "C" fn() -> !; 3] = [control, sender, idle];
     // Only the descriptor arm changes the control entry ABI; the CPU enters
     // through ERET, so this table holds code addresses, never a mismatched call.
     #[cfg(jnox_control_descriptor)]
     let entries = [control as *const (), sender as *const (), idle as *const ()];
+    #[cfg(jnox_control_markers)]
+    let entries: [unsafe extern "C" fn() -> !; 3] = [markers::control_marker_entry, sender, idle];
     unsafe {
         let frame = (&raw mut STACKS)
             .cast::<u8>()
@@ -231,11 +243,15 @@ impl Runtime {
         let until = now();
         log(kind, entry, until, id as u64);
         self.slice_start = now();
+        #[cfg(jnox_control_markers)]
+        markers::record(1, self.slice_start, id as u64, unsafe { (*f).elr });
         f
     }
 }
 
 extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
+    #[cfg(jnox_control_markers)]
+    markers::handler(2, frame, entry);
     // Preserve an event across the idle work check -> WFE race. No task
     // other than idle executes WFE while this workload is active.
     unsafe { asm!("sev", options(nostack, preserves_flags)) };
@@ -306,6 +322,8 @@ extern "C" fn irq(frame: *mut Frame, entry: u64) -> *mut Frame {
 }
 
 extern "C" fn svc(frame: *mut Frame, entry: u64) -> *mut Frame {
+    #[cfg(jnox_control_markers)]
+    markers::handler(3, frame, entry);
     let esr: u64;
     unsafe { asm!("mrs {},esr_el1",out(reg)esr,options(nostack)) };
     if esr >> 26 != 0x15 {
@@ -355,13 +373,15 @@ extern "C" fn svc(frame: *mut Frame, entry: u64) -> *mut Frame {
 }
 
 extern "C" fn final_check() -> ! {
-    locked(|| {
+    control_locked(|| {
         let index = state().missed.take().unwrap_or_else(|| fail());
         let (step, target) = (state().step, state().target(index));
         app::check(index, step);
         log(10, now(), index, target);
         state().stopping = true;
     });
+    #[cfg(jnox_control_markers)]
+    markers::record(9, now(), 2, 0);
     unsafe { asm!("svc #2", options(noreturn)) }
 }
 
@@ -375,7 +395,7 @@ extern "C" fn control(
     #[cfg(jnox_control_descriptor)]
     let phases = [(first_index, first_target), (second_index, second_target)];
     for phase in 0..2 {
-        if locked(|| state().missed.is_some()) {
+        if control_locked(|| state().missed.is_some()) {
             final_check()
         }
         #[cfg(jnox_control_descriptor)]
@@ -384,7 +404,7 @@ extern "C" fn control(
             (index, target, descriptor_step)
         };
         #[cfg(not(jnox_control_descriptor))]
-        let (index, target, step) = locked(|| {
+        let (index, target, step) = control_locked(|| {
             let s = state();
             let r = s.jobs[0].unwrap().release;
             ((r - s.epoch) / s.step + phase, r + phase * s.step, s.step)
@@ -395,7 +415,7 @@ extern "C" fn control(
                 core::hint::spin_loop()
             }
         }
-        locked(|| {
+        control_locked(|| {
             if state().missed.is_some() {
                 final_check()
             }
@@ -407,9 +427,14 @@ extern "C" fn control(
             }
         });
         if phase == 0 {
+            #[cfg(not(jnox_control_markers))]
             unsafe { asm!("svc #1", options(nostack)) }
+            #[cfg(jnox_control_markers)]
+            markers::wait_phase(index);
         }
     }
+    #[cfg(jnox_control_markers)]
+    markers::record(9, now(), 2, 0);
     unsafe { asm!("svc #2", options(noreturn)) }
 }
 
