@@ -53,6 +53,8 @@ The common kernel has a separate port contract. Each port declares its capabilit
 
 ## DES-005 User services and application APIs
 
+The native SDK's planned profile defines its source interfaces, error conventions and target acceptance separately from the Linux executable ABI. [POSIX source profile 0.1](posix-profile.en.md)
+
 The native API centers on synchronous request/reply, bounded queues, notifications, and shared memory. User libraries provide the selected subset of `pthread`, a monotonic clock, and APIs in the `socket` and `poll` families. Networking runs in a user process or the Linux domain. Planned stages add `AF_UNIX`, TCP and UDP over IPv4 and IPv6, multiple clients, nonblocking I/O, and readiness notification. The API matrix identifies features outside the selected POSIX scope. Extended filesystem features, dynamic linking, TLS, and packages will be evaluated for the extended configuration.
 
 Native Rust is the default user application target of the J-NOX SDK. The kernel and user applications link as separate ELF files. The SDK provides versioned target and linker settings, user startup and exit code, `core`, and a safe user API crate. The first static AArch64 profile handles arguments, files and standard I/O without a heap. The syscall wrappers use the versioned J-NOX ABI. Qualify `alloc` with a user allocator and `std` with the OS support required by the standard library in separate tests.
