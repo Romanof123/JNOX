@@ -51,3 +51,5 @@ FIXED RR B DONE
 Retain source revision, raw/ELF hashes, emulator version, raw UART and an exception trace from the staged image. Map IRQ and SVC entries and ERET targets against the same ELF. Identify normal Rust task return through the exit trampoline, higher-priority preemption and RR peer rotation. Measure CNTFRQ_EL0 on raspi4b and use that value for tick conversion. The 12,500,000-tick quantum is 200 ms on virt at 62.5 MHz. Measure host wall time independently. Direct model loading bypasses EEPROM and VideoCore firmware. Two physical power cycles, actual IRQ delegation, board latency and system safety approval remain open under [#34](https://github.com/Romanof123/JNOX/issues/34) and [#21](https://github.com/Romanof123/JNOX/issues/21).
 
 Two cold boots each of FIFO and RR on the Pi 4 model showed high-priority preemption and RR peer rotation. Separate register captures measured a 62.5 MHz counter. Physical boot and timing remain open. [EVD-031](../evidence/evd-031.en.md)
+
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](pi4-serial-capture.en.md#chg-062)

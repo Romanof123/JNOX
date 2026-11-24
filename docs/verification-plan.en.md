@@ -137,3 +137,5 @@ CHG-055 · REQ-002/003/005/023 · [Ordinary permit publication and independent c
 IMP-052 · VER-002/005/023. Replay agreed on 104 phases from four genuine journals. None of six integrated control boots qualified operationally. [EVD-052](evidence/evd-052.en.md)
 
 CHG-060 · CAP-013 · [Application tracing contract](application-tracing.en.md)
+
+CHG-062 · POL-002 · REQ/VER-002/005/008/016/023 · [Pi 4 physical UART profile plan](boards/pi4-serial-capture.en.md#chg-062)
