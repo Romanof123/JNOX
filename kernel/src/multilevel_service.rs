@@ -180,6 +180,8 @@ struct Event {
     due: u64,
     stop: u64,
     boost: bool,
+    #[cfg(jnox_mlfq_wake)]
+    target_before_reset: u8,
     frame: *mut Frame,
     source: u64,
     #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
@@ -190,7 +192,7 @@ struct Event {
 
 impl Runtime {
     fn select(&mut self, event: Event) -> *mut Frame {
-        #[cfg(jnox_multilevel_trace)]
+        #[cfg(any(jnox_mlfq_wake, jnox_multilevel_trace))]
         let queue = self
             .policy
             .queued()
@@ -214,6 +216,14 @@ impl Runtime {
                 }
                 if ctl & 1 != 0 { fail() }
             }
+            #[cfg(jnox_mlfq_wake)]
+            {
+                super::mlfq_wake::boundary(event.kind, event.result, event.owner.unwrap_or(CAP),
+                    event.start, event.due, event.stop, self.total, event.boost, queue,
+                    CAP, 0, self.policy.priority(0).unwrap_or_else(|| fail()),
+                    event.frame.addr(), 0, event.target_before_reset);
+                super::mlfq_wake::terminal();
+            }
             #[cfg(jnox_mlq_admission)]
             super::mlq_admission::terminal(self.service);
             if self.live.contains(&true) {
@@ -230,6 +240,13 @@ impl Runtime {
         self.start = counter();
         #[cfg(jnox_mlq_admission)]
         super::mlq_admission::dispatch(id, self.start, self.service, event.owner, event.kind);
+        #[cfg(jnox_mlfq_wake)]
+        super::mlfq_wake::boundary(
+            event.kind, event.result, event.owner.unwrap_or(CAP), event.start, event.due,
+            event.stop, self.total, event.boost, queue, id, self.start,
+            self.policy.priority(0).unwrap_or_else(|| fail()),
+            event.frame.addr(), self.frames[id].addr(), event.target_before_reset,
+        );
         self.due = self.start.checked_add(grant).unwrap_or_else(|| fail());
         let compare = self.due;
         #[cfg(jnox_app = "mlfq-delayed")]
@@ -311,6 +328,8 @@ impl Runtime {
             self.policy.remaining(id).unwrap_or_else(|| fail()),
         ];
         let boost = self.period.is_some_and(|p| self.total / p != before / p);
+        #[cfg(jnox_mlfq_wake)]
+        let target_before_reset = self.policy.priority(0).unwrap_or_else(|| fail());
         if boost && !self.policy.boost() {
             fail()
         }
@@ -323,6 +342,8 @@ impl Runtime {
             due: self.due,
             stop,
             boost,
+            #[cfg(jnox_mlfq_wake)]
+            target_before_reset,
             frame,
             source,
             #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]

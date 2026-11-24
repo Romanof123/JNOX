@@ -136,6 +136,10 @@ mod multilevel_service;
 mod mlq_admission;
 #[cfg(jnox_mlq_admission)]
 mod mlq_bound;
+#[cfg(jnox_mlfq_wake)]
+mod mlfq_wake;
+#[cfg(jnox_mlfq_wake)]
+mod wake_bound;
 #[cfg(jnox_multilevel)]
 mod multilevel_apps;
 #[cfg(jnox_bench = "partition")]
