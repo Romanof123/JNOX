@@ -1,0 +1,222 @@
+{
+  "commit": "21d82d4c78cc27d933558060b74e6119fb4cb8b5",
+  "tree": "f0cad924468d09ab1343991927a4aec39f935a44",
+  "elf_sha256": "252856aa78e77ed5c2a7b3278252751b56d4a57a97f646c0098ab627ec61e1e1",
+  "first_verdict": "PASS",
+  "native_observer_status": 0,
+  "outer_script": "Trailing CR in exit command after native status capture caused shell error.",
+  "live_quiet_window": "inconclusive; QMP stopped vCPUs before final UART bytes were forwarded",
+  "uart": "JNOX M1 BOOT\nJNOX M1 READY\nDEADLINE EDF A FIRST\nDEADLINE EDF IRQ C READY\nDEADLINE EDF C FIRST\nDEADLINE EDF A RESUMED\nDEADLINE EDF B FIRST\nDEADLINE LLF B FIRST\nDEADLINE LLF B TIE RETAINED\nDEADLINE LLF T6 CROSSOVER\nDEADLINE LLF A FIRST\nDEADLINE LLF B RESUMED T6\nDEADLINE LLF IRQ C READY\nDEADLINE LLF C FIRST\nDEADLINE LLF B RESUMED T7\nDEADLINE PASS\n",
+  "events": [
+    {
+      "type": "IRQ",
+      "pc": "0x4020129c",
+      "elr": "0x4020129c",
+      "return_pc": "0x4020150c",
+      "context": "EDF A interrupted for C"
+    },
+    {
+      "type": "SVC #1",
+      "pc": "0x4020152c",
+      "elr": "0x40201530",
+      "return_pc": "0x4020129c",
+      "context": "EDF C completed at 1, A resumed"
+    },
+    {
+      "type": "SVC #1",
+      "pc": "0x40201308",
+      "elr": "0x4020130c",
+      "return_pc": "0x40201310",
+      "context": "EDF A completed at 2, B entered"
+    },
+    {
+      "type": "SVC #1",
+      "pc": "0x40201504",
+      "elr": "0x40201508",
+      "return_pc": "0x40201310",
+      "context": "EDF B completed at 3, LLF epoch B entered"
+    },
+    {
+      "type": "IRQ",
+      "pc": "0x40201360",
+      "elr": "0x40201360",
+      "return_pc": "0x40201360",
+      "context": "LLF B retained at tick 1"
+    },
+    {
+      "type": "IRQ",
+      "pc": "0x40201360",
+      "elr": "0x40201360",
+      "return_pc": "0x40201360",
+      "context": "LLF B retained at tick 2"
+    },
+    {
+      "type": "IRQ",
+      "pc": "0x40201360",
+      "elr": "0x40201360",
+      "return_pc": "0x40201360",
+      "context": "LLF B retained at tick 3"
+    },
+    {
+      "type": "IRQ",
+      "pc": "0x40201360",
+      "elr": "0x40201360",
+      "return_pc": "0x40201360",
+      "context": "LLF B retained at tick 4"
+    },
+    {
+      "type": "IRQ",
+      "pc": "0x40201360",
+      "elr": "0x40201360",
+      "return_pc": "0x40201360",
+      "context": "LLF B retained at tick 5, both laxities 2"
+    },
+    {
+      "type": "IRQ",
+      "pc": "0x40201400",
+      "elr": "0x40201400",
+      "return_pc": "0x4020124c",
+      "context": "LLF at 6 A laxity 1 displaces B laxity 2"
+    },
+    {
+      "type": "SVC #1",
+      "pc": "0x40201308",
+      "elr": "0x4020130c",
+      "return_pc": "0x40201400",
+      "context": "LLF A completed at 6, B resumed"
+    },
+    {
+      "type": "IRQ",
+      "pc": "0x40201498",
+      "elr": "0x40201498",
+      "return_pc": "0x4020150c",
+      "context": "LLF at 7 C laxity -2 displaces B laxity 2"
+    },
+    {
+      "type": "SVC #1",
+      "pc": "0x4020152c",
+      "elr": "0x40201530",
+      "return_pc": "0x40201498",
+      "context": "LLF C completed at 7, B resumed"
+    },
+    {
+      "type": "SVC #1",
+      "pc": "0x40201504",
+      "elr": "0x40201508",
+      "return_pc": null,
+      "context": "LLF B completed at 8, terminal handler"
+    }
+  ],
+  "clock_bytes_hex": "a0acb9030000000050d4010000000000105e5f0000000000d9a8630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0acb90300000000e7176c0000000000105e5f0000000000e479cd000000000005202d0100000000fb7e8c010000000037dbeb01000000001d704b02000000008e72aa02000000006bf7090300000000",
+  "clocks": [
+    {
+      "epoch": "EDF",
+      "frequency_hz": 62500000,
+      "origin": 119888,
+      "interval": 6250000,
+      "samples": [
+        {
+          "tick": 1,
+          "observed": 6531289,
+          "expected": 6369888,
+          "late_counts": 161401,
+          "accepted": true
+        }
+      ],
+      "unused": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "observed_epoch_rate_hz": 9.748259389796395,
+      "first_last_rate_hz": null,
+      "elapsed_seconds": 0.102582416,
+      "span_seconds": 0.0
+    },
+    {
+      "epoch": "LLF",
+      "frequency_hz": 62500000,
+      "origin": 7084007,
+      "interval": 6250000,
+      "samples": [
+        {
+          "tick": 1,
+          "observed": 13466084,
+          "expected": 13334007,
+          "late_counts": 132077,
+          "accepted": true
+        },
+        {
+          "tick": 2,
+          "observed": 19734533,
+          "expected": 19584007,
+          "late_counts": 150526,
+          "accepted": true
+        },
+        {
+          "tick": 3,
+          "observed": 25984763,
+          "expected": 25834007,
+          "late_counts": 150756,
+          "accepted": true
+        },
+        {
+          "tick": 4,
+          "observed": 32234295,
+          "expected": 32084007,
+          "late_counts": 150288,
+          "accepted": true
+        },
+        {
+          "tick": 5,
+          "observed": 38498333,
+          "expected": 38334007,
+          "late_counts": 164326,
+          "accepted": true
+        },
+        {
+          "tick": 6,
+          "observed": 44724878,
+          "expected": 44584007,
+          "late_counts": 140871,
+          "accepted": true
+        },
+        {
+          "tick": 7,
+          "observed": 50984811,
+          "expected": 50834007,
+          "late_counts": 150804,
+          "accepted": true
+        }
+      ],
+      "unused": [],
+      "observed_epoch_rate_hz": 9.965648920689471,
+      "first_last_rate_hz": 9.995008625958977,
+      "elapsed_seconds": 0.702412864,
+      "span_seconds": 0.600299632
+    }
+  ],
+  "clock_interpretation": "Both CNTFRQ values give 10 intervals per guest counter second. Span is first-to-last IRQ. Elapsed is epoch origin to last sample. No independent wall-clock or physical board calibration.",
+  "host_controls": {
+    "missing": "UART deadline exceeded (0.04s)",
+    "reordered": "unexpected UART bytes or marker order",
+    "trailing": "unexpected UART bytes or marker order"
+  },
+  "host_tests": "rustc +1.95.0 --edition 2024 --test tools/scheduling_tests.rs; executable --test-threads=1; 48 passed, 0 failed (9 deadline-specific).",
+  "coverage": "11520 three-job calendars: 2 policies x 3 quanta x 10 ordered arrival pairs x 8 estimate masks x 4 absolute deadline vectors x 6 ID permutations. Elapsed oracle tracks used service, actual lengths [estimate[0]+1,2,estimate[2]], signed slack and choices. No arbitrary workload or WCET proof.",
+  "witnesses": "Guest validates frame and stack location, per-task stack tag, interrupted progress count, TPIDR_EL1 and both v31 lanes. Resume assembly checks saved count differs from live count by at most one. No separate host register/stack dump. Times of explicit SVC completions, deadlines, service estimates and arrivals are workload inputs.",
+  "files": {
+    "raw/analyze.py": "8645abe69b01fb3a34c5fc170d162ce196efdba6bac180153ae7f36f09244c2e",
+    "raw/counter.bin": "3c55e47469fbd7ac64e1cc7f14fddf43c38d5c567d29e07e9407a9a2b584a51a",
+    "raw/exceptions.log": "3be6f790b49332646b9b03f6694dfd38d8ec59dc49f08a6484da2c650de9534e",
+    "raw/host-tests.log": "0713c4e5f476f95d56dfa2ecb58441275958f3d7084ecd93038c7f7375be41cc",
+    "raw/observer.log": "e60b80085dd6f770d84b79aee901bc91a9f689e3294fe4fdddbf917fe2f22f7e",
+    "raw/observer.status": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "raw/run.sh": "12c540dc7282df5f7e9c34c31af47caa636e684f48bf463e619165d0b6c13b62",
+    "raw/uart.bin": "2203dba50eb388a281fc7ecc8eb2e4fe5ecd20c9a3798ba7d73e7d4a1a9e853b",
+    "raw/wrapper.py": "895fa2c7e980be12e73b5db60d78951d5e030c74f0c7c34c88a25ba39207e98d"
+  }
+}

@@ -34,3 +34,5 @@ DEADLINE PASS
 Host coverage compares bounded traces for both policies, ties, signed arithmetic, quantum boundaries, elapsed service and rejected inputs. The PC trace establishes actual dispatch. A physical deadline, WCET or production overload action requires its own workload, board measurements and safety review.
 
 For independent counter readback, the linked symbol `deadline_clock_evidence` contains two consecutive records of ten little-endian u64 values. Each stores counter frequency, origin, interval and seven observed IRQ counts. The EDF epoch uses the first IRQ field. Capture its 160 bytes from the parked guest before shutdown; then check each observation against its programmed absolute interval. These are guest physical-counter samples.
+
+[EVD-015](evidence/evd-015.en.md)

@@ -525,3 +525,9 @@ POL-005,partially-implemented-by,IMP-015
 IMP-015,partially-verified-by,VER-002
 IMP-015,partially-verified-by,VER-005
 IMP-015,partially-verified-by,VER-023
+IMP-015,tested-in,EVD-015
+POL-005,has-switch-evidence,EVD-015
+VER-023,has-partial-evidence,EVD-015
+VER-002,has-partial-evidence,EVD-015
+VER-005,has-partial-evidence,EVD-015
+CAP-001,has-partial-evidence,EVD-015
