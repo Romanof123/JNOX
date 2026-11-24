@@ -67,6 +67,14 @@ sched_vectors:
 
 .macro handle callback
     sub sp, sp, #{frame_size}
+    .ifdef JNOX_CONTROL
+    // Preserve task registers before sampling the physical counter at vector entry.
+    stp x0, x1, [sp]
+    isb
+    mrs x0, cntpct_el0
+    str x0, [sp, #({simd} - 8)]
+    ldp x0, x1, [sp]
+    .endif
     integer_pairs stp
     str x30, [sp, #240]
     simd_pairs stp
@@ -82,7 +90,11 @@ sched_vectors:
     mrs x9, tpidr_el0
     mrs x10, tpidrro_el0
     stp x9, x10, [sp, #{tpidr_el0}]
+    .ifdef JNOX_CONTROL
+    ldr x1, [sp, #({simd} - 8)]
+    .else
     str xzr, [sp, #({simd} - 8)]
+    .endif
     mov x0, sp
     .ifdef JNOX_SMP
     // Rust must leave the outgoing task's stack before publishing its frame.
