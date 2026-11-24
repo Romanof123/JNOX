@@ -134,3 +134,17 @@ THR-001,derives,REQ-019
 REQ-019,implemented-by-design,DES-010
 REQ-019,verified-by,VER-019
 ADR-001,verified-by,VER-019
+OBJ-006,derives,REQ-020
+THR-003,derives,REQ-020
+REQ-020,implemented-by-design,DES-005
+REQ-020,verified-by,VER-020
+OBJ-006,derives,REQ-021
+THR-003,derives,REQ-021
+REQ-021,implemented-by-design,DES-011
+REQ-021,verified-by,VER-021
+OBJ-006,derives,REQ-022
+THR-003,derives,REQ-022
+REQ-022,implemented-by-design,DES-005
+REQ-022,verified-by,VER-022
+REQ-011,implemented-by-design,DES-011
+REQ-021,verified-by,VER-011

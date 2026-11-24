@@ -7,6 +7,11 @@ flowchart TB
   CONTROL[Control tasks and safety monitoring] --> IPC[IPC with permission checks and time limits]
   NATIVE[Native J-NOX Rust drivers] --> IPC
   APPS[POSIX services · sockets · user scripts] --> IPC
+  RUST[Native J-NOX Rust app] --> SDK[J-NOX native user ABI]
+  CAPP[Native J-NOX C app] --> SDK
+  SDK --> IPC
+  ELF[Prebuilt Linux user ELF] --> COMPAT[Optional Linux user-space ABI]
+  COMPAT --> IPC
   IPC --> KERNEL[no_std Rust microkernel]
   LINUX[Linux domain · existing drivers] <--> GATE[Shared queues and dedicated message gateway]
   GATE <--> IPC
@@ -48,7 +53,11 @@ The common kernel has a separate port contract. Each port declares its capabilit
 
 ## DES-005 User services and application APIs
 
-The native API centers on synchronous request/reply, bounded queues, notifications, and shared memory. User libraries provide the selected subset of `pthread`, a monotonic clock, and APIs in the `socket` and `poll` families. Networking runs in a user process or the Linux domain. Planned stages add `AF_UNIX`, TCP and UDP over IPv4 and IPv6, multiple clients, nonblocking I/O, and readiness notification. The API matrix identifies features outside the selected POSIX scope. File services, ELF loader extensions, TLS, and packages will be evaluated for the extended configuration.
+The native API centers on synchronous request/reply, bounded queues, notifications, and shared memory. User libraries provide the selected subset of `pthread`, a monotonic clock, and APIs in the `socket` and `poll` families. Networking runs in a user process or the Linux domain. Planned stages add `AF_UNIX`, TCP and UDP over IPv4 and IPv6, multiple clients, nonblocking I/O, and readiness notification. The API matrix identifies features outside the selected POSIX scope. Extended filesystem features, dynamic linking, TLS, and packages will be evaluated for the extended configuration.
+
+Native Rust is the default user application target of the J-NOX SDK. The kernel and user applications link as separate ELF files. The SDK provides versioned target and linker settings, user startup and exit code, `core`, and a safe user API crate. The first static AArch64 profile handles arguments, files and standard I/O without a heap. The syscall wrappers use the versioned J-NOX ABI. Qualify `alloc` with a user allocator and `std` with the OS support required by the standard library in separate tests.
+
+The first native C profile targets AArch64. Its SDK rebuilds C sources as static ELF executables using the J-NOX target ABI, a sysroot with headers and libraries, startup code (`crt0`), libc, and linker settings. The libc maps a small POSIX subset to J-NOX services for opening, reading, writing, and closing authorized files, standard I/O, pipes, child process launch, and waiting for exit. The minimal shell's acceptance case is `cat sample.txt | wc -l`. It launches two external C executables, connects them with a pipe, and closes unused pipe ends so that `wc` receives EOF and prints the input file's line count.
 
 Host scripts support builds and tests. Target scripts run in ordinary user services with limits on permissions, execution time, and memory. The Linux domain can provide Python and a shell. Lightweight native runtime candidates will be evaluated for J-NOX. Schedule and resource tables for the safety configuration become fixed, explicit build inputs after their format and value ranges are validated.
 
@@ -77,5 +86,13 @@ The first channel carries the periodic virtual-output permit in `ADR-001`. The s
 3. **Timing and recovery.** The receiver monitors input loss on its own monotonic clock. On the bench, sender issue times are controlled inputs on the same virtual clock. A port across clock domains must establish timestamp provenance, synchronization uncertainty and a delay bound before accepting data as fresh. Bound the work per activation for examining slots, handling notifications and recording diagnostics so the expiry check still runs when the queue is empty, invalid traffic saturates it or Linux stops. Expiry takes precedence on the same tick. On disconnect or restart, invalidate queued frames and handles from the old generation. Apply the inhibition deadline and the conditions for rearming in a new generation from `ADR-001`.
 
 The CRC detects accidental corruption in transit. Where the threat analysis requires authentication, the design must justify keyed endpoint authentication and replay protection. Even an authorized source can send a plausible but incorrect value. Using that value in a safety decision requires evidence about the source or independent plausibility checks. The Functional Safety Team reviews the product-specific fault model, residual error risk and timing budget. [AUTOSAR E2E protocol reference](https://www.autosar.org/fileadmin/standards/R25-11/FO/AUTOSAR_FO_PRS_E2EProtocol.pdf)
+
+## DES-011 Direct execution through the Linux user-space ABI
+
+The first target for `REQ-021` is a static AArch64 little-endian ELF64 Linux CLI running directly on J-NOX. Pin the provenance, version, hash, and options of one existing distribution binary that runs with ordinary user privileges. The first fixture is the Debian arm64 static BusyBox pinned by hash in the verification plan. The selected command is `wc -l sample.txt`. The ELF loader selects the native or Linux ABI from the approved launch manifest and checks the ELF class, byte order, machine, segment bounds, and permissions. The ELF `OSABI` field alone cannot distinguish the two profiles.
+
+The Linux ABI contract defines initial stack alignment, `argc`, `argv`, `envp`, the auxiliary vector (`auxv`), and the selected libc's startup and exit requirements, including initial thread-local storage and thread pointer setup for `PT_TLS`. Audit the executable from launch through exit on reference Linux and freeze the syscall list, structure layouts, flags, and return values. Implement the AArch64 convention for `svc #0`, syscall number in `w8`, arguments in `x0`–`x5`, and result or negative errno in `x0`. Map each supported syscall number to a J-NOX service that checks capabilities and bounds sizes. An unimplemented call returns raw `-ENOSYS`. The first profile's loader rejects binaries that require `PT_INTERP`. A later dynamic profile requires qualification of the matching Linux interpreter, shared libraries, library symbol versions, and the ABI surface they exercise. [Linux syscall conventions](https://man7.org/linux/man-pages/man2/syscall.2.html) · [Linux execve and the ELF interpreter](https://man7.org/linux/man-pages/man2/execve.2.html)
+
+The minimum safety configuration can omit the Linux user-space ABI service. Direct execution uses a non-safety user domain with CPU time, memory, and file descriptor limits. In `VER-021`, run the same hashed executable with the same arguments and input on reference Linux and J-NOX and compare output and exit status. A separate deployment can explicitly select a Linux guest with a matching ISA, kernel, user space, and any required interpreter and libraries. That guest receives its own resource budget. Run the direct-execution test with the guest disabled.
 
 [Requirements](requirements.en.md) · [Verification plan](verification-plan.en.md) · [Development lifecycle](lifecycle.en.md)
