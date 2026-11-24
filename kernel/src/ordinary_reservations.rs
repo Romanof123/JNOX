@@ -576,20 +576,21 @@ impl Runtime {
         }
         let mailbox = &MAILBOXES[id];
         let f = unsafe { &*frame };
-        if f.elr != expected.pc
-            || f.spsr != expected.mode
-            || f.gpr[19] != expected.register
-            || f.tpidr_el1 != expected.thread
-            || mailbox.generation.load(Ordering::Acquire) != NA
-            || mailbox.action.load(Ordering::Acquire) != 0
-            || mailbox.goal.load(Ordering::Acquire) != NA
-            || mailbox.first.load(Ordering::Acquire) != 0
-            || !mailbox.progress.load(Ordering::Acquire).is_null()
-            || self.last_count[id] != expected.updates
-            || self.last_acc[id] != expected.accumulator
-            || self.allocation_deadline[id] != NA
-            || self.allocation_service[id] != 0
-        {
+        // An OR of exact word differences cannot cancel two mismatches.
+        let frame_difference = (f.elr ^ expected.pc)
+            | (f.spsr ^ expected.mode)
+            | (f.gpr[19] ^ expected.register)
+            | (f.tpidr_el1 ^ expected.thread);
+        let mailbox_difference = (mailbox.generation.load(Ordering::Acquire) ^ NA)
+            | mailbox.action.load(Ordering::Acquire)
+            | (mailbox.goal.load(Ordering::Acquire) ^ NA)
+            | mailbox.first.load(Ordering::Acquire)
+            | u64::from(!mailbox.progress.load(Ordering::Acquire).is_null());
+        let accounting_difference = (self.last_count[id] ^ expected.updates)
+            | (self.last_acc[id] ^ expected.accumulator)
+            | (self.allocation_deadline[id] ^ NA)
+            | self.allocation_service[id];
+        if (frame_difference | mailbox_difference | accounting_difference) != 0 {
             unexpected()
         }
     }
