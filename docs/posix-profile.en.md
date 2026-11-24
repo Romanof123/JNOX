@@ -47,3 +47,7 @@ rustc --edition=2024 tools/native_elf_plan.rs -o native_elf_plan
 rustc --edition=2024 --test kernel/native/lib.rs -o native_elf_tests
 ./native_elf_tests
 ```
+
+[Native AArch64 C bootstrap ABI and telemetry build](native-c-abi.en.md)
+
+[Telemetry migration pilot and host evidence](telemetry-migration-pilot.en.md) · [Static SDK build receipt](evidence/native-sdk-static.en-ko.md)

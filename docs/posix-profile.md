@@ -47,3 +47,7 @@ rustc --edition=2024 tools/native_elf_plan.rs -o native_elf_plan
 rustc --edition=2024 --test kernel/native/lib.rs -o native_elf_tests
 ./native_elf_tests
 ```
+
+[네이티브 AArch64 C 부트스트랩 ABI 및 텔레메트리 빌드](native-c-abi.md)
+
+[텔레메트리 이식 시험과 호스트 검증 자료](telemetry-migration-pilot.md) · [SDK 정적 빌드 기록](evidence/native-sdk-static.en-ko.md)
