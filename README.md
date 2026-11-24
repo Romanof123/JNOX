@@ -2,9 +2,11 @@
 
 English · [한국어](README.ko.md)
 
-**Just-enough Nucleus, Open eXtensions.** J-NOX is a lightweight, real-time microkernel OS designed for functional safety. Services and drivers run in independent execution domains.
+**Just-enough Nucleus, Open eXtensions.** J-NOX is a Rust real-time microkernel project for embedded systems. Its architecture calls for a small kernel, isolated services, native Rust drivers and a compatibility domain for Linux drivers.
 
-**Planning draft 0.1** is the first baseline. For automotive applications, the project aims to define a configuration that can support ISO 26262 ASIL D safety goals and to develop cybersecurity in accordance with ISO/SAE 21434. The first target system, board, safe state and quantitative timing limits are still open. Product conformity assessment and certification are at the planning stage.
+On AArch64 QEMU, the kernel runs linked Rust tasks using fixed-priority FIFO or round robin. Both policies also boot on the Raspberry Pi 4 model. The scheduling release matrix links each tested configuration to its evidence and lists the remaining work. [Run linked Rust tasks](docs/fixed-runtime.en.md) · [Pi 4 model results](docs/evidence/evd-031.en.md) · [Scheduling release matrix](docs/scheduling-release-cases.en.md)
+
+**Planning draft 0.1** established the project baseline. Automotive development targets ISO 26262 ASIL D safety goals for a specified product configuration and cybersecurity engineering in accordance with ISO/SAE 21434. Product selection, physical-board validation, safe-state approval and certification remain open. The virtual bench has its own safety parameters. [Bench safety decision](docs/safety-parameters.en.md)
 
 | Document | What it covers |
 | --- | --- |
@@ -19,6 +21,7 @@ English · [한국어](README.ko.md)
 | [M1 timer preemption](docs/m1-scheduler.en.md) | Criteria for observing the timer interrupt, higher-priority dispatch and interrupted thread resumption in one boot |
 | [M1 equal-priority FIFO](docs/m1-fifo.en.md) | Acceptance criteria for ready order, voluntary yield and resumption of equal-priority threads |
 | [Run linked Rust tasks](docs/fixed-runtime.en.md) | Build the AArch64 fixed-priority runtime, select an application table and boot it with FIFO or round robin |
+| [Run ordinary Rust batch jobs](docs/ordinary-batch.en.md) | Submit and release jobs, compare SJF/SRTF/HRRN and recover linked frames from a QEMU capture |
 | [Scheduling policies and round robin](docs/scheduling-policies.en.md) | Selection, budget and isolation contracts, with execution evidence by policy |
 | [IPC profiles](docs/ipc-mechanisms.en.md) | Ten IPC families, their resource limits and acceptance cases after scheduling qualification |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |

@@ -15,7 +15,13 @@ mod amc_policy;
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
 mod batch;
-#[cfg(jnox_bench = "batch")]
+#[cfg(jnox_batch)]
+mod batch_runtime;
+#[cfg(jnox_batch)]
+mod batch_app;
+#[cfg(jnox_batch_trace)]
+mod batch_trace;
+#[cfg(any(jnox_batch, jnox_bench = "batch"))]
 mod batch_policy;
 #[cfg(jnox_bench = "cbs")]
 mod cbs;
@@ -27,12 +33,15 @@ mod periodic_overrun;
 mod cbs_wake;
 #[cfg(jnox_fixed)]
 #[cfg_attr(any(jnox_app = "fixed-ties", jnox_app = "fixed-late"), path = "fixed_edge_apps.rs")]
+#[cfg_attr(any(jnox_app = "coop-events", jnox_app = "coop-single"), path = "coop_app.rs")]
 mod fixed_apps;
+#[cfg(any(jnox_app = "coop-events", jnox_app = "coop-single"))]
+mod coop_service;
 #[cfg(jnox_fixed)]
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;
-#[cfg(any(jnox_multilevel, jnox_fixed, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
+#[cfg(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel, not(any(jnox_bench = "boot", jnox_bench = "power"))))]
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
@@ -45,24 +54,25 @@ mod deadline_policy;
     jnox_bench = "rr",
     jnox_bench = "periodic",
     jnox_bench = "batch",
+    jnox_batch,
     jnox_bench = "periodic_overrun"
 ))]
 mod dispatch_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
 #[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"), allow(dead_code))]
 mod domain_policy;
-#[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
+#[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
 mod eevdf;
-#[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
+#[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
 mod eevdf_policy;
-#[cfg(jnox_bench = "coop")]
+#[cfg(any(jnox_bench = "coop", jnox_app = "coop-events", jnox_app = "coop-single"))]
 mod event_loop;
 #[cfg(jnox_bench = "extension")]
 mod extension;
 #[cfg(jnox_bench = "extension")]
 mod extension_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
-#[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake"), allow(dead_code))]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
+#[cfg_attr(any(jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
 #[cfg(any(jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
@@ -72,8 +82,12 @@ mod feedback_policy;
 mod group_policy;
 #[cfg(jnox_bench = "hierarchy")]
 mod hierarchy;
-#[cfg(jnox_bench = "hierarchy")]
+#[cfg(any(jnox_groups, jnox_bench = "hierarchy"))]
 mod hierarchy_policy;
+#[cfg(jnox_groups)]
+mod group_runtime;
+#[cfg(jnox_groups)]
+mod group_apps;
 #[cfg(jnox_bench = "mutex")]
 mod mutex;
 #[cfg(jnox_bench = "mutex")]
@@ -103,6 +117,7 @@ mod proportional_policy;
     jnox_bench = "rr",
     jnox_bench = "periodic",
     jnox_bench = "batch",
+    jnox_batch,
     jnox_fixed,
     jnox_multilevel,
     jnox_bench = "deadline",
@@ -158,13 +173,17 @@ extern "C" fn kernel_main() -> ! {
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(jnox_fixed)]
     fixed_apps::run();
+    #[cfg(jnox_batch)]
+    batch_app::run();
+    #[cfg(jnox_groups)]
+    group_apps::run();
     #[cfg(jnox_multilevel)]
     multilevel_apps::run();
-    #[cfg(not(any(jnox_fixed, jnox_multilevel)))]
+    #[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
     run_bench()
 }
 
-#[cfg(not(any(jnox_fixed, jnox_multilevel)))]
+#[cfg(not(any(jnox_fixed, jnox_batch, jnox_groups, jnox_multilevel)))]
 fn run_bench() -> ! {
     #[cfg(jnox_bench = "priority_resume")]
     priority_resume::run();
@@ -184,7 +203,7 @@ fn run_bench() -> ! {
     mutex::run();
     #[cfg(any(jnox_bench = "smp", jnox_bench = "power"))]
     smp_boot::boot();
-    #[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake"))]
+    #[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
     eevdf::run();
     #[cfg(jnox_bench = "hierarchy")]
     hierarchy::run();

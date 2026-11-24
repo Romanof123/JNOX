@@ -86,4 +86,18 @@ POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택�
 
 CHG-037 / IMP-035는 POL-010과 VER-002/005/023에 대한 [EVD-035](evidence/evd-035.md)를 연결한다. [비례 배분 실패 관측](m4-proportional.md#최초-실패-관측-79)
 
+[#80 링크형 협력 이벤트 계약 및 인수 기준](coop-runtime.md). CHG-038 / IMP-036 / POL-001 / [EVD-036](evidence/evd-036.md).
+
+## CHG-039 일반 배치 릴리스 기준
+
+승인 기준에 따라 증거에는 소스와 선택자, 세 링크 이미지의 태스크 측 원시 출력, 중단된 호출자의 지역 결과 복원을 기록한다. 동일 순위 도착, 추정치 거절, 용량, 오래된 핸들, 오버플로 및 추정 초과 실행은 독립 호스트 기대값과 비교한다. 기존 선택자를 유지하고 물리 시간과 제품 용량은 별도 보고한다.
+
+POL-003 / IMP-037. SJF·SRTF·HRRN에서 일반 부팅 6회와 진단 부팅 3회가 통과했으며 진단 기록의 결정 60개를 독립 재현했다. [EVD-037](evidence/evd-037.md)
+
+POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한국어) · [실행 부채와 회복 EVD-038](evidence/evd-038.md)
+
+[POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
+
+[POL-004 M3 가상 제어 작업 및 FS-M3-01](pol-004-m3-control-plan.md#korean). CHG-044는 시뮬레이션 설계를 기록한다. 구현과 독립 검증은 미완료다.
+
 CHG-042 / IMP-040 / POL-009 · [일반 MLQ·MLFQ 작업](ordinary-multilevel.md) · [EVD-040](evidence/evd-040.md)

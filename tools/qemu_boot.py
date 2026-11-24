@@ -198,6 +198,9 @@ class DynamicTranscript(Enum):
     FIXED_RR = ("FIXED RR", "fixed_runtime_observer")
     PI4_FIXED_FIFO = ("FIXED FIFO", "fixed_runtime_observer", "PI4")
     PI4_FIXED_RR = ("FIXED RR", "fixed_runtime_observer", "PI4")
+    BATCH_SJF = ("batch-sjf", "batch_runtime_observer")
+    BATCH_SRTF = ("batch-srtf", "batch_runtime_observer")
+    BATCH_HRRN = ("batch-hrrn", "batch_runtime_observer")
     AMC = ("AMC", "amc_observer")
     VRUNTIME = ("VR", "vruntime_observer")
 
@@ -218,7 +221,17 @@ def fixed_edge_transcript(prefix):
     return BOOT_TRANSCRIPT + b"".join(prefix + b" " + marker + b"\n" for marker in markers)
 
 
+def coop_transcript(selector):
+    markers = (selector + b" START", b"OWNER START", b"OWNER YIELD", b"PEER 2", b"PEER 0",
+               b"OWNER RESUME", b"OWNER OVERRUN", b"OWNER OVERRUN", b"DONE")
+    return BOOT_TRANSCRIPT + b"".join(b"COOP " + marker + b"\n" for marker in markers)
+
+
 TRANSCRIPTS = {
+    "coop-events": coop_transcript(b"EVENTS"),
+    "coop-single": coop_transcript(b"SINGLE"),
+    "ordinary-groups-late": BOOT_TRANSCRIPT + b"GROUP LATE\nGROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
+    "ordinary-groups": BOOT_TRANSCRIPT + b"GROUP BLOCK\nGROUP WAKE\nGROUP PEER\nGROUP RESUME\nGROUP RETURN\n",
     "mlq": BOOT_TRANSCRIPT + b"MLQ START\nMULTILEVEL DONE\n",
     "mlfq": BOOT_TRANSCRIPT + b"MLFQ START\nMULTILEVEL DONE\n",
     "fixed-empty": BOOT_TRANSCRIPT + b"FIXED EMPTY START\n",
@@ -256,6 +269,7 @@ TRANSCRIPTS = {
     "pi4-fixed-fifo": DynamicTranscript.PI4_FIXED_FIFO,
     "pi4-fixed-rr": DynamicTranscript.PI4_FIXED_RR,
     "pi4-scheduler": PI4_BOOT_TRANSCRIPT + SCHEDULER_LINES + FIXED_PRIORITY_LINES,
+    "eevdf-dynamic": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF DYNAMIC STOP\nEEVDF DYNAMIC PASS\n",
     "eevdf-wake": BOOT_TRANSCRIPT + b"EEVDF BEGIN\nEEVDF WAKE STOP\nEEVDF WAKE PASS\n",
     "eevdf": BOOT_TRANSCRIPT + (
         b"EEVDF BEGIN\nEEVDF EARLY INELIGIBLE\nEEVDF SLICE CHANGE\n"
@@ -286,6 +300,9 @@ TRANSCRIPTS = {
     ),
     "periodic-preempt": PERIODIC_PREEMPT_TRANSCRIPT,
 }
+for profile in (DynamicTranscript.BATCH_SJF, DynamicTranscript.BATCH_SRTF, DynamicTranscript.BATCH_HRRN):
+    TRANSCRIPTS[profile.label] = profile.observer().ordinary(profile.prefix)
+    TRANSCRIPTS[profile.label + "-trace"] = profile
 TRANSCRIPTS["smp-single"] = TRANSCRIPTS["smp"]
 QUIET_SECONDS = 0.1
 
@@ -361,6 +378,9 @@ def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet
     contract = profile.observer()
     workload = profile.module == "fixed_runtime_observer"
     passed = profile.prefix + (b" B DONE\n" if workload else b" PASS\n")
+    batch = profile.module == "batch_runtime_observer"
+    if batch:
+        passed = b"BATCH TRACE END\n"
     failed = profile.prefix + b" FAIL\n"
     stop_line = b"\n" + profile.prefix + b" STOP\n"
     deadline = time.monotonic() + timeout
@@ -389,7 +409,7 @@ def observe_dynamic(process, serial, timeout, profile, *, allow_crlf=True, quiet
             if passed in data or failed in data or b"\n" in after_stop:
                 if not data.endswith(b"\n" + passed):
                     return f"unexpected {profile.label} UART transcript", None
-                valid = contract.validate(data, profile.prefix, profile.board) if workload else contract.validate(data)
+                valid = contract.validate(data, profile.prefix, profile.board) if workload or batch else contract.validate(data)
                 if not valid:
                     return f"unexpected {profile.label} UART transcript", None
                 accepted = raw
@@ -417,7 +437,7 @@ def stop(process):
     return None
 
 
-def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, capture_dir=None):
+def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, quiet_seconds=QUIET_SECONDS, capture_dir=None, env=None):
     profile = dynamic_profile(expected)
     with tempfile.TemporaryDirectory(prefix="jnox-qemu-") as folder:
         output_dir = capture_dir or Path(folder)
@@ -425,7 +445,7 @@ def run_boot(command, timeout, expected=BOOT_TRANSCRIPT, *, allow_crlf=True, qui
         stderr_path = output_dir / "stderr"
         with uart_path.open("wb") as output, stderr_path.open("wb") as errors:
             process = subprocess.Popen(
-                command, stdin=subprocess.DEVNULL, stdout=output, stderr=errors
+                command, stdin=subprocess.DEVNULL, stdout=output, stderr=errors, env=env
             )
             try:
                 print(f"  QEMU PID = {process.pid}", flush=True)
@@ -486,7 +506,9 @@ def main():
         expected = TRANSCRIPTS[args.profile]
         image_type = "raw image" if pi4 else "ELF"
         capture_script = Path(args.qemu)
+        launch_env = None
         if capture_script.suffix == ".py" and capture_script.is_file():
+            launch_env = dict(os.environ, JNOX_CAPTURE_PROFILE=args.profile)
             launcher = [sys.executable, "-B", str(capture_script.resolve())]
         else:
             launcher = [args.qemu]
@@ -515,7 +537,7 @@ def main():
                 run_command = [*command, "-d", "int", "-D", str(capture_dir / "exceptions.log")]
             print(f"Run {run}/{runs}  {image_type} SHA-256 = {expected_hash}")
             print(f"  argv = {json.dumps(run_command, ensure_ascii=True)}", flush=True)
-            run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir,
+            run_boot(run_command, timeout, expected, allow_crlf=not pi4, capture_dir=capture_dir, env=launch_env,
                      quiet_seconds=1 if pi4 else QUIET_SECONDS)
             if kernel_sha256(kernel, raw=pi4) != expected_hash:
                 raise ValueError(f"kernel {image_type} changed during testing")
