@@ -19,3 +19,5 @@ CHG-020은 POL-014와 REQ-002/005/023을 DES-003/012, IMP-018, VER-002/005/023�
 kernel 디렉터리에서 `cargo build --release --locked --features mutex-bench -j1`로 빌드한다. 저장소 루트에서 `python3 tools/qemu_boot.py --profile mutex --kernel kernel/target/aarch64-unknown-none/release/jnox-kernel`를 실행한다. 부팅 표식 두 줄 이후 MUTEX PI TRANSFER, MUTEX CHAIN TIMEOUT, MUTEX CEILING NESTED, MUTEX PASS를 순서대로 받아야 한다. 5초 안에 수신하고 100 ms 무출력을 확인한 뒤 호스트가 종료한다.
 
 ELF 심볼 mutex_witness의 크기는 1,304바이트다. 리틀엔디언 u64 세 개가 유효 행 수, 타이머 만기, IRQ 시각을 기록한다. 각 32바이트 행은 u64 두 개로 이전 ELR과 문맥 주소를 담고, 이어 1바이트 값 16개로 사례, 동작, 인자, 호출자, 선택 작업, 선택 작업을 포함한 준비 마스크, X·Y 대기 마스크, X·Y 소유자, 작업 번호순 유효 우선순위 네 개, 깨어난 작업 및 인터럽트 ID를 담는다. 255는 해당 값 없음이다. 동작 번호 1~6은 획득·해제·활성화·양보·종료·타이머 만료다. 총 40칸 중 사례별 예상 유효 행은 8·14·12개다. IRQ는 BASE 실행 루프 안에서 발생해야 한다. 같은 실행에서 QMP로 이 표와 예외 기록 및 UART를 확보한 뒤 동결된 ELF의 명령 주소와 대조한다. 새 `MUTEX_CAPTURE_DIR`를 지정하고 `python3 tools/mutex_capture.py "$@"`를 호출하는 Linux 실행 래퍼를 `--qemu` 인자로 준다.
+
+[독립 검증 결과](evidence/evd-018.md)
