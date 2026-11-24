@@ -5,7 +5,10 @@ use core::arch::{asm, global_asm};
 use core::panic::PanicInfo;
 use core::ptr;
 
-#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "rr-bench",
+    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+))]
 mod aperiodic_policy;
 #[cfg(feature = "cbs-bench")]
 mod cbs;
@@ -13,22 +16,46 @@ mod cbs;
 mod context;
 #[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
 mod dispatch_policy;
-#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "rr-bench",
+    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+))]
 mod domain_policy;
-#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "rr-bench",
+    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+))]
 mod fair_policy;
-#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "rr-bench",
+    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+))]
 mod feedback_policy;
-#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "rr-bench",
+    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+))]
 mod group_policy;
 #[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
 mod ready_queue;
-#[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "sched-bench",
+    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+))]
 mod sched;
-#[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
+#[cfg(all(
+    feature = "rr-bench",
+    not(any(feature = "cbs-bench", feature = "periodic-bench"))
+))]
 mod service_policy;
-#[cfg(any(feature = "rr-bench", feature = "cbs-bench"))]
+#[cfg(any(
+    feature = "cbs-bench",
+    all(feature = "rr-bench", not(feature = "periodic-bench"))
+))]
 mod temporal_policy;
+
+#[cfg(all(feature = "periodic-bench", not(feature = "cbs-bench")))]
+mod periodic;
 
 static mut BSS_PROBE: u64 = 0;
 
@@ -49,7 +76,10 @@ extern "C" fn kernel_main() -> ! {
 
     uart_init();
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
-    #[cfg(all(feature = "rr-bench", not(feature = "cbs-bench")))]
+    #[cfg(all(
+        feature = "rr-bench",
+        not(any(feature = "cbs-bench", feature = "periodic-bench"))
+    ))]
     {
         if !dispatch_policy::bench_checks() {
             uart_write(b"POLICY RANK FAIL\n");
@@ -70,7 +100,10 @@ extern "C" fn kernel_main() -> ! {
         uart_write(b"POLICY SERVICE PASS\n");
     }
     #[cfg(all(feature = "sched-bench", not(feature = "cbs-bench")))]
+    #[cfg(not(feature = "periodic-bench"))]
     sched::run();
+    #[cfg(all(feature = "periodic-bench", not(feature = "cbs-bench")))]
+    periodic::run();
     #[cfg(feature = "cbs-bench")]
     cbs::run();
     #[cfg(not(any(feature = "sched-bench", feature = "cbs-bench")))]

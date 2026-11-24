@@ -1,0 +1,7 @@
+{
+  "policy": "dm",
+  "tasks": [
+    {"id": "short", "period": 4, "deadline": 4, "wcet": 2},
+    {"id": "urgent", "period": 8, "deadline": 2, "wcet": 1}
+  ]
+}
