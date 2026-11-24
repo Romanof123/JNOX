@@ -29,3 +29,5 @@ python3 tools/native_weighted_host_accounting.py replay /tmp/jnox-184-host-first
 ```
 
 Exit 0 means both sets of controls passed, 1 means a measured set failed, and 2 means the capture was incomplete or unusable. `clock_controls_pass` and `queue_controls_pass` are separate. 일반 사용자로 실행하고 새 경로에 최초 결과를 보존한다. 종료 코드 0은 두 대조 통과, 1은 실측 기준 미충족, 2는 판정에 필요한 원자료가 불완전하거나 사용할 수 없음을 뜻한다.
+
+[First host calibration and all 35 intervals / 최초 호스트 교정과 35개 구간](evidence/native-thread-accounting-first.en-ko.md).
