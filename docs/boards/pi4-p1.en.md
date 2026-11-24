@@ -6,7 +6,7 @@ The proposed low-cost P1 board is the **Raspberry Pi 4 Model B, 1 GB**, with a B
 
 ## Build and stage the candidate
 
-CHG-013 · REQ-016 · DES-001 · IMP-011 · VER-016 · EVD-011. The manifest pins firmware tag 1.20250430 and file digests. Both the dedicated link script and firmware configuration specify a raw image at `0x80000`. The boot core accepts EL2 or EL1 entry and establishes its EL1 stack. Other cores reaching this entry are parked. Low peripheral mode exposes PL011 at `0xfe201000`, with a configured 48 MHz clock and baud divisors 26 + 3/64. Timer IRQs and SMP have separate acceptance cases. [config.txt](../../boards/pi4/config.txt) · [Firmware](../../boards/pi4/firmware.json)
+CHG-013 · REQ-008/016 · DES-004/001 · IMP-011 · VER-008/016 · EVD-011. The manifest pins firmware tag 1.20250430 and file digests. Both the dedicated link script and firmware configuration specify a raw image at `0x80000`. The boot core accepts EL2 or EL1 entry and establishes its EL1 stack. Other cores reaching this entry are parked. Low peripheral mode exposes PL011 at `0xfe201000`, with a configured 48 MHz clock and baud divisors 26 + 3/64. Timer IRQs and SMP have separate acceptance cases. [config.txt](../../boards/pi4/config.txt) · [Firmware](../../boards/pi4/firmware.json)
 
 From the repository root, use Rust 1.95.0 with aarch64-unknown-none, GNU AArch64 binutils and Python 3.
 
@@ -54,3 +54,5 @@ python3 tools/qemu_boot.py --profile pi4 --kernel kernel8.img
 | Physical cold start | The two captures establish the boot/UART contract on the recorded Pi revision. |
 | Physical timer, IRQ and SMP | First identify the timer IRQ, interrupted PC, higher-priority dispatch and restoration on one core. In a later SMP case record secondary-core startup, per-core IDs, affinity and an inter-core wake-up under contention. Preserve separate verdicts. |
 | Product timing and safety | Allocate board-specific timing limits, analyze interference and measure the intended product configuration under load. Functional safety and integration review the bounds, assumptions and approval scope. P2 Cortex-R52 has its own port and evidence. [Verification plan](../verification-plan.en.md) |
+
+[EVD-011](../evidence/evd-011.en.md)

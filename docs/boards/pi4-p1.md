@@ -6,7 +6,7 @@
 
 ## 부팅 후보 만들기
 
-CHG-013 · REQ-016 · DES-001 · IMP-011 · VER-016 · EVD-011. 펌웨어 태그 1.20250430과 SHA-256은 매니페스트에 고정했다. 전용 링커와 펌웨어는 원시 이미지 시작 주소를 `0x80000`으로 지정한다. 부트 코어는 EL2 또는 EL1로 진입해 EL1 스택을 설치한다. 다른 코어가 같은 진입점에 도달하면 대기한다. 저주소 주변장치 모드에서 PL011 주소는 `0xfe201000`, 입력은 48 MHz, 분주는 26 + 3/64다. IRQ·SMP 검증은 후속 단계다. [config.txt](../../boards/pi4/config.txt) · [Firmware](../../boards/pi4/firmware.json)
+CHG-013 · REQ-008/016 · DES-004/001 · IMP-011 · VER-008/016 · EVD-011. 펌웨어 태그 1.20250430과 SHA-256은 매니페스트에 고정했다. 전용 링커와 펌웨어는 원시 이미지 시작 주소를 `0x80000`으로 지정한다. 부트 코어는 EL2 또는 EL1로 진입해 EL1 스택을 설치한다. 다른 코어가 같은 진입점에 도달하면 대기한다. 저주소 주변장치 모드에서 PL011 주소는 `0xfe201000`, 입력은 48 MHz, 분주는 26 + 3/64다. IRQ·SMP 검증은 후속 단계다. [config.txt](../../boards/pi4/config.txt) · [Firmware](../../boards/pi4/firmware.json)
 
 저장소 루트에서 Rust 1.95.0, aarch64-unknown-none 타깃, GNU AArch64 binutils와 Python 3를 사용한다.
 
@@ -54,3 +54,5 @@ python3 tools/qemu_boot.py --profile pi4 --kernel kernel8.img
 | 실보드 전원 인가 | 두 캡처는 기록한 Pi 리비전의 부팅·UART 계약을 입증한다. |
 | 실보드 타이머·IRQ·SMP | 먼저 코어 하나에서 타이머 IRQ, 중단된 PC, 높은 우선순위 스레드의 실행과 원래 스레드로의 복귀를 식별한다. 이후 SMP 시험에서 보조 코어 시작, 코어별 ID, CPU 친화성, 경합 중 코어 간 깨우기를 확인한다. 판정은 각각 보존한다. |
 | 제품 시간 한계·안전성 | 보드별 시간 한계를 배정하고 의도한 제품 구성에서 간섭을 분석하며 부하 중 시간을 측정한다. 기능안전팀과 통합팀이 상한, 가정, 승인 범위를 검토한다. P2 Cortex-R52는 별도 포트와 근거로 관리한다. [검증계획](../verification-plan.md) |
+
+[EVD-011](../evidence/evd-011.md)
