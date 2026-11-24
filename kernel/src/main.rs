@@ -17,6 +17,10 @@ mod cbs;
 mod context;
 #[cfg(jnox_bench = "coop")]
 mod coop;
+#[cfg(jnox_bench = "deadline")]
+mod deadline;
+#[cfg(jnox_bench = "deadline")]
+mod deadline_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
     jnox_bench = "rr",
@@ -43,6 +47,7 @@ mod periodic;
     jnox_bench = "rr",
     jnox_bench = "periodic",
     jnox_bench = "batch",
+    jnox_bench = "deadline",
     jnox_bench = "coop"
 ))]
 mod ready_queue;
@@ -111,6 +116,8 @@ fn run_bench() -> ! {
     partition::run();
     #[cfg(jnox_bench = "batch")]
     batch::run();
+    #[cfg(jnox_bench = "deadline")]
+    deadline::run();
     #[cfg(jnox_bench = "coop")]
     coop::run();
     #[cfg(jnox_bench = "boot")]
