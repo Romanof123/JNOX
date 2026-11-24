@@ -1,0 +1,510 @@
+{
+  "baseline": {
+    "bytes": {
+      "alloc": 16667,
+      "bss": 8,
+      "file": 67200,
+      "linked_stack": 16384,
+      "load_backed": 275,
+      "load_file": 275,
+      "load_memory": 16667,
+      "padding": 0,
+      "zero_fill": 16392
+    },
+    "machine": "aarch64",
+    "path": "boot/kernel.elf",
+    "sha256": "60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861"
+  },
+  "baseline_selector": "AArch64 virt with default selectors",
+  "features": {
+    "all": {
+      "bytes": {
+        "alloc": 79444,
+        "bss": 49240,
+        "file": 87728,
+        "linked_stack": 16384,
+        "load_backed": 13824,
+        "load_file": 13824,
+        "load_memory": 79456,
+        "padding": 12,
+        "zero_fill": 65632
+      },
+      "delta_bytes": {
+        "alloc": 62777,
+        "bss": 49232,
+        "file": 20528,
+        "linked_stack": 0,
+        "load_backed": 13549,
+        "load_file": 13549,
+        "load_memory": 62789,
+        "padding": 12,
+        "zero_fill": 49240
+      },
+      "machine": "aarch64",
+      "path": "all/kernel.elf",
+      "sha256": "85eab95c4465a0b067b16f4c3d7ad91a56d5c0955ecf19cd72e46adc7321d4dd"
+    },
+    "batch-hrrn": {
+      "bytes": {
+        "alloc": 118988,
+        "bss": 81952,
+        "file": 98648,
+        "linked_stack": 16384,
+        "load_backed": 20664,
+        "load_file": 20664,
+        "load_memory": 119008,
+        "padding": 20,
+        "zero_fill": 98344
+      },
+      "delta_bytes": {
+        "alloc": 102321,
+        "bss": 81944,
+        "file": 31448,
+        "linked_stack": 0,
+        "load_backed": 20389,
+        "load_file": 20389,
+        "load_memory": 102341,
+        "padding": 20,
+        "zero_fill": 81952
+      },
+      "machine": "aarch64",
+      "path": "batch-hrrn/kernel.elf",
+      "sha256": "f0071d57fbe891718c039223f218a7fd7b512ac64a77c2276f5f31dcf89433ce"
+    },
+    "batch-hrrn-trace": {
+      "bytes": {
+        "alloc": 128600,
+        "bss": 89648,
+        "file": 105104,
+        "linked_stack": 16384,
+        "load_backed": 22576,
+        "load_file": 22576,
+        "load_memory": 128616,
+        "padding": 16,
+        "zero_fill": 106040
+      },
+      "delta_bytes": {
+        "alloc": 111933,
+        "bss": 89640,
+        "file": 37904,
+        "linked_stack": 0,
+        "load_backed": 22301,
+        "load_file": 22301,
+        "load_memory": 111949,
+        "padding": 16,
+        "zero_fill": 89648
+      },
+      "machine": "aarch64",
+      "path": "batch-hrrn-trace/kernel.elf",
+      "sha256": "c924076846cbf83e39a38ff43a85e77c1d192a1ffb9962de3ddb7e062186ba81"
+    },
+    "batch-sjf": {
+      "bytes": {
+        "alloc": 118984,
+        "bss": 81952,
+        "file": 98648,
+        "linked_stack": 16384,
+        "load_backed": 20648,
+        "load_file": 20648,
+        "load_memory": 118992,
+        "padding": 8,
+        "zero_fill": 98344
+      },
+      "delta_bytes": {
+        "alloc": 102317,
+        "bss": 81944,
+        "file": 31448,
+        "linked_stack": 0,
+        "load_backed": 20373,
+        "load_file": 20373,
+        "load_memory": 102325,
+        "padding": 8,
+        "zero_fill": 81952
+      },
+      "machine": "aarch64",
+      "path": "batch-sjf/kernel.elf",
+      "sha256": "bb9bcd38e375018434b4f6c3f1b011872ce6a974d77899b41297336eb7b1dd19"
+    },
+    "batch-sjf-trace": {
+      "bytes": {
+        "alloc": 128596,
+        "bss": 89648,
+        "file": 105104,
+        "linked_stack": 16384,
+        "load_backed": 22576,
+        "load_file": 22576,
+        "load_memory": 128616,
+        "padding": 20,
+        "zero_fill": 106040
+      },
+      "delta_bytes": {
+        "alloc": 111929,
+        "bss": 89640,
+        "file": 37904,
+        "linked_stack": 0,
+        "load_backed": 22301,
+        "load_file": 22301,
+        "load_memory": 111949,
+        "padding": 20,
+        "zero_fill": 89648
+      },
+      "machine": "aarch64",
+      "path": "batch-sjf-trace/kernel.elf",
+      "sha256": "4627783e3f0af74ef4d0fba05babae077d45415ac5f82019ebf50d3419297590"
+    },
+    "batch-srtf": {
+      "bytes": {
+        "alloc": 118988,
+        "bss": 81952,
+        "file": 98648,
+        "linked_stack": 16384,
+        "load_backed": 20664,
+        "load_file": 20664,
+        "load_memory": 119008,
+        "padding": 20,
+        "zero_fill": 98344
+      },
+      "delta_bytes": {
+        "alloc": 102321,
+        "bss": 81944,
+        "file": 31448,
+        "linked_stack": 0,
+        "load_backed": 20389,
+        "load_file": 20389,
+        "load_memory": 102341,
+        "padding": 20,
+        "zero_fill": 81952
+      },
+      "machine": "aarch64",
+      "path": "batch-srtf/kernel.elf",
+      "sha256": "0fb0edd11935d7965a4e0b5095019514f16daf74221faf7228753df704016ee4"
+    },
+    "batch-srtf-trace": {
+      "bytes": {
+        "alloc": 128600,
+        "bss": 89648,
+        "file": 105104,
+        "linked_stack": 16384,
+        "load_backed": 22576,
+        "load_file": 22576,
+        "load_memory": 128616,
+        "padding": 16,
+        "zero_fill": 106040
+      },
+      "delta_bytes": {
+        "alloc": 111933,
+        "bss": 89640,
+        "file": 37904,
+        "linked_stack": 0,
+        "load_backed": 22301,
+        "load_file": 22301,
+        "load_memory": 111949,
+        "padding": 16,
+        "zero_fill": 89648
+      },
+      "machine": "aarch64",
+      "path": "batch-srtf-trace/kernel.elf",
+      "sha256": "e70eadb8eec174b5b938b77753be3e2f8cdeb2db2bbde6d487010c87ce2e2139"
+    },
+    "coop-bench": {
+      "bytes": {
+        "alloc": 79444,
+        "bss": 49240,
+        "file": 87728,
+        "linked_stack": 16384,
+        "load_backed": 13824,
+        "load_file": 13824,
+        "load_memory": 79456,
+        "padding": 12,
+        "zero_fill": 65632
+      },
+      "delta_bytes": {
+        "alloc": 62777,
+        "bss": 49232,
+        "file": 20528,
+        "linked_stack": 0,
+        "load_backed": 13549,
+        "load_file": 13549,
+        "load_memory": 62789,
+        "padding": 12,
+        "zero_fill": 49240
+      },
+      "machine": "aarch64",
+      "path": "coop-bench/kernel.elf",
+      "sha256": "b1aa18ea8bf4589037f7c682b837a8b70a277ce3587f21ab24120a0df0375cfe"
+    },
+    "coop-events": {
+      "bytes": {
+        "alloc": 120182,
+        "bss": 82152,
+        "file": 106328,
+        "linked_stack": 16384,
+        "load_backed": 21650,
+        "load_file": 21650,
+        "load_memory": 120194,
+        "padding": 12,
+        "zero_fill": 98544
+      },
+      "delta_bytes": {
+        "alloc": 103515,
+        "bss": 82144,
+        "file": 39128,
+        "linked_stack": 0,
+        "load_backed": 21375,
+        "load_file": 21375,
+        "load_memory": 103527,
+        "padding": 12,
+        "zero_fill": 82152
+      },
+      "machine": "aarch64",
+      "path": "coop-events/kernel.elf",
+      "sha256": "26f37606098e31ef8f177a26ed3dfd833b5a10b97e6672225c8a38099d7a395c"
+    },
+    "eevdf-bench": {
+      "bytes": {
+        "alloc": 89093,
+        "bss": 53216,
+        "file": 97056,
+        "linked_stack": 16384,
+        "load_backed": 19497,
+        "load_file": 19497,
+        "load_memory": 89097,
+        "padding": 4,
+        "zero_fill": 69600
+      },
+      "delta_bytes": {
+        "alloc": 72426,
+        "bss": 53208,
+        "file": 29856,
+        "linked_stack": 0,
+        "load_backed": 19222,
+        "load_file": 19222,
+        "load_memory": 72430,
+        "padding": 4,
+        "zero_fill": 53208
+      },
+      "machine": "aarch64",
+      "path": "eevdf-bench/kernel.elf",
+      "sha256": "134614b9f2fb1617700108c4d97a1fbda6ba44a8adfadc4673caeea2038b0ca4"
+    },
+    "eevdf-dynamic-bench": {
+      "bytes": {
+        "alloc": 169305,
+        "bss": 132256,
+        "file": 98576,
+        "linked_stack": 16384,
+        "load_backed": 20665,
+        "load_file": 20665,
+        "load_memory": 169305,
+        "padding": 0,
+        "zero_fill": 148640
+      },
+      "delta_bytes": {
+        "alloc": 152638,
+        "bss": 132248,
+        "file": 31376,
+        "linked_stack": 0,
+        "load_backed": 20390,
+        "load_file": 20390,
+        "load_memory": 152638,
+        "padding": 0,
+        "zero_fill": 132248
+      },
+      "machine": "aarch64",
+      "path": "eevdf-dynamic-bench/kernel.elf",
+      "sha256": "f5996a6d111c52c1008f918e71c1abb0c22c3a143bc4b0c2751c645202a93886"
+    },
+    "eevdf-wake-bench": {
+      "bytes": {
+        "alloc": 126121,
+        "bss": 90752,
+        "file": 97720,
+        "linked_stack": 16384,
+        "load_backed": 18985,
+        "load_file": 18985,
+        "load_memory": 126121,
+        "padding": 0,
+        "zero_fill": 107136
+      },
+      "delta_bytes": {
+        "alloc": 109454,
+        "bss": 90744,
+        "file": 30520,
+        "linked_stack": 0,
+        "load_backed": 18710,
+        "load_file": 18710,
+        "load_memory": 109454,
+        "padding": 0,
+        "zero_fill": 90744
+      },
+      "machine": "aarch64",
+      "path": "eevdf-wake-bench/kernel.elf",
+      "sha256": "c7af30eb62953c1ab0eb01ee8cfea61e350547eecccbb985625108e4e538c0eb"
+    },
+    "fixed-fifo": {
+      "bytes": {
+        "alloc": 113600,
+        "bss": 81992,
+        "file": 94192,
+        "linked_stack": 16384,
+        "load_backed": 15224,
+        "load_file": 15224,
+        "load_memory": 113608,
+        "padding": 8,
+        "zero_fill": 98384
+      },
+      "delta_bytes": {
+        "alloc": 96933,
+        "bss": 81984,
+        "file": 26992,
+        "linked_stack": 0,
+        "load_backed": 14949,
+        "load_file": 14949,
+        "load_memory": 96941,
+        "padding": 8,
+        "zero_fill": 81992
+      },
+      "machine": "aarch64",
+      "path": "fixed-fifo/kernel.elf",
+      "sha256": "e7259351f4d86fe9c9939882d2b39f93f91d8d3ac5bbaa22944e3b19c1152735"
+    },
+    "hierarchy-bench": {
+      "bytes": {
+        "alloc": 115217,
+        "bss": 83520,
+        "file": 91264,
+        "linked_stack": 16384,
+        "load_backed": 15313,
+        "load_file": 15313,
+        "load_memory": 115217,
+        "padding": 0,
+        "zero_fill": 99904
+      },
+      "delta_bytes": {
+        "alloc": 98550,
+        "bss": 83512,
+        "file": 24064,
+        "linked_stack": 0,
+        "load_backed": 15038,
+        "load_file": 15038,
+        "load_memory": 98550,
+        "padding": 0,
+        "zero_fill": 83512
+      },
+      "machine": "aarch64",
+      "path": "hierarchy-bench/kernel.elf",
+      "sha256": "43459356ed86c3dbedab503ec3817700a53d59ba8826a22e490799c08d30fdad"
+    },
+    "ordinary-groups": {
+      "bytes": {
+        "alloc": 97290,
+        "bss": 65552,
+        "file": 92216,
+        "linked_stack": 16384,
+        "load_backed": 15354,
+        "load_file": 15354,
+        "load_memory": 97290,
+        "padding": 0,
+        "zero_fill": 81936
+      },
+      "delta_bytes": {
+        "alloc": 80623,
+        "bss": 65544,
+        "file": 25016,
+        "linked_stack": 0,
+        "load_backed": 15079,
+        "load_file": 15079,
+        "load_memory": 80623,
+        "padding": 0,
+        "zero_fill": 65544
+      },
+      "machine": "aarch64",
+      "path": "ordinary-groups/kernel.elf",
+      "sha256": "e8b841c2c5c2c3ee6f3711eb4de26d21ed29222cade17f4bbb37443f0e6c927d"
+    },
+    "ordinary-groups-late": {
+      "bytes": {
+        "alloc": 97414,
+        "bss": 65552,
+        "file": 92248,
+        "linked_stack": 16384,
+        "load_backed": 15482,
+        "load_file": 15482,
+        "load_memory": 97418,
+        "padding": 4,
+        "zero_fill": 81936
+      },
+      "delta_bytes": {
+        "alloc": 80747,
+        "bss": 65544,
+        "file": 25048,
+        "linked_stack": 0,
+        "load_backed": 15207,
+        "load_file": 15207,
+        "load_memory": 80751,
+        "padding": 4,
+        "zero_fill": 65544
+      },
+      "machine": "aarch64",
+      "path": "ordinary-groups-late/kernel.elf",
+      "sha256": "ffa878b21465ccf834ff578c2c4510e53470ab4e6770790ceda026a34123bab7"
+    },
+    "ordinary-groups-late-trace": {
+      "bytes": {
+        "alloc": 104206,
+        "bss": 73352,
+        "file": 93216,
+        "linked_stack": 16384,
+        "load_backed": 14474,
+        "load_file": 14474,
+        "load_memory": 104218,
+        "padding": 12,
+        "zero_fill": 89744
+      },
+      "delta_bytes": {
+        "alloc": 87539,
+        "bss": 73344,
+        "file": 26016,
+        "linked_stack": 0,
+        "load_backed": 14199,
+        "load_file": 14199,
+        "load_memory": 87551,
+        "padding": 12,
+        "zero_fill": 73352
+      },
+      "machine": "aarch64",
+      "path": "ordinary-groups-late-trace/kernel.elf",
+      "sha256": "5e91d5b6cd76eb2bfd7894556251d5355c9f301b1cd5488d388a81107aa6d54d"
+    },
+    "ordinary-groups-trace": {
+      "bytes": {
+        "alloc": 104198,
+        "bss": 73352,
+        "file": 93192,
+        "linked_stack": 16384,
+        "load_backed": 14466,
+        "load_file": 14466,
+        "load_memory": 104210,
+        "padding": 12,
+        "zero_fill": 89744
+      },
+      "delta_bytes": {
+        "alloc": 87531,
+        "bss": 73344,
+        "file": 25992,
+        "linked_stack": 0,
+        "load_backed": 14191,
+        "load_file": 14191,
+        "load_memory": 87543,
+        "padding": 12,
+        "zero_fill": 73352
+      },
+      "machine": "aarch64",
+      "path": "ordinary-groups-trace/kernel.elf",
+      "sha256": "7d92063dc5604ea350e01ee9c58ef43f0bb8e38823eddc79ede7dfd7cab6a0b2"
+    }
+  },
+  "inputs": "Release ELF files retained by the serialized integration gate; relative paths identify build outputs. Static linked byte counts only.",
+  "schema_version": 1,
+  "source_tree": "2aae6ccdc9c90b183ac8c4e1107af7f78f2cd420"
+}

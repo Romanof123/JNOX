@@ -19,6 +19,7 @@ J-NOX profiles select how a CPU chooses its next thread, which events may preemp
 | Verified running-job preemption | IMP-009, POL-004 | A timer interrupted A. RM immediately returned to A. DM returned to the same A instruction after B completed. [EVD-009](evidence/evd-009.en.md) |
 | Verified static time partitions | IMP-010, POL-006 | Reclaimed the CPU at window boundaries with blocked-owner and explicit idle windows. [EVD-010](evidence/evd-010.en.md) |
 | Verified cooperative dispatch | IMP-012, POL-001 | A retained its CPU until voluntary yield after B became ready. A handler-enqueued event ran after the older queued event. [EVD-012](evidence/evd-012.en.md) |
+| Linked cooperative events | IMP-036, POL-001 | Two ordinary images exercised full/invalid refusals, FIFO append, measured handler time and owner reactions. [EVD-036](evidence/evd-036.en.md) |
 | Verified burst scheduling | IMP-013, POL-003 | Compared SJF retention with SRTF preemption and restoration. HRRN selected an older waiting job ahead of a shorter newcomer. [EVD-013](evidence/evd-013.en.md) |
 | Verified Pi 4 model preemption | IMP-014, POL-002 fixed priority | The Pi timer interrupted LOW and the scheduler restored its exact PC after HIGH exited. [EVD-014](evidence/evd-014.en.md) |
 | Verified sampled EDF and LLF | IMP-015, POL-005 | Recorded tie retention, preemption on a laxity crossover, negative slack, and exact restoration on one CPU. [EVD-015](evidence/evd-015.en.md) |
@@ -100,5 +101,11 @@ The cited mechanisms supply design references. Compatibility with another schedu
 CHG-032 / IMP-030 selects a single-core runtime and a static Rust task table at build time. The same kernel interface accepts FIFO and RR applications with different priorities and initial releases. EVD-030 calls for the first guest captures, task exception and stack checks, and terminal idle for each application configuration. [Fixed-priority runtime](fixed-runtime.en.md)
 
 POL-004 / IMP-033. The exact periodic pair dispatched AB under RM and BA under DM, then repeated A at tick 10 and B at tick 12 in both epochs. [EVD-033](evidence/evd-033.en.md)
+
+POL-010 · Forced first-grant rejection and two passing controls. [EVD-035](evidence/evd-035.en.md)
+
+POL-003 / IMP-037. Six ordinary boots and three diagnostic boots produced 60 independently replayed scheduling decisions across SJF, SRTF and HRRN. [EVD-037](evidence/evd-037.en.md)
+
+POL-016 · CHG-040 · IMP-038 · [Ordinary nested groups](ordinary-groups.md#english) · [Debt and recovery EVD-038](evidence/evd-038.en.md)
 
 [POL-012 live configuration fixture](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.en.md) (#85).

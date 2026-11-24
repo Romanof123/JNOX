@@ -19,6 +19,7 @@ J-NOX는 프로파일마다 다음 스레드를 고르는 규칙, 선점 시점,
 | 실행 중 선점 검증 | IMP-009, POL-004 | 타이머가 A를 중단했을 때 RM은 즉시 A로 복귀했고 DM은 B 완료 후 같은 A 명령으로 복귀했다. [EVD-009](evidence/evd-009.md) |
 | 정적 시간 분할 검증 | IMP-010, POL-006 | 차단된 소유자와 명시적 유휴 구간을 구분하고 타이머로 CPU를 회수했다. [EVD-010](evidence/evd-010.md) |
 | 협력형 실행 검증 | IMP-012, POL-001 | B가 준비돼도 A가 자발적으로 양보할 때까지 CPU를 유지했다. 처리기 내부에서 추가한 이벤트가 기존 대기 이벤트 다음에 실행됐다. [EVD-012](evidence/evd-012.md) |
+| 링크형 협력 이벤트 | IMP-036, POL-001 | 일반 이미지 두 개에서 큐 포화·잘못된 처리기 거부, FIFO 추가, 처리 시간과 소유자 반응을 확인했다. [EVD-036](evidence/evd-036.md) |
 | CPU 버스트 실행 검증 | IMP-013, POL-003 | 같은 도착에서 SJF는 실행을 유지했고 SRTF는 선점 후 중단된 작업을 복원했다. HRRN은 오래 대기한 작업을 먼저 실행했다. [EVD-013](evidence/evd-013.md) |
 | Pi 4 모델 선점 검증 | IMP-014, POL-002 고정 우선순위 | Pi 4 타이머가 LOW를 중단하고 HIGH 완료 후 같은 명령으로 복귀했다. [EVD-014](evidence/evd-014.md) |
 | 시간 경계 EDF·LLF 검증 | IMP-015, POL-005 | 동점 유지, 실행 중 여유 역전, 음수 여유 작업의 선점과 원래 명령 복귀를 확인했다. [EVD-015](evidence/evd-015.md) |
@@ -100,5 +101,11 @@ QEMU `virt`에서 기능을 여러 개 켜면 한 부팅에 한 검증 프로필
 CHG-032 / IMP-030은 빌드 때 단일 코어 런타임과 정적 Rust 작업 테이블을 선택한다. 같은 커널 인터페이스에서 서로 다른 우선순위·초기 기동 시각을 사용하는 FIFO·RR 앱을 실행한다. EVD-030에서는 구성별 첫 부팅, 작업 예외·스택 및 최종 유휴 상태를 검증한다. [고정 우선순위 런타임](fixed-runtime.md)
 
 POL-004 / IMP-033. 같은 주기 작업 쌍에서 RM은 AB, DM은 BA를 선택했고 두 구간 모두 10틱에 A, 12틱에 B를 다시 실행했다. [EVD-033](evidence/evd-033.md)
+
+POL-010 · 최초 실행권 강제 거부 및 대조군 두 건 통과. [EVD-035](evidence/evd-035.md)
+
+POL-003 / IMP-037. SJF·SRTF·HRRN에서 일반 부팅 6회와 진단 부팅 3회가 통과했으며 진단 기록의 결정 60개를 독립 재현했다. [EVD-037](evidence/evd-037.md)
+
+POL-016 · CHG-040 · IMP-038 · [일반 중첩 그룹](ordinary-groups.md#한국어) · [실행 부채와 회복 EVD-038](evidence/evd-038.md)
 
 [POL-012 실행 중 설정 시험](m4-eevdf-dynamic-design.md) · CHG-041 / IMP-039 / [EVD-039](evidence/evd-039.md) (#85).
