@@ -362,3 +362,20 @@ fn configuration_and_id_checks_cover_the_full_user_mask() {
     assert_eq!(locks.release(31, 1), Some(None));
     assert_eq!(locks.release(31, 0), Some(None));
 }
+
+#[test]
+fn ordinary_pi_transfers_to_equal_waiters_in_both_admission_orders() {
+    for [first, second] in [[1, 2], [2, 1]] {
+        let mut locks = LockSet::<4, 1>::new([2, 7, 7, 0], inheritance(0b0111)).unwrap();
+        assert!(matches!(locks.acquire(0, 0), Some(Acquire::Held)));
+        for id in [first, second] {
+            assert!(matches!(locks.acquire(id, 0), Some(Acquire::Blocked)));
+            assert_eq!(locks.effective(0), Some(7));
+        }
+        assert_eq!(locks.release(0, 0), Some(Some(first)));
+        assert_eq!(locks.effective(0), Some(2));
+        assert_eq!(locks.waiting(second), Some(0));
+        assert_eq!(locks.release(first, 0), Some(Some(second)));
+        assert_eq!(locks.release(second, 0), Some(None));
+    }
+}
