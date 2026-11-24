@@ -35,3 +35,19 @@ Use each producer’s sequence and local counter or host monotonic sample for in
 For example, a completed SGIR sampled at M’s positive index-32 checkpoint proves that later arithmetic remained. If the GIC write sees the already committed final M checkpoint, M had completed its arithmetic before that modeled transaction. When the two only bracket the final interval, report its endpoints and leave the order open. Record local intervals for P1 entry through acquire, SVC entry through lock/retirement and SGIR, and CPU0 activation through checkpoints and IRQ/SVC. A pending IRQ in a terminal snapshot alone does not establish a broken controller. A demonstrated misprogrammed target or barrier, or a delayed P1 launch before its actual first ERET, points to a specific path to repair. Determine whether that path caused the missed delivery from the trace before changing the kernel.
 
 Freeze diagnostic positions independently from the original six and retain every first attempt of each stage. Report observer overhead and the exact first unmatched event. Only the original uninstrumented qualification contract can credit a release attempt. A future corrected candidate must receive its own six first launches with its frozen ELF/raw/map/loop limits and ordinary CPU-indexed exception history. Require the exact linked loop PC, matching restored frame and ERET, subsequent owner-bound work and all four activation summaries. Physical Pi behavior and cross-core latency bounds remain open.
+
+## Stage 1 collector
+
+From a clean Linux checkout, use the archived QEMU 11.1.3 executable and Python with pyelftools. `freeze` only hashes the model executable. It extracts the three exact archived inputs from the verified first-run ZIP, freezes all six positions, records the writable PT_LOAD and symbol extents from each ELF and prints the trusted cohort digest.
+
+```sh
+python3 tools/pi4_mg2_terminal.py freeze /path/to/new-cohort /path/to/qemu-system-aarch64
+python3 tools/pi4_mg2_terminal.py run /path/to/new-cohort COHORT_SHA256 1
+python3 tools/pi4_mg2_terminal.py replay /path/to/new-cohort COHORT_SHA256 1 SESSION_SHA256
+```
+
+Use a native Linux evidence path. Run positions 1–6 in order with one guest at a time. Record the session digest printed by each launch. Every attempted position uses a new directory. The capture return code describes the observer. The replay labels the guest outcome separately. Preserve a failed or unobserved position before proceeding. The original six are stored separately in the existing archive.
+
+The host supplies a private QMP socket without waiting for a client. Its first QMP command follows the original one-second quiet interval after the UART terminal. A nonterminal deadline or early process exit preserves the partial serial/exception evidence without halting an active M for a snapshot. After a confirmed stop the collector saves exactly the linked writable segment and records the four model CPUs’ PCs and Linux thread IDs. The partial journal layout was read from the archived event and seal instructions. Every 72-byte row has eight data words followed by its tag, with 96 rows in each 6,944-byte local journal. Only the committed prefix is decoded. The raw bytes and frozen symbol extents also preserve scheduler state, seven stacks, return stamps and thread-local ownership observations. A stopped PC is a sample taken after the quiet interval.
+
+The decoder reports a verified early M return only when the matching external CPU0 SVC, private frame and independently recomputed arithmetic all agree. A sealed completion additionally requires matching RAM/UART rows and the model’s independent exception history. Lost records, unsealed prefixes, local intervals and unavailable joins are retained. The collector neither measures the GIC pending edge nor dates the SGIR against the last M addition. Stage 2 and the original migration qualification remain distinct.
