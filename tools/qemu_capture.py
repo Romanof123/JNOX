@@ -35,7 +35,7 @@ def request(stream, command, **arguments):
         return answer["return"]
 
 
-def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, extra=()):
+def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, extra=(), *, freeze=False):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.8)
         sock.connect(str(sock_path))
@@ -48,10 +48,11 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, e
             (out / "qmp.json").write_text(json.dumps({"status": status, "cpus": cpus}))
             if not status["running"]:
                 raise ValueError("guest stopped before host termination")
-            if idle_range is not None:
+            if idle_range is not None or freeze:
                 request(stream, "stop")
                 registers = request(stream, "human-monitor-command", **{"command-line": "info registers"})
                 (out / "registers.txt").write_text(registers)
+            if idle_range is not None:
                 match = re.search(r"\bPC=([0-9a-fA-F]+)\b", registers)
                 start, length = idle_range
                 if not match or not start <= int(match[1], 16) < start + length:
@@ -65,7 +66,7 @@ def snapshot(sock_path, out, address, size, idle_range=None, trace_range=None, e
                         filename=str(out / "trace.bin"))
 
 
-def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False, extra_symbols=()):
+def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, require_trace=False, extra_symbols=(), freeze=False):
     out = Path(os.environ[directory_variable]).resolve()
     out.mkdir(parents=True, exist_ok=False)
     args = sys.argv[1:]
@@ -113,7 +114,7 @@ def main(symbol, directory_variable, idle_symbol=None, trace_symbol=None, *, req
                     if guest.poll() is not None:
                         raise RuntimeError(f"guest exited early: {guest.returncode}")
                     time.sleep(0.004)
-                snapshot(sock_path, out, address, size, idle_range, trace_range, extra)
+                snapshot(sock_path, out, address, size, idle_range, trace_range, extra, freeze=freeze)
             finally:
                 if guest.poll() is None:
                     guest.terminate()

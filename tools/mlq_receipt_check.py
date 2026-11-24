@@ -6,10 +6,27 @@ import struct
 
 def check(data, refused):
     words = struct.unpack("<30Q", data)
+    if words[1] == 0 or words[2:6] != (4_000_000, 4_000_000, 24_000_000, 24_000_000 - int(refused)):
+        raise ValueError("invalid frequency, quantum, allowance, bound or deadline")
     if refused:
         if words[0] != 2 or any(words[6:]):
             raise ValueError("refused profile ran a worker or recorded a failure")
         return
+    epoch, start, first = words[6:9]
+    services = words[9:13]
+    gaps = start - epoch - sum(services)
+    excess = max(0, services[2] - words[2])
+    entry = first - start
+    used = gaps + excess + entry
+    if not (0 < epoch <= start <= first) or min(gaps, entry) < 0:
+        raise ValueError("inconsistent epoch, owner charges or target counters")
+    if (not all(0 < s <= 8_000_000 for s in services[:3]) or services[3] != 0
+            or services[2] < words[2] or used > words[3] or first - epoch > words[5]):
+        raise ValueError("measured demand, quantum or timing exceeds the frozen contract")
+    if words[13:18] != (gaps, excess, entry, used, first - epoch):
+        raise ValueError("raw counters do not reproduce the published timing decomposition")
+    if words[18:20] != (34816, 382976) or words[22:24] != (15, 1):
+        raise ValueError("unexpected high products, worker mask or first dispatch count")
     blocks = words[24]
     if words[0] != 4 or words[27] != 0:
         raise ValueError(f"state {words[0]}, failure stage {words[27]}")

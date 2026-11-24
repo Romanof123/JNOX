@@ -25,3 +25,38 @@ ID 2 processes successive complete blocks of the same 4096 samples, accumulating
 The first run produced a completed equal-peer reduction before timer delivery. Keep its original record. Replace the equal worker's elapsed-time exit with a receipt from ID 3. The receipt is its verified maximum sample value (16), published after its deterministic reduction. At the start of each block ID 2 reads the receipt, performs the whole odd-count reduction, then may finish if that starting receipt was 16. This requires a full post-receipt block on the resumed peer. The same 2,000,000 block cap, Q, whole-window allowance, service ceilings, deadlines, product equations and UART terminals apply.
 
 Extend the witness after word 26. Word 27 is failure stage (0 none, 1 pre-target service budget, 2 target handoff, 3 target redispatch, 4 prior target charge, 5 arithmetic, 6 measured timing, 7 block cap, 8 terminal demand, 9 peer result, 10 final result, 11 receipt). Word 28 is the published receipt, word 29 the index (one-based) of the completed block started with that receipt. Require word 29 = word 24 > 0 and word 28 = word 21 = 16. Refusal keeps all three zero. 최초 실패 결과를 보존하며 대상 작업의 최댓값 결과를 받은 뒤 동급 작업이 블록 하나 전체를 실제로 처리해야 종료한다.
+
+## Operator capture / 운영자 캡처
+
+On Linux, from the repository root, use Bash, Rust 1.95.0 with aarch64-unknown-none, Python 3, qemu-system-aarch64 and aarch64-linux-gnu-nm. The following runs each build and guest serially in a fresh persistent directory under the current directory. The script prints its path first. On a failed boot, inspect its saved evidence before retrying with a fresh directory. 한국어: 저장소 최상위에서 다음 Bash 명령을 실행한다. 빌드와 게스트를 하나씩 실행하며 최초 오류에서도 원시 자료는 출력 디렉터리에 남는다. 재시도 시 새 디렉터리를 사용한다.
+
+~~~bash
+set -eu
+out=$(mktemp -d "$PWD/mlq-evidence.XXXXXXXX")
+echo "$out"
+for app in mlq-admit mlq-refuse; do
+  for mode in plain trace; do
+    base="$out/$app-$mode"
+    mkdir "$base"
+    (
+      cd kernel
+      unset JNOX_MULTILEVEL_TRACE
+      if [ "$mode" = trace ]; then export JNOX_MULTILEVEL_TRACE=1; fi
+      JNOX_BOARD=virt JNOX_PROFILE=multilevel JNOX_APP="$app" CARGO_TARGET_DIR="$base/target" \
+        cargo +1.95.0 build --locked --release -j1
+    )
+    elf="$base/target/aarch64-unknown-none/release/jnox-kernel"
+    MLQ_ADMISSION_CAPTURE_DIR="$base/capture" python3 tools/qemu_boot.py \
+      --runs 1 --timeout 10 --profile "$app" --qemu tools/mlq_admission_capture.py --kernel "$elf"
+    if [ "$app" = mlq-refuse ]; then
+      python3 tools/mlq_receipt_check.py "$base/capture/audit.bin" --refused
+    else
+      python3 tools/mlq_receipt_check.py "$base/capture/audit.bin"
+    fi
+  done
+done
+~~~
+
+QEMU uses virt,gic-version=2, Cortex-A72, -smp 1, TCG, 128M, -nodefaults, no display or monitor, serial stdio, a private Unix QMP socket and -d int. launch.json records the exact argv. At host termination the wrapper stops the vCPU and records QMP state, registers, UART, exceptions, shutdown status and the raw 240-byte audit.bin. A trace build also saves the ordinary event journal in trace.bin. result.json records observed state, failure stage and pass flag. A completed admission requires the expected UART, witness checks and terminal PC in fixed_runtime_idle. Refusal parks before worker entry and requires the refusal UART, state 2 and zero words 6..29. A guest that fails or times out can leave a partial or violation witness. Inspect status, stage, PC and UART together. If launch, QMP or symbol discovery fails, some artifacts may be absent.
+
+바이너리는 리틀엔디언 u64 30개(240바이트)이다. 위 표의 0..26번 필드에 이어 27은 실패 단계, 28은 대상의 결과 수령값, 29는 수령 후 완료한 블록 번호이다. 승인 성공은 상태 4, UART 완료 및 유휴 PC를 함께 확인한다. 정상 거부는 상태 2와 작업 시작 전의 0 필드, 거부 UART로 구분한다. 상태 0·1·3은 미완료이며 상태 5는 전제 위반이다. 실패 시 audit.bin, registers.txt, uart.bin, result.json과 진단 빌드의 trace.bin을 함께 확인한다. 캡처 도구 자체가 시작하지 못한 경우 파일 일부가 없을 수 있다.
