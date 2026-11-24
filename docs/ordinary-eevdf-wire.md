@@ -12,6 +12,8 @@ Use the committed prefix even after a failure. An interrupted uncommitted row ca
 
 The opening restored frame/ELR belong to that row’s owner on dispatch. Its saved frame/ELR describe the same owner's outgoing exception. Initial frames are at stack top minus 832 bytes and enter batch_a, batch_b or responder, with SPSR 0x345. A resumed task restores its last saved frame and ELR. The final finish SVC has no ERET. / 행의 복원 프레임·ELR은 소유자의 디스패치 시점, 저장 프레임·ELR은 같은 소유자의 예외 진입 시점이다. 최초 프레임은 스택 꼭대기 832바이트 아래이며 SPSR은 0x345이다. 재개 시 마지막 저장 프레임과 ELR을 복원하고 마지막 완료 SVC에서는 ERET하지 않는다.
 
+For each wait, the next dispatch start must be strictly earlier than that sequence's due time. This supplies an observable upper bound for admission into the sleeping set. The fifth wait and immediately following snapshot show the single live change of B's weight and request. / 매 대기 뒤 다음 디스패치 시작 시각은 해당 예정 시각보다 빨라야 한다. 이 시작 시각으로 수면 집합 편입의 상한을 확인한다. 다섯째 대기와 바로 다음 상태로 B의 가중치·요청 변경을 확인한다.
+
 Build a fresh linked kernel on Linux or WSL with no benchmark features. Capture the exact source commit, ELF, SHA-256, symbols, disassembly, UART, QEMU version/arguments, same-process exception log and QMP memory dump. The capture command prints the frozen session SHA-256 for replay with pyelftools. / Linux 또는 WSL에서 벤치마크 기능 없이 빌드한다. 소스 커밋·ELF·해시·심벌·디스어셈블리·UART·QEMU 버전/인자·같은 프로세스의 예외 기록과 QMP 메모리 덤프를 보존한다. 캡처가 출력한 세션 SHA-256으로 재구성한다.
 
 ```sh
