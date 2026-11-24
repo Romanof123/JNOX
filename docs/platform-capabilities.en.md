@@ -2,7 +2,7 @@
 
 [한국어](platform-capabilities.md) · English
 
-**Planning change** `CHG-004` · source baseline `715b02f`. Status below describes the evidence published at that revision. Equal-priority FIFO verification was in progress. Link any later verdict to the specific capability and candidate it covers. [Change record #18](https://github.com/Romanof123/JNOX/issues/18)
+**Planning change** `CHG-004` · source baseline `715b02f`. The table reports evidence at that revision. A later single-core run verified equal-priority FIFO yield and resumption within `CAP-001`. [Change record #18](https://github.com/Romanof123/JNOX/issues/18) · [EVD-003 FIFO verification](evidence/evd-003.en.md)
 
 This planning baseline defines the embedded real-time OS functions J-NOX intends to offer and what a verifier would have to observe before a function can be listed as supported. A product selects a board, use case and configuration. A claim about safety, timing or compatibility applies only to the configuration and evidence named in that claim. [Product objectives and milestones](product-plan.en.md) · [Safety assumptions](safety-security-concept.en.md)
 

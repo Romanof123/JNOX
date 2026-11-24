@@ -279,3 +279,10 @@ OBJ-002,motivates-proposal,PRO-003
 PRO-003,depends-on-requirement,REQ-010
 PRO-003,depends-on-requirement,REQ-012
 PRO-003,depends-on-requirement,REQ-017
+IMP-003,tested-in,EVD-003
+VER-002,has-partial-evidence,EVD-003
+VER-005,has-partial-evidence,EVD-003
+CAP-001,has-partial-evidence,EVD-001
+CAP-001,has-partial-evidence,EVD-002
+CAP-001,has-partial-evidence,EVD-003
+CAP-014,has-partial-evidence,EVD-001

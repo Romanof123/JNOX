@@ -2,6 +2,8 @@
 
 [한국어](m1-fifo.md) · English
 
+The independent verifier recorded UART, the interrupt and exception returns from the same guest. [EVD-003 execution results](evidence/evd-003.en.md)
+
 `CHG-003` freezes the acceptance case for `IMP-003` against upstream baseline `715b02f`. Two equal-priority threads become ready in one timer interrupt. The bench checks which thread runs first, where a yielding thread re-enters the ready queue and when the interrupted lower-priority thread can resume. [Preemption baseline](m1-scheduler.en.md)
 
 | Trace | Acceptance condition |
