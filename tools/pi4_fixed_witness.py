@@ -113,7 +113,7 @@ def evidence(rows, profile, image_id, executable, symbols):
     lo,hi,_=slots[4]
     last=events[-1]
     check(gen==n and cpu==core and code(pc) and code(entry) and lo<sp<=hi and sp%16==0
-          and last[1]==2 and last[2]&65535==1 and last[5]==4 and last[9]==entry
+          and last[1]==2 and last[2]&65535==1 and last[5]==4 and last[10]==entry
           and t>=last[24],"terminal idle mismatch")
     site,size=symbols["pi4_witness_site"]
     check(site<=pc<site+size and entry==symbols["pi4_witness_terminal"][0], "terminal PC differs from ELF")
@@ -134,7 +134,7 @@ def evidence(rows, profile, image_id, executable, symbols):
             for resumed in events[i+1:]:
                 high_exited |= resumed[1]==2 and resumed[2]&65535==1 and role(resumed[4])==2
                 if role(resumed[5])==0:
-                    continued=(high_exited and resumed[8:11]==e[6:9] and (resumed[0],1) in samples
+                    continued=(high_exited and resumed[9:12]==e[6:9] and (resumed[0],1) in samples
                                and samples[resumed[0],1][7]>e[22])
                     witnessed |= continued
                     preemptions.append(dict(irq_generation=e[0],high_entry=samples[e[0],0],
