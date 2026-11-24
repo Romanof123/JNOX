@@ -1,0 +1,31 @@
+{
+  "evidence_id": "EVD-053",
+  "change": "CHG-064",
+  "study_source": "aacdbebe958feca152b358ce8cf36033cd7d6749",
+  "kernel": "b9a247c68c3ab2544f18158c8dd13fc15cab6428",
+  "corrected_decoder": "54218be8e6e06382cd491bc2e3af9f61705d4f0c",
+  "normal_completed": {
+    "S": 1,
+    "O2": 0,
+    "per_setting": 8
+  },
+  "refused": {
+    "S": 2,
+    "O2": 2,
+    "per_setting": 2
+  },
+  "selection": "Reject O2; preserve size default and 62500-tick opening guard.",
+  "files": 314,
+  "unique_objects": 204,
+  "archive": "evd-053-compiler.zip",
+  "archive_sha256": "2b32fff859625cd60b65e4227b2a444974b3ee7bef31499260f119e43dad75d2",
+  "archive_bytes": 1213149,
+  "manifest_sha256": "9be455f788ed69dbcd4f5e911ab21890988553005053b67ffa1aeef75759e12b",
+  "report_sha256": "1553654cb3a28ebc65b6a0d2c1a99cd53dedfe1d1dba010a4334ed4e278d0197",
+  "result_sha256": "380bd77dfaaf76cc4c417ac2e09f8858db7e8e4feab2aec5a5b59217901cdf5a",
+  "paths": {
+    "reservation-profile-protocol": "Frozen commands and build scripts",
+    "reservation-profile-builds": "12 linked ELFs, disassemblies, footprints, all logs including pre-Cargo harness error",
+    "reservation-profile-fresh": "Every first-launch manifest entry, independent/corrected/original decoder results, offline negative controls, pairs and original report"
+  }
+}

@@ -42,3 +42,7 @@ S = release opt-level=s (existing reference / 기존 기준), O2 = release opt-l
 | 15, 16 | cbs-saturated | trace | O2, S |
 | 17, 18 | aligned-refused | plain | S, O2 |
 | 19, 20 | cbs-refused | plain | O2, S |
+
+Only one of eight size-optimized normal boots completed. None of eight O2 boots completed. Both profiles refused both overloads. Retain the production size setting and 1 ms guard. [CHG-064 · EVD-053](evidence/evd-053-compiler.en.md)
+
+일반 부팅은 크기 최적화(S) 8건 중 1건, O2 8건 중 0건이 완료됐다. 두 설정 모두 과부하 2건씩을 거절했다. 기존 크기 최적화와 1 ms 경계 검사를 유지한다. [CHG-064 · EVD-053](evidence/evd-053-compiler.md)
