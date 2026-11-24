@@ -36,6 +36,7 @@ In `ADR-001`, the functional safety team fixed the criteria for disabling a virt
 | Order | Port | Scope of experiments and support |
 | --- | --- | --- |
 | P1 | Arm AArch64 Cortex-A72/A76 on QEMU `virt` | Reference kernel behavior, MMU, EL0/EL1, preemption, and IPC. Identify the execution environment whenever emulator results are cited alongside physical-board timing data. |
+| P1 hardware | [Raspberry Pi 4 Model B, 1 GB](boards/pi4-p1.en.md) | BCM2711 development board candidate. Verify serial boot, timer/IRQ and SMP as separate cases. |
 | P2 | Arm Cortex-R52 on QEMU MPS3-AN536 and a candidate physical board | AArch32 port with MPU protection and periodic control. R-Car V4M is a candidate for running Linux on A76 and J-NOX on R52. First assess board availability and whether resource ownership can be enforced. |
 | P3 | x86-64 on QEMU, then physical hardware | Verify UEFI/ACPI, APIC, timers, SMP, and IOMMU behavior for supported devices. Evaluate options for isolating the Linux domain. |
 | P4 | Arm AArch32, additional Cortex-R and Cortex-M cores, and IA-32 | Select representative cores and boards to extend the capability matrix. For boards with limited MPU resources or other protection constraints, specify feasible configurations and required external isolation. |

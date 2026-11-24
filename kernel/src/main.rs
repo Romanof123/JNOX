@@ -108,6 +108,7 @@ static mut BSS_PROBE: u64 = 0;
 // start.S. The assembly establishes the Rust ABI before calling kernel_main.
 global_asm!(
     include_str!("start.S"),
+    pi4 = const cfg!(jnox_pi4) as usize,
     bss_probe = sym BSS_PROBE,
     rust_entry = sym kernel_main,
 );
@@ -120,6 +121,9 @@ extern "C" fn kernel_main() -> ! {
     }
 
     uart_init();
+    #[cfg(jnox_pi4)]
+    uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
+    #[cfg(not(jnox_pi4))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(all(
         feature = "rr-bench",
@@ -172,16 +176,50 @@ extern "C" fn kernel_main() -> ! {
 }
 
 // The fixed QEMU virt bench maps PL011 UART0 here. Its input clock is 24 MHz.
+#[cfg(not(jnox_pi4))]
 const UART0: usize = 0x0900_0000;
+#[cfg(jnox_pi4)]
+const UART0: usize = 0xfe20_1000;
+
+#[cfg(jnox_pi4)]
+fn pi4_uart_pins() {
+    // BCM2711 low-peripheral mode, GPIO chapter. The boot CPU owns GPIO14/15
+    // (header pins 8/10), and preserves all other fields in these registers.
+    let fsel1 = 0xfe20_0004 as *mut u32;
+    let pulls0 = 0xfe20_00e4 as *mut u32;
+    unsafe {
+        let pulls = ptr::read_volatile(pulls0) & !(0xf << 28);
+        ptr::write_volatile(pulls0, pulls);
+        let pins = ptr::read_volatile(fsel1) & !(0x3f << 12);
+        ptr::write_volatile(fsel1, pins | (4 << 12) | (4 << 15));
+        asm!("dsb sy", options(nostack, preserves_flags));
+    }
+}
 
 fn uart_init() {
+    #[cfg(jnox_pi4)]
+    {
+        pi4_uart_pins();
+        // config.txt leaves firmware UART logging off. Drain any outstanding
+        // byte before changing its format and disable all UART interrupts.
+        unsafe {
+            while ptr::read_volatile((UART0 + 0x18) as *const u32) & (1 << 3) != 0 {
+                core::hint::spin_loop();
+            }
+            ptr::write_volatile((UART0 + 0x38) as *mut u32, 0);
+            ptr::write_volatile((UART0 + 0x44) as *mut u32, 0x7ff);
+            ptr::write_volatile((UART0 + 0x48) as *mut u32, 0);
+        }
+    }
+    // 48 MHz / (16 * 115200) rounds to 26 + 3/64; virt uses 24 MHz.
+    let (integer, fraction) = if cfg!(jnox_pi4) { (26, 3) } else { (13, 1) };
     // SAFETY: These aligned 32-bit registers belong to the bench PL011 and
     // are outside Rust allocations. Address translation is off. This CPU is
     // its only owner, interrupts are masked, and the reset transmitter is idle.
     unsafe {
         ptr::write_volatile((UART0 + 0x30) as *mut u32, 0); // CR: disable
-        ptr::write_volatile((UART0 + 0x24) as *mut u32, 13); // IBRD: 115200 baud
-        ptr::write_volatile((UART0 + 0x28) as *mut u32, 1); // FBRD
+        ptr::write_volatile((UART0 + 0x24) as *mut u32, integer); // IBRD: 115200 baud
+        ptr::write_volatile((UART0 + 0x28) as *mut u32, fraction); // FBRD
         ptr::write_volatile((UART0 + 0x2c) as *mut u32, 3 << 5); // LCR_H: 8N1
         ptr::write_volatile((UART0 + 0x30) as *mut u32, (1 << 8) | 1); // TXE, UARTEN
     }

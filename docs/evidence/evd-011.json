@@ -1,0 +1,32 @@
+{
+  "revision": "56eb28730dfed32ca24fcf2a2433f643798850b2",
+  "sha256": {
+    "kernel8.img": "f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0",
+    "jnox-kernel": "0c90947941ae87ccf2c7af717c44c059d58e2e10c474121aba5d155ce9b45453",
+    "qemu-system-aarch64": "3ae2c079d4491362fece2abb641f0ff17d88e9008c9fcd13600f249b9bd1c862",
+    "qemu_boot.py": "6f02f952770facdc28aa80c99ad84526d74f4b36c6978f2756cc4cacbeeaeff6",
+    "pi4-first.uart": "5b8b990fdf255f18eaf1ba7a15a922cab44b503e1ddc96326cacc3983075022c"
+  },
+  "qemu_version": "QEMU emulator version 11.1.3",
+  "machine": "raspi4b",
+  "observer_stdout": "Run 1/1  raw image SHA-256 = f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0\n  argv = [\"/mnt/d/codex/arm-speed-lab/build/system/qemu-system-aarch64\", \"-machine\", \"raspi4b\", \"-accel\", \"tcg\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/periodic-preempt-ed62fa1f47/kernel8.img\"]\n  QEMU PID = 475\n  UART (29 bytes) = b'JNOX PI4 BOOT\\nJNOX PI4 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 474 (python3)\\n\\nARM_SYSTEM_STATS {\"native_calls\":0,\"native_blocks\":0,\"guard_exits\":0,\"tcg_fallbacks\":0}\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+  "observer_stderr": "",
+  "wrapper_exit": 0,
+  "runner_exit_inferred": 0,
+  "exit_note": "First launch outer command returned 0. Shell status file captured only LF, so observer exit inferred from its terminal PASS path.",
+  "uart_hex": "4a4e4f582050493420424f4f540a4a4e4f58205049342052454144590a",
+  "uart_file": "pi4-first.uart",
+  "first_verdict": "PASS",
+  "guest_runs": 1,
+  "deadline_seconds": 30,
+  "quiet_seconds": 1,
+  "negative_controls": {
+    "crlf": "unexpected UART bytes or marker order",
+    "trailing_byte": "unexpected UART bytes or marker order",
+    "elf_as_raw": "expected a nonempty raw kernel image at ../pi4-target/aarch64-unknown-none/release/jnox-kernel"
+  },
+  "load": "ELF entry and RX PT_LOAD PA 0x80000; raw equals 429-byte file-backed segment. RW BSS and stack NOLOAD. Firmware config selects 0x80000.",
+  "entry": "Identity mapping, MMU and D-cache off. Aff0 zero accepts EL1 or drops from EL2. Other levels and secondary cores park. EL1 stack setup and dirtied BSS probe clear. Entry paths not individually traced.",
+  "mmio": "Pi4 GPIO FSEL1 0xfe200004, pulls 0xfe2000e4, PL011 0xfe201000. 48 MHz, divisors 26 and 3.",
+  "scope": "2 GiB Pi4 board model; direct raw load bypasses EEPROM, FAT/microSD and VideoCore boot firmware. Physical cold starts, electrical routing, actual baud, IRQ, SMP and product timing unverified."
+}

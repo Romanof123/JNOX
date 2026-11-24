@@ -1,0 +1,38 @@
+{
+  "source": "56eb28730dfed32ca24fcf2a2433f643798850b2",
+  "firmware_commit": "bc7f439c234e19371115e07b57c366df59cc1bc7",
+  "files": {
+    "COPYING.linux": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7",
+    "LICENCE.broadcom": "c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b",
+    "bcm2711-rpi-4-b.dtb": "4bc9dd6182025add23a750b18ff748e46d4e939434530e8057c6bfa1ce6f1c16",
+    "config.txt": "f212c8fb2a9a64afef4a44516d2bc445c4eeb772066c4e8981c537e2f47bebb4",
+    "fixup4.dat": "ca84b2fae239fc9041ac1bdc8648c1e33b9c6e67c4bd073b651b96dc2726c553",
+    "kernel8.img": "f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0",
+    "overlays/disable-bt.dtbo": "ea69d22dedc607fee75eec57d8a4cc0f0eab93cd75393e61a64c49fbac912d02",
+    "start4.elf": "2cc344f6171797317ae0b6197191803b45e2f3cda091f0da31c0a3f0bfc47593"
+  },
+  "manifest_sha256": "80a62fab0e8c36e0d9cb0f6d54801fca0ea1e01d64e48ce52cc1eaf1b5ca539e",
+  "zip_sha256": "32092478890a1161626abe13011d17249838b45615373ad6b50f543ceb44eedb",
+  "zip_bytes": 1356835,
+  "network_staging": "PASS",
+  "offline_staging": "PASS; identical SHA256SUMS",
+  "existing_directory_control": "rejected; original hashes rechecked",
+  "corrupt_firmware_control": "rejected before output directory creation",
+  "physical_media": "No card was written or read",
+  "cold_rebuild": {
+    "raw_sha256": "f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0",
+    "elf_sha256": "0c90947941ae87ccf2c7af717c44c059d58e2e10c474121aba5d155ce9b45453",
+    "separate_target_directories": true
+  },
+  "integration_model_repeat": {
+    "runner_exit": 0,
+    "runner_stdout": "Run 1/1  raw image SHA-256 = f57612bd6522c72af9c4eeec435cc04f30b5a3814b73829072d14553415ac6a0\n  argv = [\"/mnt/d/codex/arm-speed-lab/build/system/qemu-system-aarch64\", \"-machine\", \"raspi4b\", \"-accel\", \"tcg\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/periodic-preempt-ed62fa1f47/pi4-ready-offline/kernel8.img\"]\n  QEMU PID = 477\n  UART (29 bytes) = b'JNOX PI4 BOOT\\nJNOX PI4 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 476 (python3)\\n\\nARM_SYSTEM_STATS {\"native_calls\":0,\"native_blocks\":0,\"guard_exits\":0,\"tcg_fallbacks\":0}\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n"
+  },
+  "regressions": {
+    "legacy_virt_boot": "Run 1/1  ELF SHA-256 = 60684dd95ab040b125c6e6447b3946314c38df61fdcb19cb180d6db328459861\n  argv = [\"qemu-system-aarch64\", \"-machine\", \"virt\", \"-cpu\", \"cortex-a72\", \"-smp\", \"1\", \"-accel\", \"tcg\", \"-m\", \"128M\", \"-nodefaults\", \"-display\", \"none\", \"-monitor\", \"none\", \"-serial\", \"stdio\", \"-kernel\", \"/mnt/d/codex/.jnox-work/periodic-preempt-ed62fa1f47/pi4-repeat/aarch64-unknown-none/release/jnox-kernel\"]\n  QEMU PID = 478\n  UART (27 bytes) = b'JNOX M1 BOOT\\nJNOX M1 READY\\n'\n  QEMU stderr = b'qemu-system-aarch64: terminating on signal 15 from pid 420 (python3)\\n'\n  PASS (host stopped QEMU after the quiet window)\nPASS: 1 cold boot(s)\n",
+    "virt_all_features_release": "built",
+    "pi4_with_scheduler_feature": "rejected",
+    "unknown_board": "rejected"
+  },
+  "harness_note": "Initial integration-side diagnostic decoding failed on the occupied-directory control in Windows. All package controls were repeated with explicit UTF-8 subprocess output in new directories."
+}

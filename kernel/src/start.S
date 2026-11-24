@@ -3,12 +3,38 @@
 .global _start
 .type _start, %function
 _start:
-    // Direct ELF boot on virt, one Cortex-A72, EL2/EL3 off, MMU off.
-    // No other core or interrupt handler may use the stack, BSS or UART.
+    // The boot CPU owns the stack, BSS and UART. Both paths require an
+    // identity-addressed firmware/loader handoff with MMU and D-cache off.
     msr daifset, #0xf
+    .if {pi4}
+    // BCM2711 has a single cluster with Aff0 identifying each A72.
+    mrs x0, mpidr_el1
+    tst x0, #0xff
+    b.ne .Lpark
+    mrs x0, CurrentEL
+    cmp x0, #8
+    b.ne .Lcheck_el1
+    // Bare-metal firmware handoff at EL2. No monitor or virtualization
+    // state is preserved. Select AArch64 EL1, stage 2 off, FP accessible.
+    mov x0, #(1 << 31)
+    msr hcr_el2, x0
+    mov x0, #0x33ff
+    msr cptr_el2, x0
+    // Cortex-A72 SCTLR_EL1 RES1 bits, little-endian, MMU/caches off.
+    ldr x0, =0x30d00800
+    msr sctlr_el1, x0
+    adr x0, .Lel1
+    msr elr_el2, x0
+    mov x0, #0x3c5
+    msr spsr_el2, x0
+    isb
+    eret
+.Lcheck_el1:
+    .endif
     mrs x0, CurrentEL
     cmp x0, #4
     b.ne .Lpark
+.Lel1:
     msr spsel, #1
     ldr x0, =__stack_top
     mov sp, x0

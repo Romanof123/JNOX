@@ -15,6 +15,7 @@
 | [System requirements](docs/requirements.en.md) | Requirements, trace IDs and acceptance criteria |
 | [System architecture](docs/architecture.en.md) | Kernel, Linux driver domain, scheduling, ports and user services |
 | [First boot of the M1 Rust kernel](docs/m1-boot.en.md) | Scope and UART acceptance criteria for the minimal AArch64 QEMU kernel |
+| [Pi 4 physical bench](docs/boards/pi4-p1.en.md) | SD boot files, serial wiring and independent model and hardware acceptance |
 | [M1 timer preemption](docs/m1-scheduler.en.md) | Criteria for observing the timer interrupt, higher-priority dispatch and interrupted thread resumption in one boot |
 | [M1 equal-priority FIFO](docs/m1-fifo.en.md) | Acceptance criteria for ready order, voluntary yield and resumption of equal-priority threads |
 | [Scheduling policies and round robin](docs/scheduling-policies.en.md) | Selection, budget and isolation contracts, with execution evidence by policy |

@@ -455,3 +455,15 @@ VER-002,has-partial-evidence,EVD-010
 VER-005,has-partial-evidence,EVD-010
 VER-023,has-partial-evidence,EVD-010
 CAP-001,has-partial-evidence,EVD-010
+CHG-013,affects,REQ-016
+DES-001,implemented-by,IMP-011
+REQ-016,partially-implemented-by,IMP-011
+IMP-011,partially-verified-by,VER-016
+CHG-013,affects,REQ-008
+DES-004,implemented-by,IMP-011
+REQ-008,partially-implemented-by,IMP-011
+IMP-011,partially-verified-by,VER-008
+IMP-011,tested-in,EVD-011
+VER-008,has-partial-evidence,EVD-011
+VER-016,has-partial-evidence,EVD-011
+CAP-014,has-partial-evidence,EVD-011
