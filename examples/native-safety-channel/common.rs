@@ -45,8 +45,22 @@ pub enum Case {
     RecoverHold,
     PhaseDecision,
     PhaseComplete,
+    ArrivalBefore,
+    ArrivalSame,
+    ArrivalAfter,
 }
 impl Case {
+    pub fn arrival_publish_ms(self) -> Option<u64> {
+        match self {
+            Self::ArrivalBefore => Some(39),
+            Self::ArrivalSame => Some(40),
+            Self::ArrivalAfter => Some(41),
+            _ => None,
+        }
+    }
+    pub fn needs_verified_sample(self) -> bool {
+        self.active_case() || self.arrival_publish_ms().is_some()
+    }
     pub fn measured_phase(self) -> bool {
         matches!(self, Self::PhaseDecision | Self::PhaseComplete)
     }
@@ -150,6 +164,9 @@ impl Case {
             b"recover-hold" => Ok(Self::RecoverHold),
             b"phase-decision" => Ok(Self::PhaseDecision),
             b"phase-complete" => Ok(Self::PhaseComplete),
+            b"arrival-before" => Ok(Self::ArrivalBefore),
+            b"arrival-same" => Ok(Self::ArrivalSame),
+            b"arrival-after" => Ok(Self::ArrivalAfter),
             _ => Err(81),
         }
     }

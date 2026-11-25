@@ -297,8 +297,28 @@ impl Supervisor {
             self.observe_recovery(82, 2, 2, 65, open)
         }
     }
+    fn arrival(&mut self) -> Bench<()> {
+        let rearm = self.command(15, Command::Rearm, 1, 0);
+        let verified = self.active_reply(0, 1, common::LAST_SAMPLE, 3);
+        let live = self.observe_active(23, 1, 3, 20, true);
+        let ready = rearm.is_ok() && verified && live.is_ok() && self.failed == 0;
+        // The sender is waiting for one word, including when priming failed.
+        let word = if ready { common::RELEASE_INPUT } else { 0 };
+        let acknowledged = self.active_reply(1, 0, word, word);
+        rearm?;
+        live?;
+        if !ready || !acknowledged {
+            return Err(95);
+        }
+        let latched = dev::GATE_OPEN | dev::FAULT;
+        self.observe_recovery(48, 1, 3, 20, latched)?;
+        self.observe_recovery(65, 1, 3, 20, latched)
+    }
     fn scenario(&mut self, case: Case) -> Bench<()> {
         use Case::*;
+        if case.arrival_publish_ms().is_some() {
+            return self.arrival();
+        }
         if matches!(case, RecoverLatch | RecoverHold) {
             return self.recover(case);
         }

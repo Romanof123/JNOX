@@ -488,7 +488,7 @@ def main():
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="select a socket service with existing inbound synchronous IPC rights")
     parser.add_argument("--safety-boundary", action="count", default=0,
-                        help="record single-check phase, completion, collision or rearm observations for the virtual safety bench")
+                        help="record single-check phase, completion, collision, rearm or arrival observations for the virtual safety bench")
     parser.add_argument("--safety-downstream-injector", action="count", default=0,
                         help="include the fixed invalid-frame source in a closed-gate virtual qualification run")
     parser.add_argument("--safety-watchdog", action="count", default=0,
@@ -587,7 +587,8 @@ def main():
             parser.error("--safety-boundary requires the single-check --safety-channel profile")
         rearm_boundary = args.arg in (["rearm-15"], ["rearm-20"])
         phase_boundary = args.arg in (["phase-decision"], ["phase-complete"])
-        if (not (rearm_boundary or phase_boundary or args.arg in (["phase"], ["collision"]))
+        arrival_boundary = args.arg in (["arrival-before"], ["arrival-same"], ["arrival-after"])
+        if (not (rearm_boundary or phase_boundary or arrival_boundary or args.arg in (["phase"], ["collision"]))
                 or args.peer_arg[:1] != args.arg or args.peer2_arg[:1] != args.arg
                 or (not phase_boundary and args.peer_arg != args.arg)):
             parser.error("--safety-boundary requires one matching boundary selector for all three slots")

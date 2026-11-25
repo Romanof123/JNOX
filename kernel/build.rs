@@ -691,8 +691,9 @@ fn main() {
             && extra.is_empty(), "boundary observations require matching selectors for three slots");
         let rearm = matches!(sender[0].as_slice(), b"rearm-15" | b"rearm-20");
         let phase = matches!(sender[0].as_slice(), b"phase-decision" | b"phase-complete");
+        let arrival = matches!(sender[0].as_slice(), b"arrival-before" | b"arrival-same" | b"arrival-after");
         assert!(phase || controller == sender, "boundary observations require matching selectors for three slots");
-        assert!(rearm || phase || matches!(sender[0].as_slice(), b"phase" | b"collision"),
+        assert!(rearm || phase || arrival || matches!(sender[0].as_slice(), b"phase" | b"collision"),
             "unknown boundary observation selector");
         if supervisor.len() != 1 {
             assert!(rearm && supervisor.len() == 2, "only rearm accepts one supervisor lead");

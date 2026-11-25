@@ -44,6 +44,10 @@ Check the input handle and complete private payload, selected rejection, unchang
 
 ## Build and capture
 
+The ordinary arrival fixtures keep the same generation and gate open throughout. Put `arrival-before`, `arrival-same` or `arrival-after` in all three role argument vectors with `--safety-boundary`. Each role takes exactly one selector. The sender stages a single CRC-valid sequence 4 with scheduled issue E+39 ms after the supervisor acknowledges enabled sequence 3. It requests publication of that same grant at E+39, E+40 or E+41 ms. The controller requests its ninth CHECK at E+40 ms, 20 ms after the preceding wire issue. Use the actual protected publication bracket, CHECK operand, receive and device events to establish their order. The selector names describe the fixed calendars. [Arrival acceptance](https://github.com/Romanof123/JNOX/issues/401).
+
+세 역할의 고정 시나리오 이름은 요청한 시각을 나타낸다. 순번 3에서 출력이 켜진 뒤 같은 세대 순번 4의 정상 프레임을 실제 대여 경로에 싣는다. 게이트를 열어 둔 채 실제 게시, 이전 허가의 만료, 수신 및 출력 전이의 순서를 측정한다.
+
 Use `phase-decision` or `phase-complete` in all three argument vectors with `--safety-boundary`. To advance the controller's requested wakes for its ninth and tenth activations, append two extra `--peer-arg` values after the controller selector. Each is 0–12500 ticks written with one to five ASCII digits. Omit both for zero leads. The register and eligibility remain under their normal owners. Both fixtures keep the original real final-sample acknowledgement, CLOSE, sender refusal and complete controller service sequence. [Worst-phase acceptance](../../docs/native-safety-boundary-bench.en-ko.md) · [#400](https://github.com/Romanof123/JNOX/issues/400).
 
 In the two measured phase images, event 16 records the journal tick, counter samples immediately before and after the final active-to-inactive store and its readback, generation, accepted sequence, accepted issue, fault, and active flag before/after. The receiver array `safety_phase_samples[2][12]` records activation index, nominal target, lead, requested wake, observed wake, entry INFO tick, private entry latch result, private pre-COMPLETE INFO tick and latch result, post-COMPLETE INFO tick and latch result, and post-COMPLETE protected flags. Each row corresponds to activation 8 or 9 (zero based).
@@ -75,13 +79,13 @@ revision=$(git rev-parse HEAD)
 cases=(healthy observed live-startup silence phase collision invalid saturation queued delayed restart early boundary one no-rearm bad-spacing
        bad-crc bad-header-crc bad-length bad-version bad-type bad-channel bad-data-id bad-validity bad-permit bad-reserved
        duplicate reordered gap old-generation future-issue expired-issue issue-order wrong-owner rearm-15 rearm-20
-       recover-latch recover-hold phase-decision phase-complete)
+       recover-latch recover-hold phase-decision phase-complete arrival-before arrival-same arrival-after)
 for policy in fifo rr; do
   quantum=()
   if [ "$policy" = rr ]; then quantum=(--quantum-ticks 625000); fi
   for scenario in "${cases[@]}"; do
     boundary=()
-    if [[ "$scenario" = rearm-* || "$scenario" = phase-* ]]; then boundary=(--safety-boundary); fi
+    if [[ "$scenario" = rearm-* || "$scenario" = phase-* || "$scenario" = arrival-* ]]; then boundary=(--safety-boundary); fi
     pkg="$out/$policy-$scenario"
     python3 tools/build_native_el0.py --out "$pkg" --board virt --policy "$policy" "${quantum[@]}" \
       --elf "$out/sender.elf" --peer-elf "$out/receiver.elf" --peer-elf "$out/supervisor.elf" \
