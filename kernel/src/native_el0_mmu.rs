@@ -502,8 +502,14 @@ pub(crate) fn install_dormant_stack(pid: usize, sp: usize, bytes: &[u8]) -> Resu
 /// own VA/ASID before returning. Switching roots needs no additional TLBI.
 pub(crate) unsafe fn switch(pid: usize) -> Result<(), &'static str> {
     let target = space_id(pid).ok_or("uninstalled native pid")?;
-    if !irq_masked() || active().is_none() {
-        return Err("native switch context");
+    let _current = irq_masked().then(active).flatten().ok_or("native switch context")?;
+    // The permit profile can resume the same PID from the EL1 idle loop.
+    // Its live loan PTE updates already perform synchronous VA/ASID TLBI.
+    // Keep the return-path barriers and the caller's saved-frame restore.
+    #[cfg(jnox_native_safety_channel)]
+    if _current == pid {
+        unsafe { asm!("dsb sy", "isb", options(nostack, preserves_flags)); }
+        return Ok(());
     }
     unsafe {
         asm!("dsb sy", "msr ttbr0_el1, {}", "isb", in(reg) target, options(nostack, preserves_flags));

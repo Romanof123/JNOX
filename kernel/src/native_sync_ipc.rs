@@ -174,6 +174,17 @@ fn advance(now: u64, exiting: Option<usize>) {
 }
 
 pub(super) fn boundary(fixed: &mut Fixed, stamp: u64, exit: bool) {
+    // Safety uses synchronous IPC for control and teardown. service() and every
+    // mutating boundary drain all completions and install inherited priorities
+    // before returning. Between IPC calls only expiry or exit changes that
+    // state. A finite deadline still takes the regular path, even if far away.
+    #[cfg(all(jnox_native_safety_channel, jnox_native_sync_ipc,
+              not(any(jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset,
+                      jnox_native_capability_ipc, jnox_native_pipe_ipc,
+                      jnox_native_socket_service, jnox_native_pubsub_service))))]
+    if !exit && unsafe { (&*(&raw const ENDPOINTS)).next_deadline().is_none() } {
+        return;
+    }
     let now = monotonic_ns(stamp);
     advance(now, exit.then(|| fixed.current().unwrap_or_else(|| fail(9))));
     #[cfg(jnox_native_waitset)]
