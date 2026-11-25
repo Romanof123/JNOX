@@ -6,6 +6,10 @@ Prospective intake on main `5dc14430a3d053d49f3512c15f0df94eb82666d2`. #21 POL-0
 
 ## Operator path / 운영 경로
 
+Develop and exercise the candidate on the #356 branch. Its sealed first boots cover startup, private address spaces, core assignment and shutdown, which the placement candidate reuses. Merge and release still depend on independent acceptance of that substrate and the placement-specific cases below. [Two-core firsts](evidence/pi4-native-smp-first-execution.en-ko.md)
+
+#356 브랜치에서 배치 기능을 구현하고 시험한다. 최초 부팅으로 확인한 기동·개별 주소 공간·코어 지정·종료 경로를 재사용한다. 본선 병합과 출시는 두 코어 기반 및 아래 배치 사례의 독립 인수를 거친다.
+
 First integrate the two-core bootstrap, private TTBR roots, local vectors, terminal acknowledgement and serial journal from #355/#356 after independent acceptance; that branch is separate from this base. Permit a singleton job on either online core in the new selector only. Propose `python3 tools/build_native_el0.py --board pi4 --policy energy-placement --elf APP --placement-profile profile.json --out image`. Preserve ordinary argv/syscalls. At startup both CPUs rendezvous before epoch E. CPU0 decides once at release; publish a single initial owner to the selected core with acquire/release synchronization, then run that ELF there until exit, retaining its assignment across sleep. Other core remains in interruptible idle. Refusal and idle terminate through the same bounded rendezvous without entering EL0. Use a single outstanding job to make dispatch capacity unambiguous. Existing single-core and partitioned scheduling retain their package contracts. [Pi 4 native ABI](pi4-native-fixed-applications.en-ko.md) · [Two-core dependency](https://github.com/Romanof123/JNOX/issues/355)
 
 전용 선택기에서 ELF 하나와 모델 JSON을 묶는다. 두 코어 기동 후 CPU0에서 최초 한 번 판단하고 대상 코어만 EL0에 진입한다. 슬립 후에도 소유권을 유지한다. 무배치 결과도 두 코어 정지를 확인한다. 기존 정책은 그대로 사용한다.
