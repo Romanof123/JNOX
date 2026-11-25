@@ -68,3 +68,7 @@ AArch64 `virt` 단일 CPU에서 앱마다 주소공간을, 태스크마다 CPU �
 EVD-313 covers the five-app C/Rust builds with supervision enabled and disabled, the twenty-app build, the single-app regression and the boundary cases identified in the report. The twenty names use the same Rust ELF, with distinct writable memory for each instance. The original failed guest compilation, recovered builds, virtual timing scope and raw replay inputs are recorded together. [Independent verification and captures](evidence/native-task-policy-first.en-ko.md)
 
 독립 검증은 동일한 C·Rust 앱 5개의 감시 켬·끔, 같은 Rust ELF를 20개 앱 이름으로 배치한 구성, 기존 단일 앱 실행을 포함한다. 20개 앱 모두 각자의 쓰기 가능 메모리를 사용했다. 최초 빌드 오류, 수정 후 실행, 경계 시험과 원시 측정값을 같은 증거 기록에 보존했다. [검증 보고서와 원시 자료](evidence/native-task-policy-first.en-ko.md)
+
+A second verifier built 31 distinct native application executables and one executable exporting 31 task functions. The normal text packager rejected the over-capacity configurations and left the requested output path free. Reusing that path, the verifier booted 30 distinct applications and then 30 different tasks in one application. All 60 tasks completed one job and subsequently returned their individually assigned exit codes. Each run used one virtual CPU, GICv2 and 128 MiB. [Capacity, recovery and boot evidence](evidence/native-task-policy-capacity.en-ko.md)
+
+별도 검증자가 서로 다른 앱 31개로 RAM 한도 초과를, 한 앱의 태스크 31개로 스택 배치 한도 초과를 확인했다. 두 경우 모두 출력 디렉터리를 만들지 않고 거부했다. 같은 경로를 다시 사용해 서로 다른 앱 30개, 한 앱의 서로 다른 태스크 30개를 각각 부팅했다. 총 60개 태스크가 한 작업을 완료하고 각자 지정된 종료값을 반환했다. [용량 경계와 재시도 원본](evidence/native-task-policy-capacity.en-ko.md)
