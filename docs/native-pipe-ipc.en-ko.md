@@ -32,3 +32,9 @@ Writes of up to 512 bytes commit as one contiguous sequence. Insufficient space 
 
 1. **일반 프로세스.** FIFO·RR 각각에서 작성자 둘과 판독자 하나를 실행해 실제 바이트와 반환값을 보존한다. 원자 기록, 부분 읽기와 큰 쓰기, 포화·재충전, 양 끝의 복제 참조, 정확한 EOF·EPIPE, 참조를 보유한 프로세스의 종료, 익명 파이프 회수, FIFO 열기·unlink·재생성, 권한 거부 및 자원 고갈을 확인한다. 최대 점유량, 최종 참조 수, 첫 실패와 호스트 경계 경합 결과를 기록한다.
 2. **네이티브 셸 파이프라인.** 게스트의 네이티브 C 셸에 `cat sample.txt | wc -l`을 입력한다. 셸이 명령을 해석하고 파이프를 만든 뒤 별도 C 실행 파일 cat·wc를 기동하고 표준 출력·입력을 연결하며 불필요한 기술자를 닫아야 한다. cat은 게스트 파일을 직접 열어 읽고 wc는 EOF까지 파이프에서 읽은 줄바꿈을 센다. 명령 입력, 파일 내용, 프로세스·기술자 연결, 출력과 각 자식의 종료값을 보존한다. 현재 고정 ELF 패키지는 미리 구성한 프로세스를 시작한다. 이 검증에는 게스트 파일 접근, 셸의 실행 파일 기동, 기술자 상속 또는 명시적 전달, 자식 대기·상태 수집이 필요하다. 미리 적재한 데이터나 미리 시작한 앱 두 개만으로는 이 경로를 입증할 수 없다.
+
+## Virtual release / 가상 환경 승인
+
+**IPC-007 · IMP-308 · EVD-308.** On single-core AArch64 QEMU virt under FIFO and RR, isolated C and Rust writers delivered intact 512-byte records through a 2,048-byte stream. A native C shell launched separate cat and wc executables, connected their file descriptors, and reaped both children. On the combined package, wc read 672 bytes and printed exactly `69\n`. The default application, local stream socket and IPv4 peers also completed their integrated smoke runs. [First runs](evidence/native-pipe-ipc-first.en-ko.md) · [Corrected runs](evidence/native-pipe-ipc-corrected.en-ko.md) · [Independent release and raw data](evidence/native-pipe-ipc-release.en-ko.md)
+
+단일 코어 AArch64 QEMU virt의 FIFO·RR에서 두 작성자의 512바이트 레코드와 파이프의 EOF·EPIPE를 확인했다. 네이티브 C 셸은 cat과 wc를 각각 기동하고 파이프로 연결해 두 종료 상태를 회수했다. 통합 패키지에서 wc는 672바이트를 읽고 줄 수 69를 출력했다. 기본 앱과 로컬·IPv4 소켓도 통합 부팅에서 동작했다. [독립 판정과 재현 자료](evidence/native-pipe-ipc-release.en-ko.md)
