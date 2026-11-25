@@ -1,0 +1,73 @@
+{
+  "archive": "native-proportional-first-f107.tar.gz",
+  "source_commit": "f107b60fc1cb5bc83767ee98299d7042a3103b7a",
+  "bytes": 160146075,
+  "sha256": "e2eb4ce8cea2693deb8d265bb0ebc3e7447058cd9cbe59da9863c523801d6fae",
+  "parts": [
+    {
+      "file": "native-proportional-first-f107.tar.gz.part01",
+      "bytes": 12582912,
+      "sha256": "2b938bd4ccff453e864d03b61583ba1b10906845c93323dd26e5011fb024eaf6"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part02",
+      "bytes": 12582912,
+      "sha256": "159479464e9dc2f033e81a648d21963673d20e9d14bbb8af709edc59d12bc607"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part03",
+      "bytes": 12582912,
+      "sha256": "4f5332e179e1f726c06ef3242a59e2fb9ba31e05ef26caf1705c216ffc6ab5b6"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part04",
+      "bytes": 12582912,
+      "sha256": "9d36ec6e32fec534e59cacf125e875b3a06c17d5ee1f00292fb1cd9e842b923d"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part05",
+      "bytes": 12582912,
+      "sha256": "002e6b5bbf868bbfd4ae9b0b2e9b375e725037732165c82f43c2187cbdbc6d03"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part06",
+      "bytes": 12582912,
+      "sha256": "246cdbc0516a728d5fe0dff24ed85d3ebd32f381ae73ceb43ec569686169c5f2"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part07",
+      "bytes": 12582912,
+      "sha256": "36f45ae8ed86b7d45930ffcae8dc9ecde20d61385fd54833903da40eb9efcb5e"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part08",
+      "bytes": 12582912,
+      "sha256": "3dade046bdc61418c76023c1f0118ad9d6f2b363bda526ae87fcca760986340c"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part09",
+      "bytes": 12582912,
+      "sha256": "a74bb28d891e83795fcab6a9c83d3a1a15d6e0303e20840e06082fd5a125026e"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part10",
+      "bytes": 12582912,
+      "sha256": "e4a5b14b6bb4facf7435c94454c3dbcf4504fd56e047de6cda7d9f6c63f36f59"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part11",
+      "bytes": 12582912,
+      "sha256": "8b757f1d9d2163360129f90fc9aee3a0129fbf45412173ec99beca7c4e2cb49a"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part12",
+      "bytes": 12582912,
+      "sha256": "b7114a8b436a190e5ef1eec976d5c4f22665caf76c2f6695443fa09a96504ea5"
+    },
+    {
+      "file": "native-proportional-first-f107.tar.gz.part13",
+      "bytes": 9151131,
+      "sha256": "42a3864a0d6ef5789f707aaa9e56a5fd2aab9b7360444ed6dace13c20ffcdd29"
+    }
+  ]
+}
