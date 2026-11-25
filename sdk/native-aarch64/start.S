@@ -21,6 +21,26 @@ __jnox_exit:
 .size __jnox_exit, .-__jnox_exit
 .size _start, .-_start
 
+.text
+.p2align 2
+.global __jnox_thread_start
+.hidden __jnox_thread_start
+.type __jnox_thread_start,%function
+__jnox_thread_start:
+    mov x9, x0
+    mov x0, x1
+    blr x9
+    b pthread_exit
+.size __jnox_thread_start, .-__jnox_thread_start
+
+.global pthread_exit
+.type pthread_exit,%function
+pthread_exit:
+    mov x8, #JNOX_CALL_THREAD_EXIT
+    svc #JNOX_ABI_SVC
+    brk #0
+.size pthread_exit, .-pthread_exit
+
 .section .note.jnox.abi,"a",%note
 .p2align 2
 .long 5, 4, 1

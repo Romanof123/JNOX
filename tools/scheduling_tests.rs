@@ -1,5 +1,7 @@
 //! Native tests for the policy sources used by the kernel.
 
+#[path = "../kernel/src/native_thread_policy.rs"]
+mod native_thread_policy;
 #[path = "../kernel/src/native_periodic_policy.rs"]
 mod native_periodic_policy;
 #[path = "native_periodic_policy_tests.rs"]

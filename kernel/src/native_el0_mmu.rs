@@ -7,6 +7,53 @@ const IMAGE_LO: usize = 0x0040_0000;
 const IMAGE_HI: usize = 0x0080_0000;
 pub(crate) const STACK_BOTTOM: usize = 0x0100_1000;
 pub(crate) const STACK_TOP: usize = 0x0101_1000;
+#[cfg(jnox_native_threads)]
+const WORKER_BOTTOM: usize = STACK_BOTTOM + 2 * PAGE;
+#[cfg(jnox_native_threads)]
+const WORKER_TOP: usize = STACK_BOTTOM + 8 * PAGE;
+#[cfg(jnox_native_threads)]
+const MAIN_BOTTOM: usize = WORKER_TOP + PAGE;
+
+#[cfg(jnox_native_threads)]
+pub(crate) fn thread_stack(slot: usize) -> Option<(usize, usize)> {
+    match slot {
+        0 => Some((MAIN_BOTTOM, STACK_TOP)),
+        1 => Some((WORKER_BOTTOM, WORKER_TOP)),
+        _ => None,
+    }
+}
+
+#[cfg(jnox_native_threads)]
+pub(crate) fn thread_errno(slot: usize) -> Option<usize> {
+    match slot {
+        0 => Some(STACK_BOTTOM),
+        1 => Some(STACK_BOTTOM + core::mem::size_of::<i32>()),
+        _ => None,
+    }
+}
+
+#[cfg(jnox_native_threads)]
+static mut THREAD_CODE: [(usize, usize); crate::native_elf::MAX_LOADS] =
+    [(0, 0); crate::native_elf::MAX_LOADS];
+
+#[cfg(jnox_native_threads)]
+pub(crate) fn valid_thread_entry(address: u64) -> bool {
+    let Ok(addr) = usize::try_from(address) else { return false };
+    let Some(end) = addr.checked_add(4) else { return false };
+    // Immutable after boot. Keep precise ELF payload bounds rather than page-rounded bounds.
+    addr % 4 == 0 && unsafe { THREAD_CODE }.iter().any(|&(lo, hi)| lo <= addr && end <= hi)
+}
+
+/// Caller owns the idle worker slot on CPU0 before publishing its new frame.
+#[cfg(jnox_native_threads)]
+pub(crate) unsafe fn reset_worker_memory() {
+    unsafe {
+        let backing = (&raw mut SPACES[0].stack_ram.0).cast::<u8>();
+        ptr::write_bytes(backing.add(WORKER_BOTTOM - STACK_BOTTOM), 0, WORKER_TOP - WORKER_BOTTOM);
+        ptr::write_bytes(backing.add(core::mem::size_of::<i32>()), 0, core::mem::size_of::<i32>());
+    }
+}
+
 const LINK_START: usize = 0x4020_0000;
 const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
@@ -84,7 +131,11 @@ unsafe fn page(table: *mut Table, va: usize, pa: usize, attr: u64) {
 }
 
 fn validate(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(), &'static str> {
-    if stack_tail.is_empty() || stack_tail.len() > STACK_TOP - STACK_BOTTOM
+    #[cfg(jnox_native_threads)]
+    let bottom = MAIN_BOTTOM;
+    #[cfg(not(jnox_native_threads))]
+    let bottom = STACK_BOTTOM;
+    if stack_tail.is_empty() || stack_tail.len() > STACK_TOP - bottom
         || stack_tail.len() % 16 != 0 {
         return Err("native stack tail");
     }
@@ -132,9 +183,20 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
                 page(table, va, image.add(va - IMAGE_LO) as usize, attr);
             }
         }
+        #[cfg(jnox_native_threads)]
+        for (index, segment) in plan.segments().iter().enumerate() {
+            if segment.permission == Permission::ReadExecute {
+                let lo = segment.address as usize;
+                THREAD_CODE[index] = (lo, lo + segment.bytes.len());
+            }
+        }
         let stack = space.stack_ram.0.as_mut_ptr();
         link(&raw mut space.low, STACK_BOTTOM, 21, &raw mut space.stack);
         for va in (STACK_BOTTOM..STACK_TOP).step_by(PAGE) {
+            #[cfg(jnox_native_threads)]
+            if va == STACK_BOTTOM + PAGE || va == WORKER_TOP {
+                continue;
+            }
             page(&raw mut space.stack, va, stack.add(va - STACK_BOTTOM) as usize, NORMAL | USER | NG | PXN | UXN);
         }
         ptr::copy_nonoverlapping(stack_tail.as_ptr(), stack.add(STACK_TOP - STACK_BOTTOM - stack_tail.len()), stack_tail.len());
