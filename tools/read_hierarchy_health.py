@@ -75,6 +75,10 @@ def irq_boundary(arm, entry, idle, previous=None, floor=None):
     if previous is not None:
         require(arm["arm_after"] <= previous[45] <= earliest, "restore outside arm/IRQ interval")
     if idle:
+        # A72 MRS DAIF exposes D,A,I,F in bits 9:6. Between this sample
+        # and the interrupted idle PC the assembly only clears I (DAIFClr #2).
+        require(daif & ~0x3c0 == 0, "reserved bits in pre-unmask DAIF")
+        require((entry["spsr"] ^ daif) & 0x340 == 0, "idle D/A/F masks changed")
         require(arm["arm_after"] <= landing, "landing before completed arm")
         require(entry["spsr"] & 15 == 5 and 0 < landing <= unmask <= earliest and daif & 0x80,
                 "invalid idle landing or IRQ unmask boundary")

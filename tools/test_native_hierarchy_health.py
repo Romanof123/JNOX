@@ -172,6 +172,28 @@ class ArmHealthTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             read(packet(0, {1: 1, 2: 1, 4: 1}))
 
+    def test_idle_mask_transition(self):
+        for dropped in (False, True):
+            tag = "FIRST" if dropped else "TIMER"
+            spsr, daif = (17,22) if dropped else (15,20)
+            original = fixture(dropped)
+            candidates = [j for j,line in enumerate(original)
+                          if line.startswith(f"NATIVE HIERARCHY {tag} ")]
+            row = candidates[0 if dropped else 2]
+            for saved, pre, valid in [(0x345,0x3c0,True), (0x80000005,0x80,True),
+                                      (0x45,0x80,False), (5,0x180,False),
+                                      (5,0x81,False), (5,0x480,False)]:
+                with self.subTest(dropped=dropped,saved=saved,pre=pre):
+                    lines = original.copy()
+                    cols = lines[row].split()
+                    cols[3+spsr],cols[3+daif] = str(saved),str(pre)
+                    lines[row] = " ".join(cols)
+                    if valid:
+                        self.assertEqual(read(lines)["timing"], "late" if dropped else "within_limit")
+                    else:
+                        with self.assertRaises(ValueError):
+                            read(lines)
+
     def test_wake_tie_checkpoint(self):
         self.assertEqual(cause(0, 10, 50, 50), (3, 50))
         self.assertEqual(cause(3, 10, 50, 50), (2, 50))
