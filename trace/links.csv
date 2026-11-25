@@ -2209,3 +2209,6 @@ POL-015,partially-implemented-by,IMP-145
 POL-015,has-switch-evidence,EVD-145
 CHG-300,affects,REQ-023
 CHG-300,affects,REQ-024
+CHG-302,affects,REQ-023
+CHG-302,affects,REQ-024
+IPC-001,depends-on-policy,POL-002

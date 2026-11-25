@@ -6,7 +6,7 @@
 
 **이번 릴리스의 스케줄링 7개 계열 중 6개가 지정 범위에서 승인됐다(6/7).** POL-002 고정 우선순위는 FIFO와 라운드로빈(RR) 두 방식 모두 미결이다. 기존 승인은 POL-003 배치(지정 네이티브·링크형 프로필), POL-005 기한 기반 스케줄링(유한 M1/M3 EDF·표본 LLF), POL-009 다단계 큐(텔레메트리 배포), POL-010 비례 배분(네이티브 구성 6개), POL-011 가중 스케줄링(지정 구성), POL-012 EEVDF(링크형 EL1 텔레메트리)에 적용된다.
 
-REQ-023은 18개 전체 계열과 기존 검증 기록을 유지한다. POL-001, POL-004, POL-006부터 POL-008까지, POL-013부터 POL-018까지는 이번 릴리스에서 목록으로만 관리한다. 실물 Pi 4 검증 [#34](https://github.com/Romanof123/JNOX/issues/34), 고객 작업 부하와 최악 실행 시간(WCET) 검증, ASIL 적격성은 미결이다. 이번 스케줄링 범위의 승인이 끝나면 IPC 10개 계열의 개발을 진행한다. [스케줄링 이슈 #21](https://github.com/Romanof123/JNOX/issues/21) · [IPC 이슈 #24](https://github.com/Romanof123/JNOX/issues/24)
+REQ-023은 18개 전체 계열과 기존 검증 기록을 유지한다. POL-001, POL-004, POL-006부터 POL-008까지, POL-013부터 POL-018까지는 이번 릴리스에서 목록으로만 관리한다. 실물 Pi 4 검증 [#34](https://github.com/Romanof123/JNOX/issues/34), 고객 작업 부하와 최악 실행 시간(WCET) 검증, ASIL 적격성은 미결이다. CHG-302에 따라 #363의 가상 FIFO·RR 재생 결과를 근거로 #24 IPC 구현을 시작한다. 승인된 IPC 계열은 0/10이다. [IPC-001 계약](native-sync-ipc.en-ko.md) [스케줄링 이슈 #21](https://github.com/Romanof123/JNOX/issues/21) · [IPC 이슈 #24](https://github.com/Romanof123/JNOX/issues/24)
 
 독립 검증팀이 기존 원본을 재판독해 지정된 virt 및 Pi 4 모델에서 FIFO·RR의 동작을 확인했다. Pi 모델 네 번 모두 두 네이티브 앱의 계산 결과가 일치했고, 동순위 타이머 교대는 FIFO 두 번 각 0회, RR 두 번 각 16회였다. 물리 보드 인수는 [#34](https://github.com/Romanof123/JNOX/issues/34)에서 추적한다. [한영 독립 검증 근거](evidence/retained-fixed-policy-review.en-ko.md)
 
