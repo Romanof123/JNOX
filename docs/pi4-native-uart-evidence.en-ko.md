@@ -21,3 +21,9 @@ Exercise swapped policy, reversed or substituted app, changed kernel image/ELF, 
 UART supports the decisions and statuses the kernel reported. The expected prime counts were independently checked in EVD-129 model memory. Physical private RAM values, actual interrupted and restored execution, physical counter timing, firmware boot and power-cycle provenance require their own board evidence. Host USB arrival timestamps cannot substitute for those observations. Board and safety/product decisions remain with #34 and #21; #365 authorizes IPC engineering independently. [#34](https://github.com/Romanof123/JNOX/issues/34) · [#21](https://github.com/Romanof123/JNOX/issues/21) · [#365](https://github.com/Romanof123/JNOX/issues/365)
 
 정책 교환, 앱 교체·순서 반전, 커널 ELF·이미지 변경, 매니페스트 모순, 종료 누락·중복, 잘못된 행·소유자 전환, 마지막 줄 잘림과 끝 기록 누락을 대조한다. 파일 결합 실패, 실제 관측의 모순, 바이트 부족을 구분한다. 읽기 경계만 달라진 동일 바이트는 같은 판정이어야 한다. 포트 모의 입력과 모델 재생은 호스트 근거다. UART는 커널이 보고한 결정과 상태를 뒷받침한다. 실보드 메모리 산출물, 실제 중단·복귀, 타이머 시각과 전원·펌웨어 부팅은 별도 근거가 필요하다. USB 도착 시각으로 이를 대신할 수 없다. #34·#21의 보드 및 안전·제품 승인은 별도이며 #365의 IPC 개발 권한은 유지된다.
+
+## Host tool release / 호스트 수집기 검증
+
+**IMP-301 · EVD-301.** The independent verifier replayed all four EVD-129 model streams as files and through a simulated serial adapter. A disconnect and a keyboard interrupt after 62 bytes retained the exact input prefix and its digest, the error and the run identity. The corrected collector passed 17 host tests. Physical power-on, timer interrupts and CPU return context remain with #34. [First failure](evidence/pi4-native-serial-first.en-ko.md) · [Corrected evidence](evidence/pi4-native-serial-corrected.en-ko.md)
+
+원본 모델 로그 4개를 파일과 모의 직렬 입력으로 각각 확인했다. 62바이트를 받은 뒤 연결이 끊기거나 사용자가 중단해도 수집기가 해당 바이트의 해시·원인·실행 식별자를 남겼다. 호스트 시험 17개가 통과했고 실보드 전원 기동·타이머·선점 검증은 #34에 남아 있다. [독립 재검증](evidence/pi4-native-serial-corrected.en-ko.md)

@@ -2280,3 +2280,7 @@ IMP-310,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-310
 IMP-310,tested-in,EVD-310
 CHG-301,affects,REQ-023
+REQ-023,partially-implemented-by,IMP-301
+IMP-301,partially-verified-by,VER-023
+VER-023,has-partial-evidence,EVD-301
+IMP-301,tested-in,EVD-301
