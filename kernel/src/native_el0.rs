@@ -297,6 +297,12 @@ static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
 #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
 #[path = "native_sync_ipc.rs"]
 mod ipc;
+#[cfg(jnox_native_net_service)]
+#[path = "native_virtio_net.rs"]
+mod virtio_net;
+#[cfg(all(jnox_native_net_service, any(jnox_pi4, not(jnox_native_socket_service),
+    not(jnox_native_sync_ipc), not(jnox_native_fixed))))]
+compile_error!("native net service requires virt fixed scheduling with socket broker IPC");
 
 #[cfg(jnox_native_loan_ipc)]
 #[path = "native_loan_ipc.rs"]
@@ -433,6 +439,8 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_net_service)]
+    ipc::report_net();
     #[cfg(jnox_native_loan_ipc)]
     loans::report();
     #[cfg(jnox_native_notify_ipc)]
@@ -912,6 +920,13 @@ pub(super) fn run() -> ! {
         context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         native_el0_mmu::install_processes(&plans, &tails).unwrap_or_else(|_| fail(6));
+        #[cfg(jnox_native_net_service)]
+        virtio_net::init().unwrap_or_else(|errno| {
+            uart_write(b"NATIVE NET INIT ERROR ");
+            decimal(i64::from(errno));
+            uart_write(b"\n");
+            fail(6)
+        });
         for (pid, plan) in plans.iter().enumerate() {
             FRAMES[pid].elr = plan.entry;
             let layout = layouts[pid];

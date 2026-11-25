@@ -1,0 +1,24 @@
+# #376 IPv4 first verifier · 906fdd0
+
+**Held.** On WSL Ubuntu 22.04 QEMU 6.2 AArch64 virt with one Cortex-A72 and modern virtio-net MMIO, the ordinary C TCP client exited 103, the Rust UDP client exited 113 and the Rust IPv4 broker exited 85. The same exits occurred in four serial runs. Both FIFO and RR used the documented example priorities (C 4, Rust 4, broker 7). Each package has its own exact ELF, manifest, build log and cold guest captures.
+
+| Position | C / Rust / broker exits | Kernel RX / TX / completed / faults | Host peer |
+| --- | --- | --- | --- |
+| FIFO loopback SLIRP | 103 / 113 / 85 | 0 / 1 / 1 / 0 | Both sockets timed out |
+| RR loopback SLIRP | 103 / 113 / 85 | 0 / 1 / 1 / 0 | Both sockets timed out |
+| FIFO isolated TAP | 103 / 113 / 85 | 1 / 1 / 1 / 0 | Both sockets timed out |
+| RR isolated TAP | 103 / 113 / 85 | 0 / 1 / 1 / 0 | Both sockets timed out |
+
+**Wire and process memory.** The only transmitted Ethernet frame on each guest virtqueue was the same 42-byte ARP query for 10.0.2.2 from 10.0.2.15. All four captures include its ARP reply. QEMU 6.2 prepends a 10- or 12-byte virtual-network header to TAP filter-dump records despite the Ethernet pcap link type. Replay checks and strips those prefixes, including the 12-byte prefix on each transmitted query. The TAP also saw ordinary host IPv6 background frames. The interface never carried IPv4 application traffic. The broker's pending TX bytes, kernel descriptor bytes and captured query are identical. Private TCP results contain twelve zeroes. The UDP client recorded a three-byte send accepted by the broker and later error −32. TCP reset/EOF, UDP source information, delivery, loss/reordering, transport queue limits and complete network-service shutdown are unverified on this candidate.
+
+**Cause at the first transmission.** In the linked broker, `Tx::flush` loads its transmit length into x1, issues SVC 39 at 0x402e04 and compares the return count in x0 with x1 at 0x402e0c. The broker wrapper declares x1 as input. The kernel sets x0 to the accepted length and clears x1 in `kernel/src/native_sync_ipc.rs`. The comparison therefore sends a successful ARP transmission down the error path. The saved broker `FRAMES` contains the pending length 42 and both TX and aggregate error flags set. The kernel reported one completion and zero driver faults.
+
+**Additional controls.** For both scheduling policies a separate ordinary probe used the same frozen kernel with a selected network slot. Nonbroker RX/TX/try-receive each returned −13. Selected broker empty RX and empty try-receive returned −11, and undersize RX, undersize TX and oversize TX each returned −90. In the socket-only package and the plain package the three calls returned −38 to both slots. These six guest snapshots include manifests, ELFs, raw RAM and private outcomes. The independent probe's initial build used an unavailable `uintptr_t` alias. Its diagnostic and original C are retained with the successful `uint64_t` revision.
+
+**TAP setup.** The first user-owned-TAP invocation stopped before guest launch. The peer script checks the PID 1 network-namespace symlink, which this WSL ordinary user could not read. The retained `fifo-tap-first-peer.log` contains the error. The subsequent `*-tap-root` positions ran the same peer inside a dedicated Linux network namespace with only loopback and TAP, using WSL root there. The namespace had no default route or physical interface. SLIRP peers bound only to loopback. No host port was published externally.
+
+**Offline replay.** Verify the archive digest, extract to a new directory, and run `sha256sum -c SHA256SUMS`. Install Python 3, pyelftools (observed 0.32) and GNU AArch64 nm. Run `python3 replay.py` from the extracted directory. The script checks the kernel and application identities, walks each process page table, decodes the private and kernel queue state, compares transmitted bytes with the pcap, then replays the six control outcomes. A successful replay reproduces the original hold and controls. The packet includes the frozen workload, broker, kernel, build tools, issue snapshot and all ten raw 128 MiB guest memories. `build.sh`, `run-position.sh`, `tap-root.sh` and `controls.sh` preserve the live run commands and WSL paths. The source identity and tree are in `revision.txt`. No guest or build ran concurrently.
+
+**한국어.** 906fdd0의 FIFO·RR에서 루프백 및 격리 TAP을 사용한 네 번의 실행 모두 C·Rust·브로커가 각각 103·113·85로 종료됐다. 브로커 전송 래퍼가 x1의 변경을 선언하지 않아 정상 완료한 42바이트 ARP 송신을 오류로 판정했다. 실제 TCP 데이터·종료·리셋과 UDP 유실·재정렬은 관측되지 않았다. 별도의 여섯 게스트에서 비인가 호출 거부와 비활성 프로필의 반환값을 확인했다.
+
+[Download packet captures, ELFs and replay / 패킷·실행 파일 및 재현 도구](native-ipv4-socket-first.tar.gz). SHA-256 `d4cf67f8d285b3a0125199ffe4d25cfc850f283c31fe8ee9725bcdf9a46e5c6e`.
