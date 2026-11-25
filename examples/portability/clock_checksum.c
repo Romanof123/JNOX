@@ -17,10 +17,12 @@ int main(void)
         a = (a + input[i]) % 65521;
         b = (b + a) % 65521;
     }
+    /* Publish the complete Adler-32 value before the ending clock read. */
+    volatile unsigned int checksum = (b << 16) | a;
     if (clock_gettime(CLOCK_MONOTONIC, &end) || !valid(&end))
         return 2;
     if (end.tv_sec < start.tv_sec ||
         (end.tv_sec == start.tv_sec && end.tv_nsec < start.tv_nsec))
         return 3;
-    return ((b << 16) | a) == 0x11e60398u ? 0 : 4;
+    return checksum == 0x11e60398u ? 0 : 4;
 }

@@ -17,8 +17,11 @@ pub extern "C" fn main(_argc: i32, _argv: *const *const u8) -> i32 {
     for &byte in black_box(b"hello") {
         hash = (hash ^ u32::from(byte)).wrapping_mul(0x01000193);
     }
+    // Publish the completed hash before sampling the end of the interval.
+    let mut checksum = 0u32;
+    unsafe { core::ptr::write_volatile(&mut checksum, hash) };
     let Ok(end) = monotonic_time() else { return 2 };
     if end < start { return 3 }
-    if hash != 0x4f9f2cab { return 4 }
+    if unsafe { core::ptr::read_volatile(&checksum) } != 0x4f9f2cab { return 4 }
     0
 }
