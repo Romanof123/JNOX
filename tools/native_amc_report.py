@@ -173,6 +173,24 @@ def overlap_control(life, epoch, q):
             and 0 < peer[1][5] <= 2*q)
 
 
+def overlap_deadline_window(intervals, due):
+    """Bound the calendar call that removed the first LO0 deadline from the queue."""
+    windows = []
+    for before, current, after in zip(intervals, intervals[1:], intervals[2:]):
+        # Column 17 is calendar(), sampled after calendar_until() on every decision.
+        # The actual hardware compare can also include an earlier CPU-budget cutoff.
+        if before[17] != due or current[17] <= due:
+            continue
+        lower = max(due, current[2])
+        # A gate can reselect a frame without returning to EL0. Its entry still
+        # bounds the previous calendar call, but supplies no user return sample.
+        upper = after[2] if after[0] == 3 else after[3]
+        if current[13] != after[4] or upper < lower or upper > after[2]:
+            return None
+        windows.append((lower, upper))
+    return windows[0] if len(windows) == 1 else None
+
+
 def score(a):
     root = a.root
     need(sha(root / "session.json") == a.digest, "session identity")
@@ -356,6 +374,9 @@ def score(a):
             misses = [e for e in life if e[0] == 7 and e[2:4] == (0, 0)]
             if len(misses) == 1:
                 at = misses[0][1]
+                window = overlap_deadline_window(intervals, boundaries(1))
+                check(window is not None and window[0] <= at <= window[1],
+                      "b1 deadline fault and overlap refusal outside their measured calendar decision")
                 check(sum(r[6] for r in intervals if r[4:6] == (0, 0) and r[2] <= at)
                       == misses[0][6], "LO0 service at recorded deadline fault")
     if launch["trace"]:
