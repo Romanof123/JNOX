@@ -134,3 +134,6 @@ pub mod ipc;
 
 #[cfg(all(feature = "mailbox", target_arch = "aarch64"))]
 pub mod mailbox;
+
+#[cfg(all(feature = "notify", target_arch = "aarch64"))]
+pub mod notify;

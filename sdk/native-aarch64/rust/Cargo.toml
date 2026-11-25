@@ -8,3 +8,4 @@ path = "src/lib.rs"
 [features]
 sync-ipc = []
 mailbox = []
+notify = []
