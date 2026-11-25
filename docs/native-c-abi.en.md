@@ -10,7 +10,7 @@ Use little-endian AArch64 LP64, AAPCS64 integer calling convention and a static 
 
 Trusted launch configuration selects the native v1 personality. Check the SDK's SHF_ALLOC SHT_NOTE section .note.jnox.abi in the read-only load against that configuration. The ELF note contains little-endian namesz=5, descsz=4, type=1, owner bytes JNOX followed by NUL and three zero pad bytes, then a u32 version 1. It needs no PT_NOTE. The marker identifies an ABI; authorization requires independent executable provenance, loader validation and process capabilities. Reject a version or configured personality mismatch before entry.
 
-The loader prepares a writable, non-executable user stack disjoint from image pages. SP is 16-byte aligned. At SP is u64 argc in 0..INT_MAX; at SP+8 are argc little-endian pointers to accessible NUL-terminated argument strings followed by a null pointer. The launcher owns the bounds and overflow checks on these objects. No envp or auxv is consumed. Startup passes argc and argv in x0 and x1 to main, then sign-extends its int result into the exit request. A returned exit request trips a fault. Bootstrap permits exactly one thread per address space; launching a second thread must fail until thread-local errno and a thread context ABI exist. The address-returning errno accessor can later select a per-thread slot without changing application source. No signal-handler or async-signal-safe qualification has been performed.
+The loader prepares a writable, non-executable user stack disjoint from image pages. SP is 16-byte aligned. At SP is u64 argc in 0..INT_MAX; at SP+8 are argc little-endian pointers to accessible NUL-terminated argument strings followed by a null pointer. The launcher owns the bounds and overflow checks on these objects. No envp or auxv is consumed. Startup passes argc and argv in x0 and x1 to main, then sign-extends its int result into the exit request. A returned exit request trips a fault. The default bootstrap uses one thread per address space and its original errno storage. The opt-in two-thread profile assigns distinct errno cells to main and worker. No signal-handler or async-signal-safe qualification has been performed.
 
 ## Service ABI
 
@@ -199,3 +199,13 @@ python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
 ~~~
 
 [Boot the package and try the Rust UTF-8 example](../examples/native-argv/README.md)
+
+## Create and join a native worker thread
+
+From the repository root, package one C source or one prelinked Rust ELF with `--threads 2`. This selects a single cooperative process on CPU0 with main and one reusable worker. Its globals and argv strings belong to the process. Each thread has its own stack, saved registers and errno cell.
+
+~~~sh
+python3 tools/build_native_el0.py --out output/native-threads/c --threads 2 --source examples/native-threads/sensor.c
+~~~
+
+Call `pthread_create(&handle, NULL, start, arg)` to queue the worker. Main continues until a scheduling point. Only main joins the worker: `pthread_join(handle, &result)` waits for a live worker or collects an exited worker immediately. The slot is reusable after join. A busy slot returns EAGAIN; a reaped handle returns ESRCH. These functions return positive errors directly and preserve errno. A worker may return a pointer to shared data that survives its exit. [C and Rust build and boot examples](../examples/native-threads/README.md)

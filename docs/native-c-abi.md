@@ -10,7 +10,7 @@
 
 신뢰된 실행 구성이 native v1을 선택한다. 읽기 전용 LOAD의 SHF_ALLOC SHT_NOTE 섹션 .note.jnox.abi를 확인한다. 노트는 리틀엔디언 namesz=5, descsz=4, type=1, 소유자 JNOX와 NUL, 0 패딩 3바이트, u32 버전 1로 구성된다. 별도 PT_NOTE는 필요 없다. 실행 권한은 출처 검증, 로더 검증 및 프로세스 권한 검사로 부여한다. 설정과 ABI가 다르면 진입 전에 거절한다.
 
-로더는 이미지 밖에 쓰기 가능하고 실행 불가능한 스택을 준비한다. SP는 16바이트 경계이고 첫 u64는 0..INT_MAX 범위의 argc다. SP+8에 argc개의 NUL 종료 문자열 포인터를 놓고 마지막에 널 포인터를 붙인다. 실행기는 개수, 주소와 문자열 범위를 검사한다. envp와 auxv는 사용하지 않는다. 시작 코드는 x0, x1로 argc, argv를 main에 전달하고 int 결과를 부호 확장해 exit을 요청한다. 종료 후 복귀하면 예외를 발생시킨다. 현 프로파일은 주소 공간마다 단일 스레드만 허용한다. 스레드별 errno 및 문맥 규약을 구현할 때까지 두 번째 스레드 생성을 거부해야 한다. 주소를 반환하는 errno 접근자는 추후 스레드별 저장소를 선택할 수 있다. 비동기 신호 처리의 안전성은 별도 검증 대상이다.
+로더는 이미지 밖에 쓰기 가능하고 실행 불가능한 스택을 준비한다. SP는 16바이트 경계이고 첫 u64는 0..INT_MAX 범위의 argc다. SP+8에 argc개의 NUL 종료 문자열 포인터를 놓고 마지막에 널 포인터를 붙인다. 실행기는 개수, 주소와 문자열 범위를 검사한다. envp와 auxv는 사용하지 않는다. 시작 코드는 x0, x1로 argc, argv를 main에 전달하고 int 결과를 부호 확장해 exit을 요청한다. 종료 후 복귀하면 예외를 발생시킨다. 기본 시작 구성은 주소 공간별 단일 스레드와 기존 errno 저장소를 사용한다. 두 스레드 옵션에서는 메인과 작업 스레드에 각자의 errno 셀을 할당한다. 비동기 신호 처리의 안전성은 별도 검증 대상이다.
 
 ## 서비스 규약
 
@@ -199,3 +199,13 @@ python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
 ~~~
 
 [패키지 부팅과 Rust UTF-8 예제](../examples/native-argv/README.md)
+
+## 네이티브 작업 스레드 생성 및 조인
+
+저장소 루트에서 C 소스 하나 또는 링크된 Rust ELF 하나에 `--threads 2`를 지정한다. CPU0에서 프로세스 하나의 메인과 재사용 가능한 작업 스레드 하나가 협력형으로 실행된다. 전역 데이터와 argv 문자열은 프로세스 안에서 공유하며 스택·저장 레지스터·errno 셀은 스레드마다 따로 둔다.
+
+~~~sh
+python3 tools/build_native_el0.py --out output/native-threads/c --threads 2 --source examples/native-threads/sensor.c
+~~~
+
+메인은 `pthread_create(&handle, NULL, start, arg)`로 작업을 큐에 넣고 다음 스케줄링 지점까지 계속 실행한다. 작업 스레드는 메인만 조인할 수 있다. `pthread_join(handle, &result)`는 실행 중이면 기다리고 이미 종료됐으면 즉시 결과를 회수한다. 조인 뒤 슬롯을 재사용한다. 슬롯이 사용 중이면 EAGAIN, 회수된 핸들은 ESRCH다. 두 함수는 양의 오류 번호를 직접 반환하고 errno를 보존한다. 작업은 종료 뒤에도 유효한 공유 데이터 포인터를 반환할 수 있다. [C·Rust 빌드 및 부팅 예제](../examples/native-threads/README.md)
