@@ -130,8 +130,8 @@ native_el0_enter:
 
 .Luser_irq:
     save_native_frame
+    mov x0,sp
     bl native_sleep_irq
-    // Due sleepers join the queue. The interrupted process keeps its turn.
     b .Lrestore
 
 .Luser_sync:
@@ -180,6 +180,7 @@ native_sleep_idle:
 .Lidle_irq:
     // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
     // Its only live value is x19. IRQ entry masked delivery before this call.
+    mov x0,xzr
     bl native_sleep_irq
     cbz x0,.Lidle_eret
     adr x9,.Lleave_idle

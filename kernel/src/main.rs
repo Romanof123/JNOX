@@ -58,7 +58,7 @@ mod coop_service;
 mod control_runtime;
 #[cfg(jnox_control)]
 mod control_app;
-#[cfg(jnox_fixed)]
+#[cfg(any(jnox_fixed, jnox_native_el0))]
 mod fixed_policy;
 #[cfg(jnox_fixed)]
 mod fixed_runtime;

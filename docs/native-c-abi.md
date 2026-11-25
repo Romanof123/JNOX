@@ -87,3 +87,24 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tc
 ~~~
 
 [주 C 앱](../examples/portability/native_cooperative_report.c)은 `<sched.h>`의 `sched_yield()`를 호출한다. [Rust 동료 앱](../examples/native-cooperative-rust/src/main.rs)은 안전한 `jnox_native::yield_now()`를 호출해 `Result<(), i32>`를 받는다. 양보하면 준비된 동료에게 CPU0을 넘기고, 준비된 동료가 없으면 즉시 성공한다. 절대 기한 대기는 호출자만 차단하므로 준비된 동료는 실행을 계속한다. 각 프로세스가 전용 스택과 쓰기 가능 데이터를 사용해 두 예제의 누계 변수는 같은 가상 주소 `0x402000`에서 서로 다른 값을 유지한다. UART에 각 PID와 종료값이 표시된다. 두 앱이 종료하면 게스트가 정지 대기에 들어간다. Ctrl+C로 QEMU를 종료한다.
+
+## 독립 ELF 앱의 스케줄링
+
+주 앱은 `--source` 또는 `--elf`로 지정하고 `--peer-elf`를 두 번까지 추가한다. 주 앱은 슬롯 0이고 동료는 입력 순서대로 슬롯 1, 2를 받는다. 정책 생략 시 협력형으로 동작한다. `--policy fifo` 또는 `--policy rr` 지정 시 주 앱에 `--priority` 하나, 동료마다 `--peer-priority` 하나가 필요하다. 우선순위는 0~255이며 큰 값이 먼저 실행된다. RR의 공통 퀀텀은 1~9223372036854775807 물리 카운터 틱이다. FIFO는 퀀텀을 받지 않는다.
+
+Linux 또는 WSL에서 아래 명령으로 세 ELF를 각각 빌드하고 부팅한다. 패키지 매니페스트에는 슬롯 순서대로 입력 경로와 해시, ELF 해시, 우선순위가 기록된다. 마지막 앱이 종료되고 커널이 대기 상태에 들어간 뒤에도 시리얼 콘솔은 연결을 유지한다.
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-fixed/calendar_report.c "$run/high.elf"
+sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c "$run/a.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-fixed-rust/Cargo.toml "$run/b.elf"
+python3 tools/build_native_el0.py --out "$run/rr" --elf "$run/high.elf" \
+    --peer-elf "$run/a.elf" --peer-elf "$run/b.elf" --policy rr \
+    --priority 7 --peer-priority 3 --peer-priority 3 --quantum-ticks 1250000
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 \
+    -accel tcg -m 128M -nodefaults -display none -monitor none -no-reboot \
+    -serial stdio -kernel "$run/rr/kernel.elf"
+~~~
+
+작은 예제에서는 3순위 계산 두 개가 여러 퀀텀에 걸쳐 실행되도록 1,250,000틱을 사용한다. 최초 고정 예제의 설정은 12,500,000틱이었다. 퀀텀은 패키지에서 물리 카운터 틱 단위로 지정한다. [네이티브 FIFO·RR 근거](evidence/evd-115.md)

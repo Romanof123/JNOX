@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package a native AArch64 application and a kernel containing that exact ELF."""
+"""Package up to three native AArch64 applications into a virt kernel."""
 import argparse
 import hashlib
 import json
@@ -23,18 +23,48 @@ def output(args, cwd=ROOT, env=None):
     return subprocess.check_output(args, cwd=cwd, env=env, text=True).strip()
 
 
+def native_schedule(parser, args):
+    if len(args.peer_elf) > 2:
+        parser.error("virt supports at most two --peer-elf arguments")
+    if (args.peer_elf or args.policy) and not (args.source or args.elf):
+        parser.error("peers and scheduling policies require an ordinary --source or --elf")
+    for name in ("policy", "priority", "quantum_ticks"):
+        values = getattr(args, name)
+        if len(values) > 1:
+            parser.error(f"--{name.replace('_', '-')} may appear only once")
+    policy = args.policy[0] if args.policy else None
+    if policy:
+        if not args.priority or len(args.peer_priority) != len(args.peer_elf):
+            parser.error("fixed scheduling requires exactly one priority per supplied ELF")
+    elif args.priority or args.peer_priority:
+        parser.error("application priorities require --policy")
+    priorities = args.priority + args.peer_priority
+    if any(value < 0 or value > 255 for value in priorities):
+        parser.error("priorities must be in 0..255")
+    if bool(args.quantum_ticks) != (policy == "rr"):
+        parser.error("--quantum-ticks is required exclusively with --policy rr")
+    quantum = args.quantum_ticks[0] if args.quantum_ticks else None
+    if quantum is not None and not 1 <= quantum <= 2**63 - 1:
+        parser.error("--quantum-ticks must be in 1..2^63-1")
+    return policy, priorities, quantum
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, type=Path, help="new package directory")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--source", type=Path, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, help="already linked native AArch64 application")
-    parser.add_argument("--peer-elf", type=Path, help="independently linked second native application")
+    parser.add_argument("--peer-elf", type=Path, action="append", default=[],
+                        help="independently linked peer in slot order (up to two)")
+    parser.add_argument("--policy", choices=["fifo", "rr"], action="append", default=[])
+    parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
+    parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
+    parser.add_argument("--quantum-ticks", type=int, action="append", default=[], help="RR physical counter ticks")
     args = parser.parse_args()
-    if args.peer_elf and not (args.source or args.elf):
-        parser.error("--peer-elf requires an ordinary primary --source or --elf")
-    peer_input = args.peer_elf.resolve(strict=True) if args.peer_elf else None
-    peer_digest = sha256(peer_input) if peer_input else None
+    policy, priorities, quantum = native_schedule(parser, args)
+    peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
+    peer_digests = [sha256(path) for path in peer_inputs]
     app_input = (args.elf or args.source or SOURCE).resolve(strict=True)
     input_digest = sha256(app_input)
     app = "process" if args.source or args.elf else "startup-probe"
@@ -70,17 +100,29 @@ def main():
                            check=True)
         if sha256(user_elf if args.elf else app_input) != input_digest:
             raise ValueError("application input changed during packaging")
-        if peer_input:
-            peer_elf = out / "native_peer.elf"
+        digest = sha256(user_elf)
+        slots = [{"slot": 0, "elf": user_elf.name, "elf_sha256": digest, "input": metadata["input"]}]
+        for slot, (peer_input, peer_digest) in enumerate(zip(peer_inputs, peer_digests), 1):
+            suffix = "" if slot == 1 else str(slot)
+            peer_elf = out / f"native_peer{suffix}.elf"
             shutil.copyfile(peer_input, peer_elf)
             if sha256(peer_elf) != peer_digest:
-                raise ValueError("peer ELF changed during packaging")
+                raise ValueError(f"peer ELF in slot {slot} changed during packaging")
             peer_name = str(peer_input.relative_to(ROOT) if peer_input.is_relative_to(ROOT) else peer_input)
             inputs[peer_name] = peer_digest
-            metadata.update(peer_input={"kind": "elf", "path": peer_name, "sha256": peer_digest},
-                            peer_elf_sha256=peer_digest)
-            env.update(JNOX_NATIVE_PEER_ELF=str(peer_elf), JNOX_NATIVE_PEER_ELF_SHA256=peer_digest)
-        digest = sha256(user_elf)
+            peer = {"kind": "elf", "path": peer_name, "sha256": peer_digest}
+            slots.append({"slot": slot, "elf": peer_elf.name, "elf_sha256": peer_digest, "input": peer})
+            metadata[f"peer{suffix}_input"] = peer
+            metadata[f"peer{suffix}_elf_sha256"] = peer_digest
+            var = f"JNOX_NATIVE_PEER{suffix}_ELF"
+            env[var], env[var + "_SHA256"] = str(peer_elf), peer_digest
+        for slot in slots:
+            slot["priority"] = priorities[slot["slot"]] if policy else None
+        metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
+        if policy:
+            env.update(JNOX_NATIVE_POLICY=policy, JNOX_NATIVE_PRIORITIES=",".join(map(str, priorities)))
+        if quantum is not None:
+            env["JNOX_NATIVE_QUANTUM_TICKS"] = str(quantum)
         env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,
                    CARGO_TARGET_DIR=str(out / "target"))
@@ -92,8 +134,8 @@ def main():
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     print(f"kernel {metadata['kernel_elf_sha256']}  {kernel_elf}")
     print(f"native {digest}  {user_elf}")
-    if peer_input:
-        print(f"peer {peer_digest}  {peer_elf}")
+    for slot in slots[1:]:
+        print(f"peer {slot['elf_sha256']}  {out / slot['elf']}")
 
 
 if __name__ == "__main__":
