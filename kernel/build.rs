@@ -318,6 +318,13 @@ fn main() {
             "retained-v1 requires a native P/Q partition");
         println!("cargo::rustc-cfg=jnox_partition_retained");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_partition_cursor)");
+    if let Some(value) = selector("JNOX_PARTITION_WINDOW") {
+        assert!(value == "cursor-v1" && profile.as_deref() == Some("native")
+            && matches!(app.as_deref(), Some("partition-p" | "partition-q")),
+            "JNOX_PARTITION_WINDOW=cursor-v1 requires a native P/Q partition");
+        println!("cargo::rustc-cfg=jnox_partition_cursor");
+    }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
     if profile.as_deref() != Some("native") {

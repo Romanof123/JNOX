@@ -22,31 +22,43 @@ unsafe extern "C" {
     static mut native_partition_resume_v1: [UserFrame; 15];
 }
 
+#[cfg(jnox_partition_cursor)]
+use crate::temporal_policy::CyclicCursor as WindowTable;
+#[cfg(not(jnox_partition_cursor))]
+use crate::temporal_policy::CyclicExecutive as WindowTable;
+
+fn window_table<const N: usize>(table: CyclicExecutive<N>) -> WindowTable<N> {
+    #[cfg(jnox_partition_cursor)]
+    { table.into_cursor() }
+    #[cfg(not(jnox_partition_cursor))]
+    { table }
+}
+
 enum Table {
-    P(CyclicExecutive<3>),
-    Q(CyclicExecutive<4>),
+    P(WindowTable<3>),
+    Q(WindowTable<4>),
 }
 
 impl Table {
     fn new(q: u64, table_q: bool) -> Self {
         if table_q {
-            Self::Q(
+            Self::Q(window_table(
                 CyclicExecutive::new(
                     2,
                     5 * q,
                     [(Some(1), q), (None, q), (Some(0), 2 * q), (Some(1), q)],
                 )
                 .unwrap_or_else(|| fail(51)),
-            )
+            ))
         } else {
-            Self::P(
+            Self::P(window_table(
                 CyclicExecutive::new(2, 4 * q, [(Some(0), 2 * q), (Some(1), q), (None, q)])
                     .unwrap_or_else(|| fail(51)),
-            )
+            ))
         }
     }
 
-    fn decision(&self, offset: u64, released: bool) -> WindowDecision {
+    fn decision(&mut self, offset: u64, released: bool) -> WindowDecision {
         let ready = |pid| pid == 0 || released;
         match self {
             Self::P(table) => table.decision(offset, ready),

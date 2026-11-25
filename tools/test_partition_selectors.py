@@ -12,14 +12,14 @@ def main():
     with tempfile.TemporaryDirectory() as target:
         env["CARGO_TARGET_DIR"] = target
 
-        def cfg(features="", *, board="virt", reject=None):
+        def cfg(features="", *, board="virt", reject=None, **selectors):
             cmd = ["cargo", "rustc", "--release"]
             if features == "all":
                 cmd.append("--all-features")
             elif features:
                 cmd.extend(["--features", features])
             cmd.extend(["--", "--print", "cfg"])
-            run = subprocess.run(cmd, cwd=KERNEL, env=dict(env, JNOX_BOARD=board),
+            run = subprocess.run(cmd, cwd=KERNEL, env=dict(env, JNOX_BOARD=board, **selectors),
                                  text=True, capture_output=True)
             if reject is not None:
                 if run.returncode == 0 or reject not in run.stderr:
@@ -35,6 +35,12 @@ def main():
                 raise AssertionError(f"unexpected selector for {features!r}: {effective}")
             return effective
 
+        cursor_error = "JNOX_PARTITION_WINDOW=cursor-v1 requires a native P/Q partition"
+        cfg(JNOX_PARTITION_WINDOW="cursor-v1", reject=cursor_error)
+        cfg(JNOX_PARTITION_WINDOW="cursor-v1", JNOX_PROFILE="native",
+            JNOX_APP="weighted-share", reject=cursor_error)
+        cfg(JNOX_PARTITION_WINDOW="cursor-v2", JNOX_PROFILE="native",
+            JNOX_APP="partition-p", reject=cursor_error)
         selected("", "boot")
         selected("partition-bench", "partition")
         selected("ordinary-partition-p", "partition", True)
