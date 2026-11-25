@@ -2255,3 +2255,5 @@ IPC-006,partially-implemented-by,IMP-307
 IMP-307,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-307
 IMP-307,tested-in,EVD-307
+CHG-311,affects,REQ-019
+CHG-311,affects,REQ-024
