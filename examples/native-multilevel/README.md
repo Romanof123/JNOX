@@ -41,7 +41,7 @@ The reporter stores each absolute deadline in request_ns[3] and its first post-w
 
 ## M4 telemetry deployment / M4 경보 게시 배포
 
-From the repository root in Linux or WSL, use the normal AArch64 SDK and package tools above, GNU AArch64 binutils, stock QEMU and Python with pyelftools. Keep a new output directory for each deployment. The commands below bind the application sources and compiler to both independently built ELFs, then package those same bytes under each policy.
+Run the following commands in Bash from the repository root on Linux or WSL. Use the normal AArch64 SDK and package tools above, GNU AArch64 binutils, stock QEMU and Python with pyelftools. Keep a new output directory for each deployment. The commands below bind the application sources and compiler to both independently built ELFs, then package those same bytes under each policy.
 
 ~~~sh
 set -eu
@@ -51,7 +51,7 @@ printf '%s\n' "$rev" > "$out/revision"
 git diff --binary HEAD > "$out/source-changes.patch"
 clang --version > "$out/compiler.txt"
 ld.lld --version > "$out/linker.txt"
-sha256sum examples/native-multilevel/{report.c,alarms.h} examples/native-cbs/{crc.c,stream.h,ramp.h} examples/native-edf/clock.h > "$out/sources.sha256"
+sha256sum examples/native-multilevel/{report.c,alarms.h,publication.h} examples/native-cbs/{crc.c,stream.h,ramp.h} examples/native-edf/clock.h > "$out/sources.sha256"
 sh sdk/native-aarch64/build.sh examples/native-multilevel/report.c "$out/report.elf"
 sh sdk/native-aarch64/build.sh examples/native-cbs/crc.c "$out/crc.elf"
 sha256sum "$out/report.elf" "$out/crc.elf" > "$out/apps.sha256"

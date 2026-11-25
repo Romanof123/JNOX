@@ -275,3 +275,15 @@ python3 tools/build_native_el0.py --out share --policy weighted --weighted-conti
 The optional --weighted-notify closures:N counts full quanta closed by timer IRQ. Use wakes:N for actual wakeups from sleep. In a package with notification enabled, C code can include `<jnox/weighted_notify.h>` and read the latch with `jnox_weighted_notification()`. It changes once from zero to one. Each app continues until it chooses to exit.
 
 [Archive extraction and QEMU commands / 원본 추출 및 실행](../examples/native-weighted/README.md#original-weighted-monitor--원래-가중치-모니터) · [#327](native-weighted-continuous.en-ko.md)
+
+## Set a telemetry publication deadline and read results
+
+When packaging report.elf with crc.elf under MLQ or MLFQ, pass --arg=--publication-deadline-ms=40 to the reporter. Each round measures from the requested release to the sample taken after the complete alarm result is published. The reporting cadence remains 40 ms. Omitting the argument preserves the original unscored mode. Success returns 53, invalid settings return 106 before publication, and a deadline miss returns 107 after the reporter retains the results and samples.
+
+Give the reader the package directory and its matching capture directory. Its JSON reports per-round publication delay and margin in nanoseconds, alarm counts and the background CRC result.
+
+~~~sh
+python3 tools/read_multilevel_telemetry.py "$pkg" "$dir" > "$dir/results.json"
+~~~
+
+[Bash / SDK / QEMU](../examples/native-multilevel/README.md#m4-telemetry-deployment--m4-경보-게시-배포)
