@@ -54,10 +54,13 @@ for role in sender receiver supervisor; do
   sh sdk/native-aarch64/build-rust.sh "$app/$role/Cargo.toml" "$out/$role.elf"
 done
 revision=$(git rev-parse HEAD)
+cases=(healthy observed live-startup silence phase collision invalid saturation queued delayed restart early boundary one no-rearm bad-spacing
+       bad-crc bad-header-crc bad-length bad-version bad-type bad-channel bad-data-id bad-validity bad-permit bad-reserved
+       duplicate reordered gap old-generation future-issue expired-issue issue-order wrong-owner)
 for policy in fifo rr; do
   quantum=()
   if [ "$policy" = rr ]; then quantum=(--quantum-ticks 625000); fi
-  for scenario in healthy observed live-startup silence phase collision invalid saturation queued delayed restart early boundary one no-rearm bad-spacing; do
+  for scenario in "${cases[@]}"; do
     pkg="$out/$policy-$scenario"
     python3 tools/build_native_el0.py --out "$pkg" --board virt --policy "$policy" "${quantum[@]}" \
       --elf "$out/sender.elf" --peer-elf "$out/receiver.elf" --peer-elf "$out/supervisor.elf" \
@@ -66,7 +69,7 @@ for policy in fifo rr; do
       --safety-channel --loan-route 0:1
     python3 tools/native_el0_capture.py "$out/cap-$policy-$scenario" "$pkg/kernel.elf" \
       "$out/sender.elf" "$app/sender/src/main.rs" "$revision" --manifest "$pkg/manifest.json" \
-      --plain --expect-exit 71 --timeout 25
+      --plain --expect-exit 71 --timeout 25 --uart-limit 8388608
   done
 done
 ```
@@ -81,13 +84,15 @@ Read each symbol using its own ELF and process page-table root. Arrays have fixe
 | --- | --- |
 | safety_sender_header | Magic, case ID, epoch, Hz, unexpected syscall-result count |
 | safety_sender_rows, safety_sender_count | Planned release tick, actual creation/start, actual end, mode, input kind, generation, sequence, wire issue tick, loan handle, acquire result, publish result |
-| safety_sender_bytes | Entire 44-byte frame per sender row. Modes 0,1,2 are acquire/publish, stage only, and retry prior handle. Input kinds 0–9 are nominal, CRC, data ID, future, gap, duplicate, channel, late, prior generation and observed-time issuance. |
+| safety_sender_bytes | Entire 44-byte frame per sender row. Modes 0,1,2 are acquire/publish, stage only, and retry prior handle. Input kinds 0–9 are nominal, CRC, data ID, future, gap, duplicate, channel, late, prior generation and observed-time issuance. Kind 10 selects the fixed active-case input in the table above. |
 
 | Controller, slot 1 | Layout |
 | --- | --- |
 | safety_receiver_header | Magic, case, epoch, Hz, sequence/issue disagreement count, internal run status |
 | safety_activations, safety_activation_count | Planned release, actual wake, post-CHECK stamp, post-COMPLETE stamp, entry generation/flags, private expiry latch, two receive statuses, private/kernel rearm status, end flags/sequence/issue, private sequence/issue/recovery/enabled/faulted |
 | safety_received_rows, safety_received_bytes, safety_received_count | Activation index, attempt index, handle, VA, length, library status (Error enum code), kernel COMMIT status, private decision stamp, observed end stamp, kernel generation/flags/sequence, four private valid-state words before, four after. The four words are sequence, issue, permit and recovery count. Byte rows are the actual private copies. |
+| safety_active_received | One row per active-case receive. Each half records private generation/enabled/fault and kernel tick/generation/flags/sequence/issue, before and after validation. |
+| safety_active_ack | LAST_SAMPLE request and reply, info status, private generation/sequence/issue/permit/enabled/fault, kernel tick/generation/flags/sequence/issue. |
 | safety_exact_clock_control | A deterministic private clone of the live seq 3 receiver in collision/phase. Fields are present, last issue, expiry tick, latch one tick before, latch at equality, same-tick next-frame rejection, final sequence/enabled/faulted, worst-phase next-check tick, its latch, its enabled bit. This clock-input control never drives ENABLE. |
 | safety_exact_rearm_control | In early/boundary, independent receiver copies receive exact 15 ms and 20 ms clock inputs after the observed qualifying pair. Fields are present, first tick/status/enabled, second tick/status/enabled. An absent row indicates that the observed pair was unavailable in time. |
 
@@ -95,6 +100,8 @@ Read each symbol using its own ELF and process page-table root. Arrays have fixe
 | --- | --- |
 | safety_supervisor_header | Magic, case, epoch, Hz, unexpected observation count, internal run status |
 | safety_supervisor_rows, safety_supervisor_count | Planned tick, actual before/after, command (0 observation), generation argument, actual/expected return, before/after flags, before/after generation, before/after sequence, before/after last issue, comparison result |
+| safety_active_ipc | Four rendezvous rows containing peer PID, request, reply and status. The final two rows serve the staged-loan role case. |
+| safety_wrong_owner | Presence, two counter bounds, signed acquire result, generations before/after, flags before/after, sequences before/after, issues before/after, expected-state flag and cleanup status. |
 | safety_live_startup | Observed first and second wire issues, sampled pre-rearm tick, exact-spacing predicate, expected eligibility on this run |
 
 Use kernel `NATIVE SAFETY EVENT` rows and `jnox_virtual_permit_enable` RAM for independent state-transition evidence. The producer's before/after calls, the controller's model and the supervisor's polling each answer different questions. Type 11 brackets actual publication; type 7 records authenticated receive data; type 4 brackets injection; type 3 records detection; type 2 captures actual atomic output transition; type 10 brackets COMPLETE. Check dropped records. Compare requested release/issue ticks against actual brackets before calling two operations simultaneous. The deterministic equality rows can accompany a scheduled guest observation when exact guest-tick coincidence was missed.

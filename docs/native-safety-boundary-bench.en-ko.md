@@ -17,3 +17,11 @@ The original normal-clock FIFO and RR observations were late. Preserve both. Ins
 정상 클록 FIFO/RR 첫 관측은 모두 늦었으며 그대로 보존한다. 각 정책의 collision/phase 네 위치를 별도로 동결한다. 같은 실제 EL0 송신자·제어기·감독자와 단일 검사 자극을 사용하고 위 고정 icount 설정, 전체 명령행, 실행 파일 해시와 CNTFRQ를 기록한다. 타이머가 목표에 도달한 뒤에도 게시는 명령을 실행해야 한다. qtest 장치 시간 조절로 사용자 작업의 완료를 입증할 수 없다.
 
 마지막 수신 이슈 I와 주파수 F로 D와 H를 정확히 계산한다. 켜진 출력과 동일 세대 다음 순번을 사용한다. 새 세대 열기는 초기화이므로 다른 사례다. 성공한 이벤트 11의 두 끝이 D인지, 실제 만료 판단 피연산자도 D인지 확인하고 수신·거부·래치·실제 출력 전이를 연결한다. D를 포함하는 넓은 구간은 미정이다. phase는 D−1의 실제 신선 판정과 정확히 H틱 뒤 다음 검사의 만료를 요구한다. 중간 검사도 모두 추적한다. 기록이 부족하면 별도 빌드에서 원래 판단 시각 피연산자·결과·순번 및 손실을 기록한다. 첫 실행과 편차를 보존하며 해상도나 계측이 충분하지 않으면 미관측으로 남긴다. 공학용 관측과 정상 클록 수용은 별도로 판정한다.
+
+## Native REARM at 15 and 20 ms / 네이티브 재무장 15·20 ms
+
+Reserve four separate cold cases at the original 62.5 MHz counter frequency, FIFO and RR at each age. Boot with ENABLE low and the gate open in a new generation. Record successful commits of two consecutive set permits with wire issues I and I + 625,000 ticks. Tag scheduled wire issues explicitly. For the first supervisor REARM call, retain the exact counter value passed to `eligible`, its decision, the authenticated caller, generation, both permit issues and the pending command state. Require the original two-frame streak and no earlier REARM. The observation build must reuse the actual decision sample.
+
+At I + 937,500 ticks (15 ms), require supervisor acceptance, successful controller consumption while both permits are fresh, then a bracketed ENABLE 0→1 and readback. At I + 1,250,000 ticks (20 ms), require refusal on the first command with the first permit exactly expired, no pending command, and output still low. Score attempted deadlines and recorded operand ticks separately with signed deviations and zero safety-event loss. Retain all first captures, including any miss. An admissible result for one operation supplies no timing bound for the other operation or for normal-clock phase completion.
+
+원래 62.5 MHz에서 두 재무장 나이와 FIFO·RR을 조합해 네 번 따로 부팅한다. 동일 세대의 연속 허가 두 건을 실제 반영한 뒤, 감독자 첫 명령의 판정에 쓰인 카운터 값과 허가 두 건의 발행 시각을 보존한다. 15 ms에는 명령 수락, 제어기의 유효성 재확인, 가상 출력의 상승과 판독까지 확인한다. 20 ms에는 첫 허가가 정확히 만료된 순간의 거부, 대기 명령 없음, 출력 차단 유지를 확인한다. 요청 시각과 실제 판정 시각의 차이, 첫 실행의 실패와 기록 손실을 함께 남긴다.
