@@ -76,12 +76,17 @@ static int clock_ns(clockid_t id, uint64_t *ns)
     return 1;
 }
 
+#ifdef AMC_PAIRED_SAMPLE
+#include "../native-amc-clock/sample.h"
+#else
 static int sample(uint64_t count, struct stamp *s)
 {
     s->count = count;
     return clock_ns(CLOCK_PROCESS_CPUTIME_ID, &s->cpu_ns) &&
            clock_ns(CLOCK_MONOTONIC, &s->monotonic_ns);
 }
+
+#endif
 
 static void remember(struct stamp s)
 {
