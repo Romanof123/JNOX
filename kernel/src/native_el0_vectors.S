@@ -10,11 +10,15 @@
     .space 124
 .endm
 native_el0_vectors:
-    .rept 8                        // Current EL, SP_EL0 and SP_EL1
+    .rept 5                        // Current EL SP0 slots, then EL1h sync
         native_vector .Lunexpected
     .endr
+    native_vector .Lidle_irq      // Current EL, SP_EL1 IRQ
+    native_vector .Lunexpected
+    native_vector .Lunexpected
     native_vector .Luser_sync     // Lower EL, AArch64 synchronous exception
-    .rept 7                        // Remaining A64 slots and all A32 slots
+    native_vector .Luser_irq
+    .rept 6                        // Remaining A64 slots and all A32 slots
         native_vector .Lunexpected
     .endr
 .size native_el0_vectors, .-native_el0_vectors
@@ -101,7 +105,7 @@ native_el0_enter:
     wfe
     b .Lpark
 
-.Luser_sync:
+.macro save_native_frame
     msr daifset,#15
     sub sp,sp,#816
     native_integer_pairs stp
@@ -118,6 +122,16 @@ native_el0_enter:
     mrs x10,fpsr
     stp x9,x10,[sp,#288]
     native_simd_pairs stp
+.endm
+
+.Luser_irq:
+    save_native_frame
+    bl native_sleep_irq
+    cbnz x0,.Lunexpected         // A running EL0 process cannot be blocked.
+    b .Lrestore
+
+.Luser_sync:
+    save_native_frame
     mov x0,sp
     mov x1,#0x400
     bl native_el0_sync
@@ -131,6 +145,8 @@ native_el0_enter:
     mov w11,#0x4a01
     cmp w10,w11
     b.ne .Lunexpected
+    str x0,[sp]
+.Lrestore:
     ldp x9,x10,[sp,#256]
     tst x9,#0x1f
     b.ne .Lunexpected
@@ -142,9 +158,44 @@ native_el0_enter:
     msr fpcr,x9
     msr fpsr,x10
     native_simd_pairs ldp
-    str x0,[sp]
     native_integer_pairs ldp
     ldr x30,[sp,#240]
     add sp,sp,#816
     clrex
     eret
+
+// Keep the calling Rust continuation and its NativeFrame on the process
+// stack. x19 holds the process SP throughout idle (AAPCS callee-saved).
+.global native_sleep_switch
+.type native_sleep_switch,%function
+native_sleep_switch:
+    stp x19,x30,[sp,#-16]!
+    mov x19,sp
+    mov sp,x0
+    msr daifclr,#2
+    isb
+.global native_sleep_idle
+native_sleep_idle:
+    wfi
+    b native_sleep_idle
+.size native_sleep_switch,.-native_sleep_switch
+
+.Lidle_irq:
+    // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
+    // Its only live value is x19. IRQ entry masked delivery before this call.
+    bl native_sleep_irq
+    cbz x0,.Lidle_eret
+    adr x9,.Lleave_idle
+    msr elr_el1,x9
+    mrs x9,spsr_el1
+    orr x9,x9,#0x80
+    msr spsr_el1,x9
+.Lidle_eret:
+    eret
+
+.Lleave_idle:
+    mov sp,x19
+.global native_sleep_resume
+native_sleep_resume:
+    ldp x19,x30,[sp],#16
+    ret

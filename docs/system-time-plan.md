@@ -2,7 +2,7 @@
 
 [English](system-time-plan.en.md) · CHG-077 · [CAP-001·CAP-012](platform-capabilities.md)
 
-기존 AArch64 작업은 물리 카운터를 읽고 비교 인터럽트를 설정한다. EVD-014는 Pi 4 모델에서 PPI 30의 선점과 저장 PC 복귀를 관측했고 EVD-017은 가상 CPU 2개를 사용했다. 이 결과를 이식 가능한 시계 서비스의 출발점으로 삼는다. 단일 코어 AArch64 QEMU virt에서 네이티브 SDK를 통해 EL0의 C·Rust 응용 프로그램이 단조 시계를 읽을 수 있다. 실제 날짜·시각, RTC 영속성, 수면 및 타이머 API는 계획 단계다. [응용 프로그램 시계 근거](evidence/evd-112.md) [Pi 타이머 근거](evidence/evd-014.md) · [SMP 근거](evidence/evd-017.md)
+기존 AArch64 작업은 물리 카운터를 읽고 비교 인터럽트를 설정한다. EVD-014는 Pi 4 모델에서 PPI 30의 선점과 저장 PC 복귀를 관측했고 EVD-017은 가상 CPU 2개를 사용했다. 이 결과를 이식 가능한 시계 서비스의 출발점으로 삼는다. 단일 코어 AArch64 QEMU virt에서 네이티브 SDK를 통해 EL0의 C·Rust 응용 프로그램이 단조 시계를 읽을 수 있다. 같은 구성의 네이티브 SDK는 단조 시계 절대 기한까지 대기하는 호출도 제공한다. 실제 날짜·시각, RTC 영속성, 상대 대기 및 타이머 객체 API는 계획 단계다. [절대 기한 대기](evidence/evd-113.md) [응용 프로그램 시계 근거](evidence/evd-112.md) [Pi 타이머 근거](evidence/evd-014.md) · [SMP 근거](evidence/evd-017.md)
 
 ## 시계 계약
 

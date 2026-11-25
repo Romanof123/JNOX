@@ -195,11 +195,24 @@ pub(crate) fn copy_to_user(addr: usize, bytes: &[u8; 16]) -> bool {
     if !user_range(addr, bytes.len(), true) {
         return false;
     }
+    unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), user_backing(addr), bytes.len()) };
+    true
+}
+
+pub(crate) fn copy_from_user(addr: usize, bytes: &mut [u8; 16]) -> bool {
+    if !user_range(addr, bytes.len(), false) {
+        return false;
+    }
+    unsafe { ptr::copy_nonoverlapping(user_backing(addr), bytes.as_mut_ptr(), bytes.len()) };
+    true
+}
+
+// The caller has validated the complete span against the immutable mappings.
+fn user_backing(addr: usize) -> *mut u8 {
     let (backing, base) = if addr < IMAGE_HI {
         ((&raw mut IMAGE_RAM).cast::<u8>(), IMAGE_LO)
     } else {
         ((&raw mut STACK_RAM).cast::<u8>(), STACK_BOTTOM)
     };
-    unsafe { core::ptr::copy_nonoverlapping(bytes.as_ptr(), backing.add(addr - base), bytes.len()) };
-    true
+    backing.wrapping_add(addr - base)
 }

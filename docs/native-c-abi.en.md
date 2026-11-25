@@ -54,3 +54,23 @@ The manifest records the selected C file or prelinked ELF and its SHA-256. Expli
 The default replay checks the original exit-37 workload. For that control, run `python3 tools/build_native_el0.py --out startup-package`.
 
 Track the native service in #286 alongside #12, #8, #21 and #162. REQ-014 covers development and observability APIs. REQ-018 separately requires independent response to clock and other faults. [Requirements](requirements.en.md)
+
+## Sleep until a monotonic deadline
+
+Use the same boot-domain clock as the deadline. For periodic reporting, add each period to the previous deadline so that a late wake leaves the next target anchored to the original schedule. The profile covers one native process on one awake AArch64 QEMU virt CPU.
+
+In C, read the current time with `clock_gettime(CLOCK_MONOTONIC, &target)`, advance and normalize the timespec, then call `clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &target, 0)`. Check the return value directly. Success is zero and failures return a positive errno code. The function preserves `errno` and leaves a supplied remaining-time object untouched. The [complete C example](../examples/portability/periodic_report.c) advances the deadline by 40 ms three times.
+
+In Rust, obtain a `core::time::Duration` with `jnox_native::monotonic_time()?`, add the interval with `checked_add`, then call `jnox_native::sleep_until(target)?`. An already-due deadline returns immediately. The [complete Rust example](../examples/native-periodic-rust/src/main.rs) reads the clock after each wake and checks that it reached the deadline.
+
+From the repository root on Linux or WSL, with the native SDK build and capture dependencies installed, package and run both examples:
+
+~~~sh
+run=$(mktemp -d)
+rev=$(git rev-parse HEAD)
+python3 tools/build_native_el0.py --source examples/portability/periodic_report.c --out "$run/c"
+sh sdk/native-aarch64/build-rust.sh examples/native-periodic-rust/Cargo.toml "$run/report.elf"
+python3 tools/build_native_el0.py --elf "$run/report.elf" --out "$run/rust"
+python3 tools/native_el0_capture.py "$run/c-first" "$run/c/kernel.elf" "$run/c/user.elf" examples/portability/periodic_report.c "$rev" --expect-exit 0
+python3 tools/native_el0_capture.py "$run/rust-first" "$run/rust/kernel.elf" "$run/rust/user.elf" examples/native-periodic-rust/src/main.rs "$rev" --expect-exit 0
+~~~
