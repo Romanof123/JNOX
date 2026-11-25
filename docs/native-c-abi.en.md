@@ -186,3 +186,16 @@ python3 tools/build_native_el0.py --out strict --policy mlq --quantum-ticks 6250
 ~~~
 
 For feedback queues, use `--policy mlfq --allotment-ticks 625000,1250000,2500000 --boost-ticks 6250000` with the same ELF arguments and omit the class parameters. These are physical counter ticks. On the reference 62.5 MHz clock the three level allotments are 10, 20 and 40 ms and the boost interval is 100 ms. The [worked examples](../examples/native-multilevel/README.md) build the C reporter, CRC and yield workers and Rust histogram and boot the packages.
+
+## Private native process arguments
+
+Each occurrence of `--arg`, `--peer-arg` or `--peer2-arg` adds one UTF-8 string to slot 0, 1 or 2, respectively. The fixed first argument is /bin/app. Quote spaces, pass an empty string explicitly, and use `--arg=-west` for a leading dash. Per slot, up to 15 extra strings fit in 1,024 bytes including their NUL terminators. The native main receives argc and argv on its own stack. A slot with no extras preserves the original 80-byte layout at SP 0x01010fb0, including pointers, terminators and padding. The startup probe retains its separate original 80-byte layout.
+
+~~~sh
+sh sdk/native-aarch64/build.sh examples/native-argv/sensor.c sensor.elf
+python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
+    --arg sum --arg 16 --arg 32 --arg 'west rack' \
+    --peer-elf sensor.elf --peer-arg minmax --peer-arg 64 --peer-arg 96 --peer-arg ''
+~~~
+
+[Boot the package and try the Rust UTF-8 example](../examples/native-argv/README.md)
