@@ -46,3 +46,17 @@ REQ-019 · VER-019 · EVD-311 · [#400](https://github.com/Romanof123/JNOX/issue
 All 55 measured new-case boots met the separately evaluated virtual 25/5/30 ms response limits after actual gate closure. Each exceeded the 5 ms maximum interval between completions elsewhere in the run. All 59 cold launches, including the four original controls, the crossed store brackets and all operating-clock samples, are preserved. The original collision controls never established enabled output; [#401](https://github.com/Romanof123/JNOX/issues/401) tracks the open-gate arrival case. [Original captures, executable analysis and replay](evidence/native-permit-worst-phase.en-ko.md).
 
 순번 3의 실제 수신과 출력 활성화를 확인한 뒤 게이트를 닫았다. 명령 수 기반 시계에서 FIFO와 RR 각각 보호 판정 두 건의 시각을 3회씩, 별도 실행에서 실제 활성화 종료 저장 두 건의 시각을 3회씩 재현했다. 종료 저장 사이에는 다음 CHECK가 먼저 래치를 설정했다. 수신기 자체 시각, 보호 판정, 출력 전이와 종료 저장을 각각 측정했다. 새 시험 55회 모두 차단 후 25/5/30 ms 반응 한도를 지켰고, 전체 실행에서는 매번 5 ms 완료 간격을 초과했다. [한·영 근거와 원본](evidence/native-permit-worst-phase.en-ko.md).
+
+## Open-gate arrival ordering / 게이트가 열린 상태의 도착 순서
+
+REQ-019 · VER-019 · EVD-311 · [#401](https://github.com/Romanof123/JNOX/issues/401). Each of 12 native cold boots established generation 1, sequence 3 and ENABLE high before the sender staged the same valid sequence-4 loan it later published. All apps kept their authenticated roles and the gate stayed open. FIFO and RR each used three fixed publication calendars with the ordinary clock and instruction counting. The nominal expiry was D, twenty milliseconds after the third wire issue. The actual control decision was late in every boot.
+
+| Fixed publication calendar | Actual order across the four boots | Protected outcome |
+| --- | --- | --- |
+| E+39 ms, one millisecond before D | Publication before D and before the expiry CHECK | The already queued permit did not renew sequence 3. The output fell. |
+| E+40 ms, the same requested time as D | D elapsed, then publication completed, then CHECK observed expiry | The queued frame was received after expiry and rejected. |
+| E+41 ms, one millisecond after D | CHECK observed expiry before publication | Later delivery did not re-enable the output. |
+
+All 12 terminal register readbacks were low. The sender staging and publication, kernel receipt and receiver's private 44 bytes agreed. The protected controller kept sequence 3; the supervisor subsequently observed the latched fault. Actual CHECK−D ranged from +134 to +956 ticks on the instruction-count clock and from +4,033 to +25,693 ticks on the default clock. Every boot had a completed-check gap above 5 ms; the largest observed conservative upper bound was 6.207904 ms. Publication coincident with the exact expiry decision remains open. A separate offline instruction and clock analysis identifies a mandatory cross-role exception path in the inspected kernels. [Twelve original captures and independent replay](evidence/native-permit-arrival-first.en-ko.md) · [Instruction-clock evidence](evidence/native-permit-collision-order.en-ko.md).
+
+12회 모두 게이트가 열려 있고 실제 출력이 켜진 상태에서 정상 순번 4 프레임을 시험했다. 네 번은 D 전에 게시됐고 네 번은 D 이후 실제 만료 검사 전에 게시됐으며 네 번은 검사 뒤 게시됐다. 모두 이전 허가의 만료를 래치하고 출력을 차단했다. 동시 시각을 요청한 네 번도 실제 게시와 판정은 다른 틱에 있었다. 전체 검사 완료 간격의 보수적 상한은 최대 6.207904 ms였다. [실측 표 및 원본](evidence/native-permit-arrival-first.en-ko.md).
