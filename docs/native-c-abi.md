@@ -176,3 +176,13 @@ ELF 순서에 맞춰 예산,주기 튜플을 하나씩 지정한다. 단위는 5
 ## 유한 네이티브 작업의 격자형 LLF
 
 네이티브 EDF와 같은 100 ms 격자의 시작 가능 시각·절대 마감·예상 비용 튜플에 `--policy llf`를 지정한다. 커널은 격자 표본에서 부호 있는 여유 시간(마감 − 격자 번호 − 잔여 비용)이 가장 작은 작업을 선택한다. 새 작업이 들어오지 않아도 대기 작업이 선점할 수 있고 여유 시간이 같으면 실행 중인 작업을 유지한다. 예를 들어 체크섬 작업은 `--job 0,6,1`, 독립 빌드한 히스토그램은 `--peer-job 0,7,3`으로 지정한다. [실행 예제](../examples/native-llf/README.md)에 두 히스토그램 입력의 SDK 빌드·패키지·부팅 명령이 있다.
+
+## 네이티브 고정 클래스 및 피드백 큐
+
+고정 클래스는 `--policy mlq`로 지정한다. 주 앱에 `--class`, 각 동료에 ELF 순서대로 `--peer-class`를 지정하며 큰 클래스가 먼저 실행된다. `--quantum-ticks`는 같은 클래스의 순번 길이다. 예를 들어 경보 보고 앱을 클래스 7, CRC 앱을 클래스 1로 지정한다.
+
+~~~sh
+python3 tools/build_native_el0.py --out strict --policy mlq --quantum-ticks 625000 --elf report.elf --class 7 --peer-elf crc.elf --peer-class 1
+~~~
+
+피드백 큐는 같은 ELF 인자에 `--policy mlfq --allotment-ticks 625000,1250000,2500000 --boost-ticks 6250000`를 사용하고 클래스 인자를 생략한다. 시간 단위는 물리 카운터 틱이다. 기준 62.5 MHz 시계에서 세 단계의 할당량은 10·20·40 ms, 우선순위 복구 간격은 100 ms다. [실행 예제](../examples/native-multilevel/README.md)에서 C 보고·CRC·양보 앱 및 Rust 히스토그램 빌드와 패키지 부팅 명령을 확인할 수 있다.

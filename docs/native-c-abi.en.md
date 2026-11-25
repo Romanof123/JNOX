@@ -176,3 +176,13 @@ Specify one quota,period tuple per ELF in slot order, using counts of 50 ms slot
 ## Sampled LLF for finite native jobs
 
 Use `--policy llf` with the same 100 ms release, absolute deadline and estimated-cost tuples used by native EDF. At a grid sample the kernel chooses the smallest signed laxity (deadline minus grid index minus remaining cost). A waiting job can take over even when no job arrives. An equal-laxity incumbent keeps running. For example, package the checksum with `--job 0,6,1` and the independently built histogram with `--peer-job 0,7,3`. The [worked example](../examples/native-llf/README.md) gives the complete SDK build, package and boot commands for both histogram inputs.
+
+## Native class and feedback queues
+
+Use `--policy mlq` for fixed classes. Assign the primary with `--class` and each peer with `--peer-class` in ELF order; larger classes run first. `--quantum-ticks` sets the turn length among equal-class peers. For example, select class 7 for the alarm reporter and class 1 for CRC:
+
+~~~sh
+python3 tools/build_native_el0.py --out strict --policy mlq --quantum-ticks 625000 --elf report.elf --class 7 --peer-elf crc.elf --peer-class 1
+~~~
+
+For feedback queues, use `--policy mlfq --allotment-ticks 625000,1250000,2500000 --boost-ticks 6250000` with the same ELF arguments and omit the class parameters. These are physical counter ticks. On the reference 62.5 MHz clock the three level allotments are 10, 20 and 40 ms and the boost interval is 100 ms. The [worked examples](../examples/native-multilevel/README.md) build the C reporter, CRC and yield workers and Rust histogram and boot the packages.
