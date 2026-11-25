@@ -57,16 +57,16 @@ impl Session {
         self.gate && !self.fault && !self.rearmed && self.streak == 2
             && fresh(now,self.prior) && fresh(now,self.issue)
     }
-    fn supervisor(&mut self, cmd:u64, gen:u64) -> Result<(),i32> {
+    fn supervisor(&mut self, cmd:u64, generation:u64) -> Result<(),i32> {
         if self.dead { return Err(-32); }
         if cmd == 1 {
-            if gen != self.generation.checked_add(1).ok_or(-75)? { return Err(-116); }
+            if generation != self.generation.checked_add(1).ok_or(-75)? { return Err(-116); }
             drive(0);
             loans::invalidate();
-            *self = Self { generation:gen, gate:true, ..Self::default() };
+            *self = Self { generation, gate:true, ..Self::default() };
             return Ok(());
         }
-        if gen == 0 || gen != self.generation { return Err(-116); }
+        if generation == 0 || generation != self.generation { return Err(-116); }
         match cmd {
             2 => {
                 if self.pending || !self.eligible(counter()) { return Err(-11); }
@@ -83,7 +83,7 @@ impl Session {
                     self.snapshot = None;
                     loans::invalidate();
                 }
-                log(4,[before,counter(),cmd,gen,self.sequence,self.issue,0,0]);
+                log(4,[before,counter(),cmd,generation,self.sequence,self.issue,0,0]);
             }
             _ => return Err(-22),
         }
@@ -94,7 +94,7 @@ impl Session {
         let (_, b) = self.snapshot.take().ok_or(-11)?;
         self.released = false;
         let word = |off:usize| u64::from_le_bytes(b[off..off+8].try_into().unwrap());
-        let (gen,seq,issue,permit) = (word(8),word(16),word(24),u64::from(b[36]));
+        let (generation,seq,issue,permit) = (word(8),word(16),word(24),u64::from(b[36]));
         let mut crc = u32::MAX;
         for &byte in &b[..40] {
             crc ^= u32::from(byte);
@@ -106,8 +106,8 @@ impl Session {
         if self.fault { return Err(-110); }
         if !crc != u32::from_le_bytes(b[40..44].try_into().unwrap())
             || b[..8] != [1,1,44,0,1,0,1,1] || b[32..36] != 20u32.to_le_bytes()
-            || b[37..40] != [0;3] || permit > 1 || x[1..5] != [gen,seq,issue,permit]
-            || gen != self.generation || seq != self.sequence.checked_add(1).ok_or(-75)?
+            || b[37..40] != [0;3] || permit > 1 || x[1..5] != [generation,seq,issue,permit]
+            || generation != self.generation || seq != self.sequence.checked_add(1).ok_or(-75)?
             || (self.sequence != 0 && issue <= self.issue) { return Err(-22); }
         let now = counter();
         self.check(now);
