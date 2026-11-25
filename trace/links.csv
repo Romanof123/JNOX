@@ -2234,3 +2234,4 @@ VER-024,has-partial-evidence,EVD-304
 IMP-304,tested-in,EVD-304
 IPC-003,depends-on-policy,POL-002
 IPC-002,depends-on-policy,POL-002
+CHG-305,affects,REQ-024
