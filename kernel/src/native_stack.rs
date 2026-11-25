@@ -102,7 +102,7 @@ mod tests {
         assert_eq!(build(&args, false, 0, 4096, &mut bytes).unwrap().len, MAX_TAIL);
         assert!(build(&args, false, 3000, 4096, &mut bytes).is_none());
         assert!(build(&args, false, 0, 4097, &mut bytes).is_none());
-        assert!(build(&[&[]; 16], false, 0, 4096, &mut bytes).is_none());
+        assert!(build(&[&[] as &[u8]; 16], false, 0, 4096, &mut bytes).is_none());
         for arg in [&[b'x';1024][..], &[0xff], b"a\0b"] {
             assert!(build(&[arg], false, 0, 4096, &mut bytes).is_none());
         }
