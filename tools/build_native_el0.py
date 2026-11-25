@@ -391,7 +391,13 @@ def main():
                         help="grant a send right to another native FIFO/RR process's mailbox")
     parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
                         help="grant a notification right to another native FIFO/RR process")
+    parser.add_argument("--waitset", action="count", default=0,
+                        help="enable waitsets for configured mailbox or notification routes")
     args = parser.parse_args()
+    if args.waitset > 1:
+        parser.error("--waitset may appear only once")
+    if args.waitset and not (args.mailbox_route or args.notify_route):
+        parser.error("--waitset requires --mailbox-route or --notify-route")
     if len(args.threads) > 1:
         parser.error("--threads may appear only once")
     if args.threads and (not (args.elf or args.source) or args.peer_elf):
@@ -541,6 +547,9 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.waitset:
+        env["JNOX_NATIVE_WAITSET"] = "1"
+        metadata["waitset"] = True
     for kind, origin, endpoint, routes in grants:
         if routes:
             env[f"JNOX_NATIVE_{kind.upper()}_ROUTES"] = ",".join(f"{caller}:{dest}" for caller, dest in routes)
