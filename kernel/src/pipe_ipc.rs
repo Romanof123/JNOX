@@ -469,6 +469,49 @@ impl<const N: usize> PipeIpc<N> {
     }
 
     /// Trusted launcher operation. A user-supplied PID cannot authorize it.
+    /// Install only the requested pipe ends in a dormant child's standard
+    /// descriptors. All fallible checks precede either new reference.
+    pub fn redirect(
+        &mut self,
+        parent: usize,
+        child: usize,
+        stdin: Option<usize>,
+        stdout: Option<usize>,
+    ) -> Result<(), i32> {
+        self.process(parent)?;
+        let target = self.process(child)?;
+        if parent == child {
+            return Err(-22);
+        }
+        if target.fds[0].is_some() || target.fds[1].is_some() {
+            return Err(-16);
+        }
+        let mut grants = [None; 2];
+        for (dest, source) in [stdin, stdout].into_iter().enumerate() {
+            if let Some(fd) = source {
+                let entry = self.fd(parent, fd)?;
+                if self.descriptions[entry.description].unwrap().writer != (dest == 1) {
+                    return Err(-9);
+                }
+                grants[dest] = Some(entry.description);
+            }
+        }
+        if target.fds.iter().flatten().count() + grants.iter().flatten().count() > FD_LIMIT {
+            return Err(-24);
+        }
+        for (dest, grant) in grants.into_iter().enumerate() {
+            if let Some(id) = grant {
+                self.descriptions[id].as_mut().unwrap().refs += 1;
+                self.processes[child].fds[dest] = Some(Fd {
+                    description: id,
+                    cloexec: false,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    /// Trusted launcher operation. A user-supplied PID cannot authorize it.
     pub fn inherit(&mut self, src_pid: usize, src_fd: usize, dst_pid: usize, dst_fd: usize) -> Result<(), i32> {
         let old = self.fd(src_pid, src_fd)?;
         if (src_pid, src_fd) != (dst_pid, dst_fd) {
@@ -557,6 +600,27 @@ impl<const N: usize> PipeIpc<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn child_redirection_has_no_partial_reference_on_second_failure() {
+        let mut core = PipeIpc::<3>::new();
+        let (r, w) = core.pipe(0, O_CLOEXEC).unwrap();
+        let original = core.snapshot(0).unwrap();
+        assert_eq!(core.redirect(0, 1, Some(r), Some(r)), Err(-9));
+        assert_eq!(core.getfd(1, 0), Err(-9));
+        assert_eq!(core.snapshot(0).unwrap(), original);
+        core.redirect(0, 1, Some(r), Some(w)).unwrap();
+        assert_eq!(core.snapshot(0).unwrap().fd_refs, 4);
+        assert_eq!(core.getfd(1, 0), Ok(0));
+        assert_eq!(core.getfd(1, 1), Ok(0));
+        assert_eq!(core.getfd(1, r), Err(-9));
+        assert_eq!(core.redirect(0, 1, None, Some(w)), Err(-16));
+        core.redirect(0, 2, None, Some(w)).unwrap();
+        assert_eq!(core.write(2, 1, b"ok"), Ok(Some(2)));
+        let mut bytes = [0; 2];
+        assert_eq!(core.read(1, 0, &mut bytes), Ok(Some(2)));
+        assert_eq!(&bytes, b"ok");
+    }
 
     #[test]
     fn wrapping_stream_two_writers_short_atomic_rejection_partial_large_writes() {

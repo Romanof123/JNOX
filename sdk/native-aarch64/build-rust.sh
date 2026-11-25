@@ -3,8 +3,10 @@
 set -eu
 local_socket=0
 pipe_define=
+shell_define=
 while [ "$#" -gt 0 ]; do
     case "$1" in
+        --native-shell) shell_define=-DJNOX_SDK_NATIVE_SHELL; pipe_define=-DJNOX_SDK_PIPES ;;
         --pipes) pipe_define=-DJNOX_SDK_PIPES ;;
         --local-socket) local_socket=1 ;;
         *) break ;;
@@ -12,14 +14,14 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 if [ "$#" -ne 2 ]; then
-    echo "usage: $0 [--pipes] [--local-socket] Cargo.toml OUTPUT.elf" >&2
+    echo "usage: $0 [--pipes|--native-shell] [--local-socket] Cargo.toml OUTPUT.elf" >&2
     exit 2
 fi
 sdk=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 clang --target=aarch64-none-elf -I"$sdk/include" -c "$sdk/start.S" -o "$tmp/start.o"
-clang ${pipe_define:+"$pipe_define"} --target=aarch64-none-elf -std=c11 -O2 -ffreestanding -nostdinc \
+clang ${pipe_define:+"$pipe_define"} ${shell_define:+"$shell_define"} --target=aarch64-none-elf -std=c11 -O2 -ffreestanding -nostdinc \
     -fno-pic -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables \
     -mgeneral-regs-only -I"$sdk/include" -c "$sdk/io.c" -o "$tmp/io.o"
 manifest=$1

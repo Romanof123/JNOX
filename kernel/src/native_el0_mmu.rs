@@ -127,6 +127,18 @@ static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
 static mut UART: Table = Table::EMPTY;
 static mut GIC: Table = Table::EMPTY;
+#[cfg(jnox_native_shell)]
+const SHELL_ROM_VA: usize = 0x0180_0000;
+#[cfg(jnox_native_shell)]
+const SHELL_ROM_BYTES: usize = 2 * PAGE;
+#[cfg(jnox_native_shell)]
+static mut SHELL_ROM_TABLE: Table = Table::EMPTY;
+#[cfg(jnox_native_shell)]
+#[unsafe(no_mangle)]
+static jnox_native_shell_rom: Storage<SHELL_ROM_BYTES> =
+    Storage(*include_bytes!(env!("JNOX_NATIVE_ROM_IMAGE")));
+#[cfg(jnox_native_shell)]
+static mut SHELL_STACK_INSTALLED: [bool; SPACE_CAPACITY] = [false; SPACE_CAPACITY];
 // The horizon word has a privileged writable identity mapping and one
 // read-only EL0 alias shared by all participating processes.
 #[cfg(jnox_native_weighted_notify)]
@@ -270,6 +282,8 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         link(&raw mut space.low, WEIGHTED_NOTIFICATION_VA, 21, &raw mut WEIGHTED_NOTIFICATION_TABLE);
         #[cfg(jnox_native_loan_ipc)]
         loan::install_table(pid, &raw mut space.low);
+        #[cfg(jnox_native_shell)]
+        link(&raw mut space.low, SHELL_ROM_VA, 21, &raw mut SHELL_ROM_TABLE);
         #[cfg(jnox_native_amc_clock_page)]
         {
             let table = &raw mut AMC_CLOCK_TABLES[pid];
@@ -394,6 +408,11 @@ unsafe fn install_spaces<'a>(
         #[cfg(jnox_native_weighted_notify)]
         page(&raw mut WEIGHTED_NOTIFICATION_TABLE, WEIGHTED_NOTIFICATION_VA,
              (&raw const WEIGHTED_NOTIFICATION_PAGE) as usize, NORMAL | USER | RO | NG | PXN | UXN);
+        #[cfg(jnox_native_shell)]
+        for offset in (0..SHELL_ROM_BYTES).step_by(PAGE) {
+            let pa = (&raw const jnox_native_shell_rom) as usize + offset;
+            page(&raw mut SHELL_ROM_TABLE, SHELL_ROM_VA + offset, pa, NORMAL | USER | RO | NG | PXN | UXN);
+        }
         for pid in 0..count {
             populate(pid, plans[pid].borrow(), stack_tails[pid]);
             #[cfg(jnox_native_amc)]
@@ -436,6 +455,37 @@ fn irq_masked() -> bool {
     daif & (1 << 7) != 0
 }
 
+/// Called on masked CPU0 while the scheduler still owns the child's dormant
+/// lifecycle. Re-checking before commit allows FD redirection to be preflighted.
+#[cfg(jnox_native_shell)]
+pub(crate) fn validate_dormant_stack(pid: usize, sp: usize, bytes: &[u8]) -> Result<(), &'static str> {
+    if pid == 0 || space_id(pid).is_none() || !irq_masked() || active() != Some(0) {
+        return Err("shell child stack context");
+    }
+    if unsafe { SHELL_STACK_INSTALLED[pid] } { return Err("shell child stack already installed"); }
+    if bytes.is_empty() || bytes.len() > 1200 || sp < STACK_BOTTOM || sp % 16 != 0
+        || sp.checked_add(bytes.len()) != Some(STACK_TOP) {
+        return Err("shell child stack bounds");
+    }
+    Ok(())
+}
+
+/// Replace the packaged placeholder stack through its privileged identity
+/// alias. No user mappings or registers change here. The scheduler publishes
+/// the validated SP and marks the child runnable after the redirects commit.
+#[cfg(jnox_native_shell)]
+pub(crate) fn install_dormant_stack(pid: usize, sp: usize, bytes: &[u8]) -> Result<(), &'static str> {
+    validate_dormant_stack(pid, sp, bytes)?;
+    unsafe {
+        let stack = (&raw mut SPACES[pid].stack_ram).cast::<u8>();
+        ptr::write_bytes(stack, 0, sp - STACK_BOTTOM);
+        ptr::copy_nonoverlapping(bytes.as_ptr(), stack.add(sp - STACK_BOTTOM), bytes.len());
+        asm!("dsb ishst", options(nostack, preserves_flags));
+        SHELL_STACK_INSTALLED[pid] = true;
+    }
+    Ok(())
+}
+
 /// Scheduler owns EL1 and keeps IRQ masked until the selected frame returns.
 /// Slot ASIDs are never recycled. Live loan PTE changes invalidate their
 /// own VA/ASID before returning. Switching roots needs no additional TLBI.
@@ -458,6 +508,14 @@ fn translation(pid: usize, addr: usize, write: bool) -> Option<usize> {
     #[cfg(jnox_native_loan_ipc)]
     if loan::contains_range(addr, addr) {
         return loan::translation(pid, addr, write);
+    }
+    #[cfg(jnox_native_shell)]
+    if (SHELL_ROM_VA..SHELL_ROM_VA + SHELL_ROM_BYTES).contains(&addr) {
+        let offset = addr - SHELL_ROM_VA;
+        let base = (&raw const jnox_native_shell_rom) as usize;
+        let expected = (base + (offset & !(PAGE - 1))) as u64 | NORMAL | USER | RO | NG | PXN | UXN;
+        let pte = unsafe { SHELL_ROM_TABLE.0[offset / PAGE] };
+        return (!write && pte == expected).then_some(base + offset);
     }
     unsafe {
         let space = &raw const SPACES[pid];
@@ -494,6 +552,8 @@ fn can_copy(pid: usize, addr: usize, len: usize, write: bool) -> bool {
     let admitted = (addr >= IMAGE_LO && end < IMAGE_HI) || (addr >= STACK_BOTTOM && end < STACK_TOP);
     #[cfg(jnox_native_loan_ipc)]
     let admitted = admitted || loan::contains_range(addr, end);
+    #[cfg(jnox_native_shell)]
+    let admitted = admitted || (addr >= SHELL_ROM_VA && end < SHELL_ROM_VA + SHELL_ROM_BYTES);
     if !admitted {
         return false;
     }
@@ -505,9 +565,9 @@ pub(crate) fn user_range(addr: usize, len: usize, write: bool) -> bool {
 }
 
 pub(crate) fn user_return_pc(addr: usize) -> bool {
-    #[cfg(not(jnox_native_loan_ipc))]
+    #[cfg(not(any(jnox_native_loan_ipc, jnox_native_shell)))]
     { user_range(addr, 4, false) }
-    #[cfg(jnox_native_loan_ipc)]
+    #[cfg(any(jnox_native_loan_ipc, jnox_native_shell))]
     {
         if addr % 4 != 0 || !(IMAGE_LO..IMAGE_HI).contains(&addr) || !irq_masked() {
             return false;

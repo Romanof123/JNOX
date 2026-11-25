@@ -16,3 +16,19 @@ Named FIFO permissions come from the package grants. mkfifo accepts the normal C
 Rust functions under jnox_native::pipes return Result with negative errno. pipe2 returns two OwnedFd values; open_fifo takes a byte slice, Access::Read or Access::Write, and flags. OwnedFd reads/writes slices, duplicates with dup or dup2, exposes descriptor and status flags, and closes on drop. Explicit close consumes the value. For an exclusively owned inherited endpoint, unsafe OwnedFd::from_raw_fd transfers closing responsibility to Rust. into_raw_fd transfers it back without closing.
 
 With the local-socket client sources installed, both SDK switches may be passed in either order. The socket linker wrappers own descriptors 64 through 67 and delegate other read/write/close calls to io.c. Pipe mode adds no duplicate linker wrappers. Ordinary SDK builds without --pipes compile the original I/O branches.
+
+## Native shell catalog profile
+
+For the shell and each utility, build with --native-shell. This enables --pipes and the read-only boot-file library. The kernel package must supply the native shell catalog and map the 8,192-byte JNOXROM1 image at 0x01800000 in each participating process. This option relies on that mapping.
+
+~~~sh
+sdk/native-aarch64/build.sh --native-shell shell.c shell.elf
+sdk/native-aarch64/build.sh --native-shell cat.c cat.elf
+sdk/native-aarch64/build.sh --native-shell wc.c wc.elf
+~~~
+
+Include jnox/process.h. jnox_spawn(program, argv, stdin_fd, stdout_fd) passes the NUL-terminated program name, null-terminated argv vector, and signed redirections to native service 50. Pass -1 for an ordinary standard stream. Success returns the child's PID. jnox_waitpid(pid, &status) uses native service 51 and returns that same PID on success, with the signed native exit code in status. A null status pointer discards the code. These functions use -1 and positive errno on failure.
+
+After checking the named FIFO service, ordinary open finds an exact boot-file name of at most 31 bytes. Each process owns four independent read-only descriptions in slots 16 through 19. Reads copy the smaller of the requested count and remaining bytes, advance that description's cursor, and return zero at EOF. Close releases the description. A malformed header, out-of-bounds entry or ambiguous requested name is rejected before opening the file. Boot descriptors stay local to the opening process.
+
+After pipe ownership and closed-descriptor checks, ordinary stdout and stderr writes use native service 4. The shell runtime validates the user span and supplies console output. An inherited pipe at standard output uses the pipe service instead. Neither the shell SDK nor the file table supplies a terminal command or executes a pipeline on its own.

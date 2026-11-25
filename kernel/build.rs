@@ -519,6 +519,21 @@ fn main() {
         assert!(fifo_grants.is_none() && pipe_links.is_none(), "pipe grants and links require JNOX_NATIVE_PIPES=1");
         None
     };
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_shell)");
+    let children = selector("JNOX_NATIVE_EXEC_CHILDREN");
+    let rom = selector("JNOX_NATIVE_ROM_IMAGE");
+    let rom_hash = selector("JNOX_NATIVE_ROM_SHA256");
+    let pipe_config = match (children, rom, rom_hash) {
+        (None, None, None) => pipe_config,
+        (Some(children), Some(file), Some(hash)) => {
+            let mut constants = pipe_config.expect("native shell requires JNOX_NATIVE_PIPES=1");
+            assert!(peer_image.is_some() && peer2_image.is_some(), "native shell needs exactly two child ELFs");
+            constants.push_str(&native_shell_config(&children, &file, &hash));
+            println!("cargo::rustc-cfg=jnox_native_shell");
+            Some(constants)
+        }
+        _ => panic!("native shell requires child names, ROM image and ROM SHA-256 together"),
+    };
     let thread_rr = threads.is_some() && policy.as_deref() == Some("rr");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_fixed)");
     let thread_roles = selector("JNOX_NATIVE_THREAD_PRIORITIES");
@@ -1002,6 +1017,54 @@ fn forecast_lottery<const N: usize>(weights: &[u32], seed: u64, horizon: usize, 
         panic!("lottery interval [{start},{}) owner {owner}: count {count} < floor {}",
             start + width, floors[owner]);
     }
+}
+
+fn shell_basename(name: &str) -> bool {
+    (1..=31).contains(&name.len()) && !matches!(name, "." | "..")
+        && name.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+}
+
+fn native_shell_config(children: &str, file: &str, hash: &str) -> String {
+    use std::{fs, path::Path};
+    let mut names = ["sh", "", ""];
+    for child in children.split(',') {
+        let (slot, name) = child.split_once(':').expect("expected slot:name");
+        let i = match slot { "1" => 1, "2" => 2, _ => panic!("invalid child slot") };
+        assert!(names[i].is_empty() && shell_basename(name) && !names.contains(&name),
+            "duplicate or invalid child slot/name");
+        names[i] = name;
+    }
+    assert!(names.iter().all(|name| !name.is_empty()), "missing child slot");
+    let source = Path::new(file).canonicalize().expect("locate packaged ROM");
+    assert!(source.is_file() && fs::metadata(&source).unwrap().len() == 8192, "expected 8192-byte ROM file");
+    package_native_image(source.to_str().expect("ROM path must be UTF-8"), hash, "native_shell.rom",
+        "JNOX_PACKAGED_ROM_SHA256");
+    let output = Path::new(&env::var_os("OUT_DIR").unwrap()).join("native_shell.rom")
+        .canonicalize().expect("locate immutable ROM snapshot");
+    let bytes = fs::read(&output).expect("read immutable ROM snapshot");
+    assert!(bytes.len() == 8192 && &bytes[..8] == b"JNOXROM1", "invalid ROM header");
+    let word = |at| u32::from_le_bytes(bytes[at..at+4].try_into().unwrap()) as usize;
+    let count = word(8);
+    assert!(count <= 8 && bytes[12..16] == [0; 4], "invalid ROM file count or reserved bits");
+    let mut offset = 400;
+    let mut previous = "";
+    for i in 0..count {
+        let at = 16 + 48*i;
+        let field = &bytes[at..at+32];
+        let end = field.iter().position(|&b| b == 0).expect("unterminated ROM name");
+        let name = std::str::from_utf8(&field[..end]).expect("invalid ROM name");
+        assert!(shell_basename(name) && previous < name && field[end..].iter().all(|&b| b == 0),
+            "invalid, duplicate or unsorted ROM filename");
+        previous = name;
+        let length = word(at+36);
+        assert!(word(at+32) == offset && length <= bytes.len()-offset && bytes[at+40..at+48] == [0; 8],
+            "invalid ROM file extent or reserved bits");
+        offset += length;
+    }
+    assert!(bytes[16+48*count..400].iter().chain(&bytes[offset..]).all(|&b| b == 0),
+        "nonzero unused ROM bytes");
+    println!("cargo::rustc-env=JNOX_NATIVE_ROM_IMAGE={}", output.display());
+    format!("pub const NATIVE_EXEC_NAMES: [&str; 3] = {names:?};\n")
 }
 
 fn pipe_fields<const N: usize>(row: &str) -> [usize; N] {

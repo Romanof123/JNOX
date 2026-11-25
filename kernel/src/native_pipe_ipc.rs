@@ -24,6 +24,8 @@ struct Pipes {
     read: [u64; COUNT],
     written: [u64; COUNT],
     peaks: [usize; OBJECTS],
+    #[cfg(jnox_native_shell)]
+    redirected: [u8; COUNT],
 }
 static mut PIPES: Pipes = Pipes {
     ipc: PipeIpc::new(),
@@ -33,6 +35,8 @@ static mut PIPES: Pipes = Pipes {
     read: [0; COUNT],
     written: [0; COUNT],
     peaks: [0; OBJECTS],
+    #[cfg(jnox_native_shell)]
+    redirected: [0; COUNT],
 };
 
 // This accessor confines the mutable borrow to a single handler transaction.
@@ -49,6 +53,15 @@ pub(super) fn boot() {
             p.ipc
                 .provision_link(wp, wf, rp, rf)
                 .unwrap_or_else(|_| fail(9));
+            #[cfg(jnox_native_shell)]
+            {
+                if wf < 3 {
+                    p.redirected[wp] |= 1 << wf;
+                }
+                if rf < 3 {
+                    p.redirected[rp] |= 1 << rf;
+                }
+            }
         }
     });
 }
@@ -196,7 +209,12 @@ fn invoke(p: &mut Pipes, pid: usize, f: &mut NativeFrame) -> Result<ResultAction
             if b == u64::MAX {
                 p.ipc.dup(pid, fd)?
             } else {
-                p.ipc.dup2(pid, fd, b as usize)?
+                let target = p.ipc.dup2(pid, fd, b as usize)?;
+                #[cfg(jnox_native_shell)]
+                if target < 3 {
+                    p.redirected[pid] |= 1 << target;
+                }
+                target
             }
         }
         43 => {
@@ -331,4 +349,28 @@ pub(super) fn report(phase: u64) {
             );
         }
     })
+}
+
+#[cfg(jnox_native_shell)]
+pub(super) fn redirect(
+    child: usize,
+    stdin: Option<usize>,
+    stdout: Option<usize>,
+) -> Result<(), i32> {
+    with(|p| {
+        p.ipc.redirect(0, child, stdin, stdout)?;
+        if stdin.is_some() {
+            p.redirected[child] |= 1;
+        }
+        if stdout.is_some() {
+            p.redirected[child] |= 2;
+        }
+        Ok(())
+    })
+}
+
+#[cfg(jnox_native_shell)]
+pub(super) fn console_allowed(pid: usize, fd: usize) -> bool {
+    matches!(fd, 1 | 2)
+        && with(|p| p.redirected[pid] & (1 << fd) == 0 && p.ipc.getfd(pid, fd) == Err(-9))
 }

@@ -47,6 +47,8 @@ enum State {
     Running,
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
     BlockedIpc,
+    #[cfg(jnox_native_shell)]
+    Dormant,
     Sleeping(u64),
     Exited,
 }
@@ -70,6 +72,16 @@ pub struct Fixed {
 
 impl Fixed {
     pub fn new(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
+        Self::initial(tasks, mode, now, tasks.len())
+    }
+
+    #[cfg(jnox_native_shell)]
+    pub(crate) fn new_shell(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
+        if tasks.len() != 3 { return None; }
+        Self::initial(tasks, mode, now, 1)
+    }
+
+    fn initial(tasks: &[Config], mode: Mode, now: u64, initially_ready: usize) -> Option<Self> {
         if tasks.len() > MAX_TASKS {
             return None;
         }
@@ -94,12 +106,33 @@ impl Fixed {
         };
         for (id, config) in tasks.iter().enumerate() {
             policy.tasks[id].priority = config.priority;
-            policy.tasks[id].state = State::Sleeping(relative_deadline(now, config.delay)?);
+            if id < initially_ready {
+                policy.tasks[id].state = State::Sleeping(relative_deadline(now, config.delay)?);
+            }
+            #[cfg(jnox_native_shell)]
+            if id >= initially_ready { policy.tasks[id].state = State::Dormant; }
         }
         policy.wake_due();
         policy.select();
         policy.deadline().ok()?;
         Some(policy)
+    }
+
+    #[cfg(jnox_native_shell)]
+    pub(crate) fn dormant(&self, id: usize) -> bool {
+        id < self.count && self.tasks[id].state == State::Dormant
+    }
+
+    #[cfg(jnox_native_shell)]
+    pub(crate) fn launch(&mut self, id: usize) {
+        assert!(self.dormant(id));
+        self.join_tail(id);
+    }
+
+    #[cfg(jnox_native_shell)]
+    pub(crate) fn dismiss(&mut self, id: usize) {
+        assert!(self.dormant(id));
+        self.tasks[id].state = State::Exited;
     }
 
     pub fn current(&self) -> Option<usize> {

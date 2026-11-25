@@ -300,6 +300,9 @@ mod ipc;
 #[cfg(jnox_native_pipe_ipc)]
 #[path = "native_pipe_ipc.rs"]
 mod pipes;
+#[cfg(jnox_native_shell)]
+#[path = "native_spawn.rs"]
+mod spawn;
 
 #[cfg(jnox_native_loan_ipc)]
 #[path = "native_loan_ipc.rs"]
@@ -384,7 +387,10 @@ fn start_fixed() -> usize {
         _ => fail(9),
     };
     let now = counter();
+    #[cfg(not(jnox_native_shell))]
     unsafe { FIXED = Fixed::new(&config, mode, now) };
+    #[cfg(jnox_native_shell)]
+    unsafe { FIXED = Fixed::new_shell(&config, mode, now) };
     let p = policy();
     let next = p.current().unwrap_or_else(|| fail(9));
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
@@ -402,6 +408,11 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     #[cfg(jnox_native_pipe_ipc)]
     if matches!(action, Action::Exit) {
         pipes::exit(p.current().unwrap_or_else(|| fail(9)), p);
+    }
+    #[cfg(jnox_native_shell)]
+    if matches!(action, Action::Exit) {
+        let pid = p.current().unwrap_or_else(|| fail(9));
+        spawn::exit(pid, unsafe { EXIT_STATUS[pid] }, p);
     }
     #[cfg(jnox_native_loan_ipc)]
     if matches!(action, Action::Exit) {
@@ -467,7 +478,11 @@ fn finish_fixed() -> ! {
     uart_write(b"NATIVE FIXED DROPPED ");
     unsigned(unsafe { DROPPED });
     uart_write(b"\n");
+    #[cfg(jnox_native_shell)]
+    spawn::report();
     for (pid, status) in unsafe { EXIT_STATUS }.into_iter().enumerate() {
+        #[cfg(jnox_native_shell)]
+        if pid != 0 && !spawn::started(pid) { continue; }
         if COUNT == 1 {
             uart_write(b"NATIVE EL0 EXIT ");
             decimal(i64::from(status));
@@ -682,6 +697,13 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         let service = f.x[8];
         loans::service(unsafe { CURRENT }, f);
         fixed_dispatch(now, Action::Poll, service, f);
+        return;
+    }
+    #[cfg(jnox_native_shell)]
+    if matches!(f.x[8], 4 | 50 | 51) {
+        let service = f.x[8];
+        let action = spawn::service(unsafe { CURRENT }, f, policy());
+        fixed_dispatch(now, action, service, f);
         return;
     }
     #[cfg(jnox_native_pipe_ipc)]

@@ -3,8 +3,10 @@
 set -eu
 local_socket=0
 pipe_define=
+shell_define=
 while [ "$#" -gt 0 ]; do
     case "$1" in
+        --native-shell) shell_define=-DJNOX_SDK_NATIVE_SHELL; pipe_define=-DJNOX_SDK_PIPES ;;
         --pipes) pipe_define=-DJNOX_SDK_PIPES ;;
         --local-socket) local_socket=1 ;;
         *) break ;;
@@ -12,7 +14,7 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 if [ "$#" -ne 2 ]; then
-    echo "usage: $0 [--pipes] [--local-socket] APP.c OUTPUT.elf" >&2
+    echo "usage: $0 [--pipes|--native-shell] [--local-socket] APP.c OUTPUT.elf" >&2
     exit 2
 fi
 sdk=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -22,6 +24,7 @@ set --
 if [ "$local_socket" = 1 ]; then
     set -- "$sdk/local_socket.c" -Wl,--wrap=read,--wrap=write,--wrap=close
 fi
+if [ -n "$shell_define" ]; then set -- "$shell_define" "$@"; fi
 if [ -n "$pipe_define" ]; then set -- "$pipe_define" "$@"; fi
 exec clang --target=aarch64-none-elf -fuse-ld=lld -std=c11 -O2 \
     -ffreestanding -nostdinc -nostdlib -static -fno-pic -fno-pie \
