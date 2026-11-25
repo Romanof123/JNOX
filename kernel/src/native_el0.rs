@@ -228,16 +228,39 @@ fn update_timer(now: u64) -> bool {
     woke
 }
 
+#[cfg(jnox_native_safety_channel)]
+fn timer_matches(target: Option<u64>) -> bool {
+    // ENABLE and IMASK select the output. ISTATUS may change as the counter advances.
+    let control: u64;
+    unsafe { asm!("mrs {}, cntp_ctl_el0", out(reg) control, options(nostack, preserves_flags)); }
+    match target {
+        None => control & 3 == 0,
+        Some(ticks) if control & 3 == 1 => {
+            let compare: u64;
+            unsafe { asm!("mrs {}, cntp_cval_el0", out(reg) compare, options(nostack, preserves_flags)); }
+            compare == ticks
+        }
+        Some(_) => false,
+    }
+}
+
 fn arm_compare(earliest: Option<u64>) {
     #[cfg(jnox_native_safety_qualification)]
     let before = counter();
+    #[cfg(jnox_native_safety_channel)]
+    let write = !timer_matches(earliest);
+    #[cfg(not(jnox_native_safety_channel))]
+    let write = true;
     unsafe {
-        if let Some(target) = earliest {
-            asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}", "isb",
-                 target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
-        } else {
-            asm!("msr cntp_ctl_el0, xzr", "isb", options(nostack, preserves_flags));
+        if write {
+            if let Some(target) = earliest {
+                asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}",
+                     target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
+            } else {
+                asm!("msr cntp_ctl_el0, xzr", options(nostack, preserves_flags));
+            }
         }
+        asm!("isb", options(nostack, preserves_flags));
     }
     #[cfg(jnox_native_safety_qualification)]
     permit_trace::compare(earliest, before);
