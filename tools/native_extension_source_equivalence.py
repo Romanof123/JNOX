@@ -205,15 +205,49 @@ def check_inputs(root, outputs, images):
         trusted[r["path"]]=r["sha256"]
     require(indices==sorted(indices) and ei in indices and any(r["kind"]=="object" for r in record["inputs"])
             and sum(r["kind"]=="script" for r in record["inputs"])==1,"missing ordered inputs")
-    for i,arg in enumerate(flags):
-        if i==oi or i in indices or (i and flags[i-1]=="-L") or arg.startswith("-L"):
+    # rustc's frozen AArch64 GNU-flavour invocation selects the Cortex-A53
+    # erratum workaround even though this image runs on the Cortex-A72.
+    require(flags[:3] == ["-flavor", "gnu", "--fix-cortex-a53-843419"] and
+            flags.count("--fix-cortex-a53-843419") == 1, "target linker flavour/erratum mitigation")
+    standalone = {"--as-needed", "--no-as-needed", "-Bstatic", "-Bdynamic", "--gc-sections",
+                  "--eh-frame-hdr", "--strip-debug", "--no-eh-frame-hdr", "--no-undefined",
+                  "--start-group", "--end-group", "--whole-archive", "--no-whole-archive",
+                  "--push-state", "--pop-state", "-static", "-O1", "-O2", "--build-id=none",
+                  "--no-rosegment", "--no-relax", "--discard-all"}
+    kinds = {r["index"]: r["kind"] for r in record["inputs"]}
+    # Cargo emits the raw-dylibs search directory beside its temporary symbols.o.
+    # All libraries are still passed as explicit, digest-bound archive inputs.
+    search_dirs = {posixpath.join(posixpath.dirname(r["path"]), "raw-dylibs")
+                   for r in record["inputs"] if r["kind"] == "object" and
+                   posixpath.basename(r["path"]) == "symbols.o"}
+    i = 3
+    while i < len(flags):
+        arg = flags[i]
+        operand = flags[i+1] if i+1 < len(flags) else ""
+        if arg in ("-z", "-o", "-T", "-L"):
+            require(i not in kinds and operand and not operand.startswith("-"), "missing linker operand "+arg)
+            if arg == "-T":
+                require(kinds.get(i+1) == "script", "unbound linker script operand")
+            else:
+                require(i+1 not in kinds, "linker option consumes archived input")
+                if arg == "-z":
+                    require(operand in ("noexecstack", "relro", "now"), "unknown -z operand "+operand)
+                elif arg == "-o":
+                    require(i+1 == oi, "unexpected linker output")
+                else:
+                    require(absolute(operand) in search_dirs, "unexpected linker search directory")
+            i += 2
             continue
-        options = {"-o","-flavor","-T","--as-needed","--no-as-needed","-Bstatic","-Bdynamic",
-                   "--gc-sections","--eh-frame-hdr","--strip-debug","--no-eh-frame-hdr","--no-undefined",
-                   "--start-group","--end-group","--whole-archive","--no-whole-archive","--push-state",
-                   "--pop-state","-static","-O1","-O2","--build-id=none","--no-rosegment","--no-relax",
-                   "--discard-all","-z","gnu","noexecstack","relro","now"}
-        require(arg in options or arg.startswith("--compress-debug-sections="),"unaccounted linker input "+arg)
+        if i in kinds:
+            require((arg.startswith("-T") and kinds[i] == "script") or
+                    (not arg.startswith("-") and kinds[i] != "script"), "invalid positional linker input")
+        elif arg.startswith("-L"):
+            require(absolute(arg[2:]) in search_dirs, "unexpected linker search directory")
+        else:
+            require(arg in standalone or arg in ("--compress-debug-sections=none",
+                    "--compress-debug-sections=zlib", "--compress-debug-sections=zstd"),
+                    "unaccounted linker input "+arg)
+        i += 1
     require(record["tools"]==spec["tools"],"tool pins")
     maps={}
     trusted_maps=[]
