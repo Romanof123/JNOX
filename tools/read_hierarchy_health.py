@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 import sys
 
+from native_hierarchy_arm_replay import Hierarchy
+
 MAX = 2**64 - 1
 SUMMARY = "version period limit arms events scored early invalid late max_lag overflow rows_total stored dropped".split()
 ARM = "arm_seq kind due arm_before pre_cval pre_ctl arm_after post_cval post_ctl".split()
@@ -47,6 +49,7 @@ def eligible(arm, entry, limit):
 
 def read_uart(path, expected=None):
     one = {}
+    groups = {tag: [] for tag in ("PARENT", "CHILD", "LEAF")}
     events, timers, exits = [], [], {}
     ended = False
     with path.open("rb") as uart:
@@ -74,6 +77,8 @@ def read_uart(path, expected=None):
             if tag == "HEALTH" and data[:1] == [b"END"]:
                 require(data == [b"END", b"1"], "malformed HEALTH END")
                 ended = True
+            elif tag in groups:
+                groups[tag].append(words(data))
             elif tag == "EVENT":
                 row = words(data)
                 require(len(row) == 47 and row[0] == len(events), "EVENT width or sequence")
@@ -116,6 +121,8 @@ def read_uart(path, expected=None):
     if not h["overflow"]:
         require(bool(first) == bool(h["late"] or h["early"] or h["invalid"]), "first violation missing or spurious")
     tallies = Counter()
+    ledger = Hierarchy(config, groups)
+    register_errors = []
     prefix_max = 0
     prefix_first = None
     worst = None
@@ -126,13 +133,26 @@ def read_uart(path, expected=None):
         if i:
             require(row[8] == events[i - 1][9] and row[13] == timers[i - 1]["due"],
                     f"preceding owner or due time mismatch at {i}")
+        ledger.decision(row, timer)
+        require(timer["old_arm_seq"] == i and (i or row[13] == 0), f"previous arm identity at {i}")
+        require(all(timer[k] < 8 for k in ("pre_ctl", "post_ctl", "entry_ctl")), f"timer control flags at {i}")
+        disabled = timer["kind"] == 6
+        if (timer["arm_before"] > timer["arm_after"]
+                or (timer["post_ctl"] & 3) != (0 if disabled else 1)
+                or timer["post_cval"] != (timer["pre_cval"] if disabled else timer["due"])):
+            register_errors.append(i)
         if row[1] != 1:
             require(timer["outcome"] == 0 and not any(timer[k] for k in ENTRY), f"non-IRQ evidence at {i}")
             continue
         tallies["events"] += 1
         require(i > 0 and timer["earliest_irq"] == row[3] and timer["iar"] & 1023 == row[2],
                 f"IRQ identity at {i}")
+        require(timer["elr"] == row[19] and timer["spsr"] & 15 == (5 if row[8] == 3 else 0),
+                f"IRQ frame does not match interrupted owner at {i}")
         arm = timers[i - 1]
+        if (timer["earliest_irq"] > timer["entry_counter"] or
+                timer["entry_cval"] != arm["due"] or (timer["entry_ctl"] & 3) != 1):
+            register_errors.append(i)
         if timer["iar"] & 1023 != 30:
             outcome = 6
         elif timer["old_arm_seq"] != arm["arm_seq"]:
@@ -154,6 +174,21 @@ def read_uart(path, expected=None):
                                     **{k: arm[k] for k in ARM}, **{k: timer[k] for k in ENTRY},
                                     lag_present=int(outcome == 2), lag=lag if outcome == 2 else 0)
     complete = h["dropped"] == 0
+    if complete:
+        require(events and events[-1][9] == 4, "complete trace missing terminal decision")
+    if first and not h["overflow"]:
+        decision = first["decision_index"]
+        require(first["due"] >= config[1] and (first["due"] - config[1]) % h["period"] == 0,
+                "first idle refill is off the configured grid")
+        require(first["event_number"] <= decision and first["arm_seq"] == decision,
+                "first violation decision/arm/IRQ identity mismatch")
+        if decision == len(timers) and decision > 0:
+            require(first["event_number"] == tallies["events"] + 1 and events[-1][9] == 3
+                    and all(first[k] == timers[-1][k] for k in ARM),
+                    "first omitted IRQ contradicts the retained arm")
+        if decision >= len(timers):
+            require(first["event_number"] <= tallies["events"] + decision - len(timers) + 1,
+                    "first omitted IRQ number exceeds missing decisions")
     for k in ("events", "scored", "late", "early", "invalid"):
         require(tallies[k] <= h[k] and (not complete or tallies[k] == h[k]), f"{k} summary mismatch")
     require(prefix_max <= h["max_lag"] and (not complete or prefix_max == h["max_lag"]), "detail maximum mismatch")
@@ -170,9 +205,10 @@ def read_uart(path, expected=None):
     statuses = [exits[i][0] for i in range(slots)]
     if expected is not None:
         require(len(expected) == slots, "supply one expected status per slot")
-    valid = not (h["overflow"] or h["invalid"] or h["early"])
+    valid = not (h["overflow"] or h["invalid"] or h["early"] or register_errors)
     return {"instrumentation": "valid" if valid else "invalid_or_incomplete",
             "timing": "late" if h["late"] else "unqualified" if not valid else "within_limit" if h["scored"] else "unobserved",
+            "register_discrepancy_rows": sorted(set(register_errors)),
             "health": h, "first_violation": first, "maximum_scored_lag_ticks": h["max_lag"] if h["scored"] else None,
             "maximum_detail_row": worst if prefix_max == h["max_lag"] else None,
             "detail": "complete" if complete else "retained_prefix", "detail_counts": dict(tallies),
