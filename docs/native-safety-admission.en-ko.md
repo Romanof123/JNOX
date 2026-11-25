@@ -46,3 +46,9 @@ Use the same native ELF inputs under both FIFO and RR on single-CPU virt, defaul
 계측한 8회에서 최초 CHECK의 vCPU 스레드 점유는 371–856 µs, 비어 있는 대여 버퍼 수신의 호스트 경과 시간은 내부 수신을 포함해 234–265 µs였다. 기본 시계의 24회 모두 첫 단계가 1 ms를 넘었다. 검사·완료와 빈 수신 경로에서 감독 명령, CRC 커밋, 유효 페이지 매핑에만 필요한 실행 비용을 분리해 시험한다. 권한·세대·유효 시간·감시 및 출력 전이, 진단과 기존 앱 ABI를 보존한다.
 
 기준 커널과 후보 커널에 동일한 ELF를 넣고 FIFO·RR 각각에서 정상 부하와 의도적인 1.1 ms 초과 부하를 시험한다. 최초 실행을 포함한 32개 단계, 완료 간격, 실제 출력, 종료 상태를 대조한다. 기본 대여 IPC 및 선택형 감시도 확인한다. 실측된 한도 초과, 로그 손실과 열린 구간을 기록하고 실측 분포와 보장 상한을 구분한다.
+
+### Independent result / 독립 판정
+
+In the 32 matched cold runs, baseline and candidate each had 40 measured misses across 512 phases. All first A phases missed. All 21 first B phases with a received and committed frame missed, and all 11 with an empty receive met the phase budget. Median first A upper endpoints on the healthy workload fell from 1.978 to 1.361 ms under FIFO and from 1.795 to 1.618 ms under RR. The mix of empty and received frames changed. The per-boot trace identifies the intervals through loan release, protected commit and completion. The integrated healthy FIFO and RR runs also exceeded the limit. [80-boot comparison](evidence/native-permit-service-comparison.en-ko.md) · [First frame intervals](evidence/native-permit-first-frame.en-ko.md) · [Nine integrated boots](evidence/native-permit-policy-integration.en-ko.md)
+
+실측 범위에서 두 커널 모두 512개 단계 중 40개가 1 ms를 초과했다. 실제로 프레임 한 개를 수신·커밋한 최초 B 단계 21건은 모두 초과했고, 빈 수신 11건은 모두 통과했다. 각 실행의 관련 틱·반환 상태·권한 및 출력 이력을 원시 기록과 함께 보존했다. 이 결과로 FIFO·RR의 시간 승인을 보류한다.
