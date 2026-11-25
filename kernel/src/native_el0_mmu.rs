@@ -6,19 +6,30 @@ const PAGE: usize = 4096;
 const IMAGE_LO: usize = 0x0040_0000;
 const IMAGE_HI: usize = 0x0080_0000;
 pub(crate) const STACK_BOTTOM: usize = 0x0100_1000;
+#[cfg(not(jnox_native_thread_fixed))]
 pub(crate) const STACK_TOP: usize = 0x0101_1000;
+#[cfg(jnox_native_thread_fixed)]
+pub(crate) const STACK_TOP: usize = 0x0102_1000;
 #[cfg(jnox_native_threads)]
 const WORKER_BOTTOM: usize = STACK_BOTTOM + 2 * PAGE;
 #[cfg(jnox_native_threads)]
 const WORKER_TOP: usize = STACK_BOTTOM + 8 * PAGE;
-#[cfg(jnox_native_threads)]
+#[cfg(all(jnox_native_threads, not(jnox_native_thread_fixed)))]
 const MAIN_BOTTOM: usize = WORKER_TOP + PAGE;
+
+#[cfg(jnox_native_thread_fixed)]
+const MAIN_BOTTOM: usize = STACK_BOTTOM + 23 * PAGE;
 
 #[cfg(jnox_native_threads)]
 pub(crate) fn thread_stack(slot: usize) -> Option<(usize, usize)> {
     match slot {
         0 => Some((MAIN_BOTTOM, STACK_TOP)),
         1 => Some((WORKER_BOTTOM, WORKER_TOP)),
+        #[cfg(jnox_native_thread_fixed)]
+        2 | 3 => {
+            let offset = (slot - 1) * 7 * PAGE;
+            Some((WORKER_BOTTOM + offset, WORKER_TOP + offset))
+        }
         _ => None,
     }
 }
@@ -28,6 +39,8 @@ pub(crate) fn thread_errno(slot: usize) -> Option<usize> {
     match slot {
         0 => Some(STACK_BOTTOM),
         1 => Some(STACK_BOTTOM + core::mem::size_of::<i32>()),
+        #[cfg(jnox_native_thread_fixed)]
+        2 | 3 => Some(STACK_BOTTOM + slot * core::mem::size_of::<i32>()),
         _ => None,
     }
 }
@@ -46,11 +59,20 @@ pub(crate) fn valid_thread_entry(address: u64) -> bool {
 
 /// Caller owns the idle worker slot on CPU0 before publishing its new frame.
 #[cfg(jnox_native_threads)]
+#[cfg(not(jnox_native_thread_fixed))]
 pub(crate) unsafe fn reset_worker_memory() {
+    unsafe { clear_worker(1); }
+}
+
+#[cfg(jnox_native_threads)]
+pub(crate) unsafe fn clear_worker(slot: usize) {
+    assert!(slot > 0);
+    let (lo, hi) = thread_stack(slot).expect("worker stack");
+    let errno = thread_errno(slot).expect("worker errno");
     unsafe {
         let backing = (&raw mut SPACES[0].stack_ram.0).cast::<u8>();
-        ptr::write_bytes(backing.add(WORKER_BOTTOM - STACK_BOTTOM), 0, WORKER_TOP - WORKER_BOTTOM);
-        ptr::write_bytes(backing.add(core::mem::size_of::<i32>()), 0, core::mem::size_of::<i32>());
+        ptr::write_bytes(backing.add(lo - STACK_BOTTOM), 0, hi - lo);
+        ptr::write_bytes(backing.add(errno - STACK_BOTTOM), 0, core::mem::size_of::<i32>());
     }
 }
 
@@ -240,7 +262,7 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         link(&raw mut space.low, STACK_BOTTOM, 21, &raw mut space.stack);
         for va in (STACK_BOTTOM..STACK_TOP).step_by(PAGE) {
             #[cfg(jnox_native_threads)]
-            if va == STACK_BOTTOM + PAGE || va == WORKER_TOP {
+            if va != STACK_BOTTOM && !(0..4).filter_map(thread_stack).any(|(lo, hi)| (lo..hi).contains(&va)) {
                 continue;
             }
             page(&raw mut space.stack, va, stack.add(va - STACK_BOTTOM) as usize, NORMAL | USER | NG | PXN | UXN);

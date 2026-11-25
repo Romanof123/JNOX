@@ -8,6 +8,8 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
+한 프로세스의 네 스레드에 우선순위를 지정하고 우선순위 상속·즉시 천장·기한부 뮤텍스 대기를 선택할 수 있습니다. [C·Rust 속성과 패키징](docs/native-c-abi.md#네-스레드의-우선순위와-뮤텍스-설정)
+
 선택형 공학 구성에서 네이티브 프로세스에 개별 CPU 예산과 공유 상위 예산을 지정할 수 있습니다. [계층형 앱과 단일 CRC 설정](docs/native-c-abi.md#프로세스별-계층형-cpu-예산-설정)
 
 EEVDF 텔레메트리 배포는 커널에 링크한 Rust EL1 작업 세 개를 각자의 16 KiB 스택에서 실행합니다. 저장소 루트에서 다음 명령으로 QEMU를 한 번 부팅하고 원본을 새 디렉터리에 보존합니다. 보관한 세션 해시로 게스트를 다시 띄우지 않고 결과를 재구성할 수 있습니다.

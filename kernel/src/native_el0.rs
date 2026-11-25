@@ -46,8 +46,11 @@ mod multilevel;
 use multilevel as measured;
 #[cfg(jnox_native_multilevel)]
 global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_multilevel_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(jnox_native_threads)]
+#[cfg(all(jnox_native_threads, not(jnox_native_thread_fixed)))]
 #[path = "native_threads.rs"]
+mod threads;
+#[cfg(jnox_native_thread_fixed)]
+#[path = "native_fixed_threads.rs"]
 mod threads;
 #[cfg(jnox_native_threads)]
 global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_threads_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
@@ -201,8 +204,12 @@ fn sleep_until(f: &NativeFrame) -> Result<u64, i64> {
     if f.x[0] != 1 || f.x[1] != 1 {
         return Err(-22);
     }
+    monotonic_target(f.x[2] as usize)
+}
+
+fn monotonic_target(address: usize) -> Result<u64, i64> {
     let mut request = [0u8; 16];
-    if !native_el0_mmu::copy_from_user(f.x[2] as usize, &mut request) {
+    if !native_el0_mmu::copy_from_user(address, &mut request) {
         return Err(-14);
     }
     let seconds = i64::from_le_bytes(request[..8].try_into().unwrap());
@@ -559,7 +566,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         },
         8 if cfg!(jnox_native_process) => 0,
         9 if cfg!(jnox_native_periodic) => 0,
-        9..=18 => -95,
+        9..=19 => -95,
         _ => -38,
     };
     #[cfg(jnox_native_weighted_continuous)]
@@ -575,7 +582,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     head(8, index as u64 + 1);
     let pid = unsafe { CURRENT };
-    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=18).contains(&f.x[8]) {
+    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=19).contains(&f.x[8]) {
         f.x[0] = result as u64;
         return;
     }

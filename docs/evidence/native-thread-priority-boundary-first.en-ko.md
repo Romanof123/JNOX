@@ -1,0 +1,14 @@
+# #336 deterministic priority controls / 결정론적 우선순위 검증
+
+First public recipe at e807d739a87a2014d421c417e4bc00cb9e604e1d (parent addendum 626cab755bc95a738553e80b2b936405d2f6a0b0). Production kernel directory matches 383f1d40b10798af89d5f3ddf44c456accb96b0b. On native WSL ext4, rustc 1.95.0 x86_64-unknown-linux-gnu compiled the production-policy harness on the first invocation. Compile exit 0, 13 warnings for unused imported code. First run exit 0 with empty stderr, four supplemental cases and three imported ready-queue tests passed. Compiler identity, commands, binary and raw outputs are in proof/.
+
+| Tested host input | First outcome |
+|---|---|
+| Q=100, equal RR peer ready, FIFO donor wakes at 130 | Owner ran from 100 to 130, leaving 70. PI increased effective rank from 2 to 4 with residual still 70. Another 20 ticks to D=150 left 50 and withdrawal restored rank 2. Owner remained runnable while FIFO HIGH ran. At resume 270 the next expiry was 320. Entry 319 retained owner with 1 tick, entry 320 exhausted it and rotated to PEER. Delivered owner time was 30+20+49+1=100. |
+| Unlock at 149 | HIGH still queued with donation 4 before unlock, then owned the lock by incarnation and eventually consumed success once. Advancing to 150 preserved the transferred ownership. |
+| Unlock at 150 | Advance removed HIGH and restored owner rank 2 before unlock. Unlock left the lock free. HIGH eventually consumed timeout 110 exactly once. |
+| Unlock at 151 | Same sequence as 150 after late delivery. In each boundary case the same slot/address was recreated at generation +1, a subsequent advance preserved HIGH ownership, and stale unlock returned 22. |
+
+The harness imports the production policy, queue and rank code and uses public transitions. CPU0's sampled syscall order is pause, advance, invoke, complete, dispatch, then resume at return. The tests exercise advance-before-unlock and dispatch-before-resume. They explicitly assert current owner, waiter membership, incarnation, rank and residual at the measured transitions. They read completion later than the adapter: in the RR case after dispatch, and in boundary cases after unlock, dispatch and a later advance. The claims about the point of completion assignment rely on production source (native_priority_threads.rs lines 168 and 374) plus observed one-shot results. They do not constitute a separate pre-dispatch read of the pending value. These are deterministic host samples. They add no guest IRQ or physical timing observation.
+
+공개 명령의 첫 컴파일과 첫 실행 종료값은 모두 0이었다. 새 대조 네 건과 기존 준비 큐 검사 세 건이 통과했다. RR 소유자의 서비스 30+20+49+1=100틱을 독립 대조했다. 기부 후 70틱, 철회 후 50틱이 남았고 319에서 계속 실행한 뒤 320에서 동순위 피어로 교체됐다. D−1에는 HIGH에 직접 인계하고 D와 D+1에는 먼저 대기자를 제거해 우선순위를 2로 복원한 뒤 잠금을 비웠다. 세 경우 모두 완료 결과가 한 번만 전달되었고 이전 세대 토큰이 거부됐다. 대기열과 우선순위는 디스패치 전에 확인했다. 완료값 자체는 이후 읽었으므로 정확한 기록 시점은 실제 정책 소스와 함께 판정했다. 게스트 최초 실행 기록은 그대로이며 새로운 IRQ·실보드 시간 측정은 없다.

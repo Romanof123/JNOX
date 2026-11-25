@@ -11,6 +11,7 @@
 #define EINVAL 22
 #define ENOSYS 38
 #define ENOTSUP 95
+#define ETIMEDOUT 110
 int *__jnox_errno_location(void);
 #define errno (*__jnox_errno_location())
 #endif
