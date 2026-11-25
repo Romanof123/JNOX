@@ -10,7 +10,8 @@ import subprocess
 import sys
 
 from native_extension_program import parse_program
-from native_hierarchy import parse_topology
+from native_amc_roots import linked_roots
+from native_hierarchy import parse_topology, unique_keys
 from native_lottery_admission import forecast
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -131,8 +132,8 @@ def thread_priorities(value):
 
 
 def native_schedule(parser, args):
-    if len(args.peer_elf) > 2:
-        parser.error("virt supports at most two --peer-elf arguments")
+    if len(args.peer_elf) > (3 if args.policy == ["amc"] else 2):
+        parser.error("too many peer ELFs for the selected policy")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
     for name in ("policy", "priority", "weight", "job", "batch_job", "periodic", "reservation", "quantum_ticks", "primary_class", "allotment_ticks", "boost_ticks"):
@@ -221,6 +222,48 @@ def native_schedule(parser, args):
     return policy, priorities, weights, quantum
 
 
+def amc_manifest(source, slots):
+    doc = json.loads(source.decode("utf-8"), object_pairs_hook=unique_keys)
+    if type(doc) is not dict or set(doc) not in ({"tasks"}, {"tasks", "resets"}):
+        raise ValueError("expected tasks and optional resets")
+    tasks, resets = doc["tasks"], doc.get("resets", [])
+    if type(tasks) is not list or len(tasks) != slots or type(resets) is not list or len(resets) > 16:
+        raise ValueError("supply one task per slot and at most 16 resets")
+    lines = ["amc-v1"]
+    keys = ("priority", "c_lo", "c_hi", "deadline", "period", "offset", "generations")
+    max_cell = (2**64 - 1) // 3125000  # deployment frequency 62.5 MHz, Q=F/20
+    for task in tasks:
+        if type(task) is not dict or set(task) != {"tier", "argv", *keys}:
+            raise ValueError("incorrect AMC task fields")
+        if any(type(task[k]) is not int or not 0 <= task[k] < 2**64 for k in keys):
+            raise ValueError("AMC task parameters must be unsigned u64 integers")
+        priority, lo, hi, deadline, period, offset, count = (task[k] for k in keys)
+        tier = task["tier"]
+        if (tier not in ("LO", "HI") or not 1 <= priority <= 255 or not 0 < lo <= hi <= deadline <= period
+                or (tier == "LO" and lo != hi) or not 1 <= count <= 16
+                or offset + (count - 1) * period + deadline > max_cell):
+            raise ValueError("invalid AMC parameters or unrepresentable deployment timeline")
+        if type(task["argv"]) is not list or len(task["argv"]) != count:
+            raise ValueError("supply one argv vector for every generation")
+        lines.append(" ".join(map(str, ("task", tier, priority, lo, hi, deadline, period, offset, count))))
+        for argv in task["argv"]:
+            if type(argv) is not list or len(argv) > 15 or any(type(a) is not str or "\0" in a for a in argv):
+                raise ValueError("expected up to 15 NUL-free strings per generation")
+            args = [a.encode("utf-8") for a in argv]
+            if sum(len(a) + 1 for a in args) > 1024:
+                raise ValueError("generation arguments exceed 1024 bytes including terminators")
+            wire = bytes([len(argv)]) + b"".join(len(a).to_bytes(2, "little") + a for a in args)
+            lines.append("argv " + wire.hex())
+    previous = -1
+    for reset in resets:
+        if (type(reset) is not dict or set(reset) != {"cell", "approved"} or type(reset["approved"]) is not bool
+                or type(reset["cell"]) is not int or not previous < reset["cell"] <= max_cell):
+            raise ValueError("resets require strictly increasing representable cells and explicit boolean approval")
+        previous = reset["cell"]
+        lines.append(f"reset {previous} {int(reset['approved'])}")
+    return {"tasks": tasks, "resets": resets}, ("\n".join(lines) + "\n").encode("ascii")
+
+
 def encode_arguments(parser, args):
     vectors = [args.arg, args.peer_arg, args.peer2_arg]
     encoded = {}
@@ -286,11 +329,12 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--extension-program", type=Path, action=SinglePath, metavar="RULE.txt")
+    parser.add_argument("--amc-manifest", type=Path, action=SinglePath, metavar="DEPLOYMENT.json")
     parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
@@ -415,6 +459,18 @@ def main():
             ops = parse_program(rule_source)
         except (ValueError, OSError) as exc:
             parser.error(f"invalid --extension-program: {exc}")
+    if (args.amc_manifest is not None) != (policy == "amc"):
+        parser.error("--amc-manifest is required exclusively with --policy amc")
+    if policy == "amc":
+        if any(vectors):
+            parser.error("declare all AMC generation arguments in --amc-manifest")
+        try:
+            amc_path = args.amc_manifest.resolve(strict=True)
+            amc_source = amc_path.read_bytes()
+            amc, amc_wire = amc_manifest(amc_source, 1 + len(args.peer_elf))
+            vectors = [task["argv"][0] for task in amc["tasks"]]
+        except (OSError, ValueError, RecursionError) as exc:
+            parser.error(f"invalid --amc-manifest: {exc}")
     if (args.hierarchy is not None) != (policy == "hierarchy"):
         parser.error("--hierarchy is required exclusively with --policy hierarchy")
     if policy == "hierarchy":
@@ -464,6 +520,15 @@ def main():
         metadata.update(extension_program={"file": program.name, "sha256": digest, "operations": ops,
                                            "source": source_name}, package_argv=sys.argv[:])
         env.update(JNOX_NATIVE_EXTENSION_PROGRAM=str(program), JNOX_NATIVE_EXTENSION_SHA256=digest)
+    if policy == "amc":
+        canonical = out / "amc-v1.txt"
+        canonical.write_bytes(amc_wire)
+        digest = hashlib.sha256(amc_wire).hexdigest()
+        inputs[str(amc_path)] = hashlib.sha256(amc_source).hexdigest()
+        metadata.update(amc=amc, amc_input={"path": str(amc_path), "sha256": inputs[str(amc_path)]},
+                        amc_canonical={"file": canonical.name, "sha256": digest},
+                        timing_unit="cells", package_argv=sys.argv[:])
+        env.update(JNOX_NATIVE_AMC_MANIFEST=str(canonical), JNOX_NATIVE_AMC_SHA256=digest)
     if policy == "hierarchy":
         name = str(hierarchy_path.relative_to(ROOT) if hierarchy_path.is_relative_to(ROOT) else hierarchy_path)
         digest = hashlib.sha256(hierarchy_source).hexdigest()
@@ -509,6 +574,8 @@ def main():
             if policy == "extension":
                 i = slot["slot"]
                 slot.update(generation=(7, 11, 17)[i], cpu=0, role="reserved" if i == 0 else "delegated")
+            if policy == "amc":
+                slot["amc_task"] = amc["tasks"][slot["slot"]]
             slot["argv"] = (["/bin/app", *vectors[slot["slot"]]] if app == "process"
                             else ["/bin/native_startup_probe", "8", "13"])
             slot["priority"] = priorities[slot["slot"]] if priorities else None
@@ -611,6 +678,9 @@ def main():
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
+    if policy == "amc":
+        for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
+            slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     print(f"kernel {metadata['kernel_elf_sha256']}  {kernel_elf}")
     print(f"native {digest}  {user_elf}")

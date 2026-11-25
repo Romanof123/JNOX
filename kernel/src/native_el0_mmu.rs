@@ -82,7 +82,8 @@ const LINK_START: usize = 0x4020_0000;
 const LINK_START: usize = 0x0200_0000;
 #[cfg(jnox_pi4)]
 const GPIO: usize = 0xfe20_0000;
-const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize;
+const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize
+    + cfg!(all(jnox_native_amc, jnox_native_peer3)) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
 // Leave another 4 MiB per slot for tables, stacks and the linked kernel.
 const HIGH_TABLES: usize = 8 * SPACE_CAPACITY;
@@ -149,6 +150,11 @@ pub(crate) fn publish_weighted_notification() {
 }
 
 static mut PROCESS_COUNT: usize = 0;
+#[cfg(jnox_native_amc)]
+#[path = "native_amc_space.rs"]
+mod amc_space;
+#[cfg(jnox_native_amc)]
+pub(crate) use amc_space::amc_reload;
 unsafe extern "C" {
     #[cfg(not(jnox_pi4))]
     static _start: u8;
@@ -355,7 +361,11 @@ unsafe fn install_spaces<'a>(
              (&raw const WEIGHTED_NOTIFICATION_PAGE) as usize, NORMAL | USER | RO | NG | PXN | UXN);
         for pid in 0..count {
             populate(pid, plans[pid].borrow(), stack_tails[pid]);
+            #[cfg(jnox_native_amc)]
+            amc_space::remember(pid, plans[pid].borrow());
         }
+        #[cfg(jnox_native_amc)]
+        amc_space::prepare_kernel_root();
         // Single CPU, cold uncached mappings. MAIR[0] Normal non-cacheable,
         // MAIR[1] Device-nGnRnE; no cacheable alias or dirty D-cache line.
         // T0SZ=25 starts at L1 (39-bit VA); TTBR1 walks disabled, 32-bit PA.

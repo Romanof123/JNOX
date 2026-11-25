@@ -455,8 +455,18 @@ fn main() {
         "native batch policies require JNOX_NATIVE_BATCH_JOBS exclusively");
     let edf_jobs = selector("JNOX_NATIVE_EDF_JOBS");
     let quantum = selector("JNOX_NATIVE_QUANTUM_TICKS");
-    assert!(selector("JNOX_NATIVE_PEER3_ELF").is_none()
-        && selector("JNOX_NATIVE_PEER3_ELF_SHA256").is_none(), "virt supports at most three native slots");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_amc)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_peer3)");
+    let amc = selector("JNOX_NATIVE_AMC_MANIFEST");
+    let amc_sha = selector("JNOX_NATIVE_AMC_SHA256");
+    assert_eq!(amc.is_some(), policy.as_deref() == Some("amc"), "AMC requires a canonical manifest exclusively");
+    assert_eq!(amc.is_some(), amc_sha.is_some(), "AMC requires a canonical digest");
+    let peer3_image = selector("JNOX_NATIVE_PEER3_ELF");
+    let peer3_hash = selector("JNOX_NATIVE_PEER3_ELF_SHA256");
+    assert_eq!(peer3_image.is_some(), peer3_hash.is_some(), "third peer requires digest");
+    assert!(peer3_image.is_none() || (amc.is_some() && peer2_image.is_some()), "only AMC supports a third peer");
+    assert!(selector("JNOX_NATIVE_PEER4_ELF").is_none() && selector("JNOX_NATIVE_PEER4_ELF_SHA256").is_none(),
+        "at most four native slots");
     let peer_image = selector("JNOX_NATIVE_PEER_ELF");
     let peer_hash = selector("JNOX_NATIVE_PEER_ELF_SHA256");
     assert_eq!(peer_image.is_some(), peer_hash.is_some(), "peer ELF requires its digest");
@@ -520,7 +530,8 @@ fn main() {
         cap = value.parse().expect("deadline switch cap exceeds u64");
         assert!(cap > 0, "deadline switch cap must be positive");
     }
-    let native_argv = [0, 1, 2].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    let native_argv = [0, 1, 2, 3].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    assert!(amc.is_none() || native_argv.iter().all(Option::is_none), "declare AMC arguments in its manifest");
     for (slot, args) in native_argv.iter().enumerate() {
         if args.is_some() {
             assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
@@ -559,12 +570,12 @@ fn main() {
             }
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
-            let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
+            let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some()) + usize::from(peer3_image.is_some());
             if let (Some(program), Some(hash)) = (extension, extension_hash) {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
             }
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref());
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()));
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -575,6 +586,10 @@ fn main() {
             if let (Some(source), Some(hash)) = (peer2_image.as_deref(), peer2_hash.as_deref()) {
                 package_native_image(source, hash, "native_peer2.elf", "JNOX_PACKAGED_PEER2_SHA256");
                 println!("cargo::rustc-cfg=jnox_native_peer2");
+            }
+            if let (Some(source), Some(hash)) = (peer3_image.as_deref(), peer3_hash.as_deref()) {
+                package_native_image(source, hash, "native_peer3.elf", "JNOX_PACKAGED_PEER3_SHA256");
+                println!("cargo::rustc-cfg=jnox_native_peer3");
             }
             println!("cargo::rustc-cfg=jnox_native_el0");
         }
@@ -850,6 +865,69 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
     format!("&[{}]", literals.join(", "))
 }
 
+// Canonical amc-v1 is ASCII LF-delimited. Each task is followed by one native
+// argument-vector hex record per generation. Reset rows always follow all tasks.
+fn amc_schedule(file: &str, expected: &str, startup: &mut [String]) -> String {
+    use std::{fs, io::Read, path::{Path, PathBuf}, process::Command};
+    const MAX_CELL: u64 = u64::MAX / 3_125_000;
+    fn decimal(text: &str) -> u64 {
+        assert!(!text.is_empty() && text.bytes().all(|b| b.is_ascii_digit())
+            && (text == "0" || !text.starts_with('0')), "invalid canonical AMC decimal");
+        text.parse().expect("AMC integer exceeds u64")
+    }
+    let input = Path::new(file).canonicalize().expect("locate AMC input");
+    println!("cargo::rerun-if-changed={}", input.display());
+    let mut raw = String::new();
+    fs::File::open(input).unwrap().take(150_001).read_to_string(&mut raw).expect("read canonical AMC manifest");
+    assert!(raw.len() <= 150_000 && raw.is_ascii() && raw.ends_with('\n'), "invalid AMC canonical size or encoding");
+    let out = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("amc-v1.txt");
+    fs::write(&out, &raw).expect("snapshot canonical AMC input");
+    let result = Command::new("sha256sum").arg(out).output().expect("run sha256sum");
+    assert!(result.status.success() && std::str::from_utf8(&result.stdout).unwrap().split_whitespace().next() == Some(expected),
+        "canonical AMC SHA-256 mismatch");
+    let mut lines = raw.split_terminator('\n');
+    assert_eq!(lines.next(), Some("amc-v1"), "unknown AMC wire version");
+    let mut tasks = Vec::new();
+    let mut argument_tables = Vec::new();
+    let mut resets = Vec::new();
+    while let Some(line) = lines.next() {
+        let fields: Vec<_> = line.split(' ').collect();
+        match fields.as_slice() {
+            ["task", tier, priority, clo, chi, deadline, period, offset, count] => {
+                let slot = tasks.len();
+                assert!(slot < startup.len() && resets.is_empty(), "invalid AMC task order/count");
+                let hi = match *tier { "HI" => true, "LO" => false, _ => panic!("invalid tier") };
+                let (priority, lo, high) = (decimal(priority), decimal(clo), decimal(chi));
+                let (d, t, first, n) = (decimal(deadline), decimal(period), decimal(offset), decimal(count));
+                assert!((1..=255).contains(&priority) && 0 < lo && lo <= high && high <= d && d <= t
+                    && (hi || lo == high) && (1..=16).contains(&n), "invalid AMC descriptor");
+                let last = (n-1).checked_mul(t).and_then(|v| first.checked_add(v)).and_then(|v| v.checked_add(d));
+                assert!(last.is_some_and(|v| v <= MAX_CELL), "AMC deployment timeline overflow");
+                tasks.push((hi, priority as u8, lo, high, d, t, first, n));
+                let mut generations = Vec::new();
+                for generation in 0..n {
+                    let hex = lines.next().and_then(|line| line.strip_prefix("argv ")).expect("missing generation argv");
+                    assert!(!hex.bytes().any(|b| b.is_ascii_uppercase()), "noncanonical argument hex");
+                    let literal = native_extra_literals(slot, Some(hex));
+                    if generation == 0 { startup[slot] = literal.clone(); }
+                    generations.push(literal);
+                }
+                argument_tables.push(format!("&[{}]", generations.join(",")));
+            }
+            ["reset", cell, approval] => {
+                let cell = decimal(cell);
+                assert!(tasks.len() == startup.len() && resets.len() < 16 && cell <= MAX_CELL
+                    && resets.last().is_none_or(|&(prev, _)| prev < cell), "invalid AMC reset sequence");
+                let approved = match *approval { "0" => false, "1" => true, _ => panic!("invalid approval") };
+                resets.push((cell, approved));
+            }
+            _ => panic!("invalid canonical AMC row"),
+        }
+    }
+    assert_eq!(tasks.len(), startup.len(), "AMC slot descriptor count mismatch");
+    format!("pub const NATIVE_AMC_TASKS: [(bool,u8,u64,u64,u64,u64,u64,u64); {}] = {tasks:?};\npub const NATIVE_AMC_RESETS: &[(u64,bool)] = &{resets:?};\npub const NATIVE_AMC_ARGV: &[&[&[&[u8]]]] = &[{}];\n", tasks.len(), argument_tables.join(","))
+}
+
 fn partition_windows(table: &str) -> Vec<(Option<usize>, u64)> {
     let mut windows = Vec::new();
     let mut frame_ms = 0u64;
@@ -886,7 +964,7 @@ fn forecast_lottery<const N: usize>(weights: &[u32], seed: u64, horizon: usize, 
     }
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>) {
     let batch_jobs = if let Some(raw) = batch {
         let jobs: Vec<_> = raw.split(';').map(parse_batch_job).collect();
         assert_eq!(jobs.len(), slots, "provide one batch tuple per slot");
@@ -1019,7 +1097,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("sjf" | "srtf" | "hrrn" | "lottery" | "stride" | "weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy" | "extension") | None => {
+        Some("amc" | "sjf" | "srtf" | "hrrn" | "lottery" | "stride" | "weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy" | "extension") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
@@ -1050,6 +1128,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         extras[2] = format!("&[&{:?}]", calendar.as_bytes());
     }
     let job_count = jobs.len();
+    let amc_constants = amc.map(|(file, hash)| amc_schedule(file, hash, &mut extras));
     let extra_slots = extras.join(", ");
     let thread_bases = thread_priorities.unwrap_or_default();
     let mut generated = format!(
@@ -1058,6 +1137,10 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     if mode == "extension" {
         generated.push_str("include!(concat!(env!(\"OUT_DIR\"), \"/native_extension_ops.rs\"));\n");
+    }
+    if let Some(constants) = amc_constants {
+        generated.push_str(&constants);
+        println!("cargo::rustc-cfg=jnox_native_amc");
     }
     if let Some(raw) = hierarchy {
         generated.push_str(&build_native_hierarchy::constants(raw, slots));

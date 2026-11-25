@@ -27,12 +27,23 @@ pub enum ClockError {
     InvalidTimespec,
 }
 
+const CLOCK_MONOTONIC: i32 = 1;
+const CLOCK_PROCESS_CPUTIME_ID: i32 = 2;
+
 /// Read elapsed monotonic time from the native system clock.
 pub fn monotonic_time() -> Result<Duration, ClockError> {
-    const CLOCK_MONOTONIC: i32 = 1;
+    read_clock(CLOCK_MONOTONIC)
+}
+
+/// Read CPU time charged to the current native AMC process generation.
+pub fn process_cpu_time() -> Result<Duration, ClockError> {
+    read_clock(CLOCK_PROCESS_CPUTIME_ID)
+}
+
+fn read_clock(clock: i32) -> Result<Duration, ClockError> {
     let mut value = Timespec { tv_sec: -1, tv_nsec: -1 };
     // The SDK writes a pair of signed LP64 fields to this aligned local.
-    if unsafe { clock_gettime(CLOCK_MONOTONIC, &mut value) } != 0 {
+    if unsafe { clock_gettime(clock, &mut value) } != 0 {
         // The C SDK returns a valid errno location for this native application.
         return Err(ClockError::Errno(unsafe { *__jnox_errno_location() }));
     }
@@ -45,7 +56,6 @@ pub fn monotonic_time() -> Result<Duration, ClockError> {
 /// Sleep until an absolute deadline on the clock returned by `monotonic_time`.
 pub fn sleep_until(deadline: Duration) -> Result<(), ClockError> {
     const EOVERFLOW: i32 = 75;
-    const CLOCK_MONOTONIC: i32 = 1;
     const TIMER_ABSTIME: i32 = 1;
     let request = Timespec {
         tv_sec: i64::try_from(deadline.as_secs()).map_err(|_| ClockError::Errno(EOVERFLOW))?,
