@@ -2211,4 +2211,10 @@ CHG-300,affects,REQ-023
 CHG-300,affects,REQ-024
 CHG-302,affects,REQ-023
 CHG-302,affects,REQ-024
+REQ-024,partially-implemented-by,IMP-302
+DES-013,partially-implemented-by,IMP-302
+IPC-001,partially-implemented-by,IMP-302
+IMP-302,partially-verified-by,VER-024
+VER-024,has-partial-evidence,EVD-302
+IMP-302,tested-in,EVD-302
 IPC-001,depends-on-policy,POL-002

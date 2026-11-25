@@ -2,7 +2,7 @@
 
 CHG-302 authorizes implementation on the single-core AArch64 QEMU virt FIFO/RR configuration verified under #363. The owner opened #24 with 0/10 families accepted. The scheduling release stands at 6/7. Physical Pi 4 evidence and applicable product timing and safety approvals remain open. The ten original family acceptance cases still apply. [Owner decision #365](https://github.com/Romanof123/JNOX/issues/365) · [Virtual playback #363](https://github.com/Romanof123/JNOX/issues/363) · [Scheduling #21](https://github.com/Romanof123/JNOX/issues/21) · [Physical acquisition #34](https://github.com/Romanof123/JNOX/issues/34) · [IPC tracker #24](https://github.com/Romanof123/JNOX/issues/24) · [Original cases](ipc-mechanisms.en.md)
 
-CHG-302에 따라 #363에서 검증한 단일 코어 AArch64 QEMU virt FIFO·RR에서 IPC 구현을 시작한다. #24의 IPC 계열 승인 수는 0/10이고, #21 스케줄링 출시는 6/7이다. #34 Pi 4 실물 계측과 해당 제품 타이밍·안전 승인은 미결이다. 열 개 IPC 계열의 기존 인수 사례를 유지한다. [최초 인수 사례](ipc-mechanisms.md)
+CHG-302에 따라 #363에서 검증한 단일 코어 AArch64 QEMU virt FIFO·RR에서 IPC 구현을 시작한다. [#24](https://github.com/Romanof123/JNOX/issues/24) 착수 당시 IPC 계열 승인 수는 0/10이었고, #21 스케줄링 출시는 6/7이다. #34 Pi 4 실물 계측과 해당 제품 타이밍·안전 승인은 미결이다. 열 개 IPC 계열의 기존 인수 사례를 유지한다. [최초 인수 사례](ipc-mechanisms.md)
 
 ## Endpoint and ABI / 엔드포인트와 호출 규약
 
