@@ -45,10 +45,16 @@ pub fn complete() -> Result<(), i64> { operation(60, 3, 0, 0, 0, 0) }
 
 pub fn process_rearm() -> Result<(), i64> { operation(60, 4, 0, 0, 0, 0) }
 
-pub fn info() -> Result<State, i64> {
+pub fn info() -> Result<State, i64> { state_operation(61, 0) }
+
+/// Qualification-only operations. Sample after the protected decision.
+pub fn check_and_sample() -> Result<State, i64> { state_operation(63, 1) }
+pub fn complete_and_sample() -> Result<State, i64> { state_operation(63, 3) }
+
+fn state_operation(op: u64, action: u64) -> Result<State, i64> {
     let (status, ticks, hz, generation, flags, last_sequence, last_issue_ticks);
     unsafe {
-        asm!("svc #0x4a01", in("x8") 61u64, inout("x0") 0i64 => status,
+        asm!("svc #0x4a01", in("x8") op, inout("x0") action => status,
              inout("x1") 0u64 => ticks, inout("x2") 0u64 => hz,
              inout("x3") 0u64 => generation, inout("x4") 0u64 => flags,
              inout("x5") 0u64 => last_sequence, inout("x6") 0u64 => last_issue_ticks,

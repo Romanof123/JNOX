@@ -197,25 +197,34 @@ pub(super) fn after_loan(pid:usize,op:u64,handle:u64,f:&NativeFrame,result:Resul
     if pid==1 && op==36 && result.is_ok() && s.snapshot.as_ref().is_some_and(|p|p.0==handle) { s.released=true; }
     log(6,[pid as u64,op,result.err().unwrap_or(0) as i64 as u64,occupancy as u64,handle,f.x[1],f.x[3],s.generation]);
 }
+fn sample_state(s: &Session, f: &mut NativeFrame) {
+    let flags=u64::from(s.gate) | (jnox_virtual_permit_enable.load(Ordering::SeqCst)<<1)
+        | (u64::from(s.fault)<<2) | (u64::from(s.pending)<<3);
+    f.x[..7].copy_from_slice(&[0,counter(),hz(),s.generation,flags,s.sequence,s.issue]);
+}
 pub(super) fn service(pid:usize,f:&mut NativeFrame) {
     let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };
     let entry=counter();
     let op=f.x[8]; let cmd=f.x[0];
     if op==61 {
-        let flags=u64::from(s.gate) | (jnox_virtual_permit_enable.load(Ordering::SeqCst)<<1)
-            | (u64::from(s.fault)<<2) | (u64::from(s.pending)<<3);
-        f.x[..7].copy_from_slice(&[0,counter(),hz(),s.generation,flags,s.sequence,s.issue]);
+        sample_state(s, f);
         return;
     }
     let result=match (op,pid) {
         (59,2)=>s.supervisor(cmd,f.x[1]),
         (60,1)=>s.control(&f.x),
+        #[cfg(jnox_native_safety_qualification)]
+        (63,1) if matches!(cmd,1|3) => s.control(&f.x),
+        #[cfg(jnox_native_safety_qualification)]
+        (63,1) => Err(-22),
         _=>Err(-13),
     };
     let status=result.err().unwrap_or(0) as i64 as u64;
     log(5,[pid as u64,op,cmd,status,s.generation,s.sequence,s.issue,u64::from(s.streak)]);
-    if op==60 && cmd==3 { log(10,[entry,counter(),status,s.generation,s.sequence,s.issue,s.permit,s.streak as u64]); }
+    if matches!(op,60|63) && cmd==3 { log(10,[entry,counter(),status,s.generation,s.sequence,s.issue,s.permit,s.streak as u64]); }
     f.x[0]=status;
+    #[cfg(jnox_native_safety_qualification)]
+    if op == 63 && status == 0 { sample_state(s, f); }
 }
 pub(super) fn exit(pid:usize) {
     let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };

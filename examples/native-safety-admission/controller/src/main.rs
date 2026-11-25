@@ -133,7 +133,7 @@ fn overrun(t: Time) -> Result<()> {
     Ok(())
 }
 
-fn run(case: Case, t: Time) -> Result<()> {
+fn run(case: Case, t: Time, fused: bool) -> Result<()> {
     let mut model = Receiver::new(t.hz).map_err(|_| 91)?;
     for k in 0..JOBS {
         let mut command_used = false;
@@ -145,8 +145,12 @@ fn run(case: Case, t: Time) -> Result<()> {
                 target,
             };
             seg.start()?;
-            dev::check().map_err(|_| 92)?; // Both phases make a real expiry-first decision.
-            let entry = common::info()?;
+            let entry = if fused {
+                dev::check_and_sample().map_err(|_| 92)?
+            } else {
+                dev::check().map_err(|_| 92)?;
+                common::info()?
+            };
             if n == 0 {
                 model.begin_activation(entry.ticks)
             } else {
@@ -182,8 +186,12 @@ fn run(case: Case, t: Time) -> Result<()> {
             if matches!(case, Case::BoundaryWitness | Case::Collision) {
                 boundary_inputs(model, t.hz)?;
             }
-            dev::complete().map_err(|_| 92)?;
-            let end = common::info()?;
+            let end = if fused {
+                dev::complete_and_sample().map_err(|_| 92)?
+            } else {
+                dev::complete().map_err(|_| 92)?;
+                common::info()?
+            };
             model.check(end.ticks).map_err(|_| 91)?;
             let private = model.snapshot();
             let i = 2 * k + n;
@@ -225,10 +233,17 @@ fn panic(_: &PanicInfo<'_>) -> ! {
 #[no_mangle]
 pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
     (|| {
-        let case = Case::parse(argc, argv)?;
+        let fused = argc == 3;
+        if fused {
+            if argv.is_null() || (*argv.add(2)).is_null()
+                || core::ffi::CStr::from_ptr((*argv.add(2)).cast()).to_bytes() != b"fused-phase" {
+                return Err(81);
+            }
+        }
+        let case = Case::parse(if fused { 2 } else { argc }, argv)?;
         let t = Time::join(case)?;
         common::header(case, t);
-        let r = run(case, t);
+        let r = run(case, t, fused);
         common::record_result(r);
         common::park()?;
         r

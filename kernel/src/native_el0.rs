@@ -750,7 +750,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         return;
     }
     #[cfg(jnox_native_safety_channel)]
-    if matches!(f.x[8], 59..=61) {
+    if matches!(f.x[8], 59..=61) || (cfg!(jnox_native_safety_qualification) && f.x[8] == 63) {
         let op = f.x[8];
         #[cfg(jnox_native_safety_qualification)]
         let command = f.x[0];
