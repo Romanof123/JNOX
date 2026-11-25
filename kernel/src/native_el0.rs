@@ -517,7 +517,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         },
         8 if cfg!(jnox_native_process) => 0,
         9 if cfg!(jnox_native_periodic) => 0,
-        9..=12 => -95,
+        9..=17 => -95,
         _ => -38,
     };
     // Keep the first seven calls and the most recent call once the journal fills.
@@ -531,7 +531,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     head(8, index as u64 + 1);
     let pid = unsafe { CURRENT };
-    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=12).contains(&f.x[8]) {
+    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=17).contains(&f.x[8]) {
         f.x[0] = result as u64;
         return;
     }

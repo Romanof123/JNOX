@@ -217,3 +217,7 @@ python3 tools/build_native_el0.py --out output/native-threads/c --threads 2 --so
 ~~~sh
 python3 tools/build_native_el0.py --out output/thread-rr/rr --source examples/native-thread-rr/stream.c --threads 2 --policy rr --quantum-ticks 625000
 ~~~
+
+## 프로세스 전용 뮤텍스
+
+협력형 및 RR 두 스레드 패키지에서 고정 주소의 프로세스 전용 `pthread_mutex_t`를 `pthread_mutex_init(&m, NULL)`로 초기화한다. SDK는 `pthread_mutex_lock`, `pthread_mutex_trylock`, `pthread_mutex_unlock`, `pthread_mutex_destroy`를 제공한다. 한 프로세스에서 뮤텍스 최대 4개를 동시에 사용할 수 있다. 사용 중인 잠금에 trylock을 호출하면 errno를 보존하며 양의 EBUSY를 직접 반환한다. 차단된 lock은 소유자가 잠금을 양도한 뒤 복귀한다. 모든 사용이 끝난 뒤 잠금이 풀린 상태에서 파괴한다. [C·Rust 공유 센서 빌드 및 부팅](../examples/native-thread-mutex/README.md)

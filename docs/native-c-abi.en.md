@@ -217,3 +217,7 @@ Keep `--threads 2` alone for the default cooperative main and worker. Add `--pol
 ~~~sh
 python3 tools/build_native_el0.py --out output/thread-rr/rr --source examples/native-thread-rr/stream.c --threads 2 --policy rr --quantum-ticks 625000
 ~~~
+
+## Process-private mutexes
+
+Use an explicitly initialized, process-private `pthread_mutex_t` at a stable address. The SDK provides `pthread_mutex_init(&m, NULL)`, `pthread_mutex_lock`, `pthread_mutex_trylock`, `pthread_mutex_unlock` and `pthread_mutex_destroy` for cooperative and RR two-thread packages. Up to four mutexes may be live per process. A busy trylock returns positive EBUSY directly and preserves errno. A blocking lock resumes after the owner transfers ownership. Destroy the unlocked mutex after all users finish. [Build and boot the shared C/Rust sensor](../examples/native-thread-mutex/README.md)

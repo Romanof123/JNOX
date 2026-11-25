@@ -1,7 +1,9 @@
 #ifndef JNOX_ERRNO_H
 #define JNOX_ERRNO_H
+#define EPERM 1
 #define ESRCH 3
 #define EAGAIN 11
+#define EBUSY 16
 #define EDEADLK 35
 #define EINTR 4
 #define EFAULT 14

@@ -7,7 +7,31 @@ pub struct PthreadAttr {
     opaque: u64,
 }
 
+/// Storage for a process-private native mutex. Use a stable address for the
+/// whole initialized lifetime (e.g. static MaybeUninit<PthreadMutex>).
+#[repr(C, align(8))]
+pub struct PthreadMutex {
+    opaque: u64,
+}
+
+#[repr(C)]
+pub struct PthreadMutexAttr {
+    opaque: u64,
+}
+
 extern "C" {
+    /// Initialize writable storage with null attributes. Serialize against all
+    /// other uses; the storage may be uninitialized on entry.
+    pub fn pthread_mutex_init(mutex: *mut PthreadMutex, attr: *const PthreadMutexAttr) -> i32;
+    /// Destroy an initialized mutex; exclude concurrent use during destruction.
+    pub fn pthread_mutex_destroy(mutex: *mut PthreadMutex) -> i32;
+    /// Acquire at the original address, blocking until ownership if necessary.
+    pub fn pthread_mutex_lock(mutex: *mut PthreadMutex) -> i32;
+    /// Acquire immediately or return a positive errno.
+    pub fn pthread_mutex_trylock(mutex: *mut PthreadMutex) -> i32;
+    /// Release a mutex owned by the calling thread.
+    pub fn pthread_mutex_unlock(mutex: *mut PthreadMutex) -> i32;
+
     /// Start a worker with default attributes (null).
     ///
     /// # Safety
