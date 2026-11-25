@@ -63,7 +63,7 @@ pub(super) fn init_timer_irq() {
 }
 
 #[cfg(not(jnox_pi4))]
-fn configure_timer_ppi() {
+pub(super) fn configure_timer_ppi() {
     // With secure=off the GIC exposes both groups. Use Group 0 as IRQ (FIQEn
     // clear), with priority 0x80 allowed by PMR. PPIs are banked per CPU.
     gic_write(GICD, 0);

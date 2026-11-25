@@ -1,7 +1,7 @@
 //! One trusted, statically packaged native-v1 process on a dedicated virt boot.
 use crate::native_elf::{self, LoadPlan, Permission};
 use crate::native_el0_mmu::{self, STACK_BOTTOM, STACK_TOP};
-use crate::{park, uart_write};
+use crate::{context, park, uart_write};
 use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
 use core::ptr;
@@ -9,6 +9,7 @@ use core::ptr;
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
     fn native_el0_enter(entry: u64, sp: u64) -> !;
+    fn native_sleep_switch(idle_top: *mut u8);
     static native_el0_vectors: u8;
 }
 
@@ -69,6 +70,97 @@ fn clock_gettime(clock_id: u64, address: usize) -> i64 {
     bytes[..8].copy_from_slice(&seconds.to_le_bytes());
     bytes[8..].copy_from_slice(&((ns % 1_000_000_000) as i64).to_le_bytes());
     if native_el0_mmu::copy_to_user(address, &bytes) { 0 } else { -14 }
+}
+
+#[derive(Clone, Copy)]
+struct Resume {
+    frame: *const NativeFrame,
+    ttbr: u64,
+}
+
+#[derive(Clone, Copy)]
+enum TaskState {
+    Running,
+    BlockedUntil { target: u64, resume: Resume },
+    Ready(Resume),
+}
+
+// The ordinary native profile owns one process on CPU0. All transitions run
+// with IRQ masked. Its SVC frame and Rust continuation stay on the pinned
+// process kernel stack, while idle and its IRQ use this separate stack.
+static mut TASK: TaskState = TaskState::Running;
+static mut IDLE: context::Stack = context::Stack([0; context::STACK_BYTES]);
+
+fn disarm() {
+    unsafe { asm!("msr cntp_ctl_el0, xzr", "isb", options(nostack, preserves_flags)) };
+}
+
+fn wake_due(now: u64) -> bool {
+    if let TaskState::BlockedUntil { target, resume } = unsafe { TASK } {
+        if now >= target {
+            disarm();
+            unsafe { TASK = TaskState::Ready(resume) };
+            return true;
+        }
+    }
+    false
+}
+
+fn sleep_until(f: &NativeFrame, ttbr: u64) -> i64 {
+    if f.x[0] != 1 || f.x[1] != 1 {
+        return -22;
+    }
+    let mut request = [0u8; 16];
+    if !native_el0_mmu::copy_from_user(f.x[2] as usize, &mut request) {
+        return -14;
+    }
+    let seconds = i64::from_le_bytes(request[..8].try_into().unwrap());
+    let nanos = i64::from_le_bytes(request[8..].try_into().unwrap());
+    if seconds < 0 || !(0..1_000_000_000).contains(&nanos) {
+        return -22;
+    }
+    let (epoch, frequency) = unsafe { CLOCK_DOMAIN };
+    let hz = u128::from(frequency);
+    // Signed LP64 seconds times an unsigned 64-bit frequency fits u128,
+    // including the subsecond contribution and the 64-bit epoch.
+    let ticks = u128::from(epoch) + seconds as u128 * hz
+        + (nanos as u128 * hz).div_ceil(1_000_000_000);
+    let Ok(target) = u64::try_from(ticks) else { return -75 };
+    if counter() >= target {
+        return 0;
+    }
+    unsafe {
+        TASK = TaskState::BlockedUntil { target, resume: Resume { frame: f, ttbr } };
+        asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}", "isb",
+             target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
+    }
+    if !wake_due(counter()) {
+        let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
+        unsafe { native_sleep_switch(top) };
+    } else {
+        // Setup crossed the deadline. Withdraw any latched level before reuse.
+        context::gic_write(context::GICD + 0x280, 1 << context::TIMER_IRQ);
+        unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+    }
+    let TaskState::Ready(resume) = (unsafe { TASK }) else { fail(9) };
+    if !ptr::eq(resume.frame, f) { fail(9) }
+    unsafe {
+        asm!("msr ttbr0_el1, {}", "isb", in(reg) resume.ttbr, options(nostack, preserves_flags));
+        TASK = TaskState::Running;
+    }
+    0
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn native_sleep_irq() -> u64 {
+    let iar = context::gic_read(context::GICC + 0x0c);
+    let id = iar & 0x3ff;
+    if id >= 1020 { return 0 }
+    let ready = id == context::TIMER_IRQ && wake_due(counter());
+    unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+    context::gic_write(context::GICC + 0x10, iar);
+    unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+    ready as u64
 }
 
 fn decimal(value: i64) {
@@ -132,6 +224,7 @@ extern "C" fn native_el0_sync(frame: *const NativeFrame, vector: u64) -> i64 {
     let result = match f.x[8] {
         1 => 0,
         6 => clock_gettime(f.x[0], f.x[1] as usize),
+        7 => sleep_until(f, ttbr),
         _ => -38,
     };
     // Keep the first seven calls and the most recent call once the journal fills.
@@ -267,6 +360,8 @@ pub(super) fn run() -> ! {
             "isb", options(nostack, preserves_flags));
         ptr::write_volatile(0x0801_0000 as *mut u32, 0);
         ptr::write_volatile(0x0800_0000 as *mut u32, 0);
+        asm!("dsb sy", "isb", options(nostack, preserves_flags));
+        context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         native_el0_mmu::install(&plan, &tail).unwrap_or_else(|_| fail(6));
     }
