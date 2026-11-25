@@ -59,9 +59,12 @@ mod cyclic;
 mod aperiodic;
 #[cfg(jnox_native_aperiodic)]
 global_asm!(".set NATIVE_SERVER,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_cyclic_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(jnox_native_partition)]
+#[cfg(jnox_native_hierarchy)]
+#[path = "native_hierarchy.rs"]
+mod hierarchy;
+#[cfg(any(jnox_native_partition, jnox_native_hierarchy))]
 global_asm!(".set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_cyclic_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(not(any(jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
+#[cfg(not(any(jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
     fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
@@ -143,7 +146,7 @@ fn clock_gettime(clock_id: u64, address: usize, now: u64) -> i64 {
 #[derive(Clone, Copy, PartialEq)]
 enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_weighted_continuous) || cfg!(jnox_native_threads) || cfg!(any(jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
+const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_weighted_continuous) || cfg!(jnox_native_threads) || cfg!(any(jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
 const EMPTY_FRAME: NativeFrame = NativeFrame {
     x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
     current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
@@ -388,6 +391,8 @@ fn event(kind: &[u8], pid: usize, value: Option<i64>) {
 extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
+    #[cfg(jnox_native_hierarchy)]
+    { return hierarchy::irq(entry, frame, iar); }
     #[cfg(jnox_native_aperiodic)]
     { return aperiodic::irq(entry, frame, iar); }
     #[cfg(jnox_native_weighted_continuous)]
@@ -528,6 +533,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     if exit && f.x[0] as i32 as i64 as u64 != f.x[0] {
         fail(3);
     }
+    #[cfg(jnox_native_hierarchy)]
+    { hierarchy::syscall(entry, f); return; }
     #[cfg(jnox_native_aperiodic)]
     { aperiodic::syscall(entry, f); return; }
     #[cfg(jnox_native_partition)]
@@ -792,7 +799,7 @@ pub(super) fn run() -> ! {
             FRAMES[pid].sp_el0 = layout.sp as u64;
             ptr::write_volatile(&raw mut jnox_native_startup_slots[pid],
                 [plan.entry, layout.sp as u64, layout.len as u64, layout.argc as u64]);
-            if !cfg!(any(jnox_native_aperiodic, jnox_native_partition, jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
+            if !cfg!(any(jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
                 if pid == 0 { STATES[pid] = TaskState::Running; } else { enqueue(pid); }
             }
         }
@@ -826,11 +833,13 @@ pub(super) fn run() -> ! {
     let first = cbs::start(frequency);
     #[cfg(jnox_native_multilevel)]
     let first = multilevel::start(frequency);
+    #[cfg(jnox_native_hierarchy)]
+    let first = hierarchy::start(frequency);
     #[cfg(jnox_native_aperiodic)]
     let first = aperiodic::start(frequency);
     #[cfg(jnox_native_partition)]
     let first = cyclic::start(frequency);
-    #[cfg(not(any(jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)))]
+    #[cfg(not(any(jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)))]
     let first = if cfg!(jnox_native_fixed) {
         start_fixed()
     } else {

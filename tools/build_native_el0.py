@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import sys
 
+from native_hierarchy import parse_topology
+
 ROOT = Path(__file__).resolve().parents[1]
 SDK = ROOT / "sdk/native-aarch64"
 SOURCE = ROOT / "examples/portability/native_startup_probe.c"
@@ -246,10 +248,11 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
@@ -337,6 +340,15 @@ def main():
             parser.error("service cells must increase strictly within 0..15")
         calendar = ",".join(map(str, cells))
         vectors[2] = [calendar]
+    if (args.hierarchy is not None) != (policy == "hierarchy"):
+        parser.error("--hierarchy is required exclusively with --policy hierarchy")
+    if policy == "hierarchy":
+        try:
+            hierarchy_path = args.hierarchy.resolve(strict=True)
+            hierarchy_source = hierarchy_path.read_bytes()
+            topology, raw_topology = parse_topology(hierarchy_source, 1 + len(args.peer_elf))
+        except (ValueError, OSError, RecursionError) as exc:
+            parser.error(f"invalid --hierarchy: {exc}")
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
     if service:
         peer_inputs.append(service.resolve(strict=True))
@@ -368,6 +380,13 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if policy == "hierarchy":
+        name = str(hierarchy_path.relative_to(ROOT) if hierarchy_path.is_relative_to(ROOT) else hierarchy_path)
+        digest = hashlib.sha256(hierarchy_source).hexdigest()
+        inputs[name] = digest
+        metadata.update(hierarchy=topology, timing_unit="physical_counter_ticks",
+                        hierarchy_input={"path": name, "sha256": digest}, package_argv=sys.argv[:])
+        env["JNOX_NATIVE_HIERARCHY"] = raw_topology
     with (out / "build.log").open("w", encoding="utf-8") as log:
         if args.elf:
             shutil.copyfile(app_input, user_elf)
