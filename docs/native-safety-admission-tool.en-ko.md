@@ -1,6 +1,6 @@
 # Native permit timing screen / 네이티브 허가 채널 타이밍 판정
 
-Use the extracted FIFO or RR qualification capture with its original pkg/manifest.json and cap/launch.json, kernel.elf, session.json and uart.bin. The package copy of kernel.elf is also required. For the original first-position archive:
+Use the extracted FIFO or RR qualification capture with its original pkg/manifest.json and cap/launch.json, kernel.elf, session.json and uart.bin. The package kernel and captured user.elf are required. The checker hashes each entire embedded ELF in the kernel and matches the ordered UART identities. It also hashes every staged slot ELF present in pkg/ or cap/ and requires each ELF listed in the capture receipt. The first-position archives retain their two peer ELFs inside the kernel. For the original first-position archive:
 
 ~~~sh
 mkdir fifo-healthy

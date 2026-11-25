@@ -43,6 +43,43 @@ def timing_bounds(path, kernel, policy, gaps):
     return limits
 
 
+def verify_slot_images(pkg, cap, manifest, launch, receipt, uart, kernel_image):
+    """Verify the frozen ELF64 layout, including peers retained only inside the kernel."""
+    names = ("user.elf", "native_peer.elf", "native_peer2.elf")
+    keys = ("user_elf_sha256", "peer_elf_sha256", "peer2_elf_sha256")
+    slots = manifest["slots"]
+    expected = [slot["elf_sha256"] for slot in slots]
+    boot = re.findall(r"^NATIVE EL0 (?:(PEER[0-9]*) )?ELF ([0-9a-f]{64})\s*$",
+                      uart, re.MULTILINE)
+    if boot != list(zip(("", "PEER", "PEER2"), expected)):
+        raise ValueError("ordered UART ELF identities differ from manifest")
+    if launch["user_sha256"] != expected[0] or launch["revision"] != manifest["commit"]:
+        raise ValueError("launch executable or revision mismatch")
+    # These linked standalone ELF64 files end at their section-header table.
+    # Hash complete embedded bytes independently of the digest strings in UART.
+    embedded = set()
+    for match in re.finditer(b"\x7fELF\x02\x01\x01", kernel_image):
+        start = match.start()
+        if start == 0 or start + 64 > len(kernel_image):
+            continue
+        table = int.from_bytes(kernel_image[start+40:start+48], "little")
+        entry = int.from_bytes(kernel_image[start+58:start+60], "little")
+        count = int.from_bytes(kernel_image[start+60:start+62], "little")
+        stop = start + table + entry * count
+        if entry == 64 and count and table >= 64 and stop <= len(kernel_image):
+            embedded.add(digest(kernel_image[start:stop]))
+    for slot, name, key in zip(slots, names, keys):
+        wanted = slot["elf_sha256"]
+        if slot["elf"] != name or manifest[key] != wanted or wanted not in embedded:
+            raise ValueError(f"{name}: package or embedded ELF identity mismatch")
+        for parent in (pkg, cap):
+            path = parent / name
+            recorded = parent == cap and (name == names[0] or name in receipt)
+            if recorded and receipt.get(name) != wanted:
+                raise ValueError(f"{name}: capture receipt mismatch")
+            if (recorded or path.exists()) and digest(path.read_bytes()) != wanted:
+                raise ValueError(f"{path}: ELF bytes differ from the package")
+
 def assess(directory, bounds_path):
     pkg, cap = directory / "pkg", directory / "cap"
     manifest_bytes = (pkg / "manifest.json").read_bytes()
@@ -52,7 +89,8 @@ def assess(directory, bounds_path):
     receipt = json.loads((cap / "session.json").read_bytes())["hashes"]
     uart_bytes = (cap / "uart.bin").read_bytes()
     uart = uart_bytes.decode("ascii")
-    kernel = digest((pkg / "kernel.elf").read_bytes())
+    kernel_image = (pkg / "kernel.elf").read_bytes()
+    kernel = digest(kernel_image)
     policy = manifest["policy"]
     if (receipt["uart.bin"] != digest(uart_bytes) or receipt["launch.json"] != digest(launch_bytes)
             or receipt["kernel.elf"] != kernel or launch["argument_package"] != manifest
@@ -76,6 +114,7 @@ def assess(directory, bounds_path):
     slots = manifest["slots"]
     if [s["slot"] for s in slots] != [0, 1, 2]:
         raise ValueError("requires sender, controller and supervisor slots")
+    verify_slot_images(pkg, cap, manifest, launch, receipt, uart, kernel_image)
     if not slots[1]["priority"] > slots[0]["priority"] > slots[2]["priority"]:
         failures.append("controller > sender > supervisor rank requirement")
     if policy == "rr" and not integer(manifest.get("quantum_ticks"), 1):
