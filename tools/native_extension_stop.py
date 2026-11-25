@@ -71,6 +71,10 @@ def package_inputs(args):
     check(proof["position"] == position and proof["scope"] == "linked preflight only"
           and proof["verdict"] == "PASS" and proof["provenance"]["cohort_sha256"] == args.cohort_sha256
           and proof["kernels"][variant] == linked["output_sha256"], "same-position source equivalence")
+    selected = {"abi": 1, "capacity": 512} if args.extension_register_observations else None
+    check(spec.get("extension_register_observations")==selected and
+          proof.get("extension_register_observations")==selected and
+          manifest.get("extension_register_observations")==selected,"sealed observer profile")
     if variant == "ordinary":
         kernel = elf_file((args.package/"kernel.elf").read_bytes())
         typed, size = symbol(kernel, "jnox_extension_evaluator_enter")
@@ -235,11 +239,20 @@ def replay(args, manifest, order, qemu_hash):
     elif not plain:
         witness, unknown, typed_rows = read_trace((cap/"exceptions.log").read_bytes(), rows, returns, addresses,
                                       eval_stack, idle_stack, stopped)
+    from native_extension_registers import observations
+    direct=observations(manifest,uart,elf,mem,config,rows,loss,witness,loop,not plain)
+    if direct and not plain:
+        from native_extension_registers import trace_vectors
+        trace_vectors((cap/"exceptions.log").read_bytes(),elf,rows)
+    if direct:
+        issues.extend(direct["issues"])
+        unknown.extend(direct["unknown"])
     return dict(position=args.position, mode="plain" if plain else "captured", session=args.session_sha256,
                 reference=args.reference_sha256, cohort=args.cohort_sha256, preflight=args.preflight_sha256, typed_entries=typed_rows, cells=cells, events=rows, roots=roots, exits=exits,
                 products_by_voltage_temperature_alarms=products, cutoff_registers=witness,
-                comparator_evidence="opening intended compare and observed entry CVAL/CTL; no at-arm hardware readback",
-                pstate_evidence="live pre-IRQ state and unchanged self-branch; no direct saved SPSR_EL1 dump",
+                **({"register_observations":direct} if direct else {}),
+                comparator_evidence="direct at-arm and entry readbacks" if direct else "opening intended compare and observed entry CVAL/CTL; no at-arm hardware readback",
+                pstate_evidence="direct saved SPSR_EL1/ELR_EL1" if direct else "live pre-IRQ state and unchanged self-branch; no direct saved SPSR_EL1 dump",
                 issues=issues, unknown=unknown, plain_external_state="unobserved" if plain else None)
 
 
@@ -268,7 +281,10 @@ def main():
     parser.add_argument("--probe", type=Path)
     parser.add_argument("--qemu", default="qemu-system-aarch64")
     parser.add_argument("--nm", default="aarch64-linux-gnu-nm")
+    parser.add_argument("--extension-register-observations", action="count", default=0)
     args = parser.parse_args()
+    if args.extension_register_observations > 1:
+        parser.error("duplicate --extension-register-observations")
     manifest, order, qemu_hash = package_inputs(args)
     if args.operation == "replay":
         result = replay(args, manifest, order, qemu_hash)

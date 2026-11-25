@@ -341,7 +341,15 @@ def replay(package,capture,digest):
             issues.append("external exception source level/cause/PC stream differs from journal")
         if observed!=returns:
             issues.append("EL0 ERET stream differs from recorded returns")
+    from native_extension_registers import observations
+    direct=observations(m,uart,elf_file((capture/"kernel.elf").read_bytes()),mem,config,rows,dropped)
+    if direct and not plain:
+        from native_extension_registers import trace_vectors
+        trace_vectors(raw,elf_file((capture/"kernel.elf").read_bytes()),rows)
+    if direct:
+        issues.extend(direct["issues"])
     return dict(session_sha256=digest,config=config,program=ops,slots=slots,roots=roots,
+                **({"register_observations":direct,"unknown":direct["unknown"]} if direct else {}),
                 products=actual,exits=exits,dropped=dropped,cells=cells,events=rows,plain=plain,
                 expected_eret_pcs=returns,issues=issues)
 
@@ -357,4 +365,4 @@ if __name__=="__main__":
     except (ValueError,OSError,KeyError,ImportError,IndexError,TypeError,struct.error) as exc:
         p.exit(2,f"incomplete or inconsistent extension evidence: {exc}\n")
     print(json.dumps(result,indent=2))
-    sys.exit(1 if result["issues"] else 0)
+    sys.exit(1 if result["issues"] else 2 if result.get("unknown") else 0)

@@ -333,6 +333,7 @@ def main():
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--extension-register-observations", action="count", default=0)
     parser.add_argument("--extension-program", type=Path, action=SinglePath, metavar="RULE.txt")
     parser.add_argument("--amc-clock-page", action="count", default=0)
     parser.add_argument("--amc-manifest", type=Path, action=SinglePath, metavar="DEPLOYMENT.json")
@@ -449,6 +450,9 @@ def main():
             parser.error("service cells must increase strictly within 0..15")
         calendar = ",".join(map(str, cells))
         vectors[2] = [calendar]
+    if args.extension_register_observations and (args.extension_register_observations != 1 or
+                                                 policy != "extension" or board != "virt"):
+        parser.error("--extension-register-observations requires one explicit virt extension profile")
     if (args.extension_program is not None) != (policy == "extension"):
         parser.error("--extension-program is required exclusively with --policy extension")
     if policy == "extension":
@@ -515,6 +519,9 @@ def main():
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
     if policy == "extension":
+        if args.extension_register_observations:
+            metadata["extension_register_observations"] = {"abi": 1, "capacity": 512}
+            env["JNOX_NATIVE_EXTENSION_REGISTER_OBSERVATIONS"] = "1"
         program = out / "extension_program.txt"
         program.write_bytes(("\n".join(ops) + "\n").encode("ascii"))
         digest = sha256(program)

@@ -67,12 +67,16 @@ def build(args, root):
     spec = dict(position=args.position, tools=pins, root=str(root), wrapper_sha256=digest(wrapper),
                 driver_sha256=digest(Path(__file__)), source=str(ROOT),
                 entry_source_sha256=digest(ROOT/"kernel/src/native_extension_entry.S"))
+    if args.extension_register_observations:
+        spec["extension_register_observations"] = {"abi": 1, "capacity": 512}
     save(root/"spec.json", spec)
     order = (0, 1, 2) if args.position == "a" else (2, 1, 0)
     cmd = [sys.executable, str(ROOT/"tools/build_native_el0.py"), "--out", str(root/"ordinary"),
            "--board", "virt", "--policy", "extension", "--extension-program", str(rule),
            "--elf", str(ref/APPS[order[0]]), "--peer-elf", str(ref/APPS[order[1]]),
            "--peer-elf", str(ref/APPS[order[2]])]
+    if args.extension_register_observations:
+        cmd.append("--extension-register-observations")
     if args.position == "b":
         cmd += ["--arg", "four-batches"]
     env = {k: v for k, v in os.environ.items() if not k.startswith(("CARGO_", "RUST", "JNOX_", "COHORT349_"))}
@@ -114,7 +118,10 @@ def main():
     p.add_argument("accepted", type=Path)
     p.add_argument("out", type=Path)
     p.add_argument("--pins", required=True, type=Path)
+    p.add_argument("--extension-register-observations", action="count", default=0)
     args = p.parse_args()
+    if args.extension_register_observations > 1:
+        p.error("duplicate --extension-register-observations")
     root = args.out.absolute()
     require(root.parent.resolve(strict=True) == root.parent, "fresh directory under physical parent required")
     root.mkdir(mode=0o700)

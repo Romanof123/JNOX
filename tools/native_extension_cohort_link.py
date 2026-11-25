@@ -16,6 +16,9 @@ def link(root, spec, audit):
     target = root/"ordinary/target"
     require(Path.cwd().resolve() == ROOT/"kernel" and os.environ.get("JNOX_NATIVE_POLICY") == "extension"
             and Path(os.environ["CARGO_TARGET_DIR"]).resolve() == target, "unexpected Cargo invocation")
+    diagnostic = "extension_register_observations" in spec
+    require(os.environ.get("JNOX_NATIVE_EXTENSION_REGISTER_OBSERVATIONS") == ("1" if diagnostic else None),
+            "link invocation diagnostic selector differs from cohort")
     blobs = audit/"blobs"
     blobs.mkdir()
     inputs, responses = [], []

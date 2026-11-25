@@ -113,7 +113,11 @@ def main(argv):
     p.add_argument("position",choices=("a","b"))
     for name in ("cohort","standalone","out"):
         p.add_argument(name,type=Path)
+    p.add_argument("--extension-register-observations", action="count", default=0)
+    p.add_argument("--disabled-cohort",type=Path,help="same-position disabled builds for the diagnostic comparison")
     a=p.parse_args(argv)
+    if a.extension_register_observations>1 or bool(a.extension_register_observations)!=(a.disabled_cohort is not None):
+        p.error("diagnostic preflight requires one --extension-register-observations and --disabled-cohort")
     a.out.mkdir(parents=True,exist_ok=False)
     report=dict(position=a.position,verdict="UNVERIFIED",scope="linked preflight only")
     try:
@@ -146,6 +150,15 @@ def main(argv):
         require(images["dormant"].sections[SELECTOR]["sh_addr"]==images["active"].sections[SELECTOR]["sh_addr"],"moved selector")
         report.update(kernels=outputs,standalone=standalone_sha,entry=locations[0][0],call=locations[0][1])
         report.update(provenance=check_inputs(a.cohort,outputs,images))
+        profile={"abi":1,"capacity":512} if a.extension_register_observations else None
+        require(read_json(a.cohort/"spec.json").get("extension_register_observations")==profile,"cohort compiler profile")
+        for directory in [a.standalone]+[a.cohort/label for label in LABELS]:
+            require(read_json(directory/"manifest.json").get("extension_register_observations")==profile,
+                    "ordinary/fixture diagnostic profile mismatch")
+        if profile:
+            report["extension_register_observations"]=profile
+            from native_extension_registers import deployment_comparison
+            report["disabled_comparison"]=deployment_comparison(a,images,reference,apps)
         report["verdict"]="PASS"
     except Exception as exc:
         report["reason"]=str(exc)
