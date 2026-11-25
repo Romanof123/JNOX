@@ -357,6 +357,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_migration)");
     println!("cargo::rustc-check-cfg=cfg(jnox_eevdf_app)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_el0)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_process)");
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
     if profile.as_deref() != Some("native") {
@@ -375,10 +376,13 @@ fn main() {
     }
     match profile.as_deref() {
         Some("native") => {
-            assert!(board == "virt" && app.as_deref() == Some("startup-probe")
+            assert!(board == "virt" && matches!(app.as_deref(), Some("startup-probe" | "process"))
                 && bench == "boot" && trace.is_none() && scenario.is_none()
                 && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
-                "native startup-probe requires virt and no benchmark features");
+                "native startup-probe or process requires virt and no benchmark features");
+            if app.as_deref() == Some("process") {
+                println!("cargo::rustc-cfg=jnox_native_process");
+            }
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"));
             println!("cargo::rustc-cfg=jnox_native_el0");

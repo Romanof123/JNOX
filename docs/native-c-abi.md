@@ -33,3 +33,24 @@ EL0가 SVC #0x4a01을 실행한다. x8은 서비스 번호, x0~x2는 인자다. 
     sh sdk/native-aarch64/build.sh examples/portability/telemetry_monitor.c telemetry-native.elf
 
 컴파일러와 링커 버전, 소스·ELF 해시, 프로그램 헤더, 섹션 권한, SVC 명령 및 외부 런타임 심벌 유무를 보존한다. 독립 로드 플래너로 생성된 바이트를 검증한다. 이후 게스트 검증에서 원래 argv 경로, 실제 파일 읽기, 부분 전송 및 오류, 표준 출력·오류 바이트, 종료 상태를 확인한다. Linux 바이너리 호환성, 추가 POSIX 인터페이스, 동시성과 TLS는 각각 독립적으로 검증한다.
+
+## 네이티브 시계 앱 패키징 및 실행
+
+서비스 6은 `clock_gettime(CLOCK_MONOTONIC, tp)`를 제공한다. `svc #0x4a01` 호출 시 x8에 6, x0에 시계 ID 1, x1에 쓰기 가능한 LP64 timespec 주소를 전달한다. 구조체에는 부호 있는 64비트 초와 나노초가 순서대로 들어간다. 성공하면 0을 반환하며 오류는 위의 네이티브 규약을 따른다.
+
+Linux 저장소 루트에서 네이티브 빌드 도구, QEMU, AArch64 nm 및 Rust 타깃 `aarch64-unknown-none-softfloat`를 준비하고 새 출력 디렉터리를 사용한다.
+
+    python3 tools/build_native_el0.py --source examples/portability/clock_checksum.c --out c-package
+    sh sdk/native-aarch64/build-rust.sh examples/native-clock-rust/Cargo.toml clock-rust.elf
+    python3 tools/build_native_el0.py --elf clock-rust.elf --out rust-package
+    python3 tools/native_el0_capture.py c-run c-package/kernel.elf c-package/user.elf examples/portability/clock_checksum.c "$(git rev-parse HEAD)" --expect-exit 0
+    python3 tools/native_el0_capture.py rust-run rust-package/kernel.elf rust-package/user.elf examples/native-clock-rust/src/main.rs "$(git rev-parse HEAD)" --expect-exit 0
+
+매니페스트에 선택한 C 파일 또는 링크된 ELF의 경로와 SHA-256을 기록한다. 입력을 지정하면 일반 네이티브 프로세스 실행기가 argv[0]을 /bin/app으로 설정한다. 캡처는 Rust 소스를 포함해 전달받은 소스를 기존 이름 `probe.c`로 보관하며 UART 마지막 줄에서 예상 종료값을 확인한다. 각 캡처가 출력한 세션 해시를 아래 명령에 전달한다. 리플레이는 내장 ELF, 사용자 페이지 매핑, EL0 시계 호출 두 건의 성공, QEMU 예외 전환 및 종료값 0을 확인한다.
+
+    python3 tools/native_el0_replay.py c-run "$C_SESSION_SHA256" --clock-app
+    python3 tools/native_el0_replay.py rust-run "$RUST_SESSION_SHA256" --clock-app
+
+기본 리플레이는 기존 시작 프로브의 종료값 37을 검사한다. 해당 대조군은 `python3 tools/build_native_el0.py --out startup-package`로 빌드한다.
+
+네이티브 서비스 작업은 #286에서 추적하며 관련 이슈는 #12, #8, #21, #162이다. REQ-014는 개발·관측 API를 다루며 REQ-018은 시계 고장 등의 독립적인 감지와 대응을 요구한다. [요구사항](requirements.md)

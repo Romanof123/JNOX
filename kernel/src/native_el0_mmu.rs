@@ -188,3 +188,18 @@ pub(crate) fn user_range(addr: usize, len: usize, write: bool) -> bool {
     }
     true
 }
+
+/// Immutable page tables and a single suspended user thread make this copy
+/// all-or-nothing for the caller, including unaligned spans crossing a page.
+pub(crate) fn copy_to_user(addr: usize, bytes: &[u8; 16]) -> bool {
+    if !user_range(addr, bytes.len(), true) {
+        return false;
+    }
+    let (backing, base) = if addr < IMAGE_HI {
+        ((&raw mut IMAGE_RAM).cast::<u8>(), IMAGE_LO)
+    } else {
+        ((&raw mut STACK_RAM).cast::<u8>(), STACK_BOTTOM)
+    };
+    unsafe { core::ptr::copy_nonoverlapping(bytes.as_ptr(), backing.add(addr - base), bytes.len()) };
+    true
+}

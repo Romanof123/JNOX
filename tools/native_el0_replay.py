@@ -105,7 +105,7 @@ def permissions(mem, root, va, access, device=False):
     return hex(desc)
 
 
-def audit(kernel, user, mem):
+def audit(kernel, user, mem, clock_app=False):
     k = elf_file(kernel)
     u = elf_file(user)
     start, _ = symbol(k, "_start")
@@ -179,12 +179,12 @@ def audit(kernel, user, mem):
             0x01010FB0,
             0x01001000,
             0x01011000,
-            2,
-            37,
+            3 if clock_app else 2,
+            0 if clock_app else 37,
             1,
             0,
             4,
-            3,
+            1 if clock_app else 3,
         ),
         "terminal journal",
     )
@@ -192,7 +192,8 @@ def audit(kernel, user, mem):
         sctlr & 1 and entry == u["e_entry"] == symbol(u, "_start")[0],
         "enabled translation and linked entry",
     )
-    need(not any(any(row) for row in rows[3:]), "uncommitted journal data")
+    need(bottom <= sp < top and sp % 16 == 0, "initial stack")
+    need(not any(any(row) for row in rows[1 + events:]), "uncommitted journal data")
     mappings = {}
     segments = [
         s for s in u.iter_segments() if s["p_type"] == "PT_LOAD" and s["p_memsz"]
@@ -249,29 +250,35 @@ def audit(kernel, user, mem):
         (0x09000000, "kernel rw", True),
     ):
         mappings[hex(addr)] = permissions(mem, root, addr, access, device)
-    stack = struct.unpack("<6Q", vread(mem, root, sp, 48))
-    need(
-        stack[0] == 3 and stack[4:] == (0, 0),
-        "bootstrap argc, argv terminator and empty environment",
-    )
-    for ptr, value in zip(
-        stack[1:4], (b"/bin/native_startup_probe\0", b"8\0", b"13\0")
-    ):
+    if clock_app:
+        count, arg, argv_end, env_end = struct.unpack("<4Q", vread(mem, root, sp, 32))
+        need((count, argv_end, env_end) == (1, 0, 0) and sp + 32 <= arg <= top - 9
+             and vread(mem, root, arg, 9) == b"/bin/app\0", "process startup arguments")
+    else:
+        stack = struct.unpack("<6Q", vread(mem, root, sp, 48))
         need(
-            sp + 48 <= ptr <= top - len(value)
-            and vread(mem, root, ptr, len(value)) == value,
-            "bootstrap argv string",
+            stack[0] == 3 and stack[4:] == (0, 0),
+            "bootstrap argc, argv terminator and empty environment",
         )
-    need(stack[1:4] == (sp + 48, sp + 74, sp + 76), "exact startup string addresses")
+        for ptr, value in zip(
+            stack[1:4], (b"/bin/native_startup_probe\0", b"8\0", b"13\0")
+        ):
+            need(
+                sp + 48 <= ptr <= top - len(value)
+                and vread(mem, root, ptr, len(value)) == value,
+                "bootstrap argv string",
+            )
+        need(stack[1:4] == (sp + 48, sp + 74, sp + 76), "exact startup string addresses")
     for va in range(start, limit, PAGE):
         permissions(mem, root, va, "kernel rx" if va < rw else "kernel rw")
     final_data = {}
-    for name, expected in (
+    startup_symbols = (
         ("products", (16, 13)),
         ("bias", (8,)),
         ("__jnox_errno_location.initial_thread_errno", (38,)),
         ("weights", (2, 1)),
-    ):
+    )
+    for name, expected in ([] if clock_app else startup_symbols):
         addr, size = symbol(u, name)
         need(size == 4 * len(expected), "user symbol extent " + name)
         actual = tuple(
@@ -280,7 +287,8 @@ def audit(kernel, user, mem):
         need(actual == expected, "final user symbol " + name)
         final_data[name] = actual
     pcs = []
-    for i, row in enumerate(rows[1:3]):
+    clocks = []
+    for i, row in enumerate(rows[1:1 + events]):
         (
             idx,
             vector,
@@ -317,14 +325,19 @@ def audit(kernel, user, mem):
             and int.from_bytes(vread(mem, root, pc - 4, 4), "little") == SVC,
             "user SVC instruction",
         )
-        if i == 0:
+        if clock_app and i < 2:
+            need((nr, x0, result, disp) == (6, 1, 0, 1), "successful monotonic clock service")
+            for address in (x1, x1 + 15):
+                permissions(mem, root, address, "user rw")
+            clocks.append(hex(x1))
+        elif i == 0:
             need(
                 (nr, x0, x2, result, disp) == (4, 1, 3, (-38) & U64, 1),
                 "write syscall result",
             )
             need(vread(mem, root, x1, 3) == b"37\n", "write pointer contents")
         else:
-            need((nr, x0, result, disp) == (1, 37, 0, 2), "exit syscall")
+            need((nr, x0, result, disp) == (1, exitcode, 0, 2), "exit syscall")
         pcs.append(pc)
     return dict(
         entry=entry,
@@ -334,9 +347,9 @@ def audit(kernel, user, mem):
         vector=vbar + 0x400,
         elrs=pcs,
         final_symbols=final_data,
-        exit_status=37,
+        exit_status=exitcode,
         stdout_bytes=0,
-        write_result=-38,
+        **({"clock_output_addresses": clocks} if clock_app else {"write_result": -38}),
         page_descriptors=mappings,
     )
 
@@ -368,21 +381,21 @@ def trace_check(raw, report):
             and int(vector[2], 16) & 15 == 5,
             "QEMU SVC syndrome/ELR/vector",
         )
-        if i == 0:
+        if i + 1 < len(report["elrs"]):
             eret(pc)
     need(not list(lines), "unexpected transition after process exit")
 
 
-def check_uart(raw, user_digest):
+def check_uart(raw, user_digest, status=37):
     expected = (
         b"JNOX M1 BOOT\nJNOX M1 READY\nNATIVE EL0 ELF "
         + user_digest.encode("ascii")
-        + b"\nNATIVE EL0 EXIT 37\n"
+        + f"\nNATIVE EL0 EXIT {status}\n".encode("ascii")
     )
     need(raw == expected, "terminal markers and application stdout")
 
 
-def replay(folder, digest):
+def replay(folder, digest, clock_app=False):
     need(sha(folder / "session.json") == digest, "trusted session digest mismatch")
     rec = json.loads(bounded(folder / "session.json", 65536), object_pairs_hook=obj)
     required = {
@@ -440,14 +453,16 @@ def replay(folder, digest):
         ("probe", "probe.c"),
     ):
         need(run[key + "_sha256"] == hashes[name], "launch asset digest")
-    need(rec["marker"] == "EXIT 37", "terminal capture marker")
-    check_uart(bounded(folder / "uart.bin", 1 << 20), hashes["user.elf"])
+    status = 0 if clock_app else 37
+    need(rec["marker"] == f"EXIT {status}", "terminal capture marker")
+    check_uart(bounded(folder / "uart.bin", 1 << 20), hashes["user.elf"], status)
     memory = bounded(folder / "ram.bin", 16 << 20)
     need(len(memory) == run["ram_bytes"], "physical snapshot size")
     report = audit(
         bounded(folder / "kernel.elf", 64 << 20),
         bounded(folder / "user.elf", 16 << 20),
         Snapshot(run["ram_base"], memory),
+        clock_app,
     )
     trace_check(bounded(folder / "exceptions.log", 16 << 20), report)
     report.update(
@@ -456,7 +471,8 @@ def replay(folder, digest):
         kernel_sha256=hashes["kernel.elf"],
         probe_sha256=hashes["probe.c"],
         session_sha256=digest,
-        scope="one native startup, unsupported write and process exit on single-vCPU virt",
+        scope="two native EL0 monotonic clock calls and exit on single-vCPU virt" if clock_app else
+        "one native startup, unsupported write and process exit on single-vCPU virt",
     )
     return report
 
@@ -465,9 +481,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("folder", type=Path)
     parser.add_argument("session_sha256")
+    parser.add_argument("--clock-app", action="store_true", help="verify two monotonic calls and exit 0")
     args = parser.parse_args()
     try:
-        print(json.dumps(replay(args.folder, args.session_sha256), indent=2))
+        print(json.dumps(replay(args.folder, args.session_sha256, args.clock_app), indent=2))
     except (FileNotFoundError, ImportError) as exc:
         parser.exit(2, f"UNOBSERVED {exc}\n")
     except (OSError, ValueError, KeyError, IndexError, TypeError) as exc:

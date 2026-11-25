@@ -142,7 +142,7 @@ def capture(args):
             ),
         )
         print(sha(root / "session.json"))
-    return int(marker != "EXIT 37")
+    return int(marker != f"EXIT {args.expect_exit}")
 
 
 if __name__ == "__main__":
@@ -150,6 +150,7 @@ if __name__ == "__main__":
     for name in ("root", "kernel", "user", "probe"):
         parser.add_argument(name, type=Path)
     parser.add_argument("revision")
+    parser.add_argument("--expect-exit", type=int, default=37, help="expected signed process exit")
     parser.add_argument("--qemu", default="qemu-system-aarch64")
     parser.add_argument("--nm", default="aarch64-linux-gnu-nm")
     sys.exit(capture(parser.parse_args()))

@@ -33,3 +33,24 @@ After the unchanged workload and SDK are present in one checkout, run the follow
     sh sdk/native-aarch64/build.sh examples/portability/telemetry_monitor.c telemetry-native.elf
 
 Record compiler and linker versions, source and ELF hashes, program headers, section flags, syscall opcodes and absence of unresolved runtime imports. Validate the resulting bytes with the independent static load planner. A future supervised boot must show the original argv path, actual file reads, partial/error cases, stdout/stderr bytes and the observed exit status. Keep the native profile distinct from the Linux binary personality and qualify additional POSIX interfaces, concurrency and TLS independently.
+
+## Package and run a native clock application
+
+Service 6 implements `clock_gettime(CLOCK_MONOTONIC, tp)`. At `svc #0x4a01`, x8 holds 6, x0 holds clock ID 1 and x1 points to a writable LP64 timespec (two signed 64-bit fields, seconds followed by nanoseconds). A successful call returns zero. The native error convention above applies.
+
+Run from the repository root on Linux with the native build prerequisites, QEMU, AArch64 nm and the Rust target `aarch64-unknown-none-softfloat`. Choose fresh output directories.
+
+    python3 tools/build_native_el0.py --source examples/portability/clock_checksum.c --out c-package
+    sh sdk/native-aarch64/build-rust.sh examples/native-clock-rust/Cargo.toml clock-rust.elf
+    python3 tools/build_native_el0.py --elf clock-rust.elf --out rust-package
+    python3 tools/native_el0_capture.py c-run c-package/kernel.elf c-package/user.elf examples/portability/clock_checksum.c "$(git rev-parse HEAD)" --expect-exit 0
+    python3 tools/native_el0_capture.py rust-run rust-package/kernel.elf rust-package/user.elf examples/native-clock-rust/src/main.rs "$(git rev-parse HEAD)" --expect-exit 0
+
+The manifest records the selected C file or prelinked ELF and its SHA-256. Explicit inputs select the native process launcher with argv[0] set to /bin/app. The capture archives the supplied source under the historical name `probe.c`, including Rust source. Its expected exit checks the terminal UART line. Use each capture's printed session digest in the clock replay. It checks the embedded ELF, user mappings, two successful EL0 clock calls, the QEMU exception transitions and exit 0.
+
+    python3 tools/native_el0_replay.py c-run "$C_SESSION_SHA256" --clock-app
+    python3 tools/native_el0_replay.py rust-run "$RUST_SESSION_SHA256" --clock-app
+
+The default replay checks the original exit-37 workload. For that control, run `python3 tools/build_native_el0.py --out startup-package`.
+
+Track the native service in #286 alongside #12, #8, #21 and #162. REQ-014 covers development and observability APIs. REQ-018 separately requires independent response to clock and other faults. [Requirements](requirements.en.md)

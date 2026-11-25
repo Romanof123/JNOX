@@ -7,4 +7,5 @@
 #define JNOX_CALL_READ 3
 #define JNOX_CALL_WRITE 4
 #define JNOX_CALL_CLOSE 5
+#define JNOX_CALL_CLOCK_GETTIME 6
 #endif
