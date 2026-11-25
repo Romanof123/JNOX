@@ -2,7 +2,7 @@
 
 [한국어](system-time-plan.md) · CHG-077 · [CAP-001 and CAP-012](platform-capabilities.en.md)
 
-Existing AArch64 workloads read the physical counter and program its compare interrupt. EVD-014 observed PPI 30 preempt a running task and return to its saved PC on the Pi 4 model. EVD-017 exercised two virtual CPUs. These are starting points for a portable clock service. On single-core AArch64 QEMU virt the native SDK exposes a normal monotonic read to C and Rust applications at EL0. Realtime, RTC persistence, sleep and timer APIs remain planned. [Application clock evidence](evidence/evd-112.en.md) [Pi timer evidence](evidence/evd-014.en.md) · [SMP evidence](evidence/evd-017.en.md)
+Existing AArch64 workloads read the physical counter and program its compare interrupt. EVD-014 observed PPI 30 preempt a running task and return to its saved PC on the Pi 4 model. EVD-017 exercised two virtual CPUs. These are starting points for a portable clock service. On single-core AArch64 QEMU virt the native SDK exposes a normal monotonic read to C and Rust applications at EL0. The native SDK also exposes absolute monotonic sleep on this profile. Realtime, RTC persistence, relative sleep and timer-object APIs remain planned. [Absolute sleep](evidence/evd-113.en.md) [Application clock evidence](evidence/evd-112.en.md) [Pi timer evidence](evidence/evd-014.en.md) · [SMP evidence](evidence/evd-017.en.md)
 
 ## Clock contract
 

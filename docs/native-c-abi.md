@@ -54,3 +54,23 @@ Linux 저장소 루트에서 네이티브 빌드 도구, QEMU, AArch64 nm 및 Ru
 기본 리플레이는 기존 시작 프로브의 종료값 37을 검사한다. 해당 대조군은 `python3 tools/build_native_el0.py --out startup-package`로 빌드한다.
 
 네이티브 서비스 작업은 #286에서 추적하며 관련 이슈는 #12, #8, #21, #162이다. REQ-014는 개발·관측 API를 다루며 REQ-018은 시계 고장 등의 독립적인 감지와 대응을 요구한다. [요구사항](requirements.md)
+
+## 단조 시계의 절대 기한까지 대기
+
+기한은 같은 부팅 구간의 단조 시계에서 정한다. 주기 보고에서는 직전 기한에 주기를 더하면 복귀가 늦어져도 다음 기한은 원래 일정에 맞춰진다. 대상은 깨어 있는 단일 AArch64 QEMU virt CPU의 네이티브 프로세스 하나다.
+
+C에서는 `clock_gettime(CLOCK_MONOTONIC, &target)`으로 읽은 시각에 주기를 더하고 나노초를 정규화한 뒤 `clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &target, 0)`을 호출한다. 반환값을 직접 확인한다. 성공하면 0, 실패하면 양의 오류 번호를 반환한다. `errno`와 호출자가 제공한 잔여 시간 구조체는 보존된다. [C 예제](../examples/portability/periodic_report.c)는 40 ms 간격으로 세 번 대기한다.
+
+Rust에서는 `jnox_native::monotonic_time()?`으로 얻은 `core::time::Duration`에 `checked_add`로 주기를 더한 후 `jnox_native::sleep_until(target)?`을 호출한다. 이미 지난 기한이면 즉시 성공한다. [Rust 예제](../examples/native-periodic-rust/src/main.rs)는 매번 복귀 후 시계를 읽어 기한에 도달했는지 검사한다.
+
+Linux 또는 WSL에서 네이티브 SDK 빌드·캡처 도구를 설치한 뒤 저장소 루트에서 두 예제를 패키징하고 실행한다.
+
+~~~sh
+run=$(mktemp -d)
+rev=$(git rev-parse HEAD)
+python3 tools/build_native_el0.py --source examples/portability/periodic_report.c --out "$run/c"
+sh sdk/native-aarch64/build-rust.sh examples/native-periodic-rust/Cargo.toml "$run/report.elf"
+python3 tools/build_native_el0.py --elf "$run/report.elf" --out "$run/rust"
+python3 tools/native_el0_capture.py "$run/c-first" "$run/c/kernel.elf" "$run/c/user.elf" examples/portability/periodic_report.c "$rev" --expect-exit 0
+python3 tools/native_el0_capture.py "$run/rust-first" "$run/rust/kernel.elf" "$run/rust/user.elf" examples/native-periodic-rust/src/main.rs "$rev" --expect-exit 0
+~~~
