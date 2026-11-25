@@ -1,0 +1,20 @@
+# Independent native task policy acceptance / 독립 검증
+
+Frozen local commit 78f130af8d896ba45cb0c1edb88e140f1883d9b8 and public 002c47c1ad311ec347310662aa256011f4f5388f share tree cf7e7792da0c9dd12636c8b28daf711178e89c85. Authoritative manifests record clean local Git status. The packet excludes large kernel ELFs. Every included path in QEMU command logs and manifests describes the original WSL run. To generate equivalent packages in another directory, use replay.sh. Host Rust debug metadata can change ELF hashes between directories. Within each on/off pair all five ELF inputs are byte identical.
+
+공개 커밋과 로컬 검증 커밋의 트리가 같습니다. 재실행은 Linux, Python 3, Clang, LLD, Cargo와 두 AArch64 Rust 타깃(aarch64-unknown-none, aarch64-unknown-none-softfloat), QEMU system AArch64, GNU nm, sha256sum을 사용합니다. 결과는 QEMU 단일 코어 검증입니다. 실제 보드의 시간 상한은 측정하지 않았습니다.
+
+    git clone --filter=blob:none --sparse https://github.com/Romanof123/JNOX.git repo
+    git -C repo sparse-checkout set arch boards kernel sdk services tools examples/native-task-policy examples/portability
+    git -C repo checkout 002c47c1ad311ec347310662aa256011f4f5388f
+    bash replay.sh repo results
+
+Five compiler tests and five scheduler tests passed. Six one-vCPU TCG/GICv2 guests reached their expected terminal markers. The default singleton exited 37. The checked parser independently compared text app identities, manifest, raw JNP1 tables, a unique embedded policy image in each kernel ELF, UART summaries, and terminal RAM. In the 20-app run, each Rust heartbeat exited 25 with private value eight at the same process VA on twenty distinct physical pages. All started in equal-priority declaration order. The scheduler host test independently checks FIFO after yield. In the two-task sensor app, the observer read eight distinct samples of the shared sequence and exited 22, and its producer exited 21 at sequence 20. Both sides of every stack guard were inspected by walking live QEMU physical page tables through QMP. Root-to-ASID numbering is verified in source (pid+1 in TTBR0[55:48]); this packet records each live root and PTE walk, without a live register capture at every switch.
+
+PPI30 stopped the heavy CPU loop at a nominal watchdog expiry tick of 2,668,975, observed at 2,676,175 (+115.2 microseconds at 62.5 MHz). Its independent deadline tick was 1,731,475, observed at 1,735,066 (+57.456 microseconds). A higher-priority periodic release preempted late's running batch. With identical ELFs and only the watchdog switched off, heavy exited 23. A self-fault returned status 37 and healthy peers continued. The extra guest exercises a completed job followed by a CPU loop and PPI30 termination on its next release. The edges guest demonstrates zero fault returning -EINVAL, first watchdog expiry with zero starts, expiry in periodic wait after COMPLETE, and a deadline miss followed by a valid COMPLETE and subsequent exit 27. Eight binary and four packager negative cases reached their intended diagnostics.
+
+감시를 끄면 같은 heavy ELF가 상태 23으로 종료합니다. 감시 중에는 같은 CPU 루프가 IRQ 30으로 중지되고 다른 앱은 계속 진행합니다. 첫 실행 전의 감시 만료, 주기 대기 중 만료, 늦은 COMPLETE 이후 정상 종료를 별도 게스트로 확인했습니다. 20개 앱 모두 별도 물리 메모리에서 최종 카운터 8에 도달했습니다.
+
+First outcomes / 최초 결과. First frozen tree acc36e4aa5bd4eae7043ae284ce80cefdb269cd8 failed Rust E0308 and never booted a policy. The recovery commit 9bc29075115c61a9ed0398781218a20eff0e39ac booted all three supplied deployments. Initial legacy QEMU without -nodefaults requested an unavailable optional NIC ROM. An initial raw-negative harness used the user ELF target rather than the kernel target and was corrected. Initial archive packaging with an external Git directory misreported tracked deletions; all final measurements were repeated in a clean ext4 sparse checkout. Initial local sparse transport needed the new blobs restored from the frozen git archive. First logs are retained alongside the final evidence.
+
+[Raw captures and offline replay](native-task-policy-first.tar.gz) (SHA-256 `f5378fd339017e7acdda09b5ede9c2a815440528100cdc8888e01bd6cb866c3a`).
