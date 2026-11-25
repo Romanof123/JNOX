@@ -10,6 +10,7 @@ PHDRS {
 SECTIONS {
     .shim 0x00080000 : {
         KEEP(*(.text.pi4_native_shim))
+        KEEP(*(.pi4_native_secondary_shim))
     } :stub
 
     __native_payload_lma = 0x00081000;
