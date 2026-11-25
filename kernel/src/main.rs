@@ -107,8 +107,8 @@ mod extension_policy;
 #[cfg(any(jnox_native_weighted, jnox_eevdf_app, jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
 #[cfg_attr(any(jnox_native_weighted, jnox_eevdf_app, jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
-#[cfg(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
-#[cfg_attr(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
+#[cfg(any(jnox_ordinary_prop, jnox_multilevel, jnox_native_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
+#[cfg_attr(any(jnox_ordinary_prop, jnox_multilevel, jnox_native_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
 mod feedback_policy;
 #[cfg(any(jnox_bench = "rr", jnox_bench = "power", jnox_bench = "extension"))]
 #[cfg_attr(any(jnox_bench = "power", jnox_bench = "extension"), allow(dead_code))]
@@ -138,7 +138,7 @@ mod ordinary_mutex_survivors;
 mod ordinary_mutex_manifest;
 #[cfg(jnox_bench = "multilevel")]
 mod multilevel;
-#[cfg(any(jnox_multilevel, jnox_bench = "multilevel"))]
+#[cfg(any(jnox_multilevel, jnox_native_multilevel, jnox_bench = "multilevel"))]
 mod multilevel_policy;
 #[cfg(jnox_multilevel)]
 mod multilevel_service;

@@ -60,16 +60,45 @@ def cbs_reservation(value):
     return quota, period
 
 
+def unsigned_decimal(value):
+    if not (value.isascii() and value.isdecimal()):
+        raise argparse.ArgumentTypeError("expected unsigned decimal digits")
+    return int(value)
+
+
+def allotments(value):
+    values = [unsigned_decimal(field) for field in value.split(",")]
+    if len(values) != 3 or any(not 1 <= ticks < 2**63 for ticks in values):
+        raise argparse.ArgumentTypeError("expected three positive allotments, each at most 2^63-1 ticks")
+    return values
+
+
 def native_schedule(parser, args):
     if len(args.peer_elf) > 2:
         parser.error("virt supports at most two --peer-elf arguments")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
-    for name in ("policy", "priority", "weight", "job", "periodic", "reservation", "quantum_ticks"):
+    for name in ("policy", "priority", "weight", "job", "periodic", "reservation", "quantum_ticks", "primary_class", "allotment_ticks", "boost_ticks"):
         values = getattr(args, name)
         if len(values) > 1:
-            parser.error(f"--{name.replace('_', '-')} may appear only once")
+            option = "class" if name == "primary_class" else name.replace("_", "-")
+            parser.error(f"--{option} may appear only once")
     policy = args.policy[0] if args.policy else None
+    classes = args.primary_class + args.peer_class
+    if policy == "mlq":
+        if not args.primary_class or len(args.peer_class) != len(args.peer_elf):
+            parser.error("MLQ requires one class per supplied ELF")
+        if any(level > 255 for level in classes):
+            parser.error("MLQ classes must be in 0..255")
+    elif classes:
+        parser.error("class options require --policy mlq")
+    if policy == "mlfq":
+        if not args.allotment_ticks or not args.boost_ticks:
+            parser.error("MLFQ requires both --allotment-ticks and --boost-ticks")
+        if not 1 <= args.boost_ticks[0] < 2**63:
+            parser.error("boost period must be in 1..2^63-1")
+    elif args.allotment_ticks or args.boost_ticks:
+        parser.error("allotment and boost options require --policy mlfq")
     if policy in ("rm", "dm"):
         if not args.periodic or len(args.peer_periodic) != len(args.peer_elf):
             parser.error("RM and DM require one periodic tuple per supplied ELF")
@@ -101,9 +130,17 @@ def native_schedule(parser, args):
             parser.error("weights must be in 1..2^32-1")
     elif weights:
         parser.error("application weights require --policy weighted")
-    if bool(args.quantum_ticks) != (policy in ("rr", "weighted")):
-        parser.error("--quantum-ticks is required exclusively with --policy rr or weighted")
-    quantum = args.quantum_ticks[0] if args.quantum_ticks else None
+    if bool(args.quantum_ticks) != (policy in ("rr", "weighted", "mlq")):
+        parser.error("--quantum-ticks is required exclusively with --policy rr, weighted or mlq")
+    quantum = None
+    if args.quantum_ticks:
+        value = args.quantum_ticks[0]
+        if policy == "mlq" and not (value.isascii() and value.isdecimal()):
+            parser.error("MLQ quantum requires unsigned decimal digits")
+        try:
+            quantum = int(value)
+        except ValueError:
+            parser.error("invalid --quantum-ticks integer")
     if quantum is not None and not 1 <= quantum <= 2**63 - 1:
         parser.error("--quantum-ticks must be in 1..2^63-1")
     return policy, priorities, weights, quantum
@@ -145,12 +182,12 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq"], action="append", default=[])
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
     parser.add_argument("--weight", type=int, action="append", default=[], help="primary CPU service weight")
     parser.add_argument("--peer-weight", type=int, action="append", default=[], help="CPU service weights in peer order")
-    parser.add_argument("--quantum-ticks", type=int, action="append", default=[], help="common RR or weighted grant in physical counter ticks")
+    parser.add_argument("--quantum-ticks", action="append", default=[], help="common RR, weighted or MLQ grant in physical counter ticks")
     parser.add_argument("--job", type=deadline_job, action="append", default=[], metavar="R,D,C",
                         help="EDF/LLF primary release, absolute deadline and cost in 100 ms units")
     parser.add_argument("--peer-job", type=deadline_job, action="append", default=[], metavar="R,D,C",
@@ -163,6 +200,10 @@ def main():
                         help="primary CBS quota and period in 50 ms slots")
     parser.add_argument("--peer-reservation", type=cbs_reservation, action="append", default=[], metavar="Q,P",
                         help="CBS quota and period in 50 ms slots, in peer order")
+    parser.add_argument("--class", dest="primary_class", type=unsigned_decimal, action="append", default=[])
+    parser.add_argument("--peer-class", type=unsigned_decimal, action="append", default=[])
+    parser.add_argument("--allotment-ticks", type=allotments, action="append", default=[], metavar="TOP,MIDDLE,BOTTOM")
+    parser.add_argument("--boost-ticks", type=unsigned_decimal, action="append", default=[])
     for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg")):
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
@@ -224,6 +265,7 @@ def main():
             env[var], env[var + "_SHA256"] = str(peer_elf), peer_digest
         periodic = args.periodic + args.peer_periodic
         reservations = args.reservation + args.peer_reservation
+        classes = args.primary_class + args.peer_class
         jobs = args.job + args.peer_job
         for slot in slots:
             slot["argv"] = (["/bin/app", *vectors[slot["slot"]]] if app == "process"
@@ -237,6 +279,8 @@ def main():
             if reservations:
                 quota, period = reservations[slot["slot"]]
                 slot["reservation"] = {"quota_slots": quota, "period_slots": period}
+            if classes:
+                slot["class"] = classes[slot["slot"]]
             if jobs:
                 release, deadline, cost = jobs[slot["slot"]]
                 slot["job"] = {"release": release, "deadline": deadline, "cost": cost}
@@ -248,6 +292,14 @@ def main():
         if reservations:
             metadata["reservation_slot_ms"] = 50
             env["JNOX_NATIVE_RESERVATIONS"] = ";".join(f"{quota},{period}" for quota, period in reservations)
+        if policy in ("mlq", "mlfq"):
+            metadata.update(timing_unit="physical_counter_ticks", package_argv=sys.argv[:])
+        if classes:
+            env["JNOX_NATIVE_CLASSES"] = ",".join(map(str, classes))
+        if policy == "mlfq":
+            metadata.update(allotment_ticks=args.allotment_ticks[0], boost_ticks=args.boost_ticks[0])
+            env["JNOX_NATIVE_ALLOTMENT_TICKS"] = ",".join(map(str, args.allotment_ticks[0]))
+            env["JNOX_NATIVE_BOOST_TICKS"] = str(args.boost_ticks[0])
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy
