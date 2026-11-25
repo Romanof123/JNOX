@@ -70,6 +70,10 @@ pub(crate) fn validate_id(id: usize, seen: &mut [bool; N]) -> Result<(), Refusal
 }
 
 pub(crate) fn admit_edf(jobs: &[NumericJob], hz: u64, origin: u64) -> Result<(), Refusal> {
+    admit_native(DeadlinePolicy::Edf, jobs, hz, origin)
+}
+
+pub(crate) fn admit_native(policy: DeadlinePolicy, jobs: &[NumericJob], hz: u64, origin: u64) -> Result<(), Refusal> {
     let q = validate_table(jobs.len(), hz, 0)?;
     absolute(origin, q, HORIZON)?;
     let mut seen = [false; N];
@@ -80,27 +84,35 @@ pub(crate) fn admit_edf(jobs: &[NumericJob], hz: u64, origin: u64) -> Result<(),
     if jobs.iter().enumerate().any(|(slot, job)| job.id != slot) {
         return Err(Refusal::Table);
     }
-    simulate(DeadlinePolicy::Edf, jobs, 0)
+    check_demand(jobs, 0)?;
+    simulate_dispatch(policy, jobs, 0)
 }
 
 /// Callers have validated IDs, costs, deadlines and the supply mask.
 pub(crate) fn simulate(policy: DeadlinePolicy, jobs: &[NumericJob], mask: u64) -> Result<(), Refusal> {
-    if policy == DeadlinePolicy::Edf {
-        for start in jobs {
-            for end in jobs.iter().filter(|j| j.deadline > start.release) {
-                let mut demand = 0u64;
-                for j in jobs
-                    .iter()
-                    .filter(|j| j.release >= start.release && j.deadline <= end.deadline)
-                {
-                    demand = demand.checked_add(j.cost).ok_or(Refusal::Overflow)?;
-                }
-                if demand > available(mask, start.release, end.deadline)? {
-                    return Err(Refusal::Demand);
-                }
+    if policy == DeadlinePolicy::Edf { check_demand(jobs, mask)?; }
+    simulate_dispatch(policy, jobs, mask)
+}
+
+fn check_demand(jobs: &[NumericJob], mask: u64) -> Result<(), Refusal> {
+    for start in jobs {
+        for end in jobs.iter().filter(|j| j.deadline > start.release) {
+            let mut demand = 0u64;
+            for j in jobs
+                .iter()
+                .filter(|j| j.release >= start.release && j.deadline <= end.deadline)
+            {
+                demand = demand.checked_add(j.cost).ok_or(Refusal::Overflow)?;
+            }
+            if demand > available(mask, start.release, end.deadline)? {
+                return Err(Refusal::Demand);
             }
         }
     }
+    Ok(())
+}
+
+fn simulate_dispatch(policy: DeadlinePolicy, jobs: &[NumericJob], mask: u64) -> Result<(), Refusal> {
     let mut model = DeadlineScheduler::<N>::new(policy, 0, 1).unwrap();
     let mut left = [0; N];
     for tick in 0..=HORIZON {

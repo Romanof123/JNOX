@@ -1,8 +1,8 @@
-//! CPU0 EDF adapter for separately loaded finite jobs. Counter stamps are
+//! CPU0 finite deadline adapter for separately loaded finite jobs. Counter stamps are
 //! physical ticks. Only the shared selector sees logical grid indices.
 use super::*;
 use crate::deadline_policy::{
-    absolute, admit_edf, grid_quantum, DeadlinePolicy, DeadlineScheduler, NumericJob,
+    absolute, admit_native, grid_quantum, DeadlinePolicy, DeadlineScheduler, NumericJob,
 };
 
 struct Runtime {
@@ -28,6 +28,8 @@ const LIMIT: usize = 512;
 const WIDTH: usize = 36;
 static mut STATE: Option<Runtime> = None;
 static mut ROWS: [[u64; WIDTH]; LIMIT] = [[0; WIDTH]; LIMIT];
+// A rank exists exactly when the corresponding remaining-cost field exists.
+static mut LAXITIES: [[i128; COUNT]; LIMIT] = [[0; COUNT]; LIMIT];
 static mut USED: usize = 0;
 static mut LOST: u64 = 0;
 
@@ -47,11 +49,12 @@ pub(super) fn start(hz: u64) -> usize {
     let q = grid_quantum(hz).unwrap_or_else(|_| fail(13));
     // Complete the model before choosing S. Check all physical endpoints
     // against the real epoch separately before installing the first compare.
-    if let Err(reason) = admit_edf(&jobs, hz, 0) {
-        print(b"NATIVE EDF REFUSED", &[reason as u64]);
+    let rule = if NATIVE_DEADLINE_LLF { DeadlinePolicy::Llf } else { DeadlinePolicy::Edf };
+    if let Err(reason) = admit_native(rule, &jobs, hz, 0) {
+        print(b"REFUSED", &[reason as u64]);
         fail(14)
     }
-    let policy = DeadlineScheduler::new(DeadlinePolicy::Edf, 0, 1).unwrap_or_else(|| fail(12));
+    let policy = DeadlineScheduler::new(rule, 0, 1).unwrap_or_else(|| fail(12));
     let origin = counter().checked_add(q).unwrap_or_else(|| fail(13));
     absolute(origin, q, 16).unwrap_or_else(|_| fail(13));
     let at = |k| absolute(origin, q, k).unwrap_or_else(|_| fail(13));
@@ -176,6 +179,9 @@ pub(super) fn boundary(now: u64, reason: u64, sleep: Option<u64>, frame: Option<
         row[24 + id] = r.service[id];
         row[27 + id] = r.policy.remaining(id).unwrap_or(NO_PID);
         row[30 + id] = r.exits[id].unwrap_or(0);
+        if NATIVE_DEADLINE_LLF {
+            unsafe { LAXITIES[index][id] = r.policy.laxity(id).unwrap_or(0) };
+        }
     }
     row[..24].copy_from_slice(&[
         reason, now, k, prior.map_or(NO_PID, |id| id as u64), next.map_or(NO_PID, |id| id as u64),
@@ -204,9 +210,24 @@ extern "C" fn native_edf_return() {
 }
 
 fn print(label: &[u8], fields: &[u64]) {
+    uart_write(if NATIVE_DEADLINE_LLF { b"NATIVE LLF " } else { b"NATIVE EDF " });
     uart_write(label);
     for &n in fields { uart_write(b" "); unsigned(n); }
     uart_write(b"\n");
+}
+
+fn print_signed_rank(value: i128) {
+    let mut digits = [0u8; 39];
+    let mut start = digits.len();
+    let mut magnitude = value.unsigned_abs();
+    loop {
+        start -= 1;
+        digits[start] = b'0' + (magnitude % 10) as u8;
+        magnitude /= 10;
+        if magnitude == 0 { break; }
+    }
+    if value < 0 { uart_write(b"-"); }
+    uart_write(&digits[start..]);
 }
 
 pub(super) fn finish() -> ! {
@@ -214,13 +235,26 @@ pub(super) fn finish() -> ! {
     head(1, 3);
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
     let r = state();
-    print(b"NATIVE EDF CONFIG", &[r.epoch, r.quantum, r.frequency]);
+    print(b"CONFIG", &[r.epoch, r.quantum, r.frequency]);
     for (id, (release, due, cost)) in NATIVE_EDF_JOBS.into_iter().enumerate() {
-        print(b"NATIVE EDF JOB", &[id as u64, release, due, cost]);
+        print(b"JOB", &[id as u64, release, due, cost]);
     }
     unsafe {
-        for i in 0..USED { print(b"NATIVE EDF EVENT", &*(&raw const ROWS[i])); }
-        print(b"NATIVE EDF DROPPED", &[LOST]);
+        for i in 0..USED {
+            let row = &*(&raw const ROWS[i]);
+            print(b"EVENT", row);
+            if NATIVE_DEADLINE_LLF {
+                uart_write(b"NATIVE LLF LAXITY ");
+                unsigned(i as u64);
+                for id in 0..COUNT {
+                    uart_write(b" ");
+                    if row[27 + id] == NO_PID { uart_write(b"NA"); }
+                    else { print_signed_rank(LAXITIES[i][id]); }
+                }
+                uart_write(b"\n");
+            }
+        }
+        print(b"DROPPED", &[LOST]);
         for (pid, status) in EXIT_STATUS.into_iter().enumerate() {
             if COUNT == 1 {
                 uart_write(b"NATIVE EL0 EXIT "); decimal(i64::from(status)); uart_write(b"\n");
