@@ -1,5 +1,9 @@
 //! Native tests for the policy sources used by the kernel.
 
+#[path = "../kernel/src/native_periodic_policy.rs"]
+mod native_periodic_policy;
+#[path = "native_periodic_policy_tests.rs"]
+mod native_periodic_policy_tests;
 #[path = "../kernel/src/fixed_policy.rs"]
 mod fixed_policy;
 #[path = "fixed_runtime_tests.rs"]
