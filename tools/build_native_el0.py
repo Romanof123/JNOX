@@ -11,6 +11,7 @@ import sys
 
 from native_extension_program import parse_program
 from native_hierarchy import parse_topology
+from native_lottery_admission import forecast
 
 ROOT = Path(__file__).resolve().parents[1]
 SDK = ROOT / "sdk/native-aarch64"
@@ -31,6 +32,16 @@ class SinglePath(argparse.Action):
         if getattr(namespace, self.dest) is not None:
             parser.error(f"{option_string} may appear only once")
         setattr(namespace, self.dest, value)
+
+
+def batch_job(value):
+    fields = value.split(",")
+    if len(fields) != 2:
+        raise argparse.ArgumentTypeError("expected offset,estimate in physical counter ticks")
+    offset, estimate = map(unsigned_decimal, fields)
+    if not (0 <= offset < 2**63 and 1 <= estimate < 2**63):
+        raise argparse.ArgumentTypeError("batch offset must be 0..2^63-1 and estimate 1..2^63-1")
+    return offset, estimate
 
 
 def deadline_job(value):
@@ -124,7 +135,7 @@ def native_schedule(parser, args):
         parser.error("virt supports at most two --peer-elf arguments")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
-    for name in ("policy", "priority", "weight", "job", "periodic", "reservation", "quantum_ticks", "primary_class", "allotment_ticks", "boost_ticks"):
+    for name in ("policy", "priority", "weight", "job", "batch_job", "periodic", "reservation", "quantum_ticks", "primary_class", "allotment_ticks", "boost_ticks"):
         values = getattr(args, name)
         if len(values) > 1:
             option = "class" if name == "primary_class" else name.replace("_", "-")
@@ -155,6 +166,11 @@ def native_schedule(parser, args):
             parser.error("CBS requires one reservation per supplied ELF")
     elif args.reservation or args.peer_reservation:
         parser.error("reservations require --policy cbs")
+    if policy in ("sjf", "srtf", "hrrn"):
+        if not args.batch_job or len(args.peer_batch_job) != len(args.peer_elf):
+            parser.error("batch scheduling requires one offset,estimate tuple per supplied application")
+    elif args.batch_job or args.peer_batch_job:
+        parser.error("batch job tuples require --policy sjf, srtf or hrrn")
     if policy in ("edf", "llf"):
         if not args.job or len(args.peer_job) != len(args.peer_elf):
             parser.error("EDF and LLF require exactly one job tuple per supplied ELF")
@@ -175,20 +191,26 @@ def native_schedule(parser, args):
     priorities = args.priority + args.peer_priority
     if any(value < 0 or value > 255 for value in priorities):
         parser.error("priorities must be in 0..255")
-    weights = args.weight + args.peer_weight
-    if policy == "weighted":
+    weight_fields = args.weight + args.peer_weight
+    try:
+        weights = [unsigned_decimal(v) if policy in ("lottery", "stride") else int(v) for v in weight_fields]
+    except (ValueError, argparse.ArgumentTypeError) as exc:
+        parser.error(str(exc))
+    if policy in ("weighted", "lottery", "stride"):
         if not args.weight or len(args.peer_weight) != len(args.peer_elf):
             parser.error("weighted scheduling requires exactly one weight per supplied ELF")
+        if policy in ("lottery", "stride") and any(not 1 <= value <= 16 for value in weights):
+            parser.error("lottery and stride weights require 1..16")
         if any(not 1 <= value <= 2**32 - 1 for value in weights):
             parser.error("weights must be in 1..2^32-1")
     elif weights:
         parser.error("application weights require --policy weighted")
-    if bool(args.quantum_ticks) != (policy in ("rr", "weighted", "mlq")):
+    if bool(args.quantum_ticks) != (policy in ("rr", "weighted", "mlq", "lottery", "stride")):
         parser.error("--quantum-ticks is required exclusively with --policy rr, weighted or mlq")
     quantum = None
     if args.quantum_ticks:
         value = args.quantum_ticks[0]
-        if (policy == "mlq" or args.threads) and not (value.isascii() and value.isdecimal()):
+        if (policy in ("mlq", "lottery", "stride") or args.threads) and not (value.isascii() and value.isdecimal()):
             parser.error("quantum requires unsigned decimal digits")
         try:
             quantum = int(value)
@@ -264,7 +286,7 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "extension"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
@@ -273,13 +295,20 @@ def main():
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
+    parser.add_argument("--lottery-seed", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--lottery-window", action=SinglePath, metavar="H,W")
+    parser.add_argument("--lottery-floors", action=SinglePath, metavar="COUNT,...")
     parser.add_argument("--weighted-continuous", action="count", default=0,
                         help="apply recurring leases even with one runnable weighted process")
     parser.add_argument("--weighted-notify", type=weighted_notification, action=SinglePath,
                         metavar="closures:N|wakes:N")
-    parser.add_argument("--weight", type=int, action="append", default=[], help="primary CPU service weight")
-    parser.add_argument("--peer-weight", type=int, action="append", default=[], help="CPU service weights in peer order")
+    parser.add_argument("--weight", action="append", default=[], help="primary CPU service weight")
+    parser.add_argument("--peer-weight", action="append", default=[], help="CPU service weights in peer order")
     parser.add_argument("--quantum-ticks", action="append", default=[], help="common RR, weighted or MLQ grant in physical counter ticks")
+    parser.add_argument("--batch-job", type=batch_job, action="append", default=[], metavar="OFFSET,ESTIMATE",
+                        help="primary initial ready offset and service estimate in physical counter ticks")
+    parser.add_argument("--peer-batch-job", type=batch_job, action="append", default=[], metavar="OFFSET,ESTIMATE",
+                        help="offset and estimate for each peer in ELF order, in physical counter ticks")
     parser.add_argument("--job", type=deadline_job, action="append", default=[], metavar="R,D,C",
                         help="EDF/LLF primary release, absolute deadline and cost in 100 ms units")
     parser.add_argument("--peer-job", type=deadline_job, action="append", default=[], metavar="R,D,C",
@@ -311,6 +340,23 @@ def main():
     if args.threads and (not (args.elf or args.source) or args.peer_elf):
         parser.error("thread scheduling requires exactly one ordinary application")
     policy, priorities, weights, quantum = native_schedule(parser, args)
+    if (args.lottery_seed is not None) != (policy == "lottery"):
+        parser.error("--lottery-seed is required exclusively for lottery")
+    if args.lottery_seed is not None and args.lottery_seed >= 2**64:
+        parser.error("lottery seed must fit u64")
+    if (args.lottery_window is None) != (args.lottery_floors is None):
+        parser.error("lottery window and floors must be supplied together")
+    if args.lottery_window is not None:
+        if policy != "lottery":
+            parser.error("lottery window requires lottery scheduling")
+        try:
+            horizon, width = map(unsigned_decimal, args.lottery_window.split(","))
+            floors = list(map(unsigned_decimal, args.lottery_floors.split(",")))
+            if not 1 <= width <= horizon <= 64 or len(floors) != len(weights) or sum(floors) > width:
+                raise ValueError("require 1 <= W <= H <= 64 and one floor per slot summing to at most W")
+            forecast(weights, args.lottery_seed, horizon, width, floors)
+        except (ValueError, argparse.ArgumentTypeError) as exc:
+            parser.error(str(exc))
     board = args.board or "virt"
     if args.weighted_continuous > 1:
         parser.error("--weighted-continuous may appear only once")
@@ -454,6 +500,10 @@ def main():
         periodic = args.periodic + args.peer_periodic
         reservations = args.reservation + args.peer_reservation
         classes = args.primary_class + args.peer_class
+        batch_jobs = args.batch_job + args.peer_batch_job
+        if batch_jobs:
+            metadata.update(timing_unit="physical_counter_ticks", package_argv=sys.argv[:])
+            env["JNOX_NATIVE_BATCH_JOBS"] = ";".join(f"{offset},{estimate}" for offset, estimate in batch_jobs)
         jobs = args.job + args.peer_job
         for slot in slots:
             if policy == "extension":
@@ -472,6 +522,9 @@ def main():
                 slot["reservation"] = {"quota_slots": quota, "period_slots": period}
             if classes:
                 slot["class"] = classes[slot["slot"]]
+            if batch_jobs:
+                offset, estimate = batch_jobs[slot["slot"]]
+                slot["batch_job"] = {"offset_ticks": offset, "estimate_ticks": estimate}
             if jobs and slot["slot"] < len(jobs):
                 release, deadline, cost = jobs[slot["slot"]]
                 slot["job"] = {"release": release, "deadline": deadline, "cost": cost}
@@ -526,6 +579,18 @@ def main():
                 mode, count = args.weighted_notify
                 env["JNOX_NATIVE_WEIGHTED_NOTIFY"] = f"{mode}:{count}"
                 metadata["weighted_notify"] = {"mode": mode, "count": count}
+        if policy in ("lottery", "stride"):
+            metadata.update(timing_unit="physical_counter_ticks", all_ready_mask=(1 << len(weights)) - 1,
+                            algorithm="SplitMix64 rejection sampling" if policy == "lottery" else "stride",
+                            guarantee="conditional full-grant count" if args.lottery_window is not None
+                                      else "seeded selection" if policy == "lottery" else "service-charged stride")
+        if policy == "lottery":
+            env["JNOX_NATIVE_LOTTERY_SEED"] = str(args.lottery_seed)
+            metadata.update(lottery_seed=args.lottery_seed, lottery_window=None, lottery_floors=None)
+            if args.lottery_window is not None:
+                env["JNOX_NATIVE_LOTTERY_WINDOW"] = f"{horizon},{width}"
+                env["JNOX_NATIVE_LOTTERY_FLOORS"] = ",".join(map(str, floors))
+                metadata.update(lottery_window=[horizon, width], lottery_floors=floors)
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy

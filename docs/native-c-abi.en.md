@@ -323,6 +323,17 @@ Configure worker attributes with C pthread_attr_t or Rust PthreadAttr in the SDK
 
 [C / Rust / QEMU](../examples/native-priority-mutex/README.md) · [POL-014](native-thread-priority-protocols.en-ko.md)
 
+## Schedule native applications with lottery or stride
+
+On single-CPU virt, supply one to three ordinary ELFs. Give each a weight from 1 to 16 and set the common quantum in physical counter ticks. Lottery takes an explicit seed. With the example seed, optional window 48,24 and floors 5,3,11 specify grant counts per 24-selection window in the first 48 selections, conditional on all three apps staying ready and consuming full timer grants. CPU-time guarantees and other seeds require separate evidence. Stride uses neither a seed nor lottery floors.
+
+~~~sh
+python3 tools/build_native_el0.py --out lottery1 --policy lottery --quantum-ticks 625000 --lottery-seed 1 --lottery-window 48,24 --lottery-floors 5,3,11 --elf crc.elf --weight 1 --peer-elf histogram.elf --peer-weight 2 --peer-elf energy.elf --peer-weight 4
+python3 tools/build_native_el0.py --out stride --policy stride --quantum-ticks 625000 --elf crc.elf --weight 1 --peer-elf histogram.elf --peer-weight 2 --peer-elf energy.elf --peer-weight 4
+~~~
+
+[SDK / QEMU](../examples/native-proportional/README.md) · [POL-010](native-proportional-applications.en-ko.md)
+
 ## Read idle-refill health
 
 Keep ordinary UART through the final NATIVE HIERARCHY HEALTH END 1 line. For the saturated CRC/histogram/energy package, give expected exits in slot order. The JSON includes boot-lifetime late-refill count, worst lag in guest ticks and the first violation. The counters persist when detailed rows fill.
@@ -334,3 +345,14 @@ python3 tools/read_hierarchy_health.py output/native-hierarchy/saturated-health-
 Reader exit 0 requires valid instrumentation, at least one scored refill, no violations and matching requested exits. Exit 1 retains late, unobserved or unqualified results or exit mismatches. Exit 2 identifies incomplete or contradictory UART. The two original #334 idle WFI refill misses remain tracked in #339. Full POL-016 timing qualification remains open.
 
 [Capture / UART](../examples/native-hierarchy/README.md#read-the-idle-refill-health-report--유휴-재충전-상태-읽기) · [#339](https://github.com/Romanof123/JNOX/issues/339) · [#21](https://github.com/Romanof123/JNOX/issues/21)
+
+## Set arrival and service estimates for native batch jobs
+
+Supply each ELF with a release offset from a common epoch and an estimated service time in physical counter ticks. SRTF can interrupt a running app when a shorter remaining job becomes ready. SJF and HRRN retain the running app while it can continue. HRRN accounts for waiting time as well as the estimate when selecting the next app.
+
+~~~sh
+out=output/native-batch
+python3 tools/build_native_el0.py --out "$out/arrival-srtf" --policy srtf --elf "$out/batch.elf" --arg=--blocks --arg 32768 --batch-job 0,18750000 --peer-elf "$out/urgent.elf" --peer-batch-job 6250000,625000
+~~~
+
+[SDK / QEMU](../examples/native-batch/README.md) · [POL-003](native-batch-applications.en-ko.md)

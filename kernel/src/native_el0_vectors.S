@@ -10,6 +10,12 @@
     .space 124
 .endm
 .ifdef NATIVE_WEIGHTED_CONTINUOUS
+.set NATIVE_EARLY_ENTRY,1
+.endif
+.ifdef NATIVE_BATCH
+.set NATIVE_EARLY_ENTRY,1
+.endif
+.ifdef NATIVE_EARLY_ENTRY
 // Keep the earliest ordered exception timestamp before the common frame save.
 // The normal 832-byte frame remains at SP for the Rust handlers. The extra
 // 16 bytes above it are private to this vector and removed before EL0 return.
@@ -27,7 +33,7 @@ native_el0_vectors:
     .rept 5                        // Current EL SP0 slots, then EL1h sync
         native_vector .Lunexpected
     .endr
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_EARLY_ENTRY
     isb
     mrs x1,cntpct_el0
     b .Lidle_irq
@@ -38,7 +44,7 @@ native_el0_vectors:
     // Current EL, SP_EL1 IRQ
     native_vector .Lunexpected
     native_vector .Lunexpected
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_EARLY_ENTRY
     weighted_user_vector .Luser_sync
     weighted_user_vector .Luser_irq
     .else
@@ -127,7 +133,11 @@ native_weighted_arm:
     mrs x13,cntp_cval_el0
     mrs x14,cntp_ctl_el0
     stp x13,x14,[x12,#32]
+    .ifdef NATIVE_PROPORTIONAL
+    adr x13,90f
+    .else
     adr x13,.Lweighted_eret\@
+    .endif
     mrs x14,ttbr0_el1
     stp x13,x14,[x12,#56]
     str xzr,[x12]
@@ -148,6 +158,19 @@ native_weighted_arm:
 .Lweighted_eret\@:
     .endif
 .endm
+
+.ifdef NATIVE_BATCH
+.global native_batch_enter
+native_batch_enter:
+    sub sp,sp,#848
+    mov x1,sp
+    mov x2,#52
+1:  ldp x3,x4,[x0],#16
+    stp x3,x4,[x1],#16
+    subs x2,x2,#1
+    b.ne 1b
+    b .Lrestore
+.endif
 
 .global native_el0_enter
 .type native_el0_enter,%function
@@ -188,8 +211,14 @@ native_el0_enter:
     .endr
     clrex
     isb
+    .ifdef NATIVE_PROPORTIONAL
+    weighted_final_arm
+    cyclic_final_stamp
+90:
+    .else
     cyclic_final_stamp
     weighted_final_arm
+    .endif
     eret
 .size native_el0_enter,.-native_el0_enter
 
@@ -241,7 +270,7 @@ native_el0_enter:
     sub sp,sp,#832
     native_integer_pairs stp
     str x30,[sp,#240]
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_EARLY_ENTRY
     ldr x2,[sp,#840]
     .else
     .ifdef NATIVE_MEASURED
@@ -314,13 +343,49 @@ native_el0_enter:
     bl native_server_reselect
     b .Lrestore
     .else
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_PROPORTIONAL
+    adrp x16,native_prop_continuation_deadline
+    ldr x16,[x16,:lo12:native_prop_continuation_deadline]
+    cbz x16,.Lprop_return_ok
+    isb
+    mrs x17,cntpct_el0
+    cmp x17,x16
+    b.lo .Lprop_return_ok
+    mov x0,x17
+    mov x1,sp
+    bl native_prop_late
+    b .Lrestore
+.Lprop_return_ok:
+    ldp x16,x17,[sp,#128]
+    .endif
+    .ifdef NATIVE_BATCH
+    adrp x16,native_batch_next_compare
+    ldr x16,[x16,:lo12:native_batch_next_compare]
+    cbz x16,.Lbatch_return_ok
+    isb
+    mrs x17,cntpct_el0
+    cmp x17,x16
+    b.lo .Lbatch_return_ok
+    mov x0,x17
+    mov x1,sp
+    bl native_batch_recheck
+    b .Lrestore
+.Lbatch_return_ok:
+    ldp x16,x17,[sp,#128]
+    .endif
+    .ifdef NATIVE_EARLY_ENTRY
     add sp,sp,#848
     .else
     add sp,sp,#832
     .endif
+    .ifdef NATIVE_PROPORTIONAL
+    weighted_final_arm
+    cyclic_final_stamp
+90:
+    .else
     cyclic_final_stamp
     weighted_final_arm
+    .endif
     eret
     .endif
 
@@ -434,7 +499,7 @@ native_extension_eval_stack:
     // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
     // Its only live value is x19. IRQ entry masked delivery before this call.
     mov x0,xzr
-    .ifndef NATIVE_WEIGHTED_CONTINUOUS
+    .ifndef NATIVE_EARLY_ENTRY
     .ifdef NATIVE_MEASURED
     isb
     mrs x1,cntpct_el0

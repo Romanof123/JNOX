@@ -11,6 +11,22 @@ pub(crate) enum BatchPolicy {
     Hrrn,
 }
 
+impl BatchPolicy {
+    fn ranking(self) -> DispatchPolicy {
+        match self {
+            Self::Sjf => DispatchPolicy::ShortestJobFirst,
+            Self::Srtf => DispatchPolicy::ShortestRemainingTimeFirst,
+            Self::Hrrn => DispatchPolicy::HighestResponseRatioNext,
+        }
+    }
+}
+
+#[cfg(any(test, jnox_native_batch))]
+#[path = "native_batch_policy.rs"]
+mod native;
+#[cfg(any(test, jnox_native_batch))]
+pub(crate) use self::native::NativeBatchScheduler;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum BatchError {
     TimeRegression,
@@ -119,12 +135,7 @@ impl<const N: usize> BatchScheduler<N> {
             }
             assert!(self.ready.push_front(id));
         }
-        let ranking = match self.policy {
-            BatchPolicy::Sjf => DispatchPolicy::ShortestJobFirst,
-            BatchPolicy::Srtf => DispatchPolicy::ShortestRemainingTimeFirst,
-            BatchPolicy::Hrrn => DispatchPolicy::HighestResponseRatioNext,
-        };
-        self.running = ranking.pop_ready(&mut self.ready, now, |id| self.jobs[id]);
+        self.running = self.policy.ranking().pop_ready(&mut self.ready, now, |id| self.jobs[id]);
         Ok(self.running)
     }
 }

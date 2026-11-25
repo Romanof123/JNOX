@@ -323,6 +323,17 @@ C의 pthread_attr_t와 Rust pthread 모듈의 PthreadAttr로 작업자를 설정
 
 [C / Rust / QEMU](../examples/native-priority-mutex/README.md) · [POL-014](native-thread-priority-protocols.en-ko.md)
 
+## 네이티브 앱 추첨과 스트라이드 배정
+
+단일 CPU virt에서 일반 ELF 1~3개를 지정한다. ELF마다 가중치 1~16, 공통 퀀텀은 물리 카운터 틱 단위다. 추첨은 명시적 시드를 사용한다. 예제의 선택적 48,24 창과 하한 5,3,11은 같은 시드에서 세 앱이 계속 준비되고 온전한 타이머 배정이 이어지는 첫 48회 중 각 24회 창의 배정 횟수 조건이다. 실제 CPU 시간이나 다른 시드에 대한 하한은 별개다. 스트라이드는 시드나 추첨 하한 없이 실행한다.
+
+~~~sh
+python3 tools/build_native_el0.py --out lottery1 --policy lottery --quantum-ticks 625000 --lottery-seed 1 --lottery-window 48,24 --lottery-floors 5,3,11 --elf crc.elf --weight 1 --peer-elf histogram.elf --peer-weight 2 --peer-elf energy.elf --peer-weight 4
+python3 tools/build_native_el0.py --out stride --policy stride --quantum-ticks 625000 --elf crc.elf --weight 1 --peer-elf histogram.elf --peer-weight 2 --peer-elf energy.elf --peer-weight 4
+~~~
+
+[SDK / QEMU](../examples/native-proportional/README.md) · [POL-010](native-proportional-applications.en-ko.md)
+
 ## 유휴 재충전 상태 확인
 
 포화 CRC·히스토그램·에너지 패키지의 일반 UART를 마지막 NATIVE HIERARCHY HEALTH END 1까지 보관한다. 아래 명령의 기대 종료값은 패키지 슬롯 순서다. JSON에는 부팅 이후 누적한 재충전 지연 초과 횟수, 최대 지연(게스트 틱), 최초 위반이 남는다. 상세 행이 가득 차도 누적값은 유지된다.
@@ -334,3 +345,14 @@ python3 tools/read_hierarchy_health.py output/native-hierarchy/saturated-health-
 판독기 종료값 0은 유효한 계측과 하나 이상의 측정 및 기준 통과, 1은 지연·미관측·판정 불가 또는 종료값 불일치, 2는 불완전하거나 모순된 UART를 뜻한다. #334의 유휴 WFI 재충전 최초 실패 두 건은 #339에서 추적한다. POL-016 전체 시간 승인은 미결이다.
 
 [Capture / UART](../examples/native-hierarchy/README.md#read-the-idle-refill-health-report--유휴-재충전-상태-읽기) · [#339](https://github.com/Romanof123/JNOX/issues/339) · [#21](https://github.com/Romanof123/JNOX/issues/21)
+
+## 네이티브 배치 작업의 도착과 서비스 추정치
+
+각 ELF에 공통 시작점 기준 공개 오프셋과 서비스 추정치를 물리 카운터 틱 단위로 지정한다. SRTF는 더 짧은 남은 서비스의 앱이 준비되면 실행 중인 앱을 선점할 수 있다. SJF와 HRRN은 현재 앱이 계속 실행할 수 있으면 유지한다. HRRN은 다음 앱을 고를 때 대기 시간과 추정치를 함께 반영한다.
+
+~~~sh
+out=output/native-batch
+python3 tools/build_native_el0.py --out "$out/arrival-srtf" --policy srtf --elf "$out/batch.elf" --arg=--blocks --arg 32768 --batch-job 0,18750000 --peer-elf "$out/urgent.elf" --peer-batch-job 6250000,625000
+~~~
+
+[SDK / QEMU](../examples/native-batch/README.md) · [POL-003](native-batch-applications.en-ko.md)
