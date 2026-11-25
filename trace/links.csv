@@ -2211,4 +2211,6 @@ CHG-300,affects,REQ-023
 CHG-300,affects,REQ-024
 CHG-302,affects,REQ-023
 CHG-302,affects,REQ-024
+CHG-303,affects,REQ-024
+IPC-002,depends-on-policy,POL-002
 IPC-001,depends-on-policy,POL-002
