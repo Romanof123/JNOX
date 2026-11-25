@@ -1,13 +1,23 @@
 //! Single masked CPU0 boundary between endpoint state, saved continuations
 //! and fixed-priority scheduling. Endpoint deadlines use CLOCK_MONOTONIC ns.
-use super::{Action, CLOCK_DOMAIN, COUNT, CURRENT, FRAMES, Fixed, NATIVE_IPC_ROUTES,
-            NATIVE_PRIORITIES, NativeFrame, fail, policy};
+use super::{Action, CLOCK_DOMAIN, COUNT, CURRENT, FRAMES, Fixed, NativeFrame, fail, policy};
 
+#[cfg(jnox_native_sync_ipc)]
 #[path = "sync_ipc.rs"]
 mod endpoints;
-use endpoints::SyncIpc;
+#[cfg(jnox_native_sync_ipc)]
+static mut ENDPOINTS: endpoints::SyncIpc<COUNT> = endpoints::SyncIpc::new(super::NATIVE_IPC_ROUTES);
 
-static mut ENDPOINTS: SyncIpc<COUNT> = SyncIpc::new(NATIVE_IPC_ROUTES);
+#[cfg(jnox_native_mailbox_ipc)]
+#[path = "mailbox_ipc.rs"]
+mod mailboxes;
+#[cfg(jnox_native_mailbox_ipc)]
+static mut MAIL: mailboxes::MailboxIpc<COUNT> = mailboxes::MailboxIpc::new(super::NATIVE_MAILBOX_ROUTES);
+
+pub(super) fn handles(service: u64) -> bool {
+    (cfg!(jnox_native_sync_ipc) && matches!(service, 21..=23))
+        || (cfg!(jnox_native_mailbox_ipc) && matches!(service, 24..=25))
+}
 
 fn monotonic_ns(stamp: u64) -> u64 {
     let (origin, hz) = unsafe { CLOCK_DOMAIN };
@@ -23,13 +33,29 @@ fn compare(ns: u64) -> Option<u64> {
 }
 
 pub(super) fn next_compare() -> Option<u64> {
-    let ipc = unsafe { &*(&raw const ENDPOINTS) };
-    ipc.next_deadline().map(|ns| compare(ns).unwrap_or_else(|| fail(9)))
+    let earliest: Option<u64> = None;
+    #[cfg(jnox_native_sync_ipc)]
+    let earliest = earliest.into_iter().chain(unsafe { (&*(&raw const ENDPOINTS)).next_deadline() }).min();
+    #[cfg(jnox_native_mailbox_ipc)]
+    let earliest = earliest.into_iter().chain(unsafe { (&*(&raw const MAIL)).next_deadline() }).min();
+    earliest.map(|ns| compare(ns).unwrap_or_else(|| fail(9)))
 }
 
-fn drain(ipc: &mut SyncIpc<COUNT>, fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
+// A task has one saved blocking SVC, in at most one family at a time.
+// Complete immediate results on the actual trap stack and deferred results in FRAMES.
+fn drain(fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
     for id in 0..COUNT {
-        let Some(done) = ipc.take(id) else { continue };
+        let mut result: Option<(i32, u64, Option<u64>)> = None;
+        #[cfg(jnox_native_sync_ipc)]
+        if let Some(done) = unsafe { (&mut *(&raw mut ENDPOINTS)).take(id) } {
+            result = Some((done.status, done.x1, Some(done.x2)));
+        }
+        #[cfg(jnox_native_mailbox_ipc)]
+        if let Some(done) = unsafe { (&mut *(&raw mut MAIL)).take(id) } {
+            if result.is_some() { fail(9); }
+            result = Some((done.status, done.x1, None));
+        }
+        let Some((status, word, extra)) = result else { continue };
         let frame = match live.as_mut() {
             Some((issuer, frame)) if *issuer == id => &mut **frame,
             _ => {
@@ -37,44 +63,75 @@ fn drain(ipc: &mut SyncIpc<COUNT>, fixed: &mut Fixed, mut live: Option<(usize, &
                 unsafe { &mut *(&raw mut FRAMES[id]) }
             }
         };
-        frame.x[0] = i64::from(done.status) as u64;
-        frame.x[1] = done.x1;
-        frame.x[2] = done.x2;
+        frame.x[0] = i64::from(status) as u64;
+        frame.x[1] = word;
+        if let Some(value) = extra { frame.x[2] = value; }
     }
-    fixed.ipc_priorities(&ipc.priorities(NATIVE_PRIORITIES));
+    #[cfg(jnox_native_sync_ipc)]
+    fixed.ipc_priorities(&unsafe { (&*(&raw const ENDPOINTS)).priorities(super::NATIVE_PRIORITIES) });
+}
+
+fn advance(now: u64, exiting: Option<usize>) {
+    #[cfg(jnox_native_sync_ipc)]
+    unsafe {
+        let ipc = &mut *(&raw mut ENDPOINTS);
+        if let Some(pid) = exiting { ipc.exit(pid, now); } else { ipc.advance(now); }
+    }
+    #[cfg(jnox_native_mailbox_ipc)]
+    unsafe {
+        let mail = &mut *(&raw mut MAIL);
+        if let Some(pid) = exiting { mail.exit(pid, now); } else { mail.advance(now); }
+    }
 }
 
 pub(super) fn boundary(fixed: &mut Fixed, stamp: u64, exit: bool) {
-    let now = monotonic_ns(stamp);
-    let ipc = unsafe { &mut *(&raw mut ENDPOINTS) };
-    ipc.advance(now);
-    if exit {
-        ipc.exit(fixed.current().unwrap_or_else(|| fail(9)), now);
-    }
-    drain(ipc, fixed, None);
+    advance(monotonic_ns(stamp), exit.then(|| fixed.current().unwrap_or_else(|| fail(9))));
+    drain(fixed, None);
 }
 
 pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
     let id = unsafe { CURRENT };
-    let ipc = unsafe { &mut *(&raw mut ENDPOINTS) };
     let now = monotonic_ns(stamp);
-    ipc.advance(now);
-    let result = match frame.x[8] {
-        21 => {
-            let deadline = frame.x[2];
-            if deadline != u64::MAX && compare(deadline).is_none() {
-                Err(-75)
-            } else {
-                ipc.call(id, frame.x[0] as usize, frame.x[1], deadline, now)
-            }
+    advance(now, None);
+    let op = frame.x[8];
+    let deadline = match op { 21 | 24 => frame.x[2], 25 => frame.x[0], _ => u64::MAX };
+    let result = if deadline != u64::MAX && compare(deadline).is_none() {
+        Err(-75)
+    } else {
+        match op {
+            #[cfg(jnox_native_sync_ipc)]
+            21 => unsafe { (&mut *(&raw mut ENDPOINTS)).call(id, frame.x[0] as usize, frame.x[1], deadline, now) },
+            #[cfg(jnox_native_sync_ipc)]
+            22 => unsafe { (&mut *(&raw mut ENDPOINTS)).receive(id, now) },
+            #[cfg(jnox_native_sync_ipc)]
+            23 => unsafe { (&mut *(&raw mut ENDPOINTS)).reply(id, frame.x[0], frame.x[1], now) },
+            #[cfg(jnox_native_mailbox_ipc)]
+            24 => unsafe { (&mut *(&raw mut MAIL)).send(id, frame.x[0] as usize, frame.x[1], deadline, now) },
+            #[cfg(jnox_native_mailbox_ipc)]
+            25 => unsafe { (&mut *(&raw mut MAIL)).receive(id, deadline, now) },
+            _ => unreachable!(),
         }
-        22 => ipc.receive(id, now),
-        23 => ipc.reply(id, frame.x[0], frame.x[1], now),
-        _ => unreachable!(),
     };
     frame.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
     frame.x[1] = 0;
-    frame.x[2] = 0;
-    drain(ipc, policy(), Some((id, frame)));
-    if ipc.blocked(id) { Action::BlockIpc } else { Action::Poll }
+    if op <= 23 { frame.x[2] = 0; }
+    drain(policy(), Some((id, frame)));
+    #[cfg(jnox_native_sync_ipc)]
+    if unsafe { (&*(&raw const ENDPOINTS)).blocked(id) } { return Action::BlockIpc; }
+    #[cfg(jnox_native_mailbox_ipc)]
+    if unsafe { (&*(&raw const MAIL)).blocked(id) } { return Action::BlockIpc; }
+    Action::Poll
+}
+
+#[cfg(jnox_native_mailbox_ipc)]
+pub(super) fn report_mailboxes() {
+    let mail = unsafe { &*(&raw const MAIL) };
+    for id in 0..COUNT {
+        super::uart_write(b"NATIVE MAILBOX STATE");
+        for v in [id, mail.occupancy(id), mail.high_water(id)] {
+            super::uart_write(b" ");
+            super::unsigned(v as u64);
+        }
+        super::uart_write(b"\n");
+    }
 }

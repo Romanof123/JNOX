@@ -131,3 +131,6 @@ pub fn exit(status: i32) -> ! {
 }
 #[cfg(all(feature = "sync-ipc", target_arch = "aarch64"))]
 pub mod ipc;
+
+#[cfg(all(feature = "mailbox", target_arch = "aarch64"))]
+pub mod mailbox;
