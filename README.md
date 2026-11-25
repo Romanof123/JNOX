@@ -121,7 +121,7 @@ On the single-core QEMU `virt` model, linked Rust jobs also run under earliest-d
 | [Run ordinary Rust batch jobs](docs/ordinary-batch.en.md) | Submit and release jobs, compare SJF/SRTF/HRRN and recover linked frames from a QEMU capture |
 | [Run multilevel queues](docs/ordinary-multilevel.en.md) | Run linked Rust workers under MLQ and MLFQ and inspect how blocking, demotion and priority boosts affect dispatch |
 | [Scheduling policies and round robin](docs/scheduling-policies.en.md) | Selection, budget and isolation contracts, with execution evidence by policy |
-| [IPC profiles](docs/ipc-mechanisms.en.md) | [#24](https://github.com/Romanof123/JNOX/issues/24) opened with 0/10 families accepted. The first case pairs a C caller with a Rust server under virtual FIFO/RR. #21 stands at 6/7. [Synchronous IPC contract](docs/native-sync-ipc.en-ko.md) |
+| [IPC profiles](docs/ipc-mechanisms.en.md) | Nine of ten IPC families passed their declared single-core AArch64 QEMU FIFO/RR cases. The end-to-end permit channel remains open on its 1 ms phase requirement. [Family results](https://github.com/Romanof123/JNOX/issues/24) · [Timing evidence](https://github.com/Romanof123/JNOX/issues/389) |
 | [Verification plan](docs/verification-plan.en.md) | Methods, pass criteria, hardware verification and evidence format |
 | [Development lifecycle and change control](docs/lifecycle.en.md) | Traceability from planning through implementation and verification, including redesign and reapproval after a change |
 | [Current work and team handoffs](https://github.com/Romanof123/JNOX/issues/6) | Active tickets, next owners, independent verification and held releases |

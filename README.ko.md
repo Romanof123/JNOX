@@ -121,7 +121,7 @@ AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO�
 | [일반 Rust 배치 작업](docs/ordinary-batch.md) | 실행 중 작업 제출, 지연 도착, SJF·SRTF·HRRN 선택과 실제 프레임 검증 |
 | [다단계 큐 실행](docs/ordinary-multilevel.md) | MLQ와 MLFQ에서 Rust 작업을 실행하고 대기, 우선순위 강등·상향이 실제 실행 순서에 미치는 영향 확인 |
 | [스케줄링 정책과 라운드로빈](docs/scheduling-policies.md) | 고전·현대 정책의 선택·예산·격리 조건과 정책별 실행 검증 |
-| [IPC 프로파일](docs/ipc-mechanisms.md) | [#24](https://github.com/Romanof123/JNOX/issues/24) 착수 당시 승인 수는 0/10이었다. 가상 FIFO·RR의 C 호출자와 Rust 서버가 첫 대상이다. #21은 6/7이다. [동기 IPC 계약](docs/native-sync-ipc.en-ko.md) |
+| [IPC 프로파일](docs/ipc-mechanisms.md) | 단일 코어 AArch64 QEMU의 FIFO·RR에서 IPC 10개 기능군 중 9개가 해당 시험을 통과했다. 종단 간 안전 허가 채널은 1 ms 단계 시간 요건의 검증이 남아 있다. [기능군별 판정](https://github.com/Romanof123/JNOX/issues/24) · [시간 측정과 미결 사항](https://github.com/Romanof123/JNOX/issues/389) |
 | [검증 계획](docs/verification-plan.md) | 시험 방법, 합격 판정, 실기기 검증, 증거 형식 |
 | [개발 수명주기와 변경관리](docs/lifecycle.md) | 기획에서 구현·검증까지의 문서 연결, 변경 시 재설계 및 재승인 절차 |
 | [현재 작업과 팀 인계](https://github.com/Romanof123/JNOX/issues/6) | 진행 중인 티켓, 다음 담당 팀, 독립 검증 및 병합 보류 상태 |
