@@ -122,11 +122,14 @@ mod group_apps;
 mod mutex;
 #[cfg(any(jnox_ordinary_mutex, jnox_bench = "mutex"))]
 mod mutex_policy;
-#[cfg(all(jnox_ordinary_mutex, not(jnox_mutex_fifo)))]
+#[cfg(jnox_mutex_chain)]
+#[path = "ordinary_mutex_chain.rs"]
+mod ordinary_mutex;
+#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo))))]
 mod ordinary_mutex;
 #[cfg(jnox_mutex_fifo)]
 mod ordinary_mutex_fifo;
-#[cfg(all(jnox_ordinary_mutex, not(jnox_mutex_fifo)))]
+#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo))))]
 mod ordinary_mutex_manifest;
 #[cfg(jnox_bench = "multilevel")]
 mod multilevel;
