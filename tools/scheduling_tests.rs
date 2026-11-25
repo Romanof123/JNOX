@@ -56,6 +56,8 @@ mod power_tests;
 mod power_oracle;
 #[path = "../kernel/src/extension_policy.rs"]
 mod extension_policy;
+#[path = "../kernel/src/native_extension_transaction.rs"]
+mod native_extension_transaction;
 #[path = "extension_tests.rs"]
 mod extension_tests;
 

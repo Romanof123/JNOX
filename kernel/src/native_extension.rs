@@ -1,7 +1,10 @@
 //! Single CPU native scheduling extension. The helper evaluates private copies;
 //! the timer handler owns all commits, context selection and timer programming.
 use super::*;
-use extension_policy::{Decision, Extension, Reservation};
+use extension_policy::{Extension, Reservation};
+#[path = "native_extension_transaction.rs"]
+mod transaction;
+use transaction::Transaction;
 use group_policy::DelegatedTask;
 
 const IDLE_ID: usize = 3;
@@ -10,27 +13,13 @@ const NONE: u64 = u64::MAX;
 const GENERATIONS: [u64; 3] = [7, 11, 17];
 const CAP: usize = 512;
 const WIDTH: usize = 40;
-#[derive(Clone, Copy)]
-struct Reply {
-    policy: Extension<3>,
-    decision: Decision,
-    cell: u64,
-    progress: u64,
-    stamp: u64,
-}
 struct Runtime {
     hz: u64,
     epoch: u64,
     quantum: u64,
-    cell: Option<u64>,
+    tx: Transaction,
     start: u64,
     end: u64,
-    cutoff: u64,
-    evaluating: bool,
-    reply: Option<Reply>,
-    policy: Extension<3>,
-    snapshot: [DelegatedTask; 3],
-    heartbeat: u64,
     owner: usize,
     compare: u64,
     sleeps: [Option<u64>; 3],
@@ -89,10 +78,10 @@ impl Runtime {
         mask
     }
     fn arm(&mut self) {
-        let deadline = if self.cell.is_none() {
+        let deadline = if self.tx.cell.is_none() {
             self.epoch
-        } else if self.evaluating {
-            self.cutoff
+        } else if self.tx.evaluating {
+            self.tx.cutoff
         } else {
             self.end
         };
@@ -135,15 +124,9 @@ pub(super) fn start(hz: u64) -> usize {
             hz,
             epoch,
             quantum: q,
-            cell: None,
+            tx: Transaction::new(policy, tasks(0)),
             start: 0,
             end: 0,
-            cutoff: 0,
-            evaluating: false,
-            reply: None,
-            policy,
-            snapshot: tasks(0),
-            heartbeat: 0,
             owner: IDLE_ID,
             compare: 0,
             sleeps: [None; 3],
@@ -165,7 +148,7 @@ pub(super) fn start(hz: u64) -> usize {
 #[unsafe(no_mangle)]
 extern "C" fn native_extension_stack_if_pending() -> *mut u8 {
     let r = state();
-    if r.evaluating && r.reply.is_none() && counter() < r.cutoff {
+    if r.tx.pending() && counter() < r.tx.cutoff {
         (&raw mut EVALUATOR)
             .cast::<u8>()
             .wrapping_add(context::STACK_BYTES)
@@ -175,39 +158,15 @@ extern "C" fn native_extension_stack_if_pending() -> *mut u8 {
 }
 #[unsafe(no_mangle)]
 extern "C" fn native_extension_evaluate() {
-    let (mut policy, snapshot, cell, cutoff, progress) = {
-        let r = state();
-        (
-            r.policy,
-            r.snapshot,
-            r.cell.unwrap_or_else(|| fail(26)),
-            r.cutoff,
-            r.heartbeat.checked_add(1).unwrap_or_else(|| fail(26)),
-        )
-    };
+    let evaluation = state().tx.begin().unwrap_or_else(|| fail(26));
     unsafe {
         asm!("msr daifclr,#2", "isb", options(nostack, preserves_flags));
     }
-    let decision = policy.decide(cell, progress, &snapshot, 1, 1, NATIVE_EXTENSION_PROGRAM, 5);
+    let reply = evaluation.evaluate(NATIVE_EXTENSION_PROGRAM);
     unsafe {
         asm!("msr daifset,#2", "isb", options(nostack, preserves_flags));
     }
-    let r = state();
-    // Stage all multiword payload fields with IRQ masked. Sample publication
-    // after staging and discard on cutoff, before unmasking the consumer.
-    r.reply = Some(Reply {
-        policy,
-        decision,
-        cell,
-        progress,
-        stamp: 0,
-    });
-    let stamp = counter();
-    if stamp < cutoff && r.cell == Some(cell) && r.evaluating {
-        r.reply.as_mut().unwrap().stamp = stamp;
-    } else {
-        r.reply = None;
-    }
+    state().tx.publish(reply, counter);
 }
 
 enum Action {
@@ -244,8 +203,8 @@ fn settle(
         fail(26);
     }
     let old = r.compare;
-    let old_cell = r.cell;
-    let old_eval = r.evaluating;
+    let old_cell = r.tx.cell;
+    let old_eval = r.tx.evaluating;
     let (hardware_compare, hardware_control): (u64, u64);
     unsafe {
         asm!("mrs {}, cntp_cval_el0","mrs {}, cntp_ctl_el0",out(reg) hardware_compare,
@@ -291,26 +250,21 @@ fn settle(
     let physical = cause == 1 && op & 1023 == 30;
     if r.exited == 7 {
         r.owner = END;
-        r.reply = None;
-        r.evaluating = false;
+        r.tx.abandon();
         r.compare = 0;
         arm_compare(None);
     } else {
         if physical && now >= r.epoch {
             let k = (now - r.epoch) / r.quantum;
-            if r.cell != Some(k) {
-                skipped = k.saturating_sub(r.cell.map_or(0, |v| v + 1));
-                canceled = r.evaluating;
-                r.reply = None;
-                r.cell = Some(k);
+            if r.tx.cell != Some(k) {
+                skipped = k.saturating_sub(r.tx.cell.map_or(0, |v| v + 1));
+                canceled = r.tx.evaluating;
                 r.start = now - (now - r.epoch) % r.quantum;
                 r.end = r.start.checked_add(r.quantum).unwrap_or_else(|| fail(26));
-                r.cutoff = r.start + r.quantum / 4;
-                r.snapshot = tasks(r.ready(r.start));
+                let cutoff = r.start + r.quantum / 4;
+                let snapshot = tasks(r.ready(r.start));
                 r.owner = IDLE_ID;
-                r.evaluating = k % 3 != 2;
-                if !r.evaluating {
-                    let d = r.policy.decide(k, r.heartbeat, &r.snapshot, 1, 1, &[], 5);
+                if let Some(d) = r.tx.open(k, cutoff, snapshot) {
                     reason = d.reason as u64;
                     if let Some(p) = d.selected {
                         r.owner = p.task;
@@ -318,19 +272,12 @@ fn settle(
                     }
                 }
             }
-            if r.evaluating && now >= r.cutoff {
-                let d = if let Some(reply) =
-                    r.reply.take().filter(|p| p.cell == k && p.stamp < r.cutoff)
-                {
-                    r.policy = reply.policy;
-                    r.heartbeat = reply.progress;
-                    published = reply.stamp;
-                    reply.decision
+            if let Some((d, publication)) = r.tx.consume(k, now) {
+                if let Some(stamp) = publication {
+                    published = stamp;
                 } else {
                     canceled = true;
-                    r.policy.decide(k, r.heartbeat, &r.snapshot, 1, 1, &[], 5)
-                };
-                r.evaluating = false;
+                }
                 reason = d.reason as u64;
                 steps = u64::from(d.steps);
                 if let Some(p) = d.selected {
@@ -347,7 +294,7 @@ fn settle(
                 woke |= 1 << i;
             }
         }
-        if !physical && r.cell.is_some() && now >= r.end {
+        if !physical && r.tx.cell.is_some() && now >= r.end {
             r.owner = IDLE_ID;
         }
         r.arm();
@@ -363,7 +310,7 @@ fn settle(
         dst_pc = f.elr;
         dst_sp = f.sp_el0;
     }
-    let mask = r
+    let mask = r.tx
         .snapshot
         .iter()
         .enumerate()
@@ -374,9 +321,9 @@ fn settle(
         entry,
         now,
         old_cell.unwrap_or(NONE),
-        r.cell.unwrap_or(NONE),
+        r.tx.cell.unwrap_or(NONE),
         r.start,
-        r.cutoff,
+        r.tx.cutoff,
         r.end,
         src as u64,
         r.owner as u64,
@@ -384,12 +331,12 @@ fn settle(
         r.compare,
         skipped,
         u64::from(old_eval),
-        u64::from(r.evaluating),
+        u64::from(r.tx.evaluating),
         published,
         u64::from(canceled),
         reason,
         steps,
-        r.heartbeat,
+        r.tx.heartbeat,
         mask,
         grant,
         woke,
