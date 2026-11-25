@@ -9,6 +9,9 @@
     b \dest
     .space 124
 .endm
+.ifdef NATIVE_AMC
+.set NATIVE_EARLY_ENTRY,1
+.endif
 .ifdef NATIVE_WEIGHTED_CONTINUOUS
 .set NATIVE_EARLY_ENTRY,1
 .endif
@@ -86,6 +89,9 @@ native_el0_vectors:
 .global native_server_enter
 native_server_enter:
     // Use exactly the normal frame restore, including on the first entry.
+    .ifdef NATIVE_AMC
+    sub sp,sp,#16
+    .endif
     sub sp,sp,#832
     mov x1,sp
     mov x2,#52
@@ -333,9 +339,37 @@ native_el0_enter:
     ldr x30,[sp,#240]
     clrex
     .ifdef NATIVE_SERVER
+    .ifdef NATIVE_AMC
+    // Arm from the final return sample so kernel residency cannot consume
+    // the new entitlement. The absolute calendar may cut the slice shorter.
+    adrp x16,native_server_compare
+    ldr x16,[x16,:lo12:native_server_compare]
+    isb
+    mrs x17,cntpct_el0
+    cmp x17,x16
+    b.hs .Lserver_user_retry
+    adrp x15,native_amc_remaining
+    ldr x15,[x15,:lo12:native_amc_remaining]
+    adds x15,x17,x15
+    b.cs .Lunexpected
+    cmp x15,x16
+    csel x16,x15,x16,lo
+    msr cntp_cval_el0,x16
+    mov x15,#1
+    msr cntp_ctl_el0,x15
+    isb
+    adrp x15,native_server_last_return
+    str x17,[x15,:lo12:native_server_last_return]
+    ldr x15,[sp,#120]
+    .else
     server_gate .Lserver_user_retry
+    .endif
     ldp x16,x17,[sp,#128]
+    .ifdef NATIVE_AMC
+    add sp,sp,#848
+    .else
     add sp,sp,#832
+    .endif
     eret
 .Lserver_user_retry:
     mov x0,x17

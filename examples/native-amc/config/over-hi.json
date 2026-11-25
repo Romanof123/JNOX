@@ -1,0 +1,9 @@
+{
+  "tasks": [
+    {"tier": "LO", "priority": 1, "c_lo": 2, "c_hi": 2, "deadline": 3, "period": 5, "offset": 0, "generations": 2, "argv": [["0", "stream", "80"], ["1", "finite", "8"]]},
+    {"tier": "HI", "priority": 4, "c_lo": 1, "c_hi": 3, "deadline": 4, "period": 16, "offset": 1, "generations": 1, "argv": [["0", "stream", "175"]]},
+    {"tier": "LO", "priority": 2, "c_lo": 2, "c_hi": 2, "deadline": 3, "period": 16, "offset": 1, "generations": 1, "argv": [["0", "finite", "8"]]},
+    {"tier": "HI", "priority": 3, "c_lo": 1, "c_hi": 1, "deadline": 5, "period": 16, "offset": 1, "generations": 1, "argv": [["0", "finite", "8"]]}
+  ],
+  "resets": [{"cell": 5, "approved": true}]
+}
