@@ -12,6 +12,7 @@ struct Timespec {
 }
 
 extern "C" {
+    fn jnox_deadline_service_wait_next() -> i32;
     fn jnox_periodic_wait_next() -> i32;
     fn sched_yield() -> i32;
     fn clock_gettime(clock: i32, result: *mut Timespec) -> i32;
@@ -62,6 +63,12 @@ pub fn yield_now() -> Result<(), i32> {
     } else {
         Err(unsafe { *__jnox_errno_location() })
     }
+}
+
+/// Wait for the next reserved deadline-service cell and return its ordinal.
+pub fn deadline_service_wait_next() -> Result<u32, i32> {
+    let ordinal = unsafe { jnox_deadline_service_wait_next() };
+    u32::try_from(ordinal).map_err(|_| unsafe { *__jnox_errno_location() })
 }
 
 /// Complete this generation and wait for the next release under RM or DM.

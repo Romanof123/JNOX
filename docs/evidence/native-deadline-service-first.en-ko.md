@@ -1,0 +1,21 @@
+# #319 independent first positions / 독립 최초 실행
+
+All five admitted positions produced their complete private products and met both actual job deadlines. Four ordinary refusal boots terminated before operational timer arm or EL0 restore. Before the first boot the verifier selected the nine-position order, 120 s timeout, immutable kernel images, native binaries, commands and stock QEMU clock. The packager had printed the digests and recorded them in its manifests. A Python 3.10 hash helper error delayed serialization of the combined bindings.json until after the first EDF plain capture. The original first boot was retained; strict prelaunch combined-file provenance is incomplete for that position. There were no guest retries. All 11 archives were independently reopened from Windows. The host used QMP stop, saved the 128 MiB of RAM and terminal registers, then quit QEMU with status 0. Actual guest dispositions are in UART.
+
+소스 0054957280b20ec958a96b6849daabc897ab5f35, 계약 037ba4bac72da2cbb1b7b10039b64a9abc0e9d69. 동일한 독립 ELF 세 개와 기본 주파수 62,500,000 Hz, Q=6,250,000을 사용했다. 아래 수치는 마감 시각에서 실제 종료 시각을 뺀 카운터 틱이다. 첫 EDF 일반 실행 전에 개별 이미지 해시 및 명령은 결정돼 있었지만 통합 bindings.json 생성이 호스트 도구 오류로 지연됐다. 해당 실행을 그대로 보존했다.
+
+| Position | A deadline margin | B deadline margin | Service cells | Peak changes/Q |
+|---|---:|---:|---|---:|
+| EDF plain | 74,888,576 | 53,357,849 | 1,3 | 3 |
+| EDF traced | 74,905,321 | 53,975,164 | 1,3 | 3 |
+| LLF plain | 45,437,542 | 51,722,351 | 1,3 | 3 |
+| LLF traced | 47,058,004 | 53,329,601 | 1,3 | 3 |
+| EDF alternate plain | 74,910,258 | 60,221,062 | 2,4 | 3 |
+
+The independent oracle walks live page tables in each terminal RAM image. A published 16 blocks, 8,355,840 and exit 17. B published 67,108,864 and nine bins matching 262,144 times the eighth binomial row, exit 197. Service rows contained the cell indices, 64 inputs apiece, sums 89,440 and 617,824, returned wait ordinal 1 and exit 41. ELF disassembly shows load and multiply-accumulate inside service_reduce. For original calendars B was interrupted in service cells 1 and 3 and restored on eligible cells 2 and 4 at ELR/SP 0x40003c/0x1010fa0. For the alternate, B resumed in cell 3 and exited before activation 2 in cell 4. Timer and service transitions left the reserved tails idle. Every final park was at or beyond the end of the last reserved cell. The model ranks, measured occupancy, handler brackets, register/frame continuity, absolute grid and half-open sliding windows are replayed from the rows. The two external traces matched all nine exceptions and every actual EL0 return address in each run. Traced B's private counter held at 27,940,096 and 56,814,336 in EDF and 28,176,128 and 55,877,888 in LLF before advancing again. Plain runs have terminal RAM and journal. Return timestamps are the guest's pre-return samples, not timestamped external ERET instructions.
+
+종전 EDF와 LLF 각각에서 새 옵션 없이 A/B 사설 결과와 종료 17/197, 손실 0을 확인했다. cap 5는 사유 10, 첫 두 칸 중 한 칸만 남은 비용 2 작업은 사유 8로 양 정책에서 거절됐다. 네 번 모두 EL1 실패 대기 루프 PC 0x402026bc, 0인 사설 진행량, 거절 기록 0/0, FAULT 14와 operational ARM/EVENT 부재를 확인했다. 일반 실행은 외부 예외 추적을 수집하지 않았다. 타깃 보드나 제품 부하 판정은 별도다.
+
+177 host scheduling tests passed, including direct calls to admission for both policies and first, adjacent and terminal cells and refusal reasons. The corrected public reader rejects four offline malformed recordings in negative.log. These reader controls do not exercise hardware injection or runtime invalid-syscall execution. No invalid-input guest ran in this cohort. The original public reader rejected all five successful guests' ARM rows and classified the four refusals correctly. Reader-only 5efcf0bdd3e9f064b7420f425b860c20113c813a accepts the same five recordings and classifies the same four refusals. Live capture polled shared RAM only for traced runs and used QMP after the terminal marker. The final LLF live progress sample was 66,731,776 and its terminal RAM showed 67,108,864.
+
+검증 재현은 압축 해제한 자료 폴더에서 Linux/WSL의 python3 oracle.py . 및 python3 negative.py 명령으로 수행한다. 첫 실행 수집 명령은 bindings.json에 있으며 capture.py 및 build.sh에 홈 경로와 내보낼 Windows 경로가 있다. 첫 채점 자료를 덮어쓰지 않도록 재수집은 별도 경로를 사용한다. 각 tar.gz에는 전체 UART, 종료 상태, 레지스터 및 압축된 전체 RAM이 있고 traced 파일에는 외부 예외 로그와 호스트 진행량 표본도 있다. 패키지별 매니페스트, kernel ELF, 앱 ELF·심볼·역어셈블리, 도구 결과를 포함한다.

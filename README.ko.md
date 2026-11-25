@@ -33,6 +33,8 @@ python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
 
 C·Rust 앱을 주기 또는 상대 마감 순위로 스케줄링해 반복 실행할 수 있습니다. 각 앱은 주기 사이에도 자기 상태를 유지합니다. [네이티브 주기 작업 패키징](docs/native-c-abi.md#네이티브-주기-작업의-rmdm-실행)
 
+세 번째 네이티브 ELF에 100 ms 슬롯을 예약하고 남은 슬롯에서 EDF 또는 LLF로 두 계산 작업을 실행할 수 있습니다. [체크섬·히스토그램·반복 센서 서비스 빌드와 실행](examples/native-deadline-service/README.md)
+
 네이티브 작업 최대 세 개에 시작 가능 시각·마감·예상 CPU 비용을 지정할 수 있습니다. 격자 경계에서 긴급 작업이 실행 가능해지면 EDF가 배치 계산을 선점할 수 있습니다. [네이티브 EDF 패키지 실행](docs/native-c-abi.md#네이티브-앱의-격자-기반-edf)
 
 Linux 또는 WSL의 저장소 루트에서 새 출력 디렉터리에 가중 분석 패키지를 빌드한 후 C CRC·Rust 히스토그램 쌍을 단일 QEMU CPU에서 실행한다.

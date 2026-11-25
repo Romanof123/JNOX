@@ -221,3 +221,7 @@ python3 tools/build_native_el0.py --out output/thread-rr/rr --source examples/na
 ## 프로세스 전용 뮤텍스
 
 협력형 및 RR 두 스레드 패키지에서 고정 주소의 프로세스 전용 `pthread_mutex_t`를 `pthread_mutex_init(&m, NULL)`로 초기화한다. SDK는 `pthread_mutex_lock`, `pthread_mutex_trylock`, `pthread_mutex_unlock`, `pthread_mutex_destroy`를 제공한다. 한 프로세스에서 뮤텍스 최대 4개를 동시에 사용할 수 있다. 사용 중인 잠금에 trylock을 호출하면 errno를 보존하며 양의 EBUSY를 직접 반환한다. 차단된 lock은 소유자가 잠금을 양도한 뒤 복귀한다. 모든 사용이 끝난 뒤 잠금이 풀린 상태에서 파괴한다. [C·Rust 공유 센서 빌드 및 부팅](../examples/native-thread-mutex/README.md)
+
+## 두 마감 작업과 반복 서비스의 시간표
+
+일반 작업 튜플 2개에 `--deadline-service-elf service.elf`, 오름차순 시간표(예: `--deadline-service-cells 1,3`), `--deadline-switch-cap 6`을 지정한다. 시간표는 100 ms 슬롯 16개로 구성된다. 서비스는 한 번 시작해 argv[1]에서 시간표를 읽는다. 마지막을 제외한 각 계산 뒤 C의 `<jnox/deadline.h>`에 선언된 `jnox_deadline_service_wait_next()` 또는 Rust의 `jnox_native::deadline_service_wait_next()`를 호출하면 다음 활성화 순번을 받는다. 마지막 계산 후 종료하며 예약 슬롯의 남은 시간은 유휴로 둔다. [빌드·패키징·부팅 예제](../examples/native-deadline-service/README.md)

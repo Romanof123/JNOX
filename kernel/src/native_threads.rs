@@ -273,7 +273,7 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
             } as u64;
         }
         8 => { f.x[0] = 0; policy().yield_now(); }
-        9 => f.x[0] = (-95i64) as u64,
+        9 | 18 => f.x[0] = (-95i64) as u64,
         10 => match create(a, b, c) {
             Ok(handle) => { f.x[0] = 0; f.x[1] = handle; }
             Err(error) => f.x[0] = (-i64::from(error)) as u64,

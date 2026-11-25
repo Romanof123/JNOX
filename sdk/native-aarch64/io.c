@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <jnox/native_abi.h>
+#include <jnox/deadline.h>
 #include <jnox/periodic.h>
 #include <pthread.h>
 #include <sched.h>
@@ -50,6 +51,11 @@ static long service(long id, long first, long second, long third)
         return -1;
     }
     return x0;
+}
+
+int jnox_deadline_service_wait_next(void)
+{
+    return (int)service(JNOX_CALL_DEADLINE_SERVICE_WAIT_NEXT, 0, 0, 0);
 }
 
 int jnox_periodic_wait_next(void)

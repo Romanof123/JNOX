@@ -221,3 +221,7 @@ python3 tools/build_native_el0.py --out output/thread-rr/rr --source examples/na
 ## Process-private mutexes
 
 Use an explicitly initialized, process-private `pthread_mutex_t` at a stable address. The SDK provides `pthread_mutex_init(&m, NULL)`, `pthread_mutex_lock`, `pthread_mutex_trylock`, `pthread_mutex_unlock` and `pthread_mutex_destroy` for cooperative and RR two-thread packages. Up to four mutexes may be live per process. A busy trylock returns positive EBUSY directly and preserves errno. A blocking lock resumes after the owner transfers ownership. Destroy the unlocked mutex after all users finish. [Build and boot the shared C/Rust sensor](../examples/native-thread-mutex/README.md)
+
+## Reserve recurring service cells for two deadline jobs
+
+Supply two ordinary job tuples, `--deadline-service-elf service.elf`, an increasing calendar such as `--deadline-service-cells 1,3`, and `--deadline-switch-cap 6`. The 16-cell calendar uses 100 ms units. The service starts once and reads the calendar from argv[1]. After each nonfinal result call `jnox_deadline_service_wait_next()` from `<jnox/deadline.h>` or Rust `jnox_native::deadline_service_wait_next()` to receive the next activation ordinal. Exit after the final result. The unused tail of a reserved cell stays idle. [Build, package and boot examples](../examples/native-deadline-service/README.md)
