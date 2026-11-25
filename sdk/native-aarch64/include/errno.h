@@ -1,6 +1,7 @@
 #ifndef JNOX_ERRNO_H
 #define JNOX_ERRNO_H
 #define EPERM 1
+#define ENOENT 2
 #define ESRCH 3
 #define EAGAIN 11
 #define EBUSY 16
@@ -14,10 +15,15 @@
 #define EBADF 9
 #define EIO 5
 #define EACCES 13
+#define ENFILE 23
 #define EMFILE 24
 #define EPIPE 32
+#define ENAMETOOLONG 36
 #define EWOULDBLOCK EAGAIN
+#define EDESTADDRREQ 89
 #define EMSGSIZE 90
+#define EPROTOTYPE 91
+#define ESOCKTNOSUPPORT 94
 #define EOPNOTSUPP ENOTSUP
 #define EADDRINUSE 98
 #define EISCONN 106
