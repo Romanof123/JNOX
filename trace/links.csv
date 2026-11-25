@@ -2307,3 +2307,12 @@ DES-014,partially-implemented-by,IMP-313
 IMP-313,partially-verified-by,VER-025
 VER-025,has-partial-evidence,EVD-313
 IMP-313,tested-in,EVD-313
+REQ-019,partially-implemented-by,IMP-312
+REQ-024,partially-implemented-by,IMP-312
+DES-010,partially-implemented-by,IMP-312
+IPC-010,partially-implemented-by,IMP-312
+IMP-312,partially-verified-by,VER-019
+IMP-312,partially-verified-by,VER-024
+VER-019,has-partial-evidence,EVD-312
+VER-024,has-partial-evidence,EVD-312
+IMP-312,tested-in,EVD-312
