@@ -104,6 +104,28 @@ static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
 static mut UART: Table = Table::EMPTY;
 static mut GIC: Table = Table::EMPTY;
+// The horizon word has a privileged writable identity mapping and one
+// read-only EL0 alias shared by all participating processes.
+#[cfg(jnox_native_weighted_notify)]
+const WEIGHTED_NOTIFICATION_VA: usize = 0x0120_0000;
+#[cfg(jnox_native_weighted_notify)]
+static mut WEIGHTED_NOTIFICATION_TABLE: Table = Table::EMPTY;
+#[cfg(jnox_native_weighted_notify)]
+static mut WEIGHTED_NOTIFICATION_PAGE: Storage<PAGE> = Storage([0; PAGE]);
+
+/// Publish through the kernel alias on CPU0 before the next exception return.
+#[cfg(jnox_native_weighted_notify)]
+pub(crate) fn publish_weighted_notification() {
+    let word = (&raw mut WEIGHTED_NOTIFICATION_PAGE).cast::<u64>();
+    // The backing is page-aligned, initially zero and never writable at EL0.
+    unsafe {
+        if word.read_volatile() == 0 {
+            word.write_volatile(1);
+            asm!("dsb ishst", options(nostack, preserves_flags));
+        }
+    }
+}
+
 static mut PROCESS_COUNT: usize = 0;
 unsafe extern "C" {
     #[cfg(not(jnox_pi4))]
@@ -190,6 +212,8 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
             }
             link(&raw mut space.root, GPIO, 30, &raw mut HIGH);
         }
+        #[cfg(jnox_native_weighted_notify)]
+        link(&raw mut space.low, WEIGHTED_NOTIFICATION_VA, 21, &raw mut WEIGHTED_NOTIFICATION_TABLE);
         let image = space.image_ram.0.as_mut_ptr();
         for s in plan.segments() {
             let begin = s.address as usize;
@@ -304,6 +328,9 @@ unsafe fn install_spaces<'a>(
         page(&raw mut UART, crate::UART0, crate::UART0, DEVICE);
         page(&raw mut GIC, crate::context::GICD, crate::context::GICD, DEVICE);
         page(&raw mut GIC, crate::context::GICC, crate::context::GICC, DEVICE);
+        #[cfg(jnox_native_weighted_notify)]
+        page(&raw mut WEIGHTED_NOTIFICATION_TABLE, WEIGHTED_NOTIFICATION_VA,
+             (&raw const WEIGHTED_NOTIFICATION_PAGE) as usize, NORMAL | USER | RO | NG | PXN | UXN);
         for pid in 0..count {
             populate(pid, plans[pid].borrow(), stack_tails[pid]);
         }

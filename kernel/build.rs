@@ -371,6 +371,27 @@ fn main() {
     let peer2_hash = selector("JNOX_NATIVE_PEER2_ELF_SHA256");
     let policy = selector("JNOX_NATIVE_POLICY");
     let priorities = selector("JNOX_NATIVE_PRIORITIES");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_weighted_continuous)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_weighted_notify)");
+    let continuous = selector("JNOX_NATIVE_WEIGHTED_CONTINUOUS");
+    let notify = selector("JNOX_NATIVE_WEIGHTED_NOTIFY");
+    if let Some(value) = continuous.as_deref() {
+        assert!(value == "1" && board == "virt" && policy.as_deref() == Some("weighted"),
+            "continuous leases require native weighted scheduling on virt");
+        println!("cargo::rustc-cfg=jnox_native_weighted_continuous");
+    }
+    let notification = if let Some(raw) = notify.as_deref() {
+        assert!(continuous.is_some(), "weighted notification requires continuous leases");
+        let (mode, count) = raw.split_once(':').expect("expected closures:N or wakes:N");
+        assert!(matches!(mode, "closures" | "wakes") && !count.is_empty()
+            && count.bytes().all(|b| b.is_ascii_digit()), "invalid weighted notification");
+        let count: u64 = count.parse().expect("notification count exceeds u64");
+        assert!(count > 0, "notification count must be positive");
+        println!("cargo::rustc-cfg=jnox_native_weighted_notify");
+        (mode, count)
+    } else {
+        ("none", 0)
+    };
     let weights = selector("JNOX_NATIVE_WEIGHTS");
     let periodic = selector("JNOX_NATIVE_PERIODIC");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_partition)");
@@ -468,7 +489,7 @@ fn main() {
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref());
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), notification);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -765,7 +786,8 @@ fn partition_windows(table: &str) -> Vec<(Option<usize>, u64)> {
     windows
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, notification: (&str, u64)) {
+    let (notify_mode, notify_count) = notification;
     let windows = if let Some(table) = partition {
         assert_eq!(slots, 2, "partition requires exactly two ordinary processes");
         println!("cargo::rustc-cfg=jnox_native_partition");
@@ -885,7 +907,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     let job_count = jobs.len();
     let extra_slots = extras.join(", ");
     let generated = format!(
-        "pub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");
