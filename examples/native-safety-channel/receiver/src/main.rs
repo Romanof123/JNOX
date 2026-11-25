@@ -36,6 +36,10 @@ static mut safety_received_count: usize = 0;
 static mut safety_exact_clock_control: [u64; 12] = [0; 12];
 #[no_mangle]
 static mut safety_exact_rearm_control: [u64; 7] = [0; 7];
+// Activations 8 and 9. Latched booleans are private-model check results;
+// the final flags are the protected INFO readback after COMPLETE.
+#[no_mangle]
+static mut safety_phase_samples: [[u64; 12]; 2] = [[0; 12]; 2];
 
 fn values(s: Snapshot) -> [u64; 4] {
     [
@@ -327,14 +331,21 @@ impl Controller {
         self.active_ack = Some(reply != u64::MAX);
         ipc::reply(token, reply).map_err(|_| 84)
     }
-    fn activate(&mut self, case: Case, i: usize) -> Bench<()> {
+    fn activate(&mut self, case: Case, i: usize, phase_leads: [u64; 2]) -> Bench<()> {
         let grid = i as u64 * 5;
         let planned = match case {
             Case::Collision => self.time.at(grid)?,
-            Case::Phase if grid >= 25 => self.time.at(grid)? - 1,
+            Case::Phase | Case::PhaseDecision | Case::PhaseComplete if grid >= 25 => {
+                self.time.at(grid)? - 1
+            }
             _ => self.time.at(grid + 1)?,
         };
-        let wake = self.time.until(planned)?;
+        let phase_lead = match i {
+            8 | 9 if case.measured_phase() => Some(phase_leads[i - 8]),
+            _ => None,
+        };
+        let wake_target = planned.checked_sub(phase_lead.unwrap_or(0)).ok_or(83)?;
+        let wake = self.time.until(wake_target)?;
         dev::check().map_err(|_| 91)?;
         let entry = state()?;
         let expired = self.model.begin_activation(entry.ticks).map_err(|_| 90)?;
@@ -370,10 +381,11 @@ impl Controller {
             }
             // COMPLETE discards a one-shot command the private receiver declined.
         }
-        self.model.check(state()?.ticks).map_err(|_| 90)?;
+        let before_complete = state()?.ticks;
+        let pre_latched = self.model.check(before_complete).map_err(|_| 90)?;
         dev::complete().map_err(|_| 93)?;
         let end = state()?;
-        self.model.check(end.ticks).map_err(|_| 90)?;
+        let post_latched = self.model.check(end.ticks).map_err(|_| 90)?;
         let after = self.model.snapshot();
         // The kernel's atomic completion stamp precedes this user observation.
         // A deadline falling in that interval is visible in the two raw clocks.
@@ -406,6 +418,25 @@ impl Controller {
                 ],
             );
             write_volatile(&raw mut safety_activation_count, i + 1);
+            if let Some(lead) = phase_lead {
+                write_volatile(
+                    &raw mut safety_phase_samples[i - 8],
+                    [
+                        i as u64,
+                        planned,
+                        lead,
+                        wake_target,
+                        wake,
+                        entry.ticks,
+                        expired as u64,
+                        before_complete,
+                        pre_latched as u64,
+                        end.ticks,
+                        post_latched as u64,
+                        end.flags,
+                    ],
+                );
+            }
         }
         if matches!(case, Case::Collision | Case::Phase) {
             self.exact_control()?;
@@ -413,7 +444,12 @@ impl Controller {
         if matches!(case, Case::Early | Case::Boundary) {
             self.exact_rearm(end.ticks)?;
         }
-        if i == 4 && matches!(case, Case::Silence | Case::Phase) {
+        if i == 4
+            && matches!(
+                case,
+                Case::Silence | Case::Phase | Case::PhaseDecision | Case::PhaseComplete
+            )
+        {
             let (token, word) = ipc::receive().map_err(|_| 84)?;
             if word != common::LAST_SAMPLE {
                 return Err(84);
@@ -426,7 +462,7 @@ impl Controller {
         Ok(())
     }
 }
-fn run(case: Case) -> Bench<()> {
+fn run(case: Case, phase_leads: [u64; 2]) -> Bench<()> {
     let time = Timeline::start(case)?;
     let mut c = Controller {
         model: Receiver::new(time.hz).map_err(|_| 90)?,
@@ -436,7 +472,7 @@ fn run(case: Case) -> Bench<()> {
     };
     let mut result = Ok(());
     for i in 0..17 {
-        if let Err(e) = c.activate(case, i) {
+        if let Err(e) = c.activate(case, i, phase_leads) {
             result = Err(e);
             break;
         }
@@ -476,5 +512,21 @@ fn panic(_: &PanicInfo<'_>) -> ! {
 }
 #[no_mangle]
 pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
-    Case::parse(argc, argv).and_then(run).err().unwrap_or(72)
+    (|| {
+        if !matches!(argc, 2 | 4) {
+            return Err(81);
+        }
+        let case = Case::parse(2, argv)?;
+        let mut leads = [0; 2];
+        if argc == 4 {
+            if !case.measured_phase() {
+                return Err(81);
+            }
+            leads[0] = common::parse_lead_ticks(*argv.add(2))?;
+            leads[1] = common::parse_lead_ticks(*argv.add(3))?;
+        }
+        run(case, leads)
+    })()
+    .err()
+    .unwrap_or(72)
 }

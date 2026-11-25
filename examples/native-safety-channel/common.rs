@@ -43,8 +43,13 @@ pub enum Case {
     Rearm20,
     RecoverLatch,
     RecoverHold,
+    PhaseDecision,
+    PhaseComplete,
 }
 impl Case {
+    pub fn measured_phase(self) -> bool {
+        matches!(self, Self::PhaseDecision | Self::PhaseComplete)
+    }
     pub fn rearm_target_ms(self) -> Option<u64> {
         match self {
             Self::Rearm15 => Some(15),
@@ -143,8 +148,33 @@ impl Case {
             b"rearm-20" => Ok(Self::Rearm20),
             b"recover-latch" => Ok(Self::RecoverLatch),
             b"recover-hold" => Ok(Self::RecoverHold),
+            b"phase-decision" => Ok(Self::PhaseDecision),
+            b"phase-complete" => Ok(Self::PhaseComplete),
             _ => Err(81),
         }
+    }
+}
+// The loader supplies NUL-terminated argv strings. Read at most five digits
+// and their terminator; leading zeroes are valid.
+pub unsafe fn parse_lead_ticks(arg: *const u8) -> Bench<u64> {
+    if arg.is_null() {
+        return Err(81);
+    }
+    let mut lead = 0;
+    for i in 0..=5 {
+        let ch = *arg.add(i);
+        if ch == 0 && i != 0 {
+            break;
+        }
+        if i == 5 || !ch.is_ascii_digit() {
+            return Err(81);
+        }
+        lead = lead * 10 + u64::from(ch - b'0');
+    }
+    if lead > 12_500 {
+        Err(81)
+    } else {
+        Ok(lead)
     }
 }
 pub const ACK: u64 = 0x5341464500000000;

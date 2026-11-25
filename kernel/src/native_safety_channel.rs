@@ -251,11 +251,38 @@ impl Session {
         if permit == 0 { self.pending = false; drive(0); }
         Ok(())
     }
+    #[cfg(jnox_native_safety_phase_observation)]
+    #[inline(never)]
+    fn retire_boundary_activation(&mut self) {
+        self.pending = false;
+        self.snapshot = None;
+        self.released = false;
+        // The caller holds the masked native SVC and has checked active.
+        // Finish the cleanup before bracketing the final activation-state store.
+        let active = &raw mut self.active;
+        let was_active = unsafe { core::ptr::read_volatile(active) };
+        unsafe { core::arch::asm!("dsb sy", options(nostack, preserves_flags)); }
+        let before = counter();
+        let readback = unsafe {
+            core::arch::asm!("isb", options(nostack, preserves_flags));
+            core::ptr::write_volatile(active, false);
+            core::arch::asm!("dsb sy", options(nostack, preserves_flags));
+            let value = core::ptr::read_volatile(active);
+            core::arch::asm!("dsb ld", options(nostack, preserves_flags));
+            value
+        };
+        let after = counter();
+        log(16, [before, after, self.generation, self.sequence, self.issue,
+                 u64::from(self.fault), u64::from(was_active), u64::from(readback)]);
+    }
     fn control(&mut self, x:&[u64;31]) -> Result<(),i32> {
         self.check_at(counter(), x[0]);
         match x[0] {
             1 if !self.active => { self.active=true; self.attempts=0; self.command=false; }
             2 => return self.commit(x),
+            #[cfg(jnox_native_safety_phase_observation)]
+            3 if self.active => self.retire_boundary_activation(),
+            #[cfg(not(jnox_native_safety_phase_observation))]
             3 if self.active => { self.pending=false; self.active=false; self.snapshot=None; self.released=false; }
             4 if self.active && !self.command => {
                 self.command=true;

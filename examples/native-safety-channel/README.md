@@ -44,6 +44,12 @@ Check the input handle and complete private payload, selected rejection, unchang
 
 ## Build and capture
 
+Use `phase-decision` or `phase-complete` in all three argument vectors with `--safety-boundary`. To advance the controller's requested wakes for its ninth and tenth activations, append two extra `--peer-arg` values after the controller selector. Each is 0–12500 ticks written with one to five ASCII digits. Omit both for zero leads. The register and eligibility remain under their normal owners. Both fixtures keep the original real final-sample acknowledgement, CLOSE, sender refusal and complete controller service sequence. [Worst-phase acceptance](../../docs/native-safety-boundary-bench.en-ko.md) · [#400](https://github.com/Romanof123/JNOX/issues/400).
+
+In the two measured phase images, event 16 records the journal tick, counter samples immediately before and after the final active-to-inactive store and its readback, generation, accepted sequence, accepted issue, fault, and active flag before/after. The receiver array `safety_phase_samples[2][12]` records activation index, nominal target, lead, requested wake, observed wake, entry INFO tick, private entry latch result, private pre-COMPLETE INFO tick and latch result, post-COMPLETE INFO tick and latch result, and post-COMPLETE protected flags. Each row corresponds to activation 8 or 9 (zero based).
+
+세 역할에 같은 위상 선택자를 넣는다. 두 리드 값은 제어기 기상 요청만 앞당긴다. 이벤트 12의 만료 판정 피연산자, 이벤트 16의 활성화 종료 저장 구간, 수신기 자체의 검사 시각은 각각 원래 경로에서 기록한다.
+
 The ordinary `recover-latch` and `recover-hold` selectors exercise channel generation recovery with three live processes. Both first enable on generation 1, stop issuing permits after sequence 3 at E+20 ms, and wait for a real age-expiry latch and output fall. OPEN starts generation 2 at E+50 ms. The new set permit issues are E+55 and E+65 ms. An early REARM between these two commits must be discarded. The positive case issues a separate REARM at E+70 ms and withdraws with sequence 3 at E+76 ms. The hold case omits both operations. Verify the actual clock and device transitions throughout, including continuous inhibition after the pair in the hold case. [Recovery criteria and provenance](https://github.com/Romanof123/JNOX/issues/399).
 
 두 시험 모두 첫 세대에서 실제 허가 만료로 출력이 꺼진 뒤 새 세대를 연다. 이른 재무장 거부 후 두 번째 허가가 도착해도 출력은 차단 상태여야 한다. 양성 시험은 별도 명령으로 재무장한 뒤 허가를 철회한다. 대조 시험은 새 명령 없이 출력을 끝까지 관측한다. 프로세스는 세 개 모두 살아 있는 상태에서 실행한다.
@@ -67,13 +73,13 @@ revision=$(git rev-parse HEAD)
 cases=(healthy observed live-startup silence phase collision invalid saturation queued delayed restart early boundary one no-rearm bad-spacing
        bad-crc bad-header-crc bad-length bad-version bad-type bad-channel bad-data-id bad-validity bad-permit bad-reserved
        duplicate reordered gap old-generation future-issue expired-issue issue-order wrong-owner rearm-15 rearm-20
-       recover-latch recover-hold)
+       recover-latch recover-hold phase-decision phase-complete)
 for policy in fifo rr; do
   quantum=()
   if [ "$policy" = rr ]; then quantum=(--quantum-ticks 625000); fi
   for scenario in "${cases[@]}"; do
     boundary=()
-    if [[ "$scenario" = rearm-* ]]; then boundary=(--safety-boundary); fi
+    if [[ "$scenario" = rearm-* || "$scenario" = phase-* ]]; then boundary=(--safety-boundary); fi
     pkg="$out/$policy-$scenario"
     python3 tools/build_native_el0.py --out "$pkg" --board virt --policy "$policy" "${quantum[@]}" \
       --elf "$out/sender.elf" --peer-elf "$out/receiver.elf" --peer-elf "$out/supervisor.elf" \

@@ -551,6 +551,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_watchdog)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_downstream)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_boundary)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_phase_observation)");
     let boundary = selector("JNOX_NATIVE_SAFETY_BOUNDARY");
     let qualification = selector("JNOX_NATIVE_SAFETY_QUALIFICATION");
     let downstream = selector("JNOX_NATIVE_SAFETY_DOWNSTREAM");
@@ -686,17 +687,23 @@ fn main() {
     if boundary.is_some() {
         let [sender, controller, supervisor, extra] = core::array::from_fn(|slot|
             native_extra_args(slot, native_argv[slot].as_deref()));
-        assert!(sender.len() == 1 && controller == sender && supervisor.first() == sender.first()
+        assert!(sender.len() == 1 && controller.first() == sender.first() && supervisor.first() == sender.first()
             && extra.is_empty(), "boundary observations require matching selectors for three slots");
         let rearm = matches!(sender[0].as_slice(), b"rearm-15" | b"rearm-20");
-        assert!(rearm || matches!(sender[0].as_slice(), b"phase" | b"collision"),
+        let phase = matches!(sender[0].as_slice(), b"phase-decision" | b"phase-complete");
+        assert!(phase || controller == sender, "boundary observations require matching selectors for three slots");
+        assert!(rearm || phase || matches!(sender[0].as_slice(), b"phase" | b"collision"),
             "unknown boundary observation selector");
         if supervisor.len() != 1 {
             assert!(rearm && supervisor.len() == 2, "only rearm accepts one supervisor lead");
-            let lead = supervisor[1].as_slice();
-            assert!((1..=5).contains(&lead.len()) && lead.iter().all(u8::is_ascii_digit)
-                && lead.iter().fold(0u32, |n, digit| n * 10 + u32::from(*digit - b'0')) <= 12_500,
-                "supervisor lead must be 1 to 5 ASCII decimal digits in the range 0..12500 ticks");
+            validate_boundary_lead(&supervisor[1], "supervisor");
+        }
+        if phase && controller.len() != 1 {
+            assert!(controller.len() == 3, "phase-decision and phase-complete accept two controller leads together");
+            for lead in &controller[1..] { validate_boundary_lead(lead, "controller"); }
+        }
+        if phase {
+            println!("cargo::rustc-cfg=jnox_native_safety_phase_observation");
         }
         println!("cargo::rustc-cfg=jnox_native_safety_boundary");
     }
@@ -1011,6 +1018,12 @@ fn multilevel_duration(field: &str) -> u64 {
     let value = decimal_number(field);
     assert!((1..=i64::MAX as u64).contains(&value), "duration must be in 1..=i64::MAX");
     value
+}
+
+fn validate_boundary_lead(lead: &[u8], role: &str) {
+    assert!((1..=5).contains(&lead.len()) && lead.iter().all(u8::is_ascii_digit)
+        && lead.iter().fold(0u32, |n, digit| n * 10 + u32::from(*digit - b'0')) <= 12_500,
+        "{role} lead must be 1 to 5 ASCII decimal digits in the range 0..12500 ticks");
 }
 
 // Hex wire: u8 count, then (u16 little-endian byte length, UTF-8 payload) per extra.

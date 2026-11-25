@@ -382,7 +382,7 @@ impl Supervisor {
                 }
                 self.observe(63, false, Some(7))?;
             }
-            Silence | Phase => {
+            Silence | Phase | PhaseDecision | PhaseComplete => {
                 // The controller answers immediately after the activation that
                 // consumes the final good sample. Close on return from CALL.
                 call(1, common::LAST_SAMPLE, 3)?;
@@ -528,23 +528,10 @@ pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
         let case = Case::parse(2, argv)?;
         let mut lead_ticks = 0;
         if argc == 3 {
-            let arg = *argv.add(2);
-            if case.rearm_target_ms().is_none() || arg.is_null() {
+            if case.rearm_target_ms().is_none() {
                 return Err(81);
             }
-            for i in 0..=5 {
-                let ch = *arg.add(i);
-                if ch == 0 && i != 0 {
-                    break;
-                }
-                if i == 5 || !ch.is_ascii_digit() {
-                    return Err(81);
-                }
-                lead_ticks = lead_ticks * 10 + u64::from(ch - b'0');
-            }
-            if lead_ticks > 12_500 {
-                return Err(81);
-            }
+            lead_ticks = common::parse_lead_ticks(*argv.add(2))?;
         }
         run(case, lead_ticks)
     })()

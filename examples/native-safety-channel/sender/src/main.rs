@@ -266,7 +266,7 @@ impl Sender {
                 }
                 self.normal(1, 7, 60, false)?;
             }
-            Case::Silence | Case::Phase => {
+            Case::Silence | Case::Phase | Case::PhaseDecision | Case::PhaseComplete => {
                 self.send(self.msg(1, 4, 30, true, 0)?, 30, 0, 0, -32)?;
             }
             Case::Queued => {
