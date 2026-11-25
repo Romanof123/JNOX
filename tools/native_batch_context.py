@@ -1,0 +1,298 @@
+#!/usr/bin/env python3
+"""Historical and separately observed native batch context. See native_batch_context.md."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import struct
+import sys
+
+from native_el0_capture import capture, command
+from native_el0_replay import PA_MASK, Snapshot, argument_stacks, elf_file
+from native_batch_replay import decode, ledger, product, require, slot_statuses
+from ordinary_amc_capture import sha
+
+CASES = ("arrival-srtf", "tie-sjf")
+SOURCE = "25a41989368d4f76ec7151209e27a448b7b253e2"
+QEMU = "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+KERNEL = ("089ff0bc0ba855c6ff3cda7dd19af7243ed4af84017917b0ac5316e6f612da3b",
+          "ab8257864df4ed0aa9c08fa18c552410b6c504ce88f39dd3054669ccbac00b2b")
+MANIFEST = ("dd7ce8c45ffa06e37d93516b15aa1b1b9bc31687ca229e79c786ce40710051ae",
+            "8b913d79629709fdf573841dbbd48088343be576ab952e38c323ac1d7cd090b2")
+HISTORY = {
+    "plain": ("51c7dffe8f519eee98bbb007f60d0cb2a1f2f2859707119990fe8f9f1790f9bf",
+              "819f5c93c74f808d6a9469ed221a1f9b79dfb796097dff3edfe5807729c7b51a",
+              "04a0bb2ce6b611068eabcca5c91cf839e285fb1fbc2a6cc4043d32269f44b9b4", 13721),
+    "traced": ("b28ff5860ca0e5358dba3c9686e672162c46757ae8266aab6d4c7ffac2d6e4de",
+               "09288bc13ba96cb13e5935a7aee033a2eb01b736ca7b87f514e485f8babdf43e",
+               "4fa1e2123dbb565660b23183c7c80df60ea59364b27eeb12b6cdc4160f592d60", 13619),
+}
+
+
+def package(products, case):
+    folder = products / case
+    idx = CASES.index(case)
+    require(sha(folder/"manifest.json") == MANIFEST[idx] and sha(folder/"kernel.elf") == KERNEL[idx],
+            "original manifest/kernel mismatch")
+    manifest = json.loads((folder/"manifest.json").read_bytes())
+    for slot in manifest["slots"]:
+        require(sha(folder/slot["elf"]) == slot["elf_sha256"], "original slot ELF mismatch")
+    return folder, manifest
+
+
+def acquisition(args):
+    out = args.out.resolve()
+    plugin = args.plugin.resolve(strict=True)
+    require(sha(plugin) == args.plugin_sha256, "plugin digest mismatch")
+    qemu = Path(shutil.which("qemu-system-aarch64") or "").resolve(strict=True)
+    require(sha(qemu) == QEMU, "original QEMU mismatch")
+    for case in CASES:
+        package(args.products, case)
+    probe = args.products/"first-arrival-srtf-traced"/"probe.c"
+    require(sha(probe) == "ac5bf6aed8dc677df141d2a5e0029214f459b7c85162179fb99052360b532870", "probe source")
+    require(not any("," in str(p) for p in (out, plugin)), "QEMU observer paths cannot contain commas")
+    out.mkdir(mode=0o700)
+    results = []
+    for case in CASES:
+        folder, _ = package(args.products, case)
+        target = out/case
+        def observed(qemu_path, root, plain):
+            cmd = command(qemu_path, root, False)
+            root.chmod(0o700)
+            ram = root/"observer.ram"
+            fd = os.open(ram, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+            with os.fdopen(fd, "wb") as stream:
+                stream.truncate(128 << 20)
+            st = ram.stat()
+            (root/"backing.json").write_text(json.dumps(dict(dev=st.st_dev,ino=st.st_ino,bytes=st.st_size)))
+            shutil.copyfile(plugin, root/"observer.so")
+            require(sha(root/"observer.so") == args.plugin_sha256, "copied plugin digest")
+            cmd[cmd.index("-machine")+1] += ",memory-backend=obsram"
+            cmd.extend(["-object", f"memory-backend-file,id=obsram,size=128M,mem-path={ram},share=on",
+                        "-plugin", f"{root/'observer.so'},case={case},out={root/'context.jsonl'},ram={ram}"])
+            return cmd
+        rc = capture(argparse.Namespace(root=target,kernel=folder/"kernel.elf",user=folder/"user.elf",
+             probe=probe,revision=SOURCE,manifest=folder/"manifest.json",arg=[],peer_arg=[],peer2_arg=[],
+             expect_exit=17,timeout=90,uart_limit=None,qemu=str(qemu),nm="aarch64-linux-gnu-nm",
+             plain=False), command_factory=observed)
+        results.append(dict(case=case, session_sha256=sha(target/"session.json"), capture_exit=rc))
+    print(json.dumps(results, indent=2))
+    return int(any(r["capture_exit"] for r in results))
+
+
+def inputs(products, case, target, session_hash):
+    folder, manifest = package(products, case)
+    require(sha(target/"session.json") == session_hash, "session mismatch")
+    session = json.loads((target/"session.json").read_bytes())
+    for name, digest in session["hashes"].items():
+        require(Path(name).name == name and sha(target/name) == digest, "capture hash mismatch " + name)
+    require(session["marker"] == "EXIT 17", "incomplete capture " + session["marker"])
+    launch = json.loads((target/"launch.json").read_bytes())
+    require(launch["argument_package"] == manifest and launch["revision"] == SOURCE and
+            launch["qemu_sha256"] == QEMU and session["hashes"]["kernel.elf"] == manifest["kernel_elf_sha256"],
+            "launch identity")
+    mem = Snapshot(launch["ram_base"], (target/"ram.bin").read_bytes())
+    uart = (target/"uart.bin").read_bytes()
+    stacks = argument_stacks((target/"kernel.elf").read_bytes(), mem, manifest, uart)
+    statuses = slot_statuses(uart, len(stacks))
+    outputs = [product(role, elf_file((folder/s["elf"]).read_bytes()), mem, stacks[i], statuses[i])
+               for i,(s,role) in enumerate(zip(manifest["slots"],("batch","urgent","checksum")))]
+    timeline = ledger(decode(uart),manifest,stacks)
+    require(timeline["frequency"] == 62500000 and not timeline["dropped"] and
+            timeline["events"][-1]["dst"] == 4, "incomplete terminal ledger")
+    return session, mem, stacks, outputs, timeline["events"]
+
+
+def original(args):
+    result = {}
+    app = elf_file((args.products/CASES[0]/"user.elf").read_bytes())
+    for pc,word in ((0x400808,0x3868692a),(0x400a20,0x52800035),(0x400a2c,0x97ffff73),
+                    (0x400a38,0xf9000688),(0x400a3c,0xb90012d5),(0x400a40,0x110006b5)):
+        require(any(seg["p_type"] == "PT_LOAD" and seg["p_flags"] & 1 and
+                    0 <= pc-seg["p_vaddr"] <= seg["p_filesz"]-4 and
+                    struct.unpack_from("<I",seg.data(),pc-seg["p_vaddr"])[0] == word
+                    for seg in app.iter_segments()), "archived loop disassembly")
+    for name,(pin,ram_digest,gpr_digest,blocks) in HISTORY.items():
+        target = args.products / ("first-arrival-srtf-"+name)
+        session, mem, _, outputs, events = inputs(args.products,CASES[0],target,pin)
+        require(session["hashes"]["ram.bin"] == ram_digest, "original RAM")
+        switch, = [e for e in events if (e["src"],e["dst"]) == (0,1)]
+        restore, = [e for e in events if (e["src"],e["dst"]) == (1,0)]
+        require(switch["kind"] == 1 and switch["op"] & 1023 == 30 and switch["releases"] == 2
+                and switch["seq"] < restore["seq"] and events[-1]["src"] == 0, "original switch")
+        addr = switch["src_frame"]
+        require(addr == restore["dst_frame"] == 0x40210000 and addr-mem.base == 65536, "frame identity")
+        frame = mem.read(addr,832)
+        gprs = struct.unpack_from("<31Q",frame)
+        pstate, pc, sp = struct.unpack_from("<3Q",frame,256)
+        require((pc,sp,pstate) == (switch["src_pc"],switch["src_sp"],switch["src_pstate"]) ==
+                (restore["dst_pc"],restore["dst_sp"],restore["dst_pstate"]) and pc == 0x400808,
+                "original saved/selected PC, stack or PSTATE")
+        require(hashlib.sha256(frame[:248]).hexdigest() == gpr_digest and
+                (gprs[21] & 0xffffffff)-1 == blocks, "historical GPR bytes")
+        if name == "traced":
+            require(trace_matches(target,switch,switch["dst_pc"]) and trace_matches(target,restore,pc),
+                    "archived exception/ERET sequence")
+        result[name] = dict(session=pin, frame_pa=addr, gpr_sha256=gpr_digest,x0_to_x30=gprs,
+                            pc=pc,sp=sp,pstate=pstate,inferred_completed_stores=blocks,products=outputs,
+                            live_restore_operand=None, transient_private_word=None)
+    print(json.dumps(result,indent=2))
+    return 0
+
+def trace_matches(target, event, next_pc):
+    raw = (target/"exceptions.log").read_text(encoding="ascii")
+    name = "5 [IRQ]" if event["kind"] == 1 else "2 [SVC]"
+    pattern = (r"Taking exception " + re.escape(name) + r"(?: on CPU 0)?\n\.\.\.from EL0 to EL1\n"
+               r"\.\.\.with ESR [^\n]+\n\.\.\.with ELR 0x0*" + f"{event['src_pc']:x}" +
+               r"\n\.\.\.to EL1 PC [^\n]+\nException return from AArch64 EL1 to AArch64 EL0 PC 0x0*" +
+               f"{next_pc:x}" + r"(?:\n|$)")
+    return bool(re.search(pattern,raw))
+
+
+def observed(args):
+    target = args.out / args.case
+    session, mem, stacks, outputs, events = inputs(args.products,args.case,target,args.session_sha256)
+    require(session["hashes"].get("observer.so") == args.plugin_sha256, "observer binary mismatch")
+    launch = json.loads((target/"launch.json").read_bytes())
+    cmd = launch["argv"]
+    require(cmd[cmd.index("-machine")+1] == "virt,gic-version=2,memory-backend=obsram" and
+            cmd[cmd.index("-d")+1] == "int" and "-plugin" in cmd and "--icount" not in cmd and
+            "-icount" not in cmd, "observer clock/backing/trace")
+    path = target/"context.jsonl"
+    notes = []
+    result = dict(case=args.case,session_sha256=args.session_sha256,products=outputs,
+                  source=SOURCE,clock_scope="external observer, file-backed RAM",gaps=notes)
+    def gap(condition, text):
+        if not condition:
+            notes.append(text)
+        return condition
+    if not path.exists() or "context.jsonl" not in session["hashes"]:
+        notes.append("no retained plugin records")
+        return result
+    require(path.stat().st_size <= 4 << 20, "observer exceeded bounded output")
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    result["boundaries"] = rows
+    if not gap(bool(rows), "no plugin records"):
+        return result
+    if not gap(not any(r.get("invalid") or r.get("dropped") or r["kind"] == "invalid-site" for r in rows),
+               "unqualified callback or dropped records"):
+        return result
+    mapping = [r for r in rows if r["kind"] == "mapping"]
+    if gap(len(mapping) == 1, "read-only backing could not be qualified"):
+        backing = json.loads((target/"backing.json").read_bytes())
+        require({k:mapping[0][k] for k in backing} == backing and backing["bytes"] == 128 << 20,
+                "observer RAM mapping identity")
+    def select(kind, low=-1, high=None):
+        return [r for r in rows if r["kind"] == kind and low < r["seq"] and
+                (high is None or r["seq"] < high)]
+    require(all(a["seq"] < b["seq"] for a,b in zip(rows,rows[1:])), "plugin sequence regression")
+    first = select("first")
+    terminal = select("terminal")
+    progress = outputs[0]["private_progress"]
+    if not gap(len(terminal) == 1 and len(first) == 1, "missing first or terminal publication boundary"):
+        return result
+    require(first[0]["count"] == 1 and terminal[0]["count"] == progress,
+            "store count vs private terminal progress")
+    progress_pa = (mem.leaf(stacks[0]["root"],0x403010) & PA_MASK) + 0x10
+    require(all(r["pa"] == progress_pa for r in first+select("post-progress")), "private A backing")
+    for r in rows:
+        if r.get("value") is not None:
+            require(r["value"] == r["count"] and
+                    r["sum"] in (522240*r["value"],522240*(r["value"]+1)), "snapshot product phase")
+    for r in (first[0],terminal[0]):
+        if r.get("value") is not None:
+            require(r["sum"] == 522240*r["value"], "completed publication sum")
+    gap(all(r.get("value") is not None for r in (first[0],terminal[0])), "numeric publication reads unavailable")
+    release_mask = 2 if args.case == CASES[0] else 6
+    arrivals = [e for e in events if e["releases"] & release_mask]
+    result["release_events"] = arrivals
+    if not gap(len(arrivals) == 1, "release grouping differs from the frozen position"):
+        return result
+    e = arrivals[0]
+    if not gap(e["src"] == 0 and e["kind"] == 1 and e["op"] & 1023 == 30,
+               "no active A at a lower-EL release IRQ; prior useful work and retention unavailable"):
+        result["initial_dispatch"] = next((x for x in events if x["dst"] == 0),None)
+        result["idle_irq_records"] = select("idle-irq")
+        result["initial_store_count"] = select("idle-irq")[0]["count"] if select("idle-irq") else None
+        if args.case == CASES[1]:
+            result["queued_exit_order"] = [x["src"] for x in events if x["kind"] == 2 and x["op"] == 1]
+        return result
+    expected_dst = 1 if args.case == CASES[0] else 0
+    require(e["dst"] == expected_dst, "release choice")
+    saves = select("irq-save")
+    if not gap(len(saves) == 1, "missing or ambiguous interrupted-frame publication"):
+        return result
+    saved = saves[0]
+    gap(saved["count"] > 0, "no prior useful progress")
+    if args.case == CASES[0]:
+        back = [x for x in events if x["src"] == 1 and x["dst"] == 0 and x["seq"] > e["seq"]]
+        if not gap(len(back) == 1, "no unique B-to-A restore"):
+            return result
+        back = back[0]
+    else:
+        back = e
+    gap(trace_matches(target,e,e["dst_pc"]) and trace_matches(target,back,back["dst_pc"]),
+        "external exception/ERET chain unavailable")
+    before = saved.get("frame")
+    if not gap(before is not None, "saved integer operand unavailable"):
+        return result
+    require(len(before) == 35 and before[32:35] == [e["src_pstate"],e["src_pc"],e["src_sp"]],
+            "interrupt frame vs UART")
+    restores = [r for r in select("restore",saved["seq"]) if r.get("frame") is not None and
+                r["frame"][32:35] == [back["dst_pstate"],back["dst_pc"],back["dst_sp"]]]
+    if not gap(len(restores) == 1, "no unique independently sampled A restore operand"):
+        return result
+    restored = restores[0]
+    after = restored["frame"]
+    require(len(after) == 35 and before[:31] == after[:31], "saved vs restored GPR mismatch")
+    erets = select("eret",restored["seq"])
+    if not gap(bool(erets) and erets[0]["pc"] == 0x40201480, "restore ERET unavailable"):
+        return result
+    post = select("post-progress",erets[0]["seq"])
+    if gap(bool(post), "first post-return publication unavailable"):
+        observation = post[0]
+        gap(observation["count"] == saved["count"]+1 and observation.get("value") is not None and
+            saved.get("value") is not None and observation["value"] == saved["value"]+1,
+            "numeric first post-return advance unavailable")
+    result["integer_operands"] = dict(saved_pa=saved["pa"],restored_pa=restored["pa"],
+        saved_gpr_sha256=hashlib.sha256(struct.pack("<31Q",*before[:31])).hexdigest(),
+        restored_gpr_sha256=hashlib.sha256(struct.pack("<31Q",*after[:31])).hexdigest(),
+        all_31_match=True, register_file_sample=False)
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    subs = parser.add_subparsers(dest="command",required=True)
+    hist = subs.add_parser("historical")
+    hist.add_argument("products",type=Path)
+    for name in ("acquire","observed"):
+        sub = subs.add_parser(name)
+        sub.add_argument("products",type=Path)
+        sub.add_argument("out",type=Path)
+        if name == "acquire":
+            sub.add_argument("plugin",type=Path)
+        else:
+            sub.add_argument("case",choices=CASES)
+            sub.add_argument("session_sha256")
+        sub.add_argument("plugin_sha256")
+    args = parser.parse_args()
+    try:
+        if args.command == "historical":
+            return original(args)
+        if args.command == "acquire":
+            return acquisition(args)
+        result = observed(args)
+        result["status"] = "observed_with_gaps" if result["gaps"] else "observed"
+        print(json.dumps(result,indent=2))
+        return 2 if result["gaps"] else 0
+    except (OSError,ValueError,KeyError,IndexError,TypeError,struct.error) as exc:
+        print(json.dumps(dict(status="incomplete_or_mismatch",detail=str(exc)),indent=2))
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
