@@ -9,7 +9,12 @@ use core::ptr;
 #[path = "../native/elf.rs"]
 mod native_elf;
 #[cfg(jnox_native_el0)]
+#[cfg_attr(jnox_task_policy, path = "native_task_policy.rs")]
 mod native_el0;
+#[cfg(all(jnox_native_el0, jnox_task_policy))]
+mod task_policy_image;
+#[cfg(all(jnox_native_el0, jnox_task_policy))]
+mod task_policy_scheduler;
 #[cfg(jnox_native_el0)]
 mod native_el0_mmu;
 

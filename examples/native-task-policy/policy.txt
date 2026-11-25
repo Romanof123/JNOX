@@ -1,0 +1,12 @@
+version 1
+app sensor sensor.elf
+app heavy heavy.elf
+app late late.elf
+app fault fault.elf
+app heartbeat heartbeat.elf
+task sensor sample sample_entry 40 210 35 120
+task sensor observe observe_entry 80 200 75 240
+task heavy burn burn_entry 600 110 15 30
+task late batch batch_entry 600 100 5 off
+task fault report report_entry 500 220 450 off
+task heartbeat beat beat_entry 100 190 95 off

@@ -6,7 +6,7 @@ const PAGE: usize = 4096;
 const IMAGE_LO: usize = 0x0040_0000;
 const IMAGE_HI: usize = 0x0080_0000;
 pub(crate) const STACK_BOTTOM: usize = 0x0100_1000;
-#[cfg(not(jnox_native_thread_fixed))]
+#[cfg(not(any(jnox_native_thread_fixed, jnox_task_policy)))]
 pub(crate) const STACK_TOP: usize = 0x0101_1000;
 #[cfg(jnox_native_thread_fixed)]
 pub(crate) const STACK_TOP: usize = 0x0102_1000;
@@ -82,11 +82,32 @@ const LINK_START: usize = 0x4020_0000;
 const LINK_START: usize = 0x0200_0000;
 #[cfg(jnox_pi4)]
 const GPIO: usize = 0xfe20_0000;
+#[cfg(not(jnox_task_policy))]
 const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize
     + cfg!(jnox_native_peer3) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
 // Leave another 4 MiB per slot for tables, stacks and the linked kernel.
+#[cfg(not(jnox_task_policy))]
 const HIGH_TABLES: usize = 8 * SPACE_CAPACITY;
+#[cfg(jnox_task_policy)]
+const SPACE_CAPACITY: usize = crate::task_policy_image::APP_COUNT;
+// From the kernel load address through the end of QEMU virt's 128 MiB RAM.
+#[cfg(jnox_task_policy)]
+const HIGH_TABLES: usize = (0x4800_0000 - LINK_START) / BLOCK;
+#[cfg(jnox_task_policy)]
+pub(crate) const STACK_TOP: usize =
+    STACK_BOTTOM + (17 * crate::task_policy_image::MAX_TASKS_PER_APP - 1) * PAGE;
+#[cfg(jnox_task_policy)]
+const _: () = assert!(SPACE_CAPACITY > 0 && SPACE_CAPACITY <= 255
+    && STACK_TOP <= 0x0120_0000 && crate::task_policy_image::MAX_TASKS_PER_APP > 0);
+
+#[cfg(jnox_task_policy)]
+pub(crate) fn policy_stack(slot: usize) -> Option<(usize, usize)> {
+    if slot >= crate::task_policy_image::MAX_TASKS_PER_APP { return None; }
+    let lo = STACK_BOTTOM + slot * 17 * PAGE;
+    Some((lo, lo + 16 * PAGE))
+}
+
 const BLOCK: usize = PAGE * 512;
 
 #[repr(C, align(4096))]
@@ -235,6 +256,9 @@ fn validate(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(), &'static str> 
     let bottom = MAIN_BOTTOM;
     #[cfg(not(jnox_native_threads))]
     let bottom = STACK_BOTTOM;
+    #[cfg(jnox_task_policy)]
+    let _ = (stack_tail, bottom);
+    #[cfg(not(jnox_task_policy))]
     if stack_tail.is_empty() || stack_tail.len() > STACK_TOP - bottom
         || stack_tail.len() % 16 != 0 {
         return Err("native stack tail");
@@ -262,6 +286,8 @@ fn validate(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(), &'static str> 
 // Same linker and cold-boot ABI as the one-process native profile. Each
 // process backs the full ordinary image aperture, preserving its existing size.
 unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
+    #[cfg(jnox_task_policy)]
+    let _ = stack_tail;
     unsafe {
         let space = &mut *(&raw mut SPACES[pid]);
         link(&raw mut space.root, 0, 30, &raw mut space.low);
@@ -321,13 +347,21 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         }
         let stack = space.stack_ram.0.as_mut_ptr();
         link(&raw mut space.low, STACK_BOTTOM, 21, &raw mut space.stack);
+        #[cfg(jnox_task_policy)]
+        let slots = crate::task_policy_image::app(pid).expect("validated policy app").count;
         for va in (STACK_BOTTOM..STACK_TOP).step_by(PAGE) {
+            #[cfg(jnox_task_policy)]
+            {
+                let index = (va - STACK_BOTTOM) / PAGE;
+                if index / 17 >= slots || index % 17 == 16 { continue; }
+            }
             #[cfg(jnox_native_threads)]
             if va != STACK_BOTTOM && !(0..4).filter_map(thread_stack).any(|(lo, hi)| (lo..hi).contains(&va)) {
                 continue;
             }
             page(&raw mut space.stack, va, stack.add(va - STACK_BOTTOM) as usize, NORMAL | USER | NG | PXN | UXN);
         }
+        #[cfg(not(jnox_task_policy))]
         ptr::copy_nonoverlapping(stack_tail.as_ptr(), stack.add(STACK_TOP - STACK_BOTTOM - stack_tail.len()), stack_tail.len());
     }
 }
@@ -576,9 +610,9 @@ pub(crate) fn user_range(addr: usize, len: usize, write: bool) -> bool {
 }
 
 pub(crate) fn user_return_pc(addr: usize) -> bool {
-    #[cfg(not(any(jnox_native_loan_ipc, jnox_native_shell)))]
+    #[cfg(not(any(jnox_native_loan_ipc, jnox_native_shell, jnox_task_policy)))]
     { user_range(addr, 4, false) }
-    #[cfg(any(jnox_native_loan_ipc, jnox_native_shell))]
+    #[cfg(any(jnox_native_loan_ipc, jnox_native_shell, jnox_task_policy))]
     {
         if addr % 4 != 0 || !(IMAGE_LO..IMAGE_HI).contains(&addr) || !irq_masked() {
             return false;
