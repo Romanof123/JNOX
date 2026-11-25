@@ -83,7 +83,7 @@ const LINK_START: usize = 0x0200_0000;
 #[cfg(jnox_pi4)]
 const GPIO: usize = 0xfe20_0000;
 const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize
-    + cfg!(all(jnox_native_amc, jnox_native_peer3)) as usize;
+    + cfg!(jnox_native_peer3) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
 // Leave another 4 MiB per slot for tables, stacks and the linked kernel.
 const HIGH_TABLES: usize = 8 * SPACE_CAPACITY;

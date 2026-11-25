@@ -2,12 +2,17 @@
 # Usage: build.sh examples/portability/telemetry_monitor.c output.elf
 set -eu
 local_socket=0
-if [ "${1:-}" = "--local-socket" ]; then
-    local_socket=1
+pubsub=0
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --local-socket) local_socket=1 ;;
+        --pubsub) pubsub=1 ;;
+        *) break ;;
+    esac
     shift
-fi
+done
 if [ "$#" -ne 2 ]; then
-    echo "usage: $0 [--local-socket] APP.c OUTPUT.elf" >&2
+    echo "usage: $0 [--local-socket] [--pubsub] APP.c OUTPUT.elf" >&2
     exit 2
 fi
 sdk=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -17,6 +22,7 @@ set --
 if [ "$local_socket" = 1 ]; then
     set -- "$sdk/local_socket.c" -Wl,--wrap=read,--wrap=write,--wrap=close
 fi
+if [ "$pubsub" = 1 ]; then set -- "$sdk/pubsub.c" "$@"; fi
 exec clang --target=aarch64-none-elf -fuse-ld=lld -std=c11 -O2 \
     -ffreestanding -nostdinc -nostdlib -static -fno-pic -fno-pie \
     -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables \

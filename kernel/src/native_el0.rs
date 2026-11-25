@@ -117,11 +117,11 @@ const PEER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer.elf"))
 #[cfg(jnox_native_peer2)]
 const PEER2: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer2.elf"));
 
-#[cfg(all(jnox_native_amc, jnox_native_peer3))]
+#[cfg(jnox_native_peer3)]
 const PEER3: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer3.elf"));
 include!(concat!(env!("OUT_DIR"), "/native_schedule.rs"));
 const COUNT: usize = NATIVE_PRIORITIES.len();
-const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_amc) as usize);
+const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_peer3) as usize);
 
 #[derive(Clone, Copy)]
 #[repr(C, align(16))]
@@ -321,7 +321,8 @@ fn activate(next: usize, frame: &mut NativeFrame) {
 
 const NO_PID: u64 = u64::MAX;
 const RECORD_LIMIT: usize = 128;
-const FIELDS: usize = 21;
+const FIXED_COLUMNS: usize = if cfg!(all(jnox_native_fixed, jnox_native_peer3)) { 4 } else { 3 };
+const FIELDS: usize = 12 + 3 * FIXED_COLUMNS;
 static mut DECISIONS: [[u64; FIELDS]; RECORD_LIMIT] = [[0; FIELDS]; RECORD_LIMIT];
 static mut RECORDS: usize = 0;
 static mut DROPPED: u64 = 0;
@@ -354,11 +355,11 @@ fn record(now: u64, reason: u64, argument: u64, before: Before, interrupted: Opt
         restored.map_or(0, |f| f.0), restored.map_or(0, |f| f.1),
         before.wake.unwrap_or(0), before.expiry.unwrap_or(0), compare.unwrap_or(0),
     ]);
-    row[12..15].fill(NO_PID);
-    p.ready_order(&mut row[12..15]);
+    row[12..12 + FIXED_COLUMNS].fill(NO_PID);
+    p.ready_order(&mut row[12..12 + FIXED_COLUMNS]);
     for id in 0..COUNT {
-        row[15 + id] = p.service(id).unwrap_or_else(|| fail(9));
-        row[18 + id] = p.remaining(id);
+        row[12 + FIXED_COLUMNS + id] = p.service(id).unwrap_or_else(|| fail(9));
+        row[12 + 2 * FIXED_COLUMNS + id] = p.remaining(id);
     }
     unsafe {
         DECISIONS[index] = row;
@@ -884,7 +885,7 @@ pub(super) fn run() -> ! {
         (PEER, env!("JNOX_PACKAGED_PEER_SHA256")),
         #[cfg(jnox_native_peer2)]
         (PEER2, env!("JNOX_PACKAGED_PEER2_SHA256")),
-        #[cfg(all(jnox_native_amc, jnox_native_peer3))]
+        #[cfg(jnox_native_peer3)]
         (PEER3, env!("JNOX_PACKAGED_PEER3_SHA256")),
     ];
     for (pid, (_, digest)) in images.iter().enumerate() {
