@@ -12,6 +12,15 @@ C·Rust 앱을 주기 또는 상대 마감 순위로 스케줄링해 반복 실�
 
 네이티브 작업 최대 세 개에 시작 가능 시각·마감·예상 CPU 비용을 지정할 수 있습니다. 격자 경계에서 긴급 작업이 실행 가능해지면 EDF가 배치 계산을 선점할 수 있습니다. [네이티브 EDF 패키지 실행](docs/native-c-abi.md#네이티브-앱의-격자-기반-edf)
 
+Linux 또는 WSL의 저장소 루트에서 새 출력 디렉터리에 가중 분석 패키지를 빌드한 후 C CRC·Rust 히스토그램 쌍을 단일 QEMU CPU에서 실행한다.
+
+~~~sh
+python3 tools/weighted_analytics.py build --out output/weighted-analytics
+python3 tools/weighted_analytics.py boot --out output/weighted-analytics --variant pair
+~~~
+
+[가중 분석 패키지 운영 안내](docs/weighted-analytics-deployment.en-ko.md)
+
 네이티브 ELF마다 가중치를 지정해 C 체크섬 계산과 Rust 히스토그램 계산처럼 준비된 앱 간에 CPU 서비스를 배분할 수 있습니다. [가중 패키지 실행](docs/native-c-abi.md#네이티브-앱의-가중-cpu-서비스)
 
 독립 빌드한 C·Rust 앱을 최대 세 개까지 패키징하고 각 앱에 고정 우선순위를 줄 수 있습니다. FIFO는 동순위 순서를 유지하고 RR은 명시적인 양보 없이 동순위 계산을 교대로 실행합니다. [고정 우선순위 앱 실행](docs/native-c-abi.md)
