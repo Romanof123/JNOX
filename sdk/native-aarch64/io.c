@@ -128,3 +128,57 @@ int pthread_join(pthread_t thread, void **result)
         *result = (void *)reply.value;
     return 0;
 }
+
+_Static_assert(sizeof(pthread_mutex_t) == 8 && _Alignof(pthread_mutex_t) == 8,
+               "native mutex object ABI");
+
+int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr)
+{
+    if (attr)
+        return ENOTSUP;
+    /* The kernel validates the address. INIT does not load prior object bytes. */
+    struct service_result reply = raw_service_pair(JNOX_CALL_MUTEX_INIT, (long)mutex, 0, 0, 0);
+    if (reply.status)
+        return (int)-reply.status;
+    mutex->opaque = reply.value;
+    return 0;
+}
+
+static int mutex_operation(long call, pthread_mutex_t *mutex)
+{
+    if (!mutex || ((unsigned long)mutex & 7))
+        return EINVAL;
+    return (int)-raw_service(call, (long)mutex, (long)mutex->opaque, 0, 0);
+}
+
+int pthread_mutex_destroy(pthread_mutex_t *mutex)
+{
+    int error = mutex_operation(JNOX_CALL_MUTEX_DESTROY, mutex);
+    if (!error)
+        mutex->opaque = 0;
+    return error;
+}
+
+static int mutex_acquire(long call, pthread_mutex_t *mutex)
+{
+    int error = mutex_operation(call, mutex);
+    if (!error)
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    return error;
+}
+
+int pthread_mutex_lock(pthread_mutex_t *mutex)
+{
+    return mutex_acquire(JNOX_CALL_MUTEX_LOCK, mutex);
+}
+
+int pthread_mutex_trylock(pthread_mutex_t *mutex)
+{
+    return mutex_acquire(JNOX_CALL_MUTEX_TRYLOCK, mutex);
+}
+
+int pthread_mutex_unlock(pthread_mutex_t *mutex)
+{
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    return mutex_operation(JNOX_CALL_MUTEX_UNLOCK, mutex);
+}

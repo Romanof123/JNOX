@@ -1,6 +1,8 @@
 //! Thread lifecycle for a single process with a main thread and one joinable worker.
 use crate::ready_queue::ReadyQueue;
 
+const EPERM: i32 = 1;
+const EBUSY: i32 = 16;
 const MAIN: usize = 0;
 const WORKER: usize = 1;
 const ESRCH: i32 = 3;
@@ -16,12 +18,32 @@ pub(crate) enum State {
     Ready,
     Sleeping(u64),
     Joining,
+    MutexWait(u64),
     Zombie(u64),
     Ended,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct ThreadId {
+    pub(crate) tid: usize,
+    pub(crate) generation: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct MutexSlot {
+    pub(crate) generation: u64,
+    pub(crate) address: Option<u64>,
+    pub(crate) owner: Option<ThreadId>,
+    pub(crate) waiter: Option<ThreadId>,
+}
+
+impl MutexSlot {
+    const EMPTY: Self = Self { generation: 0, address: None, owner: None, waiter: None };
+}
+
 pub(crate) struct Policy {
     states: [State; 2],
+    locks: [MutexSlot; 4],
     queue: ReadyQueue<2>,
     owner: Option<usize>,
     generation: u64,
@@ -32,6 +54,7 @@ impl Policy {
     pub(crate) const fn new() -> Self {
         Self {
             states: [State::Running, State::Vacant],
+            locks: [MutexSlot::EMPTY; 4],
             queue: ReadyQueue::new(),
             owner: Some(MAIN),
             generation: 0,
@@ -44,6 +67,67 @@ impl Policy {
     pub(crate) fn ready(&self) -> &[usize] { self.queue.entries() }
     pub(crate) fn generation(&self) -> u64 { self.generation }
     pub(crate) fn status(&self) -> Option<i32> { self.status }
+
+    pub(crate) fn mutex_slots(&self) -> &[MutexSlot; 4] { &self.locks }
+
+    fn thread_id(&self, tid: usize) -> ThreadId {
+        ThreadId { tid, generation: if tid == MAIN { 0 } else { self.generation } }
+    }
+
+    /// The caller checks process mapping permissions before entering this transition.
+    pub(crate) fn mutex(&mut self, op: u64, addr: u64, token: u64) -> Result<u64, i32> {
+        if addr == 0 || addr % 8 != 0 || addr.checked_add(7).is_none() { return Err(EINVAL); }
+        let caller = self.thread_id(self.owner.ok_or(ESRCH)?);
+        if op == 13 {
+            if token != 0 { return Err(EINVAL); }
+            if self.locks.iter().any(|s| s.address == Some(addr)) { return Err(EBUSY); }
+            let index = self.locks.iter().position(|s|
+                s.address.is_none() && s.generation < (u64::MAX >> 2)
+            ).ok_or(EAGAIN)?;
+            let slot = &mut self.locks[index];
+            slot.generation += 1;
+            slot.address = Some(addr);
+            return Ok((slot.generation << 2) | index as u64);
+        }
+
+        let slot = &mut self.locks[(token & 3) as usize];
+        if slot.address != Some(addr) || slot.generation != token >> 2 { return Err(EINVAL); }
+        match op {
+            14 => {
+                if slot.owner.is_some() || slot.waiter.is_some() { return Err(EBUSY); }
+                slot.address = None;
+            }
+            15 | 16 => {
+                if slot.owner.is_none() {
+                    slot.owner = Some(caller);
+                } else if op == 16 {
+                    return Err(EBUSY);
+                } else if slot.owner == Some(caller) {
+                    return Err(EDEADLK);
+                } else {
+                    // With a live owner only one waiter is possible. After
+                    // owner death, both surviving incarnations can eventually
+                    // block forever. Preserve the first waiter and both states.
+                    if slot.waiter.is_none() { slot.waiter = Some(caller); }
+                    self.states[caller.tid] = State::MutexWait(token);
+                    self.owner = None;
+                    self.dispatch();
+                }
+            }
+            17 => {
+                if slot.owner != Some(caller) { return Err(EPERM); }
+                let waiter = slot.waiter.take();
+                slot.owner = waiter;
+                if let Some(next) = waiter {
+                    assert_eq!(self.thread_id(next.tid), next);
+                    assert_eq!(self.states[next.tid], State::MutexWait(token));
+                    self.enqueue(next.tid);
+                }
+            }
+            _ => return Err(EINVAL),
+        }
+        Ok(0)
+    }
 
     fn enqueue(&mut self, id: usize) {
         assert!(self.queue.push_back(id));
@@ -116,6 +200,7 @@ impl Policy {
             self.owner = None;
             self.queue = ReadyQueue::new();
             self.states = [State::Ended; 2];
+            self.locks = [MutexSlot::EMPTY; 4];
         }
     }
 
@@ -374,6 +459,75 @@ mod tests {
         assert!(rr.resume(MAIN, 14).is_err());
         rr.resume(MAIN, 18).unwrap();
         assert_eq!(rr.logical_end(), Some(28));
+    }
+
+
+    #[test]
+    fn mutex_slots_reject_stale_copies_and_skip_exhausted_generations() {
+        let mut p = Policy::new();
+        p.locks[0].generation = (u64::MAX >> 2) - 1;
+        let final_first = p.mutex(13, 8, 0).unwrap();
+        for i in 1..4 {
+            assert_eq!(p.mutex(13, 8 * (i + 1), 0), Ok(4 + i));
+        }
+        let prior = *p.mutex_slots();
+        assert_eq!(p.mutex(13, 8, 0), Err(EBUSY));
+        assert_eq!(p.mutex(13, 40, 0), Err(EAGAIN));
+        assert_eq!(p.mutex(15, 16, final_first), Err(EINVAL));
+        assert_eq!(p.mutex(15, 9, final_first), Err(EINVAL));
+        assert_eq!(*p.mutex_slots(), prior);
+        p.mutex(14, 8, final_first).unwrap();
+        assert_eq!(p.mutex(13, 8, 0), Err(EAGAIN));
+        p.mutex(14, 16, 5).unwrap();
+        assert_eq!(p.mutex(13, 16, 0), Ok(9));
+        assert_eq!(p.mutex(15, 16, 5), Err(EINVAL));
+    }
+
+    #[test]
+    fn mutex_owner_sleep_and_direct_transfer_preserve_the_unlockers_turn() {
+        let mut p = Policy::new();
+        let t = p.mutex(13, 8, 0).unwrap();
+        p.mutex(15, 8, t).unwrap();
+        assert_eq!(p.mutex(15, 8, t), Err(EDEADLK));
+        assert_eq!(p.mutex(16, 8, t), Err(EBUSY));
+        p.create().unwrap();
+        p.sleep(1, 12).unwrap();
+        assert_eq!(p.mutex(17, 8, t), Err(EPERM));
+        p.mutex(15, 8, t).unwrap();
+        assert_eq!(p.current(), None);
+        assert_eq!(p.next_compare(), Some(12));
+        p.wake_due(12);
+        assert_eq!(p.state(WORKER), State::MutexWait(t));
+        assert_eq!(p.mutex(14, 8, t), Err(EBUSY));
+        p.mutex(17, 8, t).unwrap();
+        assert_eq!(p.current(), Some(MAIN));
+        assert_eq!(p.ready(), &[WORKER]);
+        assert_eq!(p.mutex(16, 8, t), Err(EBUSY));
+        p.yield_now();
+        p.mutex(17, 8, t).unwrap();
+        p.mutex(14, 8, t).unwrap();
+    }
+
+    #[test]
+    fn reused_worker_cannot_unlock_an_abandoned_mutex() {
+        let mut p = Policy::new();
+        let t = p.mutex(13, 8, 0).unwrap();
+        let h = p.create().unwrap();
+        p.join(h).unwrap();
+        p.mutex(15, 8, t).unwrap();
+        p.thread_exit(0);
+        p.create().unwrap();
+        p.yield_now();
+        assert_eq!(p.mutex(17, 8, t), Err(EPERM));
+        p.mutex(15, 8, t).unwrap();
+        p.mutex(15, 8, t).unwrap();
+        assert_eq!(p.current(), None);
+        assert_eq!(p.next_compare(), None);
+        assert_eq!(p.state(MAIN), State::MutexWait(t));
+        assert_eq!(p.state(WORKER), State::MutexWait(t));
+        p.process_exit(-3);
+        assert_eq!(p.mutex_slots(), &[MutexSlot::EMPTY; 4]);
+        assert_eq!(p.status(), Some(-3));
     }
 
 }
