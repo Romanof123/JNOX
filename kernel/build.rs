@@ -699,8 +699,14 @@ fn main() {
             validate_boundary_lead(&supervisor[1], "supervisor");
         }
         if phase && controller.len() != 1 {
-            assert!(controller.len() == 3, "phase-decision and phase-complete accept two controller leads together");
-            for lead in &controller[1..] { validate_boundary_lead(lead, "controller"); }
+            let with_counts = sender[0].as_slice() == b"phase-complete" && controller.len() == 5;
+            assert!(controller.len() == 3 || with_counts,
+                "phase-decision and phase-complete accept two controller leads together. Only phase-complete can append a pair of NOP counts");
+            for lead in &controller[1..3] { validate_boundary_lead(lead, "controller"); }
+            for count in &controller[3..] {
+                assert!(boundary_decimal_in_range(count, 2, 15),
+                    "controller NOP count must be 1 to 2 ASCII decimal digits in the range 0..15");
+            }
         }
         if phase {
             println!("cargo::rustc-cfg=jnox_native_safety_phase_observation");
@@ -1021,9 +1027,13 @@ fn multilevel_duration(field: &str) -> u64 {
 }
 
 fn validate_boundary_lead(lead: &[u8], role: &str) {
-    assert!((1..=5).contains(&lead.len()) && lead.iter().all(u8::is_ascii_digit)
-        && lead.iter().fold(0u32, |n, digit| n * 10 + u32::from(*digit - b'0')) <= 12_500,
+    assert!(boundary_decimal_in_range(lead, 5, 12_500),
         "{role} lead must be 1 to 5 ASCII decimal digits in the range 0..12500 ticks");
+}
+
+fn boundary_decimal_in_range(value: &[u8], digits: usize, maximum: u32) -> bool {
+    (1..=digits).contains(&value.len()) && value.iter().all(u8::is_ascii_digit)
+        && value.iter().fold(0u32, |n, digit| n * 10 + u32::from(*digit - b'0')) <= maximum
 }
 
 // Hex wire: u8 count, then (u16 little-endian byte length, UTF-8 payload) per extra.

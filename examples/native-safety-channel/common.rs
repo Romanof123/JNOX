@@ -154,28 +154,33 @@ impl Case {
         }
     }
 }
-// The loader supplies NUL-terminated argv strings. Read at most five digits
-// and their terminator; leading zeroes are valid.
-pub unsafe fn parse_lead_ticks(arg: *const u8) -> Bench<u64> {
+// The loader supplies NUL-terminated argv strings; leading zeroes are valid.
+unsafe fn bounded_decimal(arg: *const u8, digits: usize, limit: u64) -> Bench<u64> {
     if arg.is_null() {
         return Err(81);
     }
-    let mut lead = 0;
-    for i in 0..=5 {
+    let mut value = 0;
+    for i in 0..=digits {
         let ch = *arg.add(i);
         if ch == 0 && i != 0 {
             break;
         }
-        if i == 5 || !ch.is_ascii_digit() {
+        if i == digits || !ch.is_ascii_digit() {
             return Err(81);
         }
-        lead = lead * 10 + u64::from(ch - b'0');
+        value = value * 10 + u64::from(ch - b'0');
     }
-    if lead > 12_500 {
+    if value > limit {
         Err(81)
     } else {
-        Ok(lead)
+        Ok(value)
     }
+}
+pub unsafe fn parse_lead_ticks(arg: *const u8) -> Bench<u64> {
+    bounded_decimal(arg, 5, 12_500)
+}
+pub unsafe fn parse_phase_nops(arg: *const u8) -> Bench<u64> {
+    bounded_decimal(arg, 2, 15)
 }
 pub const ACK: u64 = 0x5341464500000000;
 pub const READY: u64 = 0x7265616479;

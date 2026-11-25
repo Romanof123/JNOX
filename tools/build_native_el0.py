@@ -125,6 +125,12 @@ def boundary_lead_ticks(parser, value, role):
     return int(value)
 
 
+def boundary_nop_count(parser, value):
+    if not (1 <= len(value) <= 2 and value.isascii() and value.isdecimal() and int(value) <= 15):
+        parser.error("controller NOP count must be 1 to 2 ASCII decimal digits in the range 0..15")
+    return int(value)
+
+
 def pipe_fields(value):
     return tuple(unsigned_decimal(field) for field in value.split(":"))
 
@@ -591,10 +597,15 @@ def main():
                 parser.error("only a rearm boundary permits one optional supervisor lead in ticks")
             rearm_lead = boundary_lead_ticks(parser, args.peer2_arg[1], "supervisor")
         if phase_boundary:
-            leads = args.peer_arg[1:]
-            if leads and len(leads) != 2:
-                parser.error("phase-decision and phase-complete accept two controller leads together")
+            phase_complete = args.arg == ["phase-complete"]
+            if len(args.peer_arg) not in (1, 3) and not (phase_complete and len(args.peer_arg) == 5):
+                parser.error("phase-decision and phase-complete accept two controller leads together. "
+                             "Only phase-complete can append a pair of NOP counts")
+            leads = args.peer_arg[1:3]
             controller_leads = [boundary_lead_ticks(parser, v, "controller") for v in leads] if leads else [0, 0]
+            if phase_complete:
+                counts = args.peer_arg[3:]
+                controller_nops = [boundary_nop_count(parser, v) for v in counts] if counts else [0, 0]
     if args.safety_downstream_injector:
         if args.safety_downstream_injector != 1 or args.safety_qualification != 1:
             parser.error("--safety-downstream-injector requires --safety-qualification and may appear once")
@@ -822,6 +833,8 @@ def main():
             metadata["safety_boundary"].update(rearm_eligibility_event=15, supervisor_lead_ticks=rearm_lead)
         if phase_boundary:
             metadata["safety_boundary"].update(phase_completion_event=16, controller_lead_ticks=controller_leads)
+            if phase_complete:
+                metadata["safety_boundary"]["controller_nop_counts"] = controller_nops
         metadata["package_argv"] = sys.argv[:]
     if args.safety_downstream_injector:
         env["JNOX_NATIVE_SAFETY_DOWNSTREAM"] = "1"

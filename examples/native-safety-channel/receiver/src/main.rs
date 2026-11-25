@@ -40,6 +40,8 @@ static mut safety_exact_rearm_control: [u64; 7] = [0; 7];
 // the final flags are the protected INFO readback after COMPLETE.
 #[no_mangle]
 static mut safety_phase_samples: [[u64; 12]; 2] = [[0; 12]; 2];
+#[no_mangle]
+static mut safety_phase_nops: [u64; 2] = [0; 2];
 
 fn values(s: Snapshot) -> [u64; 4] {
     [
@@ -331,7 +333,13 @@ impl Controller {
         self.active_ack = Some(reply != u64::MAX);
         ipc::reply(token, reply).map_err(|_| 84)
     }
-    fn activate(&mut self, case: Case, i: usize, phase_leads: [u64; 2]) -> Bench<()> {
+    fn activate(
+        &mut self,
+        case: Case,
+        i: usize,
+        phase_leads: [u64; 2],
+        phase_nops: [u64; 2],
+    ) -> Bench<()> {
         let grid = i as u64 * 5;
         let planned = match case {
             Case::Collision => self.time.at(grid)?,
@@ -345,7 +353,17 @@ impl Controller {
             _ => None,
         };
         let wake_target = planned.checked_sub(phase_lead.unwrap_or(0)).ok_or(83)?;
+        let nops = if case == Case::PhaseComplete && matches!(i, 8 | 9) {
+            phase_nops[i - 8]
+        } else {
+            0
+        };
         let wake = self.time.until(wake_target)?;
+        for _ in 0..nops {
+            unsafe {
+                core::arch::asm!("nop", options(nomem, nostack, preserves_flags));
+            }
+        }
         dev::check().map_err(|_| 91)?;
         let entry = state()?;
         let expired = self.model.begin_activation(entry.ticks).map_err(|_| 90)?;
@@ -462,7 +480,12 @@ impl Controller {
         Ok(())
     }
 }
-fn run(case: Case, phase_leads: [u64; 2]) -> Bench<()> {
+fn run(case: Case, phase_leads: [u64; 2], phase_nops: [u64; 2]) -> Bench<()> {
+    if case == Case::PhaseComplete {
+        unsafe {
+            write_volatile(&raw mut safety_phase_nops, phase_nops);
+        }
+    }
     let time = Timeline::start(case)?;
     let mut c = Controller {
         model: Receiver::new(time.hz).map_err(|_| 90)?,
@@ -472,7 +495,7 @@ fn run(case: Case, phase_leads: [u64; 2]) -> Bench<()> {
     };
     let mut result = Ok(());
     for i in 0..17 {
-        if let Err(e) = c.activate(case, i, phase_leads) {
+        if let Err(e) = c.activate(case, i, phase_leads, phase_nops) {
             result = Err(e);
             break;
         }
@@ -513,19 +536,27 @@ fn panic(_: &PanicInfo<'_>) -> ! {
 #[no_mangle]
 pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
     (|| {
-        if !matches!(argc, 2 | 4) {
+        if !matches!(argc, 2 | 4 | 6) {
             return Err(81);
         }
         let case = Case::parse(2, argv)?;
         let mut leads = [0; 2];
-        if argc == 4 {
+        if argc >= 4 {
             if !case.measured_phase() {
                 return Err(81);
             }
             leads[0] = common::parse_lead_ticks(*argv.add(2))?;
             leads[1] = common::parse_lead_ticks(*argv.add(3))?;
         }
-        run(case, leads)
+        let mut nops = [0; 2];
+        if argc == 6 {
+            if case != Case::PhaseComplete {
+                return Err(81);
+            }
+            nops[0] = common::parse_phase_nops(*argv.add(4))?;
+            nops[1] = common::parse_phase_nops(*argv.add(5))?;
+        }
+        run(case, leads, nops)
     })()
     .err()
     .unwrap_or(72)
