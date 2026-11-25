@@ -43,23 +43,6 @@ fn drive(value: u64) {
     let after = counter();
     if old != actual { log(2, [before,after,old,actual,0,0,0,0]); }
 }
-// Preserve the counter operand passed into the real check. The journal's own
-// sample follows the decision and any resulting hardware-register update.
-macro_rules! check_at {
-    ($session:expr, $tick:expr, $site:expr) => {{
-        #[cfg(any(jnox_native_safety_qualification, jnox_native_safety_boundary))]
-        {
-            let tick = $tick;
-            let old_fault = $session.fault;
-            $session.check(tick);
-            log(12, [tick, $site, $session.generation, $session.sequence, $session.issue,
-                     u64::from(old_fault), u64::from($session.fault),
-                     u64::from($session.gate)]);
-        }
-        #[cfg(not(any(jnox_native_safety_qualification, jnox_native_safety_boundary)))]
-        $session.check($tick);
-    }};
-}
 #[cfg(jnox_native_safety_watchdog)]
 #[path = "completion_watchdog.rs"]
 mod watchdog_policy;
@@ -123,7 +106,10 @@ pub(super) fn watchdog_poll(source:u64) -> Option<u64> {
 }
 
 impl Session {
-    fn check(&mut self, now: u64) {
+    #[inline(never)]
+    fn check_at(&mut self, now: u64, _site: u64) {
+        #[cfg(any(jnox_native_safety_qualification, jnox_native_safety_boundary))]
+        let old_fault = self.fault;
         let clock_fault = self.last_check.is_some_and(|previous| now.checked_sub(previous).is_none_or(|d| d > i64::MAX as u64));
         self.last_check = Some(now);
         if self.pending && !fresh(now,self.rearm_first) { self.pending = false; }
@@ -133,6 +119,11 @@ impl Session {
             log(3,[now,self.generation,self.sequence,self.issue,0,0,0,0]);
             drive(0);
         }
+        // Record the decision's counter operand. The journal samples its own
+        // timestamp after the decision and any hardware-register update.
+        #[cfg(any(jnox_native_safety_qualification, jnox_native_safety_boundary))]
+        log(12, [now, _site, self.generation, self.sequence, self.issue,
+                 u64::from(old_fault), u64::from(self.fault), u64::from(self.gate)]);
     }
     fn eligible(&self, now: u64) -> bool {
         #[cfg(jnox_native_safety_watchdog)]
@@ -140,6 +131,7 @@ impl Session {
         self.gate && !self.fault && !self.rearmed && self.streak == 2
             && fresh(now,self.prior) && fresh(now,self.issue)
     }
+    #[inline(never)]
     fn supervisor(&mut self, cmd:u64, generation:u64) -> Result<(),i32> {
         if self.dead { return Err(-32); }
         if cmd == 1 {
@@ -176,6 +168,8 @@ impl Session {
         }
         Ok(())
     }
+    // Keep the snapshot and CRC work out of CHECK and COMPLETE's stack frame.
+    #[inline(never)]
     fn commit(&mut self, x:&[u64;31]) -> Result<(),i32> {
         if !self.active || !self.gate || self.fault || !self.released { return Err(-11); }
         let (_, b) = self.snapshot.take().ok_or(-11)?;
@@ -189,7 +183,7 @@ impl Session {
         }
         // Decode first, then recheck the old accepted issue even on a malformed input.
         let now = counter();
-        check_at!(self, now, 0x102);
+        self.check_at(now, 0x102);
         if self.fault { return Err(-110); }
         if !crc != u32::from_le_bytes(b[40..44].try_into().unwrap())
             || b[..8] != [1,1,44,0,1,0,1,1] || b[32..36] != 20u32.to_le_bytes()
@@ -197,7 +191,7 @@ impl Session {
             || generation != self.generation || seq != self.sequence.checked_add(1).ok_or(-75)?
             || (self.sequence != 0 && issue <= self.issue) { return Err(-22); }
         let now = counter();
-        check_at!(self, now, 0x202);
+        self.check_at(now, 0x202);
         if self.fault || !fresh(now,issue) { return Err(-110); }
         let adjacent = self.streak != 0 && issue.checked_sub(self.issue).is_some_and(|delta|
             u128::from(delta)*1000 == u128::from(hz())*10);
@@ -210,7 +204,7 @@ impl Session {
         Ok(())
     }
     fn control(&mut self, x:&[u64;31]) -> Result<(),i32> {
-        check_at!(self, counter(), x[0]);
+        self.check_at(counter(), x[0]);
         match x[0] {
             1 if !self.active => { self.active=true; self.attempts=0; self.command=false; }
             2 => return self.commit(x),
@@ -267,6 +261,8 @@ pub(super) fn after_loan(pid:usize,op:u64,handle:u64,f:&NativeFrame,result:Resul
     if pid==1 && op==36 && result.is_ok() && s.snapshot.as_ref().is_some_and(|p|p.0==handle) { s.released=true; }
     log(6,[pid as u64,op,result.err().unwrap_or(0) as i64 as u64,occupancy as u64,handle,f.x[1],f.x[3],s.generation]);
 }
+// INFO and successful fused phase calls use the same protected readback.
+#[inline(never)]
 fn sample_state(s: &Session, f: &mut NativeFrame) {
     let flags=u64::from(s.gate) | (jnox_virtual_permit_enable.load(Ordering::SeqCst)<<1)
         | (u64::from(s.fault)<<2) | (u64::from(s.pending)<<3);
@@ -274,6 +270,8 @@ fn sample_state(s: &Session, f: &mut NativeFrame) {
     let flags = flags | (u64::from(s.watchdog.due.is_some())<<4) | (u64::from(s.watchdog.fault)<<5);
     f.x[..7].copy_from_slice(&[0,counter(),hz(),s.generation,flags,s.sequence,s.issue]);
 }
+// The host observer brackets this service at its call and return.
+#[inline(never)]
 pub(super) fn service(pid:usize,f:&mut NativeFrame) {
     let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };
     let entry=counter();

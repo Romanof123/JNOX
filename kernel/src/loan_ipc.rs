@@ -75,13 +75,15 @@ impl Ring {
         self.tail.store(tail.wrapping_add(1), Ordering::Release);
     }
 
+    #[inline]
     fn front(&self) -> Option<(u64, u64)> {
         let head = self.head.load(Ordering::Relaxed);
         // Observe the producer's payload/descriptor publication before use.
         let tail = self.tail.load(Ordering::Acquire);
-        if Self::used(head, tail) == 0 {
+        if head == tail {
             return None;
         }
+        Self::used(head, tail);
         Some((
             head,
             self.cells[(head % CAP as u64) as usize].load(Ordering::Relaxed),
@@ -215,10 +217,12 @@ impl LoanIpc {
         Ok(())
     }
 
+    // The host phase probe times this call, including refusals on an empty ring.
+    #[inline(never)]
     pub fn receive(
         &mut self,
         pid: usize,
-        mut hook: impl FnMut(MapOp) -> Result<(), i32>,
+        hook: impl FnMut(MapOp) -> Result<(), i32>,
     ) -> Result<Grant, i32> {
         if pid != self.consumer {
             return Err(-13);
@@ -226,10 +230,21 @@ impl LoanIpc {
         if !self.reader_live {
             return Err(-32);
         }
-        let (head, handle) = self
-            .ring
-            .front()
-            .ok_or(if self.writer_live { -11 } else { -32 })?;
+        let Some((head, handle)) = self.ring.front() else {
+            return Err(if self.writer_live { -11 } else { -32 });
+        };
+        self.receive_queued(pid, head, handle, hook)
+    }
+
+    // Only a committed descriptor needs the mapping hook and its stack frame.
+    #[inline(never)]
+    fn receive_queued(
+        &mut self,
+        pid: usize,
+        head: u64,
+        handle: u64,
+        mut hook: impl FnMut(MapOp) -> Result<(), i32>,
+    ) -> Result<Grant, i32> {
         let slot = Self::slot(handle);
         let Page::Queued(g) = self.pages[slot] else {
             unreachable!("ring must name a queued loan")

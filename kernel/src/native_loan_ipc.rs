@@ -57,6 +57,8 @@ pub(super) fn invalidate() {
     unsafe { (&mut *(&raw mut CHANNEL)).invalidate(apply) }.unwrap_or_else(|_| fail(9));
 }
 
+// Keep the service boundary visible to the host phase probe.
+#[inline(never)]
 pub(super) fn service(pid: usize, f: &mut NativeFrame) {
     let channel = unsafe { &mut *(&raw mut CHANNEL) };
     let op = f.x[8];
@@ -68,16 +70,38 @@ pub(super) fn service(pid: usize, f: &mut NativeFrame) {
     }
     #[cfg(jnox_native_safety_channel)]
     let handle = f.x[0];
-    let result = match op {
-        33 | 35 => {
-            let grant = if op == 33 { channel.acquire(pid, apply) } else { channel.receive(pid, apply) };
+    let result = if op == 35 {
+        match channel.receive(pid, apply) {
+            Ok(g) => {
+                f.x[1] = g.handle;
+                f.x[2] = mmu::loan_va(g.slot) as u64;
+                f.x[3] = g.len as u64;
+                Ok(())
+            }
+            Err(errno) => {
+                f.x[1..4].fill(0);
+                Err(errno)
+            }
+        }
+    } else {
+        service_other(channel, pid, op, f)
+    };
+    #[cfg(jnox_native_safety_channel)]
+    super::safety::after_loan(pid, op, handle, f, result, channel.occupancy());
+    f.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
+}
+
+// Keep publish snapshot storage and the other operations off the receive path.
+#[inline(never)]
+fn service_other(channel: &mut LoanIpc, pid: usize, op: u64, f: &mut NativeFrame) -> Result<(), i32> {
+    match op {
+        33 => {
+            let grant = channel.acquire(pid, apply);
             f.x[1] = 0;
             f.x[2] = 0;
-            if op == 35 { f.x[3] = 0; }
             grant.map(|g| {
                 f.x[1] = g.handle;
                 f.x[2] = mmu::loan_va(g.slot) as u64;
-                if op == 35 { f.x[3] = g.len as u64; }
             })
         }
         34 => {
@@ -97,10 +121,7 @@ pub(super) fn service(pid: usize, f: &mut NativeFrame) {
         }
         36 => channel.release(pid, f.x[0], apply),
         _ => unreachable!(),
-    };
-    #[cfg(jnox_native_safety_channel)]
-    super::safety::after_loan(pid, op, handle, f, result, channel.occupancy());
-    f.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
+    }
 }
 
 pub(super) fn exit(pid: usize) {
