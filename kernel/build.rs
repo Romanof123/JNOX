@@ -373,6 +373,10 @@ fn main() {
     let priorities = selector("JNOX_NATIVE_PRIORITIES");
     let weights = selector("JNOX_NATIVE_WEIGHTS");
     let periodic = selector("JNOX_NATIVE_PERIODIC");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_partition)");
+    let partition = selector("JNOX_NATIVE_PARTITION_WINDOWS");
+    assert_eq!(partition.is_some(), policy.as_deref() == Some("partition"),
+        "partition policy requires JNOX_NATIVE_PARTITION_WINDOWS exclusively");
     let classes = selector("JNOX_NATIVE_CLASSES");
     let allotments = selector("JNOX_NATIVE_ALLOTMENT_TICKS");
     let boost = selector("JNOX_NATIVE_BOOST_TICKS");
@@ -461,7 +465,7 @@ fn main() {
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref());
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -734,7 +738,38 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
     format!("&[{}]", literals.join(", "))
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64) {
+fn partition_windows(table: &str) -> Vec<(Option<usize>, u64)> {
+    let mut windows = Vec::new();
+    let mut frame_ms = 0u64;
+    for window in table.split(',') {
+        assert!(windows.len() < 16, "too many partition windows");
+        let (owner, raw) = window.split_once(':').expect("expected owner:duration");
+        let slot = match owner {
+            "a" => Some(0),
+            "b" => Some(1),
+            "idle" => None,
+            _ => panic!("unknown partition owner"),
+        };
+        assert!(!raw.is_empty() && raw.bytes().all(|b| b.is_ascii_digit()), "invalid duration");
+        let ms: u64 = raw.parse().expect("duration exceeds u64");
+        assert!(ms > 0, "duration must be positive");
+        frame_ms = frame_ms.checked_add(ms).expect("partition frame exceeds u64 milliseconds");
+        windows.push((slot, ms));
+    }
+    for owner in [Some(0), Some(1)] {
+        assert!(windows.iter().any(|&(slot, _)| slot == owner), "partition requires both owners");
+    }
+    windows
+}
+
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>) {
+    let windows = if let Some(table) = partition {
+        assert_eq!(slots, 2, "partition requires exactly two ordinary processes");
+        println!("cargo::rustc-cfg=jnox_native_partition");
+        partition_windows(table)
+    } else {
+        Vec::new()
+    };
     let mode = policy.unwrap_or("cooperative");
     let slot_weights = if mode == "weighted" {
         let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
@@ -814,7 +849,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq") | None => {
+        Some("weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
@@ -847,7 +882,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     let job_count = jobs.len();
     let extra_slots = extras.join(", ");
     let generated = format!(
-        "pub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");

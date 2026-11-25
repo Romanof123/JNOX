@@ -23,6 +23,19 @@ native_el0_vectors:
     .endr
 .size native_el0_vectors, .-native_el0_vectors
 
+.macro cyclic_final_stamp
+    .ifdef NATIVE_CYCLIC
+    stp x16,x17,[sp,#-16]!
+    adrp x16,native_cyclic_return_cell
+    ldr x16,[x16,:lo12:native_cyclic_return_cell]
+    cbz x16,1f
+    isb
+    mrs x17,cntpct_el0
+    str x17,[x16]
+1:  ldp x16,x17,[sp],#16
+    .endif
+.endm
+
 .global native_el0_enter
 .type native_el0_enter,%function
 native_el0_enter:
@@ -62,6 +75,7 @@ native_el0_enter:
     .endr
     clrex
     isb
+    cyclic_final_stamp
     eret
 .size native_el0_enter,.-native_el0_enter
 
@@ -172,6 +186,7 @@ native_el0_enter:
     ldr x30,[sp,#240]
     add sp,sp,#832
     clrex
+    cyclic_final_stamp
     eret
 
 // Keep the calling Rust continuation and its NativeFrame on the process
@@ -182,6 +197,16 @@ native_sleep_switch:
     stp x19,x30,[sp,#-16]!
     mov x19,sp
     mov sp,x0
+    .ifdef NATIVE_CYCLIC
+    bl native_cyclic_return
+    cyclic_final_stamp
+    b native_cyclic_idle_landing
+.global native_cyclic_idle_landing
+native_cyclic_idle_landing:
+    isb
+    mrs x0,cntpct_el0
+    bl native_cyclic_idle_sample
+    .endif
     msr daifclr,#2
     isb
 .global native_sleep_idle
@@ -199,7 +224,20 @@ native_sleep_idle:
     mrs x1,cntpct_el0
     .endif
     bl native_sleep_irq
+    .ifdef NATIVE_CYCLIC
+    cbnz x0,.Lcyclic_leave
+    adr x9,native_cyclic_idle_landing
+    msr elr_el1,x9
+    mrs x9,spsr_el1
+    orr x9,x9,#0x80
+    msr spsr_el1,x9
+    bl native_cyclic_return
+    cyclic_final_stamp
+    b .Lidle_eret
+.Lcyclic_leave:
+    .else
     cbz x0,.Lidle_eret
+    .endif
     adr x9,.Lleave_idle
     msr elr_el1,x9
     mrs x9,spsr_el1

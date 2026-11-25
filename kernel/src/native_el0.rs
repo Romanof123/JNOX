@@ -49,7 +49,12 @@ global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_multileve
 mod threads;
 #[cfg(jnox_native_threads)]
 global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_threads_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(not(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
+#[cfg(jnox_native_partition)]
+#[path = "native_cyclic.rs"]
+mod cyclic;
+#[cfg(jnox_native_partition)]
+global_asm!(".set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_cyclic_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(not(any(jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
     fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
@@ -376,6 +381,8 @@ fn event(kind: &[u8], pid: usize, value: Option<i64>) {
 extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
+    #[cfg(jnox_native_partition)]
+    { return cyclic::irq(entry, frame, iar); }
     #[cfg(jnox_native_cbs)]
     if let Some(f) = unsafe { frame.as_ref() } { cbs::witness(entry, f, 0); }
     #[cfg(jnox_native_edf)]
@@ -510,6 +517,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     if exit && f.x[0] as i32 as i64 as u64 != f.x[0] {
         fail(3);
     }
+    #[cfg(jnox_native_partition)]
+    { cyclic::syscall(entry, f); return; }
     #[cfg(jnox_native_threads)]
     { threads::syscall(entry, f); return; }
     // Unsupported services do not dereference a user pointer, acquire
@@ -763,7 +772,7 @@ pub(super) fn run() -> ! {
             FRAMES[pid].sp_el0 = layout.sp as u64;
             ptr::write_volatile(&raw mut jnox_native_startup_slots[pid],
                 [plan.entry, layout.sp as u64, layout.len as u64, layout.argc as u64]);
-            if !cfg!(any(jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
+            if !cfg!(any(jnox_native_partition, jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
                 if pid == 0 { STATES[pid] = TaskState::Running; } else { enqueue(pid); }
             }
         }
@@ -797,7 +806,9 @@ pub(super) fn run() -> ! {
     let first = cbs::start(frequency);
     #[cfg(jnox_native_multilevel)]
     let first = multilevel::start(frequency);
-    #[cfg(not(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)))]
+    #[cfg(jnox_native_partition)]
+    let first = cyclic::start(frequency);
+    #[cfg(not(any(jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)))]
     let first = if cfg!(jnox_native_fixed) {
         start_fixed()
     } else {
