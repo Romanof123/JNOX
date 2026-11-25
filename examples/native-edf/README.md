@@ -38,3 +38,25 @@ With 100 ms grid units, the three-job admission model finishes urgent, batch and
 | Mid-grid wake | midgrid (0,5,1), batch (0,8,2) | Earlier job requests 40 ms. Batch remains active after the mid-grid wake until the next sampled arbitration. |
 
 Sleep clients export request_ns and observed_ns (u64 absolute monotonic nanoseconds), private_progress (u32, 1 before sleep and 2 after a successful clock read) and private_result (u32). Expected final results and statuses are 53, 59 and 61 for sleep_first, sleep_last and midgrid respectively. Each checks its original private value after resumption. Operand-only and numeric controls are described in the [EDF design](../../docs/native-edf-applications.en-ko.md).
+
+## Fixed-size batch input
+
+Use the same batch.elf to process an exact number of 4096-byte blocks. For example, package 32768 blocks with the existing histogram and urgent ELFs:
+
+~~~sh
+python3 tools/build_native_el0.py --out edf-fixed --policy edf \
+    --elf batch.elf --arg=--blocks --arg 32768 --job 0,8,2 \
+    --peer-elf histogram.elf --peer-job 0,12,8 \
+    --peer-elf urgent.elf --peer-job 1,4,1
+~~~
+
+Boot edf-fixed/kernel.elf using the QEMU invocation above. Fixed mode accepts an ASCII decimal count from 1 through 65536, including leading zeros. It publishes the sum before the completed-block count and performs no clock or yield calls during the reduction. For a single-slot control, omit the peer options and use a fresh package output directory.
+
+| Arguments after /bin/app | Expected (private_progress, private_result) | Exit |
+| --- | --- | ---: |
+| --blocks 32768 | (32768, 17112760320) | 17 |
+| --blocks 1 | (1, 522240) | 17 |
+| --blocks 65537 or --blocks 2x | (0, 0) | 105 |
+| No extras | (n, 522240 × n), after the original 160 ms minimum | 17 on success |
+
+Signs, whitespace, non-ASCII digits, trailing characters, zero, and incorrect argument counts return 105 before processing input. The [fixed-input design](../../docs/native-edf-block-input.en-ko.md) specifies the independent cold boot and interruption checks.
