@@ -29,7 +29,12 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--source", type=Path, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, help="already linked native AArch64 application")
+    parser.add_argument("--peer-elf", type=Path, help="independently linked second native application")
     args = parser.parse_args()
+    if args.peer_elf and not (args.source or args.elf):
+        parser.error("--peer-elf requires an ordinary primary --source or --elf")
+    peer_input = args.peer_elf.resolve(strict=True) if args.peer_elf else None
+    peer_digest = sha256(peer_input) if peer_input else None
     app_input = (args.elf or args.source or SOURCE).resolve(strict=True)
     input_digest = sha256(app_input)
     app = "process" if args.source or args.elf else "startup-probe"
@@ -65,6 +70,16 @@ def main():
                            check=True)
         if sha256(user_elf if args.elf else app_input) != input_digest:
             raise ValueError("application input changed during packaging")
+        if peer_input:
+            peer_elf = out / "native_peer.elf"
+            shutil.copyfile(peer_input, peer_elf)
+            if sha256(peer_elf) != peer_digest:
+                raise ValueError("peer ELF changed during packaging")
+            peer_name = str(peer_input.relative_to(ROOT) if peer_input.is_relative_to(ROOT) else peer_input)
+            inputs[peer_name] = peer_digest
+            metadata.update(peer_input={"kind": "elf", "path": peer_name, "sha256": peer_digest},
+                            peer_elf_sha256=peer_digest)
+            env.update(JNOX_NATIVE_PEER_ELF=str(peer_elf), JNOX_NATIVE_PEER_ELF_SHA256=peer_digest)
         digest = sha256(user_elf)
         env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,
@@ -77,6 +92,8 @@ def main():
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     print(f"kernel {metadata['kernel_elf_sha256']}  {kernel_elf}")
     print(f"native {digest}  {user_elf}")
+    if peer_input:
+        print(f"peer {peer_digest}  {peer_elf}")
 
 
 if __name__ == "__main__":

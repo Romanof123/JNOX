@@ -74,3 +74,16 @@ python3 tools/build_native_el0.py --elf "$run/report.elf" --out "$run/rust"
 python3 tools/native_el0_capture.py "$run/c-first" "$run/c/kernel.elf" "$run/c/user.elf" examples/portability/periodic_report.c "$rev" --expect-exit 0
 python3 tools/native_el0_capture.py "$run/rust-first" "$run/rust/kernel.elf" "$run/rust/user.elf" examples/native-periodic-rust/src/main.rs "$rev" --expect-exit 0
 ~~~
+
+## Package two cooperative native processes
+
+Build the Rust peer separately and pass its ELF to the packager alongside the primary C source. To use an already linked primary, replace `--source PATH.c` with `--elf PATH.elf`. From the repository root on Linux or WSL:
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build-rust.sh examples/native-cooperative-rust/Cargo.toml "$run/peer.elf"
+python3 tools/build_native_el0.py --source examples/portability/native_cooperative_report.c --peer-elf "$run/peer.elf" --out "$run/package"
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/package/kernel.elf"
+~~~
+
+The [C primary](../examples/portability/native_cooperative_report.c) calls `sched_yield()` from `<sched.h>`. The [Rust peer](../examples/native-cooperative-rust/src/main.rs) uses safe `jnox_native::yield_now()`, which returns `Result<(), i32>`. Yield hands CPU0 to a ready peer. If the caller is alone, yield succeeds immediately. An absolute sleep blocks its caller and lets a ready peer run. Each process keeps a private stack and writable data, so both examples use virtual address `0x402000` for different accumulators. The UART reports each PID and exit status. After both processes exit, the guest parks. Stop QEMU with Ctrl+C.

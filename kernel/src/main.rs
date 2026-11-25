@@ -180,6 +180,7 @@ mod ordinary_proportional;
     jnox_bench = "mutex",
     jnox_bench = "multilevel",
     jnox_bench = "priority_resume",
+    jnox_native_el0,
     jnox_bench = "periodic_overrun"
 ))]
 mod ready_queue;

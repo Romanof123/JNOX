@@ -15,7 +15,7 @@ SECTIONS
     .note.jnox.abi : { KEEP(*(.note.jnox.abi)) } :ro
     .rodata : { *(.rodata .rodata.*) } :ro
     . = ALIGN(4096);
-    .data : { *(.data .data.*) } :rw
+    .data : { *(.data.private_report) *(.data .data.*) } :rw
     .bss (NOLOAD) : { *(.bss .bss.*) *(COMMON) } :rw
     ASSERT(_start == 0x00400000, "entry must be first executable byte")
     ASSERT(. <= 0x00800000, "image exceeds the native user window")
