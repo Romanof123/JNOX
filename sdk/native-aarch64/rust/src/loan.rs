@@ -21,6 +21,7 @@ impl Reader {
     /// The caller must retain this live read grant throughout the access and
     /// exclude concurrent release, revocation and address reuse. The mapped
     /// page includes a zeroed tail after length. No Rust page reference is made.
+    #[inline]
     pub unsafe fn read_page_byte(&self, offset: usize) -> u8 {
         assert!(offset < PAGE_BYTES);
         unsafe { ptr::read_volatile((self.address + offset) as *const u8) }
