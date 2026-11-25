@@ -8,6 +8,8 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
+Give native batch applications release offsets and service estimates, then run them under SJF, SRTF or HRRN. [Build and schedule the applications](examples/native-batch/README.md)
+
 Choose lottery or stride scheduling with a weight per application. [Configure the seed and grant window and run the apps](docs/native-c-abi.en.md#schedule-native-applications-with-lottery-or-stride)
 
 Set priorities for four threads in one process and choose priority inheritance, immediate ceiling or a timed mutex wait. [C and Rust attributes and packaging](docs/native-c-abi.en.md#configure-four-threads-and-priority-aware-mutexes)

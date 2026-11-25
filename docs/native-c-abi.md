@@ -345,3 +345,14 @@ python3 tools/read_hierarchy_health.py output/native-hierarchy/saturated-health-
 판독기 종료값 0은 유효한 계측과 하나 이상의 측정 및 기준 통과, 1은 지연·미관측·판정 불가 또는 종료값 불일치, 2는 불완전하거나 모순된 UART를 뜻한다. #334의 유휴 WFI 재충전 최초 실패 두 건은 #339에서 추적한다. POL-016 전체 시간 승인은 미결이다.
 
 [Capture / UART](../examples/native-hierarchy/README.md#read-the-idle-refill-health-report--유휴-재충전-상태-읽기) · [#339](https://github.com/Romanof123/JNOX/issues/339) · [#21](https://github.com/Romanof123/JNOX/issues/21)
+
+## 네이티브 배치 작업의 도착과 서비스 추정치
+
+각 ELF에 공통 시작점 기준 공개 오프셋과 서비스 추정치를 물리 카운터 틱 단위로 지정한다. SRTF는 더 짧은 남은 서비스의 앱이 준비되면 실행 중인 앱을 선점할 수 있다. SJF와 HRRN은 현재 앱이 계속 실행할 수 있으면 유지한다. HRRN은 다음 앱을 고를 때 대기 시간과 추정치를 함께 반영한다.
+
+~~~sh
+out=output/native-batch
+python3 tools/build_native_el0.py --out "$out/arrival-srtf" --policy srtf --elf "$out/batch.elf" --arg=--blocks --arg 32768 --batch-job 0,18750000 --peer-elf "$out/urgent.elf" --peer-batch-job 6250000,625000
+~~~
+
+[SDK / QEMU](../examples/native-batch/README.md) · [POL-003](native-batch-applications.en-ko.md)
