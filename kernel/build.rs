@@ -406,6 +406,13 @@ fn main() {
         _ => panic!("pubsub requires service 3 and both canonical topic grant strings"),
     };
     let socket_service = selector("JNOX_NATIVE_SOCKET_SERVICE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_net_service)");
+    let net_service = selector("JNOX_NATIVE_NET_SERVICE");
+    if let Some(net_service) = net_service.as_ref() {
+        assert!(socket_service.as_ref() == Some(net_service),
+            "network service must match the configured native socket service");
+        println!("cargo::rustc-cfg=jnox_native_net_service");
+    }
     assert!(socket_service.is_none() || ipc_routes.is_some(),
         "socket service requires explicit synchronous IPC routes");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_waitset)");
@@ -504,6 +511,7 @@ fn main() {
     assert_eq!(amc.is_some(), amc_sha.is_some(), "AMC requires a canonical digest");
     let peer3_image = selector("JNOX_NATIVE_PEER3_ELF");
     let peer3_hash = selector("JNOX_NATIVE_PEER3_ELF_SHA256");
+    assert!(net_service.is_none() || peer3_image.is_none(), "native net service supports at most three processes");
     assert_eq!(peer3_image.is_some(), peer3_hash.is_some(), "third peer requires digest");
     assert!(topic_masks.is_none() || peer3_image.is_some(), "pubsub requires four process slots");
     let four_fixed = board == "virt" && matches!(policy.as_deref(), Some("fifo" | "rr"));
@@ -530,6 +538,36 @@ fn main() {
             && matches!(policy.as_deref(), Some("fifo" | "rr")),
             "IPC routes require ordinary FIFO/RR processes on virt");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_pipe_ipc)");
+    let pipes = selector("JNOX_NATIVE_PIPES");
+    let fifo_grants = selector("JNOX_NATIVE_FIFO_GRANTS");
+    let pipe_links = selector("JNOX_NATIVE_PIPE_LINKS");
+    let pipe_config = if let Some(value) = pipes {
+        assert!(value == "1" && board == "virt" && threads.is_none()
+            && profile.as_deref() == Some("native") && app.as_deref() == Some("process")
+            && matches!(policy.as_deref(), Some("fifo" | "rr")), "pipes require ordinary virt FIFO/RR processes");
+        assert!(peer3_image.is_none(), "native pipes support at most three processes");
+        let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
+        Some(native_pipe_config(slots, fifo_grants.as_deref(), pipe_links.as_deref()))
+    } else {
+        assert!(fifo_grants.is_none() && pipe_links.is_none(), "pipe grants and links require JNOX_NATIVE_PIPES=1");
+        None
+    };
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_shell)");
+    let children = selector("JNOX_NATIVE_EXEC_CHILDREN");
+    let rom = selector("JNOX_NATIVE_ROM_IMAGE");
+    let rom_hash = selector("JNOX_NATIVE_ROM_SHA256");
+    let pipe_config = match (children, rom, rom_hash) {
+        (None, None, None) => pipe_config,
+        (Some(children), Some(file), Some(hash)) => {
+            let mut constants = pipe_config.expect("native shell requires JNOX_NATIVE_PIPES=1");
+            assert!(peer_image.is_some() && peer2_image.is_some(), "native shell needs exactly two child ELFs");
+            constants.push_str(&native_shell_config(&children, &file, &hash));
+            println!("cargo::rustc-cfg=jnox_native_shell");
+            Some(constants)
+        }
+        _ => panic!("native shell requires child names, ROM image and ROM SHA-256 together"),
+    };
     let thread_rr = threads.is_some() && policy.as_deref() == Some("rr");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_fixed)");
     let thread_roles = selector("JNOX_NATIVE_THREAD_PRIORITIES");
@@ -627,7 +665,7 @@ fn main() {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
             }
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()), [ipc_routes.as_deref(), mailbox_routes.as_deref(), notify_routes.as_deref()], loan_route.as_deref(), socket_service.as_deref(), topic_masks);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()), [ipc_routes.as_deref(), mailbox_routes.as_deref(), notify_routes.as_deref()], loan_route.as_deref(), pipe_config.as_deref(), socket_service.as_deref(), topic_masks);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -1016,6 +1054,90 @@ fn forecast_lottery<const N: usize>(weights: &[u32], seed: u64, horizon: usize, 
     }
 }
 
+fn shell_basename(name: &str) -> bool {
+    (1..=31).contains(&name.len()) && !matches!(name, "." | "..")
+        && name.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+}
+
+fn native_shell_config(children: &str, file: &str, hash: &str) -> String {
+    use std::{fs, path::Path};
+    let mut names = ["sh", "", ""];
+    for child in children.split(',') {
+        let (slot, name) = child.split_once(':').expect("expected slot:name");
+        let i = match slot { "1" => 1, "2" => 2, _ => panic!("invalid child slot") };
+        assert!(names[i].is_empty() && shell_basename(name) && !names.contains(&name),
+            "duplicate or invalid child slot/name");
+        names[i] = name;
+    }
+    assert!(names.iter().all(|name| !name.is_empty()), "missing child slot");
+    let source = Path::new(file).canonicalize().expect("locate packaged ROM");
+    assert!(source.is_file() && fs::metadata(&source).unwrap().len() == 8192, "expected 8192-byte ROM file");
+    package_native_image(source.to_str().expect("ROM path must be UTF-8"), hash, "native_shell.rom",
+        "JNOX_PACKAGED_ROM_SHA256");
+    let output = Path::new(&env::var_os("OUT_DIR").unwrap()).join("native_shell.rom")
+        .canonicalize().expect("locate immutable ROM snapshot");
+    let bytes = fs::read(&output).expect("read immutable ROM snapshot");
+    assert!(bytes.len() == 8192 && &bytes[..8] == b"JNOXROM1", "invalid ROM header");
+    let word = |at| u32::from_le_bytes(bytes[at..at+4].try_into().unwrap()) as usize;
+    let count = word(8);
+    assert!(count <= 8 && bytes[12..16] == [0; 4], "invalid ROM file count or reserved bits");
+    let mut offset = 400;
+    let mut previous = "";
+    for i in 0..count {
+        let at = 16 + 48*i;
+        let field = &bytes[at..at+32];
+        let end = field.iter().position(|&b| b == 0).expect("unterminated ROM name");
+        let name = std::str::from_utf8(&field[..end]).expect("invalid ROM name");
+        assert!(shell_basename(name) && previous < name && field[end..].iter().all(|&b| b == 0),
+            "invalid, duplicate or unsorted ROM filename");
+        previous = name;
+        let length = word(at+36);
+        assert!(word(at+32) == offset && length <= bytes.len()-offset && bytes[at+40..at+48] == [0; 8],
+            "invalid ROM file extent or reserved bits");
+        offset += length;
+    }
+    assert!(bytes[16+48*count..400].iter().chain(&bytes[offset..]).all(|&b| b == 0),
+        "nonzero unused ROM bytes");
+    println!("cargo::rustc-env=JNOX_NATIVE_ROM_IMAGE={}", output.display());
+    format!("pub const NATIVE_EXEC_NAMES: [&str; 3] = {names:?};\n")
+}
+
+fn pipe_fields<const N: usize>(row: &str) -> [usize; N] {
+    let mut fields = row.split(':');
+    let values = std::array::from_fn(|_| {
+        let f = fields.next().expect("missing pipe field");
+        assert!(!f.is_empty() && f.bytes().all(|b| b.is_ascii_digit()), "invalid pipe field");
+        f.parse().expect("pipe field too large")
+    });
+    assert!(fields.next().is_none(), "extra pipe field");
+    values
+}
+
+fn native_pipe_config(slots: usize, grants: Option<&str>, links: Option<&str>) -> String {
+    let mut readers = vec![0u8; slots];
+    let mut writers = vec![0u8; slots];
+    for row in grants.into_iter().flat_map(|s| s.split(',')) {
+        let [owner, read, write] = pipe_fields(row);
+        assert!(owner < slots && read != 0 && write != 0 && (read | write) < (1 << slots), "invalid FIFO grant");
+        assert!(readers[owner] == 0 && writers[owner] == 0, "duplicate FIFO owner");
+        readers[owner] = read as u8;
+        writers[owner] = write as u8;
+    }
+    let mut boot_links = Vec::new();
+    let mut occupied = vec![[false; 11]; slots];
+    for row in links.into_iter().flat_map(|s| s.split(',')) {
+        assert!(boot_links.len() < 4, "at most four boot pipe links");
+        let [writer, wfd, reader, rfd] = pipe_fields(row);
+        for (slot, fd) in [(writer, wfd), (reader, rfd)] {
+            assert!(slot < slots && fd <= 10 && !occupied[slot][fd], "unavailable boot pipe descriptor");
+            assert!(occupied[slot].iter().filter(|&&used| used).count() < 8, "at most eight pipe descriptors per process");
+            occupied[slot][fd] = true;
+        }
+        boot_links.push((writer, wfd, reader, rfd));
+    }
+    format!("pub const NATIVE_PIPE_READERS: [u8; {slots}] = {readers:?};\npub const NATIVE_PIPE_WRITERS: [u8; {slots}] = {writers:?};\npub const NATIVE_PIPE_LINKS: &[(usize, usize, usize, usize)] = &{boot_links:?};\n")
+}
+
 fn parse_ipc_route(pair: &str, slots: usize) -> [usize; 2] {
     let [caller, b':', server] = *pair.as_bytes() else {
         panic!("expected IPC route CALLER:SERVER");
@@ -1027,7 +1149,7 @@ fn parse_ipc_route(pair: &str, slots: usize) -> [usize; 2] {
     [caller, server]
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>, socket_service: Option<&str>, topic_masks: Option<(&str, &str)>) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>, pipe_config: Option<&str>, socket_service: Option<&str>, topic_masks: Option<(&str, &str)>) {
     let batch_jobs = if let Some(raw) = batch {
         let jobs: Vec<_> = raw.split(';').map(parse_batch_job).collect();
         assert_eq!(jobs.len(), slots, "provide one batch tuple per slot");
@@ -1204,6 +1326,10 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     if mode == "extension" {
         generated.push_str("include!(concat!(env!(\"OUT_DIR\"), \"/native_extension_ops.rs\"));\n");
+    }
+    if let Some(constants) = pipe_config {
+        generated.push_str(constants);
+        println!("cargo::rustc-cfg=jnox_native_pipe_ipc");
     }
     if let Some(raw) = loan_route {
         assert!((2..=3).contains(&slots), "loans require two or three process slots");

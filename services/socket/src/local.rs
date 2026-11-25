@@ -115,6 +115,12 @@ pub struct Local {
     fds: [[Option<usize>; FDS]; CLIENTS],
 }
 impl Local {
+    /// Copy bounded value-only state directly between disjoint private banks.
+    pub fn copy_from(&mut self, source: &Self) {
+        self.objects.copy_from_slice(&source.objects);
+        self.fds.copy_from_slice(&source.fds);
+    }
+
     pub const fn new() -> Self {
         Self {
             objects: [Socket::EMPTY; OBJECTS],

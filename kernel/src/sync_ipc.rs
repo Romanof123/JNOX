@@ -208,6 +208,17 @@ impl<const N: usize> SyncIpc<N> {
         self.start_receive(server, now, ReceiveMode::Broker)
     }
 
+    #[cfg(any(test, jnox_native_net_service))]
+    pub fn broker_try_receive(&mut self, server: usize, now: u64) -> Result<(), i32> {
+        self.broker_receive(server, now)?;
+        if self.slots[server].receiving.is_some() {
+            // The serialized poll found neither an undelivered call nor a death.
+            self.slots[server].receiving = None;
+            return Err(-11);
+        }
+        Ok(())
+    }
+
     fn start_receive(&mut self, server: usize, now: u64, mode: ReceiveMode) -> Result<(), i32> {
         self.advance(now);
         self.available(server)?;
@@ -288,6 +299,25 @@ impl<const N: usize> SyncIpc<N> {
 mod tests {
     use super::*;
     const FOREVER: u64 = u64::MAX;
+
+    #[test]
+    fn try_broker_never_enrolls_an_empty_wait() {
+        let mut ipc = SyncIpc::with_broker([4, 4, 0], 2);
+        assert_eq!(ipc.broker_try_receive(1, 0), Err(-13));
+        assert_eq!(ipc.broker_try_receive(2, 0), Err(-11));
+        assert!(!ipc.blocked(2));
+        ipc.call(1, 2, 17, FOREVER, 1).unwrap();
+        assert_eq!(ipc.take_with_caller(2), None);
+        ipc.broker_try_receive(2, 2).unwrap();
+        let (msg, caller) = ipc.take_with_caller(2).unwrap();
+        assert_eq!((caller, msg.x2), (Some(1), 17));
+        assert_ne!(msg.x1, 0);
+        ipc.exit(1, 3);
+        ipc.broker_try_receive(2, 4).unwrap();
+        assert_eq!(ipc.take_with_caller(2), Some((Completion::new(0, 0, 0), Some(1))));
+        assert_eq!(ipc.broker_try_receive(2, 4), Err(-11));
+        assert!(!ipc.blocked(2));
+    }
 
     #[test]
     fn broker_uses_the_actual_caller_in_both_receive_orders() {

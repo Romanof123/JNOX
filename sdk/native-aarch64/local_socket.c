@@ -1,13 +1,20 @@
 #include <errno.h>
 #include <jnox/ipc.h>
 #include <sys/un.h>
+#include <netinet/in.h>
+
+_Static_assert(sizeof(struct sockaddr_in) == 16 &&
+               __builtin_offsetof(struct sockaddr_in, sin_port) == 2 &&
+               __builtin_offsetof(struct sockaddr_in, sin_addr) == 4,
+               "native IPv4 address layout");
 
 /* Each native process has its own BSS and its own authenticated broker slot.
  * Fail a concurrent call rather than interleave BEGIN/CHUNK/COMMIT/READ. */
 enum { FD_BASE = 64, FD_COUNT = 4, PATH_MAX_BYTES = 31, DATA_MAX = 64 };
 enum { OP_SOCKET = 1, OP_BIND, OP_CONNECT, OP_LISTEN, OP_ACCEPT, OP_SEND,
-       OP_RECV, OP_SHUTDOWN, OP_CLOSE };
-static struct descriptor { unsigned char kind, nonblock; } descriptors[FD_COUNT];
+       OP_RECV, OP_SHUTDOWN, OP_CLOSE, OP_SOCKET4, OP_BIND4, OP_CONNECT4,
+       OP_SEND4, OP_RECV4 };
+static struct descriptor { unsigned char kind, nonblock, family; } descriptors[FD_COUNT];
 static uint64_t broker_pid;
 static unsigned char configured, active;
 
@@ -72,32 +79,45 @@ static long commit(const struct transaction *t) {
 static long prepare(struct transaction *t, unsigned op, int fd) {
     if (!configured) return -ENOTCONN;
     t->op = op;
-    if (op == OP_SOCKET) return 0;
+    if (op == OP_SOCKET || op == OP_SOCKET4) return 0;
     if (fd < FD_BASE || fd >= FD_BASE + FD_COUNT) return -EBADF;
     t->slot = (unsigned)(fd - FD_BASE);
     if (!descriptors[t->slot].kind) return -EBADF;
+    if (descriptors[t->slot].family == AF_INET) {
+        switch (op) {
+        case OP_BIND: t->op = OP_BIND4; break;
+        case OP_CONNECT: t->op = OP_CONNECT4; break;
+        case OP_SEND: t->op = OP_SEND4; break;
+        case OP_RECV: t->op = OP_RECV4; break;
+        }
+    }
     t->nonblock = descriptors[t->slot].nonblock;
     return 0;
 }
 
-static long new_fd(long result, unsigned kind, unsigned nonblock) {
+static long new_fd(long result, unsigned kind, unsigned nonblock, unsigned family) {
     if (result < 0) return result;
     if (result >= FD_COUNT || descriptors[result].kind) return -EIO;
-    descriptors[result] = (struct descriptor){kind, nonblock};
+    descriptors[result] = (struct descriptor){kind, nonblock, family};
     return FD_BASE + result;
 }
 int socket(int domain, int type, int protocol) {
     unsigned kind = type & ~SOCK_NONBLOCK;
-    if (domain != AF_UNIX || protocol != 0 ||
-        (kind != SOCK_STREAM && kind != SOCK_DGRAM && kind != SOCK_SEQPACKET))
+    if (domain == AF_INET) {
+        if ((kind != SOCK_STREAM && kind != SOCK_DGRAM) ||
+            (protocol && protocol != (kind == SOCK_STREAM ? IPPROTO_TCP : IPPROTO_UDP)))
+            return error(ENOTSUP);
+    } else if (domain != AF_UNIX || protocol != 0 ||
+               (kind != SOCK_STREAM && kind != SOCK_DGRAM && kind != SOCK_SEQPACKET)) {
         return error(ENOTSUP);
+    }
     if (!enter()) return -1;
     struct transaction t = {0};
-    long r = prepare(&t, OP_SOCKET, 0);
+    long r = prepare(&t, domain == AF_INET ? OP_SOCKET4 : OP_SOCKET, 0);
     if (r < 0) return finish(r);
     t.arg = kind;
     t.nonblock = !!(type & SOCK_NONBLOCK);
-    return finish(new_fd(commit(&t), kind, t.nonblock));
+    return finish(new_fd(commit(&t), kind, t.nonblock, domain));
 }
 
 /* Use byte copies of the common family field so sockaddr casts need no
@@ -107,7 +127,13 @@ static long address(struct transaction *t, const struct sockaddr *addr, socklen_
     if (!addr || len <= base || len > sizeof(struct sockaddr_un)) return -EINVAL;
     sa_family_t family;
     __builtin_memcpy(&family, addr, sizeof family);
-    if (family != AF_UNIX) return -ENOTSUP;
+    if (family != descriptors[t->slot].family) return -ENOTSUP;
+    if (family == AF_INET) {
+        if (len != sizeof(struct sockaddr_in)) return -EINVAL;
+        t->path = (const unsigned char *)addr + __builtin_offsetof(struct sockaddr_in, sin_port);
+        t->pathlen = 6;
+        return 0;
+    }
     t->path = (const unsigned char *)addr + base;
     while (t->pathlen < len - base && t->path[t->pathlen]) ++t->pathlen;
     return t->pathlen && t->pathlen <= PATH_MAX_BYTES ? 0 : -EINVAL;
@@ -133,7 +159,7 @@ static int simple(unsigned op, int fd, unsigned arg) {
     t.arg = arg;
     r = commit(&t);
     if (op == OP_ACCEPT)
-        r = new_fd(r, descriptors[t.slot].kind, 0);
+        r = new_fd(r, descriptors[t.slot].kind, 0, descriptors[t.slot].family);
     if (op == OP_CLOSE && r == 0)
         descriptors[t.slot] = (struct descriptor){0};
     return finish(r);
@@ -172,14 +198,23 @@ ssize_t send(int fd, const void *buf, size_t len, int flags) {
     return sendto(fd, buf, len, flags, 0, 0);
 }
 
-static long read_response(unsigned char *data, unsigned cap, long count, int flags,
+static long read_response(struct descriptor desc, unsigned char *data, unsigned cap, long count, int flags,
                           struct sockaddr *addr, socklen_t *addrlen) {
     long meta = rpc(0x14ULL << 56);
     if (meta < 0) return meta;
     unsigned used = meta & 255, full = (meta >> 8) & 255, path = (meta >> 16) & 255;
     if ((meta >> 24) || used != (unsigned long)count || used > cap ||
         full < used || full > DATA_MAX || path > PATH_MAX_BYTES) return -EIO;
-    struct sockaddr_un source = {.sun_family = AF_UNIX};
+    unsigned family = desc.family;
+    if (family == AF_INET) {
+        if (desc.kind == SOCK_DGRAM && (path != 6 || full > 32)) return -EIO;
+        if (desc.kind == SOCK_STREAM && (path || full != used)) return -EIO;
+    }
+    unsigned char source[sizeof(struct sockaddr_un)] = {0};
+    sa_family_t source_family = family;
+    __builtin_memcpy(source, &source_family, sizeof source_family);
+    unsigned offset = family == AF_INET ? __builtin_offsetof(struct sockaddr_in, sin_port)
+                                        : __builtin_offsetof(struct sockaddr_un, sun_path);
     unsigned total = used + path;
     unsigned char payload[DATA_MAX];
     for (unsigned off = 0; off < total; off += 6) {
@@ -190,15 +225,16 @@ static long read_response(unsigned char *data, unsigned cap, long count, int fla
             unsigned i = off + j;
             unsigned char byte = (unsigned long)word >> (8 * j);
             if (i < used) payload[i] = byte;
-            else source.sun_path[i - used] = (char)byte;
+            else source[offset + i - used] = byte;
         }
     }
     for (unsigned i = 0; i < used; ++i) data[i] = payload[i];
     if (addr) {
-        socklen_t actual = __builtin_offsetof(struct sockaddr_un, sun_path) + path + !!path;
+        socklen_t actual = offset + path + !!path;
+        if (family == AF_INET) actual = path ? sizeof(struct sockaddr_in) : 0;
         socklen_t copy = *addrlen < actual ? *addrlen : actual;
         for (unsigned i = 0; i < copy; ++i)
-            ((unsigned char *)addr)[i] = ((const unsigned char *)&source)[i];
+            ((unsigned char *)addr)[i] = source[i];
         *addrlen = actual;
     }
     return flags & MSG_TRUNC ? full : used;
@@ -214,7 +250,7 @@ ssize_t recvfrom(int fd, void *buf, size_t len, int flags,
     t.arg = len > DATA_MAX ? DATA_MAX : (unsigned)len;
     t.nonblock |= !!(flags & MSG_DONTWAIT);
     r = commit(&t);
-    if (r >= 0) r = read_response(buf, t.arg, r, flags, addr, addrlen);
+    if (r >= 0) r = read_response(descriptors[t.slot], buf, t.arg, r, flags, addr, addrlen);
     return finish(r);
 }
 ssize_t recv(int fd, void *buf, size_t len, int flags) {
