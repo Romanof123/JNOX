@@ -253,3 +253,13 @@ python3 tools/build_native_el0.py --out table-p --policy partition --partition-w
 ~~~
 
 [에너지 합계와 비트 밀도 히스토그램 빌드 및 QEMU 실행](../examples/native-cyclic/README.md)
+
+## 비주기 서비스와 백그라운드 앱 실행
+
+단일 CPU virt에서 주 ELF는 서비스이고 피어 ELF는 백그라운드 앱이다. 아래 예는 50 ms 슬롯 5개당 2개를 서비스 예산으로 정한다. 서비스에 슬롯을 배정할 때 예산 한 단위를 사용한다. 서비스가 차단되면 준비된 백그라운드가 남은 시간을 쓸 수 있다. 산발 서버의 보충 기록 용량은 1~8이다. polling 또는 deferrable을 선택하려면 정책명을 바꾸고 --server-credits를 생략한다.
+
+~~~sh
+python3 tools/build_native_el0.py --out ss --policy sporadic --server-slot-ms 50 --server-budget 2,5 --server-credits 2 --elf service.elf --peer-elf background.elf
+~~~
+
+[SDK build / QEMU 실행](../examples/native-aperiodic/README.md)
