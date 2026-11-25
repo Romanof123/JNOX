@@ -95,19 +95,28 @@ def observe(folder, read, *, profile="pi4-scheduler", now=time.monotonic_ns, sle
     """Read bounded chunks. Keep every observed byte including a failed readout."""
     matcher = NativeMatcher(profile) if profile in NATIVE_PROFILES else Matcher(profile)
     count = 0
+    read_records = 0
+    terminal_cause = None
     complete = None
     h = hashlib.sha256()
     with (folder / "uart.bin").open("xb") as raw, (folder / "reads.jsonl").open(
             "x", encoding="utf-8") as log:
         epoch, start = arm if arm is not None else (time.time_ns(), now())
         while True:
-            chunk = read(4096)
+            try:
+                chunk = read(4096)
+            except (OSError, EOFError, KeyboardInterrupt) as error:
+                elapsed = now() - start
+                verdict = "interrupted" if isinstance(error, KeyboardInterrupt) else "read_error"
+                terminal_cause = {"operation": "read", "type": type(error).__name__, "message": str(error)}
+                break
             elapsed = now() - start
             if chunk:
                 raw.write(chunk)
                 h.update(chunk)
                 log.write(json.dumps({"elapsed_ns": elapsed, "offset": count,
                                       "length": len(chunk)}) + "\n")
+                read_records += 1
                 end = count + len(chunk)
                 if not matcher.feed(chunk):
                     count = end
@@ -124,13 +133,21 @@ def observe(folder, read, *, profile="pi4-scheduler", now=time.monotonic_ns, sle
                 verdict = "matched" if matcher.variant is not None else "inconclusive"
                 break
             if not chunk:
-                sleep(0.005)
+                try:
+                    sleep(0.005)
+                except KeyboardInterrupt as error:
+                    elapsed = now() - start
+                    verdict = "interrupted"
+                    terminal_cause = {"operation": "wait", "type": type(error).__name__, "message": str(error)}
+                    break
     details = {}
     if profile in NATIVE_PROFILES:
         details = {"native_events": matcher.events, "native_rotations": matcher.rotations,
                    "frequency": matcher.frequency, "service_ticks": matcher.service,
                    "dropped": matcher.dropped, "journal_complete": matcher.journal_complete,
                    "observation": matcher.observation if verdict in ("matched", "inconclusive") else None}
+    if terminal_cause is not None:
+        details.update(terminal_cause=terminal_cause, read_records=read_records)
     return {**details, "uart_verdict": verdict, "arm_unix_ns": epoch, "arm_monotonic_ns": start,
             "elapsed_ns": elapsed, "final_lf_elapsed_ns": complete,
             "bytes": count, "uart_sha256": h.hexdigest(), "profile": profile,
@@ -245,11 +262,15 @@ def main():
                     arm = (time.time_ns(), time.monotonic_ns())
                     print("Armed. Apply board power now.", flush=True)
                 result = observe(folder, stream.read, profile=args.profile, arm=arm)
-            if args.replay and args.profile in NATIVE_PROFILES:
-                result["replay_input_sha256"] = digest(folder / "replay-input.bin")
-            write_json(folder / "result.json", dict(result, run_id=run_id, session_id=session_id,
-                       operator_off_ack_unix_ns=off_ack_unix_ns,
-                       run=index + 1, mode=mode, source=label))
+                if args.replay and args.profile in NATIVE_PROFILES:
+                    result["replay_input_sha256"] = digest(folder / "replay-input.bin")
+                write_json(folder / "result.json", dict(result, run_id=run_id, session_id=session_id,
+                           operator_off_ack_unix_ns=off_ack_unix_ns,
+                           run=index + 1, mode=mode, source=label))
+            if "terminal_cause" in result:
+                cause = result["terminal_cause"]
+                print(f"Capture failed: {cause['type']}: {cause['message']}", file=sys.stderr)
+                return 130 if result["uart_verdict"] == "interrupted" else 2
             passed = passed and result["uart_verdict"] == "matched"
         return 0 if passed else 1
     except (ValueError, OSError, EOFError) as error:
