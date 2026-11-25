@@ -1,6 +1,6 @@
-//! Private ordinary-process mappings on the single boot CPU.
+//! Private ordinary-process mappings with CPU-local translation registers.
 use crate::native_elf::{LoadPlan, Permission};
-use core::{arch::asm, borrow::Borrow, ptr};
+use core::{arch::asm, borrow::Borrow, ptr, sync::atomic::{AtomicUsize, Ordering}};
 
 const PAGE: usize = 4096;
 const IMAGE_LO: usize = 0x0040_0000;
@@ -170,7 +170,30 @@ pub(crate) fn amc_clock_alias(pid: usize) -> *mut u64 {
     unsafe { (&raw mut jnox_native_amc_clock_pages[pid]).cast::<u64>() }
 }
 
-static mut PROCESS_COUNT: usize = 0;
+const COUNT_LOAD: Ordering = if cfg!(jnox_native_smp_partitioned) { Ordering::Acquire } else { Ordering::Relaxed };
+const COUNT_STORE: Ordering = if cfg!(jnox_native_smp_partitioned) { Ordering::Release } else { Ordering::Relaxed };
+static PROCESS_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+#[cfg(jnox_native_smp_partitioned)]
+static mut SPIN_TABLE: Table = Table::EMPTY;
+#[cfg(jnox_native_smp_partitioned)]
+unsafe extern "C" {
+    static pi4_native_smp_stacks: u8;
+}
+
+#[cfg(jnox_native_smp_partitioned)]
+fn guard(va: usize) -> bool {
+    let base = &raw const pi4_native_smp_stacks as usize;
+    (0..4).any(|unit| va == base + unit * 5 * PAGE)
+}
+
+#[cfg(jnox_native_smp_partitioned)]
+fn affinity() -> u64 {
+    let mpidr: u64;
+    unsafe { asm!("mrs {}, mpidr_el1", out(reg) mpidr, options(nostack, preserves_flags)) };
+    mpidr & 0xff00_ffffff
+}
+
 #[cfg(jnox_native_amc)]
 #[path = "native_amc_space.rs"]
 mod amc_space;
@@ -260,6 +283,8 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
                 link(&raw mut space.low, va, 21, kernel);
             }
             link(&raw mut space.root, GPIO, 30, &raw mut HIGH);
+            #[cfg(jnox_native_smp_partitioned)]
+            link(&raw mut space.low, 0, 21, &raw mut SPIN_TABLE);
         }
         #[cfg(jnox_native_weighted_notify)]
         link(&raw mut space.low, WEIGHTED_NOTIFICATION_VA, 21, &raw mut WEIGHTED_NOTIFICATION_TABLE);
@@ -329,6 +354,8 @@ unsafe fn install_spaces<'a>(
     plans: &[impl Borrow<LoadPlan<'a>>],
     stack_tails: &[&[u8]],
 ) -> Result<(), &'static str> {
+    #[cfg(jnox_native_smp_partitioned)]
+    if affinity() != 0 { return Err("only CPU0 populates native mappings"); }
     let count = plans.len();
     if !(1..=SPACE_CAPACITY).contains(&count) || stack_tails.len() != count {
         return Err("native process count");
@@ -341,7 +368,7 @@ unsafe fn install_spaces<'a>(
     }
     // MMU, D-cache, I-cache and big-endian EL0/EL1 must all be off.
     if el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
-        || ctl & (0x1005 | (3 << 24)) != 0 || unsafe { PROCESS_COUNT != 0 } {
+        || ctl & (0x1005 | (3 << 24)) != 0 || PROCESS_COUNT.load(COUNT_LOAD) != 0 {
         return Err("native VM requires cold masked EL1h");
     }
     #[cfg(not(jnox_pi4))]
@@ -351,7 +378,7 @@ unsafe fn install_spaces<'a>(
     let rw = &raw const __native_rw_start as usize;
     let end = &raw const __stack_top as usize;
     #[cfg(jnox_pi4)]
-    if end > 0x0400_0000 || count != 2 {
+    if end > 0x0400_0000 || !(2..=2 + cfg!(jnox_native_smp_partitioned) as usize).contains(&count) {
         return Err("Pi 4 native kernel aperture or process count");
     }
     if start != LINK_START || !(start < rw && rw < end) || rw % PAGE != 0
@@ -366,6 +393,8 @@ unsafe fn install_spaces<'a>(
     // writes, including size and address checks for the last slot.
     unsafe {
         for va in (start..end).step_by(PAGE) {
+            #[cfg(jnox_native_smp_partitioned)]
+            if guard(va) { continue; }
             let table = (&raw mut KERNEL).cast::<Table>().add((va - start) / BLOCK);
             #[cfg(not(jnox_pi4))]
             if va % BLOCK == 0 {
@@ -381,6 +410,8 @@ unsafe fn install_spaces<'a>(
             link(&raw mut HIGH, crate::context::GICD, 21, &raw mut GIC);
             page(&raw mut UART, GPIO, GPIO, DEVICE);
         }
+        #[cfg(jnox_native_smp_partitioned)]
+        page(&raw mut SPIN_TABLE, 0, 0, NORMAL | PXN | UXN);
         page(&raw mut UART, crate::UART0, crate::UART0, DEVICE);
         page(&raw mut GIC, crate::context::GICD, crate::context::GICD, DEVICE);
         page(&raw mut GIC, crate::context::GICC, crate::context::GICC, DEVICE);
@@ -394,29 +425,54 @@ unsafe fn install_spaces<'a>(
         }
         #[cfg(jnox_native_amc)]
         amc_space::prepare_kernel_root();
-        // Single CPU, cold uncached mappings. MAIR[0] Normal non-cacheable,
-        // MAIR[1] Device-nGnRnE; no cacheable alias or dirty D-cache line.
-        // T0SZ=25 starts at L1 (39-bit VA); TTBR1 walks disabled, 32-bit PA.
-        let tcr = 25u64 | (3 << 12) | (25 << 16) | (1 << 23) | (2 << 30);
-        asm!("dsb sy", "msr mair_el1, {mair}", "msr tcr_el1, {tcr}",
-             "msr ttbr0_el1, {root}", "isb", "tlbi vmalle1", "ic iallu",
-             "dsb sy", "isb", "msr sctlr_el1, {enable}", "isb",
-             mair = in(reg) 0x44u64, tcr = in(reg) tcr, root = in(reg) root_id(0),
-             enable = in(reg) ctl | 1, options(nostack, preserves_flags));
-        PROCESS_COUNT = count;
+        enable_local(root_id(0), ctl);
+        PROCESS_COUNT.store(count, COUNT_STORE);
     }
     Ok(())
 }
 
+// Both cores use inner-shareable, non-cacheable Normal memory for the
+// identity and EL0 aliases. Device-nGnRnE remains MAIR index 1. Each PE
+// invalidates its own stale translations and instructions before enabling M.
+unsafe fn enable_local(root: u64, ctl: u64) {
+    let tcr = 25u64 | (3 << 12) | (25 << 16) | (1 << 23) | (2 << 30);
+    unsafe {
+        asm!("dsb sy", "msr mair_el1, {mair}", "msr tcr_el1, {tcr}",
+             "msr ttbr0_el1, {root}", "isb", "tlbi vmalle1", "ic iallu",
+             "dsb sy", "isb", "msr sctlr_el1, {enable}", "isb",
+             mair = in(reg) 0x44u64, tcr = in(reg) tcr, root = in(reg) root,
+             enable = in(reg) ctl | 1, options(nostack, preserves_flags));
+    }
+}
+
+/// CPU1 enters with its dedicated identity-mapped stack and masked exceptions.
+#[cfg(jnox_native_smp_partitioned)]
+pub(crate) unsafe fn enable_secondary(pid: usize) -> Result<(), &'static str> {
+    let (el, masks, spsel, ctl): (u64, u64, u64, u64);
+    unsafe {
+        asm!("mrs {}, CurrentEL", "mrs {}, daif", "mrs {}, SPSel", "mrs {}, sctlr_el1",
+             out(reg) el, out(reg) masks, out(reg) spsel, out(reg) ctl,
+             options(nostack, preserves_flags));
+    }
+    if affinity() != 1 || el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
+        || ctl & (0x1005 | (3 << 24)) != 0 {
+        return Err("secondary VM requires cold masked CPU1 EL1h");
+    }
+    let root = space_id(pid).ok_or("unpublished secondary native root")?;
+    unsafe { enable_local(root, ctl); }
+    if active() != Some(pid) { return Err("secondary TTBR readback"); }
+    Ok(())
+}
+
 pub(crate) fn space_id(pid: usize) -> Option<u64> {
-    if pid >= unsafe { PROCESS_COUNT } {
+    if pid >= PROCESS_COUNT.load(COUNT_LOAD) {
         return None;
     }
     Some(root_id(pid))
 }
 
 pub(crate) fn active() -> Option<usize> {
-    let count = unsafe { PROCESS_COUNT };
+    let count = PROCESS_COUNT.load(COUNT_LOAD);
     if count == 0 { return None; }
     let ttbr: u64;
     unsafe { asm!("mrs {}, ttbr0_el1", out(reg) ttbr, options(nostack, preserves_flags)) };
@@ -431,7 +487,7 @@ fn irq_masked() -> bool {
 
 /// Scheduler owns EL1 and keeps IRQ masked until the selected frame returns.
 /// For immutable per-ASID nG user entries, a switch does not recycle any TLB
-/// tag. Installation already invalidated all predecessors on this sole CPU.
+/// tag. Installation already invalidated all predecessors on the local CPU.
 pub(crate) unsafe fn switch(pid: usize) -> Result<(), &'static str> {
     let target = space_id(pid).ok_or("uninstalled native pid")?;
     if !irq_masked() || active().is_none() {
@@ -514,4 +570,10 @@ pub(crate) fn copy_from_user(addr: usize, dst: &mut [u8]) -> bool {
 
 pub(crate) fn copy_to_user(addr: usize, src: &[u8]) -> bool {
     active().is_some_and(|pid| copy_to_process(pid, addr, src))
+}
+
+/// Report a verified private backing address for terminal or owner-local observations.
+#[cfg(jnox_native_smp_partitioned)]
+pub(crate) fn private_address(pid: usize, va: usize) -> Option<usize> {
+    translation(pid, va, false)
 }
