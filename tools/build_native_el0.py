@@ -184,7 +184,7 @@ def native_schedule(parser, args):
         parser.error("--thread-priorities requires --threads 4")
     if args.threads == ["2"] and policy not in (None, "rr"):
         parser.error("thread scheduling supports only cooperative or RR")
-    if policy in ("fifo", "rr") and not args.threads:
+    if policy in ("fifo", "rr", "smp-partitioned") and not args.threads:
         if not args.priority or len(args.peer_priority) != len(args.peer_elf):
             parser.error("fixed scheduling requires exactly one priority per supplied ELF")
     elif args.priority or args.peer_priority:
@@ -328,15 +328,20 @@ def main():
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
-                        help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
+                        help="independently linked peer in slot order (up to three peers for AMC, two for other policies)")
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc", "smp-partitioned"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--extension-program", type=Path, action=SinglePath, metavar="RULE.txt")
+    parser.add_argument("--amc-clock-page", action="count", default=0)
     parser.add_argument("--amc-manifest", type=Path, action=SinglePath, metavar="DEPLOYMENT.json")
     parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
+    parser.add_argument("--cpu-mask", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--peer-cpu-mask", type=unsigned_decimal, action="append", default=[])
+    parser.add_argument("--release-cell", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--peer-release-cell", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
     parser.add_argument("--lottery-seed", type=unsigned_decimal, action=SinglePath)
@@ -408,7 +413,21 @@ def main():
         parser.error("--weighted-continuous requires weighted scheduling on virt")
     if args.weighted_notify is not None and not args.weighted_continuous:
         parser.error("--weighted-notify requires --weighted-continuous")
-    if board == "pi4" and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
+    smp = policy == "smp-partitioned"
+    if smp:
+        if board != "pi4" or not 1 <= len(args.peer_elf) <= 2 or args.threads:
+            parser.error("smp-partitioned requires two or three Pi 4 native processes")
+        masks = [args.cpu_mask, *args.peer_cpu_mask]
+        if len(masks) != 1 + len(args.peer_elf) or set(masks) != {1, 2}:
+            parser.error("supply a singleton CPU mask per slot, using both CPU0 and CPU1")
+        if args.peer_release_cell and len(args.peer_release_cell) != len(args.peer_elf):
+            parser.error("supply one release cell per peer or omit all peer release cells")
+        smp_release_cells = [args.release_cell or 0, *(args.peer_release_cell or [0] * len(args.peer_elf))]
+        if max(smp_release_cells) > 255 or min(priorities) < 1:
+            parser.error("release cells must be 0..255 and priorities 1..255")
+    elif args.cpu_mask is not None or args.peer_cpu_mask or args.release_cell is not None or args.peer_release_cell:
+        parser.error("CPU masks and release cells require smp-partitioned")
+    if board == "pi4" and not smp and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
                            or not (args.source or args.elf) or args.threads):
         parser.error("pi4 requires a primary application and one peer under FIFO or RR")
     server_policy = policy in ("polling", "deferrable", "sporadic")
@@ -459,6 +478,8 @@ def main():
             ops = parse_program(rule_source)
         except (ValueError, OSError) as exc:
             parser.error(f"invalid --extension-program: {exc}")
+    if args.amc_clock_page and (args.amc_clock_page != 1 or policy != "amc"):
+        parser.error("--amc-clock-page is accepted once, only with --policy amc")
     if (args.amc_manifest is not None) != (policy == "amc"):
         parser.error("--amc-manifest is required exclusively with --policy amc")
     if policy == "amc":
@@ -528,6 +549,9 @@ def main():
         metadata.update(amc=amc, amc_input={"path": str(amc_path), "sha256": inputs[str(amc_path)]},
                         amc_canonical={"file": canonical.name, "sha256": digest},
                         timing_unit="cells", package_argv=sys.argv[:])
+        metadata["amc_clock_page"] = {"enabled": bool(args.amc_clock_page), "abi": 1, "va": 0x01400000}
+        if args.amc_clock_page:
+            env["JNOX_AMC_CLOCK_PAGE"] = "1"
         env.update(JNOX_NATIVE_AMC_MANIFEST=str(canonical), JNOX_NATIVE_AMC_SHA256=digest)
     if policy == "hierarchy":
         name = str(hierarchy_path.relative_to(ROOT) if hierarchy_path.is_relative_to(ROOT) else hierarchy_path)
@@ -570,7 +594,14 @@ def main():
             metadata.update(timing_unit="physical_counter_ticks", package_argv=sys.argv[:])
             env["JNOX_NATIVE_BATCH_JOBS"] = ";".join(f"{offset},{estimate}" for offset, estimate in batch_jobs)
         jobs = args.job + args.peer_job
+        if smp:
+            env["JNOX_NATIVE_CPU_MASKS"] = ",".join(map(str, masks))
+            env["JNOX_NATIVE_RELEASE_CELLS"] = ",".join(map(str, smp_release_cells))
+            metadata.update(online_cpus=[0, 1], release_grid_hz=50, bsp="raspi4b")
         for slot in slots:
+            if smp:
+                i = slot["slot"]
+                slot.update(cpu_mask=masks[i], release_cell=smp_release_cells[i])
             if policy == "extension":
                 i = slot["slot"]
                 slot.update(generation=(7, 11, 17)[i], cpu=0, role="reserved" if i == 0 else "delegated")

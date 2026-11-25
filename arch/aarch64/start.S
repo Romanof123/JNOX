@@ -59,6 +59,12 @@ _start:
     cmp x0, #4
     b.ne .Lpark
 .Lel1:
+    .if {native_partitioned}
+    mrs x0,S3_1_C15_C2_1
+    orr x0,x0,#64
+    msr S3_1_C15_C2_1,x0
+    isb
+    .endif
     msr spsel, #1
     ldr x0, =__stack_top
     mov sp, x0

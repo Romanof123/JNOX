@@ -458,6 +458,12 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_amc)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_peer3)");
     let amc = selector("JNOX_NATIVE_AMC_MANIFEST");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_amc_clock_page)");
+    if let Some(setting) = selector("JNOX_AMC_CLOCK_PAGE") {
+        assert!(setting == "1" && amc.is_some() && policy.as_deref() == Some("amc"),
+                "JNOX_AMC_CLOCK_PAGE requires value 1 and native AMC");
+        println!("cargo::rustc-cfg=jnox_native_amc_clock_page");
+    }
     let amc_sha = selector("JNOX_NATIVE_AMC_SHA256");
     assert_eq!(amc.is_some(), policy.as_deref() == Some("amc"), "AMC requires a canonical manifest exclusively");
     assert_eq!(amc.is_some(), amc_sha.is_some(), "AMC requires a canonical digest");
@@ -556,12 +562,30 @@ fn main() {
             && all_package_features_enabled(),
             "pi4-stream-v1 requires a Pi 4 SMP migration application");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_smp_partitioned)");
+    let smp_masks = selector("JNOX_NATIVE_CPU_MASKS");
+    let smp_cells = selector("JNOX_NATIVE_RELEASE_CELLS");
+    let pi4_native_smp = policy.as_deref() == Some("smp-partitioned");
+    let smp_table = if pi4_native_smp {
+        assert!(board == "pi4" && profile.as_deref() == Some("native") &&
+                app.as_deref() == Some("process") && peer_image.is_some() && threads.is_none(),
+                "smp-partitioned requires two or three Pi 4 native processes");
+        let slots = 2 + usize::from(peer2_image.is_some());
+        let masks = native_smp_bytes(smp_masks.as_deref().expect("missing CPU masks"), slots);
+        assert!(masks.iter().all(|m| matches!(m, 1 | 2)) && masks.contains(&1) && masks.contains(&2),
+                "singleton CPU masks must cover both cores");
+        let cells = smp_cells.as_deref().map(|v| native_smp_bytes(v, slots)).unwrap_or_else(|| vec![0; slots]);
+        Some((masks, cells))
+    } else {
+        assert!(smp_masks.is_none() && smp_cells.is_none(), "CPU mask and release table require smp-partitioned");
+        None
+    };
     let pi4_native_fixed = board == "pi4" && profile.as_deref() == Some("native")
         && app.as_deref() == Some("process") && peer_image.is_some() && peer2_image.is_none()
         && matches!(policy.as_deref(), Some("fifo" | "rr"));
     match profile.as_deref() {
         Some("native") => {
-            assert!((board == "virt" || pi4_native_fixed) && matches!(app.as_deref(), Some("startup-probe" | "process"))
+            assert!((board == "virt" || pi4_native_fixed || pi4_native_smp) && matches!(app.as_deref(), Some("startup-probe" | "process"))
                 && bench == "boot" && trace.is_none() && scenario.is_none()
                 && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
                 "native requires virt or two Pi fixed processes and no benchmark features");
@@ -575,7 +599,7 @@ fn main() {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
             }
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()));
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()), smp_table);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -755,7 +779,7 @@ fn main() {
                 "JNOX_BOARD=pi4 supports serial boot, sched-bench, or uninstrumented fixed FIFO/RR"
             );
             println!("cargo::rustc-cfg=jnox_pi4");
-            if pi4_native_fixed { "pi4-native.ld" } else { "pi4.ld" }
+            if pi4_native_fixed || pi4_native_smp { "pi4-native.ld" } else { "pi4.ld" }
         }
         _ => panic!("unknown JNOX_BOARD {board:?}; expected virt or pi4"),
     };
@@ -964,7 +988,16 @@ fn forecast_lottery<const N: usize>(weights: &[u32], seed: u64, horizon: usize, 
     }
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>) {
+fn native_smp_bytes(raw: &str, slots: usize) -> Vec<u8> {
+    let values: Vec<_> = raw.split(',').map(|s| {
+        assert!(!s.is_empty() && s.bytes().all(|c| c.is_ascii_digit()), "expected decimal SMP field");
+        s.parse::<u8>().expect("SMP field outside 0..255")
+    }).collect();
+    assert_eq!(values.len(), slots, "expected one SMP value per slot");
+    values
+}
+
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, smp_table: Option<(Vec<u8>, Vec<u8>)>) {
     let batch_jobs = if let Some(raw) = batch {
         let jobs: Vec<_> = raw.split(';').map(parse_batch_job).collect();
         assert_eq!(jobs.len(), slots, "provide one batch tuple per slot");
@@ -1090,6 +1123,11 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             }
             vec![0; slots]
         }
+        Some("smp-partitioned") => {
+            let list = native_smp_bytes(priorities.expect("missing SMP priorities"), slots);
+            assert!(list.iter().all(|p| *p != 0), "SMP priorities must be 1..255");
+            list
+        }
         Some("fifo" | "rr") => {
             let list: Vec<u8> = priorities.expect("fixed scheduling requires priorities").split(',')
                 .map(|value| value.parse().expect("priority must be 0..255")).collect();
@@ -1135,6 +1173,10 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         "pub const NATIVE_BATCH_JOBS: [(u64, u64); {slots}] = {batch_jobs:?};\npub const NATIVE_THREAD_PRIORITIES: [u8; 4] = {thread_bases:?};\npub const NATIVE_LOTTERY_SEED: u64 = {seed};\npub const NATIVE_LOTTERY_HORIZON: usize = {horizon};\npub const NATIVE_LOTTERY_WINDOW: usize = {width};\npub const NATIVE_LOTTERY_FLOORS: [u8; {slots}] = {counts:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
+    if let Some((masks, cells)) = smp_table {
+        generated.push_str(&format!("pub const NATIVE_SMP_CPU_MASKS: [u8; {slots}] = {masks:?};\npub const NATIVE_SMP_RELEASE_CELLS: [u64; {slots}] = {cells:?};\n"));
+        println!("cargo::rustc-cfg=jnox_native_smp_partitioned");
+    }
     if mode == "extension" {
         generated.push_str("include!(concat!(env!(\"OUT_DIR\"), \"/native_extension_ops.rs\"));\n");
     }
