@@ -35,3 +35,9 @@ At the fifth accepted wait charge the old interval, block ID 2 and change B from
 5. Independent Release records the verdict on the exact target, earlier controls and current measured workload. Integration records merged provenance in both matrices. PM explicitly decides the [#21](https://github.com/Romanof123/JNOX/issues/21) POL-012 checkbox for this adopted finite deployment.
 
 각 기존 대조군은 원래 허용치와 대상에 맞춰 독립 재생한다. 과거 동일 이미지 대조의 재생과 이번 최초 실행을 구별한다. Release가 실제 산출물·시각·원본을 확인하고 Integration이 양언어 표를 연결한 뒤 PM이 #21에서 채택한 가상 배포의 출시 여부를 명시한다.
+
+## Release decision / 출시 판정 · 2026-11-25
+
+The opening reservation of EVD-134 and baseline `d13f8fd4538b28213d2e79ff69f86e02285df878` record the prospective design. Independent verification tested candidate `6c22596f71e956c9db8b97548dc91de8d79e43cb` against accepted main `93635a0dd59237f7c861c1db6117866d24bd95eb`. After independent Release confirmed both sets of controls, PM approved POL-012 for this finite one-CPU linked EL1 deployment. The first-run receipt is archived at `95c0ba8de2beff919d4c41740c8e0e8767f34059`. [Receipt](evidence/eevdf-telemetry-deployment-first.en-ko.md) · [EVD-134](evidence/evd-134.en.md)
+
+서두의 예약 표기와 기준 d13f8fd는 사전 설계 당시 기록이다. 승인된 main 93635a0과 후보 6c22596을 대상으로 독립 검증을 마쳤다. 독립 Release의 기존·현재 대조군 확인 후 PM은 이 단일 CPU 링크형 EL1 배포에 한해 POL-012 출시를 승인했다. 최초 관측 원본은 95c0ba8에 보존됐다. [EVD-134](evidence/evd-134.md)

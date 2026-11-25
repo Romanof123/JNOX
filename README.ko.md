@@ -8,6 +8,15 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
+EEVDF 텔레메트리 배포는 커널에 링크한 Rust EL1 작업 세 개를 각자의 16 KiB 스택에서 실행합니다. 저장소 루트에서 다음 명령으로 QEMU를 한 번 부팅하고 원본을 새 디렉터리에 보존합니다. 보관한 세션 해시로 게스트를 다시 띄우지 않고 결과를 재구성할 수 있습니다.
+
+~~~sh
+python3 tools/eevdf_telemetry.py run --out first-run
+python3 tools/eevdf_telemetry.py replay --run first-run --session-sha256 "$(cat first-run/session.sha256)"
+~~~
+
+[도구 설정, 원본 파일과 판정 기준](docs/eevdf-telemetry-deployment.en-ko.md)
+
 텔레메트리 앱에 경보 게시 기한을 지정하고 각 회차의 지연·여유 시간과 백그라운드 CRC 결과를 읽을 수 있습니다. [배포 및 JSON 판독](examples/native-multilevel/README.md#m4-telemetry-deployment--m4-경보-게시-배포)
 
 실행 가능한 앱이 하나여도 가중 퀀텀을 유지하고 지정 횟수의 퀀텀 종료나 기상을 앱에 알릴 수 있습니다. [가중 모니터 패키징과 실행](examples/native-weighted/README.md#original-weighted-monitor--원래-가중치-모니터)
