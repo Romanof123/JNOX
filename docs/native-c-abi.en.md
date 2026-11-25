@@ -225,3 +225,21 @@ Use an explicitly initialized, process-private `pthread_mutex_t` at a stable add
 ## Reserve recurring service cells for two deadline jobs
 
 Supply two ordinary job tuples, `--deadline-service-elf service.elf`, an increasing calendar such as `--deadline-service-cells 1,3`, and `--deadline-switch-cap 6`. The 16-cell calendar uses 100 ms units. The service starts once and reads the calendar from argv[1]. After each nonfinal result call `jnox_deadline_service_wait_next()` from `<jnox/deadline.h>` or Rust `jnox_native::deadline_service_wait_next()` to receive the next activation ordinal. Exit after the final result. The unused tail of a reserved cell stays idle. [Build, package and boot examples](../examples/native-deadline-service/README.md)
+
+## Run two native applications on the Pi 4 model
+
+From the repository root, build the C and Rust prime counters. Package the same two ELFs at priority 2 on CPU0 under FIFO or RR. The quantum is in timer ticks.
+
+~~~sh
+sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c low.elf
+sh sdk/native-aarch64/build-rust.sh examples/native-fixed-rust/Cargo.toml high.elf
+python3 tools/build_native_el0.py --out pi-fifo --board pi4 --policy fifo --elf low.elf --priority 2 --peer-elf high.elf --peer-priority 2
+python3 tools/build_native_el0.py --out pi-rr --board pi4 --policy rr --quantum-ticks 1250000 --elf low.elf --priority 2 --peer-elf high.elf --peer-priority 2
+qemu-system-aarch64 -M raspi4b -accel tcg -display none -serial stdio -kernel pi-rr/kernel8.img
+~~~
+
+For FIFO, change the final image path to `pi-fifo/kernel8.img`. Direct loading bypasses EEPROM, SD and VideoCore firmware. The command below stages the pinned firmware for a FAT32 card. Add `--firmware-dir pinned-boot` for an existing firmware tree. Physical boot and board timing require separate observations. [Prepare and verify the card](boards/pi4-p1.en.md)
+
+~~~sh
+python3 tools/package_pi4.py --kernel pi-rr/kernel8.img --output pi-rr-boot
+~~~

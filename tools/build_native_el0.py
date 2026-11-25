@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package up to three native AArch64 applications into a virt kernel."""
+"""Package up to three native AArch64 applications for virt or Raspberry Pi 4."""
 import argparse
 import hashlib
 import json
@@ -176,9 +176,38 @@ def encode_arguments(parser, args):
     return vectors, encoded
 
 
+def package_pi4_image(out, kernel, env):
+    nm = "aarch64-linux-gnu-nm"
+    objcopy = "aarch64-linux-gnu-objcopy"
+    names = ("_start", "__native_payload_lma", "__native_payload_start",
+             "pi4_native_payload_entry", "__native_payload_copy_end")
+    symbols = {}
+    for line in output([nm, "-n", str(kernel)], env=env).splitlines():
+        fields = line.split()
+        if len(fields) == 3 and fields[2] in names:
+            symbols[fields[2]] = int(fields[0], 16)
+    if (symbols["_start"], symbols["__native_payload_lma"],
+        symbols["__native_payload_start"], symbols["pi4_native_payload_entry"]) != (
+            0x80000, 0x81000, 0x02000000, 0x02000000):
+        raise ValueError("unexpected Pi native load or entry layout")
+    image = out / "kernel8.img"
+    command = [objcopy, "-O", "binary", str(kernel), str(image)]
+    subprocess.run(command, cwd=ROOT, env=env, check=True)
+    size = image.stat().st_size
+    copy_size = symbols["__native_payload_copy_end"] - symbols["__native_payload_start"]
+    if copy_size <= 0 or size != 0x1000 + copy_size:
+        raise ValueError("raw Pi image extent differs from initialized payload")
+    return {"kernel8_img": image.name, "kernel8_img_sha256": sha256(image),
+            "kernel8_img_bytes": size, "load_address": symbols["_start"],
+            "entry_address": symbols["_start"], "runtime_address": symbols["__native_payload_start"],
+            "link_symbols": symbols, "objcopy_command": command,
+            "objcopy": output([objcopy, "--version"], env=env), "nm": output([nm, "--version"], env=env)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
+    parser.add_argument("--board", choices=["virt", "pi4"], action=SinglePath)
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
@@ -220,6 +249,10 @@ def main():
     if args.threads and (not (args.elf or args.source) or args.peer_elf):
         parser.error("--threads 2 requires exactly one ordinary application")
     policy, priorities, weights, quantum = native_schedule(parser, args)
+    board = args.board or "virt"
+    if board == "pi4" and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
+                           or not (args.source or args.elf) or args.threads):
+        parser.error("pi4 requires a primary application and one peer under FIFO or RR")
     vectors, encoded_arguments = encode_arguments(parser, args)
     service = args.deadline_service_elf
     cells = []
@@ -260,7 +293,7 @@ def main():
     user_command = None if args.elf else ["sh", str(SDK / "build.sh"), str(app_input), str(user_elf)]
     kernel_command = [sys.executable, "tools/build_kernel.py", "--arch", "aarch64"]
     metadata = {
-        "format": 1, "profile": "native", "app": app, "board": "virt",
+        "format": 1, "profile": "native", "app": app, "board": board,
         "commit": commit, "tracked_changes": dirty, "source_sha256": inputs,
         "input": {"kind": "elf" if args.elf else "c", "path": input_name, "sha256": input_digest},
         "compiler": None if args.elf else output(["clang", "--version"], env=env),
@@ -353,12 +386,14 @@ def main():
         if quantum is not None:
             env["JNOX_NATIVE_QUANTUM_TICKS"] = str(quantum)
         env.update(encoded_arguments)
-        env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=app,
+        env.update(JNOX_BOARD=board, JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,
                    CARGO_TARGET_DIR=str(out / "target"))
         subprocess.run(kernel_command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                        check=True)
     shutil.copyfile(out / "target" / TARGET / "release/jnox-kernel", kernel_elf)
+    if board == "pi4":
+        metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")

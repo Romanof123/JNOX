@@ -8,6 +8,8 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
+Run native C and Rust processes under FIFO or RR on the Pi 4 model. [Build and boot the two applications](docs/native-c-abi.en.md#run-two-native-applications-on-the-pi-4-model)
+
 Give a worker a shared sample buffer and join it to collect its result. Build the cooperative C example from the repository root:
 
 ~~~sh
