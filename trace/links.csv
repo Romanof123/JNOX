@@ -2220,5 +2220,11 @@ IMP-302,tested-in,EVD-302
 IPC-001,depends-on-policy,POL-002
 CHG-303,affects,REQ-024
 CHG-304,affects,REQ-024
+REQ-024,partially-implemented-by,IMP-304
+DES-013,partially-implemented-by,IMP-304
+IPC-003,partially-implemented-by,IMP-304
+IMP-304,partially-verified-by,VER-024
+VER-024,has-partial-evidence,EVD-304
+IMP-304,tested-in,EVD-304
 IPC-003,depends-on-policy,POL-002
 IPC-002,depends-on-policy,POL-002

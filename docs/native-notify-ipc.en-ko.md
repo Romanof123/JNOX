@@ -1,8 +1,8 @@
 # IPC-003 · FIFO pulses and latched event bits / FIFO 펄스와 이벤트 비트
 
-CHG-304 defines local notifications for ordinary native processes on single-core AArch64 QEMU virt under FIFO or RR. Each `--notify-route SENDER:OWNER` grants pulse send and event set in that direction. Only the owner can receive. Synchronous call and mailbox grants confer their own distinct rights. This is a prospective contract under REQ-024, DES-013 and VER-024. [Decision and scope #369](https://github.com/Romanof123/JNOX/issues/369) · [Acceptance tracker #24](https://github.com/Romanof123/JNOX/issues/24)
+CHG-304 defines local notifications for ordinary native processes on single-core AArch64 QEMU virt under FIFO or RR. Each `--notify-route SENDER:OWNER` grants pulse send and event set in that direction. Only the owner can receive. Synchronous call and mailbox grants confer their own distinct rights. Independent Release approved this two-app profile under REQ-024, DES-013 and VER-024. [Release decision](evidence/native-notify-ipc-release.en-ko.md) [Decision and scope #369](https://github.com/Romanof123/JNOX/issues/369) · [Acceptance tracker #24](https://github.com/Romanof123/JNOX/issues/24)
 
-CHG-304는 단일 코어 AArch64 QEMU virt의 일반 FIFO·RR 프로세스 사이에서 로컬 알림을 전달하는 계약이다. 각 `--notify-route SENDER:OWNER`는 해당 방향으로 펄스를 보내고 이벤트 비트를 설정할 권한을 부여한다. 수신은 소유자만 할 수 있다. 동기 호출과 우편함의 권한은 각각 별도로 부여한다. 인수 판정은 #24에서 추적한다.
+CHG-304는 단일 코어 AArch64 QEMU virt의 일반 FIFO·RR 프로세스 사이에서 로컬 알림을 전달하는 계약이다. 각 `--notify-route SENDER:OWNER`는 해당 방향으로 펄스를 보내고 이벤트 비트를 설정할 권한을 부여한다. 수신은 소유자만 할 수 있다. 동기 호출과 우편함의 권한은 각각 별도로 부여한다. 독립 Release는 일반 앱 두 개의 이 프로파일을 승인했다. [출시 판정](evidence/native-notify-ipc-release.en-ko.md)
 
 | native-v1 SVC 0x4a01 | Inputs / 입력 | Result / 결과 |
 | --- | --- | --- |

@@ -4,6 +4,8 @@
 
 **IPC-001 출시 판정.** 독립 배포팀이 단일 코어 AArch64 QEMU virt의 FIFO·RR에서 로컬 동기 호출·수신·응답을 승인했다. 승인 범위는 2~3개 프로세스, 방향 지정 호출 권한, 8바이트 요청·응답이다. 기존 12회와 추가 RR 1회에서 두 도착 순서, 우선순위 상속·회수와 정리를 확인했다. 응답과 호출자 종료가 같은 시각인 순서는 호스트에서 검증했다. [독립 승인](evidence/native-sync-ipc-release.en-ko.md) · [추가 원본](evidence/native-sync-ipc-release-supplement.tar.gz) · [현재 계열별 판정](https://github.com/Romanof123/JNOX/issues/24).
 
+**IPC-003 출시 판정 · IMP-304 · EVD-304.** 독립 Release는 단일 코어 AArch64 QEMU virt FIFO·RR에서 일반 네이티브 앱 두 개의 알림을 승인했다. #24 승인 수는 3/10이다. 최초 열 번 중 아홉 번이 예상과 일치했다. 한 건은 EACCES 예상이 잘못됐으며 예상값을 수정한 열한 번째 실행을 별도로 보존했다. 추가 RR 실행에서는 통신 권한을 반대로 설정하고 75/76으로 종료했다. 같은 펄스 두 건은 따로 수신됐고 반복 설정한 이벤트 비트는 하나로 합쳐졌다. 정확한 기한 동시성, 강제 종료와 모든 비트 검사는 호스트 사례다. [First report / 최초 보고서](evidence/native-notify-ipc-first.en-ko.md) · [First archive / 최초 자료](evidence/native-notify-ipc-first.tar.gz) · [Release decision / 출시 판정](evidence/native-notify-ipc-release.en-ko.md) · [Supplement / 추가 자료](evidence/native-notify-ipc-release-supplement.tar.gz)
+
 ## 현재 릴리스 범위
 
 **이번 릴리스의 스케줄링 7개 계열 중 6개가 지정 범위에서 승인됐다(6/7).** POL-002 고정 우선순위는 FIFO와 라운드로빈(RR) 두 방식 모두 미결이다. 기존 승인은 POL-003 배치(지정 네이티브·링크형 프로필), POL-005 기한 기반 스케줄링(유한 M1/M3 EDF·표본 LLF), POL-009 다단계 큐(텔레메트리 배포), POL-010 비례 배분(네이티브 구성 6개), POL-011 가중 스케줄링(지정 구성), POL-012 EEVDF(링크형 EL1 텔레메트리)에 적용된다.
