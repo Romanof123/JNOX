@@ -23,21 +23,36 @@ def output(args, cwd=ROOT, env=None):
     return subprocess.check_output(args, cwd=cwd, env=env, text=True).strip()
 
 
+def edf_job(value):
+    fields = value.split(",")
+    if len(fields) != 3 or any(not (field.isascii() and field.isdecimal()) for field in fields):
+        raise argparse.ArgumentTypeError("expected release,deadline,cost in unsigned decimal grid units")
+    release, deadline, cost = map(int, fields)
+    if not (release < deadline <= 16 and 0 < cost < 2**64):
+        raise argparse.ArgumentTypeError("require 0 <= release < deadline <= 16 and positive u64 cost")
+    return release, deadline, cost
+
+
 def native_schedule(parser, args):
     if len(args.peer_elf) > 2:
         parser.error("virt supports at most two --peer-elf arguments")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
-    for name in ("policy", "priority", "quantum_ticks"):
+    for name in ("policy", "priority", "quantum_ticks", "job"):
         values = getattr(args, name)
         if len(values) > 1:
             parser.error(f"--{name.replace('_', '-')} may appear only once")
     policy = args.policy[0] if args.policy else None
-    if policy:
+    if policy == "edf":
+        if not args.job or len(args.peer_job) != len(args.peer_elf):
+            parser.error("EDF requires exactly one job tuple per supplied ELF")
+    elif args.job or args.peer_job:
+        parser.error("job tuples require --policy edf")
+    if policy in ("fifo", "rr"):
         if not args.priority or len(args.peer_priority) != len(args.peer_elf):
             parser.error("fixed scheduling requires exactly one priority per supplied ELF")
     elif args.priority or args.peer_priority:
-        parser.error("application priorities require --policy")
+        parser.error("application priorities require --policy fifo or rr")
     priorities = args.priority + args.peer_priority
     if any(value < 0 or value > 255 for value in priorities):
         parser.error("priorities must be in 0..255")
@@ -57,10 +72,14 @@ def main():
     group.add_argument("--elf", type=Path, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "edf"], action="append", default=[])
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
     parser.add_argument("--quantum-ticks", type=int, action="append", default=[], help="RR physical counter ticks")
+    parser.add_argument("--job", type=edf_job, action="append", default=[], metavar="R,D,C",
+                        help="EDF primary release, absolute deadline and cost in 100 ms units")
+    parser.add_argument("--peer-job", type=edf_job, action="append", default=[], metavar="R,D,C",
+                        help="EDF job tuple for each peer, in peer order")
     args = parser.parse_args()
     policy, priorities, quantum = native_schedule(parser, args)
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
@@ -116,11 +135,20 @@ def main():
             metadata[f"peer{suffix}_elf_sha256"] = peer_digest
             var = f"JNOX_NATIVE_PEER{suffix}_ELF"
             env[var], env[var + "_SHA256"] = str(peer_elf), peer_digest
+        jobs = args.job + args.peer_job
         for slot in slots:
-            slot["priority"] = priorities[slot["slot"]] if policy else None
+            slot["priority"] = priorities[slot["slot"]] if priorities else None
+            if jobs:
+                release, deadline, cost = jobs[slot["slot"]]
+                slot["job"] = {"release": release, "deadline": deadline, "cost": cost}
+        if jobs:
+            metadata["edf_profile"] = {"name": "finite", "grid_ms": 100, "horizon_grids": 16}
+            env["JNOX_NATIVE_EDF_JOBS"] = ";".join(",".join(map(str, job)) for job in jobs)
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:
-            env.update(JNOX_NATIVE_POLICY=policy, JNOX_NATIVE_PRIORITIES=",".join(map(str, priorities)))
+            env["JNOX_NATIVE_POLICY"] = policy
+        if priorities:
+            env["JNOX_NATIVE_PRIORITIES"] = ",".join(map(str, priorities))
         if quantum is not None:
             env["JNOX_NATIVE_QUANTUM_TICKS"] = str(quantum)
         env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=app,

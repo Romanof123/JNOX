@@ -72,7 +72,7 @@ mod deadline;
 mod ordinary_deadline;
 #[cfg(jnox_ordinary_deadline)]
 mod deadline_jobs;
-#[cfg(any(jnox_ordinary_deadline, jnox_bench = "deadline"))]
+#[cfg(any(jnox_native_edf, jnox_ordinary_deadline, jnox_bench = "deadline"))]
 mod deadline_policy;
 #[cfg(any(
     jnox_bench = "scheduler",

@@ -8,6 +8,12 @@ use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
 use core::ptr;
 
+#[cfg(jnox_native_edf)]
+#[path = "native_edf.rs"]
+mod edf;
+#[cfg(jnox_native_edf)]
+global_asm!(".set NATIVE_EDF,1", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(not(jnox_native_edf))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
     fn native_el0_enter(entry: u64, sp: u64, spsr: u64) -> !;
@@ -89,7 +95,7 @@ fn clock_gettime(clock_id: u64, address: usize, now: u64) -> i64 {
 #[derive(Clone, Copy, PartialEq)]
 enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-const INITIAL_PSTATE: u64 = if COUNT > 1 { 0x340 } else { 0x3c0 };
+const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_edf) { 0x340 } else { 0x3c0 };
 const EMPTY_FRAME: NativeFrame = NativeFrame {
     x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
     current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
@@ -331,10 +337,22 @@ fn event(kind: &[u8], pid: usize, value: Option<i64>) {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn native_sleep_irq(frame: *mut NativeFrame) -> u64 {
+extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
     if id >= 1020 { return 0 }
+    #[cfg(jnox_native_edf)]
+    if id == context::TIMER_IRQ {
+        let next = edf::irq(entry, unsafe { frame.as_ref() });
+        unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+        context::gic_write(context::GICC + 0x10, iar);
+        unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+        if let (Some(next), Some(interrupted)) = (next, unsafe { frame.as_mut() }) {
+            activate(next, interrupted);
+        }
+        return next.is_some() as u64;
+    }
+    let _ = entry;
     let mut next_owner = None;
     let ready = if id != context::TIMER_IRQ {
         false
@@ -393,7 +411,7 @@ extern "C" fn native_el0_unexpected() -> ! {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64) {
+extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) {
     // The lower-A64 vector created this private, 16-byte aligned EL1 frame.
     let f = unsafe { &mut *frame };
     let vbar: u64;
@@ -417,7 +435,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64) {
     }
     // Unsupported services do not dereference a user pointer, acquire
     // descriptors, emit output or claim to have completed a transfer.
-    let now = counter();
+    let now = if cfg!(jnox_native_edf) { entry } else { counter() };
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
@@ -441,6 +459,26 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64) {
     }
     head(8, index as u64 + 1);
     let pid = unsafe { CURRENT };
+    #[cfg(jnox_native_edf)]
+    {
+        let service = f.x[8];
+        if exit {
+            head(9, f.x[0]);
+            unsafe { EXIT_STATUS[pid] = f.x[0] as i32 };
+        } else { f.x[0] = result as u64; }
+        let reason = if exit { 3 } else if deadline.is_some() { 2 } else if service == 8 && result == 0 { 1 } else { return };
+        if let Some(next) = edf::boundary(now, reason, deadline, Some(f)) {
+            activate(next, f);
+        } else if edf::finished() {
+            edf::finish();
+        } else {
+            unsafe { FRAMES[pid] = *f };
+            let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
+            unsafe { native_sleep_switch(top) };
+            activate(edf::owner().unwrap_or_else(|| fail(12)), f);
+        }
+        return;
+    }
     if cfg!(jnox_native_fixed) {
         let service = f.x[8];
         let action = if exit {
@@ -628,7 +666,7 @@ pub(super) fn run() -> ! {
         for (pid, plan) in plans.iter().enumerate() {
             FRAMES[pid].elr = plan.entry;
             FRAMES[pid].sp_el0 = sp as u64;
-            if !cfg!(jnox_native_fixed) {
+            if !cfg!(any(jnox_native_fixed, jnox_native_edf)) {
                 if pid == 0 { STATES[pid] = TaskState::Running; } else { enqueue(pid); }
             }
         }
@@ -652,6 +690,9 @@ pub(super) fn run() -> ! {
     head(14, ttbr);
     head(15, ARGS.len() as u64);
     head(1, 2);
+    #[cfg(jnox_native_edf)]
+    let first = edf::start(frequency);
+    #[cfg(not(jnox_native_edf))]
     let first = if cfg!(jnox_native_fixed) {
         start_fixed()
     } else {

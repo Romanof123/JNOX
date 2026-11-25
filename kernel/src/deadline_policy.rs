@@ -2,6 +2,9 @@
 //! between observations belongs to the actual incumbent throughout.
 
 use super::ready_queue::ReadyQueue;
+#[path = "deadline_numeric.rs"]
+pub(crate) mod numeric;
+pub(crate) use numeric::{absolute, admit_edf, grid_quantum, NumericJob, Refusal};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum DeadlinePolicy {
@@ -16,12 +19,14 @@ pub(crate) enum DeadlineError {
     ZeroEstimate,
     Duplicate,
     NotRunning,
+    NotSuspended,
 }
 
 #[derive(Clone, Copy)]
 struct Job {
     deadline: u64,
     remaining: u64,
+    suspended: bool,
 }
 
 impl Job {
@@ -70,7 +75,7 @@ impl<const N: usize> DeadlineScheduler<N> {
         self.jobs.get(id)?.map(|job| job.laxity(self.now))
     }
 
-    #[cfg(jnox_ordinary_deadline)]
+    #[cfg(any(jnox_ordinary_deadline, jnox_native_el0))]
     pub(crate) fn ready(&self) -> &[usize] { self.ready.entries() }
 
     pub(crate) fn account(&mut self, now: u64) -> Result<(), DeadlineError> {
@@ -113,18 +118,55 @@ impl<const N: usize> DeadlineScheduler<N> {
         self.jobs[id] = Some(Job {
             deadline,
             remaining: estimate,
+            suspended: false,
         });
         Ok(())
     }
 
-    pub(crate) fn complete(&mut self, now: u64, id: usize) -> Result<(), DeadlineError> {
+    pub(crate) fn suspend(&mut self, now: u64, id: usize) -> Result<(), DeadlineError> {
+        self.account_owner(now, id)?;
+        self.running = None;
+        self.jobs[id].as_mut().expect("running job").suspended = true;
+        Ok(())
+    }
+
+    pub(crate) fn resume(&mut self, now: u64, id: usize) -> Result<(), DeadlineError> {
+        let job = self.jobs.get(id).ok_or(DeadlineError::InvalidId)?;
+        if !job.is_some_and(|j| j.suspended) { return Err(DeadlineError::NotSuspended); }
+        self.account(now)?;
+        assert!(self.ready.push_back(id));
+        self.jobs[id].as_mut().expect("suspended job").suspended = false;
+        Ok(())
+    }
+
+    pub(crate) fn yield_running(&mut self, now: u64, id: usize) -> Result<(), DeadlineError> {
+        self.account_owner(now, id)?;
+        self.running = None;
+        assert!(self.ready.push_back(id));
+        Ok(())
+    }
+
+    /// Between samples a wake may start an idle CPU. It cannot displace an owner.
+    pub(crate) fn decide_unsampled(&mut self, now: u64) -> Result<Option<usize>, DeadlineError> {
+        if self.running.is_none() {
+            return self.decide(now);
+        }
+        self.account(now)?;
+        Ok(self.running)
+    }
+
+    fn account_owner(&mut self, now: u64, id: usize) -> Result<(), DeadlineError> {
         if id >= N {
             return Err(DeadlineError::InvalidId);
         }
         if self.running != Some(id) {
             return Err(DeadlineError::NotRunning);
         }
-        self.account(now)?;
+        self.account(now)
+    }
+
+    pub(crate) fn complete(&mut self, now: u64, id: usize) -> Result<(), DeadlineError> {
+        self.account_owner(now, id)?;
         self.jobs[id] = None;
         self.running = None;
         Ok(())
@@ -140,7 +182,7 @@ impl<const N: usize> DeadlineScheduler<N> {
             if !boundary || self.last_boundary == Some(now) {
                 return Ok(Some(id));
             }
-            #[cfg(jnox_ordinary_deadline)]
+            #[cfg(any(jnox_ordinary_deadline, jnox_native_el0))]
             {
                 let rank = |job: Job| match self.policy {
                     DeadlinePolicy::Edf => i128::from(job.deadline),
@@ -158,7 +200,7 @@ impl<const N: usize> DeadlineScheduler<N> {
                 self.last_boundary = Some(now);
                 return Ok(self.running);
             }
-            #[cfg(not(jnox_ordinary_deadline))]
+            #[cfg(not(any(jnox_ordinary_deadline, jnox_native_el0)))]
             assert!(self.ready.push_front(id));
         }
         self.running = self.ready.pop_ranked(
