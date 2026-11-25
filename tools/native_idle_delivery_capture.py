@@ -43,6 +43,12 @@ def save(path, value):
         stream.write("\n")
 
 
+def host_identity():
+    return {"boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
+            "allowed_cpus": sorted(os.sched_getaffinity(0)), "platform": platform.platform(),
+            "uid": os.getuid()}
+
+
 def bracket(fn):
     before = mono()
     try:
@@ -153,7 +159,7 @@ class Observer:
         self.stop.set()
         if self.thread is not None:
             self.thread.join()
-        save(out / "host.json", {"version": 1, "clock": "CLOCK_MONOTONIC ns",
+        save(out / "host.json", {**host_identity(), "version": 1, "clock": "CLOCK_MONOTONIC ns",
              "qemu_pid_main_tid": self.pid, "cpu0_tid": self.cpu_tid, "period_ns": PERIOD_NS,
              "sampler_cpu_ns": self.cost_ns, "skipped_periods": self.skipped, "error": self.error,
              "qmp": self.commands.export(), "samples": self.samples.export()})
@@ -171,7 +177,7 @@ def preflight(out):
     active = sample(pid, tid)
     time.sleep(0.015)
     slept = sample(pid, tid)
-    save(out / "preflight.json", {"platform": platform.platform(), "uid": os.getuid(),
+    save(out / "preflight.json", {**host_identity(),
          "monotonic": vars(time.get_clock_info("monotonic")), "thread": vars(time.get_clock_info("thread_time")),
          "clock_brackets": widths, "calibration_digest": digest.hexdigest(),
          "before": before, "after_cpu": active, "after_sleep": slept,

@@ -11,16 +11,17 @@ def anchor(t, due, outcome=1):
 
 
 class IdleDeliveryBounds(unittest.TestCase):
-    def test_no_interpolation_without_external_across_idle_bound(self):
+    def test_held_out_fit_never_replaces_causal_interval(self):
         rows=[anchor(10,12),anchor(30,34,2),anchor(50,53)]
-        causal=projection(rows,1,None,1)
+        causal=projection(rows,1,1)
         self.assertEqual(causal["basis"],"causal only")
         self.assertGreater(causal["due_ns"][1],causal["irq_ns"][0])
-        matched=projection(rows,1,{"rate_error_ppb":0,"offset_error_ns":0},1)
-        self.assertTrue(all(matched["held_out_overlap"]))
-        self.assertLess(matched["due_ns"][1],matched["irq_ns"][0])
+        self.assertTrue(all(causal["held_out_overlap"]))
+        self.assertEqual(causal["due_ns"],causal["causal_due_ns"])
         rows[2]["samples"][0]["host_ns"]=[5000,5001]
-        self.assertEqual(projection(rows,1,{"rate_error_ppb":0,"offset_error_ns":0},1)["basis"],"causal only")
+        inconsistent=projection(rows,1,1)
+        self.assertFalse(all(inconsistent["held_out_overlap"]))
+        self.assertEqual(inconsistent["due_ns"],inconsistent["causal_due_ns"])
 
     def test_deferred_wait_booking_and_uncovered_edges(self):
         s={"tid":11,"starttime":20,"rows":[(97,101,[0,0,0,0,0]),(103,104,[2,4,1,0,0]),

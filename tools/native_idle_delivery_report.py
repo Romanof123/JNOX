@@ -5,9 +5,10 @@ Example: python3 tools/native_idle_delivery_report.py --control cold01 --observe
  --preflight setup/preflight.json --kernel packages/wake/kernel.elf --markers cold02/markers.bin
  --apps reporter.elf histogram.elf energy.elf
 
-An optional independently established --clock-bound JSON supplies kernel_sha256, platform,
-rate_error_ppb (relative to 16 ns/tick), offset_error_ns, evidence (nonempty reference)
-and covers_idle=true. This conditional model is never inferred from the same marker pairs.
+Supply --wait-calibration with the raw blocked/runnable child-trial receipt from the
+same boot, UID and allowed CPUs. Nominal 16 ns/tick projections use adjacent, unaffected
+observations as held-out diagnostics. No independent across-idle continuity/error
+bound is available from these captures. Only causal host intervals enter attribution.
 """
 import argparse
 import hashlib
@@ -131,7 +132,7 @@ def intersect(bounds):
     return [lo,hi] if lo <= hi else None
 
 
-def projection(anchors, i, bound, resolution):
+def projection(anchors, i, resolution):
     a = anchors[i]
     d,e = a["due_ticks"], a["samples"][1]["guest_ticks"]
     ordered = [s for anchor in anchors for s in anchor["samples"]]
@@ -148,26 +149,21 @@ def projection(anchors, i, bound, resolution):
     neighbors = anchors[max(0,i-1):i]+anchors[i+1:i+2]
     if len(neighbors)!=2 or any(n["outcome"] in (2,3,4) for n in neighbors):
         return result
-    ppb,error = (bound["rate_error_ppb"],bound["offset_error_ns"]) if bound else (0,0)
     # Read values identify a 16 ns guest tick bin; retain a whole bin
     # at each projected endpoint as well as host resolution and rate error.
-    error += 32
+    error = 32
     basis = [s for n in neighbors for s in n["samples"]]
     def model(t):
-        return intersect([projected(s,t,ppb,error+resolution) for s in basis])
+        return intersect([projected(s,t,0,error+resolution) for s in basis])
     checks = []
     for s in a["samples"]:
         predicted = model(s["guest_ticks"])
         measured = [s["host_ns"][0]-resolution,s["host_ns"][1]+resolution]
         checks.append(bool(predicted and intersect([predicted,measured])))
     due, irq = model(d), model(e)
-    result.update(anchor_projections=[{"seq":s["seq"],"due_ns":projected(s,d,ppb,error+resolution),
-                                       "irq_ns":projected(s,e,ppb,error+resolution)} for s in basis],
+    result.update(anchor_projections=[{"seq":s["seq"],"due_ns":projected(s,d,0,error+resolution),
+                                       "irq_ns":projected(s,e,0,error+resolution)} for s in basis],
                   held_out_overlap=checks, nominal_due_ns=due, nominal_irq_ns=irq)
-    if bound and all(checks) and due and irq and causal:
-        supported = intersect([due,causal])
-        if supported:
-            result.update(due_ns=supported,irq_ns=intersect([irq,direct]),basis="conditional on supplied across-idle clock bound")
     return result
 
 def task_series(host, tid):
@@ -248,12 +244,6 @@ def analyze(args):
         any(r[1]!=i//4 or r[2]!="pmemsave" or r[3]["size"]!=(2496 if i%4==3 else 128)
             for i,r in enumerate(running))):
         limits.append("running QMP cadence or command failure")
-    clock = load(args.clock_bound) if args.clock_bound else None
-    if clock:
-        check(clock["kernel_sha256"]==ELF_HASH and clock["platform"]==pre["platform"] and
-              clock["covers_idle"] is True and clock["evidence"] and
-              all(type(clock[k]) is int and clock[k]>=0 for k in ("rate_error_ppb","offset_error_ns")),
-              "unsupported external clock bound")
     pf = [pre[k] for k in ("before","after_cpu","after_sleep")]
     pf_tids = {r["tid"] for r in pf}
     widths = pre["clock_brackets"]
@@ -273,10 +263,20 @@ def analyze(args):
         limits.append(str(exc))
     # The stock preflight measures CPU advancement and a voluntary sleep. It
     # cannot independently qualify runnable-wait accounting under contention.
-    wait = load(args.wait_calibration) if args.wait_calibration else None
-    if wait:
-        check(wait["platform"]==pre["platform"] and wait["evidence"] and wait["blocked_control_pass"] is True
-              and wait["runnable_wait_control_pass"] is True,"unsupported external wait calibration")
+    wait = None
+    if args.wait_calibration:
+        try:
+            from native_idle_wait_calibration import validate_wait_calibration
+            receipt = load(args.wait_calibration)
+            for key in ("platform","uid","boot_id"):
+                check(receipt[key] == pre[key] == host[key], f"wait calibration {key} differs")
+            check(receipt["allowed_before"] == receipt["allowed_after"] ==
+                  pre["allowed_cpus"] == host["allowed_cpus"], "wait calibration allowed CPUs differ")
+            derived = validate_wait_calibration(receipt,pre["platform"])
+            wait = {"path":str(args.wait_calibration.resolve()),"sha256":digest(args.wait_calibration),
+                    "trial_bounds":derived}
+        except (ImportError,OSError,ValueError,TypeError,KeyError,IndexError) as exc:
+            wait = {"insufficient":str(exc)}
     records = []
     anchors = marker["anchors"]
     ticks = [s["guest_ticks"] for a in anchors for s in a["samples"]]
@@ -285,7 +285,7 @@ def analyze(args):
     for i,a in enumerate(anchors):
         if a["outcome"]!=2:
             continue
-        model = projection(anchors,i,clock,resolution)
+        model = projection(anchors,i,resolution)
         model["reference_tick_ns"] = 16
         r = dict(a,clock=model,lag_ticks=a["samples"][1]["guest_ticks"]-a["due_ticks"],
                  runnable_wait_lower_ns=0, verdict="insufficient clock or accounting coverage")
@@ -298,7 +298,7 @@ def analyze(args):
                                if s["host_ns"][1]+resolution<=start),key=lambda b:b[0],default=None)
                 if witness:
                     witness=[witness[0]-resolution,witness[1]+resolution]
-                r["threads"] = [contribution(s,start,stop,witness if tid==host["cpu0_tid"] else None,bool(wait),resolution)
+                r["threads"] = [contribution(s,start,stop,witness if tid==host["cpu0_tid"] else None,wait is not None and "trial_bounds" in wait,resolution)
                                 for tid,s in sorted(series.items())]
                 lower=max(t["runnable_wait_lower_ns"] for t in r["threads"])
                 r.update(runnable_wait_lower_ns=lower,verdict="positive post-deadline runnable contribution conditional on supplied calibration"
@@ -315,7 +315,7 @@ def analyze(args):
         verdict="see event bounds"
     return {"control":control,"observed":observed,"preflight_path":str(args.preflight.resolve()),
             "preflight_sha256":digest(args.preflight),"preflight_empty_widths_ns":[v[1]-v[0] for v in widths],
-            "marker_path":str(args.markers.resolve()),"marker_join":marker,"clock_bound":clock,"wait_calibration":wait,
+            "marker_path":str(args.markers.resolve()),"marker_join":marker,"clock_bound":"causal only; independent across-idle rate bound unavailable","wait_calibration":wait,
             "host":{"path":str((args.observed/"host.json").resolve()),"sha256":digest(args.observed/"host.json"),
                     "main_tid":host["qemu_pid_main_tid"],"cpu_tid":host["cpu0_tid"],"qmp_setup":setup,
                     "sample_count":host["samples"]["total"],"sample_drops":host["samples"]["dropped"],
@@ -330,8 +330,7 @@ def main():
     for name in ("control","observed","preflight","kernel","markers"):
         p.add_argument("--"+name,type=Path,required=True)
     p.add_argument("--apps",nargs=3,type=Path,required=True,metavar=("REPORTER","HISTOGRAM","ENERGY"))
-    p.add_argument("--clock-bound",type=Path)
-    p.add_argument("--wait-calibration",type=Path,help="external same-platform calibration JSON: evidence, platform, blocked_control_pass, runnable_wait_control_pass")
+    p.add_argument("--wait-calibration",type=Path,help="raw same-boot wait-calibration.json produced by native_idle_wait_calibration.py")
     try:
         result=analyze(p.parse_args())
     except (OSError,ValueError,TypeError,KeyError,IndexError,struct.error) as exc:
