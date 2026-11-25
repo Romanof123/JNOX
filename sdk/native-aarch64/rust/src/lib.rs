@@ -137,3 +137,6 @@ pub mod mailbox;
 
 #[cfg(all(feature = "notify", target_arch = "aarch64"))]
 pub mod notify;
+
+#[cfg(all(feature = "waitset", target_arch = "aarch64"))]
+pub mod waitset;

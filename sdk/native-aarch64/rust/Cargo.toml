@@ -9,3 +9,4 @@ path = "src/lib.rs"
 sync-ipc = []
 mailbox = []
 notify = []
+waitset = []

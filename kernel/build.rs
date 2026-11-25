@@ -385,6 +385,12 @@ fn main() {
     let mailbox_routes = selector("JNOX_NATIVE_MAILBOX_ROUTES");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_notify_ipc)");
     let notify_routes = selector("JNOX_NATIVE_NOTIFY_ROUTES");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_waitset)");
+    if let Some(value) = selector("JNOX_NATIVE_WAITSET") {
+        assert!(value == "1" && (mailbox_routes.is_some() || notify_routes.is_some()),
+            "JNOX_NATIVE_WAITSET=1 requires mailbox or notification routes");
+        println!("cargo::rustc-cfg=jnox_native_waitset");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_hierarchy)");
     println!("cargo::rerun-if-changed=build_native_hierarchy.rs");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_extension)");

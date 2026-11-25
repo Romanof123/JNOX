@@ -20,10 +20,50 @@ mod notifications;
 #[cfg(jnox_native_notify_ipc)]
 static mut NOTIFY: notifications::NotifyIpc<COUNT> = notifications::NotifyIpc::new(super::NATIVE_NOTIFY_ROUTES);
 
+#[cfg(jnox_native_waitset)]
+#[path = "waitset_ipc.rs"]
+mod waitsets;
+#[cfg(jnox_native_waitset)]
+static mut SETS: waitsets::WaitsetIpc<COUNT> = waitsets::WaitsetIpc::new();
+
+#[cfg(jnox_native_waitset)]
+fn levels(id: usize) -> waitsets::Levels {
+    let mut levels = waitsets::Levels::default();
+    #[cfg(jnox_native_mailbox_ipc)]
+    { levels.mailbox = unsafe { (&*(&raw const MAIL)).occupancy(id) != 0 }; }
+    #[cfg(jnox_native_notify_ipc)]
+    unsafe {
+        let state = &*(&raw const NOTIFY);
+        levels.pulse = state.occupancy(id) != 0;
+        levels.events = state.pending_mask(id);
+    }
+    levels
+}
+
+#[cfg(jnox_native_waitset)]
+fn refresh(now: u64) {
+    let sets = unsafe { &mut *(&raw mut SETS) };
+    for id in 0..COUNT {
+        sets.refresh(id, now, levels(id));
+    }
+}
+
+#[cfg(jnox_native_waitset)]
+fn attach(id: usize, owner: usize, source: u64, mask: u64) -> Result<u64, i32> {
+    if owner != id { return Err(-13); }
+    match source {
+        1 if !cfg!(jnox_native_mailbox_ipc) => return Err(-95),
+        2 | 3 if !cfg!(jnox_native_notify_ipc) => return Err(-95),
+        _ => {}
+    }
+    unsafe { (&mut *(&raw mut SETS)).attach(id, owner, source, mask) }
+}
+
 pub(super) fn handles(service: u64) -> bool {
     (cfg!(jnox_native_sync_ipc) && matches!(service, 21..=23))
         || (cfg!(jnox_native_mailbox_ipc) && matches!(service, 24..=25))
         || (cfg!(jnox_native_notify_ipc) && matches!(service, 26..=29))
+        || (cfg!(jnox_native_waitset) && matches!(service, 30..=32))
 }
 
 fn monotonic_ns(stamp: u64) -> u64 {
@@ -47,6 +87,8 @@ pub(super) fn next_compare() -> Option<u64> {
     let earliest = earliest.into_iter().chain(unsafe { (&*(&raw const MAIL)).next_deadline() }).min();
     #[cfg(jnox_native_notify_ipc)]
     let earliest = earliest.into_iter().chain(unsafe { (&*(&raw const NOTIFY)).next_deadline() }).min();
+    #[cfg(jnox_native_waitset)]
+    let earliest = earliest.into_iter().chain(unsafe { (&*(&raw const SETS)).next_deadline() }).min();
     earliest.map(|ns| compare(ns).unwrap_or_else(|| fail(9)))
 }
 
@@ -72,6 +114,11 @@ fn drain(fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
                 _ => unsafe { FRAMES[id].x[8] },
             };
             result = Some((done.status, done.x1, (service == 27).then_some(done.x2)));
+        }
+        #[cfg(jnox_native_waitset)]
+        if let Some(done) = unsafe { (&mut *(&raw mut SETS)).take(id) } {
+            if result.is_some() { fail(9); }
+            result = Some((done.status, done.x1, Some(done.x2)));
         }
         let Some((status, word, extra)) = result else { continue };
         let frame = match live.as_mut() {
@@ -104,10 +151,15 @@ fn advance(now: u64, exiting: Option<usize>) {
     update!(MAIL);
     #[cfg(jnox_native_notify_ipc)]
     update!(NOTIFY);
+    #[cfg(jnox_native_waitset)]
+    update!(SETS);
 }
 
 pub(super) fn boundary(fixed: &mut Fixed, stamp: u64, exit: bool) {
-    advance(monotonic_ns(stamp), exit.then(|| fixed.current().unwrap_or_else(|| fail(9))));
+    let now = monotonic_ns(stamp);
+    advance(now, exit.then(|| fixed.current().unwrap_or_else(|| fail(9))));
+    #[cfg(jnox_native_waitset)]
+    refresh(now);
     drain(fixed, None);
 }
 
@@ -116,7 +168,9 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
     let now = monotonic_ns(stamp);
     advance(now, None);
     let op = frame.x[8];
-    let deadline = match op { 21 | 24 => frame.x[2], 25 | 27 => frame.x[0], 29 => frame.x[1], _ => u64::MAX };
+    let deadline = match op { 21 | 24 => frame.x[2], 25 | 27 | 32 => frame.x[0], 29 => frame.x[1], _ => u64::MAX };
+    #[cfg(jnox_native_waitset)]
+    let mut handle = 0;
     let result = if deadline != u64::MAX && compare(deadline).is_none() {
         Err(-75)
     } else {
@@ -139,12 +193,23 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
             28 => unsafe { (&mut *(&raw mut NOTIFY)).event_set(id, frame.x[0] as usize, frame.x[1], now) },
             #[cfg(jnox_native_notify_ipc)]
             29 => unsafe { (&mut *(&raw mut NOTIFY)).event_take(id, frame.x[0], deadline, now) },
+            #[cfg(jnox_native_waitset)]
+            30 => attach(id, frame.x[0] as usize, frame.x[1], frame.x[2]).map(|value| handle = value),
+            #[cfg(jnox_native_waitset)]
+            31 => unsafe { (&mut *(&raw mut SETS)).detach(id, frame.x[0]) },
+            #[cfg(jnox_native_waitset)]
+            32 => unsafe { (&mut *(&raw mut SETS)).wait(id, deadline, now, levels(id)) },
             _ => unreachable!(),
         }
     };
     frame.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
     frame.x[1] = 0;
-    if op <= 23 || op == 27 { frame.x[2] = 0; }
+    #[cfg(jnox_native_waitset)]
+    {
+        if op == 30 { frame.x[1] = handle; }
+        refresh(now);
+    }
+    if op <= 23 || op == 27 || op == 32 { frame.x[2] = 0; }
     drain(policy(), Some((id, frame)));
     #[cfg(jnox_native_sync_ipc)]
     if unsafe { (&*(&raw const ENDPOINTS)).blocked(id) } { return Action::BlockIpc; }
@@ -152,6 +217,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
     if unsafe { (&*(&raw const MAIL)).blocked(id) } { return Action::BlockIpc; }
     #[cfg(jnox_native_notify_ipc)]
     if unsafe { (&*(&raw const NOTIFY)).blocked(id) } { return Action::BlockIpc; }
+    #[cfg(jnox_native_waitset)]
+    if unsafe { (&*(&raw const SETS)).blocked(id) } { return Action::BlockIpc; }
     Action::Poll
 }
 
