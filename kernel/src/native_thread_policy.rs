@@ -1,10 +1,11 @@
-//! Cooperative lifecycle for a single process with a main thread and one joinable worker.
+//! Thread lifecycle for a single process with a main thread and one joinable worker.
 use crate::ready_queue::ReadyQueue;
 
 const MAIN: usize = 0;
 const WORKER: usize = 1;
 const ESRCH: i32 = 3;
 const EAGAIN: i32 = 11;
+const EINVAL: i32 = 22;
 const EDEADLK: i32 = 35;
 const EOVERFLOW: i32 = 75;
 
@@ -155,6 +156,78 @@ impl Policy {
     }
 }
 
+/// RR timing uses the lifecycle's sole FIFO. A turn can span several measured
+/// EL0 intervals; kernel gaps do not add service or move its nominal expiry.
+pub(crate) struct RoundRobin {
+    quantum: u64,
+    turn: Option<(usize, u64)>,
+    started: Option<u64>,
+    last_sample: u64,
+    service: [u64; 2],
+}
+
+impl RoundRobin {
+    pub(crate) const fn new(quantum: u64) -> Result<Self, i32> {
+        if quantum == 0 || quantum > i64::MAX as u64 { return Err(EINVAL); }
+        Ok(Self { quantum, turn: None, started: None, last_sample: 0, service: [0; 2] })
+    }
+
+    /// Sample near the actual return, after owner selection and frame setup.
+    pub(crate) fn resume(&mut self, tid: usize, now: u64) -> Result<(), i32> {
+        if tid >= self.service.len() || self.started.is_some() || now < self.last_sample {
+            return Err(EINVAL);
+        }
+        if let Some((owner, _)) = self.turn {
+            if owner != tid { return Err(EINVAL); }
+        } else {
+            let end = crate::fixed_policy::relative_deadline(now, self.quantum).ok_or(EOVERFLOW)?;
+            self.turn = Some((tid, end));
+        }
+        self.started = Some(now);
+        self.last_sample = now;
+        Ok(())
+    }
+
+    /// Charge exactly the interrupted thread; a late interrupt is uncapped.
+    pub(crate) fn pause(&mut self, tid: usize, entry: u64) -> Result<u64, i32> {
+        if self.turn.map(|(id, _)| id) != Some(tid) { return Err(EINVAL); }
+        let elapsed = entry.checked_sub(self.started.ok_or(EINVAL)?).ok_or(EINVAL)?;
+        self.service[tid] = self.service[tid].checked_add(elapsed).ok_or(EOVERFLOW)?;
+        self.started = None;
+        self.last_sample = entry;
+        Ok(elapsed)
+    }
+
+    pub(crate) fn end_turn(&mut self) {
+        assert!(self.started.is_none());
+        self.turn = None;
+    }
+
+    pub(crate) fn logical_end(&self) -> Option<u64> { self.turn.map(|(_, end)| end) }
+    pub(crate) fn remaining(&self, now: u64) -> u64 {
+        self.logical_end().map_or(0, |end| end.saturating_sub(now))
+    }
+    pub(crate) fn service(&self, tid: usize) -> u64 { self.service[tid] }
+
+    pub(crate) fn compare(&self, policy: &Policy, now: u64) -> Option<u64> {
+        let slice = self.logical_end().filter(|_| !policy.ready().is_empty());
+        policy.next_compare().into_iter().chain(slice).min().map(|at| at.max(now))
+    }
+
+    /// Wake first so an equal-time arrival participates in the single decision.
+    /// A late interrupt never assigns fictitious service to the waiting peer.
+    pub(crate) fn timer(&mut self, policy: &mut Policy, now: u64) -> bool {
+        policy.wake_due(now);
+        if self.turn.is_some() &&
+            crate::fixed_policy::rotate_expired(self.remaining(now), || !policy.ready().is_empty()) {
+            self.end_turn();
+            policy.yield_now();
+            return true;
+        }
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -241,4 +314,66 @@ mod tests {
         assert_eq!(p.generation(), u64::MAX >> 1);
         assert_eq!(p.state(WORKER), State::Vacant);
     }
+
+    #[test]
+    fn solo_expiry_and_late_irq_charge_one_actual_interval() {
+        let mut p = Policy::new();
+        let mut rr = RoundRobin::new(10).unwrap();
+        rr.resume(MAIN, 100).unwrap();
+        assert_eq!(rr.compare(&p, 100), None);
+        assert_eq!(rr.pause(MAIN, 125), Ok(25));
+        p.create().unwrap();
+        assert_eq!(rr.logical_end(), Some(110));
+        assert_eq!(rr.compare(&p, 125), Some(125));
+        rr.resume(MAIN, 130).unwrap();
+        assert_eq!(rr.pause(MAIN, 150), Ok(20));
+        assert!(rr.timer(&mut p, 150));
+        assert_eq!(p.current(), Some(WORKER));
+        assert_eq!((rr.service(MAIN), rr.service(WORKER)), (45, 0));
+        rr.resume(WORKER, 159).unwrap();
+        assert_eq!(rr.compare(&p, 159), Some(169));
+    }
+
+    #[test]
+    fn sleeper_wakes_before_rotation_and_unexpired_turn_survives_irq() {
+        for target in [8, 10, 12] {
+            let mut p = Policy::new();
+            p.create().unwrap();
+            p.yield_now();
+            p.sleep(0, target).unwrap();
+            let mut rr = RoundRobin::new(10).unwrap();
+            rr.resume(MAIN, 0).unwrap();
+            assert_eq!(rr.compare(&p, 0), Some(target));
+            rr.pause(MAIN, target).unwrap();
+            assert_eq!(rr.timer(&mut p, target), target >= 10);
+            if target < 10 {
+                rr.resume(MAIN, target + 1).unwrap();
+                assert_eq!(rr.logical_end(), Some(10));
+                assert_eq!(rr.compare(&p, target + 1), Some(10));
+            } else {
+                assert_eq!(p.current(), Some(WORKER));
+                assert_eq!(p.ready(), &[MAIN]);
+            }
+        }
+    }
+
+    #[test]
+    fn fresh_turn_and_accounting_failures_are_checked_before_mutation() {
+        assert!(RoundRobin::new(0).is_err());
+        assert!(RoundRobin::new(u64::MAX).is_err());
+        let mut rr = RoundRobin::new(10).unwrap();
+        assert_eq!(rr.resume(MAIN, u64::MAX - 9), Err(EOVERFLOW));
+        assert_eq!(rr.logical_end(), None);
+        rr.resume(MAIN, 10).unwrap();
+        assert!(rr.pause(WORKER, 11).is_err());
+        assert!(rr.pause(MAIN, 9).is_err());
+        assert_eq!(rr.pause(MAIN, 15), Ok(5));
+        assert!(rr.pause(MAIN, 15).is_err());
+        assert!(rr.resume(WORKER, 16).is_err());
+        rr.end_turn();
+        assert!(rr.resume(MAIN, 14).is_err());
+        rr.resume(MAIN, 18).unwrap();
+        assert_eq!(rr.logical_end(), Some(28));
+    }
+
 }

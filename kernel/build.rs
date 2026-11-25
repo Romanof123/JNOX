@@ -392,10 +392,13 @@ fn main() {
             "native peers and scheduling require ordinary native process packaging");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_threads)");
-    if let Some(capacity) = selector("JNOX_NATIVE_THREADS") {
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_rr)");
+    let threads = selector("JNOX_NATIVE_THREADS");
+    let thread_rr = threads.is_some() && policy.as_deref() == Some("rr");
+    if let Some(capacity) = threads {
         assert!(capacity == "2" && profile.as_deref() == Some("native")
-            && app.as_deref() == Some("process") && peer_image.is_none() && policy.is_none(),
-            "JNOX_NATIVE_THREADS=2 requires a single ordinary ELF and the default cooperative policy");
+            && app.as_deref() == Some("process") && peer_image.is_none() && (policy.is_none() || thread_rr),
+            "JNOX_NATIVE_THREADS=2 requires a single ordinary ELF and cooperative or RR scheduling");
         println!("cargo::rustc-cfg=jnox_native_threads");
     }
     let native_argv = [0, 1, 2].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
@@ -433,7 +436,7 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -706,7 +709,7 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
     format!("&[{}]", literals.join(", "))
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3]) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool) {
     let mode = policy.unwrap_or("cooperative");
     let slot_weights = if mode == "weighted" {
         let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
@@ -774,6 +777,11 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         println!("cargo::rustc-cfg=jnox_native_multilevel");
     }
     let values = match policy {
+        Some("rr") if thread_rr => {
+            assert!(priorities.is_none(), "thread RR has implicit equal rank");
+            println!("cargo::rustc-cfg=jnox_native_thread_rr");
+            vec![0; slots]
+        }
         Some("fifo" | "rr") => {
             let list: Vec<u8> = priorities.expect("fixed scheduling requires priorities").split(',')
                 .map(|value| value.parse().expect("priority must be 0..255")).collect();
@@ -787,7 +795,13 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         }
         Some(other) => panic!("invalid native policy {other:?}"),
     };
-    let ticks: u64 = if mode == "mlq" {
+    let ticks: u64 = if thread_rr {
+        let raw = quantum.expect("thread RR requires quantum ticks");
+        assert!(!raw.is_empty() && raw.bytes().all(|b| b.is_ascii_digit()), "invalid thread quantum");
+        let value = raw.parse().expect("invalid thread quantum");
+        assert!((1..=i64::MAX as u64).contains(&value), "thread quantum must be in 1..=i64::MAX");
+        value
+    } else if mode == "mlq" {
         multilevel_duration(quantum.expect("MLQ requires quantum ticks"))
     } else if matches!(mode, "rr" | "weighted") {
         let value = quantum.expect("RR and weighted scheduling require quantum ticks").parse().expect("invalid quantum ticks");

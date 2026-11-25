@@ -1,4 +1,4 @@
-//! Two cooperative EL0 threads in a single process/address space. Handlers
+//! Two EL0 threads in a single process/address space. Handlers
 //! run masked on CPU0; the idle timer can run only inside native_sleep_switch.
 use super::*;
 #[path = "native_thread_policy.rs"]
@@ -14,6 +14,73 @@ static mut USED: usize = 0;
 static mut LOST: u64 = 0;
 static mut RETURN_ROW: Option<usize> = None;
 
+#[cfg(jnox_native_thread_rr)]
+mod rr {
+    use super::*;
+    use policy::RoundRobin;
+
+    static mut CLOCK: Option<RoundRobin> = None;
+    static mut START: Option<u64> = None;
+    static mut RETURN_PENDING: bool = false;
+    static mut EVENTS: [[u64; 12]; LIMIT] = [[0; 12]; LIMIT];
+
+    fn clock() -> &'static mut RoundRobin {
+        unsafe { (&mut *(&raw mut CLOCK)).as_mut().unwrap_or_else(|| fail(20)) }
+    }
+    pub(super) fn init() {
+        unsafe { CLOCK = Some(RoundRobin::new(NATIVE_QUANTUM_TICKS).unwrap_or_else(|_| fail(20))); }
+    }
+    pub(super) fn compare(now: u64) -> Option<u64> { clock().compare(policy(), now) }
+
+    pub(super) fn enter(now: u64, owner: Option<usize>) {
+        let end = clock().logical_end();
+        let queue = policy().ready().iter().fold(0, |v, &id| (v << 4) | (id as u64 + 1));
+        let start = unsafe { (*(&raw mut START)).take() };
+        let elapsed = owner.map_or(0, |id| clock().pause(id, now).unwrap_or_else(|_| fail(20)));
+        let i = unsafe { USED };
+        if i < LIMIT {
+            unsafe { EVENTS[i] = [i as u64, queue, end.unwrap_or(0), start.unwrap_or(0), now,
+                elapsed, end.map_or(0, |at| now.saturating_sub(at)), 0, 0, 0,
+                clock().service(0), clock().service(1)]; }
+        }
+    }
+    pub(super) fn timer(now: u64) {
+        let rotated = clock().timer(policy(), now);
+        let i = unsafe { USED };
+        if i < LIMIT { unsafe { EVENTS[i][7] = rotated as u64; } }
+    }
+    pub(super) fn end_turn() { clock().end_turn(); }
+    pub(super) fn selected(selected: bool) {
+        unsafe { RETURN_PENDING = selected; }
+        let i = unsafe { USED };
+        if i < LIMIT {
+            unsafe { EVENTS[i][8] = clock().logical_end().unwrap_or(0); EVENTS[i][9] = COMPARE.unwrap_or(0); }
+        }
+    }
+    pub(super) fn resume(now: u64) {
+        // Spurious/other IRQs leave a running segment untouched.
+        if !unsafe { core::mem::replace(&mut *(&raw mut RETURN_PENDING), false) } { return; }
+        let id = policy().current().unwrap_or_else(|| fail(20));
+        clock().resume(id, now).unwrap_or_else(|_| fail(20));
+        unsafe { START = Some(now); }
+        update_compare(now);
+        if let Some(i) = unsafe { RETURN_ROW } {
+            unsafe {
+                ROWS[i][25] = COMPARE.unwrap_or(0);
+                EVENTS[i][8] = clock().logical_end().unwrap_or(0);
+                EVENTS[i][9] = COMPARE.unwrap_or(0);
+            }
+        }
+    }
+    pub(super) fn dump() {
+        print(b"NATIVE THREAD RR CONFIG", &[unsafe { CLOCK_DOMAIN.1 }, NATIVE_QUANTUM_TICKS]);
+        unsafe {
+            for i in 0..USED { print(b"NATIVE THREAD RR EVENT", &*(&raw const EVENTS[i])); }
+        }
+        print(b"NATIVE THREAD RR SERVICE", &[clock().service(0), clock().service(1)]);
+    }
+}
+
 fn policy() -> &'static mut Policy { unsafe { &mut *(&raw mut POLICY) } }
 fn bounds(id: usize) -> (usize, usize) { native_el0_mmu::thread_stack(id).unwrap_or_else(|| fail(20)) }
 fn locator(id: usize) -> u64 { native_el0_mmu::thread_errno(id).unwrap_or_else(|| fail(20)) as u64 }
@@ -26,7 +93,10 @@ fn validate(id: usize, f: &NativeFrame) {
     { fail(20) }
 }
 
-fn update_compare() {
+fn update_compare(_now: u64) {
+    #[cfg(jnox_native_thread_rr)]
+    let next = rr::compare(_now);
+    #[cfg(not(jnox_native_thread_rr))]
     let next = policy().next_compare();
     if next != unsafe { COMPARE } {
         arm_compare(next);
@@ -44,6 +114,8 @@ fn describe(state: State) -> (u64, u64) {
 
 fn record(now: u64, cause: u64, prior: Option<usize>, op: u64, args: [u64; 3],
           outgoing: Option<&NativeFrame>, selected: Option<&NativeFrame>, old_compare: Option<u64>) {
+    #[cfg(jnox_native_thread_rr)]
+    rr::selected(selected.is_some());
     let index = unsafe { USED };
     if index == LIMIT {
         unsafe { LOST = LOST.saturating_add(1); RETURN_ROW = None; }
@@ -74,8 +146,11 @@ fn record(now: u64, cause: u64, prior: Option<usize>, op: u64, args: [u64; 3],
 
 #[unsafe(no_mangle)]
 extern "C" fn native_threads_return() {
+    let now = counter();
+    #[cfg(jnox_native_thread_rr)]
+    rr::resume(now);
     unsafe {
-        if let Some(index) = (*(&raw mut RETURN_ROW)).take() { ROWS[index][27] = counter(); }
+        if let Some(index) = (*(&raw mut RETURN_ROW)).take() { ROWS[index][27] = now; }
     }
 }
 
@@ -83,7 +158,10 @@ pub(super) fn start(mut main: NativeFrame) -> u64 {
     main.tls[1] = locator(0);
     validate(0, &main);
     unsafe { SAVED[0] = main; }
-    record(counter(), 0, None, 0, [0; 3], None, Some(&main), None);
+    let now = counter();
+    #[cfg(jnox_native_thread_rr)]
+    { rr::init(); rr::enter(now, None); }
+    record(now, 0, None, 0, [0; 3], None, Some(&main), None);
     main.tls[1]
 }
 
@@ -109,18 +187,29 @@ fn create(start: u64, arg: u64, trampoline: u64) -> Result<u64, i32> {
 
 fn saved(id: usize) -> &'static NativeFrame { unsafe { &*(&raw const SAVED[id]) } }
 
-pub(super) fn irq(now: u64, frame: Option<&NativeFrame>) -> bool {
+pub(super) fn irq(now: u64, frame: Option<&mut NativeFrame>) -> bool {
     let prior = policy().current();
     let old_compare = unsafe { COMPARE };
-    if let Some(f) = frame { validate(prior.unwrap_or_else(|| fail(20)), f); }
+    if let Some(f) = frame.as_deref() {
+        let id = prior.unwrap_or_else(|| fail(20));
+        validate(id, f);
+        unsafe { SAVED[id] = *f; }
+    }
+    #[cfg(jnox_native_thread_rr)]
+    { rr::enter(now, prior); rr::timer(now); }
+    #[cfg(not(jnox_native_thread_rr))]
     policy().wake_due(now);
-    update_compare();
+    update_compare(now);
     let next = policy().current();
-    // A timer during user execution only enqueues sleepers. An idle IRQ
-    // instead selects a saved thread for the suspended kernel continuation.
-    if frame.is_some() && prior != next { fail(20) }
-    let selected = frame.or_else(|| next.map(saved));
-    record(now, if frame.is_some() { 2 } else { 3 }, prior, 0, [0; 3], frame, selected, old_compare);
+    let selected = next.map(saved);
+    record(now, if frame.is_some() { 2 } else { 3 }, prior, 0, [0; 3], frame.as_deref(), selected, old_compare);
+    if let Some(f) = frame {
+        if prior != next {
+            let id = next.unwrap_or_else(|| fail(20));
+            validate(id, saved(id));
+            *f = *saved(id);
+        }
+    }
     next.is_some()
 }
 
@@ -130,6 +219,8 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
     let old_compare = unsafe { COMPARE };
     let [a, b, c] = [f.x[0], f.x[1], f.x[2]];
     let op = f.x[8];
+    #[cfg(jnox_native_thread_rr)]
+    rr::enter(now, Some(id));
     policy().wake_due(now);
     match op {
         1 => policy().process_exit(a as i32),
@@ -158,7 +249,9 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
         _ => f.x[0] = (-38i64) as u64,
     }
     unsafe { SAVED[id] = *f };
-    update_compare();
+    #[cfg(jnox_native_thread_rr)]
+    if op == 8 || policy().current() != Some(id) { rr::end_turn(); }
+    update_compare(now);
     record(now, 1, Some(id), op, [a, b, c], Some(f), policy().current().map(saved), old_compare);
     if let Some(status) = policy().status() { finish(status); }
     if policy().current().is_none() {
@@ -190,6 +283,8 @@ fn finish(status: i32) -> ! {
         for i in 0..USED { print(b"NATIVE THREAD EVENT", &*(&raw const ROWS[i])); }
         print(b"NATIVE THREAD DROPPED", &[LOST]);
     }
+    #[cfg(jnox_native_thread_rr)]
+    rr::dump();
     uart_write(b"NATIVE EL0 EXIT "); decimal(i64::from(status)); uart_write(b"\n");
     park()
 }
