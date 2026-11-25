@@ -18,6 +18,8 @@ python3 tools/build_native_el0.py --out output/native-threads/c --threads 2 --so
 
 To time-slice main and its worker on CPU0, add `--policy rr --quantum-ticks 625000` to the two-thread package. [Build the round-robin stream example](examples/native-thread-rr/README.md)
 
+In a two-thread native package, C main and a Rust worker can use the same mutex to protect a shared aggregate. The example updates count, sum and sum of squares under one lock. [Build and boot the C/Rust sensor example](examples/native-thread-mutex/README.md)
+
 Package the same native sensor executable twice with separate argument vectors. From the repository root on Linux or WSL, this example assigns a sum over [16,32) to the primary and a min/max over [64,96) to the peer.
 
 ~~~sh
