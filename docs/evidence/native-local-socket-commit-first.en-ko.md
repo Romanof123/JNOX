@@ -1,0 +1,9 @@
+# AF_UNIX commit candidate, first guest captures / 로컬 소켓 최초 실행 자료
+
+The verifier ran eighteen ordinary guest boots and eighteen separate register-traced boots on the fixed-priority FIFO and RR AArch64 virt configurations. The frozen source is `9912ae3db95aec3f1a67f690d01c7379339168d1`. The regular C/Rust client, peer and Rust service all exited in every position. The three transport workloads returned 73/74/0, the backlog and receive-order workloads returned 81/82/0, the two full-queue send workloads returned 201/202/0 and the peer-death workload returned 62/63/0. Both policies and the separate register runs produced the same exit triples for each workload.
+
+Integration collected the original captures after the verification runner returned the guest lane. `audit_captures.py` checks every captured file against its session hashes, reads all three process exits and the reported scheduler drop count from each UART, and pairs each first run with its traced counterpart. Some scheduler buffers filled. `exits-by-position.json` retains each count. These checks establish the captured binaries and application exits. Packet-level interpretation of when particular socket state changes took effect relative to a reply is reserved for the independent Release analysis.
+
+검증팀이 FIFO·RR에서 원본 부팅 18회와 별도 레지스터 관측 부팅 18회를 수행했다. 통합팀이 남겨진 ELF·UART·RAM·레지스터 자료를 수집하고 각 세션 해시와 세 프로세스의 종료값을 확인했다. 일부 일반 스케줄러 기록은 용량을 넘었고, 위치별 누락 수를 보존했다. 개별 소켓 연산의 확정 시점은 배포 검토에서 원본을 대조한다.
+
+Download the archive, extract it into a fresh directory and run `python3 audit_captures.py .`. Compare its output byte-for-byte with `exits-by-position.json`. [Original corrected-candidate captures and per-position results](native-local-socket-commit-first.tar.gz). SHA-256 `9819033ffec7ee0d1867f5348bb20b76cc37dac6c0284bccb5cb7fbe2dd96165`.
