@@ -2161,3 +2161,11 @@ VER-023,has-partial-evidence,EVD-141
 IMP-141,tested-in,EVD-141
 POL-018,partially-implemented-by,IMP-141
 POL-018,has-switch-evidence,EVD-141
+CHG-144,affects,REQ-002
+VER-002,has-partial-evidence,EVD-144
+CHG-144,affects,REQ-023
+VER-023,has-partial-evidence,EVD-144
+IMP-117,tested-in,EVD-144
+IMP-121,tested-in,EVD-144
+IMP-128,tested-in,EVD-144
+POL-005,has-switch-evidence,EVD-144
