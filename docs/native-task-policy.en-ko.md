@@ -48,3 +48,23 @@ A job completing exactly at its deadline is on time. A still-outstanding job rec
 The minimum reaction in this profile is to identify and stop the faulting task and preserve scheduling for survivors. Any actuator inhibition, cross-task escalation, physical response bound or approval must be allocated by the product integrator and demonstrated for its target. The protected virtual-output watchdog has its own receiver and recovery contract. [Safety channel #11](https://github.com/Romanof123/JNOX/issues/11) · [Protected watchdog #392](https://github.com/Romanof123/JNOX/issues/392)
 
 이 프로필의 최소 반응은 고장 태스크 식별·중단과 나머지 태스크의 스케줄링 유지다. 장치 차단, 다른 태스크로의 확대 조치, 실물 반응 기한과 승인은 제품 통합 책임자가 별도로 배정하고 해당 대상에서 입증한다.
+
+## Choosing an interval / 감시 간격 선택
+
+Choose the allowed completion gap for each task from its expected completion cadence and response requirement. A gap shorter than the task period can expire during the wait after a successful completion. A numeric value enables supervision on that task. Use `off` for a task that needs scheduling and deadline diagnostics alone. Change the policy and rebuild the OS package to deploy new intervals with the same application binaries. The compiled policy creates the declared tasks at boot. This profile provides no application call to register additional policy tasks during execution. [Build, boot and C/Rust examples](../examples/native-task-policy/README.md)
+
+태스크마다 정상 완료 간격과 필요한 반응 기한을 기준으로 감시 값을 정한다. 감시 간격이 주기보다 짧으면 정상 완료 뒤 다음 주기를 기다리다가 고장으로 판정될 수 있다. 숫자를 쓰면 해당 태스크의 완료를 감시하고, `off`를 쓰면 주기 실행과 작업 마감 기록만 유지하면서 자체 오류도 보고할 수 있다. 정책을 바꾸고 같은 앱 바이너리로 OS 패키지를 다시 빌드한다. 정책 태스크는 부팅 시 생성하며, 실행 중 정책 태스크를 추가 등록하는 SDK 호출은 제공하지 않는다.
+
+The 30 ms in the permit-channel test measures elapsed time from injected fault to observed virtual output inhibition. Its separate limits are 25 ms to detect the fault and 5 ms from detection to output inhibition. A task watchdog records missing completion and stops that task. A product that connects that event to an output must allocate the detection and output budgets and measure both transitions. [Permit-channel budgets and observations](verification-plan.en.md#verdicts-and-evidence)
+
+허가 채널 시험의 30 ms는 고장 주입부터 가상 출력이 실제로 차단될 때까지다. 검출까지 25 ms, 검출 후 출력 차단까지 5 ms를 각각 판정한다. 태스크 감시가 직접 수행하는 반응은 완료 누락 기록과 해당 태스크 중단이다. 이를 제품 출력에 연결할 때는 검출과 차단에 각각 시간을 배정하고 두 전이를 측정한다. [허가 채널 시험 기준](verification-plan.md#판정과-증거)
+
+## Implementation and verification / 구현 및 검증
+
+IMP-313 on the single-CPU AArch64 `virt` target allocates one address space per app and one saved CPU context and 64 KiB guarded stack per task. Its stack table admits up to 30 tasks within one app. The ASID allocator has 255 app identifiers, and the 128 MiB reference machine's RAM and linked kernel segments limit which complete deployments fit. The loader and packager check capacity and the native v1 executable layout. [Native packager](../tools/build_task_policy.py) · [Boot loader](../kernel/src/task_policy_image.rs) · [C and Rust workloads](../examples/native-task-policy)
+
+AArch64 `virt` 단일 CPU에서 앱마다 주소공간을, 태스크마다 CPU 문맥과 가드 페이지가 있는 64 KiB 스택을 할당한다. 현재 주소 배치는 앱 하나에 태스크 30개까지 허용한다. 앱 식별자 255개와 별도로 기준 머신의 RAM 128 MiB 및 커널 세그먼트 배치가 실제 수용량을 제한한다. 수용할 수 없는 구성은 배포 패키지 빌드에서 거부한다.
+
+EVD-313 covers the five-app C/Rust builds with supervision enabled and disabled, the twenty-app build, the single-app regression and the boundary cases identified in the report. The twenty names use the same Rust ELF, with distinct writable memory for each instance. The original failed guest compilation, recovered builds, virtual timing scope and raw replay inputs are recorded together. [Independent verification and captures](evidence/native-task-policy-first.en-ko.md)
+
+독립 검증은 동일한 C·Rust 앱 5개의 감시 켬·끔, 같은 Rust ELF를 20개 앱 이름으로 배치한 구성, 기존 단일 앱 실행을 포함한다. 20개 앱 모두 각자의 쓰기 가능 메모리를 사용했다. 최초 빌드 오류, 수정 후 실행, 경계 시험과 원시 측정값을 같은 증거 기록에 보존했다. [검증 보고서와 원시 자료](evidence/native-task-policy-first.en-ko.md)

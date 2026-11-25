@@ -2289,3 +2289,8 @@ REQ-025,implemented-by-design,DES-014
 REQ-025,verified-by,VER-025
 HAZ-001,derives,REQ-025
 OBJ-004,derives,REQ-025
+REQ-025,partially-implemented-by,IMP-313
+DES-014,partially-implemented-by,IMP-313
+IMP-313,partially-verified-by,VER-025
+VER-025,has-partial-evidence,EVD-313
+IMP-313,tested-in,EVD-313
