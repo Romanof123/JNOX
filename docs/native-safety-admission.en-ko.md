@@ -62,3 +62,11 @@ The engineering branch adopts inlining for the existing bounded, volatile byte r
 The receiver retains the bitwise CRC. In the independent 42-boot CRC trial the healthy first-frame median from loan release to the post-decode clock sample increased from 209.5 to 286.0 µs under FIFO and from 209.3 to 280.1 µs under RR. The kernel independently checked the same protected wire format. This experiment measures a larger interval than the CRC calculation itself. [CRC comparison and raw data](evidence/native-permit-receiver-crc.en-ko.md).
 
 56회 교차 시험에서 첫 프레임의 대여 수신부터 반환까지의 중앙값이 FIFO에서 307.4→237.5 µs, RR에서 265.2→211.6 µs였다. 범위 검사와 volatile 바이트 판독을 유지하면서 함수 호출을 인라인한 변경을 개발 브랜치에 반영한다. 후속 프레임의 개선 방향은 일정하지 않았다. 별도 42회 비교에서 표 기반 CRC를 사용한 수신기의 반환부터 디코드 후 시각까지의 중앙값은 두 정책 모두 증가해 기존 비트 단위 CRC를 유지한다. 정상 부팅마다 최초 빈 검사와 실제 첫 프레임 처리에서 1 ms를 초과했다. 실물 반응 시간과 제품 기능안전 승인은 계속 열려 있다.
+
+### First empty activation and physical timer / 최초 빈 수신과 물리 타이머
+
+In 32 healthy cold boots each first empty A phase exceeded 1 ms. Its lower endpoint was 1,191–2,092 µs after target. All 467 later empty A phases had upper endpoints below 549 µs. On FIFO the post-CHECK sample to the pre-receive-service timestamp took a median 619 µs. On RR the whole protected CHECK service took a median 481 µs. These intervals contain guest and emulator work. [Per-phase reconstruction and replay](evidence/native-permit-empty-a0.en-ko.md).
+
+The register-readback trial avoided repeated writes of unchanged CNTP_CVAL and CNTP_CTL settings. The observed instruction path increased from 40 to 48 instructions for the same enabled request and from 34 to 39 for the same disable. All 28 register controls and 20 watchdog boots passed. The two timing order blocks changed in opposite directions under each policy. Both builds missed 8 of 128 healthy phases per policy. The engineering branch retains its current timer implementation. [Timer trial and original data](evidence/native-permit-physical-compare.en-ko.md) · [Arm timer registers](https://documentation-service.arm.com/static/633d612a4c59b30b51771183).
+
+첫 빈 수신 32회와 이후 빈 수신 467회의 측정 구간을 비교했다. 지연이 집중된 위치는 FIFO와 RR에서 달랐다. 타이머 후보는 중복 쓰기를 줄였으나 순서에 따라 시간 변화 방향이 달랐고 1 ms 초과 횟수도 같았다. 기존 타이머 구현을 유지한다.
