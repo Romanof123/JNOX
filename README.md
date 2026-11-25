@@ -12,6 +12,12 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 Dashed boxes show planned components. The native Rust driver runs as an isolated service. Existing Linux drivers run in their own Linux domain and communicate with J-NOX through a validated gateway. The native app and kernel path has been exercised on AArch64 QEMU. [Architecture and isolation](docs/architecture.en.md) · [Native IPC evidence](docs/evidence/native-sync-ipc-release.en-ko.md)
 
+## Native applications and IPC
+
+On single-core AArch64 QEMU `virt`, the native C shell can run `cat sample.txt | wc -l`. The shell starts two separate executables, connects their descriptors and waits for both exit statuses. The SDK example includes the build commands and input files. [Run the shell example](examples/native-shell-pipeline/README.md) · [Independent output and exit checks](docs/evidence/native-pipe-ipc-release.en-ko.md)
+
+Nine IPC families have passed their declared FIFO/RR virtual profiles. They cover synchronous calls, bounded mailboxes, pulses and events, waitsets, shared buffer loans, local and IPv4 sockets, pipes and named FIFOs, publish/subscribe, and mailbox capability transfer. The tenth family is a protected permit channel under timing verification. [IPC requirements and results](https://github.com/Romanof123/JNOX/issues/24) · [Protected channel timing](https://github.com/Romanof123/JNOX/issues/389)
+
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
 Give native batch applications release offsets and service estimates, then run them under SJF, SRTF or HRRN. [Build and schedule the applications](examples/native-batch/README.md)
