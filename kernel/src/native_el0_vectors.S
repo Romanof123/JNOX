@@ -453,6 +453,9 @@ native_cyclic_idle_landing:
     isb
     mrs x0,cntpct_el0
     bl native_cyclic_idle_sample
+    .ifdef NATIVE_EXTENSION
+    bl native_extension_on_idle
+    .endif
     .endif
     .ifdef NATIVE_HIERARCHY
     // The previously sampled landing precedes this masked boundary. No
@@ -472,7 +475,61 @@ native_sleep_idle:
     b native_sleep_idle
 .size native_sleep_switch,.-native_sleep_switch
 
+    .ifdef NATIVE_EXTENSION
+// On interruption discard the evaluator continuation and recover the idle
+// caller's AAPCS state. Rust never keeps a trusted mutable borrow unmasked.
+.macro extension_restore
+    ldp d8,d9,[sp,#96]
+    ldp d10,d11,[sp,#112]
+    ldp d12,d13,[sp,#128]
+    ldp d14,d15,[sp,#144]
+    ldp x19,x20,[sp,#0]
+    ldp x21,x22,[sp,#16]
+    ldp x23,x24,[sp,#32]
+    ldp x25,x26,[sp,#48]
+    ldp x27,x28,[sp,#64]
+    ldp x29,x30,[sp,#80]
+    add sp,sp,#160
+.endm
+.macro extension_abort_stack
+    adrp x10,native_extension_caller
+    ldr x11,[x10,:lo12:native_extension_caller]
+    cbz x11,1f
+    str xzr,[x10,:lo12:native_extension_caller]
+    mov sp,x11
+    extension_restore
+1:
+.endm
+native_extension_on_idle:
+    stp x19,x30,[sp,#-16]!
+    bl native_extension_stack_if_pending
+    ldp x19,x30,[sp],#16
+    cbnz x0,native_extension_eval_stack
+    ret
+native_extension_eval_stack:
+    sub sp,sp,#160
+    stp x19,x20,[sp,#0]
+    stp x21,x22,[sp,#16]
+    stp x23,x24,[sp,#32]
+    stp x25,x26,[sp,#48]
+    stp x27,x28,[sp,#64]
+    stp x29,x30,[sp,#80]
+    stp d8,d9,[sp,#96]
+    stp d10,d11,[sp,#112]
+    stp d12,d13,[sp,#128]
+    stp d14,d15,[sp,#144]
+    mov x11,sp
+    adrp x10,native_extension_caller
+    str x11,[x10,:lo12:native_extension_caller]
+    mov sp,x0
+    bl native_extension_evaluate
+    extension_abort_stack
+    ret
+    .endif
 .Lidle_irq:
+    .ifdef NATIVE_EXTENSION
+    extension_abort_stack
+    .endif
     // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
     // Its only live value is x19. IRQ entry masked delivery before this call.
     mov x0,xzr
