@@ -367,6 +367,8 @@ fn record(now: u64, reason: u64, argument: u64, before: Before, interrupted: Opt
 }
 
 fn start_fixed() -> usize {
+    #[cfg(jnox_native_capability_ipc)]
+    ipc::caps::boot();
     #[cfg(jnox_native_notify_ipc)]
     ipc::report_notifications(0);
     let config = NATIVE_PRIORITIES.map(|priority| Config { priority, delay: 0 });
@@ -433,6 +435,8 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_capability_ipc)]
+    ipc::caps::report(1);
     #[cfg(jnox_native_loan_ipc)]
     loans::report();
     #[cfg(jnox_native_notify_ipc)]

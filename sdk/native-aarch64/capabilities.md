@@ -1,0 +1,7 @@
+# Native mailbox capabilities
+
+C clients include jnox/capability.h. Rust clients enable the capabilities Cargo feature of jnox-native and use jnox_native::capabilities. Use the ordinary SDK build.sh or build-rust.sh entry point; the bindings invoke the native services directly. The running package must configure initial authorities and permitted transfers.
+
+Look up an initial authority by index. This lookup does not install another grant. Copy or move the handle to a recipient slot with a subset of its rights and a u64 application tag. SEND is 1 and DELEGATE is 2. The recipient takes a notice containing its local handle, the tag, sender, target mailbox and granted rights. Send through this handle to transfer a real mailbox word; the target's ordinary mailbox receive obtains that word. A zero deadline is nonblocking, a finite deadline is absolute monotonic ns, and the maximum u64 waits indefinitely. Observe returns the calling process's current and peak handle and notice counts.
+
+C returns zero or negative errno and leaves output objects untouched on errors. Rust move_to transfers ownership of its Handle argument and returns (error, original_handle) on failure. A successful move or close invalidates the token in the kernel. Saving raw() and wrapping the old value via Handle::from_raw allows a client to observe the resulting rejection. Wrapping a number creates no authority. Rust handles have explicit close; dropping the wrapper alone does not close a kernel handle.

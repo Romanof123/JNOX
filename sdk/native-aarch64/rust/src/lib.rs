@@ -146,3 +146,6 @@ pub mod loan;
 
 #[cfg(all(feature = "local-socket", target_arch = "aarch64"))]
 pub mod local_socket;
+
+#[cfg(all(feature = "capabilities", target_arch = "aarch64"))]
+pub mod capabilities;
