@@ -27,6 +27,8 @@ struct Session {
     sequence: u64, issue: u64, permit: u64, streak: u8, prior: u64,
     snapshot: Option<(u64, [u8; 44])>, released: bool,
     rearm_first: u64, last_check: Option<u64>,
+    #[cfg(jnox_native_safety_watchdog)]
+    watchdog: CompletionWatchdog,
 }
 static mut STATE: Option<Session> = None;
 fn hz() -> u64 { unsafe { CLOCK_DOMAIN.1 } }
@@ -58,6 +60,68 @@ macro_rules! check_at {
         $session.check($tick);
     }};
 }
+#[cfg(jnox_native_safety_watchdog)]
+#[derive(Default)]
+struct CompletionWatchdog {
+    last: Option<u64>,
+    due: Option<u64>,
+    observed: Option<u64>,
+    fault: bool,
+}
+
+#[cfg(jnox_native_safety_watchdog)]
+impl Session {
+    // Sources 1/30/59/60/61/63 are endpoint exit, physical IRQ or actual SVC.
+    // 0x100 + fixed reason means the poll immediately before comparator selection.
+    fn watch_record(&self, kind:u64, old:(Option<u64>,Option<u64>), now:u64, source:u64) {
+        log(13,[kind,self.generation,old.0.unwrap_or(u64::MAX),old.1.unwrap_or(u64::MAX),
+                now,source,self.watchdog.last.unwrap_or(u64::MAX),self.watchdog.due.unwrap_or(u64::MAX)]);
+    }
+
+    fn watch_stop(&mut self, kind:u64, now:u64, source:u64) {
+        let old = (self.watchdog.last,self.watchdog.due);
+        self.watchdog.due = None;
+        self.watchdog.fault = true;
+        self.fault = true;
+        self.pending = false;
+        drive(0);
+        self.watch_record(kind,old,now,source);
+    }
+
+    fn watch_poll(&mut self, now:u64, source:u64) {
+        if self.generation == 0 || self.dead || self.watchdog.fault { return; }
+        let previous = self.watchdog.observed.replace(now);
+        if previous.is_some_and(|p| now.checked_sub(p).is_none_or(|d| d > i64::MAX as u64)) {
+            self.watch_stop(5,now,source);
+        } else if self.watchdog.due.is_some_and(|due| now >= due) {
+            self.watch_stop(4,now,source);
+        }
+    }
+
+    fn watch_complete(&mut self, now:u64, source:u64) -> Result<(),i32> {
+        self.watch_poll(now,source);
+        if self.watchdog.fault || self.dead { return Err(-110); }
+        if self.generation == 0 { return Ok(()); }
+        let old = (self.watchdog.last,self.watchdog.due);
+        let allowed = u64::try_from(u128::from(hz()) * 5 / 1000).unwrap();
+        let Some(due) = now.checked_add(allowed).and_then(|end| end.checked_add(1)) else {
+            self.watch_stop(5,now,source);
+            return Err(-75);
+        };
+        self.watchdog.last = Some(now);
+        self.watchdog.due = Some(due);
+        self.watch_record(if old.0.is_some() {3} else {2},old,now,source);
+        Ok(())
+    }
+}
+
+#[cfg(jnox_native_safety_watchdog)]
+pub(super) fn watchdog_poll(source:u64) -> Option<u64> {
+    let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };
+    s.watch_poll(counter(),source);
+    s.watchdog.due
+}
+
 impl Session {
     fn check(&mut self, now: u64) {
         let clock_fault = self.last_check.is_some_and(|previous| now.checked_sub(previous).is_none_or(|d| d > i64::MAX as u64));
@@ -71,6 +135,8 @@ impl Session {
         }
     }
     fn eligible(&self, now: u64) -> bool {
+        #[cfg(jnox_native_safety_watchdog)]
+        if self.watchdog.due.is_none_or(|due| now >= due) { return false; }
         self.gate && !self.fault && !self.rearmed && self.streak == 2
             && fresh(now,self.prior) && fresh(now,self.issue)
     }
@@ -80,7 +146,11 @@ impl Session {
             if generation != self.generation.checked_add(1).ok_or(-75)? { return Err(-116); }
             drive(0);
             loans::invalidate();
+            #[cfg(jnox_native_safety_watchdog)]
+            let prior = (self.watchdog.last,self.watchdog.due);
             *self = Self { generation, gate:true, ..Self::default() };
+            #[cfg(jnox_native_safety_watchdog)]
+            self.watch_record(1,prior,counter(),59);
             return Ok(());
         }
         if generation == 0 || generation != self.generation { return Err(-116); }
@@ -200,12 +270,16 @@ pub(super) fn after_loan(pid:usize,op:u64,handle:u64,f:&NativeFrame,result:Resul
 fn sample_state(s: &Session, f: &mut NativeFrame) {
     let flags=u64::from(s.gate) | (jnox_virtual_permit_enable.load(Ordering::SeqCst)<<1)
         | (u64::from(s.fault)<<2) | (u64::from(s.pending)<<3);
+    #[cfg(jnox_native_safety_watchdog)]
+    let flags = flags | (u64::from(s.watchdog.due.is_some())<<4) | (u64::from(s.watchdog.fault)<<5);
     f.x[..7].copy_from_slice(&[0,counter(),hz(),s.generation,flags,s.sequence,s.issue]);
 }
 pub(super) fn service(pid:usize,f:&mut NativeFrame) {
     let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };
     let entry=counter();
     let op=f.x[8]; let cmd=f.x[0];
+    #[cfg(jnox_native_safety_watchdog)]
+    s.watch_poll(entry,op);
     if op==61 {
         sample_state(s, f);
         return;
@@ -219,6 +293,10 @@ pub(super) fn service(pid:usize,f:&mut NativeFrame) {
         (63,1) => Err(-22),
         _=>Err(-13),
     };
+    #[cfg(jnox_native_safety_watchdog)]
+    let result = result.and_then(|()| {
+        if matches!(op,60|63) && cmd==3 { s.watch_complete(counter(),op) } else { Ok(()) }
+    });
     let status=result.err().unwrap_or(0) as i64 as u64;
     log(5,[pid as u64,op,cmd,status,s.generation,s.sequence,s.issue,u64::from(s.streak)]);
     if matches!(op,60|63) && cmd==3 { log(10,[entry,counter(),status,s.generation,s.sequence,s.issue,s.permit,s.streak as u64]); }
@@ -229,6 +307,8 @@ pub(super) fn service(pid:usize,f:&mut NativeFrame) {
 pub(super) fn exit(pid:usize) {
     let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };
     if !s.dead {
+        #[cfg(jnox_native_safety_watchdog)]
+        s.watch_stop(6,counter(),1);
         s.dead=true; s.gate=false; s.fault=true; s.pending=false; s.snapshot=None;
         loans::invalidate(); drive(0);
         log(8,[pid as u64,s.generation,s.sequence,s.issue,0,0,0,0]);

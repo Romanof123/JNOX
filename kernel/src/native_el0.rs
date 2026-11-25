@@ -459,6 +459,8 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     let compare = compare.into_iter().chain(ipc::next_compare()).min();
+    #[cfg(jnox_native_safety_watchdog)]
+    let compare = compare.into_iter().chain(safety::watchdog_poll(0x100 + reason)).min();
     arm_compare(compare);
     record(now, reason, argument, before, frame, compare);
     next
@@ -558,6 +560,8 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let id = iar & 0x3ff;
     #[cfg(jnox_native_safety_qualification)]
     permit_trace::irq(iar, entry, frame.is_null());
+    #[cfg(jnox_native_safety_watchdog)]
+    if id == context::TIMER_IRQ { safety::watchdog_poll(30); }
     #[cfg(jnox_native_safety_interference)]
     if id == 27 {
         interference::irq(entry, iar, frame.is_null());
