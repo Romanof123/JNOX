@@ -12,7 +12,14 @@ struct Grant {
 #[derive(Clone, Copy)]
 struct Sleep { target: u64, opening: u64, observed: bool }
 
+#[derive(Default)]
+struct Startup {
+    prepared_from: u64, frozen_at: u64, armed_at: u64, return_check: u64,
+    witnessed: bool,
+}
+
 struct Runtime {
+    startup: Startup,
     policy: NativeCbs<COUNT>,
     epoch: u64, hz: u64, span: u64, guard: u64,
     sleepers: [Option<Sleep>; COUNT], compare: Option<u64>, grant: Option<Grant>,
@@ -86,7 +93,7 @@ impl Runtime {
     fn halt(&mut self, sample: u64, g: Grant, frame: Option<&NativeFrame>, code: u64) -> ! {
         let prior = self.compare.take();
         arm_compare(None);
-        let elapsed = if let Some(id) = g.pid {
+        let elapsed = if let Some(id) = g.pid.filter(|_| g.lower != 0) {
             let n = sample.checked_sub(g.entry).unwrap_or_else(|| fail(13));
             self.wall[id] = self.wall[id].checked_add(n).unwrap_or_else(|| fail(13));
             n
@@ -142,32 +149,40 @@ impl Runtime {
 }
 
 pub(super) fn start(hz: u64) -> usize {
-    if hz == 0 || hz % 1000 != 0 { fail(13) }
-    let policy = NativeCbs::new(NATIVE_RESERVATIONS).unwrap_or_else(|error| {
+    if hz < 10_000 || hz % 1000 != 0 { fail(13) }
+    let prepared_from = counter();
+    let mut policy = NativeCbs::new(NATIVE_RESERVATIONS).unwrap_or_else(|error| {
         print(b"NATIVE CBS REFUSED", &[error as u64]); fail(17)
     });
-    let epoch = counter().checked_add(hz / 10).unwrap_or_else(|| fail(13));
-    for (_, p) in NATIVE_RESERVATIONS {
-        (hz / 20).checked_mul(u64::from(p)).and_then(|n| epoch.checked_add(n))
-            .unwrap_or_else(|| fail(13));
-    }
+    let first = policy.open(0).unwrap_or_else(|_| fail(17)).unwrap_or_else(|| fail(17));
+    let selected = counter();
+    let (pc, sp) = unsafe { (FRAMES[first].elr, FRAMES[first].sp_el0) };
+    let grant = Grant { pid: Some(first), selected, pc, sp, ..Grant::default() };
     unsafe {
-        STATE = Some(Runtime { policy, epoch, hz, span: hz / 20, guard: hz / 1000,
-            sleepers: [None; COUNT], compare: Some(epoch), grant: None, wall: [0; COUNT] });
-        asm!("msr vbar_el1, {}", "isb", in(reg) &raw const native_el0_vectors, options(nostack));
+        STATE = Some(Runtime { policy, epoch: 0, hz, span: hz / 20, guard: hz / 1000,
+            startup: Startup { prepared_from, ..Startup::default() },
+            sleepers: [None; COUNT], compare: None, grant: Some(grant), wall: [0; COUNT] });
     }
-    arm_compare(Some(epoch));
-    if counter() >= epoch { arm_compare(None); fail(15) }
-    let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
-    unsafe { native_sleep_switch(top) };
-    owner().unwrap_or_else(|| fail(17))
+    // The ordinary first-entry path switches this owner's mapping, sets
+    // CURRENT, and installs the vectors, ELR, SP and PSTATE before its hook.
+    first
 }
 
 pub(super) fn witness(now: u64, f: &NativeFrame, service: u64) {
     let r = state();
+    let initial = r.grant.unwrap_or_else(|| fail(17));
+    if initial.slot == 0 && !r.startup.witnessed {
+        // Defer formatting the startup opening row until after the entry
+        // sample. The opening itself had no observed EL0 return yet.
+        r.record(0, initial.entry, Grant { lower: 0, ..initial }, None, 0, None, 0, 0, 0);
+    }
     let g = r.grant.as_mut().unwrap_or_else(|| fail(17));
     if g.pid != Some(unsafe { CURRENT }) || g.lower == 0 { fail(17) }
-    if g.upper == 0 { g.upper = now; g.witness = service; }
+    if g.upper == 0 {
+        g.upper = now;
+        g.witness = service;
+        if g.slot == 0 { r.startup.witnessed = true; }
+    }
     let grant = *g;
     if now > grant.end { r.halt(now, grant, Some(f), 3) }
 }
@@ -216,8 +231,34 @@ extern "C" fn native_cbs_return() {
     let r = state();
     if let Some(mut g) = r.grant {
         if g.lower == 0 {
+            if g.slot == 0 {
+                if g.pid != Some(unsafe { CURRENT }) || r.epoch != 0 { fail(17) }
+                let frozen_at = counter();
+                r.startup.frozen_at = frozen_at;
+                r.epoch = frozen_at.checked_add(r.hz / 10_000).unwrap_or_else(|| fail(13));
+                for (_, p) in NATIVE_RESERVATIONS { r.opening(u64::from(p)); }
+                g.opening = r.epoch;
+                g.end = r.opening(1);
+                g.cutoff = g.end - r.guard;
+                r.compare = Some(g.cutoff);
+                arm_compare(r.compare);
+                r.startup.armed_at = counter();
+                let mut entry = r.startup.armed_at;
+                while entry < g.opening { entry = counter(); }
+                g.entry = entry;
+                r.grant = Some(g);
+                if entry - g.opening > r.guard {
+                    r.startup.return_check = entry;
+                    r.record(0, entry, g, None, 0, None, 0, 0, 0);
+                    r.halt(entry, g, None, 1)
+                }
+            }
             let now = counter();
-            if now - g.opening > r.guard { r.halt(now, g, None, 2) }
+            if g.slot == 0 { r.startup.return_check = now; }
+            if now - g.opening > r.guard {
+                if g.slot == 0 { r.record(0, g.entry, g, None, 0, None, 0, 0, 0); }
+                r.halt(now, g, None, 2)
+            }
             g.lower = now;
             r.grant = Some(g);
         }
@@ -225,6 +266,10 @@ extern "C" fn native_cbs_return() {
 }
 
 fn dump(r: &Runtime) {
+    // Preparation start, selection is in the opening row, epoch freeze,
+    // post-arm counter, pre-return guard sample, and verified EL0 launches.
+    print(b"NATIVE CBS STARTUP", &[r.startup.prepared_from, r.startup.frozen_at,
+        r.startup.armed_at, r.startup.return_check, u64::from(r.startup.witnessed)]);
     print(b"NATIVE CBS CONFIG", &[r.epoch, r.hz, r.span, r.guard]);
     for (id, (q,p)) in NATIVE_RESERVATIONS.into_iter().enumerate() {
         print(b"NATIVE CBS JOB", &[id as u64, u64::from(q), u64::from(p)]);
