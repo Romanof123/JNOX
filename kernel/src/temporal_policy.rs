@@ -118,6 +118,23 @@ impl NativeCyclic {
 
     pub(crate) fn frame_ticks(&self) -> u64 { self.table.frame_ticks }
 
+    /// Apply all wakes through the selection sample, including any which
+    /// became due while the exception handler was servicing the caller.
+    pub(crate) fn select_at(&self, entry: u64, decision: u64, wakes: &mut [Option<u64>; 2],
+                            exited: u8) -> Result<(Option<NativeWindow>, u8, u8), ()> {
+        if decision < entry { return Err(()); }
+        let mut ready = 0;
+        let mut woke = 0;
+        for (id, wake) in wakes.iter_mut().enumerate() {
+            if wake.is_some_and(|at| at <= decision) {
+                *wake = None;
+                woke |= 1 << id;
+            }
+            if wake.is_none() && exited & (1 << id) == 0 { ready |= 1 << id; }
+        }
+        Ok((self.at(decision, ready)?, ready, woke))
+    }
+
     /// None before epoch, Err when this active window's absolute end cannot fit.
     pub(crate) fn at(&self, now: u64, ready: u8) -> Result<Option<NativeWindow>, ()> {
         let Some(elapsed) = now.checked_sub(self.epoch) else { return Ok(None); };
@@ -660,6 +677,23 @@ mod native_reservation_tests {
 #[cfg(test)]
 mod native_cyclic_tests {
     use super::NativeCyclic;
+
+    #[test]
+    fn syscall_crossing_an_edge_selects_at_completion_and_applies_due_wakes() {
+        let entry = 109;
+        for decision in [110, 111] {
+            for middle in [Some(1), None] {
+                let slots = [(Some(0), 10), (middle, 5), (Some(1), 5)];
+                let table = NativeCyclic::new(100, 1000, &slots).unwrap();
+                let mut wakes = [None, Some(decision)];
+                assert_eq!(table.at(entry, 1).unwrap().unwrap().runnable, Some(0));
+                let (window, ready, woke) = table.select_at(entry, decision, &mut wakes, 0).unwrap();
+                let window = window.unwrap();
+                assert_eq!((window.runnable, window.start, window.end), (middle, 110, 115));
+                assert_eq!((ready, woke, wakes), (3, 2, [None, None]));
+            }
+        }
+    }
 
     #[test]
     fn duplicate_late_and_wrap_samples_keep_the_absolute_sequence() {

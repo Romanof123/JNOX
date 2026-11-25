@@ -5,7 +5,7 @@ use crate::temporal_policy::NativeCyclic;
 const IDLE_OWNER: usize = 2;
 const TERMINAL: usize = 3;
 const LIMIT: usize = 512;
-const WIDTH: usize = 33;
+const WIDTH: usize = 34;
 static mut ROWS: [[u64; WIDTH]; LIMIT] = [[0; WIDTH]; LIMIT];
 static mut STATE: Option<Runtime> = None;
 // A masked final ERET stamp uses only two scratch registers, saved on EL1 SP.
@@ -50,21 +50,16 @@ pub(super) fn start(hz: u64) -> usize {
     }
     let stamp = counter();
     if stamp >= epoch { fail(21); }
-    select(stamp, 0, 0, 0, None);
+    select(stamp, stamp, 0, 0, 0, None);
     unsafe { native_sleep_switch(idle_top()); }
     state().owner
 }
 
-fn select(now: u64, kind: u64, op: u64, arg: u64, f: Option<&NativeFrame>) -> usize {
+fn select(entry: u64, decision: u64, kind: u64, op: u64, arg: u64, f: Option<&NativeFrame>) -> usize {
     let r = state();
     let prior = r.owner;
-    let mut ready = 0;
-    let mut woke = 0u8;
-    for (id, wake) in r.wake.iter_mut().enumerate() {
-        if wake.is_some_and(|at| at <= now) { *wake = None; woke |= 1 << id; }
-        if wake.is_none() && r.exited & (1 << id) == 0 { ready |= 1 << id; }
-    }
-    let w = r.table.at(now, ready).unwrap_or_else(|_| fail(21));
+    let (w, ready, woke) = r.table.select_at(entry, decision, &mut r.wake, r.exited)
+        .unwrap_or_else(|_| fail(21));
     let next = if r.exited == 3 { TERMINAL } else { w.and_then(|v| v.runnable).unwrap_or(IDLE_OWNER) };
     let edge = w.map_or(r.epoch, |v| v.end);
     let target = r.wake.iter().flatten().copied().fold(edge, u64::min);
@@ -86,13 +81,13 @@ fn select(now: u64, kind: u64, op: u64, arg: u64, f: Option<&NativeFrame>) -> us
     if r.used < LIMIT {
         let index = r.used;
         unsafe { ROWS[index] = [
-            index as u64, kind, now, op, prior as u64, next as u64,
+            index as u64, kind, entry, op, prior as u64, next as u64,
             r.sequence.unwrap_or(NO_PID), seq.unwrap_or(NO_PID), w.map_or(NO_PID, |v| v.frame),
             w.map_or(NO_PID, |v| v.slot as u64), w.and_then(|v| v.owner).unwrap_or(IDLE_OWNER) as u64,
             w.map_or(0, |v| v.start), edge, r.compare, if next == TERMINAL { 0 } else { target },
             ready as u64, woke as u64, r.wake[0].unwrap_or(0), r.wake[1].unwrap_or(0), r.exited as u64,
-            skipped, now.saturating_sub(r.end), src_pc, src_sp, root(), dst_pc, dst_sp, 0, 0, 0,
-            arg, f.map_or(0, |f| f.x[0]), counter(),
+            skipped, decision.saturating_sub(r.end), src_pc, src_sp, root(), dst_pc, dst_sp, 0, 0, 0,
+            arg, f.map_or(0, |f| f.x[0]), counter(), decision,
         ]; }
         r.current_row = Some(index);
         r.used += 1;
@@ -131,7 +126,7 @@ fn transfer(next: usize, f: &mut NativeFrame) {
 pub(super) fn irq(now: u64, frame: *mut NativeFrame, iar: u32) -> u64 {
     let irq = iar & 0x3ff;
     let f = unsafe { frame.as_mut() };
-    let next = select(now, 1, irq as u64, 0, f.as_deref());
+    let next = select(now, now, 1, irq as u64, 0, f.as_deref());
     if irq < 1020 {
         unsafe { asm!("dsb sy", options(nostack, preserves_flags)); }
         context::gic_write(context::GICC + 0x10, iar);
@@ -163,7 +158,7 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
         9..=18 => -95,
         _ => -38,
     } as u64;
-    let next = select(now, 2, op, arg, Some(f));
+    let next = select(now, counter(), 2, op, arg, Some(f));
     transfer(next, f);
 }
 
@@ -174,7 +169,7 @@ fn print(label: &[u8], values: &[u64]) {
 }
 fn finish() -> ! {
     let r = state();
-    print(b"CONFIG", &[1, r.epoch, r.hz, r.table.frame_ticks()]);
+    print(b"CONFIG", &[2, r.epoch, r.hz, r.table.frame_ticks()]);
     for (index, &(owner, ms)) in NATIVE_PARTITION_WINDOWS.iter().enumerate() {
         print(b"WINDOW", &[index as u64, owner.unwrap_or(IDLE_OWNER) as u64, ms, ms * (r.hz / 1000)]);
     }
