@@ -146,6 +146,34 @@ def native_schedule(parser, args):
     return policy, priorities, weights, quantum
 
 
+def encode_arguments(parser, args):
+    vectors = [args.arg, args.peer_arg, args.peer2_arg]
+    encoded = {}
+    for slot, extras in enumerate(vectors):
+        if not extras:
+            continue
+        if not (args.source or args.elf) or slot > len(args.peer_elf):
+            parser.error(f"slot {slot}: arguments require a supplied ordinary application")
+        if len(extras) > 15:
+            parser.error(f"slot {slot}: at most 15 extra arguments")
+        wire = bytearray([len(extras)])
+        used = 0
+        for value in extras:
+            if "\0" in value:
+                parser.error(f"slot {slot}: an argument contains NUL")
+            try:
+                data = value.encode("utf-8")
+            except UnicodeEncodeError:
+                parser.error(f"slot {slot}: arguments must be valid UTF-8")
+            used += len(data) + 1
+            if used > 1024:
+                parser.error(f"slot {slot}: extra arguments exceed 1024 bytes including NULs")
+            wire.extend(len(data).to_bytes(2, "little"))
+            wire.extend(data)
+        encoded[f"JNOX_NATIVE_ARGV{slot}_HEX"] = wire.hex()
+    return vectors, encoded
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
@@ -176,8 +204,12 @@ def main():
     parser.add_argument("--peer-class", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--allotment-ticks", type=allotments, action="append", default=[], metavar="TOP,MIDDLE,BOTTOM")
     parser.add_argument("--boost-ticks", type=unsigned_decimal, action="append", default=[])
+    for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg")):
+        parser.add_argument(option, action="append", default=[], metavar="VALUE",
+                            help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
     args = parser.parse_args()
     policy, priorities, weights, quantum = native_schedule(parser, args)
+    vectors, encoded_arguments = encode_arguments(parser, args)
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
     peer_digests = [sha256(path) for path in peer_inputs]
     app_input = (args.elf or args.source or SOURCE).resolve(strict=True)
@@ -236,6 +268,8 @@ def main():
         classes = args.primary_class + args.peer_class
         jobs = args.job + args.peer_job
         for slot in slots:
+            slot["argv"] = (["/bin/app", *vectors[slot["slot"]]] if app == "process"
+                            else ["/bin/native_startup_probe", "8", "13"])
             slot["priority"] = priorities[slot["slot"]] if priorities else None
             if weights:
                 slot["weight"] = weights[slot["slot"]]
@@ -275,6 +309,7 @@ def main():
             env["JNOX_NATIVE_WEIGHTS"] = ",".join(map(str, weights))
         if quantum is not None:
             env["JNOX_NATIVE_QUANTUM_TICKS"] = str(quantum)
+        env.update(encoded_arguments)
         env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,
                    CARGO_TARGET_DIR=str(out / "target"))
