@@ -172,3 +172,7 @@ python3 tools/build_native_el0.py --out isolated --policy cbs --elf crc.elf --re
 ~~~
 
 Specify one quota,period tuple per ELF in slot order, using counts of 50 ms slots. In this example each application receives one nominal grant per four slots (200 ms); unused capacity stays idle. Use positive integer quotas no larger than their periods. The sum of the quota/period fractions must be at most one. The normal loader accepts a primary application and up to two peer ELFs. Each worker retains its private block count and result across grants. Physical service is measured separately from nominal entitlement.
+
+## Sampled LLF for finite native jobs
+
+Use `--policy llf` with the same 100 ms release, absolute deadline and estimated-cost tuples used by native EDF. At a grid sample the kernel chooses the smallest signed laxity (deadline minus grid index minus remaining cost). A waiting job can take over even when no job arrives. An equal-laxity incumbent keeps running. For example, package the checksum with `--job 0,6,1` and the independently built histogram with `--peer-job 0,7,3`. The [worked example](../examples/native-llf/README.md) gives the complete SDK build, package and boot commands for both histogram inputs.
