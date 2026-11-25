@@ -243,3 +243,13 @@ FIFO로 실행하려면 마지막 이미지 경로를 `pi-fifo/kernel8.img`로 �
 ~~~sh
 python3 tools/package_pi4.py --kernel pi-rr/kernel8.img --output pi-rr-boot
 ~~~
+
+## 두 앱에 반복 CPU 창 지정
+
+단일 CPU AArch64 virt에서 주 ELF는 a, 피어 ELF는 b다. 아래 시간표는 a 100 ms, b 50 ms, 커널 유휴 50 ms를 반복한다. 두 앱을 모두 포함하는 2~16개의 창을 지정할 수 있다. 지정한 앱이 차단되거나 종료되면 그 창의 남은 시간은 유휴 상태다.
+
+~~~sh
+python3 tools/build_native_el0.py --out table-p --policy partition --partition-windows a:100,b:50,idle:50 --elf energy.elf --peer-elf density.elf
+~~~
+
+[에너지 합계와 비트 밀도 히스토그램 빌드 및 QEMU 실행](../examples/native-cyclic/README.md)
