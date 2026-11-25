@@ -3,6 +3,7 @@
 //! caller serializes eligibility changes at boundaries between dispatches.
 
 use super::feedback_policy::lottery_winner;
+use core::convert::TryFrom;
 
 // Same exact integer scale as service_policy's equal-quantum StrideClass.
 const STRIDE_SCALE: u64 = 720_720; // LCM(1..=16)
@@ -26,7 +27,7 @@ fn next_word(state: &mut u64) -> u64 {
 /// The permutation cannot repeat a rejected word: after at most cutoff
 /// rejections the next sample must succeed. Here 1 <= total <= 32 * 16.
 #[derive(Clone, Copy)]
-#[cfg_attr(not(jnox_ordinary_prop), allow(dead_code))]
+#[cfg_attr(not(any(test, jnox_ordinary_prop, jnox_native_proportional)), allow(dead_code))]
 pub(crate) struct Draw {
     pub(crate) before: u64, pub(crate) after: u64, pub(crate) words: u64,
     pub(crate) raw: u64, pub(crate) ticket: u32, pub(crate) total: u32,
@@ -54,7 +55,7 @@ fn uniform_ticket(state: &mut u64, total: u32) -> Option<Draw> {
 
 enum Method<const N: usize> {
     Lottery { state: u64, last_draw: Option<(u32,u32)> },
-    Stride { pass: [u64; N], last_base: Option<u64> },
+    Stride { pass: [u128; N], last_base: Option<u128> },
 }
 
 pub(crate) struct Proportional<const N: usize> {
@@ -62,7 +63,7 @@ pub(crate) struct Proportional<const N: usize> {
     ready: u32,
     running: Option<usize>,
     method: Method<N>,
-    #[cfg(jnox_ordinary_prop)]
+    #[cfg(any(test, jnox_ordinary_prop, jnox_native_proportional))]
     audit: Option<Draw>,
 }
 
@@ -74,7 +75,7 @@ impl<const N: usize> Proportional<N> {
         {
             return None;
         }
-        Some(Self { weights, ready: 0, running: None, method, #[cfg(jnox_ordinary_prop)] audit: None })
+        Some(Self { weights, ready: 0, running: None, method, #[cfg(any(test, jnox_ordinary_prop, jnox_native_proportional))] audit: None })
     }
 
     pub(crate) fn lottery(weights: [u8; N], seed: u64) -> Option<Self> {
@@ -143,17 +144,21 @@ impl<const N: usize> Proportional<N> {
         }
     }
 
-    #[cfg(jnox_ordinary_prop)]
+    #[cfg(any(test, jnox_ordinary_prop, jnox_native_proportional))]
     pub(crate) fn lottery_state(&self) -> Option<u64> {
         match self.method { Method::Lottery {state,..} => Some(state), _ => None }
     }
 
-    #[cfg(jnox_ordinary_prop)]
+    #[cfg(any(test, jnox_ordinary_prop, jnox_native_proportional))]
     pub(crate) fn draw_record(&self) -> Option<Draw> {
         self.audit
     }
 
     pub(crate) fn pass(&self, id: usize) -> Option<u64> {
+        u64::try_from(self.pass_wide(id)?).ok()
+    }
+
+    pub(crate) fn pass_wide(&self, id: usize) -> Option<u128> {
         match &self.method {
             Method::Stride { pass, .. } => pass.get(id).copied(),
             Method::Lottery { .. } => None,
@@ -161,6 +166,10 @@ impl<const N: usize> Proportional<N> {
     }
 
     pub(crate) fn last_normalization(&self) -> Option<u64> {
+        u64::try_from(self.last_normalization_wide()?).ok()
+    }
+
+    pub(crate) fn last_normalization_wide(&self) -> Option<u128> {
         match &self.method {
             Method::Stride { last_base, .. } => *last_base,
             Method::Lottery { .. } => None,
@@ -177,7 +186,7 @@ impl<const N: usize> Proportional<N> {
                 let total = tickets.iter().sum();
                 let draw = uniform_ticket(state, total)?;
                 *last_draw = Some((draw.ticket, draw.total));
-                #[cfg(jnox_ordinary_prop)]
+                #[cfg(any(test, jnox_ordinary_prop, jnox_native_proportional))]
                 { self.audit = Some(draw); }
                 lottery_winner(&tickets, u64::from(draw.ticket)).expect("accepted ticket has an owner")
             }
@@ -203,13 +212,23 @@ impl<const N: usize> Proportional<N> {
     /// ratios describe selections; equal service intervals convert selections
     /// into service shares. Stride directly charges the reported service.
     pub(crate) fn stop(&mut self, id: usize, service: u32) -> bool {
+        self.stop_elapsed(id, u64::from(service))
+    }
+
+    /// Charge one observed lease without truncating a long counter interval.
+    /// Dispatch normalized its winner to zero, so even the maximum possible
+    /// charge fits in 84 bits. Other ready passes retain their relative debt.
+    pub(crate) fn stop_elapsed(&mut self, id: usize, service: u64) -> bool {
         if self.running != Some(id) {
             return false;
         }
         if let Method::Stride { pass, .. } = &mut self.method {
-            // Normalization set the winner to zero. The product is bounded by
-            // 720720 * (2^32 - 1), and charging never increases another pass.
-            pass[id] = (STRIDE_SCALE / u64::from(self.weights[id])) * u64::from(service);
+            let stride = u128::from(STRIDE_SCALE / u64::from(self.weights[id]));
+            let increment = stride * u128::from(service);
+            let Some(charged) = pass[id].checked_add(increment) else {
+                return false;
+            };
+            pass[id] = charged;
         }
         self.running = None;
         true
@@ -228,35 +247,61 @@ pub(crate) struct WindowInput {
     pub(crate) floors: [u8; 3],
 }
 
-#[cfg(any(test, jnox_ordinary_prop))]
+#[derive(Clone, Copy)]
+pub(crate) struct NativeWindowInput<const N: usize> {
+    pub(crate) seed: u64,
+    pub(crate) weights: [u8; N],
+    pub(crate) horizon: usize,
+    pub(crate) width: usize,
+    pub(crate) floors: [u8; N],
+}
+
 #[derive(Debug, PartialEq)]
-pub(crate) struct WindowReport {
-    pub(crate) minimum: [u8; 3],
+pub(crate) struct WindowReport<const N: usize = 3> {
+    pub(crate) minimum: [u8; N],
     pub(crate) first_short: Option<(usize, usize, u8)>,
 }
 
 #[cfg(any(test, jnox_ordinary_prop))]
 impl WindowInput {
-    const CAPACITY: usize = 64;
+    pub(crate) fn analyze(self) -> Option<WindowReport> {
+        // The original linked fixture admits three ready streams and requires
+        // a positive floor for each. Native packages may declare a zero floor.
+        if self.ready != 7 || self.floors.contains(&0) {
+            return None;
+        }
+        NativeWindowInput {
+            seed: self.seed,
+            weights: self.weights,
+            horizon: self.horizon,
+            width: self.width,
+            floors: self.floors,
+        }.analyze()
+    }
+}
+
+const WINDOW_CAPACITY: usize = 64;
+
+impl<const N: usize> NativeWindowInput<N> {
 
     /// Scratch policy is intentionally distinct from the live policy. Only
     /// aggregates and the first failing predicate can cross this boundary.
-    pub(crate) fn analyze(self) -> Option<WindowReport> {
-        if !(1..=Self::CAPACITY).contains(&self.horizon)
+    pub(crate) fn analyze(self) -> Option<WindowReport<N>> {
+        if !(1..=3).contains(&N)
+            || !(1..=WINDOW_CAPACITY).contains(&self.horizon)
             || !(1..=self.horizon).contains(&self.width)
-            || self.ready != 7
-            || self.floors.iter().any(|&f| f == 0 || usize::from(f) > self.width)
+            || self.floors.iter().any(|&f| usize::from(f) > self.width)
             || self.floors.iter().map(|&f| usize::from(f)).sum::<usize>() > self.width
         {
             return None;
         }
         let mut scratch = Proportional::lottery(self.weights, self.seed)?;
-        if !scratch.set_ready_mask(self.ready) {
+        if !scratch.set_ready_mask((1u32 << N) - 1) {
             return None;
         }
-        let mut ring = [0usize; Self::CAPACITY];
-        let mut occupancy = [0u8; 3];
-        let mut report = WindowReport { minimum: [u8::MAX; 3], first_short: None };
+        let mut ring = [0usize; WINDOW_CAPACITY];
+        let mut occupancy = [0u8; N];
+        let mut report = WindowReport { minimum: [u8::MAX; N], first_short: None };
         for slot in 0..self.horizon {
             let index = slot % self.width;
             if slot >= self.width {

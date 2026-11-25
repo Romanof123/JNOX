@@ -4,6 +4,9 @@ use super::*;
 mod policy;
 #[path = "native_hierarchy_trace.rs"]
 mod trace;
+#[path = "hierarchy_refill_health.rs"]
+mod health;
+use health::{ArmKind, Entry, Health, Outcome};
 
 const P: usize = NATIVE_HIERARCHY_PARENTS.len();
 const C: usize = NATIVE_HIERARCHY_CHILDREN.len();
@@ -23,6 +26,10 @@ struct Runtime {
     compare: Option<u64>,
     wake: [Option<u64>; L],
     exited: u64,
+    health: Health,
+    arm_seq: u64,
+    prior_regs: [u64; 2],
+    first_detail: Option<[u64; 25]>,
 }
 static mut STATE: Option<Runtime> = None;
 
@@ -45,16 +52,60 @@ pub(super) fn start(hz: u64) -> usize {
         NATIVE_HIERARCHY_CHILDREN, NATIVE_HIERARCHY_LEAVES).unwrap_or_else(|| fail(23));
     unsafe {
         STATE = Some(Runtime { ledger, epoch, hz, owner: IDLE_OWNER, grant_start: 0, grant_end: 0,
-            compare: None, wake: [None; L], exited: 0 });
+            compare: None, wake: [None; L], exited: 0, health: Health::new(),
+            arm_seq: 0, prior_regs: [0; 2], first_detail: None });
     }
-    select(epoch, 0, 0, 0, None, Action::Keep)
+    select(epoch, 0, 0, 0, None, Action::Keep, None)
 }
 
 enum Action { Keep, Sleep(u64), Exit }
 
-fn select(entry: u64, kind: u64, op: u64, argument: u64, frame: Option<&NativeFrame>, action: Action) -> usize {
+fn timer_regs() -> [u64; 2] {
+    let (cval, ctl): (u64, u64);
+    unsafe {
+        asm!("mrs {}, cntp_cval_el0", "mrs {}, cntp_ctl_el0", out(reg) cval, out(reg) ctl,
+            options(nostack, preserves_flags));
+    }
+    [cval, ctl]
+}
+
+fn arm_kind(target: usize, policy: Option<u64>, wake: Option<u64>, due: Option<u64>, compare: Option<u64>) -> ArmKind {
+    if target == TERMINAL { return ArmKind::Terminal; }
+    if compare != due { return ArmKind::Horizon; }
+    if target == IDLE_OWNER && policy.is_some() && policy == due {
+        return if wake == due { ArmKind::WakeRefill } else { ArmKind::Refill };
+    }
+    if wake.is_some() && wake == due { ArmKind::Wake } else { ArmKind::Grant }
+}
+
+fn select(entry: u64, kind: u64, op: u64, argument: u64, frame: Option<&NativeFrame>, action: Action,
+          irq: Option<Entry>) -> usize {
     let r = state();
     let src = r.owner;
+    let seq = trace::counts().0;
+    let old_seq = r.arm_seq;
+    let mut timer = [0; 22];
+    timer[0] = seq;
+    timer[10] = old_seq;
+    if let Some(e) = irq {
+        let idle = src == IDLE_OWNER;
+        let [landing, before_unmask, daif] = trace::idle_boundary();
+        let outcome = r.health.observe(old_seq, e, idle, NATIVE_HIERARCHY_PERIOD / 8);
+        timer[11..].copy_from_slice(&[e.earliest, e.cval, e.ctl, e.counter, e.spsr, e.elr,
+            e.iar, landing, before_unmask, daif, outcome as u64]);
+        if r.first_detail.is_none() {
+            if let Some(v) = &r.health.first {
+                let a = &v.arm;
+                let [pre_cval, pre_ctl] = r.prior_regs;
+                r.first_detail = Some([1, seq, v.event, v.outcome as u64, a.seq, a.kind as u64,
+                    a.due, a.before, pre_cval, pre_ctl, a.after, a.cval, a.ctl, e.earliest,
+                    e.cval, e.ctl, e.counter, e.spsr, e.elr, e.iar, landing, before_unmask,
+                    daif, u64::from(v.lag.is_some()), v.lag.unwrap_or(0)]);
+            }
+        }
+    } else {
+        timer[21] = Outcome::Other as u64;
+    }
     let mut row = trace::Row {
         kind, op, entry, source: src as u64, argument, old_compare: r.compare.unwrap_or(0),
         grant_start: r.grant_start, grant_end: r.grant_end, src_root: root(), ..Default::default()
@@ -107,12 +158,24 @@ fn select(entry: u64, kind: u64, op: u64, argument: u64, frame: Option<&NativeFr
         (if terminal { TERMINAL } else { IDLE_OWNER }, r.ledger.next_actionable(now, &ready))
     };
     row.select_end = counter();
-    r.compare = policy_due.into_iter().chain(r.wake.iter().flatten().copied()).min()
+    let wake_due = r.wake.iter().flatten().copied().min();
+    let due = policy_due.into_iter().chain(wake_due).min();
+    r.compare = due
         // CVAL compares using signed counter distances. Revisit a very distant
         // wake/refill in range, retaining the original absolute deadline.
         .map(|due| due.min(now.saturating_add(i64::MAX as u64)));
     if target == IDLE_OWNER && r.compare.is_none() { fail(23); }
+    let cause = arm_kind(target, policy_due, wake_due, due, r.compare);
+    let before = counter();
+    let prior = timer_regs();
     arm_compare(r.compare);
+    let [cval, ctl] = timer_regs();
+    let after = counter();
+    r.prior_regs = prior;
+    let programmed = r.compare.unwrap_or(0);
+    r.arm_seq = r.health.arm(cause, programmed, before, after, cval, ctl);
+    timer[1..10].copy_from_slice(&[r.arm_seq, cause as u64, programmed, before, prior[0],
+        prior[1], after, cval, ctl]);
     row.target = target as u64;
     row.next_compare = r.compare.unwrap_or(0);
     if target < L {
@@ -127,7 +190,7 @@ fn select(entry: u64, kind: u64, op: u64, argument: u64, frame: Option<&NativeFr
         row.dst_sp = idle_top() as u64;
     }
     r.owner = target;
-    trace::record(row);
+    trace::record(row, timer);
     target
 }
 
@@ -143,7 +206,16 @@ pub(super) fn irq(entry: u64, ptr: *mut NativeFrame, iar: u32) -> u64 {
     let id = iar & 0x3ff;
     let f = unsafe { ptr.as_mut() };
     if f.is_some() != (state().owner < L) { fail(23); }
-    let next = select(entry, 1, id as u64, 0, f.as_deref(), Action::Keep);
+    let [cval, ctl] = timer_regs();
+    let (spsr, elr): (u64, u64);
+    unsafe {
+        asm!("mrs {}, spsr_el1", "mrs {}, elr_el1", out(reg) spsr, out(reg) elr,
+            options(nostack, preserves_flags));
+    }
+    // native_sleep_irq already acknowledged this IAR. Read the timer before
+    // selection reprograms it; retain the original assembly stamp separately.
+    let captured = Entry { earliest: entry, cval, ctl, counter: counter(), spsr, elr, iar: u64::from(iar) };
+    let next = select(entry, 1, id as u64, 0, f.as_deref(), Action::Keep, Some(captured));
     if id < 1020 {
         unsafe { asm!("dsb sy", options(nostack, preserves_flags)); }
         context::gic_write(context::GICC + 0x10, iar);
@@ -171,7 +243,7 @@ pub(super) fn syscall(entry: u64, frame: &mut NativeFrame) {
         9..=18 => -95,
         _ => -38,
     } as u64;
-    let target = select(entry, 2, op, arg, Some(frame), action);
+    let target = select(entry, 2, op, arg, Some(frame), action, None);
     transfer(target, frame);
 }
 
@@ -186,11 +258,18 @@ fn finish() -> ! {
     for (id, (group, quota)) in NATIVE_HIERARCHY_CHILDREN.into_iter().enumerate() { print(b"CHILD", &[id as u64, group as u64, quota]); }
     for (id, (child, quota)) in NATIVE_HIERARCHY_LEAVES.into_iter().enumerate() { print(b"LEAF", &[id as u64, child as u64, quota]); }
     trace::dump();
+    let (total, stored, dropped) = trace::counts();
+    let h = &r.health;
+    print(b"HEALTH", &[health::VERSION, NATIVE_HIERARCHY_PERIOD, NATIVE_HIERARCHY_PERIOD / 8,
+        h.arms, h.events, h.scored, h.early, h.invalid, h.late, h.max_lag,
+        u64::from(h.overflow), total, stored, dropped]);
+    if let Some(first) = &r.first_detail { print(b"FIRST", first); } else { print(b"FIRST", &[0]); }
     for id in 0..L {
         let status = i64::from(unsafe { EXIT_STATUS[id] });
         if L == 1 { uart_write(b"NATIVE EL0 EXIT "); decimal(status); uart_write(b"\n"); }
         else { event(b"EXIT", id, Some(status)); }
     }
     head(10, 1); head(1, 3);
+    print(b"HEALTH END", &[health::VERSION]);
     park()
 }

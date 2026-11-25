@@ -55,14 +55,35 @@ static mut native_hierarchy_rows: [[u64; WIDTH]; CAPACITY] = [[0; WIDTH]; CAPACI
 static mut native_hierarchy_used: usize = 0;
 #[unsafe(no_mangle)]
 static mut native_hierarchy_lost: u64 = 0;
+#[unsafe(no_mangle)]
+static mut native_hierarchy_timer_rows: [[u64; 22]; CAPACITY] = [[0; 22]; CAPACITY];
+#[unsafe(no_mangle)]
+static mut native_hierarchy_pre_unmask: [u64; 2] = [0; 2];
+static mut LANDING: u64 = 0;
+
+pub(super) fn counts() -> (u64, u64, u64) {
+    unsafe {
+        let used = native_hierarchy_used as u64;
+        (used.saturating_add(native_hierarchy_lost), used, native_hierarchy_lost)
+    }
+}
+
+pub(super) fn idle_boundary() -> [u64; 3] {
+    unsafe {
+        let [stamp, daif] = ptr::read_volatile(&raw const native_hierarchy_pre_unmask);
+        [LANDING, stamp, daif]
+    }
+}
 
 // Existing native cyclic assembly writes the last pre-ERET / idle-transfer
 // counter through this pointer, after the chosen mapping and frame are active.
 #[unsafe(no_mangle)]
 static mut native_cyclic_return_cell: *mut u64 = ptr::null_mut();
 
-pub(super) fn record(r: Row) {
+pub(super) fn record(r: Row, timer: [u64; 22]) {
     unsafe {
+        LANDING = 0;
+        ptr::write_volatile(&raw mut native_hierarchy_pre_unmask, [0; 2]);
         native_cyclic_return_cell = ptr::null_mut();
         let i = native_hierarchy_used;
         if i == CAPACITY {
@@ -70,6 +91,7 @@ pub(super) fn record(r: Row) {
             return;
         }
         let row = &mut *(&raw mut native_hierarchy_rows[i]);
+        native_hierarchy_timer_rows[i] = timer;
         row[..29].copy_from_slice(&[
             i as u64, r.kind, r.op, r.entry, r.settle_begin, r.settle_end,
             r.select_begin, r.select_end, r.source, r.target, r.ready, r.woke,
@@ -107,6 +129,7 @@ extern "C" fn native_cyclic_return() {
 #[unsafe(no_mangle)]
 extern "C" fn native_cyclic_idle_sample(stamp: u64) {
     unsafe {
+        LANDING = stamp;
         if !native_cyclic_return_cell.is_null() {
             let row = &mut *(&raw mut native_hierarchy_rows[native_hierarchy_used - 1]);
             if row[9] == 3 && row[IDLE_LANDING] == 0 { row[IDLE_LANDING] = stamp; }
@@ -125,6 +148,7 @@ pub(super) fn dump() {
                 unsigned(v);
             }
             uart_write(b"\n");
+            super::print(b"TIMER", &*(&raw const native_hierarchy_timer_rows[i]));
         }
         uart_write(b"NATIVE HIERARCHY DROPPED ");
         unsigned(native_hierarchy_lost);
