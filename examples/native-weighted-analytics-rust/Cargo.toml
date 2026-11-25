@@ -1,0 +1,18 @@
+[package]
+name = "extended-byte-density-histogram"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "extended-byte-density-histogram"
+path = "../native-weighted-rust/src/main.rs"
+
+[dependencies]
+jnox-native = { path = "../../sdk/native-aarch64/rust" }
+
+[profile.release]
+panic = "abort"
+
+[features]
+default = ["extended-input"]
+extended-input = []

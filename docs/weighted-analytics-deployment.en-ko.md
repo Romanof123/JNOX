@@ -6,7 +6,7 @@ PM은 가상 배포 대상으로 weighted-analytics를 선택할 수 있다. 이
 
 ## Operator build and boot / 운영자 빌드·부팅
 
-Provide one source-controlled operator command with these proposed normal entry points, run from the repository root on Linux/WSL:
+Run these commands from the repository root on Linux or WSL:
 
 ~~~sh
 python3 tools/weighted_analytics.py build --out output/weighted-analytics
@@ -18,6 +18,15 @@ Build all four ordinary ELFs once using the existing C SDK build.sh and Rust bui
 Commit the extended data generators, loop extents, full product checks, a source-readable configuration and an independent host oracle. Adapt the existing weighted examples with explicit build-time input sizes or check in the small extended sources; retain the old examples' default extents and checks. Identify the historical extended sources and archive digest in the usage guide. Fresh builds must not unpack old captures, download binaries, vendor toolchains or copy a kernel backend. Keep growth in the logical dataset, generated a block at a time. Document Rust toolchain/target, clang/lld and QEMU prerequisites. Build into a new output directory; record source revision/changes, SDK and workload source/input hashes, compiler and linker versions/commands, per-slot ELF SHA-256, kernel digest, weights and ordered package metadata. Record actual produced identities, even when a toolchain produces different bytes. [Ordinary package](../tools/build_native_el0.py) · [Prior input and capture provenance](evidence/native-weighted-applications-first.en-ko.md)
 
 저장소에 확장 데이터 생성 규칙과 반복 수, 독립 계산식을 넣는다. 기본 예제의 입력은 보존한다. 운영자는 빌드 명령 한 번으로 기존 SDK와 패키저를 통해 네 프로필과 오류 대조 이미지를 만들고 이름으로 부팅한다. 실행 파일은 변형 사이에서 재사용하고 각 이미지의 실제 해시·도구·빌드 인자·슬롯별 가중치를 기록한다.
+
+
+### Running the profile / 실행 방법
+
+Install Python 3.9+, Git, a POSIX shell, clang/ld.lld, Rust 1.95.0 with the aarch64-unknown-none and aarch64-unknown-none-softfloat targets, and qemu-system-aarch64. Run the build and boot commands above from the checkout. Build takes a new output path. Select `pair`, `swap`, `triple`, `timed` or `overflow` when booting. The guest serial console stays attached after the final report; interrupt QEMU to close it.
+
+`deployment/build.json` records the input, package and ELF identities. Each variant retains its kernel, ordered user ELFs, ordinary manifest and build log. `launches/` records the verified kernel identity and exact QEMU invocation for each launch. An ordinary console boot does not by itself score the timing windows.
+
+Linux 또는 WSL에서 위 도구와 Rust 타깃을 설치한 뒤 새 경로에 빌드한다. 같은 경로로 부팅할 때 다섯 변형 중 하나를 고른다. 최종 보고 후 콘솔은 QEMU를 중단해 닫는다. 입력·ELF·패키지 식별값은 `deployment/build.json`, 부팅별 실제 실행 인자와 커널 해시는 `launches/`에 남는다.
 
 ## Frozen clients / 고정 입력과 결과
 
