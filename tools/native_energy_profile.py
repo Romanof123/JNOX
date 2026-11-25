@@ -112,3 +112,26 @@ def parse_profile(data):
 def load_profile(path):
     with Path(path).open("rb") as stream:
         return parse_profile(stream.read(MAX_BYTES + 1))
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate typed kernel constants from a hash-pinned placement profile")
+    parser.add_argument("source", type=Path)
+    parser.add_argument("source_sha256")
+    parser.add_argument("wire_sha256")
+    parser.add_argument("output_rs", type=Path)
+    args = parser.parse_args()
+    try:
+        profile = load_profile(args.source)
+        if profile.source_sha256 != args.source_sha256:
+            parser.error("placement source SHA-256 mismatch")
+        if profile.wire_sha256 != args.wire_sha256:
+            parser.error("placement canonical wire SHA-256 mismatch")
+        args.output_rs.write_bytes(profile.rust_constants().encode("ascii"))
+    except (ValueError, OSError) as exc:
+        parser.error(str(exc))
+
+
+if __name__ == "__main__":
+    main()
