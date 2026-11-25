@@ -2112,6 +2112,10 @@ CHG-139,affects,REQ-002
 REQ-002,partially-implemented-by,IMP-139
 IMP-139,partially-verified-by,VER-002
 VER-002,has-partial-evidence,EVD-139
+CHG-139,affects,REQ-014
+REQ-014,partially-implemented-by,IMP-139
+IMP-139,partially-verified-by,VER-014
+VER-014,has-partial-evidence,EVD-139
 CHG-139,affects,REQ-020
 REQ-020,partially-implemented-by,IMP-139
 IMP-139,partially-verified-by,VER-020
