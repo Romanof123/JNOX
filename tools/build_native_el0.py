@@ -207,7 +207,13 @@ def main():
     for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg")):
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
+    parser.add_argument("--threads", choices=["2"], action="append", default=[],
+                        help="enable two joinable cooperative thread contexts for one ordinary ELF")
     args = parser.parse_args()
+    if len(args.threads) > 1:
+        parser.error("--threads may appear only once")
+    if args.threads and (not (args.elf or args.source) or args.peer_elf or args.policy):
+        parser.error("--threads 2 requires exactly one ordinary application and the default cooperative policy")
     policy, priorities, weights, quantum = native_schedule(parser, args)
     vectors, encoded_arguments = encode_arguments(parser, args)
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
@@ -300,6 +306,9 @@ def main():
             metadata.update(allotment_ticks=args.allotment_ticks[0], boost_ticks=args.boost_ticks[0])
             env["JNOX_NATIVE_ALLOTMENT_TICKS"] = ",".join(map(str, args.allotment_ticks[0]))
             env["JNOX_NATIVE_BOOST_TICKS"] = str(args.boost_ticks[0])
+        if args.threads:
+            metadata["thread_capacity"] = 2
+            env["JNOX_NATIVE_THREADS"] = "2"
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy

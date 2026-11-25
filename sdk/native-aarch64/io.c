@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <jnox/native_abi.h>
 #include <jnox/periodic.h>
+#include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
 #include <time.h>
@@ -12,21 +13,32 @@ _Static_assert(sizeof(void *) == 8 && sizeof(long) == 8 && sizeof(int) == 4,
 int *__jnox_errno_location(void)
 {
     static int initial_thread_errno;
-    return &initial_thread_errno;
+    int *cell;
+    __asm__ volatile("mrs %0, tpidrro_el0" : "=r"(cell));
+    return cell ? cell : &initial_thread_errno;
 }
 
-/* EL1 preserves all user GPRs except the x0 result across this exception. */
-static long raw_service(long id, long first, long second, long third, long fourth)
+struct service_result {
+    long status;
+    uint64_t value;
+};
+
+static struct service_result raw_service_pair(long id, long first, long second, long third, long fourth)
 {
     register long x0 __asm__("x0") = first;
     register long x1 __asm__("x1") = second;
     register long x2 __asm__("x2") = third;
     register long x3 __asm__("x3") = fourth;
     register long x8 __asm__("x8") = id;
-    __asm__ volatile("svc %c[trap]" : "+r"(x0)
-                     : "r"(x1), "r"(x2), "r"(x3), "r"(x8), [trap] "i"(JNOX_ABI_SVC)
+    __asm__ volatile("svc %c[trap]" : "+r"(x0), "+r"(x1)
+                     : "r"(x2), "r"(x3), "r"(x8), [trap] "i"(JNOX_ABI_SVC)
                      : "memory", "cc");
-    return x0;
+    return (struct service_result){x0, (uint64_t)x1};
+}
+
+static long raw_service(long id, long first, long second, long third, long fourth)
+{
+    return raw_service_pair(id, first, second, third, fourth).status;
 }
 
 static long service(long id, long first, long second, long third)
@@ -88,4 +100,31 @@ int clock_nanosleep(clockid_t clock, int flags, const struct timespec *request,
 {
     (void)remaining;
     return (int)-raw_service(JNOX_CALL_CLOCK_NANOSLEEP, clock, flags, (long)request, 0);
+}
+
+extern void __jnox_thread_start(void *(*start)(void *), void *arg);
+
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                   void *(*start)(void *), void *arg)
+{
+    if (!thread || !start)
+        return EINVAL;
+    if (attr)
+        return ENOTSUP;
+    struct service_result reply = raw_service_pair(JNOX_CALL_THREAD_CREATE,
+        (long)start, (long)arg, (long)__jnox_thread_start, 0);
+    if (reply.status)
+        return (int)-reply.status;
+    *thread = reply.value;
+    return 0;
+}
+
+int pthread_join(pthread_t thread, void **result)
+{
+    struct service_result reply = raw_service_pair(JNOX_CALL_THREAD_JOIN, (long)thread, 0, 0, 0);
+    if (reply.status)
+        return (int)-reply.status;
+    if (result)
+        *result = (void *)reply.value;
+    return 0;
 }

@@ -391,6 +391,13 @@ fn main() {
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
             "native peers and scheduling require ordinary native process packaging");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_threads)");
+    if let Some(capacity) = selector("JNOX_NATIVE_THREADS") {
+        assert!(capacity == "2" && profile.as_deref() == Some("native")
+            && app.as_deref() == Some("process") && peer_image.is_none() && policy.is_none(),
+            "JNOX_NATIVE_THREADS=2 requires a single ordinary ELF and the default cooperative policy");
+        println!("cargo::rustc-cfg=jnox_native_threads");
+    }
     let native_argv = [0, 1, 2].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
     for (slot, args) in native_argv.iter().enumerate() {
         if args.is_some() {

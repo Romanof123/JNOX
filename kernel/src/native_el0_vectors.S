@@ -27,6 +27,7 @@ native_el0_vectors:
 .type native_el0_enter,%function
 native_el0_enter:
     msr daifset,#15
+    msr tpidrro_el0,x3
     mov x3,x2
     mrs x2,CurrentEL
     cmp x2,#4
@@ -51,7 +52,6 @@ native_el0_enter:
     measured_return
     .endif
     msr tpidr_el0,xzr
-    msr tpidrro_el0,xzr
     msr fpcr,xzr
     msr fpsr,xzr
     .irp reg,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31

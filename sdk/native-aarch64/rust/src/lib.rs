@@ -1,6 +1,8 @@
 //! Application services for the J-NOX native AArch64 ABI v1.
 #![no_std]
 
+pub mod pthread;
+
 use core::time::Duration;
 
 #[repr(C)]

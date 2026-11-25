@@ -44,10 +44,15 @@ mod multilevel;
 use multilevel as measured;
 #[cfg(jnox_native_multilevel)]
 global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_multilevel_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(not(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)))]
+#[cfg(jnox_native_threads)]
+#[path = "native_threads.rs"]
+mod threads;
+#[cfg(jnox_native_threads)]
+global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_threads_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(not(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
-    fn native_el0_enter(entry: u64, sp: u64, spsr: u64) -> !;
+    fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
     fn native_sleep_switch(idle_top: *mut u8);
     static native_el0_vectors: u8;
 }
@@ -126,7 +131,7 @@ fn clock_gettime(clock_id: u64, address: usize, now: u64) -> i64 {
 #[derive(Clone, Copy, PartialEq)]
 enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(any(jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
+const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_threads) || cfg!(any(jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
 const EMPTY_FRAME: NativeFrame = NativeFrame {
     x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
     current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
@@ -374,6 +379,14 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     #[cfg(jnox_native_cbs)]
     if let Some(f) = unsafe { frame.as_ref() } { cbs::witness(entry, f, 0); }
     if id >= 1020 { return 0 }
+    #[cfg(jnox_native_threads)]
+    if id == context::TIMER_IRQ {
+        let ready = threads::irq(entry, unsafe { frame.as_ref() });
+        unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+        context::gic_write(context::GICC + 0x10, iar);
+        unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+        return ready as u64;
+    }
     #[cfg(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel))]
     if id == context::TIMER_IRQ {
         #[cfg(jnox_native_weighted)]
@@ -486,6 +499,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     if exit && f.x[0] as i32 as i64 as u64 != f.x[0] {
         fail(3);
     }
+    #[cfg(jnox_native_threads)]
+    { threads::syscall(entry, f); return; }
     // Unsupported services do not dereference a user pointer, acquire
     // descriptors, emit output or claim to have completed a transfer.
     let now = if cfg!(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { entry } else { counter() };
@@ -502,7 +517,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         },
         8 if cfg!(jnox_native_process) => 0,
         9 if cfg!(jnox_native_periodic) => 0,
-        9 => -95,
+        9..=12 => -95,
         _ => -38,
     };
     // Keep the first seven calls and the most recent call once the journal fills.
@@ -516,7 +531,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     head(8, index as u64 + 1);
     let pid = unsafe { CURRENT };
-    if f.x[8] == 9 && !cfg!(jnox_native_periodic) {
+    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=12).contains(&f.x[8]) {
         f.x[0] = result as u64;
         return;
     }
@@ -711,9 +726,13 @@ pub(super) fn run() -> ! {
     }
     let plans = images.map(|(image, _)| validated_image(image));
     let buffers = unsafe { &mut *(&raw mut STARTUP_TAILS) };
+    #[cfg(jnox_native_threads)]
+    let stack_bottom = native_el0_mmu::thread_stack(0).unwrap_or_else(|| fail(20)).0;
+    #[cfg(not(jnox_native_threads))]
+    let stack_bottom = STACK_BOTTOM;
     let layouts: [native_stack::Layout; COUNT] = core::array::from_fn(|pid| {
         native_stack::build(NATIVE_ARGV_EXTRAS[pid], !cfg!(jnox_native_process),
-            STACK_BOTTOM, STACK_TOP, &mut buffers[pid]).unwrap_or_else(|| fail(19))
+            stack_bottom, STACK_TOP, &mut buffers[pid]).unwrap_or_else(|| fail(19))
     });
     let tails: [&[u8]; COUNT] = core::array::from_fn(|pid| &buffers[pid][..layouts[pid].len]);
     // Dedicated virt boot with a quiescent single CPU. Other profiles keep
@@ -750,7 +769,7 @@ pub(super) fn run() -> ! {
     }
     head(4, plans[0].entry);
     head(5, layouts[0].sp as u64);
-    head(6, STACK_BOTTOM as u64);
+    head(6, stack_bottom as u64);
     head(7, STACK_TOP as u64);
     head(12, current);
     head(13, sctlr);
@@ -777,6 +796,10 @@ pub(super) fn run() -> ! {
     unsafe {
         if first != 0 { native_el0_mmu::switch(first).unwrap_or_else(|_| fail(9)); }
         CURRENT = first;
-        native_el0_enter(FRAMES[first].elr, FRAMES[first].sp_el0, INITIAL_PSTATE)
+        #[cfg(jnox_native_threads)]
+        let locator = threads::start(FRAMES[first]);
+        #[cfg(not(jnox_native_threads))]
+        let locator = 0;
+        native_el0_enter(FRAMES[first].elr, FRAMES[first].sp_el0, INITIAL_PSTATE, locator)
     }
 }
