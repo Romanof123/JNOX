@@ -162,3 +162,13 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tc
 ~~~
 
 Use `$run/dm/kernel.elf` to boot the DM package. Each process enters main once. After each completed batch, C calls `jnox_periodic_wait_next()` from `<jnox/periodic.h>` (0 on success, −1 with errno on failure). Rust calls `jnox_native::wait_next_period()`, returning `Result<(), i32>`. Successful return resumes the same process for its next generation, with its private data and stack preserved. Exit finishes the current generation. [EVD-118](evidence/evd-118.en.md)
+
+## Hard CPU reservations for native applications
+
+Build the [C CRC worker and Rust histogram worker](../examples/native-cbs/README.md) with the public SDK. From the repository root on Linux or WSL, follow the linked build and QEMU commands. The package step for those two ELFs is:
+
+~~~sh
+python3 tools/build_native_el0.py --out isolated --policy cbs --elf crc.elf --reservation 1,4 --peer-elf histogram.elf --peer-reservation 1,4
+~~~
+
+Specify one quota,period tuple per ELF in slot order, using counts of 50 ms slots. In this example each application receives one nominal grant per four slots (200 ms); unused capacity stays idle. Use positive integer quotas no larger than their periods. The sum of the quota/period fractions must be at most one. The normal loader accepts a primary application and up to two peer ELFs. Each worker retains its private block count and result across grants. Physical service is measured separately from nominal entitlement.
