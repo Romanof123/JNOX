@@ -6,6 +6,12 @@ J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Ru
 
 J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 중심에는 작은 신뢰 커널과 격리된 서비스가 있습니다. 네이티브 Rust 드라이버와 Linux 드라이버용 별도 호환 영역을 지원하는 것이 목표입니다.
 
+## 시스템 아키텍처
+
+![사용자 앱, Rust 마이크로커널, 격리된 드라이버, 보드 지원, 하드웨어 순서로 쌓은 J-NOX 계층도](docs/diagrams/system-architecture.ko.svg)
+
+점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 기존 Linux 드라이버는 별도 Linux 영역에서 게이트웨이를 통해 J-NOX와 통신하도록 설계했습니다. 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
+
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
 네이티브 배치 앱에 공개 시각과 서비스 추정치를 주고 SJF·SRTF·HRRN으로 실행할 수 있습니다. [앱 빌드와 배치 설정](examples/native-batch/README.md)

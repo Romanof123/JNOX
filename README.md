@@ -6,6 +6,12 @@ J-NOX is developing a full-featured real-time operating system in Rust for embed
 
 The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture keeps the trusted kernel small and calls for isolated services, native Rust drivers and a compatibility domain for Linux drivers.
 
+## System architecture
+
+![J-NOX layers, from user apps to the Rust microkernel, isolated drivers, board support and hardware](docs/diagrams/system-architecture.en.svg)
+
+Dashed boxes show planned components. The native Rust driver runs as an isolated service. Existing Linux drivers run in their own Linux domain and communicate with J-NOX through a validated gateway. The native app and kernel path has been exercised on AArch64 QEMU. [Architecture and isolation](docs/architecture.en.md) · [Native IPC evidence](docs/evidence/native-sync-ipc-release.en-ko.md)
+
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
 Give native batch applications release offsets and service estimates, then run them under SJF, SRTF or HRRN. [Build and schedule the applications](examples/native-batch/README.md)
