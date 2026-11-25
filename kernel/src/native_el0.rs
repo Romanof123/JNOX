@@ -380,6 +380,8 @@ fn record(now: u64, reason: u64, argument: u64, before: Before, interrupted: Opt
 }
 
 fn start_fixed() -> usize {
+    #[cfg(jnox_native_capability_ipc)]
+    ipc::caps::boot();
     #[cfg(jnox_native_pipe_ipc)]
     {
         pipes::boot();
@@ -463,6 +465,8 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_capability_ipc)]
+    ipc::caps::report(1);
     #[cfg(jnox_native_pipe_ipc)]
     pipes::report(1);
     #[cfg(jnox_native_net_service)]

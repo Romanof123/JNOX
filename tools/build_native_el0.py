@@ -106,6 +106,13 @@ def ipc_route(value):
     return int(value[0]), int(value[2])
 
 
+def cap_grant(value):
+    fields = value.split(":")
+    if len(fields) != 3 or fields[0] not in ("0", "1", "2") or fields[1] not in ("0", "1", "2") or fields[2] not in ("1", "2", "3"):
+        raise argparse.ArgumentTypeError("expected OWNER:TARGET:RIGHTS with slots 0..2 and rights 1..3")
+    return tuple(map(int, fields))
+
+
 def unsigned_decimal(value):
     if not (value.isascii() and value.isdecimal()):
         raise argparse.ArgumentTypeError("expected unsigned decimal digits")
@@ -466,6 +473,10 @@ def main():
                         help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="select a socket service with existing inbound synchronous IPC rights")
+    parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
+                        help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
+    parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
+                        help="allow capability transfers between the specified slots")
     parser.add_argument("--loan-route", type=ipc_route, action="append", default=[], metavar="PRODUCER:CONSUMER",
                         help="grant one native FIFO/RR process pair a shared-buffer loan channel")
     parser.add_argument("--waitset", action="count", default=0,
@@ -544,7 +555,7 @@ def main():
         ("mailbox", "caller", "owner", sorted(args.mailbox_route)),
         ("notify", "sender", "owner", sorted(args.notify_route)),
     ]
-    for kind, routes in [(kind, routes) for kind, _, _, routes in grants] + [("loan", args.loan_route)]:
+    for kind, routes in [(kind, routes) for kind, _, _, routes in grants] + [("loan", args.loan_route), ("cap", args.cap_route)]:
         if not routes:
             continue
         count = 1 + len(args.peer_elf)
@@ -555,6 +566,19 @@ def main():
             parser.error(f"duplicate --{kind}-route")
         if any(caller == server or max(caller, server) >= count for caller, server in routes):
             parser.error(f"--{kind}-route requires distinct slots present in the package")
+    if args.cap_grant:
+        slots = 1 + len(args.peer_elf)
+        if board != "virt" or policy not in ("fifo", "rr") or args.threads or slots not in (2, 3):
+            parser.error("--cap-grant requires two or three ordinary FIFO/RR processes on virt")
+        if len(set(args.cap_grant)) != len(args.cap_grant):
+            parser.error("duplicate --cap-grant")
+        per_owner = [0] * slots
+        for owner, target, _ in args.cap_grant:
+            if max(owner, target) >= slots:
+                parser.error("--cap-grant references an absent process")
+            per_owner[owner] += 1
+            if per_owner[owner] > 4:
+                parser.error("at most four initial capabilities per owner")
     if args.weighted_continuous > 1:
         parser.error("--weighted-continuous may appear only once")
     if args.weighted_continuous and (policy != "weighted" or board != "virt"):
@@ -700,6 +724,14 @@ def main():
     if args.socket_service:
         env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
+    if args.cap_grant or args.cap_route:
+        cap_routes = sorted(args.cap_route)
+        for key, rows in (("JNOX_NATIVE_CAP_GRANTS", args.cap_grant), ("JNOX_NATIVE_CAP_ROUTES", cap_routes)):
+            if rows:
+                env[key] = ",".join(":".join(map(str, row)) for row in rows)
+        metadata.update(cap_grants=[dict(owner=o, target=t, rights=r) for o, t, r in args.cap_grant],
+                        cap_routes=[dict(src=src, dst=dst) for src, dst in cap_routes],
+                        mailbox_routes=[], cap_handle_slots=4, cap_notice_slots=2, package_argv=sys.argv[:])
     if args.loan_route:
         producer, consumer = args.loan_route[0]
         env["JNOX_NATIVE_LOAN_ROUTE"] = f"{producer}:{consumer}"
