@@ -233,8 +233,75 @@ impl Supervisor {
         self.observe_active(offset + 33, generation, 4, seq4_issue, true)?;
         self.observe_active(offset + 42, generation, 5, offset + 36, false)
     }
+    fn observe_recovery(
+        &mut self,
+        ms: u64,
+        generation: u64,
+        seq: u64,
+        issue_ms: u64,
+        flags: u64,
+    ) -> Bench<()> {
+        let target = self.time.at(ms)?;
+        let issue = self.time.at(issue_ms)?;
+        self.time.until(target)?;
+        self.capture_matching(target, None, generation, Some(0), |before, after| {
+            before.ticks >= target
+                && after.ticks >= before.ticks
+                && [before, after]
+                    .into_iter()
+                    .all(|s| recovery_state(s, generation, seq, issue, flags))
+        })
+    }
+    fn recover(&mut self, case: Case) -> Bench<()> {
+        let open = dev::GATE_OPEN;
+        let high = open | dev::ENABLED;
+        let latched = open | dev::FAULT;
+        self.prime_active(0, 1)?;
+        self.observe_recovery(23, 1, 3, 20, high)?;
+        self.observe_recovery(48, 1, 3, 20, latched)?;
+        if self.failed != 0 {
+            return Err(95);
+        }
+        let old_issue = self.time.at(20)?;
+        self.time.wait(50)?;
+        self.capture_matching(
+            self.time.at(50)?,
+            Some(Command::Open),
+            2,
+            Some(0),
+            |before, after| {
+                recovery_state(before, 1, 3, old_issue, latched)
+                    && recovery_state(after, 2, 0, 0, open)
+            },
+        )?;
+        let first_issue = self.time.at(55)?;
+        self.time.wait(60)?;
+        self.capture_matching(
+            self.time.at(60)?,
+            Some(Command::Rearm),
+            2,
+            Some(-11),
+            |before, after| {
+                [before, after]
+                    .into_iter()
+                    .all(|s| recovery_state(s, 2, 1, first_issue, open))
+            },
+        )?;
+        self.observe_recovery(68, 2, 2, 65, open)?;
+        if case == Case::RecoverLatch {
+            self.command(70, Command::Rearm, 2, 0)?;
+            self.observe_recovery(73, 2, 2, 65, high)?;
+            self.observe_recovery(82, 2, 3, 76, open)
+        } else {
+            self.observe_recovery(73, 2, 2, 65, open)?;
+            self.observe_recovery(82, 2, 2, 65, open)
+        }
+    }
     fn scenario(&mut self, case: Case) -> Bench<()> {
         use Case::*;
+        if matches!(case, RecoverLatch | RecoverHold) {
+            return self.recover(case);
+        }
         if case.active_case() {
             return self.active_scenario(case);
         }
@@ -367,6 +434,12 @@ impl Supervisor {
         }
         Ok(())
     }
+}
+fn recovery_state(s: &dev::State, generation: u64, seq: u64, issue: u64, flags: u64) -> bool {
+    s.generation == generation
+        && s.last_sequence == seq
+        && s.last_issue_ticks == issue
+        && s.flags & (dev::GATE_OPEN | dev::ENABLED | dev::FAULT | dev::PENDING_REARM) == flags
 }
 fn active_state(
     s: &dev::State,

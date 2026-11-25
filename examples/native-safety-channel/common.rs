@@ -41,6 +41,8 @@ pub enum Case {
     WrongOwner,
     Rearm15,
     Rearm20,
+    RecoverLatch,
+    RecoverHold,
 }
 impl Case {
     pub fn rearm_target_ms(self) -> Option<u64> {
@@ -139,6 +141,8 @@ impl Case {
             b"wrong-owner" => Ok(Self::WrongOwner),
             b"rearm-15" => Ok(Self::Rearm15),
             b"rearm-20" => Ok(Self::Rearm20),
+            b"recover-latch" => Ok(Self::RecoverLatch),
+            b"recover-hold" => Ok(Self::RecoverHold),
             _ => Err(81),
         }
     }

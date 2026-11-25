@@ -44,6 +44,10 @@ Check the input handle and complete private payload, selected rejection, unchang
 
 ## Build and capture
 
+The ordinary `recover-latch` and `recover-hold` selectors exercise channel generation recovery with three live processes. Both first enable on generation 1, stop issuing permits after sequence 3 at E+20 ms, and wait for a real age-expiry latch and output fall. OPEN starts generation 2 at E+50 ms. The new set permit issues are E+55 and E+65 ms. An early REARM between these two commits must be discarded. The positive case issues a separate REARM at E+70 ms and withdraws with sequence 3 at E+76 ms. The hold case omits both operations. Verify the actual clock and device transitions throughout, including continuous inhibition after the pair in the hold case. [Recovery criteria and provenance](https://github.com/Romanof123/JNOX/issues/399).
+
+두 시험 모두 첫 세대에서 실제 허가 만료로 출력이 꺼진 뒤 새 세대를 연다. 이른 재무장 거부 후 두 번째 허가가 도착해도 출력은 차단 상태여야 한다. 양성 시험은 별도 명령으로 재무장한 뒤 허가를 철회한다. 대조 시험은 새 명령 없이 출력을 끝까지 관측한다. 프로세스는 세 개 모두 살아 있는 상태에서 실행한다.
+
 For the measured REARM cases, give all three apps the selector `rearm-15` or `rearm-20`. Package with `--safety-boundary` in addition to the safety channel and loan route. The optional second supervisor argument (`--peer2-arg 00000` through `--peer2-arg 12500`) advances only its wake request, in counter ticks. Omission selects zero. The sender issues exactly two set permits at E and E+10 ms. The supervisor verifies inhibited sequence 2, then makes its first REARM call. The four words in `safety_rearm_launch` give the nominal decision target, lead, requested wake, and observed wake. The ordinary command row records the actual return. Its expected-status sentinel 2⁶³ allows either normal outcome during measurement.
 
 In a boundary image, safety event 15 records the journal timestamp followed by the original eligibility operand, caller PID, generation, first issue, second issue, streak, pending before consumption, and eligibility. A journal stamp or requested wake can differ from the decision tick. For standalone reproduction use the ordinary build command below with your selector and add `--safety-boundary` to the package command. [Acceptance and measurement rules](../../docs/native-safety-boundary-bench.en-ko.md) · [#398](https://github.com/Romanof123/JNOX/issues/398).
@@ -62,7 +66,8 @@ done
 revision=$(git rev-parse HEAD)
 cases=(healthy observed live-startup silence phase collision invalid saturation queued delayed restart early boundary one no-rearm bad-spacing
        bad-crc bad-header-crc bad-length bad-version bad-type bad-channel bad-data-id bad-validity bad-permit bad-reserved
-       duplicate reordered gap old-generation future-issue expired-issue issue-order wrong-owner rearm-15 rearm-20)
+       duplicate reordered gap old-generation future-issue expired-issue issue-order wrong-owner rearm-15 rearm-20
+       recover-latch recover-hold)
 for policy in fifo rr; do
   quantum=()
   if [ "$policy" = rr ]; then quantum=(--quantum-ticks 625000); fi
