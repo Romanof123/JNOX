@@ -475,6 +475,8 @@ def main():
                         help="select a socket service with existing inbound synchronous IPC rights")
     parser.add_argument("--safety-boundary", action="count", default=0,
                         help="record single-check safety decisions (same phase or collision argument for all slots)")
+    parser.add_argument("--safety-watchdog", action="count", default=0,
+                        help="enable the kernel watchdog for the three-role safety qualification profile")
     parser.add_argument("--safety-interference", action="count", default=0,
                         help="arm a finite independent CNTV IRQ stream during safety qualification")
     parser.add_argument("--safety-qualification", action="count", default=0,
@@ -557,6 +559,8 @@ def main():
             parser.error("--safety-boundary requires the single-check --safety-channel profile")
         if args.arg not in (["phase"], ["collision"]) or not args.arg == args.peer_arg == args.peer2_arg:
             parser.error("--safety-boundary requires the same single phase or collision argument for all three slots")
+    if args.safety_watchdog and (args.safety_watchdog != 1 or args.safety_qualification != 1):
+        parser.error("--safety-watchdog requires --safety-qualification and may appear once")
     if args.safety_interference and (args.safety_interference != 1 or args.safety_qualification != 1):
         parser.error("--safety-interference requires --safety-qualification and may appear once")
     if args.safety_qualification:
@@ -761,6 +765,13 @@ def main():
         env["JNOX_NATIVE_SAFETY_BOUNDARY"] = "1"
         metadata["safety_boundary"] = {"scenario": args.arg[0], "decision_event": 12}
         metadata["package_argv"] = sys.argv[:]
+    if args.safety_watchdog:
+        env["JNOX_NATIVE_SAFETY_WATCHDOG"] = "1"
+        metadata["safety_watchdog"] = {
+            "sender_slot": 0, "controller_slot": 1, "supervisor_slot": 2,
+            "status_flags": {"primed": 16, "watchdog_fault": 32},
+            "clock": "kernel_physical_counter_ticks",
+        }
     if args.safety_interference:
         env["JNOX_NATIVE_SAFETY_INTERFERENCE"] = "1"
         metadata["safety_interference"] = {"intid": 27, "maximum_irqs": 32, "first_ms": 1,

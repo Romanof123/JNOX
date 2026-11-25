@@ -9,6 +9,8 @@ pub const GATE_OPEN: u64 = 1;
 pub const ENABLED: u64 = 2;
 pub const FAULT: u64 = 4;
 pub const PENDING_REARM: u64 = 8;
+pub const WATCHDOG_PRIMED: u64 = 16;
+pub const WATCHDOG_FAULT: u64 = 32;
 
 pub struct State {
     pub ticks: u64,

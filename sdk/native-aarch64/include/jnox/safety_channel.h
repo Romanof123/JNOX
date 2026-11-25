@@ -10,7 +10,8 @@ enum jnox_safety_command {
 };
 enum jnox_safety_flags {
     JNOX_SAFETY_GATE_OPEN = 1, JNOX_SAFETY_ENABLED = 2,
-    JNOX_SAFETY_FAULT = 4, JNOX_SAFETY_PENDING_REARM = 8
+    JNOX_SAFETY_FAULT = 4, JNOX_SAFETY_PENDING_REARM = 8,
+    JNOX_SAFETY_WATCHDOG_PRIMED = 16, JNOX_SAFETY_WATCHDOG_FAULT = 32
 };
 typedef struct {
     long status;

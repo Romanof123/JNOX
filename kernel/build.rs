@@ -539,9 +539,15 @@ fn main() {
     let safety_channel = selector("JNOX_NATIVE_SAFETY_CHANNEL");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_qualification)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_interference)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_watchdog)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_boundary)");
     let boundary = selector("JNOX_NATIVE_SAFETY_BOUNDARY");
     let qualification = selector("JNOX_NATIVE_SAFETY_QUALIFICATION");
+    if let Some(value) = selector("JNOX_NATIVE_SAFETY_WATCHDOG") {
+        assert!(value == "1" && qualification.as_deref() == Some("1"),
+            "safety watchdog requires the qualification profile");
+        println!("cargo::rustc-cfg=jnox_native_safety_watchdog");
+    }
     if let Some(value) = selector("JNOX_NATIVE_SAFETY_INTERFERENCE") {
         assert!(value == "1" && qualification.as_deref() == Some("1"),
             "safety interference requires the qualification profile");
