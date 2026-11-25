@@ -129,3 +129,5 @@ pub fn exit(status: i32) -> ! {
     // The SDK exit stub consumes only its integer status and never returns.
     unsafe { __jnox_exit(status) }
 }
+#[cfg(all(feature = "sync-ipc", target_arch = "aarch64"))]
+pub mod ipc;
