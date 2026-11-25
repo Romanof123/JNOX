@@ -300,3 +300,47 @@ fn epoch_near_clock_limit_keeps_only_representable_boundaries() {
         assert_eq!(scheduler.decide(max).unwrap(), Some(0));
     }
 }
+
+#[test]
+fn suspended_job_keeps_deadline_and_cost_and_a_mid_grid_wake_waits_for_arbitration() {
+    let mut m = DeadlineScheduler::<2>::new(DeadlinePolicy::Edf, 0, 1).unwrap();
+    m.release(0, 0, 6, 9).unwrap();
+    m.release(0, 1, 3, 5).unwrap();
+    assert_eq!(m.decide(0), Ok(Some(1)));
+    assert_eq!(m.suspend(1, 1), Ok(()));
+    assert_eq!(m.decide(1), Ok(Some(0)));
+    assert_eq!(m.resume(3, 1), Ok(()));
+    assert_eq!(m.resume(4, 1), Err(DeadlineError::NotSuspended));
+    assert_eq!(m.suspend(4, 1), Err(DeadlineError::NotRunning));
+    assert_eq!(m.yield_running(2, 0), Err(DeadlineError::TimeRegression));
+    assert_eq!(m.now(), 3);
+    assert_eq!(m.remaining(0), Some(4));
+    assert_eq!(m.remaining(1), Some(2));
+    assert_eq!(m.decide_unsampled(3), Ok(Some(0)));
+    assert_eq!(m.decide(4), Ok(Some(1)));
+}
+
+#[test]
+fn yielding_owner_joins_waiting_equal_deadlines_and_can_win_again_alone() {
+    let mut m = DeadlineScheduler::<2>::new(DeadlinePolicy::Edf, 0, 1).unwrap();
+    m.release(0, 1, 2, 5).unwrap();
+    m.release(0, 0, 2, 5).unwrap();
+    assert_eq!(m.decide(0), Ok(Some(1)));
+    m.yield_running(0, 1).unwrap();
+    assert_eq!(m.decide(0), Ok(Some(0)));
+    m.complete(1, 0).unwrap();
+    assert_eq!(m.decide(1), Ok(Some(1)));
+    m.yield_running(1, 1).unwrap();
+    assert_eq!(m.decide(1), Ok(Some(1)));
+}
+
+#[test]
+fn native_edf_checks_the_last_cell_and_admits_an_exact_deadline_finish() {
+    use super::deadline_policy::{admit_edf, NumericJob, Refusal};
+    let job = NumericJob { id: 0, release: 14, deadline: 16, cost: 2 };
+    assert_eq!(admit_edf(&[job], 10, u64::MAX - 16), Ok(()));
+    assert_eq!(admit_edf(&[job], 10, u64::MAX - 15), Err(Refusal::Overflow));
+    assert_eq!(admit_edf(&[job], 11, 0), Err(Refusal::Grid));
+    assert_eq!(admit_edf(&[NumericJob { cost: 3, ..job }], 10, 0), Err(Refusal::Demand));
+    assert_eq!(admit_edf(&[NumericJob { id: 1, ..job }], 10, 0), Err(Refusal::Table));
+}

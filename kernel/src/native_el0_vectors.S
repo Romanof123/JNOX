@@ -47,8 +47,8 @@ native_el0_enter:
     msr elr_el1,x0
     msr sp_el0,x1
     msr spsr_el1,x3
-    .ifdef NATIVE_WEIGHTED
-    bl native_weighted_return
+    .ifdef NATIVE_MEASURED
+    measured_return
     .endif
     msr tpidr_el0,xzr
     msr tpidrro_el0,xzr
@@ -113,7 +113,7 @@ native_el0_enter:
     sub sp,sp,#832
     native_integer_pairs stp
     str x30,[sp,#240]
-    .ifdef NATIVE_WEIGHTED
+    .ifdef NATIVE_MEASURED
     isb
     mrs x2,cntpct_el0
     .endif
@@ -137,7 +137,7 @@ native_el0_enter:
 
 .Luser_irq:
     save_native_frame
-    .ifdef NATIVE_WEIGHTED
+    .ifdef NATIVE_MEASURED
     mov x1,x2
     .endif
     mov x0,sp
@@ -150,8 +150,8 @@ native_el0_enter:
     mov x1,#0x400
     bl native_el0_sync
 .Lrestore:
-    .ifdef NATIVE_WEIGHTED
-    bl native_weighted_return
+    .ifdef NATIVE_MEASURED
+    measured_return
     .endif
     ldp x9,x10,[sp,#256]
     tst x9,#0x1f
@@ -194,7 +194,7 @@ native_sleep_idle:
     // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
     // Its only live value is x19. IRQ entry masked delivery before this call.
     mov x0,xzr
-    .ifdef NATIVE_WEIGHTED
+    .ifdef NATIVE_MEASURED
     isb
     mrs x1,cntpct_el0
     .endif

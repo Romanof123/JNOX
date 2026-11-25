@@ -124,3 +124,22 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tc
 ~~~
 
 [examples/native-weighted](../examples/native-weighted/README.md) · [EVD-116](evidence/evd-116.en.md)
+
+## Sampled EDF for native applications
+
+Package one to three independently linked C or Rust ELFs with `--policy edf`. Supply the primary tuple with `--job` and one `--peer-job` per peer ELF in argument order. Each tuple gives release time, absolute deadline and estimated CPU cost in 100 ms grid units from a common epoch. In this finite CPU0 admission profile, 0 ≤ release < deadline ≤ 16 and cost must be positive. Admission models independent jobs using their declared costs; compare actual completion with the deadline separately. For example, `1,4,1` releases the urgent job at 100 ms, due at 400 ms with 100 ms of estimated CPU demand. From the repository root on Linux or WSL:
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-edf/batch.c "$run/batch.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-edf-rust/Cargo.toml "$run/histogram.elf"
+sh sdk/native-aarch64/build.sh examples/native-edf/urgent.c "$run/urgent.elf"
+python3 tools/build_native_el0.py --out "$run/edf" --policy edf \
+    --elf "$run/batch.elf" --job 0,8,2 \
+    --peer-elf "$run/histogram.elf" --peer-job 0,12,8 \
+    --peer-elf "$run/urgent.elf" --peer-job 1,4,1
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg \
+    -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/edf/kernel.elf"
+~~~
+
+[examples/native-edf](../examples/native-edf/README.md) · [EVD-117](evidence/evd-117.en.md)

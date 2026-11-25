@@ -124,3 +124,22 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tc
 ~~~
 
 [examples/native-weighted](../examples/native-weighted/README.md) · [EVD-116](evidence/evd-116.md)
+
+## 네이티브 앱의 격자 기반 EDF
+
+독립 빌드한 C·Rust ELF 1~3개를 `--policy edf`로 패키징한다. 주 앱의 튜플은 `--job`, 각 동료의 튜플은 해당 ELF 순서대로 `--peer-job`으로 지정한다. 튜플은 공통 기준 시점에서 100 ms 단위로 센 시작 가능 시각·절대 마감·예상 CPU 비용이다. 이 CPU0 유한 수용 프로필에서는 0 ≤ 시작 < 마감 ≤ 16이고 비용은 양수여야 한다. 수용 검사는 독립 작업의 선언 비용을 사용하며 실제 종료 시각은 따로 확인한다. 예를 들어 `1,4,1`은 100 ms에 시작 가능하고 마감은 400 ms, 예상 CPU 비용은 100 ms라는 뜻이다. Linux 또는 WSL에서 저장소 루트를 기준으로 실행한다.
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-edf/batch.c "$run/batch.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-edf-rust/Cargo.toml "$run/histogram.elf"
+sh sdk/native-aarch64/build.sh examples/native-edf/urgent.c "$run/urgent.elf"
+python3 tools/build_native_el0.py --out "$run/edf" --policy edf \
+    --elf "$run/batch.elf" --job 0,8,2 \
+    --peer-elf "$run/histogram.elf" --peer-job 0,12,8 \
+    --peer-elf "$run/urgent.elf" --peer-job 1,4,1
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg \
+    -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/edf/kernel.elf"
+~~~
+
+[examples/native-edf](../examples/native-edf/README.md) · [EVD-117](evidence/evd-117.md)

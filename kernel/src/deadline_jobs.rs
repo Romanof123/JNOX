@@ -1,9 +1,8 @@
 //! Linked ordinary entries and the finite admission model.
-use super::deadline_policy::{DeadlinePolicy, DeadlineScheduler};
+use super::deadline_policy::{DeadlinePolicy, numeric::{self, NumericJob}};
+pub use super::deadline_policy::numeric::{absolute, available, Refusal, HORIZON, N};
 use core::sync::atomic::{AtomicU64, Ordering};
 
-pub const N: usize = 3;
-pub const HORIZON: u64 = 16;
 pub static PRODUCT: [AtomicU64; N] = [const { AtomicU64::new(0) }; N];
 pub static PROGRESS: [AtomicU64; N] = [const { AtomicU64::new(0) }; N];
 
@@ -130,26 +129,6 @@ pub static LLF: [Job; N] = [
     job(2, 7, 8, 3, 25),
 ];
 
-#[derive(Debug, PartialEq, Eq)]
-#[repr(u64)]
-pub enum Refusal {
-    Table = 1,
-    Duplicate,
-    Entry,
-    Cost,
-    Deadline,
-    Grid,
-    Overflow,
-    Demand,
-    Miss,
-}
-
-pub fn absolute(origin: u64, q: u64, k: u64) -> Result<u64, Refusal> {
-    origin
-        .checked_add(q.checked_mul(k).ok_or(Refusal::Overflow)?)
-        .ok_or(Refusal::Overflow)
-}
-
 /// Maximum exception entries (and hence returning owner changes) in every
 /// integer-counter window of this width, assuming one grid IRQ in its own
 /// cell and at most one asynchronous completion per admitted one-shot job.
@@ -171,13 +150,6 @@ pub fn admit(policy: DeadlinePolicy, jobs: &[Job], hz: u64, origin: u64) -> Resu
     admit_with_supply(policy, jobs, hz, origin, 0)
 }
 
-pub fn available(mask: u64, start: u64, end: u64) -> Result<u64, Refusal> {
-    if mask >> HORIZON != 0 || start > end || end > HORIZON {
-        return Err(Refusal::Grid);
-    }
-    Ok((start..end).filter(|k| mask & (1 << k) == 0).count() as u64)
-}
-
 pub fn admit_with_supply(
     policy: DeadlinePolicy,
     jobs: &[Job],
@@ -185,77 +157,23 @@ pub fn admit_with_supply(
     origin: u64,
     mask: u64,
 ) -> Result<(), Refusal> {
-    available(mask, 0, HORIZON)?;
-    if jobs.is_empty() || jobs.len() > N {
-        return Err(Refusal::Table);
-    }
-    if hz == 0 || hz % 10 != 0 {
-        return Err(Refusal::Grid);
-    }
-    absolute(origin, hz / 10, HORIZON + 1)?;
+    let q = numeric::validate_table(jobs.len(), hz, mask)?;
+    absolute(origin, q, HORIZON + 1)?;
     let mut seen = [false; N];
-    for j in jobs {
-        if j.id >= N {
-            return Err(Refusal::Table);
-        }
-        if core::mem::replace(&mut seen[j.id], true) {
-            return Err(Refusal::Duplicate);
-        }
+    let mut numbers = [NumericJob::EMPTY; N];
+    for (index, j) in jobs.iter().enumerate() {
+        numeric::validate_id(j.id, &mut seen)?;
         if j.entry.is_none() {
             return Err(Refusal::Entry);
         }
-        if j.cost == 0 {
-            return Err(Refusal::Cost);
-        }
-        absolute(origin, hz / 10, j.deadline)?;
-        if j.deadline <= j.release || j.deadline > HORIZON {
-            return Err(Refusal::Deadline);
-        }
+        let descriptor = NumericJob { id: j.id, release: j.release, deadline: j.deadline, cost: j.cost };
+        descriptor.validate(origin, q)?;
         let duration = hz.checked_mul(j.milliseconds).ok_or(Refusal::Overflow)?;
         if duration == 0 || duration % 1000 != 0 {
             return Err(Refusal::Grid);
         }
-        absolute(absolute(origin, hz / 10, HORIZON)?, 1, duration / 1000)?;
+        absolute(absolute(origin, q, HORIZON)?, 1, duration / 1000)?;
+        numbers[index] = descriptor;
     }
-    if policy == DeadlinePolicy::Edf {
-        for start in jobs {
-            for end in jobs.iter().filter(|j| j.deadline > start.release) {
-                let mut demand = 0u64;
-                for j in jobs
-                    .iter()
-                    .filter(|j| j.release >= start.release && j.deadline <= end.deadline)
-                {
-                    demand = demand.checked_add(j.cost).ok_or(Refusal::Overflow)?;
-                }
-                if demand > available(mask, start.release, end.deadline)? {
-                    return Err(Refusal::Demand);
-                }
-            }
-        }
-    }
-    let mut model = DeadlineScheduler::<N>::new(policy, 0, 1).unwrap();
-    let mut left = [0; N];
-    for tick in 0..=HORIZON {
-        if jobs.iter().any(|j| j.deadline == tick && left[j.id] != 0) {
-            return Err(Refusal::Miss);
-        }
-        let withheld = mask & (1 << tick) != 0;
-        if withheld {
-            model.withhold(tick).unwrap();
-        }
-        for j in jobs.iter().filter(|j| j.release == tick) {
-            model.release(tick, j.id, j.cost, j.deadline).unwrap();
-            left[j.id] = j.cost;
-        }
-        if withheld {
-            continue;
-        }
-        if let Some(id) = model.decide(tick).unwrap() {
-            left[id] -= 1;
-            if left[id] == 0 {
-                model.complete(tick + 1, id).unwrap();
-            }
-        }
-    }
-    Ok(())
+    numeric::simulate(policy, &numbers[..jobs.len()], mask)
 }
