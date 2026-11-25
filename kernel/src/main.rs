@@ -33,7 +33,7 @@ mod batch_runtime;
 mod batch_app;
 #[cfg(jnox_batch_trace)]
 mod batch_trace;
-#[cfg(any(jnox_batch, jnox_bench = "batch"))]
+#[cfg(any(jnox_native_batch, jnox_batch, jnox_bench = "batch"))]
 mod batch_policy;
 #[cfg(jnox_bench = "cbs")]
 mod cbs;
@@ -83,6 +83,7 @@ mod native_periodic_policy;
     jnox_bench = "periodic",
     jnox_bench = "batch",
     jnox_batch,
+    jnox_native_batch,
     jnox_native_periodic,
     jnox_bench = "periodic_overrun"
 ))]

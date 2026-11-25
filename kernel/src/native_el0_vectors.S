@@ -15,6 +15,9 @@
 .ifdef NATIVE_WEIGHTED_CONTINUOUS
 .set NATIVE_EARLY_ENTRY,1
 .endif
+.ifdef NATIVE_BATCH
+.set NATIVE_EARLY_ENTRY,1
+.endif
 .ifdef NATIVE_EARLY_ENTRY
 // Keep the earliest ordered exception timestamp before the common frame save.
 // The normal 832-byte frame remains at SP for the Rust handlers. The extra
@@ -161,6 +164,19 @@ native_weighted_arm:
 .Lweighted_eret\@:
     .endif
 .endm
+
+.ifdef NATIVE_BATCH
+.global native_batch_enter
+native_batch_enter:
+    sub sp,sp,#848
+    mov x1,sp
+    mov x2,#52
+1:  ldp x3,x4,[x0],#16
+    stp x3,x4,[x1],#16
+    subs x2,x2,#1
+    b.ne 1b
+    b .Lrestore
+.endif
 
 .global native_el0_enter
 .type native_el0_enter,%function
@@ -376,7 +392,22 @@ native_el0_enter:
 .Lprop_return_ok:
     ldp x16,x17,[sp,#128]
     .endif
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_BATCH
+    adrp x16,native_batch_next_compare
+    ldr x16,[x16,:lo12:native_batch_next_compare]
+    cbz x16,.Lbatch_return_ok
+    isb
+    mrs x17,cntpct_el0
+    cmp x17,x16
+    b.lo .Lbatch_return_ok
+    mov x0,x17
+    mov x1,sp
+    bl native_batch_recheck
+    b .Lrestore
+.Lbatch_return_ok:
+    ldp x16,x17,[sp,#128]
+    .endif
+    .ifdef NATIVE_EARLY_ENTRY
     add sp,sp,#848
     .else
     add sp,sp,#832
