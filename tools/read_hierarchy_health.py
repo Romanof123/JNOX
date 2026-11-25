@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""Read and reconcile the terminal native hierarchy idle-refill health report."""
+import argparse
+from collections import Counter
+import json
+from pathlib import Path
+import re
+import sys
+
+MAX = 2**64 - 1
+SUMMARY = "version period limit arms events scored early invalid late max_lag overflow rows_total stored dropped".split()
+ARM = "arm_seq kind due arm_before pre_cval pre_ctl arm_after post_cval post_ctl".split()
+ENTRY = "earliest_irq entry_cval entry_ctl entry_counter spsr elr iar idle_landing last_before_unmask daif_before_unmask".split()
+TIMER = ["decision_index", *ARM, "old_arm_seq", *ENTRY, "outcome"]
+FIRST = ["decision_index", "event_number", "outcome", *ARM, *ENTRY, "lag_present", "lag"]
+OUTCOMES = ("other", "scored", "late", "early", "invalid", "stale", "non_ppi")
+
+
+def require(ok, message):
+    if not ok:
+        raise ValueError(message)
+
+
+def words(tokens):
+    require(all(re.fullmatch(rb"[0-9]{1,20}", t) for t in tokens), "invalid unsigned decimal")
+    result = [int(t) for t in tokens]
+    require(all(x <= MAX for x in result), "value exceeds u64")
+    return result
+
+
+def fields(keys, row):
+    require(len(keys) == len(row), f"expected {len(keys)} fields, got {len(row)}")
+    return dict(zip(keys, row))
+
+
+def eligible(arm, entry, limit):
+    due = arm["due"]
+    earliest = entry["earliest_irq"]
+    if (arm["post_cval"] != due or entry["entry_cval"] != due
+            or arm["post_ctl"] & 3 != 1 or entry["entry_ctl"] & 3 != 1
+            or not arm["arm_before"] <= arm["arm_after"] <= earliest <= entry["entry_counter"]):
+        return 4
+    if earliest < due:
+        return 3
+    return 2 if earliest - due > limit else 1
+
+
+def read_uart(path, expected=None):
+    one = {}
+    events, timers, exits = [], [], {}
+    ended = False
+    with path.open("rb") as uart:
+        for line in uart:
+            if not line.startswith((b"NATIVE HIERARCHY ", b"NATIVE EL0 EXIT ")):
+                continue
+            require(line.endswith(b"\n"), "truncated UART record")
+            require(not ended, "record after HEALTH END")
+            tokens = line.split()
+            if tokens[:3] == [b"NATIVE", b"EL0", b"EXIT"]:
+                if len(tokens) == 3 + 1:
+                    slot, status = 0, tokens[3]
+                    multi = False
+                else:
+                    require(len(tokens) == 6 and tokens[3] == b"PID", "invalid process exit")
+                    slot, = words(tokens[4:5])
+                    status = tokens[5]
+                    multi = True
+                require(re.fullmatch(rb"-?[0-9]{1,10}", status) and -(2**31) <= int(status) < 2**31
+                        and slot not in exits, "invalid or duplicate process exit")
+                exits[slot] = (int(status), multi)
+                continue
+            tag = tokens[2].decode("ascii")
+            data = tokens[3:]
+            if tag == "HEALTH" and data[:1] == [b"END"]:
+                require(data == [b"END", b"1"], "malformed HEALTH END")
+                ended = True
+            elif tag == "EVENT":
+                row = words(data)
+                require(len(row) == 47 and row[0] == len(events), "EVENT width or sequence")
+                events.append(row)
+            elif tag == "TIMER":
+                t = fields(TIMER, words(data))
+                require(t["decision_index"] == len(timers), "TIMER sequence")
+                timers.append(t)
+            elif tag in ("CONFIG", "DROPPED", "FIRST", "HEALTH"):
+                require(tag not in one, f"duplicate {tag}")
+                one[tag] = words(data)
+    require(ended and set(one) == {"CONFIG", "DROPPED", "FIRST", "HEALTH"}, "incomplete terminal report")
+    h = fields(SUMMARY, one["HEALTH"])
+    config = one["CONFIG"]
+    require(len(config) == 7 and config[0] == h["version"] == 1 and config[3] == h["period"] > 0
+            and h["limit"] == h["period"] // 8, "config/health threshold mismatch")
+    slots = config[6]
+    require(1 <= slots <= 3 and set(exits) == set(range(slots))
+            and all(multi == (slots > 1) for _, multi in exits.values()), "incomplete process exits")
+    require(h["overflow"] in (0, 1) and h["stored"] == len(events) == len(timers)
+            and one["DROPPED"] == [h["dropped"]]
+            and h["rows_total"] == min(MAX, h["stored"] + h["dropped"]), "inconsistent detail counts")
+    require(h["late"] <= h["scored"] and bool(h["late"]) == (h["max_lag"] > h["limit"])
+            and (h["scored"] or h["max_lag"] == 0), "inconsistent lag maximum")
+    if not h["overflow"]:
+        require(h["arms"] == h["rows_total"] and h["scored"] + h["early"] + h["invalid"] <= h["events"] <= h["arms"],
+                "inconsistent observation counts")
+    first = None
+    if one["FIRST"] != [0]:
+        require(one["FIRST"][:1] == [1], "malformed FIRST")
+        first = fields(FIRST, one["FIRST"][1:])
+        outcome = first["outcome"]
+        require(outcome in (2, 3, 4) and first["kind"] in (1, 2) and first["iar"] & 1023 == 30
+                and eligible(first, first, h["limit"]) == outcome, "invalid first violation")
+        require(first["lag_present"] == int(outcome == 2)
+                and first["lag"] == (first["earliest_irq"] - first["due"] if outcome == 2 else 0)
+                and first["lag"] <= h["max_lag"] and h[OUTCOMES[outcome]] > 0
+                and 1 <= first["event_number"] <= h["events"] and first["decision_index"] < h["rows_total"]
+                and 0 < first["arm_seq"] <= h["arms"], "inconsistent FIRST operands")
+    if not h["overflow"]:
+        require(bool(first) == bool(h["late"] or h["early"] or h["invalid"]), "first violation missing or spurious")
+    tallies = Counter()
+    prefix_max = 0
+    prefix_first = None
+    worst = None
+    for i, (row, timer) in enumerate(zip(events, timers)):
+        require(timer["kind"] <= 6 and row[1] in (0, 1, 2) and timer["due"] == row[14]
+                and timer["arm_seq"] == i + 1, f"arm mismatch at {i}")
+        require((i == 0) == (row[1] == 0), f"startup sequence at {i}")
+        if i:
+            require(row[8] == events[i - 1][9] and row[13] == timers[i - 1]["due"],
+                    f"preceding owner or due time mismatch at {i}")
+        if row[1] != 1:
+            require(timer["outcome"] == 0 and not any(timer[k] for k in ENTRY), f"non-IRQ evidence at {i}")
+            continue
+        tallies["events"] += 1
+        require(i > 0 and timer["earliest_irq"] == row[3] and timer["iar"] & 1023 == row[2],
+                f"IRQ identity at {i}")
+        arm = timers[i - 1]
+        if timer["iar"] & 1023 != 30:
+            outcome = 6
+        elif timer["old_arm_seq"] != arm["arm_seq"]:
+            outcome = 5
+        elif row[8] == 3 and arm["kind"] in (1, 2):
+            outcome = eligible(arm, timer, h["limit"])
+        else:
+            outcome = 0
+        require(timer["outcome"] == outcome, f"outcome mismatch at {i}")
+        if outcome in (1, 2):
+            lag = timer["earliest_irq"] - arm["due"]
+            tallies["scored"] += 1
+            if worst is None or lag > prefix_max:
+                prefix_max, worst = lag, i
+        if outcome in (2, 3, 4):
+            tallies[OUTCOMES[outcome]] += 1
+            if prefix_first is None:
+                prefix_first = dict(decision_index=i, event_number=tallies["events"], outcome=outcome,
+                                    **{k: arm[k] for k in ARM}, **{k: timer[k] for k in ENTRY},
+                                    lag_present=int(outcome == 2), lag=lag if outcome == 2 else 0)
+    complete = h["dropped"] == 0
+    for k in ("events", "scored", "late", "early", "invalid"):
+        require(tallies[k] <= h[k] and (not complete or tallies[k] == h[k]), f"{k} summary mismatch")
+    require(prefix_max <= h["max_lag"] and (not complete or prefix_max == h["max_lag"]), "detail maximum mismatch")
+    if prefix_first or complete or (first and first["decision_index"] < h["stored"]):
+        require(prefix_first == first, "detail first violation mismatch")
+    if not h["overflow"]:
+        require(h["events"] - tallies["events"] <= h["dropped"], "event count exceeds missing decisions")
+        missing = sum(h[k] - tallies[k] for k in ("scored", "early", "invalid"))
+        require(missing <= h["events"] - tallies["events"]
+                and h["late"] - tallies["late"] <= h["scored"] - tallies["scored"],
+                "missing outcomes exceed missing observations")
+        if first and not prefix_first:
+            require(first["event_number"] > tallies["events"], "first violation IRQ predates dropped rows")
+    statuses = [exits[i][0] for i in range(slots)]
+    if expected is not None:
+        require(len(expected) == slots, "supply one expected status per slot")
+    valid = not (h["overflow"] or h["invalid"] or h["early"])
+    return {"instrumentation": "valid" if valid else "invalid_or_incomplete",
+            "timing": "late" if h["late"] else "unqualified" if not valid else "within_limit" if h["scored"] else "unobserved",
+            "health": h, "first_violation": first, "maximum_scored_lag_ticks": h["max_lag"] if h["scored"] else None,
+            "maximum_detail_row": worst if prefix_max == h["max_lag"] else None,
+            "detail": "complete" if complete else "retained_prefix", "detail_counts": dict(tallies),
+            "process_exits": statuses, "expected_exits_match": None if expected is None else statuses == expected}
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("uart", type=Path)
+    parser.add_argument("--expect-exit", action="append", type=int, help="repeat in package slot order")
+    args = parser.parse_args()
+    try:
+        result = read_uart(args.uart, args.expect_exit)
+    except (ValueError, OSError) as exc:
+        parser.exit(2, f"incomplete or contradictory UART: {exc}\n")
+    print(json.dumps(result, indent=2))
+    sys.exit(0 if result["timing"] == "within_limit" and result["instrumentation"] == "valid"
+             and result["expected_exits_match"] is not False else 1)
