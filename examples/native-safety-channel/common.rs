@@ -21,8 +21,63 @@ pub enum Case {
     BadSpacing,
     Observed,
     LiveStartup,
+    BadCrc,
+    BadHeaderCrc,
+    BadLength,
+    BadVersion,
+    BadType,
+    BadChannel,
+    BadDataId,
+    BadValidity,
+    BadPermit,
+    BadReserved,
+    Duplicate,
+    Reordered,
+    Gap,
+    OldGeneration,
+    FutureIssue,
+    ExpiredIssue,
+    IssueOrder,
+    WrongOwner,
 }
 impl Case {
+    pub fn active_case(self) -> bool {
+        matches!(
+            self,
+            Self::BadCrc
+                | Self::BadHeaderCrc
+                | Self::BadLength
+                | Self::BadVersion
+                | Self::BadType
+                | Self::BadChannel
+                | Self::BadDataId
+                | Self::BadValidity
+                | Self::BadPermit
+                | Self::BadReserved
+                | Self::Duplicate
+                | Self::Reordered
+                | Self::Gap
+                | Self::OldGeneration
+                | Self::FutureIssue
+                | Self::ExpiredIssue
+                | Self::IssueOrder
+                | Self::WrongOwner
+        )
+    }
+    pub fn active_offset_ms(self) -> u64 {
+        if self == Self::OldGeneration {
+            40
+        } else {
+            0
+        }
+    }
+    pub fn active_generation(self) -> u64 {
+        if self == Self::OldGeneration {
+            2
+        } else {
+            1
+        }
+    }
     pub unsafe fn parse(argc: i32, argv: *const *const u8) -> Bench<Self> {
         if argc != 2 || argv.is_null() {
             return Err(81);
@@ -55,6 +110,24 @@ impl Case {
             b"bad-spacing" => Ok(Self::BadSpacing),
             b"observed" => Ok(Self::Observed),
             b"live-startup" => Ok(Self::LiveStartup),
+            b"bad-crc" => Ok(Self::BadCrc),
+            b"bad-header-crc" => Ok(Self::BadHeaderCrc),
+            b"bad-length" => Ok(Self::BadLength),
+            b"bad-version" => Ok(Self::BadVersion),
+            b"bad-type" => Ok(Self::BadType),
+            b"bad-channel" => Ok(Self::BadChannel),
+            b"bad-data-id" => Ok(Self::BadDataId),
+            b"bad-validity" => Ok(Self::BadValidity),
+            b"bad-permit" => Ok(Self::BadPermit),
+            b"bad-reserved" => Ok(Self::BadReserved),
+            b"duplicate" => Ok(Self::Duplicate),
+            b"reordered" => Ok(Self::Reordered),
+            b"gap" => Ok(Self::Gap),
+            b"old-generation" => Ok(Self::OldGeneration),
+            b"future-issue" => Ok(Self::FutureIssue),
+            b"expired-issue" => Ok(Self::ExpiredIssue),
+            b"issue-order" => Ok(Self::IssueOrder),
+            b"wrong-owner" => Ok(Self::WrongOwner),
             _ => Err(81),
         }
     }
@@ -63,6 +136,9 @@ pub const ACK: u64 = 0x5341464500000000;
 pub const READY: u64 = 0x7265616479;
 pub const STOP: u64 = 0x73746f70;
 pub const LAST_SAMPLE: u64 = 0x6c617374;
+pub const RELEASE_INPUT: u64 = 0x696e707574;
+pub const GRANT_STAGED: u64 = 0x737461676564;
+pub const PUBLISH_GRANT: u64 = 0x7075626c697368;
 pub fn finish() -> Bench<()> {
     for expected in [READY, STOP] {
         let (token, word) = ipc::receive().map_err(|_| 84)?;

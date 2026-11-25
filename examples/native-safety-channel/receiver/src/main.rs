@@ -20,6 +20,14 @@ static mut safety_activations: [[u64; 19]; 24] = [[0; 19]; 24];
 static mut safety_activation_count: usize = 0;
 #[no_mangle]
 static mut safety_received_rows: [[u64; 20]; 64] = [[0; 20]; 64];
+// Active-case sidecar indexed by safety_received_rows. Each half is the private
+// generation, enabled, faulted and kernel ticks, generation, flags, sequence, issue.
+#[no_mangle]
+static mut safety_active_received: [[u64; 16]; 64] = [[0; 16]; 64];
+// Request, reply, info status, private generation, sequence, issue, permit,
+// enabled, faulted, then kernel ticks, generation, flags, sequence and issue.
+#[no_mangle]
+static mut safety_active_ack: [u64; 14] = [0; 14];
 #[no_mangle]
 static mut safety_received_bytes: [[u8; FRAME_BYTES]; 64] = [[0; FRAME_BYTES]; 64];
 #[no_mangle]
@@ -37,13 +45,23 @@ fn values(s: Snapshot) -> [u64; 4] {
         s.recovery as u64,
     ]
 }
+fn kernel_values(s: &dev::State) -> [u64; 5] {
+    [
+        s.ticks,
+        s.generation,
+        s.flags,
+        s.last_sequence,
+        s.last_issue_ticks,
+    ]
+}
 struct Controller {
     model: Receiver,
     time: Timeline,
     divergences: u64,
+    active_ack: Option<bool>,
 }
 impl Controller {
-    fn one(&mut self, iteration: usize, ordinal: usize) -> Bench<i64> {
+    fn one(&mut self, iteration: usize, ordinal: usize, active: bool) -> Bench<i64> {
         let loan = match loan::receive() {
             Ok(r) => r,
             Err(e) => return Ok(e),
@@ -52,7 +70,8 @@ impl Controller {
         let len = loan.length;
         let slot = (handle & 3) as usize;
         let va = loan.address();
-        let before = values(self.model.snapshot());
+        let before_state = self.model.snapshot();
+        let before = values(before_state);
         let mut bytes = [0; FRAME_BYTES];
         let mut checked = validate_loan(0, 1, slot, len);
         if va != 0x01600000 + slot * 4096 {
@@ -72,11 +91,15 @@ impl Controller {
         let mut candidate = self.model;
         let mut decision = 0;
         let mut clock_error = false;
+        let mut prior_kernel = None;
         let valid = checked.and_then(|()| {
             candidate.accept(&bytes, || match dev::info() {
                 Ok(v) => {
                     decision = v.ticks;
-                    v.ticks
+                    if active {
+                        prior_kernel = Some(kernel_values(&v));
+                    }
+                    decision
                 }
                 Err(_) => {
                     clock_error = true;
@@ -86,6 +109,11 @@ impl Controller {
         });
         if clock_error {
             return Err(82);
+        }
+        // A transport refusal can precede the decision clock. Capture the
+        // kernel tuple before any commit in that case as well.
+        if active && prior_kernel.is_none() {
+            prior_kernel = Some(kernel_values(&state()?));
         }
         let local = valid.as_ref().err().map_or(0, |e| *e as u64);
         let mut kernel = SKIPPED;
@@ -108,11 +136,28 @@ impl Controller {
             self.model = candidate;
         }
         let end = state()?;
-        let after = values(self.model.snapshot());
+        let after_state = self.model.snapshot();
+        let after = values(after_state);
         unsafe {
             let at = safety_received_count;
             if at >= 64 {
                 return Err(87);
+            }
+            if let Some(prior) = prior_kernel {
+                let mut row = [0; 16];
+                row[..3].copy_from_slice(&[
+                    before_state.generation,
+                    before_state.enabled as u64,
+                    before_state.faulted as u64,
+                ]);
+                row[3..8].copy_from_slice(&prior);
+                row[8..11].copy_from_slice(&[
+                    after_state.generation,
+                    after_state.enabled as u64,
+                    after_state.faulted as u64,
+                ]);
+                row[11..].copy_from_slice(&kernel_values(&end));
+                write_volatile(&raw mut safety_active_received[at], row);
             }
             write_volatile(&raw mut safety_received_bytes[at], bytes);
             write_volatile(
@@ -232,6 +277,56 @@ impl Controller {
         }
         Ok(())
     }
+    fn acknowledge_active(&mut self, case: Case, activation_complete: bool) -> Bench<()> {
+        let (token, word) = ipc::receive().map_err(|_| 84)?;
+        // The call may have blocked. Sample after receipt and check a copy of
+        // the private state at that same tick without adding a model transition.
+        let actual = dev::info();
+        let private = self.model.snapshot();
+        let mut at_reply = self.model;
+        let expected_issue = self.time.at(20 + case.active_offset_ms());
+        let reply = match &actual {
+            Ok(s)
+                if activation_complete
+                    && word == common::LAST_SAMPLE
+                    && private.generation == case.active_generation()
+                    && s.generation == private.generation
+                    && private.sequence == 3
+                    && s.last_sequence == private.sequence
+                    && private.issue == Some(s.last_issue_ticks)
+                    && expected_issue == Ok(s.last_issue_ticks)
+                    && private.permit
+                    && private.enabled
+                    && !private.faulted
+                    && s.flags & (dev::GATE_OPEN | dev::ENABLED | dev::FAULT)
+                        == (dev::GATE_OPEN | dev::ENABLED)
+                    && at_reply.check(s.ticks) == Ok(false) =>
+            {
+                s.last_sequence
+            }
+            _ => u64::MAX,
+        };
+        let mut row = [SKIPPED; 14];
+        row[..9].copy_from_slice(&[
+            word,
+            reply,
+            actual.as_ref().err().copied().unwrap_or(0) as u64,
+            private.generation,
+            private.sequence,
+            private.issue.unwrap_or(0),
+            private.permit as u64,
+            private.enabled as u64,
+            private.faulted as u64,
+        ]);
+        if let Ok(s) = &actual {
+            row[9..].copy_from_slice(&kernel_values(s));
+        }
+        unsafe {
+            write_volatile(&raw mut safety_active_ack, row);
+        }
+        self.active_ack = Some(reply != u64::MAX);
+        ipc::reply(token, reply).map_err(|_| 84)
+    }
     fn activate(&mut self, case: Case, i: usize) -> Bench<()> {
         let grid = i as u64 * 5;
         let planned = match case {
@@ -251,7 +346,7 @@ impl Controller {
         }
         let mut attempts = [SKIPPED; 2];
         for (n, r) in attempts.iter_mut().enumerate() {
-            let code = self.one(i, n)?;
+            let code = self.one(i, n, case.active_case())?;
             *r = code as u64;
             if code != 0 {
                 if !matches!(code, -11 | -32) {
@@ -325,6 +420,9 @@ impl Controller {
             }
             ipc::reply(token, end.last_sequence).map_err(|_| 84)?;
         }
+        if case.active_case() && i as u64 == 4 + case.active_offset_ms() / 5 {
+            self.acknowledge_active(case, true)?;
+        }
         Ok(())
     }
 }
@@ -334,6 +432,7 @@ fn run(case: Case) -> Bench<()> {
         model: Receiver::new(time.hz).map_err(|_| 90)?,
         time,
         divergences: 0,
+        active_ack: None,
     };
     let mut result = Ok(());
     for i in 0..17 {
@@ -341,6 +440,14 @@ fn run(case: Case) -> Bench<()> {
             result = Err(e);
             break;
         }
+    }
+    if case.active_case() && c.active_ack.is_none() {
+        // An earlier activation failed before the supervisor's rendezvous.
+        // Answer it before entering the normal two-message exit protocol.
+        c.acknowledge_active(case, false)?;
+    }
+    if result.is_ok() && c.active_ack == Some(false) {
+        result = Err(94);
     }
     unsafe {
         write_volatile(

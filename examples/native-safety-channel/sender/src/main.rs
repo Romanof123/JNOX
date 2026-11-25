@@ -6,7 +6,7 @@
 mod common;
 use common::{state, Bench, Case, Timeline};
 use core::{panic::PanicInfo, ptr::write_volatile};
-use jnox_native::{exit, loan};
+use jnox_native::{exit, ipc, loan};
 use jnox_safety_channel::{crc32, encode, Permit, FRAME_BYTES};
 
 #[used]
@@ -20,6 +20,8 @@ static mut safety_sender_bytes: [[u8; FRAME_BYTES]; 64] = [[0; FRAME_BYTES]; 64]
 #[no_mangle]
 static mut safety_sender_count: usize = 0;
 
+const ACTIVE_INPUT: u64 = 10;
+
 #[derive(Clone, Copy)]
 struct Message {
     gen: u64,
@@ -29,7 +31,7 @@ struct Message {
     kind: u64,
 }
 impl Message {
-    fn bytes(self) -> Bench<[u8; FRAME_BYTES]> {
+    fn bytes(self, case: Case) -> Bench<[u8; FRAME_BYTES]> {
         let mut b = encode(Permit {
             generation: self.gen,
             sequence: self.seq,
@@ -44,6 +46,38 @@ impl Message {
                     b[6..8].copy_from_slice(&0x0102u16.to_le_bytes())
                 } else {
                     b[4..6].copy_from_slice(&2u16.to_le_bytes())
+                }
+                let checksum = crc32(&b[..40]).to_le_bytes();
+                b[40..44].copy_from_slice(&checksum);
+            }
+            ACTIVE_INPUT => {
+                match case {
+                    // Each checksum case changes one byte after encoding.
+                    Case::BadCrc => {
+                        b[36] = 0;
+                        return Ok(b);
+                    }
+                    Case::BadHeaderCrc => {
+                        b[0] ^= 1;
+                        return Ok(b);
+                    }
+                    Case::BadLength => b[2..4].copy_from_slice(&43u16.to_le_bytes()),
+                    Case::BadVersion => b[0] = 2,
+                    Case::BadType => b[1] = 2,
+                    Case::BadChannel => b[4..6].copy_from_slice(&2u16.to_le_bytes()),
+                    Case::BadDataId => b[6..8].copy_from_slice(&0x0102u16.to_le_bytes()),
+                    Case::BadValidity => b[32..36].copy_from_slice(&19u32.to_le_bytes()),
+                    Case::BadPermit => b[36] = 2,
+                    Case::BadReserved => b[37] = 1,
+                    // These cases encoded their single changed field in Message.
+                    Case::Duplicate
+                    | Case::Reordered
+                    | Case::Gap
+                    | Case::OldGeneration
+                    | Case::FutureIssue
+                    | Case::ExpiredIssue
+                    | Case::IssueOrder => return Ok(b),
+                    _ => return Err(86),
                 }
                 let checksum = crc32(&b[..40]).to_le_bytes();
                 b[40..44].copy_from_slice(&checksum);
@@ -76,7 +110,7 @@ impl Sender {
         if m.kind == 9 && mode != 2 {
             m.issue = start;
         }
-        let bytes = m.bytes()?;
+        let bytes = m.bytes(self.case)?;
         let (handle, acquired, published) = if mode == 2 {
             (old, 0, loan::publish(old, FRAME_BYTES).err().unwrap_or(0))
         } else {
@@ -142,7 +176,60 @@ impl Sender {
         )?;
         Ok(())
     }
+
+    fn prime(&mut self, generation: u64, offset: u64) -> Bench<()> {
+        for (seq, ms) in [(1, 0), (2, 10), (3, 20)] {
+            self.normal(generation, seq, offset + ms, true)?;
+        }
+        Ok(())
+    }
+
+    fn active(&mut self, case: Case) -> Bench<()> {
+        let offset = case.active_offset_ms();
+        let generation = case.active_generation();
+        if case == Case::OldGeneration {
+            self.prime(1, 0)?;
+        }
+        self.prime(generation, offset)?;
+        acknowledge(common::RELEASE_INPUT, true)?;
+        if case == Case::WrongOwner {
+            let staged = self.msg(generation, 4, offset + 24, true, 0)?;
+            let handle = self.send(staged, offset + 24, 1, 0, 0)?;
+            // IPC exchanges public synchronization words. PID0 alone holds
+            // the writer and publishes its original bytes after the check.
+            acknowledge(common::GRANT_STAGED, handle != 0)?;
+            acknowledge(common::PUBLISH_GRANT, true)?;
+            self.send(staged, offset + 30, 2, handle, 0)?;
+        } else {
+            let seq = match case {
+                Case::Duplicate => 3,
+                Case::Reordered => 2,
+                Case::Gap => 5,
+                _ => 4,
+            };
+            let issue = offset
+                + match case {
+                    Case::FutureIssue => 45,
+                    Case::ExpiredIssue => 0,
+                    Case::IssueOrder => 20,
+                    _ => 24,
+                };
+            let wire_generation = if case == Case::OldGeneration {
+                1
+            } else {
+                generation
+            };
+            let frame = self.msg(wire_generation, seq, issue, true, ACTIVE_INPUT)?;
+            self.send(frame, offset + 24, 0, 0, 0)?;
+            self.normal(generation, 4, offset + 30, true)?;
+        }
+        self.normal(generation, 5, offset + 36, false)
+    }
+
     fn run(&mut self, case: Case) -> Bench<()> {
+        if case.active_case() {
+            return self.active(case);
+        }
         if case == Case::Delayed {
             self.send(self.msg(1, 1, 0, true, 7)?, 25, 0, 0, 0)?;
             self.normal(1, 1, 30, true)?;
@@ -227,6 +314,18 @@ impl Sender {
         Ok(())
     }
 }
+
+fn acknowledge(expected: u64, ready: bool) -> Bench<()> {
+    let (token, word) = ipc::receive().map_err(|_| 84)?;
+    let accepted = ready && word == expected;
+    ipc::reply(token, if accepted { word } else { 0 }).map_err(|_| 84)?;
+    if accepted {
+        Ok(())
+    } else {
+        Err(84)
+    }
+}
+
 fn run(case: Case) -> Bench<()> {
     let time = Timeline::start(case)?;
     let mut sender = Sender {

@@ -7,7 +7,7 @@ mod common;
 use common::{state, status, Bench, Case, Timeline, ACK, READY, STOP};
 use core::{panic::PanicInfo, ptr::write_volatile};
 use jnox_native::{
-    exit, ipc,
+    exit, ipc, loan,
     safety_channel::{self as dev, Command},
 };
 
@@ -21,6 +21,10 @@ static mut safety_supervisor_rows: [[u64; 16]; 48] = [[0; 16]; 48];
 static mut safety_supervisor_count: usize = 0;
 #[no_mangle]
 static mut safety_live_startup: [u64; 5] = [0; 5];
+#[no_mangle]
+static mut safety_active_ipc: [[u64; 4]; 4] = [[0; 4]; 4];
+#[no_mangle]
+static mut safety_wrong_owner: [u64; 14] = [0; 14];
 struct Supervisor {
     time: Timeline,
     failed: u64,
@@ -35,12 +39,23 @@ impl Supervisor {
         enable: Option<bool>,
         seq: Option<u64>,
     ) -> Bench<()> {
+        self.capture_matching(planned, cmd, gen, want_rc, |_, after| {
+            enable.is_none_or(|v| v == (after.flags & dev::ENABLED != 0))
+                && seq.is_none_or(|s| s == after.last_sequence)
+        })
+    }
+    fn capture_matching(
+        &mut self,
+        planned: u64,
+        cmd: Option<Command>,
+        gen: u64,
+        want_rc: i64,
+        matches: impl FnOnce(&dev::State, &dev::State) -> bool,
+    ) -> Bench<()> {
         let before = state()?;
         let rc = cmd.map_or(0, |c| status(dev::supervise(c, gen)));
         let after = state()?;
-        let ok = rc == want_rc
-            && enable.is_none_or(|v| v == (after.flags & dev::ENABLED != 0))
-            && seq.is_none_or(|s| s == after.last_sequence);
+        let ok = rc == want_rc && matches(&before, &after);
         if !ok {
             self.failed += 1;
         }
@@ -82,8 +97,122 @@ impl Supervisor {
         self.time.wait(ms)?;
         self.capture(self.time.at(ms)?, None, 0, 0, Some(enabled), seq)
     }
+    fn observe_active(
+        &mut self,
+        ms: u64,
+        gen: u64,
+        seq: u64,
+        issue_ms: u64,
+        enabled: bool,
+    ) -> Bench<()> {
+        self.time.wait(ms)?;
+        let issue = self.time.at(issue_ms)?;
+        let hz = self.time.hz;
+        self.capture_matching(self.time.at(ms)?, None, gen, 0, |before, after| {
+            [before, after]
+                .into_iter()
+                .all(|s| active_state(s, hz, gen, seq, issue, enabled))
+        })
+    }
+    fn prime_active(&mut self, offset: u64, generation: u64) -> Bench<()> {
+        self.observe_active(offset + 3, generation, 1, offset, false)?;
+        self.observe_active(offset + 13, generation, 2, offset + 10, false)?;
+        self.command(offset + 15, Command::Rearm, generation, 0)?;
+        self.observe_active(offset + 18, generation, 2, offset + 10, true)
+    }
+    fn active_reply(&mut self, row: usize, pid: u64, word: u64, expected: u64) -> bool {
+        let reply = ipc::call(pid, word, u64::MAX);
+        let ok = reply == Ok(expected);
+        if !ok {
+            self.failed += 1;
+        }
+        unsafe {
+            write_volatile(
+                &raw mut safety_active_ipc[row],
+                [pid, word, reply.unwrap_or(0), status(reply) as u64],
+            );
+        }
+        ok
+    }
+    fn wrong_owner(&mut self, generation: u64, issue_ms: u64) -> Bench<()> {
+        let before = state()?;
+        let rc = status(loan::acquire());
+        let observed = state();
+        let close_status = if rc == 0 {
+            // Revoke the unexpected grant and the staged loan without accessing either page.
+            status(dev::supervise(Command::Close, generation)) as u64
+        } else {
+            1 << 63
+        };
+        let after = observed?;
+        let issue = self.time.at(issue_ms)?;
+        let ok = rc == -13
+            && [&before, &after]
+                .into_iter()
+                .all(|s| active_state(s, self.time.hz, generation, 3, issue, true));
+        unsafe {
+            write_volatile(
+                &raw mut safety_wrong_owner,
+                [
+                    1,
+                    before.ticks,
+                    after.ticks,
+                    rc as u64,
+                    before.generation,
+                    after.generation,
+                    before.flags,
+                    after.flags,
+                    before.last_sequence,
+                    after.last_sequence,
+                    before.last_issue_ticks,
+                    after.last_issue_ticks,
+                    ok as u64,
+                    close_status,
+                ],
+            );
+        }
+        if !ok {
+            self.failed += 1;
+        }
+        Ok(())
+    }
+    fn active_scenario(&mut self, case: Case) -> Bench<()> {
+        let offset = case.active_offset_ms();
+        let generation = case.active_generation();
+        let prior = if case == Case::OldGeneration {
+            self.prime_active(0, 1)
+                .and_then(|()| self.observe_active(23, 1, 3, 20, true))
+                .and_then(|()| self.command(35, Command::Open, generation, 0))
+        } else {
+            Ok(())
+        };
+        let primed = self.prime_active(offset, generation);
+        self.active_reply(0, 1, common::LAST_SAMPLE, 3);
+        let live = self.observe_active(offset + 21, generation, 3, offset + 20, true);
+        let released = self.active_reply(1, 0, common::RELEASE_INPUT, common::RELEASE_INPUT);
+        let seq4_issue = if case == Case::WrongOwner {
+            if released && self.active_reply(2, 0, common::GRANT_STAGED, common::GRANT_STAGED) {
+                let denial = self.wrong_owner(generation, offset + 20);
+                // The owner waits for this reply only after acknowledging its staged grant.
+                self.active_reply(3, 0, common::PUBLISH_GRANT, common::PUBLISH_GRANT);
+                denial?;
+            }
+            offset + 24
+        } else {
+            offset + 30
+        };
+        prior?;
+        primed?;
+        live?;
+        self.observe_active(offset + 28, generation, 3, offset + 20, true)?;
+        self.observe_active(offset + 33, generation, 4, seq4_issue, true)?;
+        self.observe_active(offset + 42, generation, 5, offset + 36, false)
+    }
     fn scenario(&mut self, case: Case) -> Bench<()> {
         use Case::*;
+        if case.active_case() {
+            return self.active_scenario(case);
+        }
         self.observe(3, false, if case == Delayed { Some(0) } else { Some(1) })?;
         if case == LiveStartup {
             let a = state()?;
@@ -213,6 +342,24 @@ impl Supervisor {
         }
         Ok(())
     }
+}
+fn active_state(
+    s: &dev::State,
+    hz: u64,
+    generation: u64,
+    seq: u64,
+    issue: u64,
+    enabled: bool,
+) -> bool {
+    let flags = dev::GATE_OPEN | if enabled { dev::ENABLED } else { 0 };
+    s.generation == generation
+        && s.last_sequence == seq
+        && s.last_issue_ticks == issue
+        && s.flags & (dev::GATE_OPEN | dev::ENABLED | dev::FAULT) == flags
+        && s.hz == hz
+        && s.ticks
+            .checked_sub(issue)
+            .is_some_and(|age| u128::from(age) * 1000 < u128::from(hz) * 20)
 }
 fn call(pid: u64, word: u64, want: u64) -> Bench<()> {
     if ipc::call(pid, word, u64::MAX) == Ok(want) {
