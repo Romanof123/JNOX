@@ -33,3 +33,16 @@ REQ-019 · VER-019 · EVD-311 · [#398](https://github.com/Romanof123/JNOX/issue
 At one tick before the 20 ms boundary both supervisors queued the command. By the controller's next check the first permit had expired. The pending command cleared and the output stayed inhibited. Both one-tick-late commands were refused. The four unadjusted ordinary-clock supervisor samples were late by 9,696–14,105 ticks. Across all 24 functional boots the dedicated safety journal lost zero records. Every boot had a completed-check gap above 5 ms. The maximum conservative upper bound was 5.262096 ms on the ordinary clock and 5.013008 ms on the instruction-count clock. The original refused package and all subsequent runs are included. [Independent captures, host package checks and replay](evidence/native-permit-rearm-ticks.en-ko.md).
 
 단일 Cortex-A72의 명령 수 기반 가상 시계에서 FIFO·RR 각각 15 ms와 20 ms 판정을 새 부팅으로 세 번씩 재현했다. 15 ms에는 감독자 명령이 수락되고, 약 1.008 ms 후 제어기의 재확인을 거쳐 가상 출력이 켜졌다. 정확히 20 ms에는 첫 허가가 만료돼 명령이 거부되고 출력이 계속 꺼져 있었다. 1틱 이른 명령은 대기 중 만료됐고 1틱 늦은 명령은 바로 거부됐다. 기본 시계 네 번에서는 목표 틱보다 늦었다. 24회 모두 5 ms 검사 완료 간격을 초과했다. [원본 및 재검증](evidence/native-permit-rearm-ticks.en-ko.md).
+
+## Worst check phase on the protected channel / 최악 검사 위상의 보호 경로
+
+REQ-019 · VER-019 · EVD-311 · [#400](https://github.com/Romanof123/JNOX/issues/400). After accepted sequence 3 and confirmed device enable, the supervisor closed the normal input and the producer's next acquisition was refused. At 62.5 MHz let I be this permit's wire issue, D=I+1,250,000 and H=312,500. The original delivery followed I by approximately 1.006 ms in the selected runs. FIFO and RR each reproduced the following two engineering observations in three cold boots per case.
+
+| Native event | Observation on the instruction-count clock |
+| --- | --- |
+| Two consecutive protected freshness decisions | The successful COMPLETE decision at D−1 found the old permit fresh. The next protected CHECK at D−1+H latched expiry, followed by an actual virtual output fall. Private receiver sampling continued between the protected decisions. |
+| Two consecutive completed activations in separate boots | The two actual active-to-inactive stores, each bracketed through readback, occurred exactly at D−1 and D−1+H. Between these stores the next opening CHECK caused the latch. Its operand preceded the second store by 300 ticks under FIFO and 322 under RR. |
+
+All 55 measured new-case boots met the separately evaluated virtual 25/5/30 ms response limits after actual gate closure. Each exceeded the 5 ms maximum interval between completions elsewhere in the run. All 59 cold launches, including the four original controls, the crossed store brackets and all operating-clock samples, are preserved. The original collision controls never established enabled output; [#401](https://github.com/Romanof123/JNOX/issues/401) tracks the open-gate arrival case. [Original captures, executable analysis and replay](evidence/native-permit-worst-phase.en-ko.md).
+
+순번 3의 실제 수신과 출력 활성화를 확인한 뒤 게이트를 닫았다. 명령 수 기반 시계에서 FIFO와 RR 각각 보호 판정 두 건의 시각을 3회씩, 별도 실행에서 실제 활성화 종료 저장 두 건의 시각을 3회씩 재현했다. 종료 저장 사이에는 다음 CHECK가 먼저 래치를 설정했다. 수신기 자체 시각, 보호 판정, 출력 전이와 종료 저장을 각각 측정했다. 새 시험 55회 모두 차단 후 25/5/30 ms 반응 한도를 지켰고, 전체 실행에서는 매번 5 ms 완료 간격을 초과했다. [한·영 근거와 원본](evidence/native-permit-worst-phase.en-ko.md).
