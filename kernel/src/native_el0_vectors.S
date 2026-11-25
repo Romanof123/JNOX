@@ -9,15 +9,42 @@
     b \dest
     .space 124
 .endm
+.ifdef NATIVE_WEIGHTED_CONTINUOUS
+// Keep the earliest ordered exception timestamp before the common frame save.
+// The normal 832-byte frame remains at SP for the Rust handlers. The extra
+// 16 bytes above it are private to this vector and removed before EL0 return.
+.macro weighted_user_vector dest
+    str x2,[sp,#-16]!
+    isb
+    mrs x2,cntpct_el0
+    str x2,[sp,#8]
+    ldr x2,[sp]
+    b \dest
+    .space 128-24
+.endm
+.endif
 native_el0_vectors:
     .rept 5                        // Current EL SP0 slots, then EL1h sync
         native_vector .Lunexpected
     .endr
-    native_vector .Lidle_irq      // Current EL, SP_EL1 IRQ
+    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    isb
+    mrs x1,cntpct_el0
+    b .Lidle_irq
+    .space 128-12
+    .else
+    native_vector .Lidle_irq
+    .endif
+    // Current EL, SP_EL1 IRQ
     native_vector .Lunexpected
     native_vector .Lunexpected
+    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    weighted_user_vector .Luser_sync
+    weighted_user_vector .Luser_irq
+    .else
     native_vector .Luser_sync     // Lower EL, AArch64 synchronous exception
     native_vector .Luser_irq
+    .endif
     .rept 6                        // Remaining A64 slots and all A32 slots
         native_vector .Lunexpected
     .endr
@@ -63,6 +90,65 @@ native_server_enter:
     b .Lrestore
 .endif
 
+.ifdef NATIVE_WEIGHTED_CONTINUOUS
+// Written by Rust while IRQs are masked; read back at the next exception.
+// Each field is one u64. No pending flag means preserve the existing timer
+// and its associated launch evidence across this return.
+.pushsection .bss.native_weighted_arm,"aw",%nobits
+.balign 8
+.global native_weighted_arm
+.type native_weighted_arm,%object
+native_weighted_arm:
+    .zero 80
+.size native_weighted_arm,.-native_weighted_arm
+.popsection
+.endif
+
+.macro weighted_final_arm
+    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    stp x12,x13,[sp,#-32]!
+    stp x14,x15,[sp,#16]
+    adrp x12,native_weighted_arm
+    add x12,x12,:lo12:native_weighted_arm
+    ldr x13,[x12]                 // pending
+    cbz x13,.Lweighted_arm_done\@
+    ldp x14,x15,[x12,#8]          // quantum, earliest wake (MAX = none)
+    isb
+    mrs x13,cntpct_el0            // R is the operand of the actual timer arm
+    str x13,[x12,#24]
+    adds x14,x13,x14
+    b.cs .Lweighted_arm_overflow\@
+    cmp x15,x14
+    csel x14,x15,x14,lo
+    msr cntp_cval_el0,x14
+    mov x13,#1
+    msr cntp_ctl_el0,x13
+    isb
+    mrs x13,cntp_cval_el0
+    mrs x14,cntp_ctl_el0
+    stp x13,x14,[x12,#32]
+    adr x13,.Lweighted_eret\@
+    mrs x14,ttbr0_el1
+    stp x13,x14,[x12,#56]
+    str xzr,[x12]
+    isb
+    mrs x13,cntpct_el0
+    str x13,[x12,#48]
+.Lweighted_arm_done\@:
+    ldp x14,x15,[sp,#16]
+    ldp x12,x13,[sp],#32
+    b .Lweighted_eret\@
+.Lweighted_arm_overflow\@:
+    mov x13,#1
+    str x13,[x12,#72]
+    str xzr,[x12]
+    msr cntp_ctl_el0,xzr
+    isb
+    b native_weighted_arm_overflow
+.Lweighted_eret\@:
+    .endif
+.endm
+
 .global native_el0_enter
 .type native_el0_enter,%function
 native_el0_enter:
@@ -103,6 +189,7 @@ native_el0_enter:
     clrex
     isb
     cyclic_final_stamp
+    weighted_final_arm
     eret
 .size native_el0_enter,.-native_el0_enter
 
@@ -154,9 +241,13 @@ native_el0_enter:
     sub sp,sp,#832
     native_integer_pairs stp
     str x30,[sp,#240]
+    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    ldr x2,[sp,#840]
+    .else
     .ifdef NATIVE_MEASURED
     isb
     mrs x2,cntpct_el0
+    .endif
     .endif
     mrs x9,esr_el1
     str x9,[sp,#248]
@@ -223,8 +314,13 @@ native_el0_enter:
     bl native_server_reselect
     b .Lrestore
     .else
+    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    add sp,sp,#848
+    .else
     add sp,sp,#832
+    .endif
     cyclic_final_stamp
+    weighted_final_arm
     eret
     .endif
 
@@ -271,9 +367,11 @@ native_sleep_idle:
     // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
     // Its only live value is x19. IRQ entry masked delivery before this call.
     mov x0,xzr
+    .ifndef NATIVE_WEIGHTED_CONTINUOUS
     .ifdef NATIVE_MEASURED
     isb
     mrs x1,cntpct_el0
+    .endif
     .endif
     bl native_sleep_irq
     .ifdef NATIVE_CYCLIC
