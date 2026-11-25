@@ -2,6 +2,12 @@
 
 [한국어](scheduling-policies.md) · [Release cases and remaining verification](scheduling-release-cases.en.md)
 
+## Current release scope
+
+**Six of seven retained scheduling families have scoped approvals (6/7).** POL-002 fixed priority remains open for both FIFO and round robin (RR). Existing approvals cover POL-003 batch (named native and linked profiles), POL-005 deadlines (finite M1/M3 EDF and sampled LLF), POL-009 multilevel queues (telemetry deployment), POL-010 proportional share (six native configurations), POL-011 weighted scheduling (named configurations), and POL-012 EEVDF (linked EL1 telemetry).
+
+REQ-023 retains all eighteen families and their historical evidence. POL-001, POL-004, POL-006 through POL-008 and POL-013 through POL-018 are catalog-only for this release. Physical Pi 4 verification under [#34](https://github.com/Romanof123/JNOX/issues/34), customer workload and WCET qualification, and ASIL qualification remain open. Development of the ten IPC families follows the retained scheduling gate. [Scheduling tracker #21](https://github.com/Romanof123/JNOX/issues/21) · [IPC tracker #24](https://github.com/Romanof123/JNOX/issues/24)
+
 J-NOX profiles select how a CPU chooses its next thread, which events may preempt it, where it may run, and how much CPU time it may use. For example, a control profile can pin threads to one CPU, assign priorities by period, use FIFO within a priority, and apply a ceiling to a shared mutex. An extended profile can schedule weighted service threads inside a CPU reservation. Each combination has its own configuration and verification record.
 
 `CHG-005` tracks this product scope through `OBJ-004 → REQ-023 → DES-012 → VER-023`. Timing and isolation also require `REQ-002 → DES-003 → VER-002`, and thread operations require `REQ-005 → DES-003 → VER-005`. Each `POL` ID identifies a family. Results identify the particular variant, layer, processor count and configuration tested. [Requirements](requirements.en.md) · [Architecture](architecture.en.md) · [Verification plan](verification-plan.en.md)

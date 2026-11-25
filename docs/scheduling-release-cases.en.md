@@ -2,7 +2,13 @@
 
 [한국어](scheduling-release-cases.md) · [Release criteria](scheduling-policies.en.md) · [REQ-023 / VER-023 · #21](https://github.com/Romanof123/JNOX/issues/21)
 
-Baseline `19d2154`. Each row allocates the existing release criteria to recorded subcases and remaining work. Each record identifies its revision, configuration and observations. EVD-004 exercised controlled selection/accounting inputs inside a guest. Task-specific records identify actual context switches on QEMU virtual CPUs. EVD-008 is a host calculation. Physical measurements and product approval apply according to each declared profile. Six of 18 policy families have scoped release decisions (6/18). POL-003 covers the named native and linked batch profiles, POL-005 the finite M1/M3 EDF and sampled LLF profiles, POL-009 the named multilevel telemetry deployment, POL-010 the six native proportional configurations, POL-011 the named weighted configurations, and POL-012 the linked EL1 EEVDF telemetry workload. The other 12 remain open.
+## Current release scope
+
+**Six of seven retained scheduling families have scoped approvals (6/7).** POL-002 fixed priority remains open for both FIFO and round robin (RR). Existing approvals cover POL-003 batch (named native and linked profiles), POL-005 deadlines (finite M1/M3 EDF and sampled LLF), POL-009 multilevel queues (telemetry deployment), POL-010 proportional share (six native configurations), POL-011 weighted scheduling (named configurations), and POL-012 EEVDF (linked EL1 telemetry).
+
+REQ-023 retains all eighteen families and their historical evidence. POL-001, POL-004, POL-006 through POL-008 and POL-013 through POL-018 are catalog-only for this release. Physical Pi 4 verification under [#34](https://github.com/Romanof123/JNOX/issues/34), customer workload and WCET qualification, and ASIL qualification remain open. Development of the ten IPC families follows the retained scheduling gate. [Scheduling tracker #21](https://github.com/Romanof123/JNOX/issues/21) · [IPC tracker #24](https://github.com/Romanof123/JNOX/issues/24)
+
+Baseline `19d2154`. Each row allocates the existing release criteria to recorded subcases and remaining work. Each record identifies its revision, configuration and observations. EVD-004 exercised controlled selection/accounting inputs inside a guest. Task-specific records identify actual context switches on QEMU virtual CPUs. EVD-008 is a host calculation. Physical measurements and product approval apply according to each declared profile.
 
 For the trace audit under [#6](https://github.com/Romanof123/JNOX/issues/6), an explicit EVD-number link in the recorded-subcases cell of a policy row requires a typed policy evidence edge when a directly linked implementation was tested in that record. Shared references, static measurements and pending physical or product work retain their own scope. [#208](https://github.com/Romanof123/JNOX/issues/208)
 
