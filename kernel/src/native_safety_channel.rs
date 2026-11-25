@@ -275,10 +275,23 @@ impl Session {
         log(16, [before, after, self.generation, self.sequence, self.issue,
                  u64::from(self.fault), u64::from(was_active), u64::from(readback)]);
     }
+    #[cfg(jnox_native_safety_arrival_observation)]
+    #[inline(never)]
+    fn observe_opening_queue(&self, check_operand: u64) {
+        let (occupancy, handle, length) = loans::opening_queue();
+        let flags = u64::from(self.gate) | (u64::from(self.fault) << 1);
+        log(17, [check_operand, self.generation, self.sequence, occupancy, handle, length,
+                 u64::from(self.active), flags]);
+    }
     fn control(&mut self, x:&[u64;31]) -> Result<(),i32> {
-        self.check_at(counter(), x[0]);
+        let check_operand = counter();
+        self.check_at(check_operand, x[0]);
         match x[0] {
-            1 if !self.active => { self.active=true; self.attempts=0; self.command=false; }
+            1 if !self.active => {
+                self.active=true; self.attempts=0; self.command=false;
+                #[cfg(jnox_native_safety_arrival_observation)]
+                self.observe_opening_queue(check_operand);
+            }
             2 => return self.commit(x),
             #[cfg(jnox_native_safety_phase_observation)]
             3 if self.active => self.retire_boundary_activation(),

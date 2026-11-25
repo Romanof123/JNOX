@@ -67,6 +67,11 @@ pub(super) fn occupancy() -> usize {
     unsafe { (&*(&raw const CHANNEL)).occupancy() }
 }
 
+#[cfg(jnox_native_safety_arrival_observation)]
+pub(super) fn opening_queue() -> (u64, u64, u64) {
+    unsafe { (&*(&raw const CHANNEL)).opening_queue() }
+}
+
 // Keep the service boundary visible to the host phase probe.
 #[inline(never)]
 pub(super) fn service(pid: usize, f: &mut NativeFrame) {

@@ -137,6 +137,23 @@ impl LoanIpc {
     pub fn occupancy(&self) -> usize {
         Ring::used(self.head(), self.tail())
     }
+    /// The masked opening CHECK serializes these reads with publish and receive.
+    /// Preserve the ring's published handle even if its page metadata disagrees.
+    #[cfg(any(test, jnox_native_safety_arrival_observation))]
+    pub fn opening_queue(&self) -> (u64, u64, u64) {
+        let head = self.head();
+        let occupancy = self.tail().wrapping_sub(head);
+        if occupancy == 0 {
+            return (0, 0, 0);
+        }
+        // The acquire load of tail observes the producer's release publication.
+        let handle = self.ring.cells[(head % CAP as u64) as usize].load(Ordering::Relaxed);
+        let length = match self.pages.get(Self::slot(handle)) {
+            Some(Page::Queued(grant)) if grant.handle == handle => grant.len as u64,
+            _ => u64::MAX,
+        };
+        (occupancy, handle, length)
+    }
     pub fn high_water(&self) -> usize {
         self.peak
     }
@@ -358,6 +375,23 @@ mod tests {
     }
     fn unexpected(_: MapOp) -> Result<(), i32> {
         panic!("refusal must precede MMU work")
+    }
+
+    #[test]
+    fn opening_queue_reads_the_published_front_without_consuming_it() {
+        let mut channel = LoanIpc::new(0, 1);
+        let a = channel.acquire(0, ok).unwrap();
+        let b = channel.acquire(0, ok).unwrap();
+        assert_eq!(channel.opening_queue(), (0, 0, 0));
+        // Publish in reverse slot order. A page scan would select the wrong grant.
+        channel.publish(0, b.handle, 0, ok).unwrap();
+        channel.publish(0, a.handle, 44, ok).unwrap();
+        assert_eq!(channel.opening_queue(), (2, b.handle, 0));
+        assert_eq!(channel.opening_queue(), (2, b.handle, 0));
+        assert_eq!(channel.receive(1, ok).unwrap().handle, b.handle);
+        assert_eq!(channel.opening_queue(), (1, a.handle, 44));
+        assert_eq!(channel.receive(1, ok).unwrap().handle, a.handle);
+        assert_eq!(channel.opening_queue(), (0, 0, 0));
     }
 
     #[cfg(jnox_native_safety_downstream)]

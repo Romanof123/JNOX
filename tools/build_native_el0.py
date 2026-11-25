@@ -833,6 +833,8 @@ def main():
         metadata["safety_boundary"] = {"scenario": args.arg[0], "decision_event": 12}
         if rearm_boundary:
             metadata["safety_boundary"].update(rearm_eligibility_event=15, supervisor_lead_ticks=rearm_lead)
+        if arrival_boundary:
+            metadata["safety_boundary"].update(opening_queue_event=17, opening_queue_schema=1)
         if phase_boundary:
             metadata["safety_boundary"].update(phase_completion_event=16, controller_lead_ticks=controller_leads)
             if phase_complete:

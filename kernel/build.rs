@@ -552,6 +552,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_downstream)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_boundary)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_phase_observation)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_arrival_observation)");
     let boundary = selector("JNOX_NATIVE_SAFETY_BOUNDARY");
     let qualification = selector("JNOX_NATIVE_SAFETY_QUALIFICATION");
     let downstream = selector("JNOX_NATIVE_SAFETY_DOWNSTREAM");
@@ -711,6 +712,10 @@ fn main() {
         }
         if phase {
             println!("cargo::rustc-cfg=jnox_native_safety_phase_observation");
+        }
+        if arrival {
+            // The three encoded role argument vectors have all passed the checks above.
+            println!("cargo::rustc-cfg=jnox_native_safety_arrival_observation");
         }
         println!("cargo::rustc-cfg=jnox_native_safety_boundary");
     }
