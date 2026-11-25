@@ -142,6 +142,58 @@ class ArmHealthTest(unittest.TestCase):
             check(dict(rows_total=4, dropped=1, events=2, scored=0, late=0, max_lag=0),
                   sticky=None)
 
+    def test_sticky_chronology_with_and_without_arm_row(self):
+        def packet(retained, updates):
+            result = []
+            for line in fixture(True):
+                cols = line.split()
+                if cols[2] in ("EVENT", "TIMER") and int(cols[3]) >= retained:
+                    continue
+                if cols[2] == "EVENT" and cols[3] == "0":
+                    cols[3+45] = "103"
+                if cols[2] == "DROPPED":
+                    cols[3] = str(4-retained)
+                if cols[2] == "HEALTH" and cols[3] != "END":
+                    cols[-2:] = [str(retained), str(4-retained)]
+                if cols[2] == "FIRST":
+                    for field, value in updates.items():
+                        cols[3+field] = str(value)
+                result.append(" ".join(cols))
+            return result
+
+        for retained in (0, 1, 2):
+            self.assertEqual(read(packet(retained, {}))["timing"], "late")
+            for change in ({7: 99}, {10: 107}, {9: 8}, {12: 9}, {15: 9}):
+                with self.subTest(retained=retained, change=change), self.assertRaises(ValueError):
+                    read(packet(retained, change))
+        self.assertEqual(read(packet(0, {7: 102}))["timing"], "late")
+        with self.assertRaises(ValueError):
+            read(packet(1, {7: 102}))
+        with self.assertRaises(ValueError):
+            read(packet(0, {1: 1, 2: 1, 4: 1}))
+
+    def test_idle_mask_transition(self):
+        for dropped in (False, True):
+            tag = "FIRST" if dropped else "TIMER"
+            spsr, daif = (17,22) if dropped else (15,20)
+            original = fixture(dropped)
+            candidates = [j for j,line in enumerate(original)
+                          if line.startswith(f"NATIVE HIERARCHY {tag} ")]
+            row = candidates[0 if dropped else 2]
+            for saved, pre, valid in [(0x345,0x3c0,True), (0x80000005,0x80,True),
+                                      (0x45,0x80,False), (5,0x180,False),
+                                      (5,0x81,False), (5,0x480,False)]:
+                with self.subTest(dropped=dropped,saved=saved,pre=pre):
+                    lines = original.copy()
+                    cols = lines[row].split()
+                    cols[3+spsr],cols[3+daif] = str(saved),str(pre)
+                    lines[row] = " ".join(cols)
+                    if valid:
+                        self.assertEqual(read(lines)["timing"], "late" if dropped else "within_limit")
+                    else:
+                        with self.assertRaises(ValueError):
+                            read(lines)
+
     def test_wake_tie_checkpoint(self):
         self.assertEqual(cause(0, 10, 50, 50), (3, 50))
         self.assertEqual(cause(3, 10, 50, 50), (2, 50))

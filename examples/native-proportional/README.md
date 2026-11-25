@@ -1,6 +1,6 @@
 # Proportional native workloads / 네이티브 비례 배분 작업
 
-Build the ELFs once from the repository root under Bash on Linux or WSL. The three stable packages share identical input bytes and slot order. Linux 또는 WSL의 Bash에서 저장소 루트를 기준으로 실행한다. 안정 부하 세 구성은 같은 바이너리와 슬롯 순서를 사용한다.
+Install Python with pyelftools for offline ELF replay. 오프라인 ELF 재생에 사용할 Python 환경에 pyelftools를 설치한다. Build the ELFs once from the repository root under Bash on Linux or WSL. The three stable packages share identical input bytes and slot order. Linux 또는 WSL의 Bash에서 저장소 루트를 기준으로 실행한다. 안정 부하 세 구성은 같은 바이너리와 슬롯 순서를 사용한다.
 
 ~~~bash
 out=output/native-proportional
