@@ -34,3 +34,7 @@ IMP-312 implements CHG-312 on the protected three-process virtual output. EVD-31
 The ordinary worker uses the public monotonic sleep service for each future release. Sampling the raw counter before monotonic time biases the converted target later. The worker verifies the original raw target after wake. Actual completed-check gaps include this sampling and dispatch time. A successful watchdog response to missed completion and the 1 ms full-phase admission criterion are separate measurements. [Build and role arguments](../examples/native-safety-watchdog/README.md)
 
 일반 이미지에서는 제어기 > 송신기 > 감독자 우선순위를 사용하며 커널의 기존 5 ms 완료 감시를 선택할 수 있다. 커널이 첫 정상 완료에서 감시를 시작하고, 이후 완료가 누락되면 동일한 물리 타이머로 가상 출력을 차단한다. 태스크는 각 위상에서 한 번 절대 대기하고 복귀 후 원래 카운터 목표에 도달했는지 확인한다.
+
+The ordinary path has been exercised across both virtual scheduling policies with healthy operation, late sleep, late computation, controller exit and both recovery workloads. Protected timing, endpoint state and package-control results are recorded in the [bilingual verification report](evidence/native-permit-ordinary-watchdog.en-ko.md).
+
+일반 경로의 정상 완료, 실행 지연, 종료, 재시작 결과와 원시 자료는 [독립 검증 보고서](evidence/native-permit-ordinary-watchdog.en-ko.md)에 있다.
