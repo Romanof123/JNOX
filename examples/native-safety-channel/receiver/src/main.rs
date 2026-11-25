@@ -343,6 +343,7 @@ impl Controller {
         let grid = i as u64 * 5;
         let planned = match case {
             Case::Collision => self.time.at(grid)?,
+            _ if i == 8 && case.arrival_publish_ms().is_some() => self.time.at(grid)?,
             Case::Phase | Case::PhaseDecision | Case::PhaseComplete if grid >= 25 => {
                 self.time.at(grid)? - 1
             }
@@ -474,7 +475,7 @@ impl Controller {
             }
             ipc::reply(token, end.last_sequence).map_err(|_| 84)?;
         }
-        if case.active_case() && i as u64 == 4 + case.active_offset_ms() / 5 {
+        if case.needs_verified_sample() && i as u64 == 4 + case.active_offset_ms() / 5 {
             self.acknowledge_active(case, true)?;
         }
         Ok(())
@@ -500,7 +501,7 @@ fn run(case: Case, phase_leads: [u64; 2], phase_nops: [u64; 2]) -> Bench<()> {
             break;
         }
     }
-    if case.active_case() && c.active_ack.is_none() {
+    if case.needs_verified_sample() && c.active_ack.is_none() {
         // An earlier activation failed before the supervisor's rendezvous.
         // Answer it before entering the normal two-message exit protocol.
         c.acknowledge_active(case, false)?;

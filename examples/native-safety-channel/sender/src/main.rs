@@ -227,6 +227,24 @@ impl Sender {
     }
 
     fn run(&mut self, case: Case) -> Bench<()> {
+        if let Some(publish_ms) = case.arrival_publish_ms() {
+            let primed = self.prime(1, 0);
+            // Consume and reply even if an earlier publication failed. A zero
+            // reply or a cancellation ends this case before staging a grant.
+            let release = acknowledge(
+                common::RELEASE_INPUT,
+                primed.is_ok() && self.unexpected == 0,
+            );
+            primed?;
+            release?;
+            let frame = self.msg(1, 4, 39, true, 0)?;
+            let handle = self.send(frame, 39, 1, 0, 0)?;
+            if handle == 0 {
+                return Err(88);
+            }
+            self.send(frame, publish_ms, 2, handle, 0)?;
+            return Ok(());
+        }
         if case.active_case() {
             return self.active(case);
         }
