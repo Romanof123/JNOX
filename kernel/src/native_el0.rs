@@ -19,8 +19,10 @@ use weighted as measured;
 #[cfg(jnox_native_edf)]
 use edf as measured;
 
-#[cfg(jnox_native_weighted)]
+#[cfg(all(jnox_native_weighted, not(jnox_native_weighted_continuous)))]
 global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_weighted_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(jnox_native_weighted_continuous)]
+global_asm!(".set NATIVE_WEIGHTED_CONTINUOUS,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_weighted_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
 #[cfg(jnox_native_edf)]
 global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_edf_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
 #[cfg(jnox_native_periodic)]
@@ -144,7 +146,7 @@ fn clock_gettime(clock_id: u64, address: usize, now: u64) -> i64 {
 #[derive(Clone, Copy, PartialEq)]
 enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_threads) || cfg!(any(jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
+const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_weighted_continuous) || cfg!(jnox_native_threads) || cfg!(any(jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
 const EMPTY_FRAME: NativeFrame = NativeFrame {
     x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
     current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
@@ -393,6 +395,8 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     { return hierarchy::irq(entry, frame, iar); }
     #[cfg(jnox_native_aperiodic)]
     { return aperiodic::irq(entry, frame, iar); }
+    #[cfg(jnox_native_weighted_continuous)]
+    { return weighted::interrupt(entry, frame, iar); }
     #[cfg(jnox_native_partition)]
     { return cyclic::irq(entry, frame, iar); }
     #[cfg(jnox_native_cbs)]
@@ -556,6 +560,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         9..=18 => -95,
         _ => -38,
     };
+    #[cfg(jnox_native_weighted_continuous)]
+    weighted::syscall_sample(now, f, result);
     // Keep the first seven calls and the most recent call once the journal fills.
     let index = count.min(7);
     let row = [index as u64, vector, f.current_el, f.esr, f.spsr, f.elr, f.sp_el0,
@@ -589,6 +595,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         let reason = if exit { 3 } else if deadline.is_some() { 2 }
             else if service == 8 && result == 0 { 1 }
             else if service == 9 && cfg!(jnox_native_periodic) { 9 }
+            else if cfg!(jnox_native_weighted_continuous) && result == 0 && (service == 6 || service == 7) { service }
             else if due_poll { 5 } else { return };
         if let Some(next) = measured::boundary(now, reason, deadline, Some(f)) {
             activate(next, f);

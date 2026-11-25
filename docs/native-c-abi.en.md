@@ -263,3 +263,15 @@ python3 tools/build_native_el0.py --out ss --policy sporadic --server-slot-ms 50
 ~~~
 
 [SDK build / QEMU 실행](../examples/native-aperiodic/README.md)
+
+## Keep weighted quanta active during solo service
+
+On single-CPU virt, add --weighted-continuous to keep the quantum timer active even when only one app is runnable. Omit the flag for legacy weighted operation with uninterrupted solo service. Assign each ELF a positive weight and specify the quantum in timer ticks.
+
+~~~sh
+python3 tools/build_native_el0.py --out share --policy weighted --weighted-continuous --weighted-notify closures:36 --quantum-ticks 625000 --elf monitor.elf --weight 1 --arg A --arg share --peer-elf monitor.elf --peer-weight 2 --peer-arg B --peer-arg share
+~~~
+
+The optional --weighted-notify closures:N counts full quanta closed by timer IRQ. Use wakes:N for actual wakeups from sleep. In a package with notification enabled, C code can include `<jnox/weighted_notify.h>` and read the latch with `jnox_weighted_notification()`. It changes once from zero to one. Each app continues until it chooses to exit.
+
+[Archive extraction and QEMU commands / 원본 추출 및 실행](../examples/native-weighted/README.md#original-weighted-monitor--원래-가중치-모니터) · [#327](native-weighted-continuous.en-ko.md)
