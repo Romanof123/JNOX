@@ -12,6 +12,15 @@ Run recurring C and Rust batches under rate-monotonic or deadline-monotonic sche
 
 Package up to three native jobs with their release times, deadlines and estimated CPU costs. Sampled EDF lets an urgent job interrupt a batch calculation when it becomes eligible at a grid boundary. [Build a native EDF package](docs/native-c-abi.en.md#sampled-edf-for-native-applications)
 
+From the repository root on Linux or WSL, build the weighted analytics packages into a new output directory, then boot the C CRC and Rust histogram pair on one QEMU CPU.
+
+~~~sh
+python3 tools/weighted_analytics.py build --out output/weighted-analytics
+python3 tools/weighted_analytics.py boot --out output/weighted-analytics --variant pair
+~~~
+
+[Weighted analytics operator guide](docs/weighted-analytics-deployment.en-ko.md)
+
 Assign a weight to each native ELF to divide CPU service among ready applications, such as a C checksum worker and a Rust histogram worker. [Build a weighted package](docs/native-c-abi.en.md#weighted-cpu-service-for-native-applications)
 
 Package up to three native C or Rust applications with fixed priorities. FIFO preserves equal-priority order, and RR lets equal-priority calculations take turns without an explicit yield. [Build and run a fixed-priority package](docs/native-c-abi.en.md#scheduling-independently-linked-applications)

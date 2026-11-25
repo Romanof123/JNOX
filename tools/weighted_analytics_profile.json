@@ -1,0 +1,19 @@
+{
+  "name": "weighted-analytics",
+  "counter_hz": 62500000,
+  "quantum_ticks": 625000,
+  "sources": {
+    "checksum": "examples/native-weighted-analytics/checksum.c",
+    "histogram": "examples/native-weighted-analytics-rust/Cargo.toml",
+    "energy": "examples/native-weighted-analytics/energy.c",
+    "reporter": "examples/native-weighted/reporter.c",
+    "overflow": "examples/native-weighted-analytics/overflow.c"
+  },
+  "variants": {
+    "pair": [["checksum", 1], ["histogram", 2]],
+    "swap": [["checksum", 2], ["histogram", 1]],
+    "triple": [["checksum", 1], ["histogram", 2], ["energy", 3]],
+    "timed": [["checksum", 1], ["reporter", 2]],
+    "overflow": [["overflow", 1], ["checksum", 2]]
+  }
+}

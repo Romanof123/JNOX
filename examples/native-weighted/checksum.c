@@ -1,30 +1,3 @@
-#include <stdint.h>
-
-/* CRC-32/ISO-HDLC over 16 MiB of repeated byte ramps. */
-static volatile unsigned char block[256];
-volatile uint32_t private_progress;
-volatile uint32_t private_result;
-
-__attribute__((noinline))
-void checksum_stream(void)
-{
-    uint32_t crc = 0xffffffffU;
-    for (unsigned i = 0; i < 256; ++i)
-        block[i] = (unsigned char)i;
-    for (unsigned n = 0; n < 65536; ++n) {
-        for (unsigned i = 0; i < 256; ++i) {
-            crc ^= block[i];
-            for (unsigned bit = 0; bit < 8; ++bit)
-                crc = (crc >> 1) ^ (0xedb88320U & (0U - (crc & 1)));
-        }
-        private_result = ~crc;
-        private_progress = (n + 1) * 256;
-    }
-}
-
-int main(void)
-{
-    checksum_stream();
-    uint32_t crc = private_result;
-    return crc == 0x2a223dadU ? (int)(crc % 251) : 101;
-}
+#define CRC_BLOCKS 65536U
+#define CRC_EXPECTED 0x2a223dadU
+#include "checksum_stream.h"
