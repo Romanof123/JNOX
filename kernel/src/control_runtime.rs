@@ -437,13 +437,18 @@ extern "C" fn svc(frame: *mut Frame, entry: u64) -> *mut Frame {
     s.select(entry, 35)
 }
 
+// The caller holds the control decision guard and owns this missed index.
+fn complete_missed_phase(index: u64) {
+    let (step, target) = (state().step, state().target(index));
+    app::check(index, step);
+    log(10, now(), index, target);
+    state().stopping = true;
+}
+
 extern "C" fn final_check() -> ! {
     control_locked(|| {
         let index = state().missed.take().unwrap_or_else(|| fail());
-        let (step, target) = (state().step, state().target(index));
-        app::check(index, step);
-        log(10, now(), index, target);
-        state().stopping = true;
+        complete_missed_phase(index);
     });
     #[cfg(jnox_control_markers)]
     markers::record(9, now(), 2, 0);
@@ -460,6 +465,10 @@ extern "C" fn control(
     #[cfg(jnox_control_descriptor)]
     let phases = [(first_index, first_target), (second_index, second_target)];
     for phase in 0..2 {
+        // Descriptor arguments are private to this activation. A newly
+        // released missed-phase frame may contain zero arguments; the guard
+        // below consumes the actual missed index before using any of them.
+        #[cfg(not(jnox_control_descriptor))]
         if control_locked(|| state().missed.is_some()) {
             final_check()
         }
@@ -480,9 +489,10 @@ extern "C" fn control(
                 core::hint::spin_loop()
             }
         }
-        control_locked(|| {
-            if state().missed.is_some() {
-                final_check()
+        let completed_missed_phase = control_locked(|| {
+            if let Some(missed) = state().missed.take() {
+                complete_missed_phase(missed);
+                return true;
             }
             app::check(index, step);
             let finish = now();
@@ -490,7 +500,11 @@ extern "C" fn control(
             if finish < target || finish - target > step * 2 / 5 {
                 state().timing_fault(7)
             }
+            false
         });
+        if completed_missed_phase {
+            break;
+        }
         if phase == 0 {
             #[cfg(not(jnox_control_markers))]
             unsafe { asm!("svc #1", options(nostack)) }
