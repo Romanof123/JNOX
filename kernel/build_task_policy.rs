@@ -8,6 +8,8 @@ use std::process::Command;
 #[allow(dead_code)]
 #[path = "native/elf.rs"]
 mod elf;
+use elf::{LoadPlan, Permission};
+include!("src/native_v1_note.rs");
 
 const RAM: usize = 126 * 1024 * 1024;
 const APP_RECORD: usize = 48;
@@ -46,8 +48,15 @@ fn validate(data: &[u8]) -> (usize, usize, usize) {
         assert!(word(app, 32) == offset && len <= data.len() - offset
             && word(app, 40) == first && (1..=MAX_LOCAL).contains(&count)
             && count <= tasks - first, "invalid policy app range");
-        let plan = elf::plan(&data[offset..offset + len], 0x400000..0x800000)
-            .expect("invalid task policy application ELF");
+        let image = &data[offset..offset + len];
+        let app_name = std::str::from_utf8(name(app)).expect("validated ASCII app name");
+        let plan = elf::plan(image, 0x400000..0x800000)
+            .unwrap_or_else(|error| panic!("app {app_name}: invalid ELF layout: {error:?}"));
+        let permissions = [Permission::ReadExecute, Permission::Read, Permission::ReadWrite];
+        assert!(plan.entry == 0x400000 && plan.segments().iter().map(|s| s.permission).eq(permissions),
+                "app {app_name}: native ABI requires entry 0x400000 and RX, R, RW segments");
+        assert!(native_v1_note(image, &plan).is_some(),
+                "app {app_name}: invalid or missing native v1 ABI note");
         let mut names = BTreeSet::new();
         for slot in 0..count {
             let at = table + (first + slot) * TASK_RECORD;

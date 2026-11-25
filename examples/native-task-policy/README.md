@@ -2,19 +2,36 @@
 
 ## Build / 빌드
 
-From the repository root on Linux, with Clang, LLD, Cargo, Python 3 and the Rust target `aarch64-unknown-none-softfloat` installed, run the following commands. Linux 저장소 루트에서 같은 명령을 실행합니다.
+From the repository root on Linux or WSL, use Clang, LLD, Cargo, Python 3 and the Rust target `aarch64-unknown-none-softfloat`. Keep the same shell for both command blocks. Linux 또는 WSL의 저장소 루트에서 아래 두 명령 블록을 같은 셸에서 실행합니다.
 
 ```sh
-sh examples/native-task-policy/build.sh /tmp/jnox-policy
-python3 tools/task_policy.py /tmp/jnox-policy/policy.txt --out /tmp/jnox-policy/on
-python3 tools/task_policy.py /tmp/jnox-policy/unmonitored.txt --out /tmp/jnox-policy/off
-python3 tools/task_policy.py /tmp/jnox-policy/scale20.txt --out /tmp/jnox-policy/scale
-(cd /tmp/jnox-policy && sha256sum -c apps.sha256)
+run_dir=$(mktemp -d)
+sh examples/native-task-policy/build.sh "$run_dir/apps"
+for config in policy unmonitored scale20; do
+    python3 tools/task_policy.py "$run_dir/apps/$config.txt" --out "$run_dir/compiled-$config"
+done
+(cd "$run_dir/apps" && sha256sum -c apps.sha256)
 ```
 
 Each output directory contains the compiled policy and `policy-manifest.json` with each app's ELF digest, task entry addresses and settings. Both watchdog configurations use the same five ELF files. Only the final field of the `heavy burn` line changes. Keep the linked ELF symbol tables for entry resolution. 각 출력 디렉터리의 매니페스트에서 ELF 해시, 진입 주소, 정책을 확인할 수 있습니다. 감시 여부를 바꿀 때 앱을 다시 빌드할 필요가 없습니다.
 
 ## Policy / 정책
+
+### Package and boot / 패키징 및 부팅
+
+Choose `policy`, `unmonitored` or `scale20` in the first line. The package command embeds the selected configuration and its ELFs into a bootable kernel. QEMU writes the UART trace to the terminal. After `JNOX POLICY DONE`, press **Ctrl+A**, release, then press **X** to quit QEMU. 첫 줄에서 구성을 선택하면 해당 정책과 ELF를 포함한 커널이 생성됩니다. 터미널에서 완료 메시지를 확인한 후 **Ctrl+A**, **X** 순서로 눌러 종료합니다.
+
+```sh
+config=policy
+boot_dir=$(mktemp -d "$run_dir/boot-$config.XXXXXX")
+python3 tools/build_native_el0.py --board virt --task-policy "$run_dir/apps/$config.txt" \
+    --out "$boot_dir/package"
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 \
+    -accel tcg -m 128M -nodefaults -display none -serial mon:stdio \
+    -nic none -no-reboot -kernel "$boot_dir/package/kernel.elf"
+```
+
+### Text format / 정책 파일 형식
 
 ```text
 version 1

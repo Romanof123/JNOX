@@ -76,6 +76,7 @@ pub(crate) fn task(id: usize) -> Option<Task> {
 // The number of decoded ELFs can vary independently of the EL1 stack size.
 static mut PLANS: [MaybeUninit<LoadPlan<'static>>; APP_COUNT] =
     [const { MaybeUninit::uninit() }; APP_COUNT];
+static EMPTY_STACK_TAILS: [&[u8]; APP_COUNT] = [&[]; APP_COUNT];
 
 /// Boot CPU only, with interrupts masked and before any address space is live.
 pub(crate) unsafe fn install() -> Result<(), &'static str> {
@@ -125,5 +126,5 @@ pub(crate) unsafe fn install() -> Result<(), &'static str> {
     }
     // All plans now refer into the same immutable package validated above.
     let plans = unsafe { core::slice::from_raw_parts(plans, APP_COUNT) };
-    unsafe { crate::native_el0_mmu::install_processes(plans, &[&[]; APP_COUNT]) }
+    unsafe { crate::native_el0_mmu::install_processes(plans, &EMPTY_STACK_TAILS) }
 }

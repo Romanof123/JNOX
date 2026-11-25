@@ -28,13 +28,13 @@ def within(data, offset, size):
     return memoryview(data)[offset:offset + size]
 
 
-def executable_segments(blob, offset, count, entry):
+def native_segments(blob, offset, count, entry):
     # Match kernel/native/elf.rs::plan for the native user address window.
     require(offset >= ELF.size and 1 <= count <= 16, "invalid program header table")
     previous_end = 0x400000
     loads = 0
     stack = False
-    executable = []
+    segments = []
     for kind, flags, start, va, _, size, memsz, align in PH.iter_unpack(within(blob, offset, count * PH.size)):
         if kind == 0:
             continue
@@ -52,22 +52,46 @@ def executable_segments(blob, offset, count, entry):
                 "invalid native load address or size")
         within(blob, start, size)
         previous_end = (va + memsz + 4095) & ~4095
-        if flags == 5:
-            executable.append((va, start, size))
-    require(entry % 4 == 0 and any(va <= entry and entry + 4 <= va + size
-                                   for va, _, size in executable), "invalid ELF entry point")
-    return executable
+        segments.append((flags, va, start, size))
+    require([s[0] for s in segments] == [5, 4, 6], "native ABI requires RX, R, RW load segments")
+    _, va, _, size = segments[0]
+    require(entry == 0x400000 and va <= entry and entry + 4 <= va + size,
+            "native ABI requires a file-backed ELF entry at 0x400000")
+    return segments
+
+
+def validate_native_note(blob, sections, names_id, ro):
+    # Match kernel/src/native_v1_note.rs, including the section-to-segment mapping.
+    note = bytes.fromhex("05000000 04000000 01000000 4a4e4f58 00000000 01000000")
+    require(len(sections) <= 128 and names_id < len(sections) and sections[names_id][1] == 3,
+            "invalid native section-name table")
+    names = bytes(within(blob, sections[names_id][4], sections[names_id][5]))
+    found = False
+    for name, typ, flags, va, file, size, *_ in sections:
+        end = names.find(b"\0", name)
+        require(end >= name, "invalid native section name")
+        if names[name:end] != b".note.jnox.abi":
+            continue
+        _, ro_va, ro_file, ro_size = ro
+        delta = va - ro_va
+        require(not found and typ == 7 and flags == 2 and size == len(note) and
+                0 <= delta and delta + size <= ro_size and file == ro_file + delta and
+                within(blob, file, size) == note, "invalid native v1 ABI note")
+        found = True
+    require(found, "missing native v1 ABI note")
 
 
 def function_symbols(blob, wanted):
     fields = ELF.unpack(within(blob, 0, ELF.size))
-    ident, kind, arch, version, entry, phoff, shoff, flags, ehsize, phsize, phnum, shsize, shnum, _ = fields
+    ident, kind, arch, version, entry, phoff, shoff, flags, ehsize, phsize, phnum, shsize, shnum, names_id = fields
     require(ident[:9] == b"\x7fELF\x02\x01\x01\0\0" and
             (kind, arch, version, flags) == (2, 183, 1, 0), "expected static little-endian AArch64 ET_EXEC")
     require((ehsize, phsize, shsize) == (ELF.size, PH.size, SH.size) and shnum and shoff >= ELF.size,
             "invalid ELF header sizes or missing sections")
-    segments = executable_segments(blob, phoff, phnum, entry)
+    segments = native_segments(blob, phoff, phnum, entry)
     sections = list(SH.iter_unpack(within(blob, shoff, shnum * SH.size)))
+    validate_native_note(blob, sections, names_id, segments[1])
+    _, rx_va, rx_file, rx_size = segments[0]
     symbols = {name.encode("ascii"): [] for name in wanted}
     for _, typ, _, _, offset, size, link, _, _, entsize in sections:
         if typ != 2:  # SHT_SYMTAB
@@ -89,8 +113,8 @@ def function_symbols(blob, wanted):
                 _, stype, sflags, base, fileoff, section_size, *_ = sections[section]
                 bound = addr + max(4, length)
                 valid = (stype == 1 and sflags & 6 == 6 and base <= addr and bound <= base + section_size
-                         and any(va <= addr and bound <= va + size and fileoff + addr - base == start + addr - va
-                                 for va, start, size in segments))
+                         and rx_va <= addr and bound <= rx_va + rx_size
+                         and fileoff + addr - base == rx_file + addr - rx_va)
             symbols[name].append(addr if valid else None)
     return symbols
 

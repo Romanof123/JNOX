@@ -14,6 +14,8 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 ## 네이티브 앱과 IPC
 
+AArch64 QEMU `virt`에서는 텍스트 정책 파일로 네이티브 C·Rust 태스크의 주기, 우선순위, 마감과 선택적 감시 시간을 지정합니다. 예제에서는 앱 5개를 패키징하고 같은 ELF를 재사용해 감시 설정을 변경합니다. [태스크 정책 예제 빌드 및 부팅](examples/native-task-policy/README.md)
+
 단일 코어 AArch64 QEMU `virt`에서 네이티브 C 셸로 `cat sample.txt | wc -l`을 실행할 수 있습니다. 셸은 두 실행 파일을 별도 프로세스로 기동하고 파이프로 연결한 뒤 두 종료 상태를 회수합니다. SDK 예제에 빌드 명령과 입력 파일이 있습니다. [셸 예제 실행](examples/native-shell-pipeline/README.md) · [출력과 종료 상태 독립 검증](docs/evidence/native-pipe-ipc-release.en-ko.md)
 
 FIFO·RR 가상 환경에서 각자 지정한 조건으로 검증을 마친 IPC는 아홉 계열입니다. 동기 호출, 유한 메일박스, 펄스·이벤트, 대기 집합, 공유 버퍼 대여, 로컬·IPv4 소켓, 파이프·이름 있는 FIFO, 발행·구독, 메일박스 전송 권한 전달을 지원합니다. 열 번째인 안전 허가 채널은 시간 조건을 검증 중입니다. [IPC 요구사항과 판정](https://github.com/Romanof123/JNOX/issues/24) · [안전 채널 시간 검증](https://github.com/Romanof123/JNOX/issues/389)

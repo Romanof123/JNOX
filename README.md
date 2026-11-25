@@ -14,6 +14,8 @@ Dashed boxes show planned components. The native Rust driver runs as an isolated
 
 ## Native applications and IPC
 
+On AArch64 QEMU `virt`, a text policy assigns periods, priorities, deadlines and optional watchdogs to native C and Rust task entries. The example packages five apps and shows how to change monitoring while reusing the same ELFs. [Build and boot the task-policy example](examples/native-task-policy/README.md)
+
 On single-core AArch64 QEMU `virt`, the native C shell can run `cat sample.txt | wc -l`. The shell starts two separate executables, connects their descriptors and waits for both exit statuses. The SDK example includes the build commands and input files. [Run the shell example](examples/native-shell-pipeline/README.md) · [Independent output and exit checks](docs/evidence/native-pipe-ipc-release.en-ko.md)
 
 Nine IPC families have passed their declared FIFO/RR virtual profiles. They cover synchronous calls, bounded mailboxes, pulses and events, waitsets, shared buffer loans, local and IPv4 sockets, pipes and named FIFOs, publish/subscribe, and mailbox capability transfer. The tenth family is a protected permit channel under timing verification. [IPC requirements and results](https://github.com/Romanof123/JNOX/issues/24) · [Protected channel timing](https://github.com/Romanof123/JNOX/issues/389)

@@ -7,17 +7,26 @@ import unittest
 from task_policy import APP, ELF, HEADER, PH, SH, SYM, TASK, compile_policy
 
 
-def fixture(info=2, address=0x400000, symbol_size=4):
+def fixture(info=2, address=0x400000, symbol_size=4, entry=0x400000, permissions=(5, 4, 6),
+            note_va=0x401000, note_version=1, note_name=b".note.jnox.abi", rx_size=4):
     names = b"\0run\0"
-    blob = bytearray(4100)
+    section_names = b"\0" + note_name + b"\0"
+    blob = bytearray(12292)
     ident = b"\x7fELF\x02\x01\x01" + bytes(9)
-    ELF.pack_into(blob, 0, ident, 2, 183, 1, 0x400000, 64, 128, 0, 64, 56, 1, 64, 4, 0)
-    PH.pack_into(blob, 64, 1, 5, 4096, 0x400000, 0, 4, 8, 4096)
-    SH.pack_into(blob, 192, 0, 1, 6, 0x400000, 4096, 4, 0, 0, 4, 0)
-    SH.pack_into(blob, 256, 0, 2, 0, 0, 384, 48, 3, 1, 8, 24)
-    SH.pack_into(blob, 320, 0, 3, 0, 0, 432, len(names), 0, 0, 1, 0)
-    SYM.pack_into(blob, 408, 1, info, 0, 1, address, symbol_size)
-    blob[432:432 + len(names)] = names
+    ELF.pack_into(blob, 0, ident, 2, 183, 1, entry, 64, 256, 0, 64, 56, len(permissions), 64, 6, 5)
+    for i, flags in enumerate(permissions):
+        size = (rx_size, 24, 4)[i]
+        PH.pack_into(blob, 64 + i * PH.size, 1, flags, 4096 * (i + 1), 0x400000 + 4096 * i,
+                     0, size, max(size, 8), 4096)
+    SH.pack_into(blob, 320, 0, 1, 6, 0x400000, 4096, 4, 0, 0, 4, 0)
+    SH.pack_into(blob, 384, 0, 2, 0, 0, 640, 48, 3, 1, 8, 24)
+    SH.pack_into(blob, 448, 0, 3, 0, 0, 688, len(names), 0, 0, 1, 0)
+    SH.pack_into(blob, 512, 1, 7, 2, note_va, 8192, 24, 0, 0, 4, 0)
+    SH.pack_into(blob, 576, 0, 3, 0, 0, 720, len(section_names), 0, 0, 1, 0)
+    SYM.pack_into(blob, 664, 1, info, 0, 1, address, symbol_size)
+    blob[688:688 + len(names)] = names
+    blob[720:720 + len(section_names)] = section_names
+    blob[8192:8216] = bytes.fromhex("05000000 04000000 01000000 4a4e4f58 00000000") + note_version.to_bytes(4, "little")
     return bytes(blob)
 
 
@@ -71,6 +80,19 @@ class PolicyTests(unittest.TestCase):
             self.compile('app a "my image.elf"')
         with self.assertRaisesRegex(ValueError, r"policy.txt:4:"):
             self.compile('app a "my image.elf"\ntask a t run 1 1 1 off\ntask a t run 2 2 2 off')
+
+    def test_guest_native_abi_rejections_locate_app_line(self):
+        for kwargs, diagnostic in [
+            (dict(permissions=(5,)), "RX, R, RW"),
+            (dict(permissions=(5, 6, 4)), "RX, R, RW"),
+            (dict(entry=0x400004, rx_size=8), "ELF entry"),
+            (dict(note_version=2), "invalid native v1 ABI note"),
+            (dict(note_va=0x401004), "invalid native v1 ABI note"),
+            (dict(note_name=b".note.other"), "missing native v1 ABI note"),
+        ]:
+            with self.subTest(kwargs=kwargs), self.assertRaisesRegex(ValueError, f"policy.txt:2: a: .*{diagnostic}"):
+                self.elf.write_bytes(fixture(**kwargs))
+                self.compile('app a "my image.elf"\ntask a t run 1 1 1 off')
 
     def test_task_symbol_must_be_file_backed_function(self):
         for image in [fixture(info=1), fixture(address=0x400004), fixture(address=0x400001),

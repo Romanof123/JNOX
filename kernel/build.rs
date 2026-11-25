@@ -90,6 +90,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_task_policy)");
     println!("cargo::rerun-if-changed=build_task_policy.rs");
     println!("cargo::rerun-if-changed=native/elf.rs");
+    println!("cargo::rerun-if-changed=src/native_v1_note.rs");
     let task_bin = selector("JNOX_TASK_POLICY_BIN");
     let task_hash = selector("JNOX_TASK_POLICY_SHA256");
     assert!(profile.as_deref() == Some("task-policy") || (task_bin.is_none() && task_hash.is_none()),
