@@ -33,6 +33,8 @@ python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
 
 Run recurring C and Rust batches under rate-monotonic or deadline-monotonic scheduling. Each application keeps its private state between periods. [Package recurring native jobs](docs/native-c-abi.en.md#recurring-native-jobs-under-rm-and-dm)
 
+Give a third native ELF selected 100 ms cells while two compute jobs use the remaining cells under EDF or LLF. [Build and run the checksum, histogram and recurring sensor service](examples/native-deadline-service/README.md)
+
 Package up to three native jobs with their release times, deadlines and estimated CPU costs. Sampled EDF lets an urgent job interrupt a batch calculation when it becomes eligible at a grid boundary. [Build a native EDF package](docs/native-c-abi.en.md#sampled-edf-for-native-applications)
 
 From the repository root on Linux or WSL, build the weighted analytics packages into a new output directory, then boot the C CRC and Rust histogram pair on one QEMU CPU.
