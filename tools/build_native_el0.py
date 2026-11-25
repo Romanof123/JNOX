@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from native_extension_program import parse_program
 from native_amc_roots import linked_roots
 from native_hierarchy import parse_topology, unique_keys
 from native_lottery_admission import forecast
@@ -328,10 +329,11 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "amc"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--extension-program", type=Path, action=SinglePath, metavar="RULE.txt")
     parser.add_argument("--amc-manifest", type=Path, action=SinglePath, metavar="DEPLOYMENT.json")
     parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
@@ -446,6 +448,17 @@ def main():
             parser.error("service cells must increase strictly within 0..15")
         calendar = ",".join(map(str, cells))
         vectors[2] = [calendar]
+    if (args.extension_program is not None) != (policy == "extension"):
+        parser.error("--extension-program is required exclusively with --policy extension")
+    if policy == "extension":
+        if len(args.peer_elf) != 2:
+            parser.error("extension requires one reserved application and two delegated peers")
+        try:
+            rule_path = args.extension_program.resolve(strict=True)
+            rule_source = rule_path.read_bytes()
+            ops = parse_program(rule_source)
+        except (ValueError, OSError) as exc:
+            parser.error(f"invalid --extension-program: {exc}")
     if (args.amc_manifest is not None) != (policy == "amc"):
         parser.error("--amc-manifest is required exclusively with --policy amc")
     if policy == "amc":
@@ -498,6 +511,15 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if policy == "extension":
+        program = out / "extension_program.txt"
+        program.write_bytes(("\n".join(ops) + "\n").encode("ascii"))
+        digest = sha256(program)
+        source_name = str(rule_path.relative_to(ROOT) if rule_path.is_relative_to(ROOT) else rule_path)
+        inputs[source_name] = hashlib.sha256(rule_source).hexdigest()
+        metadata.update(extension_program={"file": program.name, "sha256": digest, "operations": ops,
+                                           "source": source_name}, package_argv=sys.argv[:])
+        env.update(JNOX_NATIVE_EXTENSION_PROGRAM=str(program), JNOX_NATIVE_EXTENSION_SHA256=digest)
     if policy == "amc":
         canonical = out / "amc-v1.txt"
         canonical.write_bytes(amc_wire)
@@ -549,6 +571,9 @@ def main():
             env["JNOX_NATIVE_BATCH_JOBS"] = ";".join(f"{offset},{estimate}" for offset, estimate in batch_jobs)
         jobs = args.job + args.peer_job
         for slot in slots:
+            if policy == "extension":
+                i = slot["slot"]
+                slot.update(generation=(7, 11, 17)[i], cpu=0, role="reserved" if i == 0 else "delegated")
             if policy == "amc":
                 slot["amc_task"] = amc["tasks"][slot["slot"]]
             slot["argv"] = (["/bin/app", *vectors[slot["slot"]]] if app == "process"
