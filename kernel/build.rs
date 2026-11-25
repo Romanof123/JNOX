@@ -445,10 +445,31 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_rr)");
     let threads = selector("JNOX_NATIVE_THREADS");
     let thread_rr = threads.is_some() && policy.as_deref() == Some("rr");
-    if let Some(capacity) = threads {
-        assert!(capacity == "2" && profile.as_deref() == Some("native")
-            && app.as_deref() == Some("process") && peer_image.is_none() && (policy.is_none() || thread_rr),
-            "JNOX_NATIVE_THREADS=2 requires a single ordinary ELF and cooperative or RR scheduling");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_fixed)");
+    let thread_roles = selector("JNOX_NATIVE_THREAD_PRIORITIES");
+    assert_eq!(thread_roles.is_some(), threads.as_deref() == Some("4"),
+        "four thread slots require JNOX_NATIVE_THREAD_PRIORITIES exclusively");
+    let thread_priorities = thread_roles.map(|roles| {
+        let values: Vec<u8> = roles.split(',').map(|field| {
+            assert!(!field.is_empty() && field.bytes().all(|b| b.is_ascii_digit()), "invalid thread priority");
+            let priority = field.parse::<u8>().expect("thread priority exceeds u8");
+            assert!((1..=31).contains(&priority), "thread priority outside 1..31");
+            priority
+        }).collect();
+        <[u8; 4]>::try_from(values).expect("expected four thread priorities")
+    });
+    if let Some(capacity) = threads.as_deref() {
+        assert!(board == "virt" && profile.as_deref() == Some("native")
+            && app.as_deref() == Some("process") && peer_image.is_none(),
+            "native threads require one ordinary virt process");
+        match capacity {
+            "2" => assert!(policy.is_none() || thread_rr, "two threads require cooperative or RR scheduling"),
+            "4" => {
+                assert!(matches!(policy.as_deref(), Some("fifo" | "rr")), "four threads require FIFO or RR");
+                println!("cargo::rustc-cfg=jnox_native_thread_fixed");
+            }
+            _ => panic!("unsupported thread capacity"),
+        }
         println!("cargo::rustc-cfg=jnox_native_threads");
     }
     let service_image = selector("JNOX_NATIVE_DEADLINE_SERVICE_ELF");
@@ -514,7 +535,7 @@ fn main() {
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref());
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -811,7 +832,7 @@ fn partition_windows(table: &str) -> Vec<(Option<usize>, u64)> {
     windows
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>) {
     if server_settings.is_some() {
         assert_eq!(slots, 2, "native servers require exactly two ordinary applications");
         println!("cargo::rustc-cfg=jnox_native_aperiodic");
@@ -892,9 +913,11 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         println!("cargo::rustc-cfg=jnox_native_multilevel");
     }
     let values = match policy {
-        Some("rr") if thread_rr => {
-            assert!(priorities.is_none(), "thread RR has implicit equal rank");
-            println!("cargo::rustc-cfg=jnox_native_thread_rr");
+        Some("fifo" | "rr") if thread_priorities.is_some() || thread_rr => {
+            assert!(priorities.is_none(), "process priorities are incompatible with thread scheduling");
+            if thread_rr {
+                println!("cargo::rustc-cfg=jnox_native_thread_rr");
+            }
             vec![0; slots]
         }
         Some("fifo" | "rr") => {
@@ -936,8 +959,9 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     }
     let job_count = jobs.len();
     let extra_slots = extras.join(", ");
+    let thread_bases = thread_priorities.unwrap_or_default();
     let mut generated = format!(
-        "pub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_THREAD_PRIORITIES: [u8; 4] = {thread_bases:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     if let Some(raw) = hierarchy {
