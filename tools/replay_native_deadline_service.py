@@ -32,8 +32,8 @@ def require(condition, message):
 
 def read_rows(path):
     policy = None
-    rows = {"CONFIG": [], "JOB": [], "EVENT": [], "REFUSED": [], "END": []}
-    widths = {"CONFIG": 6, "JOB": 4, "EVENT": len(Event._fields), "REFUSED": 3, "END": 3}
+    widths = {"CONFIG": 6, "JOB": 4, "ARM": 2, "EVENT": len(Event._fields), "REFUSED": 3, "END": 3}
+    rows = {label: [] for label in widths}
     with path.open("rb") as stream:
         for line_no, raw in enumerate(stream, 1):
             fields = raw.split()
@@ -54,6 +54,10 @@ def read_rows(path):
             require(not rows["END"] and not rows["REFUSED"], f"{where}: record after disposition")
             require(label == "CONFIG" or rows["CONFIG"], f"{where}: missing initial CONFIG")
             require(label in ("CONFIG", "JOB") or len(rows["JOB"]) == 2, f"{where}: missing job descriptors")
+            if label in ("EVENT", "END"):
+                require(len(rows["ARM"]) == 1, f"{where}: missing initial ARM")
+            if label in ("ARM", "REFUSED"):
+                require(not rows["ARM"], f"{where}: duplicate arm or refusal after arm")
             rows[label].append(values)
     require(len(rows["CONFIG"]) == 1, "expected one recurring CONFIG")
     require(len(rows["JOB"]) == 2, "expected two recurring JOB rows")
@@ -137,6 +141,11 @@ def refusal_name(reason, cap, interval, miss):
 def replay_events(rows, jobs, cells, epoch, q, cap, policy):
     events = [Event(*values) for values in rows["EVENT"]]
     require(events and rows["END"] == [(0, len(events), 0)], "incomplete or failed terminal journal")
+    initial_arm, first_compare = rows["ARM"][0]
+    require(first_compare == epoch and epoch - q <= initial_arm < epoch,
+            "initial arm sample or first compare differs from launch calendar")
+    require(events[0].kind == 1 and events[0].old_compare == first_compare,
+            "first IRQ does not observe the initial compare")
     model = JobReplay(jobs, policy)
     previous_stamp = epoch
     owner = IDLE
@@ -159,6 +168,18 @@ def replay_events(rows, jobs, cells, epoch, q, cap, policy):
         terminal = number == len(events) - 1
         check(event.terminal == int(terminal) and (event.target == PARK) == terminal, "terminal marker")
         check(event.target in range(5), "invalid return owner")
+        check(event.physical_start == (events[number - 1].returned if number else 0),
+              "occupancy start differs from previous return")
+        check(event.elapsed == (event.entry - event.physical_start if number else 0),
+              "physical occupancy differs from sampled interval")
+        check(event.ordinal == (cells.index(k) if k in cells else LIMIT), "activation ordinal")
+        if event.source == IDLE:
+            check(event.src_pc == event.src_sp == 0, "idle supplied an EL0 frame")
+        if event.target in (IDLE, PARK):
+            check(event.dst_pc == event.dst_sp == 0, "idle or park supplied an EL0 frame")
+        if terminal:
+            check(event.returned == event.arm == event.next_compare == 0,
+                  "terminal park returned or armed a compare")
         if event.source in (0, 1, SERVICE):
             check(event.src_pc and event.src_sp, "missing interrupted frame")
             saved[event.source] = (event.src_pc, event.src_sp)
@@ -201,6 +222,12 @@ def replay_events(rows, jobs, cells, epoch, q, cap, policy):
                   "live estimate differs from policy replay")
             check(event.next_compare == epoch + (k+1)*q, "next compare off absolute grid")
             check(event.returned >= event.entry and (event.returned-epoch)//q == k, "return crossed cell")
+            if event.kind == 1:
+                check(event.entry <= event.arm <= event.returned < event.next_compare,
+                      "grid compare was not programmed before return")
+            else:
+                check(event.arm == 0 and event.next_compare == event.old_compare,
+                      "syscall changed the grid compare")
             if event.target in (0, 1, SERVICE):
                 check(event.dst_pc and event.dst_sp, "missing return frame")
                 if event.target in saved:
@@ -225,7 +252,8 @@ def replay_events(rows, jobs, cells, epoch, q, cap, policy):
     require(starts == cells and completions == cells, "missing or displaced service activation")
     require(len(exited) == 2 and events[-1].entry >= epoch + (cells[-1]+1)*q, "early terminal park")
     require(peak <= min(cap, 6), "sliding-Q owner-change bound exceeded")
-    return {"verdict": "accepted", "events": len(events), "peak_changes_per_Q": peak,
+    return {"verdict": "accepted", "initial_arm_sample": initial_arm, "first_compare": first_compare,
+            "events": len(events), "peak_changes_per_Q": peak,
             "service_cells_completed": completions, "job_exit_counters": exited}
 
 
