@@ -8,6 +8,8 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
+네이티브 작업 최대 세 개에 시작 가능 시각·마감·예상 CPU 비용을 지정할 수 있습니다. 격자 경계에서 긴급 작업이 실행 가능해지면 EDF가 배치 계산을 선점할 수 있습니다. [네이티브 EDF 패키지 실행](docs/native-c-abi.md#네이티브-앱의-격자-기반-edf)
+
 네이티브 ELF마다 가중치를 지정해 C 체크섬 계산과 Rust 히스토그램 계산처럼 준비된 앱 간에 CPU 서비스를 배분할 수 있습니다. [가중 패키지 실행](docs/native-c-abi.md#네이티브-앱의-가중-cpu-서비스)
 
 독립 빌드한 C·Rust 앱을 최대 세 개까지 패키징하고 각 앱에 고정 우선순위를 줄 수 있습니다. FIFO는 동순위 순서를 유지하고 RR은 명시적인 양보 없이 동순위 계산을 교대로 실행합니다. [고정 우선순위 앱 실행](docs/native-c-abi.md)
