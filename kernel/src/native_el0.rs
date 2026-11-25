@@ -294,6 +294,10 @@ fn dispatch(frame: &mut NativeFrame) {
 static mut FIXED: Option<Fixed> = None;
 static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
 
+#[cfg(jnox_native_sync_ipc)]
+#[path = "native_sync_ipc.rs"]
+mod ipc;
+
 fn policy() -> &'static mut Fixed {
     // Masked, non-nested CPU0 policy entry. Never retain this borrow across idle.
     unsafe { (*(&raw mut FIXED)).as_mut().unwrap_or_else(|| fail(9)) }
@@ -381,12 +385,41 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
+    #[cfg(jnox_native_sync_ipc)]
+    ipc::boundary(p, now, matches!(action, Action::Exit));
     if p.event(now, action) != Some(true) { fail(9) }
     let next = p.current();
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
+    #[cfg(jnox_native_sync_ipc)]
+    let compare = compare.into_iter().chain(ipc::next_compare()).min();
     arm_compare(compare);
     record(now, reason, argument, before, frame, compare);
     next
+}
+
+fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
+    let pid = unsafe { CURRENT };
+    if let Some(next) = fixed_event(now, action, reason, Some(f)) {
+        activate(next, f);
+    } else if policy().finished() {
+        finish_fixed();
+    } else {
+        unsafe { FRAMES[pid] = *f };
+        let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
+        unsafe { native_sleep_switch(top) };
+        let next = policy().current().unwrap_or_else(|| fail(9));
+        #[cfg(jnox_native_sync_ipc)]
+        unsafe {
+            // An idle IRQ can complete the very owner that went to sleep.
+            // FRAMES holds the completion. The interrupted SVC stack still
+            // holds the pre-idle registers, even when CURRENT == next.
+            native_el0_mmu::switch(next).unwrap_or_else(|_| fail(9));
+            *f = FRAMES[next];
+            CURRENT = next;
+        }
+        #[cfg(not(jnox_native_sync_ipc))]
+        activate(next, f);
+    }
 }
 
 fn finish_fixed() -> ! {
@@ -607,6 +640,13 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let now = if cfg!(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { entry } else { counter() };
     #[cfg(jnox_native_cbs)]
     cbs::witness(now, f, f.x[8]);
+    #[cfg(jnox_native_sync_ipc)]
+    if matches!(f.x[8], 21..=23) {
+        let service = f.x[8];
+        let action = ipc::service(now, f);
+        fixed_dispatch(now, action, service, f);
+        return;
+    }
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
@@ -634,7 +674,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     head(8, index as u64 + 1);
     let pid = unsafe { CURRENT };
-    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=19).contains(&f.x[8]) {
+    if !cfg!(jnox_native_sync_ipc) && ((f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=19).contains(&f.x[8])) {
         f.x[0] = result as u64;
         return;
     }
@@ -685,17 +725,10 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             Action::Poll
         };
         if !exit { f.x[0] = result as u64; }
-        let reason = match action { Action::Exit => 3, Action::Sleep(_) => 2, Action::Yield => 1, Action::Poll => 5 };
-        if let Some(next) = fixed_event(now, action, reason, Some(f)) {
-            activate(next, f);
-        } else if policy().finished() {
-            finish_fixed();
-        } else {
-            unsafe { FRAMES[pid] = *f };
-            let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
-            unsafe { native_sleep_switch(top) };
-            activate(policy().current().unwrap_or_else(|| fail(9)), f);
-        }
+        let reason = match action { Action::Exit => 3, Action::Sleep(_) => 2, Action::Yield => 1, Action::Poll => 5,
+            #[cfg(jnox_native_sync_ipc)] Action::BlockIpc => unreachable!(),
+        };
+        fixed_dispatch(now, action, reason, f);
         return;
     }
     if exit {

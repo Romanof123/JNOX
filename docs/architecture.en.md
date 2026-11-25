@@ -109,6 +109,8 @@ An aperiodic grant reserves a slot. Only a matching completion retires request w
 
 ## DES-013 IPC ownership and service boundaries
 
+For IPC-001 the kernel owns directed call rights, waiter queues, reply-token generations and effective priority donations. On the single CPU, traps and timer interrupts serialize transitions on the same state. [IPC-001](native-sync-ipc.en-ko.md)
+
 The kernel owns endpoint authority, wait and wake transitions, and bounded cross-domain transfer. User services own socket transports, publish/subscribe delivery and protocol-specific queues. The safety receiver checks protected data and controls expiry under DES-010. Each profile binds pool sizes, resource accounting, timeouts and restart generations before implementation. [IPC design and acceptance](ipc-mechanisms.en.md)
 
 [Requirements](requirements.en.md) · [Verification plan](verification-plan.en.md) · [Development lifecycle](lifecycle.en.md)

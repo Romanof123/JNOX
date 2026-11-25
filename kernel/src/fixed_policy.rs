@@ -34,6 +34,8 @@ pub enum Mode {
 #[derive(Clone, Copy)]
 pub enum Action {
     Poll,
+    #[cfg(jnox_native_sync_ipc)]
+    BlockIpc,
     Yield,
     Sleep(u64),
     Exit,
@@ -43,6 +45,8 @@ pub enum Action {
 enum State {
     Ready,
     Running,
+    #[cfg(jnox_native_sync_ipc)]
+    BlockedIpc,
     Sleeping(u64),
     Exited,
 }
@@ -110,6 +114,20 @@ impl Fixed {
 
     pub fn service(&self, id: usize) -> Option<u64> {
         Some(self.tasks[..self.count].get(id)?.service)
+    }
+
+    #[cfg(jnox_native_sync_ipc)]
+    pub(crate) fn ipc_priorities(&mut self, ranks: &[u8]) {
+        assert_eq!(self.count, ranks.len());
+        for (task, &rank) in self.tasks[..self.count].iter_mut().zip(ranks) {
+            task.priority = rank;
+        }
+    }
+
+    #[cfg(jnox_native_sync_ipc)]
+    pub(crate) fn ipc_wake(&mut self, id: usize) {
+        assert!(self.tasks[id].state == State::BlockedIpc);
+        self.join_tail(id);
     }
 
     fn has_peer(&self, id: usize) -> bool {
@@ -218,6 +236,11 @@ impl Fixed {
         if let Some(id) = self.owner {
             match action {
                 Action::Poll => {}
+                #[cfg(jnox_native_sync_ipc)]
+                Action::BlockIpc => {
+                    self.tasks[id].state = State::BlockedIpc;
+                    self.owner = None;
+                }
                 Action::Yield | Action::Sleep(0) => {
                     self.owner = None;
                     self.join_tail(id);

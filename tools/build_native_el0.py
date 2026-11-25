@@ -75,6 +75,12 @@ def budget_tuple(value):
     return quota, period
 
 
+def ipc_route(value):
+    if len(value) != 3 or value[1] != ":" or value[0] not in "012" or value[2] not in "012":
+        raise argparse.ArgumentTypeError("expected CALLER:SERVER with slots 0, 1 or 2")
+    return int(value[0]), int(value[2])
+
+
 def unsigned_decimal(value):
     if not (value.isascii() and value.isdecimal()):
         raise argparse.ArgumentTypeError("expected unsigned decimal digits")
@@ -379,6 +385,8 @@ def main():
     parser.add_argument("--deadline-service-elf", type=Path, action=SinglePath)
     parser.add_argument("--deadline-service-cells", action="append", default=[], metavar="CELL,...")
     parser.add_argument("--deadline-switch-cap", type=unsigned_decimal, action="append", default=[])
+    parser.add_argument("--ipc-route", type=ipc_route, action="append", default=[], metavar="CALLER:SERVER",
+                        help="grant a directed synchronous call right between native FIFO/RR processes")
     args = parser.parse_args()
     if len(args.threads) > 1:
         parser.error("--threads may appear only once")
@@ -403,6 +411,15 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
+    routes = sorted(args.ipc_route)
+    if routes:
+        count = 1 + len(args.peer_elf)
+        if board != "virt" or policy not in ("fifo", "rr") or args.threads or count not in (2, 3):
+            parser.error("--ipc-route requires two or three native processes under FIFO or RR on virt")
+        if len(set(routes)) != len(routes):
+            parser.error("duplicate --ipc-route")
+        if any(caller == server or max(caller, server) >= count for caller, server in routes):
+            parser.error("--ipc-route requires distinct slots present in the package")
     if args.weighted_continuous > 1:
         parser.error("--weighted-continuous may appear only once")
     if args.weighted_continuous and (policy != "weighted" or board != "virt"):
@@ -514,6 +531,10 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if routes:
+        env["JNOX_NATIVE_IPC_ROUTES"] = ",".join(f"{caller}:{server}" for caller, server in routes)
+        metadata.update(ipc_routes=[{"caller": caller, "server": server} for caller, server in routes],
+                        package_argv=sys.argv[:])
     if policy == "extension":
         program = out / "extension_program.txt"
         program.write_bytes(("\n".join(ops) + "\n").encode("ascii"))
