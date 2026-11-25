@@ -360,6 +360,22 @@ native_el0_enter:
     isb
     adrp x15,native_server_last_return
     str x17,[x15,:lo12:native_server_last_return]
+    .ifdef NATIVE_AMC_CLOCK_PAGE
+    // x17 is the very same R used to arm the physical compare above.
+    // Only the admitted EL0 return reaches this point, with IRQs masked.
+    adrp x15,native_amc_clock_alias
+    ldr x15,[x15,:lo12:native_amc_clock_alias]
+    cbz x15,.Lamc_page_done
+    str x17,[x15,#56]
+    ldr x16,[x15]
+    add x16,x16,#1
+    stlr x16,[x15]
+    adrp x15,native_amc_clock_audit
+    ldr x15,[x15,:lo12:native_amc_clock_audit]
+    cbz x15,.Lamc_page_done
+    stp x16,x17,[x15]
+.Lamc_page_done:
+    .endif
     ldr x15,[sp,#120]
     .else
     server_gate .Lserver_user_retry

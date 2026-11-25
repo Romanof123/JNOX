@@ -1,5 +1,8 @@
 //! One CPU, finite non-overlapping release tokens and actual EL0 occupancy.
 use super::*;
+#[cfg(jnox_native_amc_clock_page)]
+#[path = "native_amc_time.rs"]
+mod clock_page;
 use crate::domain_policy::{CriticalityDomain, CriticalityMode, ExecutionBudget};
 const IDLE_PID: usize = COUNT;
 const TERMINAL: usize = COUNT + 1;
@@ -18,6 +21,9 @@ static mut native_server_last_return: u64 = 0;
 static mut native_amc_remaining: u64 = 0;
 #[unsafe(no_mangle)]
 static mut native_cyclic_return_cell: *mut u64 = ptr::null_mut();
+const CLOCK_ARCHIVE_BYTES: usize = 1 << 20;
+static mut CLOCK_ARCHIVE: [u8; CLOCK_ARCHIVE_BYTES] = [0; CLOCK_ARCHIVE_BYTES];
+static mut CLOCK_INDEX: [[[u64; 4]; 16]; COUNT] = [[[0; 4]; 16]; COUNT];
 static mut LOG: [[u64; 10]; 640] = [[0; 10]; 640];
 #[derive(Clone, Copy, Default)]
 struct Job {
@@ -36,6 +42,9 @@ struct Runtime {
     domain: CriticalityDomain<COUNT>,
     images: [&'static [u8]; COUNT],
     witness: [Option<(usize, usize)>; COUNT],
+    clock_evidence: [Option<(usize, usize)>; COUNT],
+    clock_bytes: usize,
+    clock_lost: u64,
     jobs: [Job; COUNT],
     attempt: [usize; COUNT],
     accepted: [usize; COUNT],
@@ -69,7 +78,7 @@ fn root() -> u64 {
     }
     v
 }
-fn symbol(image: &[u8], plan: &LoadPlan<'_>) -> Option<(usize, usize)> {
+fn symbol(image: &[u8], plan: &LoadPlan<'_>, name: &[u8], maximum: u64) -> Option<(usize, usize)> {
     let off = usize::try_from(u64_at(image, 40)?).ok()?;
     let n = u16::from_le_bytes(image.get(60..62)?.try_into().ok()?) as usize;
     let headers = image.get(off..off.checked_add(n.checked_mul(64)?)?)?;
@@ -85,17 +94,13 @@ fn symbol(image: &[u8], plan: &LoadPlan<'_>) -> Option<(usize, usize)> {
         }
         let names = section_bytes(image, strh)?;
         for sym in section_bytes(image, h)?.chunks_exact(24) {
-            if sym[4] & 15 != 1
-                || !names
-                    .get(u32_at(sym, 0)? as usize..)?
-                    .starts_with(b"amc_product\0")
-            {
+            if sym[4] & 15 != 1 || !names.get(u32_at(sym, 0)? as usize..)?.starts_with(name) {
                 continue;
             }
             let addr = u64_at(sym, 8)?;
             let size = u64_at(sym, 16)?;
             if found.is_some()
-                || !(1..=1024).contains(&size)
+                || !(1..=maximum).contains(&size)
                 || !plan.segments().iter().any(|s| {
                     s.permission == Permission::ReadWrite
                         && addr >= s.address
@@ -177,9 +182,29 @@ impl Runtime {
                 fail(27);
             }
         }
+        if let Some((addr, len)) = self.clock_evidence[i] {
+            let offset = self.clock_bytes;
+            let stored = if len <= CLOCK_ARCHIVE_BYTES - offset {
+                let dst = unsafe { &mut (&mut *(&raw mut CLOCK_ARCHIVE))[offset..offset + len] };
+                if !native_el0_mmu::copy_from_process(i, addr, dst) {
+                    fail(27);
+                }
+                self.clock_bytes += len;
+                len
+            } else {
+                self.clock_lost = self.clock_lost.saturating_add(1);
+                0
+            };
+            unsafe {
+                CLOCK_INDEX[i][j.gen_id as usize] =
+                    [addr as u64, len as u64, offset as u64, stored as u64];
+            }
+        }
         if kind != 5 && !self.domain.finish(i) {
             fail(27);
         }
+        #[cfg(jnox_native_amc_clock_page)]
+        clock_page::revoke(i);
         self.jobs[i].live = false;
         self.jobs[i].wake = None;
         self.log(
@@ -236,6 +261,8 @@ impl Runtime {
                 FRAMES[i].sp_el0 = l.sp as u64;
             }
         }
+        #[cfg(jnox_native_amc_clock_page)]
+        clock_page::begin_generation(i, g as u64, self.hz);
         self.jobs[i] = Job {
             live: true,
             gen_id: g as u64,
@@ -369,7 +396,15 @@ pub(super) fn start(hz: u64, images: [&'static [u8]; COUNT]) -> usize {
             ExecutionBudget::Low(times(lo, q))
         }
     });
-    let witness = images.map(|img| symbol(img, &validated_image(img)));
+    #[cfg(jnox_native_amc_clock_page)]
+    clock_page::enable(hz);
+    let descriptors = images.map(|img| {
+        let plan = validated_image(img);
+        (
+            symbol(img, &plan, b"amc_product\0", 1024),
+            symbol(img, &plan, b"amc_clock_evidence\0", 73760),
+        )
+    });
     unsafe {
         STATE = Some(Runtime {
             hz,
@@ -377,7 +412,10 @@ pub(super) fn start(hz: u64, images: [&'static [u8]; COUNT]) -> usize {
             epoch,
             domain: CriticalityDomain::new(budgets).unwrap_or_else(|| fail(27)),
             images,
-            witness,
+            witness: descriptors.map(|d| d.0),
+            clock_evidence: descriptors.map(|d| d.1),
+            clock_bytes: 0,
+            clock_lost: 0,
             jobs: [Job::default(); COUNT],
             attempt: [0; COUNT],
             accepted: [0; COUNT],
@@ -404,6 +442,8 @@ enum Input {
 fn decide(entry: u64, frame: Option<&mut NativeFrame>, input: Input) -> usize {
     let r = state();
     let src = r.owner;
+    #[cfg(jnox_native_amc_clock_page)]
+    clock_page::enter(src);
     if frame.is_some() != (src < COUNT) {
         fail(27);
     }
@@ -475,6 +515,8 @@ fn decide(entry: u64, frame: Option<&mut NativeFrame>, input: Input) -> usize {
                     }
                 },
                 8 => 0,
+                #[cfg(jnox_native_amc_clock_page)]
+                20 => clock_page::VA,
                 9..=18 => (-95i64) as u64,
                 _ => (-38i64) as u64,
             };
@@ -534,6 +576,10 @@ fn decide(entry: u64, frame: Option<&mut NativeFrame>, input: Input) -> usize {
     });
     r.owner = dst;
     let idx = r.rows;
+    #[cfg(jnox_native_amc_clock_page)]
+    if dst < COUNT {
+        clock_page::prepare(dst, dst_gen, r.jobs[dst].used, idx);
+    }
     if idx < MAX_ROWS {
         unsafe {
             native_amc_intervals[idx] = [
@@ -687,6 +733,20 @@ fn finish() -> ! {
         b"RESULTS",
         &[(&raw const native_amc_results).addr() as u64, 16, 1024],
     );
+    #[cfg(jnox_native_amc_clock_page)]
+    clock_page::report(r.rows, r.lost);
+    if r.clock_evidence.iter().any(Option::is_some) {
+        print(
+            b"CLOCK_EVIDENCE",
+            &[
+                1,
+                (&raw const CLOCK_INDEX).addr() as u64,
+                (&raw const CLOCK_ARCHIVE).addr() as u64,
+                r.clock_bytes as u64,
+                r.clock_lost,
+            ],
+        );
+    }
     print(b"END", &[r.logs as u64, r.log_lost, r.landing]);
     head(10, 1);
     head(1, 3);

@@ -29,13 +29,13 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def package(root, case):
+def package(root, case, fixture=None):
     m = json.loads((root / "manifest.json").read_bytes())
     slots = m["slots"]
     need(m["policy"] == "amc" and 1 <= len(slots) <= 4, "AMC package")
     raw = (root / "deployment.json").read_bytes()
     desc, wire = amc_manifest(raw, len(slots))
-    need(raw == (FIXTURES / (case + ".json")).read_bytes(), "named fixture input identity")
+    need(raw == (fixture or FIXTURES / (case + ".json")).read_bytes(), "named fixture input identity")
     need(desc == m["amc"] and digest(raw) == m["amc_input"]["sha256"], "raw deployment identity")
     need(wire == (root / "amc-v1.txt").read_bytes() and digest(wire) == m["amc_canonical"]["sha256"], "canonical deployment identity")
     need(sha(root / "kernel.elf") == m["kernel_elf_sha256"], "kernel identity")
@@ -51,7 +51,7 @@ def package(root, case):
     return m
 
 
-def capture(a):
+def capture(a, *, fixture=None):
     root = a.out.resolve()
     root.mkdir()
     m = json.loads((a.package / "manifest.json").read_bytes())
@@ -62,7 +62,7 @@ def capture(a):
         files[f"slot{i}.elf"] = a.package / s["elf"]
     for name, src in files.items():
         shutil.copyfile(src, root / name)
-    package(root, a.case)
+    package(root, a.case, fixture)
     kernel = elf_file((root / "kernel.elf").read_bytes())
     base = symbol(kernel, "_start")[0]
     size = symbol(kernel, "__stack_top")[0] - base
@@ -138,11 +138,12 @@ def product(blob, slot, gen, mode, amount, kind):
                 stamp_loss=overflow, fresh=True)
 
 
-def parse_uart(raw):
+def parse_uart(raw, *, clock=False):
     records = defaultdict(list)
     for line in raw.splitlines(keepends=True):
         if line.startswith(b"NATIVE AMC "):
-            need(re.fullmatch(rb"NATIVE AMC [A-Z]+(?: [0-9]+)+\r?\n", line), "incomplete UART record")
+            tag_pattern = rb"(?:[A-Z]+|CLOCK_EVIDENCE)" if clock else rb"[A-Z]+"
+            need(re.fullmatch(rb"NATIVE AMC " + tag_pattern + rb"(?: [0-9]+)+\r?\n", line), "incomplete UART record")
             _, _, tag, *fields = line.split()
             records[tag.decode()].append(tuple(map(int, fields)))
     def one(tag):
@@ -191,7 +192,39 @@ def overlap_deadline_window(intervals, due):
     return windows[0] if len(windows) == 1 else None
 
 
-def score(a):
+def trace_vectors(raw, intervals, count, vector_base, dropped):
+    """Match each CPU0 QEMU exception block to its native AArch64 vector slot."""
+    expected = []
+    for row in intervals:
+        cause, src = row[0], row[4]
+        if cause == 3:
+            continue
+        idle = src == count
+        need(cause in (1, 2) and (not idle or cause == 1), "invalid native exception origin")
+        slot = 5 if idle else 8 if cause == 2 else 9
+        expected.append((b"2 [SVC]" if cause == 2 else b"5 [IRQ]", int(idle),
+                         row[10], vector_base + 128 * slot))
+    lines = iter(raw.splitlines())
+    observed = []
+    for line in lines:
+        if not line.startswith(b"Taking exception"):
+            continue
+        head = re.fullmatch(rb"Taking exception (2 \[SVC\]|5 \[IRQ\])(?: on CPU 0)?", line)
+        origin = re.fullmatch(rb"\.\.\.from EL([01]) to EL1", next(lines, b""))
+        esr = re.fullmatch(rb"\.\.\.with ESR (0x[0-9a-fA-F]+)/(0x[0-9a-fA-F]+)", next(lines, b""))
+        saved = re.fullmatch(rb"\.\.\.with ELR (0x[0-9a-fA-F]+)", next(lines, b""))
+        dest = re.fullmatch(rb"\.\.\.to EL1 PC (0x[0-9a-fA-F]+) PSTATE (0x[0-9a-fA-F]+)", next(lines, b""))
+        need(head and origin and esr and saved and dest, "missing or malformed QEMU exception/vector")
+        if head[1] == b"2 [SVC]":
+            need(int(esr[1], 16) == 0x15 and int(esr[2], 16) == 0x56004a01, "native SVC syndrome")
+        need(int(dest[2], 16) & 0x8f == 0x85, "vector entry requires IRQ-masked EL1h")
+        observed.append((head[1], int(origin[1]), int(saved[1], 16), int(dest[1], 16)))
+    need(observed[:len(expected)] == expected and (dropped or len(observed) == len(expected)),
+         "external exception kind/origin/ELR/vector differs from native interval")
+    return sum(origin == 0 for _, origin, _, _ in observed)
+
+
+def score(a, *, clock=None):
     root = a.root
     need(sha(root / "session.json") == a.digest, "session identity")
     session = json.loads((root / "session.json").read_bytes())
@@ -201,8 +234,8 @@ def score(a):
         need(Path(name).name == name and sha(root / name) == h, "capture digest " + name)
     launch = json.loads((root / "launch.json").read_bytes())
     case = launch["case"]
-    need(case in CASES, "named case")
-    m = package(root, case)
+    need(case in CASES or (clock and case == "control"), "named case")
+    m = package(root, case, clock.fixture if clock else None)
     if session["marker"] != "end":
         print(json.dumps(dict(status="incomplete", marker=session["marker"], session=a.digest)))
         return 2
@@ -212,7 +245,7 @@ def score(a):
     need(image_lines == [f"NATIVE EL0 {labels[i]}ELF {s['elf_sha256']}".encode("ascii")
                          for i,s in enumerate(m["slots"])], "ordered UART image identities")
     expected = [s["expected_ttbr0_el1"] for s in m["slots"]]
-    records, one = parse_uart(raw_uart)
+    records, one = parse_uart(raw_uart, clock=bool(clock))
     ver, epoch, hz, q, count, idle, term, origin = one("CONFIG")
     tasks = m["amc"]["tasks"]
     need((ver,hz,q,count,idle,term) == (1,62500000,3125000,len(tasks),len(tasks),len(tasks)+1), "deployment clock/shape")
@@ -225,6 +258,14 @@ def score(a):
     need((addr, 8192*23*8) == symbol(kernel,"native_amc_intervals") and width == 23 and rows <= 8192, "interval ELF extent")
     need((pa,count*16*1024) == symbol(kernel,"native_amc_results") and (generations,stride)==(16,1024), "result ELF extent")
     intervals = list(struct.iter_unpack("<23Q",mem.read(addr,rows*width*8)))
+    # CPU0-only virt AMC enables only its physical timer interrupt. The producer
+    # stores the full GICC_IAR read in column 1 for IRQs; SVC and gate rows reuse
+    # that column. GICv2 IHI 0048B.b section 4.4.4: CPUID is RAZ for non-SGIs.
+    for index, row in enumerate(intervals):
+        if row[0] == 1:
+            need(row[1] == 30, f"AMC IRQ row {index}: expected raw PPI30 IAR 0x1e, got {row[1]:#x}")
+    if clock:
+        clock.load(root, launch, m, records, mem, kernel, intervals, hz, origin)
     life = records["LIFE"]
     logs, missing, landing = one("END")
     need(len(life)==logs and all(len(e)==10 for e in life) and len(records["TASK"])==count,"lifecycle framing")
@@ -301,7 +342,10 @@ def score(a):
             # permitting arbitrary preemption or IRQs in between.
             samples={((b[2]-origin)*1000000000//hz,a[7]*1000000000//hz)
                      for a,b in zip(calls,calls[1:]) if a[19]==2 and b[19]==1}
-            check(all((wall,cpu) in samples for wall,cpu,n in recorded),"task clock product/syscall mismatch")
+            if clock:
+                clock.samples(slot, gen, recorded, samples)
+            else:
+                check(all((wall,cpu) in samples for wall,cpu,n in recorded),"task clock product/syscall mismatch")
         if kind==3:
             exit_at[slot,gen]=stamp
             check(v[2] == slot, "signed exit slot " + str(slot))
@@ -338,23 +382,26 @@ def score(a):
             for e in life:
                 if e[0]==5:
                     check(not any(r[13:15]==e[2:4] and r[2]>=c for r in intervals),"return to discarded generation")
-            irq=[r for r in intervals if r[0]==1 and r[1]&1023==30 and r[4:6]==(1,0) and b<=r[2]<=c]
+            irq=[r for r in intervals if r[0]==1 and r[1]==30 and r[4:6]==(1,0) and b<=r[2]<=c]
             stamps=products.get((1,0),{}).get("stamps",[])
             witnesses=[r for r in intervals if r[0:2]==(2,6) and r[4:6]==(1,0) and r[19:21]==(1,0) and
                        r[2]>=c and any((r[2]-origin)*1000000000//hz==s[0] for s in stamps)]
-            if not irq or not witnesses:
-                unknown.append("crossing PPI/task-owned clock witness")
+            if clock:
+                crossing = clock.crossing(b, c, q, intervals, stamps)
             else:
-                x=witnesses[0][2]
-                crossing=dict(b=b,irq=irq[-1][2],compare=irq[-1][9],commit=c,observed=x,latency_ticks=x-b)
-                check(b<=irq[-1][2]<=c<=x<b+q,"crossing timing window")
+                if not irq or not witnesses:
+                    unknown.append("crossing PPI/task-owned clock witness")
+                else:
+                    x=witnesses[0][2]
+                    crossing=dict(b=b,irq=irq[-1][2],compare=irq[-1][9],commit=c,observed=x,latency_ticks=x-b)
+                    check(b<=irq[-1][2]<=c<=x<b+q,"crossing timing window")
         discarded={e[2] for e in life if e[0]==5}
         check(discarded==({0} if case=="staggered" else {0,2}),"discard set")
         check(products.get((0,0),{}).get("count",0)>0,"partially served LO0")
         if case=="staggered":
             check(exit_at.get((2,0),MAX)<boundaries(2) and (1,0) in exit_at and exit_at.get((3,0),MAX)<boundaries(8),"survivor before b8")
             wfi=symbol(kernel,"native_sleep_idle")[0]
-            check(any(r[10] in (wfi,wfi+4) and r[0]==1 and r[4]==idle and r[1]&1023==30 and r[9]==boundaries(2) and r[13]==0 for r in intervals),"idle PPI30 b2 release")
+            check(any(r[10] in (wfi,wfi+4) and r[0]==1 and r[4]==idle and r[1]==30 and r[9]==boundaries(2) and r[13]==0 for r in intervals),"idle PPI30 b2 release")
         else:
             check(any(e[0]==6 and e[5:8]==(boundaries(5),1,1) and any(v[0]==1 and v[2:4]==(0,1) for v in life[index+1:]) for index,e in enumerate(life)),"approved reset b5")
             check(exit_at.get((0,1),MAX)<boundaries(6) and exit_at.get((3,0),MAX)<boundaries(6),"fresh LO and survivor before b6")
@@ -368,6 +415,8 @@ def score(a):
     elif case=="refusal":
         check([(e[5],e[6],e[7]) for e in life if e[0]==6]==[(boundaries(2),1,0),(boundaries(3),0,0),(boundaries(4),1,1)],"reset refusals")
         check(any(e[0]==2 and e[2]==0 and e[5]==boundaries(2) and e[8]==2 for e in life),"LO refused in HI")
+    elif clock and case == "control":
+        clock.control(life, products, intervals, exit_at)
     else:
         check(overlap_control(life, epoch, q), "overlap admission, single b1 miss, refusal and continuing service to exit")
         if not lost:
@@ -380,12 +429,13 @@ def score(a):
                 check(sum(r[6] for r in intervals if r[4:6] == (0, 0) and r[2] <= at)
                       == misses[0][6], "LO0 service at recorded deadline fault")
     if launch["trace"]:
-        raw=(root/"exceptions.log").read_bytes()
-        entries=re.findall(rb"Taking exception (?:2 \[SVC\]|5 \[IRQ\])[^\n]*\r?\n\.\.\.from EL0 to EL1\r?\n(?:\.\.\.with ESR [^\n]+\n)?\.\.\.with ELR (0x[0-9a-fA-F]+)",raw)
-        observed=[int(s,16) for s in entries]
-        expected=[r[10] for r in intervals if r[0] in (1,2) and r[4]<count]
+        base, size = symbol(kernel, "native_el0_vectors")
+        need(base % 2048 == 0 and size == 16 * 128, "linked AArch64 native vector table")
+        el0_entries = trace_vectors((root/"exceptions.log").read_bytes(), intervals, count, base, lost)
         if not lost:
-            check(observed==expected and bool(expected),"external EL0 exception PC sequence")
+            check(el0_entries > 0, "missing external EL0 exception stream")
+        if clock:
+            clock.report["external_el0_entries"] = el0_entries
     if not missing and not lost:
         for i,t in enumerate(tasks):
             admissions=[e for e in life if e[0] in (1,2) and e[2]==i]
@@ -400,6 +450,10 @@ def score(a):
                 canonical_sha256=m["amc_canonical"]["sha256"],rows=rows,lost=lost,life_lost=missing,
                 idle_landing=landing,expected_roots=[s["expected_ttbr0_el1"] for s in m["slots"]],roots=roots,crossing=crossing,carry=carry,products={f"{i}.{g}":p for (i,g),p in products.items()},
                 lifecycle=life,issues=issues,unknown=unknown)
+    if clock:
+        report["clock_pair"] = clock.finish(products, life)
+        issues.extend(clock.issues)
+        unknown.extend(clock.unknown)
     report["status"]="incomplete" if (lost or missing) else "failed" if issues else "incomplete" if unknown else "observations-met"
     print(json.dumps(report,indent=2))
     return 0 if report["status"]=="observations-met" else 2
