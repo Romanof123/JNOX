@@ -140,3 +140,6 @@ pub mod notify;
 
 #[cfg(all(feature = "waitset", target_arch = "aarch64"))]
 pub mod waitset;
+
+#[cfg(all(feature = "loan", target_arch = "aarch64"))]
+pub mod loan;

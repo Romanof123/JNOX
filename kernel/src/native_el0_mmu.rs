@@ -171,6 +171,11 @@ pub(crate) fn amc_clock_alias(pid: usize) -> *mut u64 {
 }
 
 static mut PROCESS_COUNT: usize = 0;
+#[cfg(jnox_native_loan_ipc)]
+#[path = "native_loan_mmu.rs"]
+mod loan;
+#[cfg(jnox_native_loan_ipc)]
+pub(crate) use loan::{loan_map_reader, loan_map_writer, loan_pte, loan_publish, loan_revoke, loan_va};
 #[cfg(jnox_native_amc)]
 #[path = "native_amc_space.rs"]
 mod amc_space;
@@ -263,6 +268,8 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         }
         #[cfg(jnox_native_weighted_notify)]
         link(&raw mut space.low, WEIGHTED_NOTIFICATION_VA, 21, &raw mut WEIGHTED_NOTIFICATION_TABLE);
+        #[cfg(jnox_native_loan_ipc)]
+        loan::install_table(pid, &raw mut space.low);
         #[cfg(jnox_native_amc_clock_page)]
         {
             let table = &raw mut AMC_CLOCK_TABLES[pid];
@@ -430,8 +437,8 @@ fn irq_masked() -> bool {
 }
 
 /// Scheduler owns EL1 and keeps IRQ masked until the selected frame returns.
-/// For immutable per-ASID nG user entries, a switch does not recycle any TLB
-/// tag. Installation already invalidated all predecessors on this sole CPU.
+/// Slot ASIDs are never recycled. Live loan PTE changes invalidate their
+/// own VA/ASID before returning. Switching roots needs no additional TLBI.
 pub(crate) unsafe fn switch(pid: usize) -> Result<(), &'static str> {
     let target = space_id(pid).ok_or("uninstalled native pid")?;
     if !irq_masked() || active().is_none() {
@@ -448,6 +455,10 @@ pub(crate) unsafe fn switch(pid: usize) -> Result<(), &'static str> {
 
 fn translation(pid: usize, addr: usize, write: bool) -> Option<usize> {
     space_id(pid)?;
+    #[cfg(jnox_native_loan_ipc)]
+    if loan::contains_range(addr, addr) {
+        return loan::translation(pid, addr, write);
+    }
     unsafe {
         let space = &raw const SPACES[pid];
         let (table, base, size) = if (IMAGE_LO..IMAGE_HI).contains(&addr) {
@@ -480,7 +491,10 @@ fn can_copy(pid: usize, addr: usize, len: usize, write: bool) -> bool {
     let Some(end) = addr.checked_add(len - 1) else { return false };
     // Both endpoints must lie in a single admitted aperture. This also bounds
     // validation of adversarial integer lengths to at most 1024 user pages.
-    if !((addr >= IMAGE_LO && end < IMAGE_HI) || (addr >= STACK_BOTTOM && end < STACK_TOP)) {
+    let admitted = (addr >= IMAGE_LO && end < IMAGE_HI) || (addr >= STACK_BOTTOM && end < STACK_TOP);
+    #[cfg(jnox_native_loan_ipc)]
+    let admitted = admitted || loan::contains_range(addr, end);
+    if !admitted {
         return false;
     }
     ((addr & !(PAGE - 1))..=end).step_by(PAGE).all(|va| translation(pid, va, write).is_some())
@@ -488,6 +502,25 @@ fn can_copy(pid: usize, addr: usize, len: usize, write: bool) -> bool {
 
 pub(crate) fn user_range(addr: usize, len: usize, write: bool) -> bool {
     active().is_some_and(|pid| can_copy(pid, addr, len, write))
+}
+
+pub(crate) fn user_return_pc(addr: usize) -> bool {
+    #[cfg(not(jnox_native_loan_ipc))]
+    { user_range(addr, 4, false) }
+    #[cfg(jnox_native_loan_ipc)]
+    {
+        if addr % 4 != 0 || !(IMAGE_LO..IMAGE_HI).contains(&addr) || !irq_masked() {
+            return false;
+        }
+        let Some(pid) = active() else { return false };
+        unsafe {
+            let table = &raw const SPACES[pid].image[(addr - IMAGE_LO) / BLOCK];
+            let entry = table.cast::<u64>().add((addr >> 12) & 511).read();
+            let ram = (&raw const SPACES[pid].image_ram) as usize;
+            let pa = ram + ((addr - IMAGE_LO) & !(PAGE - 1));
+            entry == (pa as u64 | NORMAL | USER | RO | NG | PXN)
+        }
+    }
 }
 
 // Each aperture is backed contiguously at its VA offset. Use its privileged

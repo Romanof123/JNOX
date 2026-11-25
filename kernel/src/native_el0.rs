@@ -298,6 +298,10 @@ static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
 #[path = "native_sync_ipc.rs"]
 mod ipc;
 
+#[cfg(jnox_native_loan_ipc)]
+#[path = "native_loan_ipc.rs"]
+mod loans;
+
 fn policy() -> &'static mut Fixed {
     // Masked, non-nested CPU0 policy entry. Never retain this borrow across idle.
     unsafe { (*(&raw mut FIXED)).as_mut().unwrap_or_else(|| fail(9)) }
@@ -387,6 +391,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
+    #[cfg(jnox_native_loan_ipc)]
+    if matches!(action, Action::Exit) {
+        loans::exit(p.current().unwrap_or_else(|| fail(9)));
+    }
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     if !ipc::handles(reason) { ipc::boundary(p, now, matches!(action, Action::Exit)); }
     if p.event(now, action) != Some(true) { fail(9) }
@@ -425,6 +433,8 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_loan_ipc)]
+    loans::report();
     #[cfg(jnox_native_notify_ipc)]
     ipc::report_notifications(1);
     #[cfg(jnox_native_mailbox_ipc)]
@@ -609,7 +619,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     proportional::validate_sync(vector, f, vbar, ttbr, far, entry);
     if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64
         || f.current_el != 4 || f.spsr & 0x1f != 0 || f.esr >> 26 != 0x15
-        || f.esr & 0xffff != 0x4a01 || !native_el0_mmu::user_range(f.elr as usize, 4, false)
+        || f.esr & 0xffff != 0x4a01 || !native_el0_mmu::user_return_pc(f.elr as usize)
         || !(STACK_BOTTOM as u64..=STACK_TOP as u64).contains(&f.sp_el0) || f.sp_el0 % 16 != 0
     {
         #[cfg(jnox_native_edf)]
@@ -651,6 +661,13 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         let service = f.x[8];
         let action = ipc::service(now, f);
         fixed_dispatch(now, action, service, f);
+        return;
+    }
+    #[cfg(jnox_native_loan_ipc)]
+    if matches!(f.x[8], 33..=36) {
+        let service = f.x[8];
+        loans::service(unsafe { CURRENT }, f);
+        fixed_dispatch(now, Action::Poll, service, f);
         return;
     }
     let mut deadline = None;
