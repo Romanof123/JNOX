@@ -266,6 +266,22 @@ impl LoanIpc {
         Ok(())
     }
 
+    #[cfg(jnox_native_safety_channel)]
+    pub fn invalidate(&mut self, mut hook: impl FnMut(MapOp) -> Result<(), i32>) -> Result<(), i32> {
+        for (slot, page) in self.pages.iter_mut().enumerate() {
+            let pid = match page {
+                Page::Writer(_) => Some(self.producer),
+                Page::Reader(_) => Some(self.consumer),
+                _ => None,
+            };
+            if let Some(pid) = pid { hook(MapOp::Revoke { pid, slot })?; }
+            *page = Page::Free;
+        }
+        while let Some((head, _)) = self.ring.front() { self.ring.consume(head); }
+        // Keep the generation counter: stale handles never become valid again.
+        Ok(())
+    }
+
     pub fn exit(
         &mut self,
         pid: usize,

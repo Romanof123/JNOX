@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package up to three native AArch64 applications for virt or Raspberry Pi 4."""
+"""Package up to four native AArch64 applications for virt or Raspberry Pi 4."""
 import argparse
 import hashlib
 import json
@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from native_shell_rom import shell_package
 from native_extension_program import parse_program
 from native_amc_roots import linked_roots
 from native_hierarchy import parse_topology, unique_keys
@@ -75,16 +76,84 @@ def budget_tuple(value):
     return quota, period
 
 
+def topic_grant(value):
+    parts = value.split(":")
+    if len(parts) != 2 or parts[0] not in ("0", "1", "2"):
+        raise argparse.ArgumentTypeError("expected client SLOT:MASK for slot 0, 1 or 2")
+    mask = parts[1]
+    base = 16 if mask.startswith("0x") else 10
+    digits = mask[2:] if base == 16 else mask
+    allowed = "0123456789abcdefABCDEF" if base == 16 else "0123456789"
+    if not digits or any(c not in allowed for c in digits) or int(digits, base) > 15:
+        raise argparse.ArgumentTypeError("topic mask must be 0..15 (decimal or 0x hex)")
+    return int(parts[0]), int(digits, base)
+
+
+def topic_vector(parser, grants):
+    masks = [0, 0, 0]
+    seen = set()
+    for slot, mask in grants:
+        if slot in seen:
+            parser.error("duplicate client slot in topic grants for one direction")
+        seen.add(slot)
+        masks[slot] = mask
+    return "".join(format(mask, "x") for mask in masks)
+
+
 def ipc_route(value):
-    if len(value) != 3 or value[1] != ":" or value[0] not in "012" or value[2] not in "012":
-        raise argparse.ArgumentTypeError("expected two colon-separated slots 0, 1 or 2")
+    if len(value) != 3 or value[1] != ":" or value[0] not in "0123" or value[2] not in "0123":
+        raise argparse.ArgumentTypeError("expected two colon-separated slots 0 through 3")
     return int(value[0]), int(value[2])
+
+
+def cap_grant(value):
+    fields = value.split(":")
+    if len(fields) != 3 or fields[0] not in ("0", "1", "2") or fields[1] not in ("0", "1", "2") or fields[2] not in ("1", "2", "3"):
+        raise argparse.ArgumentTypeError("expected OWNER:TARGET:RIGHTS with slots 0..2 and rights 1..3")
+    return tuple(map(int, fields))
 
 
 def unsigned_decimal(value):
     if not (value.isascii() and value.isdecimal()):
         raise argparse.ArgumentTypeError("expected unsigned decimal digits")
     return int(value)
+
+
+def pipe_fields(value):
+    return tuple(unsigned_decimal(field) for field in value.split(":"))
+
+
+def validate_pipes(parser, args, policy, board):
+    if not args.pipes:
+        if args.fifo_grant or args.pipe_link:
+            parser.error("--fifo-grant and --pipe-link require --pipes")
+        return
+    slots = len(args.peer_elf) + 1
+    if args.pipes != 1 or board != "virt" or policy not in ("fifo", "rr") or args.threads or slots > 3:
+        parser.error("--pipes requires one to three ordinary FIFO/RR processes on virt")
+    owners = set()
+    for grant in args.fifo_grant:
+        if len(grant) != 3:
+            parser.error("--fifo-grant requires OWNER:READERMASK:WRITERMASK")
+        owner, readers, writers = grant
+        if owner >= slots or owner in owners or not readers or not writers or (readers | writers) >= (1 << slots):
+            parser.error("duplicate FIFO owner, empty grant, or slot outside package")
+        owners.add(owner)
+    if len(args.pipe_link) > 4:
+        parser.error("at most four boot pipe links")
+    occupied = set()
+    references = [0] * slots
+    for link in args.pipe_link:
+        if len(link) != 4:
+            parser.error("--pipe-link requires WRITER:WFD:READER:RFD")
+        writer, wfd, reader, rfd = link
+        for slot, fd in ((writer, wfd), (reader, rfd)):
+            if slot >= slots or fd > 10 or (slot, fd) in occupied:
+                parser.error("pipe link has an unavailable slot or descriptor")
+            if references[slot] >= 8:
+                parser.error("at most eight pipe descriptors per process")
+            occupied.add((slot, fd))
+            references[slot] += 1
 
 
 def allotments(value):
@@ -138,7 +207,7 @@ def thread_priorities(value):
 
 
 def native_schedule(parser, args):
-    if len(args.peer_elf) > (3 if args.policy == ["amc"] else 2):
+    if len(args.peer_elf) > (3 if args.policy in (["amc"], ["fifo"], ["rr"]) else 2):
         parser.error("too many peer ELFs for the selected policy")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
@@ -271,7 +340,7 @@ def amc_manifest(source, slots):
 
 
 def encode_arguments(parser, args):
-    vectors = [args.arg, args.peer_arg, args.peer2_arg]
+    vectors = [args.arg, args.peer_arg, args.peer2_arg, args.peer3_arg]
     encoded = {}
     for slot, extras in enumerate(vectors):
         if not extras:
@@ -334,7 +403,7 @@ def main():
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
-                        help="independently linked peer in slot order (up to three peers for AMC, two for other policies)")
+                        help="independently linked peer in slot order (up to three peers for virt FIFO/RR or AMC, two for other policies)")
     parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
@@ -376,7 +445,7 @@ def main():
     parser.add_argument("--peer-class", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--allotment-ticks", type=allotments, action="append", default=[], metavar="TOP,MIDDLE,BOTTOM")
     parser.add_argument("--boost-ticks", type=unsigned_decimal, action="append", default=[])
-    for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg")):
+    for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg", "--peer3-arg")):
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
     parser.add_argument("--thread-priorities", type=thread_priorities, action=SinglePath)
@@ -391,22 +460,58 @@ def main():
                         help="grant a send right to another native FIFO/RR process's mailbox")
     parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
                         help="grant a notification right to another native FIFO/RR process")
+    parser.add_argument("--exec-child", action="append", default=[], metavar="SLOT:NAME",
+                        help="reserve child executable slot 1 or 2 in a native shell package")
+    parser.add_argument("--rom-file", action="append", default=[], metavar="NAME=FILE",
+                        help="embed a host file under an immutable guest basename")
+    parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
+    parser.add_argument("--fifo-grant", type=pipe_fields, action="append", default=[],
+                        metavar="OWNER:READERMASK:WRITERMASK")
+    parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
+                        metavar="WRITER:WFD:READER:RFD")
     parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="select a socket service with existing inbound synchronous IPC rights")
+    parser.add_argument("--safety-channel", action="count", default=0,
+                        help="select the three-process protected virtual permit bench")
+    parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
+                        help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
+    parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
+                        help="allow capability transfers between the specified slots")
     parser.add_argument("--loan-route", type=ipc_route, action="append", default=[], metavar="PRODUCER:CONSUMER",
                         help="grant one native FIFO/RR process pair a shared-buffer loan channel")
     parser.add_argument("--waitset", action="count", default=0,
                         help="enable waitsets for configured mailbox or notification routes")
+    parser.add_argument("--pubsub-service", choices=["3"], action="append", default=[])
+    parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
+    parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if len(args.pubsub_service) > 1:
+        parser.error("--pubsub-service may appear only once")
+    if (args.pubsub_publish or args.pubsub_subscribe) and not args.pubsub_service:
+        parser.error("topic grants require --pubsub-service")
+    if args.pubsub_service:
+        if (args.board not in (None, "virt") or args.policy not in (["fifo"], ["rr"])
+                or args.threads or len(args.peer_elf) != 3 or args.peer3_arg):
+            parser.error("pubsub requires four ordinary virt FIFO/RR applications and kernel-generated slot 3 arguments")
+        if not all((pid, 3) in args.ipc_route for pid in range(3)):
+            parser.error("pubsub requires explicit IPC routes 0:3, 1:3 and 2:3")
+        publish = topic_vector(parser, args.pubsub_publish)
+        subscribe = topic_vector(parser, args.pubsub_subscribe)
     if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
         parser.error("--net-service must appear once and match --socket-service")
+    if args.net_service and len(args.peer_elf) > 2:
+        parser.error("--net-service supports at most three native processes")
     if len(args.socket_service) > 1:
         parser.error("--socket-service may appear only once")
     if args.socket_service:
+        if len(args.peer_elf) > 2 and not args.pubsub_service:
+            parser.error("--socket-service supports at most three native processes")
         service_slot = int(args.socket_service[0])
         service_clients = sorted(caller for caller, server in args.ipc_route if server == service_slot)
+        if 3 in service_clients:
+            parser.error("socket service accepts identities 0..2")
         if not service_clients:
             parser.error("--socket-service requires an explicit --ipc-route into its slot")
     if len(args.loan_route) > 1:
@@ -438,21 +543,47 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
+    if args.safety_channel and (args.safety_channel != 1 or board != "virt" or policy not in ("fifo", "rr")
+                                or args.threads or len(args.peer_elf) != 2 or args.loan_route != [(0, 1)]):
+        parser.error("--safety-channel requires exactly three virt FIFO/RR processes and --loan-route 0:1")
+    validate_pipes(parser, args, policy, board)
+    shell = None
+    if args.exec_child or args.rom_file:
+        if not args.pipes or len(args.peer_elf) != 2:
+            parser.error("shell packaging requires --pipes and exactly two peer ELFs")
+        try:
+            shell = shell_package(args.exec_child, args.rom_file)
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
     grants = [
         ("ipc", "caller", "server", sorted(args.ipc_route)),
         ("mailbox", "caller", "owner", sorted(args.mailbox_route)),
         ("notify", "sender", "owner", sorted(args.notify_route)),
     ]
-    for kind, routes in [(kind, routes) for kind, _, _, routes in grants] + [("loan", args.loan_route)]:
+    for kind, routes in [(kind, routes) for kind, _, _, routes in grants] + [("loan", args.loan_route), ("cap", args.cap_route)]:
         if not routes:
             continue
         count = 1 + len(args.peer_elf)
-        if board != "virt" or policy not in ("fifo", "rr") or args.threads or count not in (2, 3):
-            parser.error(f"--{kind}-route requires two or three native processes under FIFO or RR on virt")
+        maximum = 4 if kind == "ipc" else 3
+        if board != "virt" or policy not in ("fifo", "rr") or args.threads or not 2 <= count <= maximum:
+            parser.error(f"--{kind}-route requires 2..{maximum} native processes under FIFO or RR on virt")
         if len(set(routes)) != len(routes):
             parser.error(f"duplicate --{kind}-route")
         if any(caller == server or max(caller, server) >= count for caller, server in routes):
             parser.error(f"--{kind}-route requires distinct slots present in the package")
+    if args.cap_grant:
+        slots = 1 + len(args.peer_elf)
+        if board != "virt" or policy not in ("fifo", "rr") or args.threads or slots not in (2, 3):
+            parser.error("--cap-grant requires two or three ordinary FIFO/RR processes on virt")
+        if len(set(args.cap_grant)) != len(args.cap_grant):
+            parser.error("duplicate --cap-grant")
+        per_owner = [0] * slots
+        for owner, target, _ in args.cap_grant:
+            if max(owner, target) >= slots:
+                parser.error("--cap-grant references an absent process")
+            per_owner[owner] += 1
+            if per_owner[owner] > 4:
+                parser.error("at most four initial capabilities per owner")
     if args.weighted_continuous > 1:
         parser.error("--weighted-continuous may appear only once")
     if args.weighted_continuous and (policy != "weighted" or board != "virt"):
@@ -482,6 +613,8 @@ def main():
     elif args.partition_windows is not None:
         parser.error("--partition-windows requires --policy partition")
     vectors, encoded_arguments = encode_arguments(parser, args)
+    if args.pubsub_service:
+        vectors[3] = [publish, subscribe]
     service = args.deadline_service_elf
     cells = []
     if service or args.deadline_service_cells or args.deadline_switch_cap:
@@ -564,6 +697,30 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.pubsub_service:
+        env["JNOX_NATIVE_PUBSUB_SERVICE"] = "3"
+        env["JNOX_NATIVE_PUBSUB_PUBLISH"] = publish
+        env["JNOX_NATIVE_PUBSUB_SUBSCRIBE"] = subscribe
+        metadata["pubsub_service"] = {"slot": 3, "authorized_clients": [0, 1, 2],
+                                      "publish_masks": publish, "subscribe_masks": subscribe}
+    if shell is not None:
+        names, files, image = shell
+        rom = out / "native_shell.rom"
+        rom.write_bytes(image)
+        digest = hashlib.sha256(image).hexdigest()
+        env.update(JNOX_NATIVE_EXEC_CHILDREN=f"1:{names[1]},2:{names[2]}",
+                   JNOX_NATIVE_ROM_IMAGE=str(rom), JNOX_NATIVE_ROM_SHA256=digest)
+        metadata.update(exec_names=names, rom_image=rom.name, rom_sha256=digest, rom_files=files)
+    if args.pipes:
+        env["JNOX_NATIVE_PIPES"] = "1"
+        fifo_grants = sorted(args.fifo_grant)
+        for key, rows in (("JNOX_NATIVE_FIFO_GRANTS", fifo_grants), ("JNOX_NATIVE_PIPE_LINKS", args.pipe_link)):
+            if rows:
+                env[key] = ",".join(":".join(map(str, row)) for row in rows)
+        metadata.update(pipes=True,
+                        fifo_grants=[dict(owner=o, reader_mask=r, writer_mask=w) for o, r, w in fifo_grants],
+                        pipe_links=[dict(writer=w, writer_fd=a, reader=r, reader_fd=b) for w, a, r, b in args.pipe_link],
+                        package_argv=sys.argv[:])
     if args.net_service:
         env["JNOX_NATIVE_NET_SERVICE"] = str(service_slot)
         metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",
@@ -572,6 +729,23 @@ def main():
     if args.socket_service:
         env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
+    if args.safety_channel:
+        env["JNOX_NATIVE_SAFETY_CHANNEL"] = "1"
+        metadata["safety_channel"] = {
+            "producer": 0, "controller": 1, "supervisor": 2, "channel": 1, "data_id": 0x0101,
+            "frame_bytes": 44, "input_period_ms": 10, "control_period_ms": 5,
+            "control_deadline_ms": 5, "max_check_interval_ms": 5, "validity_ms": 20,
+            "detection_limit_ms": 25, "inhibit_limit_ms": 5, "response_limit_ms": 30,
+            "output": "virtual_ENABLE", "syscalls": {"supervise": 59, "control": 60, "info": 61},
+        }
+    if args.cap_grant or args.cap_route:
+        cap_routes = sorted(args.cap_route)
+        for key, rows in (("JNOX_NATIVE_CAP_GRANTS", args.cap_grant), ("JNOX_NATIVE_CAP_ROUTES", cap_routes)):
+            if rows:
+                env[key] = ",".join(":".join(map(str, row)) for row in rows)
+        metadata.update(cap_grants=[dict(owner=o, target=t, rights=r) for o, t, r in args.cap_grant],
+                        cap_routes=[dict(src=src, dst=dst) for src, dst in cap_routes],
+                        mailbox_routes=[], cap_handle_slots=4, cap_notice_slots=2, package_argv=sys.argv[:])
     if args.loan_route:
         producer, consumer = args.loan_route[0]
         env["JNOX_NATIVE_LOAN_ROUTE"] = f"{producer}:{consumer}"
@@ -737,6 +911,9 @@ def main():
                 env["JNOX_NATIVE_LOTTERY_FLOORS"] = ",".join(map(str, floors))
                 metadata.update(lottery_window=[horizon, width], lottery_floors=floors)
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
+        if len(slots) == 4 and policy in ("fifo", "rr"):
+            metadata["fixed_event_layout"] = {"fields": 24, "ready_start": 12, "service_start": 16,
+                                              "remaining_start": 20, "slots_per_group": 4}
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy
         if priorities:
@@ -756,7 +933,7 @@ def main():
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
-    if policy == "amc":
+    if policy == "amc" or (policy in ("fifo", "rr") and len(slots) == 4):
         for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
             slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")

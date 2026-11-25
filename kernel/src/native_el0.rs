@@ -117,11 +117,11 @@ const PEER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer.elf"))
 #[cfg(jnox_native_peer2)]
 const PEER2: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer2.elf"));
 
-#[cfg(all(jnox_native_amc, jnox_native_peer3))]
+#[cfg(jnox_native_peer3)]
 const PEER3: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer3.elf"));
 include!(concat!(env!("OUT_DIR"), "/native_schedule.rs"));
 const COUNT: usize = NATIVE_PRIORITIES.len();
-const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_amc) as usize);
+const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_peer3) as usize);
 
 #[derive(Clone, Copy)]
 #[repr(C, align(16))]
@@ -185,7 +185,7 @@ fn write_clock(address:usize, elapsed:u64, frequency:u64)->i64 {
 #[derive(Clone, Copy, PartialEq)]
 enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(any(jnox_native_amc, jnox_native_batch, jnox_native_proportional)) || cfg!(jnox_native_weighted_continuous) || cfg!(jnox_native_threads) || cfg!(any(jnox_native_extension, jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
+const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_pipe_ipc) || cfg!(any(jnox_native_amc, jnox_native_batch, jnox_native_proportional)) || cfg!(jnox_native_weighted_continuous) || cfg!(jnox_native_threads) || cfg!(any(jnox_native_extension, jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
 const EMPTY_FRAME: NativeFrame = NativeFrame {
     x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
     current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
@@ -297,6 +297,12 @@ static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
 #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
 #[path = "native_sync_ipc.rs"]
 mod ipc;
+#[cfg(jnox_native_pipe_ipc)]
+#[path = "native_pipe_ipc.rs"]
+mod pipes;
+#[cfg(jnox_native_shell)]
+#[path = "native_spawn.rs"]
+mod spawn;
 #[cfg(jnox_native_net_service)]
 #[path = "native_virtio_net.rs"]
 mod virtio_net;
@@ -307,6 +313,9 @@ compile_error!("native net service requires virt fixed scheduling with socket br
 #[cfg(jnox_native_loan_ipc)]
 #[path = "native_loan_ipc.rs"]
 mod loans;
+#[cfg(jnox_native_safety_channel)]
+#[path = "native_safety_channel.rs"]
+mod safety;
 
 fn policy() -> &'static mut Fixed {
     // Masked, non-nested CPU0 policy entry. Never retain this borrow across idle.
@@ -327,7 +336,8 @@ fn activate(next: usize, frame: &mut NativeFrame) {
 
 const NO_PID: u64 = u64::MAX;
 const RECORD_LIMIT: usize = 128;
-const FIELDS: usize = 21;
+const FIXED_COLUMNS: usize = if cfg!(all(jnox_native_fixed, jnox_native_peer3)) { 4 } else { 3 };
+const FIELDS: usize = 12 + 3 * FIXED_COLUMNS;
 static mut DECISIONS: [[u64; FIELDS]; RECORD_LIMIT] = [[0; FIELDS]; RECORD_LIMIT];
 static mut RECORDS: usize = 0;
 static mut DROPPED: u64 = 0;
@@ -360,11 +370,11 @@ fn record(now: u64, reason: u64, argument: u64, before: Before, interrupted: Opt
         restored.map_or(0, |f| f.0), restored.map_or(0, |f| f.1),
         before.wake.unwrap_or(0), before.expiry.unwrap_or(0), compare.unwrap_or(0),
     ]);
-    row[12..15].fill(NO_PID);
-    p.ready_order(&mut row[12..15]);
+    row[12..12 + FIXED_COLUMNS].fill(NO_PID);
+    p.ready_order(&mut row[12..12 + FIXED_COLUMNS]);
     for id in 0..COUNT {
-        row[15 + id] = p.service(id).unwrap_or_else(|| fail(9));
-        row[18 + id] = p.remaining(id);
+        row[12 + FIXED_COLUMNS + id] = p.service(id).unwrap_or_else(|| fail(9));
+        row[12 + 2 * FIXED_COLUMNS + id] = p.remaining(id);
     }
     unsafe {
         DECISIONS[index] = row;
@@ -373,6 +383,15 @@ fn record(now: u64, reason: u64, argument: u64, before: Before, interrupted: Opt
 }
 
 fn start_fixed() -> usize {
+    #[cfg(jnox_native_safety_channel)]
+    safety::boot();
+    #[cfg(jnox_native_capability_ipc)]
+    ipc::caps::boot();
+    #[cfg(jnox_native_pipe_ipc)]
+    {
+        pipes::boot();
+        pipes::report(0);
+    }
     #[cfg(jnox_native_notify_ipc)]
     ipc::report_notifications(0);
     let config = NATIVE_PRIORITIES.map(|priority| Config { priority, delay: 0 });
@@ -382,7 +401,10 @@ fn start_fixed() -> usize {
         _ => fail(9),
     };
     let now = counter();
+    #[cfg(not(jnox_native_shell))]
     unsafe { FIXED = Fixed::new(&config, mode, now) };
+    #[cfg(jnox_native_shell)]
+    unsafe { FIXED = Fixed::new_shell(&config, mode, now) };
     let p = policy();
     let next = p.current().unwrap_or_else(|| fail(9));
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
@@ -397,6 +419,17 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
+    #[cfg(jnox_native_safety_channel)]
+    if matches!(action, Action::Exit) { safety::exit(p.current().unwrap_or_else(|| fail(9))); }
+    #[cfg(jnox_native_pipe_ipc)]
+    if matches!(action, Action::Exit) {
+        pipes::exit(p.current().unwrap_or_else(|| fail(9)), p);
+    }
+    #[cfg(jnox_native_shell)]
+    if matches!(action, Action::Exit) {
+        let pid = p.current().unwrap_or_else(|| fail(9));
+        spawn::exit(pid, unsafe { EXIT_STATUS[pid] }, p);
+    }
     #[cfg(jnox_native_loan_ipc)]
     if matches!(action, Action::Exit) {
         loans::exit(p.current().unwrap_or_else(|| fail(9)));
@@ -424,7 +457,7 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
         let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
         unsafe { native_sleep_switch(top) };
         let next = policy().current().unwrap_or_else(|| fail(9));
-        #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
+        #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
         unsafe {
             // An idle IRQ can complete the very owner that went to sleep.
             // FRAMES holds the completion. The interrupted SVC stack still
@@ -433,12 +466,18 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
             *f = FRAMES[next];
             CURRENT = next;
         }
-        #[cfg(not(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset)))]
+        #[cfg(not(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc)))]
         activate(next, f);
     }
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_safety_channel)]
+    safety::report();
+    #[cfg(jnox_native_capability_ipc)]
+    ipc::caps::report(1);
+    #[cfg(jnox_native_pipe_ipc)]
+    pipes::report(1);
     #[cfg(jnox_native_net_service)]
     ipc::report_net();
     #[cfg(jnox_native_loan_ipc)]
@@ -461,7 +500,11 @@ fn finish_fixed() -> ! {
     uart_write(b"NATIVE FIXED DROPPED ");
     unsigned(unsafe { DROPPED });
     uart_write(b"\n");
+    #[cfg(jnox_native_shell)]
+    spawn::report();
     for (pid, status) in unsafe { EXIT_STATUS }.into_iter().enumerate() {
+        #[cfg(jnox_native_shell)]
+        if pid != 0 && !spawn::started(pid) { continue; }
         if COUNT == 1 {
             uart_write(b"NATIVE EL0 EXIT ");
             decimal(i64::from(status));
@@ -671,11 +714,32 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         fixed_dispatch(now, action, service, f);
         return;
     }
+    #[cfg(jnox_native_safety_channel)]
+    if matches!(f.x[8], 59..=61) {
+        let op = f.x[8];
+        safety::service(unsafe { CURRENT }, f);
+        fixed_dispatch(now, Action::Poll, op, f);
+        return;
+    }
     #[cfg(jnox_native_loan_ipc)]
     if matches!(f.x[8], 33..=36) {
         let service = f.x[8];
         loans::service(unsafe { CURRENT }, f);
         fixed_dispatch(now, Action::Poll, service, f);
+        return;
+    }
+    #[cfg(jnox_native_shell)]
+    if matches!(f.x[8], 4 | 50 | 51) {
+        let service = f.x[8];
+        let action = spawn::service(unsafe { CURRENT }, f, policy());
+        fixed_dispatch(now, action, service, f);
+        return;
+    }
+    #[cfg(jnox_native_pipe_ipc)]
+    if matches!(f.x[8], 41..=49) {
+        let service = f.x[8];
+        let action = pipes::service(unsafe { CURRENT }, f, policy());
+        fixed_dispatch(now, action, service, f);
         return;
     }
     let mut deadline = None;
@@ -757,7 +821,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         };
         if !exit { f.x[0] = result as u64; }
         let reason = match action { Action::Exit => 3, Action::Sleep(_) => 2, Action::Yield => 1, Action::Poll => 5,
-            #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))] Action::BlockIpc => unreachable!(),
+            #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))] Action::BlockIpc => unreachable!(),
         };
         fixed_dispatch(now, action, reason, f);
         return;
@@ -892,7 +956,7 @@ pub(super) fn run() -> ! {
         (PEER, env!("JNOX_PACKAGED_PEER_SHA256")),
         #[cfg(jnox_native_peer2)]
         (PEER2, env!("JNOX_PACKAGED_PEER2_SHA256")),
-        #[cfg(all(jnox_native_amc, jnox_native_peer3))]
+        #[cfg(jnox_native_peer3)]
         (PEER3, env!("JNOX_PACKAGED_PEER3_SHA256")),
     ];
     for (pid, (_, digest)) in images.iter().enumerate() {

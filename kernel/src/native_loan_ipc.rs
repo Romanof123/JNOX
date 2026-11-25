@@ -52,9 +52,22 @@ fn apply(op: MapOp) -> Result<(), i32> {
     Ok(())
 }
 
+#[cfg(jnox_native_safety_channel)]
+pub(super) fn invalidate() {
+    unsafe { (&mut *(&raw mut CHANNEL)).invalidate(apply) }.unwrap_or_else(|_| fail(9));
+}
+
 pub(super) fn service(pid: usize, f: &mut NativeFrame) {
     let channel = unsafe { &mut *(&raw mut CHANNEL) };
     let op = f.x[8];
+    #[cfg(jnox_native_safety_channel)]
+    if let Err(errno) = super::safety::before_loan(pid, op) {
+        f.x[..4].fill(0);
+        f.x[0] = i64::from(errno) as u64;
+        return;
+    }
+    #[cfg(jnox_native_safety_channel)]
+    let handle = f.x[0];
     let result = match op {
         33 | 35 => {
             let grant = if op == 33 { channel.acquire(pid, apply) } else { channel.receive(pid, apply) };
@@ -67,10 +80,26 @@ pub(super) fn service(pid: usize, f: &mut NativeFrame) {
                 if op == 35 { f.x[3] = g.len as u64; }
             })
         }
-        34 => channel.publish(pid, f.x[0], f.x[1], apply),
+        34 => {
+            #[cfg(jnox_native_safety_channel)]
+            let snapshot = {
+                let slot = (f.x[0] & 3) as usize;
+                let mut fields = [0; 24];
+                (f.x[1] == 44 && channel.page(slot).is_some_and(|p| p.state == 1 && p.handle == f.x[0])
+                    && mmu::copy_from_user(mmu::loan_va(slot) + 8, &mut fields)).then_some(fields)
+            };
+            #[cfg(jnox_native_safety_channel)]
+            let before = super::counter();
+            let status = channel.publish(pid, f.x[0], f.x[1], apply);
+            #[cfg(jnox_native_safety_channel)]
+            super::safety::published(f.x[0], snapshot, before, super::counter(), status.err().unwrap_or(0));
+            status
+        }
         36 => channel.release(pid, f.x[0], apply),
         _ => unreachable!(),
     };
+    #[cfg(jnox_native_safety_channel)]
+    super::safety::after_loan(pid, op, handle, f, result, channel.occupancy());
     f.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
 }
 

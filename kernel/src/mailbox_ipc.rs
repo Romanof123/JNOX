@@ -178,12 +178,27 @@ impl<const N: usize> MailboxIpc<N> {
         deadline: u64,
         now: u64,
     ) -> Result<(), i32> {
+        self.send_checked(sender, owner, word, deadline, now, true)
+    }
+
+    /// The kernel caller has resolved a live SEND capability for this owner.
+    #[cfg(jnox_native_capability_ipc)]
+    pub(super) fn send_resolved(
+        &mut self, sender: usize, owner: usize, word: u64, deadline: u64, now: u64,
+    ) -> Result<(), i32> {
+        self.send_checked(sender, owner, word, deadline, now, false)
+    }
+
+    fn send_checked(
+        &mut self, sender: usize, owner: usize, word: u64, deadline: u64, now: u64,
+        require_route: bool,
+    ) -> Result<(), i32> {
         self.advance(now);
         self.available(sender)?;
         if owner >= N {
             return Err(-22);
         }
-        if self.routes[sender] & (1 << owner) == 0 {
+        if require_route && self.routes[sender] & (1 << owner) == 0 {
             return Err(-13);
         }
         if !self.tasks[owner].alive {
