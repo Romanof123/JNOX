@@ -381,7 +381,7 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     if id >= 1020 { return 0 }
     #[cfg(jnox_native_threads)]
     if id == context::TIMER_IRQ {
-        let ready = threads::irq(entry, unsafe { frame.as_ref() });
+        let ready = threads::irq(entry, unsafe { frame.as_mut() });
         unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
         context::gic_write(context::GICC + 0x10, iar);
         unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };

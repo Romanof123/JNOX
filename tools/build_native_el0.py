@@ -114,11 +114,13 @@ def native_schedule(parser, args):
             parser.error("EDF and LLF require exactly one job tuple per supplied ELF")
     elif args.job or args.peer_job:
         parser.error("job tuples require --policy edf or llf")
-    if policy in ("fifo", "rr"):
+    if args.threads and policy not in (None, "rr"):
+        parser.error("thread scheduling supports only cooperative or RR")
+    if policy in ("fifo", "rr") and not args.threads:
         if not args.priority or len(args.peer_priority) != len(args.peer_elf):
             parser.error("fixed scheduling requires exactly one priority per supplied ELF")
     elif args.priority or args.peer_priority:
-        parser.error("application priorities require --policy fifo or rr")
+        parser.error("application priorities require process-level FIFO or RR")
     priorities = args.priority + args.peer_priority
     if any(value < 0 or value > 255 for value in priorities):
         parser.error("priorities must be in 0..255")
@@ -135,8 +137,8 @@ def native_schedule(parser, args):
     quantum = None
     if args.quantum_ticks:
         value = args.quantum_ticks[0]
-        if policy == "mlq" and not (value.isascii() and value.isdecimal()):
-            parser.error("MLQ quantum requires unsigned decimal digits")
+        if (policy == "mlq" or args.threads) and not (value.isascii() and value.isdecimal()):
+            parser.error("quantum requires unsigned decimal digits")
         try:
             quantum = int(value)
         except ValueError:
@@ -208,12 +210,12 @@ def main():
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
     parser.add_argument("--threads", choices=["2"], action="append", default=[],
-                        help="enable two joinable cooperative thread contexts for one ordinary ELF")
+                        help="enable two joinable thread contexts for one ordinary ELF")
     args = parser.parse_args()
     if len(args.threads) > 1:
         parser.error("--threads may appear only once")
-    if args.threads and (not (args.elf or args.source) or args.peer_elf or args.policy):
-        parser.error("--threads 2 requires exactly one ordinary application and the default cooperative policy")
+    if args.threads and (not (args.elf or args.source) or args.peer_elf):
+        parser.error("--threads 2 requires exactly one ordinary application")
     policy, priorities, weights, quantum = native_schedule(parser, args)
     vectors, encoded_arguments = encode_arguments(parser, args)
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
@@ -308,6 +310,8 @@ def main():
             env["JNOX_NATIVE_BOOST_TICKS"] = str(args.boost_ticks[0])
         if args.threads:
             metadata["thread_capacity"] = 2
+            if policy == "rr":
+                metadata.update(scheduling_scope="within_process", timing_unit="physical_counter_ticks")
             env["JNOX_NATIVE_THREADS"] = "2"
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:

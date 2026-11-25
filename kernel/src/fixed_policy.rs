@@ -7,11 +7,16 @@ const MAX_INTERVAL: u64 = i64::MAX as u64;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompareOverflow;
 
-fn relative_deadline(now: u64, delay: u64) -> Option<u64> {
+pub(crate) fn relative_deadline(now: u64, delay: u64) -> Option<u64> {
     if delay > MAX_INTERVAL {
         return None;
     }
     now.checked_add(delay)
+}
+
+/// A saturated equal-rank turn rotates only when another task can run.
+pub(crate) fn rotate_expired(remaining: u64, equal_peer_ready: impl FnOnce() -> bool) -> bool {
+    remaining == 0 && equal_peer_ready()
 }
 
 #[derive(Clone, Copy)]
@@ -180,7 +185,7 @@ impl Fixed {
 
     fn select(&mut self) {
         if let Some(id) = self.owner {
-            if self.quantum.is_some() && self.tasks[id].remaining == 0 && self.has_peer(id) {
+            if self.quantum.is_some() && rotate_expired(self.tasks[id].remaining, || self.has_peer(id)) {
                 self.join_tail(id);
             } else {
                 // Preserve the turn across higher-priority interruptions.

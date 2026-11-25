@@ -209,3 +209,11 @@ python3 tools/build_native_el0.py --out output/native-threads/c --threads 2 --so
 ~~~
 
 Call `pthread_create(&handle, NULL, start, arg)` to queue the worker. Main continues until a scheduling point. Only main joins the worker: `pthread_join(handle, &result)` waits for a live worker or collects an exited worker immediately. The slot is reusable after join. A busy slot returns EAGAIN; a reaped handle returns ESRCH. These functions return positive errors directly and preserve errno. A worker may return a pointer to shared data that survives its exit. [C and Rust build and boot examples](../examples/native-threads/README.md)
+
+## Round robin within one native process
+
+Keep `--threads 2` alone for the default cooperative main and worker. Add `--policy rr --quantum-ticks 625000` to rotate the two equal-rank runnable threads on CPU0. At the reference 62.5 MHz clock that quantum is 10 ms. Both threads share the application address space and keep their own saved frame and stack. [Build and boot the same stream ELF under both policies](../examples/native-thread-rr/README.md)
+
+~~~sh
+python3 tools/build_native_el0.py --out output/thread-rr/rr --source examples/native-thread-rr/stream.c --threads 2 --policy rr --quantum-ticks 625000
+~~~

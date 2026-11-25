@@ -209,3 +209,11 @@ python3 tools/build_native_el0.py --out output/native-threads/c --threads 2 --so
 ~~~
 
 메인은 `pthread_create(&handle, NULL, start, arg)`로 작업을 큐에 넣고 다음 스케줄링 지점까지 계속 실행한다. 작업 스레드는 메인만 조인할 수 있다. `pthread_join(handle, &result)`는 실행 중이면 기다리고 이미 종료됐으면 즉시 결과를 회수한다. 조인 뒤 슬롯을 재사용한다. 슬롯이 사용 중이면 EAGAIN, 회수된 핸들은 ESRCH다. 두 함수는 양의 오류 번호를 직접 반환하고 errno를 보존한다. 작업은 종료 뒤에도 유효한 공유 데이터 포인터를 반환할 수 있다. [C·Rust 빌드 및 부팅 예제](../examples/native-threads/README.md)
+
+## 한 네이티브 프로세스 안의 라운드로빈
+
+`--threads 2`만 지정하면 메인과 작업 스레드는 기본 협력형으로 실행된다. `--policy rr --quantum-ticks 625000`을 추가하면 준비된 동순위 스레드 둘이 CPU0에서 교대로 실행된다. 기준 62.5 MHz 시계의 이 퀀텀은 10 ms다. 두 스레드는 앱 주소 공간을 공유하고 저장 프레임과 스택은 각각 유지한다. [같은 스트림 ELF를 두 정책으로 빌드·부팅하기](../examples/native-thread-rr/README.md)
+
+~~~sh
+python3 tools/build_native_el0.py --out output/thread-rr/rr --source examples/native-thread-rr/stream.c --threads 2 --policy rr --quantum-ticks 625000
+~~~
