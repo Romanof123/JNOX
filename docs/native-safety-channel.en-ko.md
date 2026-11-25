@@ -58,3 +58,9 @@ Check corruption, wrong route/data ID, future or expired frames, gaps, duplicate
 독립 관측은 주입·게이트 폐쇄 시각, 제어기 고장 래치 시각, 가상 장치에서 실제 ENABLE 1→0이 된 시각을 공통 단조 틱으로 따로 보존한다. 불확실해 경계를 구분할 수 없는 결과는 통과로 처리하지 않는다. 검출 ≤25 ms, 이후 차단 ≤5 ms, 전체 ≤30 ms와 사건 순서를 각각 검사한다. 정상 운전 중 조기 차단 여부, 무송신·연속 손상·포화는 독립 실행으로 측정한다. 만료 한 틱 전 검사와 5 ms 뒤 검사, 20 ms 동시 도착에서 만료 우선, 손상·오배달·중복·세대·재시작 거부를 확인한다. 0·10 ms 허가 후 15 ms 재무장은 허용하고 별도 실행에서 최초 20 ms 재무장은 거부한다. 조건을 하나씩 제외하고 각 한계값은 통과, 한 틱 초과는 실패하는지 확인한다. Linux 중계는 별도 검증이 필요하다. 물리 장치 반응, 제품 FTTI·ASIL, 고장난 시간원 및 실제 액추에이터의 격리는 이 가상 판정 범위 밖이다.
 
 The bench provides no physical actuator, physical FTTI, ASIL or item-level approval. The Functional Safety Team and accountable product integrator retain the separate item/HARA, board/HIL, independence, residual-error and approval work under #10.
+
+## First native verification / 첫 네이티브 검증
+
+**IMP-311 · EVD-311 · HOLD.** A Rust 2024 identifier prevented the first protected image from building. After correction the independent verifier booted all 32 FIFO/RR cases. Each of the 544 release-to-completion measurements fit within 5 ms. Consecutive completed checks exceeded 5 ms in every boot. Both collision supervisors observed ENABLE low at 18 ms and 37 ms and exited 95. Ten marked fault runs met the measured 25/5/30 ms limits. The regular workload and exact boundary experiments are tracked in #389. [Original](evidence/native-safety-channel-first.en-ko.md) · [Corrected runs](evidence/native-safety-channel-corrected.en-ko.md) · [Native timing plan](native-safety-admission.en-ko.md)
+
+최초 보호 이미지 빌드 실패와 수정본의 32회 실행을 보존했다. 단일 작업의 완료 시간은 544회 모두 기준을 충족했지만 연속 검사 사이의 간격은 모든 부팅에서 초과했다. 두 만료 충돌 사례에서도 기대한 출력 전환을 관측하지 못해 안전 채널을 승인 보류했다. [원본과 측정값](evidence/native-safety-channel-corrected.en-ko.md) · [후속 검증](https://github.com/Romanof123/JNOX/issues/389)

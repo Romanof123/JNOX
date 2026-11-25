@@ -2281,3 +2281,12 @@ VER-024,has-partial-evidence,EVD-310
 IMP-310,tested-in,EVD-310
 CHG-311,affects,REQ-019
 CHG-311,affects,REQ-024
+REQ-019,partially-implemented-by,IMP-311
+REQ-024,partially-implemented-by,IMP-311
+DES-010,partially-implemented-by,IMP-311
+IPC-010,partially-implemented-by,IMP-311
+IMP-311,partially-verified-by,VER-019
+IMP-311,partially-verified-by,VER-024
+VER-019,has-partial-evidence,EVD-311
+VER-024,has-partial-evidence,EVD-311
+IMP-311,tested-in,EVD-311
