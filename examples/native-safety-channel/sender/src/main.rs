@@ -253,6 +253,13 @@ impl Sender {
         }
         self.normal(1, 3, 20, true)?;
         match case {
+            Case::RecoverLatch | Case::RecoverHold => {
+                self.normal(2, 1, 55, true)?;
+                self.normal(2, 2, 65, true)?;
+                if case == Case::RecoverLatch {
+                    self.normal(2, 3, 76, false)?;
+                }
+            }
             Case::Healthy | Case::Observed | Case::LiveStartup => {
                 for (seq, ms) in [(4, 30), (5, 40), (6, 50)] {
                     self.normal(1, seq, ms, true)?;
