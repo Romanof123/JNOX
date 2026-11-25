@@ -29,13 +29,13 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def package(root, case):
+def package(root, case, fixture=None):
     m = json.loads((root / "manifest.json").read_bytes())
     slots = m["slots"]
     need(m["policy"] == "amc" and 1 <= len(slots) <= 4, "AMC package")
     raw = (root / "deployment.json").read_bytes()
     desc, wire = amc_manifest(raw, len(slots))
-    need(raw == (FIXTURES / (case + ".json")).read_bytes(), "named fixture input identity")
+    need(raw == (fixture or FIXTURES / (case + ".json")).read_bytes(), "named fixture input identity")
     need(desc == m["amc"] and digest(raw) == m["amc_input"]["sha256"], "raw deployment identity")
     need(wire == (root / "amc-v1.txt").read_bytes() and digest(wire) == m["amc_canonical"]["sha256"], "canonical deployment identity")
     need(sha(root / "kernel.elf") == m["kernel_elf_sha256"], "kernel identity")
@@ -51,7 +51,7 @@ def package(root, case):
     return m
 
 
-def capture(a):
+def capture(a, *, fixture=None):
     root = a.out.resolve()
     root.mkdir()
     m = json.loads((a.package / "manifest.json").read_bytes())
@@ -62,7 +62,7 @@ def capture(a):
         files[f"slot{i}.elf"] = a.package / s["elf"]
     for name, src in files.items():
         shutil.copyfile(src, root / name)
-    package(root, a.case)
+    package(root, a.case, fixture)
     kernel = elf_file((root / "kernel.elf").read_bytes())
     base = symbol(kernel, "_start")[0]
     size = symbol(kernel, "__stack_top")[0] - base
@@ -138,11 +138,12 @@ def product(blob, slot, gen, mode, amount, kind):
                 stamp_loss=overflow, fresh=True)
 
 
-def parse_uart(raw):
+def parse_uart(raw, *, clock=False):
     records = defaultdict(list)
     for line in raw.splitlines(keepends=True):
         if line.startswith(b"NATIVE AMC "):
-            need(re.fullmatch(rb"NATIVE AMC [A-Z]+(?: [0-9]+)+\r?\n", line), "incomplete UART record")
+            tag_pattern = rb"(?:[A-Z]+|CLOCK_EVIDENCE)" if clock else rb"[A-Z]+"
+            need(re.fullmatch(rb"NATIVE AMC " + tag_pattern + rb"(?: [0-9]+)+\r?\n", line), "incomplete UART record")
             _, _, tag, *fields = line.split()
             records[tag.decode()].append(tuple(map(int, fields)))
     def one(tag):
@@ -191,7 +192,7 @@ def overlap_deadline_window(intervals, due):
     return windows[0] if len(windows) == 1 else None
 
 
-def score(a):
+def score(a, *, clock=None):
     root = a.root
     need(sha(root / "session.json") == a.digest, "session identity")
     session = json.loads((root / "session.json").read_bytes())
@@ -201,8 +202,8 @@ def score(a):
         need(Path(name).name == name and sha(root / name) == h, "capture digest " + name)
     launch = json.loads((root / "launch.json").read_bytes())
     case = launch["case"]
-    need(case in CASES, "named case")
-    m = package(root, case)
+    need(case in CASES or (clock and case == "control"), "named case")
+    m = package(root, case, clock.fixture if clock else None)
     if session["marker"] != "end":
         print(json.dumps(dict(status="incomplete", marker=session["marker"], session=a.digest)))
         return 2
@@ -212,7 +213,7 @@ def score(a):
     need(image_lines == [f"NATIVE EL0 {labels[i]}ELF {s['elf_sha256']}".encode("ascii")
                          for i,s in enumerate(m["slots"])], "ordered UART image identities")
     expected = [s["expected_ttbr0_el1"] for s in m["slots"]]
-    records, one = parse_uart(raw_uart)
+    records, one = parse_uart(raw_uart, clock=bool(clock))
     ver, epoch, hz, q, count, idle, term, origin = one("CONFIG")
     tasks = m["amc"]["tasks"]
     need((ver,hz,q,count,idle,term) == (1,62500000,3125000,len(tasks),len(tasks),len(tasks)+1), "deployment clock/shape")
@@ -225,6 +226,8 @@ def score(a):
     need((addr, 8192*23*8) == symbol(kernel,"native_amc_intervals") and width == 23 and rows <= 8192, "interval ELF extent")
     need((pa,count*16*1024) == symbol(kernel,"native_amc_results") and (generations,stride)==(16,1024), "result ELF extent")
     intervals = list(struct.iter_unpack("<23Q",mem.read(addr,rows*width*8)))
+    if clock:
+        clock.load(root, launch, m, records, mem, kernel, intervals, hz, origin)
     life = records["LIFE"]
     logs, missing, landing = one("END")
     need(len(life)==logs and all(len(e)==10 for e in life) and len(records["TASK"])==count,"lifecycle framing")
@@ -301,7 +304,10 @@ def score(a):
             # permitting arbitrary preemption or IRQs in between.
             samples={((b[2]-origin)*1000000000//hz,a[7]*1000000000//hz)
                      for a,b in zip(calls,calls[1:]) if a[19]==2 and b[19]==1}
-            check(all((wall,cpu) in samples for wall,cpu,n in recorded),"task clock product/syscall mismatch")
+            if clock:
+                clock.samples(slot, gen, recorded, samples)
+            else:
+                check(all((wall,cpu) in samples for wall,cpu,n in recorded),"task clock product/syscall mismatch")
         if kind==3:
             exit_at[slot,gen]=stamp
             check(v[2] == slot, "signed exit slot " + str(slot))
@@ -342,12 +348,15 @@ def score(a):
             stamps=products.get((1,0),{}).get("stamps",[])
             witnesses=[r for r in intervals if r[0:2]==(2,6) and r[4:6]==(1,0) and r[19:21]==(1,0) and
                        r[2]>=c and any((r[2]-origin)*1000000000//hz==s[0] for s in stamps)]
-            if not irq or not witnesses:
-                unknown.append("crossing PPI/task-owned clock witness")
+            if clock:
+                crossing = clock.crossing(b, c, q, intervals, stamps)
             else:
-                x=witnesses[0][2]
-                crossing=dict(b=b,irq=irq[-1][2],compare=irq[-1][9],commit=c,observed=x,latency_ticks=x-b)
-                check(b<=irq[-1][2]<=c<=x<b+q,"crossing timing window")
+                if not irq or not witnesses:
+                    unknown.append("crossing PPI/task-owned clock witness")
+                else:
+                    x=witnesses[0][2]
+                    crossing=dict(b=b,irq=irq[-1][2],compare=irq[-1][9],commit=c,observed=x,latency_ticks=x-b)
+                    check(b<=irq[-1][2]<=c<=x<b+q,"crossing timing window")
         discarded={e[2] for e in life if e[0]==5}
         check(discarded==({0} if case=="staggered" else {0,2}),"discard set")
         check(products.get((0,0),{}).get("count",0)>0,"partially served LO0")
@@ -368,6 +377,8 @@ def score(a):
     elif case=="refusal":
         check([(e[5],e[6],e[7]) for e in life if e[0]==6]==[(boundaries(2),1,0),(boundaries(3),0,0),(boundaries(4),1,1)],"reset refusals")
         check(any(e[0]==2 and e[2]==0 and e[5]==boundaries(2) and e[8]==2 for e in life),"LO refused in HI")
+    elif clock and case == "control":
+        clock.control(life, products, intervals, exit_at)
     else:
         check(overlap_control(life, epoch, q), "overlap admission, single b1 miss, refusal and continuing service to exit")
         if not lost:
@@ -400,6 +411,10 @@ def score(a):
                 canonical_sha256=m["amc_canonical"]["sha256"],rows=rows,lost=lost,life_lost=missing,
                 idle_landing=landing,expected_roots=[s["expected_ttbr0_el1"] for s in m["slots"]],roots=roots,crossing=crossing,carry=carry,products={f"{i}.{g}":p for (i,g),p in products.items()},
                 lifecycle=life,issues=issues,unknown=unknown)
+    if clock:
+        report["clock_pair"] = clock.finish(products, life)
+        issues.extend(clock.issues)
+        unknown.extend(clock.unknown)
     report["status"]="incomplete" if (lost or missing) else "failed" if issues else "incomplete" if unknown else "observations-met"
     print(json.dumps(report,indent=2))
     return 0 if report["status"]=="observations-met" else 2
