@@ -2,6 +2,12 @@
 
 **Disposition: unknown for FIFO and RR.** The three ordinary processes on one QEMU virt Cortex-A72 can exercise the protected channel. The current release pattern does not instantiate FS-M3-01. Keep the previous symbolic admission refusal and the original RM/DM evidence. An example budget or a finite passing trace cannot authorize either package. Scope is CPU-only virtual output. Linux gateway, physical response, FTTI and ASIL require separate evidence. [ADR-001](safety-parameters.en.md) · [FS-M3-01](fs-m3-admission.md) · [frozen workload](pol-004-m3-control-plan.md) · [#11](https://github.com/Romanof123/JNOX/issues/11)
 
+## Deferred 1 ms phase investigation / 1 ms 위상 초과 후속 과제
+
+The project owner deferred investigation and optimization of the 1 ms full-phase target. In the ordinary healthy FIFO and RR captures, the first two phases of each run had already exceeded 1 ms at the post-COMPLETE sample. Timing admission for this criterion remains open under #389. The next IPC-010 work item is the pending input at the permit-expiry boundary in #401. [Timing follow-up #389](https://github.com/Romanof123/JNOX/issues/389) · [Expiry and arrival #401](https://github.com/Romanof123/JNOX/issues/401) · [Original measurements](evidence/native-permit-ordinary-watchdog.en-ko.md).
+
+프로젝트 책임자의 결정에 따라 1 ms 위상 초과의 원인 분석과 최적화를 후속 과제로 이관했다. 일반 이미지의 FIFO·RR 정상 시험에서 각각 첫 두 위상은 완료 직후 상태를 읽은 시점에 이미 1 ms를 넘겼다. 이 기준은 #389에 미충족으로 기록한다. 다음 IPC-010 작업은 #401에서 이미 큐에 들어온 정상 프레임을 허가 만료 시각에 검사하는 사례다.
+
 ## What the sources timestamp
 
 Source basis: frozen ordinary apps 453fcb58, protected frame library d546c1f, kernel publication and withdrawal instrumentation 82b0fa4b. [Qualification tracking #389](https://github.com/Romanof123/JNOX/issues/389). Freeze final ELF/kernel hashes, argv, priority, RR quantum, frequency, emulator and observation configuration separately for each run.
