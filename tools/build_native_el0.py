@@ -401,6 +401,7 @@ def main():
     parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
     parser.add_argument("--board", choices=["virt", "pi4"], action=SinglePath)
     group = parser.add_mutually_exclusive_group()
+    group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
@@ -486,6 +487,18 @@ def main():
     parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if args.task_policy is not None:
+        allowed = {"out", "board", "kernel_profile", "task_policy"}
+        conflicts = [action.option_strings[0] for action in parser._actions
+                     if action.dest not in allowed and hasattr(args, action.dest)
+                     and getattr(args, action.dest) != action.default]
+        if conflicts or args.board == "pi4":
+            parser.error("--task-policy requires virt and excludes legacy options " + ", ".join(conflicts))
+        from build_task_policy import package
+        try:
+            return package(args, ROOT)
+        except (ValueError, OSError, subprocess.SubprocessError) as exc:
+            parser.error(str(exc))
     if len(args.pubsub_service) > 1:
         parser.error("--pubsub-service may appear only once")
     if (args.pubsub_publish or args.pubsub_subscribe) and not args.pubsub_service:
