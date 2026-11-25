@@ -11,7 +11,7 @@ import struct
 import sys
 
 from native_el0_capture import capture, command
-from native_el0_replay import PA_MASK, Snapshot, argument_stacks, elf_file
+from native_el0_replay import PA_MASK, Snapshot, argument_stacks, elf_file, symbol
 from native_batch_replay import decode, ledger, product, require, slot_statuses
 from ordinary_amc_capture import sha
 
@@ -152,6 +152,143 @@ def trace_matches(target, event, next_pc):
     return bool(re.search(pattern,raw))
 
 
+def clock_return_recheck(event):
+    # The vector calls step(..., 3, 0, 0, 0, frame, Keep) only when its
+    # sampled counter has reached the armed compare. No new EL0 lease closes.
+    return (event["kind"] == 3 and event["op"] == event["arg"] == event["result"] == 0
+            and event["src"] == event["dst"] == 0 and event["src_pc"] == 0x40029c
+            and event["transparent_count"] > 0 and event["transparent_ticks"] > 0
+            and event["segment"] == event["last_return"] == event["eoi"] == 0
+            and 0 < event["prior_compare"] == event["cval"] <= event["entry"]
+            and event["ctl"] & 3 == 1 and event["entry"] <= event["decision"] <= event["returned"]
+            and event["src_pstate"] & 31 == 0 and event["src_root"] >> 48 == 1
+            and all(event["src_"+k] == event["dst_"+k] for k in ("pc","sp","pstate","frame","root")))
+
+
+def timed_sjf_retention(target, app_path, events, release, first, terminal, result, measured=False):
+    # This inference belongs to the pinned no-argument batch.elf. Its one setup
+    # clock precedes the loop, then each sum/progress store precedes one clock.
+    app = elf_file(app_path.read_bytes())
+    words = {0x400854:0x97fffe8c, 0x400948:0x97ffffac, 0x40095c:0xf90006c8,
+             0x400960:0xb9001314, 0x400964:0x97fffe48, 0x400294:0x528000c8,
+             0x400298:0xd4094021}
+    for pc, word in words.items():
+        require(any(seg["p_type"] == "PT_LOAD" and seg["p_flags"] & 1 and
+                    0 <= pc-seg["p_vaddr"] <= seg["p_filesz"]-4 and
+                    struct.unpack_from("<I",seg.data(),pc-seg["p_vaddr"])[0] == word
+                    for seg in app.iter_segments()), "pinned timed-loop instruction mismatch")
+    recheck = clock_return_recheck(release)
+    require(release["dst"] == 0 and (recheck or (release["kind"],release["op"],release["arg"]) == (2,6,1))
+            and release["result"] == 0 and
+            release["src_pc"] == 0x40029c and release["releases"] == 6 and
+            release["queued_slots"] == [1,2] and release["returned"] >= release["decision"] and
+            all(release["src_"+k] == release["dst_"+k] for k in ("pc","sp","pstate","frame","root")),
+            "clock release context or retention mismatch")
+    exit_order = [e["src"] for e in events if e["kind"] == 2 and e["op"] == 1]
+    require(exit_order == [0,1,2], "equal queued completion order mismatch")
+    result["queued_exit_order"] = exit_order
+    boundary = dict(cause="EL1 return recheck after clock SVC" if recheck else "clock_gettime SVC 6", owner=0, retained=True, peer_queue=[1,2],
+                    pc=release["src_pc"], sp=release["src_sp"], pstate=release["src_pstate"],
+                    root=release["src_root"], frame=release["src_frame"],
+                    first_private=first, terminal_private=terminal, irq_delivery=False,
+                    simultaneous_private_word=None, immediate_post_return_private_word=None)
+    result["clock_release"] = boundary
+    if not measured:
+        result["gaps"].append("no simultaneous private word at the SVC release or first publication after its return")
+    a_dispatch = next(e for e in events if e["dst"] == 0)
+    a_exit = next(e for e in events if e["kind"] == 2 and e["op"] == 1 and e["src"] == 0)
+    if (release["seq"] != a_dispatch["seq"]+1 or a_exit["seq"] != release["seq"]+1 or
+            a_dispatch["src"] != 3 or a_dispatch["ready"] != 1):
+        result["gaps"].append("additional scheduling boundaries prevent attributing transparent calls")
+        return
+    prior = release["transparent_count"]
+    # A recheck follows the last already-counted transparent clock SVC. A
+    # direct clock decision adds the deciding SVC to the transparent count.
+    ordinal = prior if recheck else prior + 1
+    completed = ordinal - 1  # the first clock is the pre-loop setup call
+    clocks = ordinal + a_exit["transparent_count"]
+    trace = (target/"exceptions.log").read_text(encoding="ascii").splitlines()
+    prefix = "Exception return from AArch64 EL1 to AArch64 EL0 PC "
+    start = next((n+1 for n,line in enumerate(trace) if line.startswith(prefix)), None)
+    syscall = ["Taking exception 2 [SVC]", "...from EL0 to EL1", "...with ESR 0x15/0x56004a01",
+               "...with ELR 0x40029c", "...to EL1 PC 0x40200c00 PSTATE 0x3c5", prefix+"0x40029c"]
+    if (start is None or trace[start-1] != prefix+"0x400000" or
+            clocks != terminal["count"]+1 or
+            start+6*clocks+6 > len(trace) or
+            any(trace[start+6*i:start+6*i+6] != syscall for i in range(clocks)) or
+            trace[start+6*clocks:start+6*clocks+6] !=
+            syscall[:3]+["...with ELR 0x400020", syscall[4], prefix+"0x400000"]):
+        result["gaps"].append("external SVC/ERET sequence does not corroborate the clock-call inference")
+        return
+    boundary.update(transparent_calls_recorded=prior, transparent_clocks_before=ordinal-1,
+                    release_clock_ordinal=ordinal, separate_recheck_exception=False if recheck else None,
+                    total_user_clock_returns=clocks, inferred_completed_blocks=completed,
+                    inferred_sum=completed*522240, prior_useful_work=completed>0)
+    if completed == 0:
+        result["gaps"].append("release occurred at the setup clock before useful publication")
+
+
+def measured_sjf(target, rows, arrivals, events, progress_pa, result):
+    observations = []
+    result["measured_peer_admissions"] = observations
+    result["queued_exit_order"] = [e["src"] for e in events if e["kind"] == 2 and e["op"] == 1]
+    published = [r for r in rows if r["kind"] == "release"]
+    later = [r for r in rows if r["kind"] == "release-post"]
+    for group in (published,later):
+        require(len({r["decision"] for r in group}) == len(group) and
+                all(r["decision"] in {e["seq"] for e in arrivals} for r in group),
+                "duplicate or unknown peer-release identity")
+    for event in arrivals:
+        seq = event["seq"]
+        samples = [r for r in published if r["decision"] == seq]
+        posts = [r for r in later if r["decision"] == seq]
+        if not samples:
+            result["gaps"].append(f"no sampled release for UART decision {seq}")
+            continue
+        sample = samples[0]
+        for row in samples+posts:
+            require([row[k] for k in ("decision","event_kind","op","src","dst","releases")] ==
+                    [event[k] for k in ("seq","kind","op","src","dst","releases")],
+                    "sampled release identity vs UART")
+        require(0 <= seq < 1024 and sample["pc"] == 0x402036b8 and
+                sample["pa"] == 0x4021a328 + 312*seq + 224, "actual decision publication address")
+        active = event["src"] == 0
+        irq = event["kind"] == 1 and event["op"] & 1023 == 30
+        clock = event["kind"] == 2 and event["op"] == 6
+        recheck = clock_return_recheck(event)
+        entry_kind = ("timer IRQ" if irq else "clock SVC" if clock else
+                      "EL1 return recheck after clock SVC" if recheck else "other")
+        item = dict(decision=seq, cause=entry_kind, source=event["src"],target=event["dst"],
+                    release=sample, next_publication=posts[0] if posts else None,
+                    incumbent_retained=active and event["dst"] == 0,
+                    prior_stores=sample["count"], prior_private_word=sample["value"])
+        observations.append(item)
+        if sample["value"] is None:
+            result["gaps"].append(f"no qualified private word at release {seq}")
+        if posts:
+            post = posts[0]
+            require(post["seq"] > sample["seq"] and post["pc"] == 0x400964 and
+                    post["pa"] == progress_pa and post["count"] == sample["count"]+1,
+                    "first subsequent A publication identity/count")
+            if post["value"] is None:
+                result["gaps"].append(f"no qualified private word after release {seq}")
+            else:
+                require(post["sum"] == 522240*post["value"], "uncompleted post-release publication")
+        else:
+            result["gaps"].append(f"no subsequent A publication sampled for decision {seq}")
+        if not active or event["dst"] != 0 or not sample["count"]:
+            result["gaps"].append(f"running A with useful prior work was not retained at decision {seq}")
+        elif not (irq or clock or recheck):
+            result["gaps"].append(f"unqualified exception cause at decision {seq}")
+        elif not recheck and not trace_matches(target,event,event["dst_pc"]):
+            result["gaps"].append(f"no matching exception/ERET for decision {seq}")
+        if active and event["dst"] == 0:
+            require(all(event["src_"+k] == event["dst_"+k] for k in ("pc","sp","pstate","frame","root")),
+                    "SJF incumbent context differs on return")
+    if result["queued_exit_order"] != [0,1,2]:
+        result["gaps"].append("expected A/B/C completion order was not observed")
+
+
 def observed(args):
     target = args.out / args.case
     session, mem, stacks, outputs, events = inputs(args.products,args.case,target,args.session_sha256)
@@ -209,16 +346,42 @@ def observed(args):
     release_mask = 2 if args.case == CASES[0] else 6
     arrivals = [e for e in events if e["releases"] & release_mask]
     result["release_events"] = arrivals
+    corrected = "accepted" in terminal[0]
+    if corrected and args.case == CASES[1]:
+        measured_sjf(target,rows,arrivals,events,progress_pa,result)
+        if not gap(len(arrivals) == 1 and arrivals[0]["releases"] & 6 == 6,
+                   "peers did not arrive in one decision"):
+            return result
+        e = arrivals[0]
+        if e["src"] == e["dst"] == 0 and ((e["kind"],e["op"]) == (2,6) or clock_return_recheck(e)):
+            timed_sjf_retention(target,args.products/args.case/"user.elf",events,e,first[0],terminal[0],
+                                result, measured=True)
+            direct = result["measured_peer_admissions"]
+            if direct:
+                clock_row = result["clock_release"]
+                clock_row["simultaneous_private_word"] = direct[0]["prior_private_word"]
+                post = direct[0]["next_publication"]
+                clock_row["immediate_post_return_private_word"] = post["value"] if post else None
+                if direct[0]["prior_private_word"] is not None and "inferred_completed_blocks" in clock_row:
+                    require(clock_row["inferred_completed_blocks"] == direct[0]["prior_private_word"],
+                            "measured release word differs from clock reconstruction")
+        return result
     if not gap(len(arrivals) == 1, "release grouping differs from the frozen position"):
         return result
     e = arrivals[0]
-    if not gap(e["src"] == 0 and e["kind"] == 1 and e["op"] & 1023 == 30,
-               "no active A at a lower-EL release IRQ; prior useful work and retention unavailable"):
+    if args.case == CASES[1] and e["src"] == 0 and e["kind"] == 2 and e["op"] == 6:
+        timed_sjf_retention(target,args.products/args.case/"user.elf",events,e,first[0],terminal[0],result)
+        return result
+    if e["src"] != 0:
+        gap(False, "A was not running at peer admission; incumbent retention unavailable")
         result["initial_dispatch"] = next((x for x in events if x["dst"] == 0),None)
         result["idle_irq_records"] = select("idle-irq")
         result["initial_store_count"] = select("idle-irq")[0]["count"] if select("idle-irq") else None
         if args.case == CASES[1]:
             result["queued_exit_order"] = [x["src"] for x in events if x["kind"] == 2 and x["op"] == 1]
+        return result
+    if not gap(e["kind"] == 1 and e["op"] & 1023 == 30,
+               "active A release was outside the sampled lower-EL IRQ path"):
         return result
     expected_dst = 1 if args.case == CASES[0] else 0
     require(e["dst"] == expected_dst, "release choice")
@@ -236,11 +399,42 @@ def observed(args):
         back = e
     gap(trace_matches(target,e,e["dst_pc"]) and trace_matches(target,back,back["dst_pc"]),
         "external exception/ERET chain unavailable")
+    if corrected and args.case == CASES[0]:
+        transfers = [r for r in rows if r["seq"] > saved["seq"] and r["kind"] in ("restore","eret")]
+        if not gap([r["kind"] for r in transfers] == ["restore","eret","restore","eret"],
+                   "incomplete pair of accepted B/A returns"):
+            return result
+        require(saved["pc"] == 0x40201290 and 0x40ab1000 <= saved["pa"] <= 0x40ab5000-832
+                and saved["pa"] % 16 == 0, "IRQ frame save location")
+        for i, dest_event in enumerate((e,back)):
+            restore, eret = transfers[2*i:2*i+2]
+            n = i+1
+            require(restore["pc"] == 0x402013e8 and restore["accepted"] == n and
+                    restore["restore_execs"] >= n and restore["erets"] == i and
+                    0x40ab1000 <= restore["pa"] <= 0x40ab5000-832 and restore["pa"] % 16 == 0 and
+                    eret["pc"] == 0x40201480 and eret["erets"] == eret["accepted"] == n and
+                    eret["restore_execs"] == restore["restore_execs"], "accepted LDP/ERET ordering")
+            operand = restore.get("frame")
+            if not gap(operand is not None, "accepted operand unavailable for selection " + str(n)):
+                return result
+            require(len(operand) == 35 and operand[32:] ==
+                    [dest_event["dst_pstate"],dest_event["dst_pc"],dest_event["dst_sp"]],
+                    "accepted operand vs selected context")
+        app = elf_file((args.products/args.case/"user.elf").read_bytes())
+        reduction, length = symbol(app,"batch_reduce")
+        if not gap(reduction <= e["src_pc"] < reduction+length and e["src_root"] == back["dst_root"] and
+                   saved.get("value") is not None and
+                   trace_matches(target,e,e["dst_pc"]) and trace_matches(target,back,back["dst_pc"]),
+                   "productive A interruption, private sample or external B/A returns unavailable"):
+            return result
     before = saved.get("frame")
     if not gap(before is not None, "saved integer operand unavailable"):
         return result
     require(len(before) == 35 and before[32:35] == [e["src_pstate"],e["src_pc"],e["src_sp"]],
             "interrupt frame vs UART")
+    if corrected and args.case == CASES[0]:
+        require(saved["value"] == (before[21] & 0xffffffff)-1 and
+                saved["sum"] == 522240*saved["value"], "productive W21 vs sampled completed work")
     restores = [r for r in select("restore",saved["seq"]) if r.get("frame") is not None and
                 r["frame"][32:35] == [back["dst_pstate"],back["dst_pc"],back["dst_sp"]]]
     if not gap(len(restores) == 1, "no unique independently sampled A restore operand"):
@@ -254,6 +448,11 @@ def observed(args):
     post = select("post-progress",erets[0]["seq"])
     if gap(bool(post), "first post-return publication unavailable"):
         observation = post[0]
+        if corrected:
+            require(len(post) == 1 and observation["pc"] == 0x400a40 and observation["pa"] == progress_pa,
+                    "first post-ERET A publication identity")
+            if observation["value"] is not None:
+                require(observation["sum"] == 522240*observation["value"], "first post-ERET result")
         gap(observation["count"] == saved["count"]+1 and observation.get("value") is not None and
             saved.get("value") is not None and observation["value"] == saved["value"]+1,
             "numeric first post-return advance unavailable")
