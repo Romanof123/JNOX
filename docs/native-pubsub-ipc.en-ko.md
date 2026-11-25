@@ -1,8 +1,8 @@
 # Native publish/subscribe service / 네이티브 발행·구독 서비스
 
-CHG-309 follows REQ-024 → DES-013 → IPC-008 → VER-024. The planned local deployment uses four separately linked ordinary AArch64 EL0 processes on one QEMU virt CPU under fixed-priority FIFO and RR. One application publishes, two others subscribe and an isolated broker owns the topic and subscriber queues. IPC-008 remains open. The approved IPC family count under #24 is 5/10. [IPC-008 #384](https://github.com/Romanof123/JNOX/issues/384) · [IPC acceptance #24](https://github.com/Romanof123/JNOX/issues/24)
+CHG-309 follows REQ-024 → DES-013 → IPC-008 → VER-024. The planned local deployment uses four separately linked ordinary AArch64 EL0 processes on one QEMU virt CPU under fixed-priority FIFO and RR. One application publishes, two others subscribe and an isolated broker owns the topic and subscriber queues. [IPC-008 #384](https://github.com/Romanof123/JNOX/issues/384) · [IPC acceptance #24](https://github.com/Romanof123/JNOX/issues/24)
 
-CHG-309의 로컬 배포는 단일 코어 AArch64 QEMU virt에서 고정 우선순위 FIFO·RR로 각각 링크한 일반 EL0 프로세스 네 개를 실행한다. 발행자 하나, 구독자 둘, 토픽과 구독 큐를 소유하는 브로커 하나다. IPC-008은 검증 전이며 #24에서 승인된 계열은 5/10이다.
+CHG-309의 로컬 배포는 단일 코어 AArch64 QEMU virt에서 고정 우선순위 FIFO·RR로 각각 링크한 일반 EL0 프로세스 네 개를 실행한다. 발행자 하나, 구독자 둘, 토픽과 구독 큐를 소유하는 브로커 하나다.
 
 ## Authority and lifetime / 권한과 수명
 
@@ -31,3 +31,9 @@ Run the four distinct ELFs on both schedulers. Record package and ELF hashes, sl
 * 준비 전에 취소되거나 기한이 만료된 원시 RPC의 토큰과 브로커 반영 시점을 기록한다. 호출자가 후속 RPC를 보내기 전에 다른 프로세스에서 준비 조건을 만든다. 늦은 전달·샘플 소비·카운터 변경이 없는지 확인하고, 반대 순서에서는 일치하는 토큰으로 정확히 한 번만 전달되는지 확인한다.
 
 This profile covers local IPC only. A remote bridge requires its own transport and evidence. / 이번 범위는 로컬 IPC다. 원격 브리지는 독립된 전송 프로필과 증거가 필요하다.
+
+## Virtual release / 가상 환경 승인
+
+**IMP-309 · EVD-309.** Independent verification covered a C publisher, two subscribers and a Rust broker in four separate EL0 address spaces on single-core AArch64 QEMU virt under FIFO and RR. The active subscriber received IDs 1–8 without loss. The stalled subscriber dropped two samples, retained 1–4 in order, then received 8 after renewing its subscription. The release reproduced deadline ordering and checked broker identity with both socket and publish/subscribe selectors active. Sixteen durable release boots supplement the first ten. [First verification](evidence/native-pubsub-ipc-first.en-ko.md) · [Release and raw data](evidence/native-pubsub-ipc-release.en-ko.md)
+
+단일 가상 CPU의 FIFO·RR에서 활성 구독자는 1~8번 표본을 모두 받았다. 지연 구독자의 손실은 두 건이었으며 재구독 후 8번을 받았다. 소켓과 발행·구독 브로커를 함께 구성해 각 브로커의 수신 권한도 확인했다. 최초 검증 10회와 영구 저장소에 원본을 보존한 통합 검증 16회를 연결한다. [통합 판정과 재현 자료](evidence/native-pubsub-ipc-release.en-ko.md)
