@@ -4,7 +4,7 @@ use super::*;
 use extension_policy::{Extension, Reservation};
 #[path = "native_extension_transaction.rs"]
 mod transaction;
-use transaction::Transaction;
+include!("native_extension_registers.rs");
 use group_policy::DelegatedTask;
 
 const IDLE_ID: usize = 3;
@@ -93,7 +93,7 @@ impl Runtime {
             .min()
             .unwrap_or(deadline)
             .min(deadline);
-        arm_compare(Some(self.compare));
+        extension_arm!(self, Some(self.compare));
         unsafe {
             native_server_compare = if self.owner < 3 { self.end } else { NONE };
         }
@@ -255,7 +255,7 @@ fn settle(
         r.owner = END;
         r.tx.abandon();
         r.compare = 0;
-        arm_compare(None);
+        extension_arm!(r, None);
     } else {
         if physical && now >= r.epoch {
             let k = (now - r.epoch) / r.quantum;
@@ -416,7 +416,7 @@ extern "C" fn native_server_reselect(at: u64, frame: *mut NativeFrame) -> u64 {
     (next < 3) as u64
 }
 pub(super) fn irq(entry: u64, frame: *mut NativeFrame, iar: u32) -> u64 {
-    before_event();
+    before_irq_event!(iar, frame);
     let f = unsafe { frame.as_mut() };
     let next = settle(entry, 1, u64::from(iar), 0, f.as_deref(), Action::Keep);
     if iar & 1023 < 1020 {
@@ -487,6 +487,8 @@ fn finish() -> ! {
         print(b"EVENT", unsafe { &*(&raw const ROWS[i]) });
     }
     print(b"DROPPED", &[r.dropped]);
+    #[cfg(jnox_native_extension_register_observations)]
+    registers::emit();
     for i in 0..3 {
         event(b"EXIT", i, Some(i64::from(unsafe { EXIT_STATUS[i] })));
     }

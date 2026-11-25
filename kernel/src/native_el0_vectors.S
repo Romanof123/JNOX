@@ -302,7 +302,32 @@ native_el0_enter:
     str x10,[sp,#824]
 .endm
 
+.ifdef NATIVE_EXTENSION_REGISTERS
+// IRQ entry is masked. Preserve the incoming registers and SP on either
+// stack. The ordinary entry timestamp remains at its original handler site.
+.macro extension_snapshot_registers
+    stp x9,x10,[sp,#-16]!
+    isb
+    mrs x10,cntpct_el0
+    adrp x9,jnox_extension_reg_scratch
+    add x9,x9,:lo12:jnox_extension_reg_scratch
+    str x10,[x9]
+    mrs x10,spsr_el1
+    str x10,[x9,#8]
+    mrs x10,elr_el1
+    str x10,[x9,#16]
+    add x10,sp,#16
+    str x10,[x9,#24]
+    adrp x10,jnox_extension_reg_generation
+    ldr x10,[x10,:lo12:jnox_extension_reg_generation]
+    str x10,[x9,#32]
+    ldp x9,x10,[sp],#16
+.endm
+.endif
 .Luser_irq:
+    .ifdef NATIVE_EXTENSION_REGISTERS
+    extension_snapshot_registers
+    .endif
     save_native_frame
     .ifdef NATIVE_MEASURED
     mov x1,x2
@@ -543,6 +568,9 @@ native_extension_eval_stack:
     ret
     .endif
 .Lidle_irq:
+    .ifdef NATIVE_EXTENSION_REGISTERS
+    extension_snapshot_registers
+    .endif
     .ifdef NATIVE_EXTENSION
     extension_abort_stack
     .endif

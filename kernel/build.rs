@@ -384,6 +384,13 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_extension)");
     assert!(selector("JNOX_NATIVE_EXTENSION_STOP_BENCH").is_none(),
             "use the source-built native extension cohort packager");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_extension_register_observations)");
+    if let Some(value) = selector("JNOX_NATIVE_EXTENSION_REGISTER_OBSERVATIONS") {
+        assert!(value == "1" && board == "virt" && profile.as_deref() == Some("native")
+                && app.as_deref() == Some("process") && policy.as_deref() == Some("extension"),
+                "register observations require the virt native extension profile and value 1");
+        println!("cargo::rustc-cfg=jnox_native_extension_register_observations");
+    }
     let extension = selector("JNOX_NATIVE_EXTENSION_PROGRAM");
     let extension_hash = selector("JNOX_NATIVE_EXTENSION_SHA256");
     assert_eq!(extension.is_some(), policy.as_deref() == Some("extension"), "extension policy requires a program");
