@@ -460,6 +460,12 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_amc)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_peer3)");
     let amc = selector("JNOX_NATIVE_AMC_MANIFEST");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_amc_clock_page)");
+    if let Some(setting) = selector("JNOX_AMC_CLOCK_PAGE") {
+        assert!(setting == "1" && amc.is_some() && policy.as_deref() == Some("amc"),
+                "JNOX_AMC_CLOCK_PAGE requires value 1 and native AMC");
+        println!("cargo::rustc-cfg=jnox_native_amc_clock_page");
+    }
     let amc_sha = selector("JNOX_NATIVE_AMC_SHA256");
     assert_eq!(amc.is_some(), policy.as_deref() == Some("amc"), "AMC requires a canonical manifest exclusively");
     assert_eq!(amc.is_some(), amc_sha.is_some(), "AMC requires a canonical digest");

@@ -328,12 +328,13 @@ def main():
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
-                        help="independently linked peer in slot order (up to two)")
+                        help="independently linked peer in slot order (up to three peers for AMC, two for other policies)")
     parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--extension-program", type=Path, action=SinglePath, metavar="RULE.txt")
+    parser.add_argument("--amc-clock-page", action="count", default=0)
     parser.add_argument("--amc-manifest", type=Path, action=SinglePath, metavar="DEPLOYMENT.json")
     parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
@@ -459,6 +460,8 @@ def main():
             ops = parse_program(rule_source)
         except (ValueError, OSError) as exc:
             parser.error(f"invalid --extension-program: {exc}")
+    if args.amc_clock_page and (args.amc_clock_page != 1 or policy != "amc"):
+        parser.error("--amc-clock-page is accepted once, only with --policy amc")
     if (args.amc_manifest is not None) != (policy == "amc"):
         parser.error("--amc-manifest is required exclusively with --policy amc")
     if policy == "amc":
@@ -528,6 +531,9 @@ def main():
         metadata.update(amc=amc, amc_input={"path": str(amc_path), "sha256": inputs[str(amc_path)]},
                         amc_canonical={"file": canonical.name, "sha256": digest},
                         timing_unit="cells", package_argv=sys.argv[:])
+        metadata["amc_clock_page"] = {"enabled": bool(args.amc_clock_page), "abi": 1, "va": 0x01400000}
+        if args.amc_clock_page:
+            env["JNOX_AMC_CLOCK_PAGE"] = "1"
         env.update(JNOX_NATIVE_AMC_MANIFEST=str(canonical), JNOX_NATIVE_AMC_SHA256=digest)
     if policy == "hierarchy":
         name = str(hierarchy_path.relative_to(ROOT) if hierarchy_path.is_relative_to(ROOT) else hierarchy_path)
