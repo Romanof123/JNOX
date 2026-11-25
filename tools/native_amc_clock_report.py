@@ -4,7 +4,6 @@ import argparse
 from collections import Counter, defaultdict
 import json
 from pathlib import Path
-import re
 import shutil
 import struct
 import subprocess
@@ -114,16 +113,8 @@ class ClockEvidence:
             sequence[dest] = seq
             self.grants[dest].append((R,next_row[2],settled,seq))
         self.report["accepted_publications"] = sum(map(len,self.grants.values()))
-        if self.trace:
-            raw = (root/"exceptions.log").read_text("ascii")
-            observed = [(int(code),int(pc,16)) for code,pc in re.findall(
-                r"Taking exception (2|5) \[(?:SVC|IRQ)\][^\n]*\n\.\.\.from EL0 to EL1\n"
-                r"\.\.\.with ESR [^\n]+\n\.\.\.with ELR (0x[\da-fA-F]+)",raw)]
-            expected = [(2 if r[0] == 2 else 5,r[10]) for r in intervals if r[0] in (1,2) and r[4]<self.count]
-            self.check(observed == expected, "external exception kind/ELR stream")
-            self.report["external_el0_entries"] = len(observed)
-        else:
-            self.report["external_el0_entries"] = None
+        # Filled by the shared linked-vector check for a traced capture.
+        self.report["external_el0_entries"] = None
 
     def pair(self,key,wall,cpu):
         # F=62.5 MHz gives exactly 16 ns per tick. Derive g from the user

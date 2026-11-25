@@ -192,6 +192,38 @@ def overlap_deadline_window(intervals, due):
     return windows[0] if len(windows) == 1 else None
 
 
+def trace_vectors(raw, intervals, count, vector_base, dropped):
+    """Match each CPU0 QEMU exception block to its native AArch64 vector slot."""
+    expected = []
+    for row in intervals:
+        cause, src = row[0], row[4]
+        if cause == 3:
+            continue
+        idle = src == count
+        need(cause in (1, 2) and (not idle or cause == 1), "invalid native exception origin")
+        slot = 5 if idle else 8 if cause == 2 else 9
+        expected.append((b"2 [SVC]" if cause == 2 else b"5 [IRQ]", int(idle),
+                         row[10], vector_base + 128 * slot))
+    lines = iter(raw.splitlines())
+    observed = []
+    for line in lines:
+        if not line.startswith(b"Taking exception"):
+            continue
+        head = re.fullmatch(rb"Taking exception (2 \[SVC\]|5 \[IRQ\])(?: on CPU 0)?", line)
+        origin = re.fullmatch(rb"\.\.\.from EL([01]) to EL1", next(lines, b""))
+        esr = re.fullmatch(rb"\.\.\.with ESR (0x[0-9a-fA-F]+)/(0x[0-9a-fA-F]+)", next(lines, b""))
+        saved = re.fullmatch(rb"\.\.\.with ELR (0x[0-9a-fA-F]+)", next(lines, b""))
+        dest = re.fullmatch(rb"\.\.\.to EL1 PC (0x[0-9a-fA-F]+) PSTATE (0x[0-9a-fA-F]+)", next(lines, b""))
+        need(head and origin and esr and saved and dest, "missing or malformed QEMU exception/vector")
+        if head[1] == b"2 [SVC]":
+            need(int(esr[1], 16) == 0x15 and int(esr[2], 16) == 0x56004a01, "native SVC syndrome")
+        need(int(dest[2], 16) & 0x8f == 0x85, "vector entry requires IRQ-masked EL1h")
+        observed.append((head[1], int(origin[1]), int(saved[1], 16), int(dest[1], 16)))
+    need(observed[:len(expected)] == expected and (dropped or len(observed) == len(expected)),
+         "external exception kind/origin/ELR/vector differs from native interval")
+    return sum(origin == 0 for _, origin, _, _ in observed)
+
+
 def score(a, *, clock=None):
     root = a.root
     need(sha(root / "session.json") == a.digest, "session identity")
@@ -397,12 +429,13 @@ def score(a, *, clock=None):
                 check(sum(r[6] for r in intervals if r[4:6] == (0, 0) and r[2] <= at)
                       == misses[0][6], "LO0 service at recorded deadline fault")
     if launch["trace"]:
-        raw=(root/"exceptions.log").read_bytes()
-        entries=re.findall(rb"Taking exception (?:2 \[SVC\]|5 \[IRQ\])[^\n]*\r?\n\.\.\.from EL0 to EL1\r?\n(?:\.\.\.with ESR [^\n]+\n)?\.\.\.with ELR (0x[0-9a-fA-F]+)",raw)
-        observed=[int(s,16) for s in entries]
-        expected=[r[10] for r in intervals if r[0] in (1,2) and r[4]<count]
+        base, size = symbol(kernel, "native_el0_vectors")
+        need(base % 2048 == 0 and size == 16 * 128, "linked AArch64 native vector table")
+        el0_entries = trace_vectors((root/"exceptions.log").read_bytes(), intervals, count, base, lost)
         if not lost:
-            check(observed==expected and bool(expected),"external EL0 exception PC sequence")
+            check(el0_entries > 0, "missing external EL0 exception stream")
+        if clock:
+            clock.report["external_el0_entries"] = el0_entries
     if not missing and not lost:
         for i,t in enumerate(tasks):
             admissions=[e for e in life if e[0] in (1,2) and e[2]==i]
