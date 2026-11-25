@@ -1,0 +1,11 @@
+# Independent first host verification / 독립 호스트 1차 검증
+
+**Release finding: FAIL / 릴리스 판정: 실패.** A simulated disconnect after two 31-byte reads left 62 original RR bytes, a read log and run identity. The CLI returned 2 and printed the error to stderr. The capture directory lacks result.json, the error, a terminal verdict and a recorded digest. Preserve a machine-readable reason and partial-stream digest on I/O failure and rerun the scenario. 모의 UART 연결을 두 번 읽은 뒤 끊자 원본 62바이트와 읽기 로그는 보존됐지만 수집 디렉터리에는 종료 판정·오류 사유·해시가 없었다. 오류는 표준 오류 출력에만 남았다.
+
+Frozen checkout cb7081a4cacab82d8d31b06e3746192d041ee342, tree 1e055403a50162d0d76ec0a1ca271ed8aefce276. The supplied public commit was absent from this checkout; no independent public-tree comparison. 공개 커밋 객체는 해당 체크아웃에서 확인할 수 없었다.
+
+Windows Python unittest discovery ran all 16 tests from the new native and existing Pi serial suites. The suite includes malformed and duplicate/missing exit controls, package mismatch, truncated endings, retained versus hidden rotation, drop accounting, fragmented reads and legacy linked scheduler regression. Four archived EVD-129 streams passed both file capture and simulated serial entry. Model package archive SHA256 39b5e911a6a0abb040c9749054a3cf5693170f5e5e50d99a48deea8b8b074445. Both Pi 4 packages bind kernel ELF and card image, ordered C and Rust application hashes, and firmware files; see file-*/session.json. FIFO yielded zero rotations, RR 16, zero drops, exits 12 and 77. Archive contains raw captured bytes and per-run hash records. 기존·신규 테스트 총 16개 통과. 원본 네 개의 파일 및 모의 포트 입력이 일치했다. 각 패키지의 커널·카드 이미지·앱·펌웨어 해시는 세션 기록에 있다. FIFO는 교대 0회, RR은 16회이며 종료값은 각각 12와 77이다.
+
+SIMULATED-port directories use the real CLI, prompts, arm logic, reader and recorder with an injected BytesIO serial adapter and simulated operator. The collector's operator_declared_physical field in these directories is a mode label. All UART bytes originate from QEMU model boots; no physical board, USB signaling, timer, private RAM or power cycle was observed. 모의 포트는 일반 CLI 경로를 실행했고 바이트는 QEMU 모델에서 왔다. 실물 보드·전원·UART 전기 신호·실제 타이머 및 전용 RAM은 관측하지 않았다.
+
+[Raw host captures and checks](pi4-native-serial-first.zip) (SHA-256 `1bba1c3dbbca1b9f6545b9fbb9b26120f66992dd504453d868e45b6afc696759`).

@@ -60,3 +60,12 @@ python3 tools/pi4_serial_capture.py --profile pi4-fixed-rr --replay /archive/rr/
 실행마다 세션·실행 ID, 요청 프로필, 정확히 일치한 순서, 첫 불일치 바이트의 오프셋, 호스트 준비 시각과 무응답 관측 시간을 남긴다. 전원 차단 확인과 실제 전원 인가의 입회 기록을 함께 보존한다. EVD-031 모델 및 EVD-014 파일 재생은 호스트 도구 검증용이다. 실물 FIFO/RR 확인은 [#34](https://github.com/Romanof123/JNOX/issues/34)에서 계속 추적한다.
 
 통합 호스트 수집기는 시간 조건 시험 566건, 관찰 API 검사 8건, 모의 포트 사례 4건과 기존 캡처 시험 7건을 통과했다. [Pi 4 직렬 캡처 도구 · 호스트 검증](../evidence/pi4-fixed-serial-host.md)
+
+## 실제 카드의 네이티브 FIFO/RR
+
+[EVD-129 원본 ZIP](../evidence/pi4-native-fixed-applications-first.zip)을 빈 디렉터리에 푼다. 그 루트에서 `p=fifo` 또는 `p=rr`, `repo`를 저장소 경로로 설정한다. 해당 `d905/boot-$p/` 내용을 카드에 준비하고 `d905/$p/` 패키지 전체를 보존한다. 시작 전에 정책별 원본 매니페스트, 커널 ELF와 이미지, 순서가 정해진 앱 ELF 두 개, 펌웨어·설정·빌드 로그를 대조한다. 원래 빌드 경로는 출처 정보다. 재생에서는 불일치 때도 전체 제출 파일을 `replay-input.bin`에 보존한다. 각 결과는 완전한 기록, 남은 앞부분으로 뒷받침되는 관측, 판정 불가능을 구분한다. 두 최초 실행과 전원 입회 기록을 보존한다. UART만으로 복귀 PC/SP, 사적 메모리 결과, 보드 타이밍이나 실제 전원 재인가는 입증할 수 없다.
+
+~~~sh
+python3 "$repo/tools/pi4_serial_capture.py" --profile "pi4-native-$p" --native-manifest "d905/$p/manifest.json" --elf "d905/$p/kernel.elf" --boot-dir /mnt/pi-boot --port /dev/ttyUSB0 --board-revision "$REV" --eeprom "$EEPROM" --witness "$WITNESS" --card-id "$CARD" --adapter-id "$ADAPTER" --boot-dir-source mounted-card --output "physical-$p-01"
+python3 "$repo/tools/pi4_serial_capture.py" --profile "pi4-native-$p" --native-manifest "d905/$p/manifest.json" --elf "d905/$p/kernel.elf" --boot-dir "d905/boot-$p" --replay /archive/run1/uart.bin /archive/run2/uart.bin --boot-dir-source archive --output "replay-$p-01"
+~~~
