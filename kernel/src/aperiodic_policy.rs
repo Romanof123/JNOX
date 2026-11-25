@@ -26,6 +26,7 @@ pub(crate) enum ServerError {
     EmptyRelease,
     BacklogOverflow,
     TimeOverflow,
+    TimeRegression,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,6 +47,7 @@ pub(crate) struct AperiodicServer<const R: usize> {
     backlog: u32,
     replenishments: [Replenishment; R],
     used: usize,
+    capacity: usize,
 }
 
 impl<const R: usize> AperiodicServer<R> {
@@ -63,7 +65,54 @@ impl<const R: usize> AperiodicServer<R> {
             backlog: 0,
             replenishments: [Replenishment { due: 0, amount: 0 }; R],
             used: 0,
+            capacity: R,
         })
+    }
+
+    pub(crate) fn new_live(kind: ServerKind, start: u64, quota: u32, period: u32,
+                           capacity: usize) -> Option<Self> {
+        match kind {
+            ServerKind::Sporadic if !(1..=8).contains(&capacity) || capacity > R => return None,
+            ServerKind::Polling | ServerKind::Deferrable if capacity != 0 => return None,
+            _ => {}
+        }
+        let mut server = Self::new(kind, start, quota, period)?;
+        server.capacity = capacity;
+        Some(server)
+    }
+
+    /// A live grant does not drain demand. Only a real surrender, block or exit
+    /// forfeits any remaining polling authorization before another decision.
+    pub(crate) fn surrender_live(&mut self) {
+        if self.kind == ServerKind::Polling { self.remaining = 0; }
+    }
+
+    pub(crate) fn tick_live(&mut self, runnable: bool, cpu_available: bool) -> Result<bool, ServerError> {
+        self.tick_demand(cpu_available, Some(runnable))
+    }
+
+    /// Settle [now,target) with no grants, in time bounded by the credit table.
+    /// The caller splits intervals at externally observed readiness changes.
+    pub(crate) fn skip_live_to(&mut self, target: u64, runnable: bool) -> Result<(), ServerError> {
+        if target < self.now { return Err(ServerError::TimeRegression); }
+        if target == self.now { return Ok(()); }
+        match self.kind {
+            ServerKind::Sporadic => {
+                let matured = self.pending_replenishments().partition_point(|entry| entry.due < target);
+                // Every pending unit is a previous debit from this same quota.
+                for entry in &self.replenishments[..matured] { self.remaining += entry.amount; }
+                self.replenishments.copy_within(matured..self.used, 0);
+                self.used -= matured;
+            }
+            ServerKind::Polling if !runnable => self.remaining = 0,
+            ServerKind::Polling | ServerKind::Deferrable => {
+                let last = target - 1;
+                let aligned = last - (last - self.start) % u64::from(self.period);
+                if aligned >= self.now { self.remaining = self.quota; }
+            }
+        }
+        self.now = target;
+        Ok(())
     }
 
     pub(crate) fn release(&mut self, work: u32) -> Result<(), ServerError> {
@@ -99,6 +148,10 @@ impl<const R: usize> AperiodicServer<R> {
     /// processes due credits without charging service. Errors leave the clock,
     /// backlog, budget and replenishment queue intact.
     pub(crate) fn tick(&mut self, cpu_available: bool) -> Result<bool, ServerError> {
+        self.tick_demand(cpu_available, None)
+    }
+
+    fn tick_demand(&mut self, cpu_available: bool, live_runnable: Option<bool>) -> Result<bool, ServerError> {
         let next = self.now.checked_add(1).ok_or(ServerError::TimeOverflow)?;
         let period = u64::from(self.period);
         // Due times are strictly increasing and the clock advances one tick
@@ -113,7 +166,7 @@ impl<const R: usize> AperiodicServer<R> {
             }
             _ => self.remaining,
         };
-        let run = cpu_available && self.backlog > 0 && available > 0;
+        let run = cpu_available && live_runnable.unwrap_or(self.backlog > 0) && available > 0;
         let repay_at = if run && self.kind == ServerKind::Sporadic {
             Some(
                 self.now
@@ -129,7 +182,7 @@ impl<const R: usize> AperiodicServer<R> {
             self.used -= 1;
         }
         if let Some(due) = repay_at {
-            if self.used < R {
+            if self.used < self.capacity {
                 self.replenishments[self.used] = Replenishment { due, amount: 1 };
                 self.used += 1;
             } else {
@@ -143,9 +196,9 @@ impl<const R: usize> AperiodicServer<R> {
         self.remaining = available;
         if run {
             self.remaining -= 1;
-            self.backlog -= 1;
+            if live_runnable.is_none() { self.backlog -= 1; }
         }
-        if self.kind == ServerKind::Polling && self.backlog == 0 {
+        if self.kind == ServerKind::Polling && !live_runnable.unwrap_or(self.backlog > 0) {
             self.remaining = 0;
         }
         self.now = next;
@@ -337,4 +390,66 @@ mod tests {
     fn invalid_parameters_and_overflows_preserve_state() {
         assert!(error_checks());
     }
+
+    #[test]
+    fn live_grant_remains_backlogged_until_observed_surrender() {
+        for kind in [ServerKind::Polling, ServerKind::Deferrable] {
+            let mut s = AperiodicServer::<8>::new_live(kind, 0, 3, 5, 0).unwrap();
+            assert_eq!(s.tick_live(true, true), Ok(true));
+            assert_eq!(s.tick_live(true, true), Ok(true));
+            assert_eq!(s.remaining_quota(), 1);
+            s.surrender_live();
+            assert_eq!(s.tick_live(true, true), Ok(kind == ServerKind::Deferrable));
+            s.skip_live_to(5, false).unwrap();
+            assert_eq!(s.tick_live(false, true), Ok(false));
+            assert_eq!(s.tick_live(true, true), Ok(kind == ServerKind::Deferrable));
+        }
+    }
+
+    #[test]
+    fn configured_credit_limit_merges_youngest_and_matures_at_exact_due() {
+        for cap in 1..=8 {
+            let mut s = AperiodicServer::<8>::new_live(ServerKind::Sporadic, 0, 9, 11, cap).unwrap();
+            for k in 0..9 {
+                assert_eq!(s.tick_live(true, true), Ok(true));
+                assert_eq!(s.remaining_quota() + s.pending_replenishments().iter().map(|x| x.amount).sum::<u32>(), 9);
+                assert_eq!(s.pending_replenishments().len(), (k+1).min(cap));
+            }
+            assert_eq!(s.pending_replenishments()[cap-1], Replenishment { due: 19, amount: 10-cap as u32 });
+            s.surrender_live();
+            s.skip_live_to(19, false).unwrap();
+            assert_eq!(s.pending_replenishments().len(), 1);
+            assert_eq!(s.remaining_quota(), cap as u32 - 1);
+            assert_eq!(s.tick_live(false, true), Ok(false));
+            assert_eq!(s.remaining_quota(), 9);
+        }
+    }
+
+    #[test]
+    fn skipped_live_cells_match_unavailable_individual_ticks() {
+        for kind in [ServerKind::Polling, ServerKind::Deferrable, ServerKind::Sporadic] {
+            for end in 20..35 {
+                for runnable in [true, false] {
+                    let cap = if kind == ServerKind::Sporadic { 2 } else { 0 };
+                    let make = || AperiodicServer::<8>::new_live(kind, 17, 3, 5, cap).unwrap();
+                    let (mut batched, mut stepped) = (make(), make());
+                    for s in [&mut batched, &mut stepped] {
+                        for _ in 0..3 { assert_eq!(s.tick_live(true, true), Ok(true)); }
+                    }
+                    batched.skip_live_to(end, runnable).unwrap();
+                    while stepped.now() < end { assert_eq!(stepped.tick_live(runnable, false), Ok(false)); }
+                    assert_eq!(batched.remaining_quota(), stepped.remaining_quota());
+                    assert_eq!(batched.pending_replenishments(), stepped.pending_replenishments());
+                    assert_eq!(batched.skip_live_to(end-1, runnable), Err(ServerError::TimeRegression));
+                    assert_eq!(batched.now(), end);
+                }
+            }
+        }
+        for cap in [0, 9] {
+            assert!(AperiodicServer::<8>::new_live(ServerKind::Sporadic, 0, 2, 5, cap).is_none());
+        }
+        assert!(AperiodicServer::<1>::new_live(ServerKind::Sporadic, 0, 2, 5, 2).is_none());
+        assert!(AperiodicServer::<8>::new_live(ServerKind::Polling, 0, 2, 5, 1).is_none());
+    }
+
 }
