@@ -65,7 +65,9 @@ global_asm!(".set NATIVE_SERVER,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\
 #[cfg(jnox_native_hierarchy)]
 #[path = "native_hierarchy.rs"]
 mod hierarchy;
-#[cfg(any(jnox_native_partition, jnox_native_hierarchy))]
+#[cfg(jnox_native_hierarchy)]
+global_asm!(".set NATIVE_HIERARCHY,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_cyclic_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(jnox_native_partition)]
 global_asm!(".set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_cyclic_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
 #[cfg(not(any(jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));

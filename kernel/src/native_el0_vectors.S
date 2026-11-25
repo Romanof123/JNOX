@@ -355,6 +355,16 @@ native_cyclic_idle_landing:
     mrs x0,cntpct_el0
     bl native_cyclic_idle_sample
     .endif
+    .ifdef NATIVE_HIERARCHY
+    // The previously sampled landing precedes this masked boundary. No
+    // instrumentation executes between DAIFClr and the existing ISB/WFI.
+    adrp x0,native_hierarchy_pre_unmask
+    add x0,x0,:lo12:native_hierarchy_pre_unmask
+    mrs x2,daif
+    isb
+    mrs x1,cntpct_el0
+    stp x1,x2,[x0]
+    .endif
     msr daifclr,#2
     isb
 .global native_sleep_idle

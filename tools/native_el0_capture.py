@@ -120,12 +120,22 @@ def capture(args):
 
                 pipe = Pipe()
                 request(pipe, "qmp_capabilities")
+                hierarchy_health = False
                 while proc.poll() is None:
                     uart = root / "uart.bin"
                     if uart.exists():
-                        if uart.stat().st_size > 1 << 20:
+                        # Up to 4096 EVENT/TIMER pairs, each with 69 decimal u64 fields.
+                        size = uart.stat().st_size
+                        if size > 8 << 20:
                             raise ValueError("oversize UART")
+                        if size > 1 << 20 and not hierarchy_health:
+                            with uart.open("rb") as stream:
+                                hierarchy_health = b"\nNATIVE HIERARCHY TIMER " in stream.read(1 << 20)
+                            if not hierarchy_health:
+                                raise ValueError("oversize UART")
                         raw = uart.read_bytes()
+                        if not hierarchy_health:
+                            hierarchy_health = bool(re.search(rb"(?m)^NATIVE HIERARCHY HEALTH 1 ", raw))
                         exits = {}
                         if manifest and len(manifest["slots"]) > 1:
                             exits = {int(i): int(code) for i, code in re.findall(
@@ -135,6 +145,13 @@ def capture(args):
                             raw,
                         )
                         all_slots = manifest and set(exits) == set(range(len(manifest["slots"])))
+                        fault = terminal and terminal[1].startswith(b"FAULT ")
+                        if (terminal or all_slots) and hierarchy_health and not fault:
+                            # HEALTH precedes the exits. A fragmented final line is not a footer.
+                            last_exit = raw.rfind(b"NATIVE EL0 EXIT ")
+                            if not re.search(rb"(?m)^NATIVE HIERARCHY HEALTH END 1\r?\n", raw[last_exit:]):
+                                time.sleep(0.005)
+                                continue
                         if terminal or all_slots:
                             request(pipe, "stop")
                             request(
