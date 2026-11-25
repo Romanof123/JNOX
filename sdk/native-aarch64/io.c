@@ -70,27 +70,78 @@ int sched_yield(void)
     return (int)service(JNOX_CALL_SCHED_YIELD, 0, 0, 0);
 }
 
+#ifdef JNOX_SDK_PIPES
+#include "pipe_io.inc"
+#endif
+#ifdef JNOX_SDK_NATIVE_SHELL
+#include "native_shell_io.inc"
+#endif
+
 int open(const char *path, int flags, ...)
 {
+#ifdef JNOX_SDK_PIPES
+    long n = fifo_name_length(path);
+    if (n == -EFAULT) return pipe_result(n);
+    if (n > 0) {
+        long fd = raw_service(45, (long)path, n, flags, 0);
+        if (fd >= 0) return (int)fd;
+        if (fd != -ENOENT && fd != -ENOSYS) return pipe_result(fd);
+    }
+#endif
+#ifdef JNOX_SDK_NATIVE_SHELL
+    return (int)pipe_result(boot_file_open(path, flags));
+#else
     if (flags != O_RDONLY) {
         errno = EINVAL;
         return -1;
     }
+#ifdef JNOX_SDK_PIPES
+    int ordinary = (int)service(JNOX_CALL_OPEN, (long)path, flags, 0);
+    if (ordinary >= 0 && ordinary <= PIPE_LAST_FD)
+        pipe_closed[ordinary] = 0;
+    return ordinary;
+#else
     return (int)service(JNOX_CALL_OPEN, (long)path, flags, 0);
+#endif
+#endif
 }
 
 ssize_t read(int fd, void *buffer, size_t count)
 {
+#ifdef JNOX_SDK_PIPES
+    long owned = pipe_owned(fd);
+    if (owned < 0) return pipe_result(owned);
+    if (owned) return service(46, fd, (long)buffer, (long)count);
+#endif
+#ifdef JNOX_SDK_NATIVE_SHELL
+    if (boot_fd(fd)) return pipe_result(boot_file_read(fd, buffer, count));
+#endif
     return service(JNOX_CALL_READ, fd, (long)buffer, (long)count);
 }
 
 ssize_t write(int fd, const void *buffer, size_t count)
 {
+#ifdef JNOX_SDK_PIPES
+    long owned = pipe_owned(fd);
+    if (owned < 0) return pipe_result(owned);
+    if (owned) return service(47, fd, (long)buffer, (long)count);
+#endif
+#ifdef JNOX_SDK_NATIVE_SHELL
+    if (boot_fd(fd)) return pipe_result(-EBADF);
+#endif
     return service(JNOX_CALL_WRITE, fd, (long)buffer, (long)count);
 }
 
 int close(int fd)
 {
+#ifdef JNOX_SDK_PIPES
+    long owned = pipe_owned(fd);
+    if (owned < 0) return pipe_result(owned);
+    if (owned) return close_pipe_fd(fd);
+#endif
+#ifdef JNOX_SDK_NATIVE_SHELL
+    if (boot_fd(fd)) return (int)pipe_result(boot_file_close(fd));
+#endif
     return (int)service(JNOX_CALL_CLOSE, fd, 0, 0);
 }
 

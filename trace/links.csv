@@ -2255,3 +2255,13 @@ IPC-006,partially-implemented-by,IMP-307
 IMP-307,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-307
 IMP-307,tested-in,EVD-307
+CHG-308,affects,REQ-024
+REQ-024,partially-implemented-by,IMP-308
+REQ-020,partially-implemented-by,IMP-308
+DES-013,partially-implemented-by,IMP-308
+IPC-007,partially-implemented-by,IMP-308
+IMP-308,partially-verified-by,VER-024
+IMP-308,partially-verified-by,VER-020
+VER-024,has-partial-evidence,EVD-308
+VER-020,has-partial-evidence,EVD-308
+IMP-308,tested-in,EVD-308

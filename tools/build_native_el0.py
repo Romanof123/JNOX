@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from native_shell_rom import shell_package
 from native_extension_program import parse_program
 from native_amc_roots import linked_roots
 from native_hierarchy import parse_topology, unique_keys
@@ -85,6 +86,43 @@ def unsigned_decimal(value):
     if not (value.isascii() and value.isdecimal()):
         raise argparse.ArgumentTypeError("expected unsigned decimal digits")
     return int(value)
+
+
+def pipe_fields(value):
+    return tuple(unsigned_decimal(field) for field in value.split(":"))
+
+
+def validate_pipes(parser, args, policy, board):
+    if not args.pipes:
+        if args.fifo_grant or args.pipe_link:
+            parser.error("--fifo-grant and --pipe-link require --pipes")
+        return
+    slots = len(args.peer_elf) + 1
+    if args.pipes != 1 or board != "virt" or policy not in ("fifo", "rr") or args.threads or slots > 3:
+        parser.error("--pipes requires one to three ordinary FIFO/RR processes on virt")
+    owners = set()
+    for grant in args.fifo_grant:
+        if len(grant) != 3:
+            parser.error("--fifo-grant requires OWNER:READERMASK:WRITERMASK")
+        owner, readers, writers = grant
+        if owner >= slots or owner in owners or not readers or not writers or (readers | writers) >= (1 << slots):
+            parser.error("duplicate FIFO owner, empty grant, or slot outside package")
+        owners.add(owner)
+    if len(args.pipe_link) > 4:
+        parser.error("at most four boot pipe links")
+    occupied = set()
+    references = [0] * slots
+    for link in args.pipe_link:
+        if len(link) != 4:
+            parser.error("--pipe-link requires WRITER:WFD:READER:RFD")
+        writer, wfd, reader, rfd = link
+        for slot, fd in ((writer, wfd), (reader, rfd)):
+            if slot >= slots or fd > 10 or (slot, fd) in occupied:
+                parser.error("pipe link has an unavailable slot or descriptor")
+            if references[slot] >= 8:
+                parser.error("at most eight pipe descriptors per process")
+            occupied.add((slot, fd))
+            references[slot] += 1
 
 
 def allotments(value):
@@ -391,6 +429,15 @@ def main():
                         help="grant a send right to another native FIFO/RR process's mailbox")
     parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
                         help="grant a notification right to another native FIFO/RR process")
+    parser.add_argument("--exec-child", action="append", default=[], metavar="SLOT:NAME",
+                        help="reserve child executable slot 1 or 2 in a native shell package")
+    parser.add_argument("--rom-file", action="append", default=[], metavar="NAME=FILE",
+                        help="embed a host file under an immutable guest basename")
+    parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
+    parser.add_argument("--fifo-grant", type=pipe_fields, action="append", default=[],
+                        metavar="OWNER:READERMASK:WRITERMASK")
+    parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
+                        metavar="WRITER:WFD:READER:RFD")
     parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
@@ -438,6 +485,15 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
+    validate_pipes(parser, args, policy, board)
+    shell = None
+    if args.exec_child or args.rom_file:
+        if not args.pipes or len(args.peer_elf) != 2:
+            parser.error("shell packaging requires --pipes and exactly two peer ELFs")
+        try:
+            shell = shell_package(args.exec_child, args.rom_file)
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
     grants = [
         ("ipc", "caller", "server", sorted(args.ipc_route)),
         ("mailbox", "caller", "owner", sorted(args.mailbox_route)),
@@ -564,6 +620,24 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if shell is not None:
+        names, files, image = shell
+        rom = out / "native_shell.rom"
+        rom.write_bytes(image)
+        digest = hashlib.sha256(image).hexdigest()
+        env.update(JNOX_NATIVE_EXEC_CHILDREN=f"1:{names[1]},2:{names[2]}",
+                   JNOX_NATIVE_ROM_IMAGE=str(rom), JNOX_NATIVE_ROM_SHA256=digest)
+        metadata.update(exec_names=names, rom_image=rom.name, rom_sha256=digest, rom_files=files)
+    if args.pipes:
+        env["JNOX_NATIVE_PIPES"] = "1"
+        fifo_grants = sorted(args.fifo_grant)
+        for key, rows in (("JNOX_NATIVE_FIFO_GRANTS", fifo_grants), ("JNOX_NATIVE_PIPE_LINKS", args.pipe_link)):
+            if rows:
+                env[key] = ",".join(":".join(map(str, row)) for row in rows)
+        metadata.update(pipes=True,
+                        fifo_grants=[dict(owner=o, reader_mask=r, writer_mask=w) for o, r, w in fifo_grants],
+                        pipe_links=[dict(writer=w, writer_fd=a, reader=r, reader_fd=b) for w, a, r, b in args.pipe_link],
+                        package_argv=sys.argv[:])
     if args.net_service:
         env["JNOX_NATIVE_NET_SERVICE"] = str(service_slot)
         metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",

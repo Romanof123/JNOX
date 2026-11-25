@@ -1,7 +1,6 @@
 #ifndef JNOX_ERRNO_H
 #define JNOX_ERRNO_H
 #define EPERM 1
-#define ENOENT 2
 #define ESRCH 3
 #define EAGAIN 11
 #define EBUSY 16
@@ -12,13 +11,18 @@
 #define EINVAL 22
 #define ENOSYS 38
 #define ENOTSUP 95
+#define ENOENT 2
+#define ENXIO 6
 #define EBADF 9
-#define EIO 5
 #define EACCES 13
+#define EEXIST 17
 #define ENFILE 23
 #define EMFILE 24
+#define ENOSPC 28
 #define EPIPE 32
 #define ENAMETOOLONG 36
+#define ETIMEDOUT 110
+#define EIO 5
 #define EWOULDBLOCK EAGAIN
 #define EDESTADDRREQ 89
 #define EMSGSIZE 90
@@ -29,7 +33,6 @@
 #define EISCONN 106
 #define ENOTCONN 107
 #define ECONNREFUSED 111
-#define ETIMEDOUT 110
 int *__jnox_errno_location(void);
 #define errno (*__jnox_errno_location())
 #endif
