@@ -14,15 +14,22 @@ int *__jnox_errno_location(void)
 }
 
 /* EL1 preserves all user GPRs except the x0 result across this exception. */
-static long service(long id, long first, long second, long third)
+static long raw_service(long id, long first, long second, long third, long fourth)
 {
     register long x0 __asm__("x0") = first;
     register long x1 __asm__("x1") = second;
     register long x2 __asm__("x2") = third;
+    register long x3 __asm__("x3") = fourth;
     register long x8 __asm__("x8") = id;
     __asm__ volatile("svc %c[trap]" : "+r"(x0)
-                     : "r"(x1), "r"(x2), "r"(x8), [trap] "i"(JNOX_ABI_SVC)
+                     : "r"(x1), "r"(x2), "r"(x3), "r"(x8), [trap] "i"(JNOX_ABI_SVC)
                      : "memory", "cc");
+    return x0;
+}
+
+static long service(long id, long first, long second, long third)
+{
+    long x0 = raw_service(id, first, second, third, 0);
     if (x0 < 0) {
         /* The supervisor ABI limits errno to 1..4095. */
         errno = (int)-x0;
@@ -62,4 +69,11 @@ _Static_assert(sizeof(struct timespec) == 16 &&
 int clock_gettime(clockid_t clock, struct timespec *result)
 {
     return (int)service(JNOX_CALL_CLOCK_GETTIME, clock, (long)result, 0);
+}
+
+int clock_nanosleep(clockid_t clock, int flags, const struct timespec *request,
+                    struct timespec *remaining)
+{
+    (void)remaining;
+    return (int)-raw_service(JNOX_CALL_CLOCK_NANOSLEEP, clock, flags, (long)request, 0);
 }

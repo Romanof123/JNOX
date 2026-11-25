@@ -11,6 +11,7 @@ struct Timespec {
 
 extern "C" {
     fn clock_gettime(clock: i32, result: *mut Timespec) -> i32;
+    fn clock_nanosleep(clock: i32, flags: i32, request: *const Timespec, remaining: *mut Timespec) -> i32;
     fn __jnox_errno_location() -> *mut i32;
     fn __jnox_exit(status: i32) -> !;
 }
@@ -34,6 +35,20 @@ pub fn monotonic_time() -> Result<Duration, ClockError> {
         return Err(ClockError::InvalidTimespec);
     }
     Ok(Duration::new(value.seconds as u64, value.nanoseconds as u32))
+}
+
+/// Sleep until an absolute deadline on the clock returned by `monotonic_time`.
+pub fn sleep_until(deadline: Duration) -> Result<(), ClockError> {
+    const EOVERFLOW: i32 = 75;
+    const CLOCK_MONOTONIC: i32 = 1;
+    const TIMER_ABSTIME: i32 = 1;
+    let request = Timespec {
+        seconds: i64::try_from(deadline.as_secs()).map_err(|_| ClockError::Errno(EOVERFLOW))?,
+        nanoseconds: i64::from(deadline.subsec_nanos()),
+    };
+    // The SDK reads this initialized request and ignores remaining for absolute waits.
+    let code = unsafe { clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &request, core::ptr::null_mut()) };
+    if code == 0 { Ok(()) } else { Err(ClockError::Errno(code)) }
 }
 
 /// Terminate the calling application with its native exit status.
