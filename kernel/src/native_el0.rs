@@ -144,7 +144,7 @@ fn clock_gettime(clock_id: u64, address: usize, now: u64) -> i64 {
 #[derive(Clone, Copy, PartialEq)]
 enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_threads) || cfg!(any(jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
+const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_threads) || cfg!(any(jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
 const EMPTY_FRAME: NativeFrame = NativeFrame {
     x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
     current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
