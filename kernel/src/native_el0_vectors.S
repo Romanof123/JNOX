@@ -47,6 +47,9 @@ native_el0_enter:
     msr elr_el1,x0
     msr sp_el0,x1
     msr spsr_el1,x3
+    .ifdef NATIVE_WEIGHTED
+    bl native_weighted_return
+    .endif
     msr tpidr_el0,xzr
     msr tpidrro_el0,xzr
     msr fpcr,xzr
@@ -110,6 +113,10 @@ native_el0_enter:
     sub sp,sp,#832
     native_integer_pairs stp
     str x30,[sp,#240]
+    .ifdef NATIVE_WEIGHTED
+    isb
+    mrs x2,cntpct_el0
+    .endif
     mrs x9,esr_el1
     str x9,[sp,#248]
     mrs x9,spsr_el1
@@ -130,6 +137,9 @@ native_el0_enter:
 
 .Luser_irq:
     save_native_frame
+    .ifdef NATIVE_WEIGHTED
+    mov x1,x2
+    .endif
     mov x0,sp
     bl native_sleep_irq
     b .Lrestore
@@ -140,6 +150,9 @@ native_el0_enter:
     mov x1,#0x400
     bl native_el0_sync
 .Lrestore:
+    .ifdef NATIVE_WEIGHTED
+    bl native_weighted_return
+    .endif
     ldp x9,x10,[sp,#256]
     tst x9,#0x1f
     b.ne .Lunexpected
@@ -181,6 +194,10 @@ native_sleep_idle:
     // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
     // Its only live value is x19. IRQ entry masked delivery before this call.
     mov x0,xzr
+    .ifdef NATIVE_WEIGHTED
+    isb
+    mrs x1,cntpct_el0
+    .endif
     bl native_sleep_irq
     cbz x0,.Lidle_eret
     adr x9,.Lleave_idle

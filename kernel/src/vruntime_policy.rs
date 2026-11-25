@@ -18,6 +18,14 @@ struct Task {
     ready: bool,
 }
 
+/// Absolute physical comparator for a contended grant.
+pub(crate) fn grant_expiry(start: u64, quantum: u64) -> Option<u64> {
+    if !(1..=i64::MAX as u64).contains(&quantum) {
+        return None;
+    }
+    start.checked_add(quantum)
+}
+
 pub(crate) struct VruntimeScheduler<const N: usize> {
     tasks: [Task; N],
     floor: VirtualTime,
@@ -55,6 +63,10 @@ impl<const N: usize> VruntimeScheduler<N> {
         self.tasks.get(id).map(|task| task.service)
     }
 
+    pub(crate) fn ready(&self, id: usize) -> Option<bool> {
+        self.tasks.get(id).map(|task| task.ready)
+    }
+
     pub(crate) fn floor(&self) -> VirtualTime {
         self.floor
     }
@@ -90,6 +102,15 @@ impl<const N: usize> VruntimeScheduler<N> {
         self.owner = Some(lease);
         self.sequence = sequence;
         Some(lease)
+    }
+
+    /// Release a grant whose start and closing samples coincide.
+    pub(crate) fn retire_zero(&mut self, lease: Lease) -> bool {
+        if self.owner != Some(lease) {
+            return false;
+        }
+        self.owner = None;
+        true
     }
 
     /// Add actual physical counter ticks to the owner and ticks/weight to its
@@ -151,5 +172,26 @@ impl<const N: usize> VruntimeScheduler<N> {
         task.ready = true;
         self.advance_floor();
         true
+    }
+}
+
+#[cfg(test)]
+mod sequence_tests {
+    use super::VruntimeScheduler;
+
+    #[test]
+    fn final_sequence_is_usable_once_and_exhaustion_preserves_accounting() {
+        let mut sched = VruntimeScheduler::new([3]).unwrap();
+        sched.sequence = u64::MAX - 1;
+        let last = sched.dispatch().unwrap();
+        assert_eq!(last.sequence, u64::MAX);
+        assert!(sched.charge(last, 2));
+        assert!(sched.dispatch().is_none());
+        assert_eq!(sched.sequence, u64::MAX);
+        assert_eq!(sched.owner, None);
+        assert_eq!(sched.service(0), Some(2));
+        assert_eq!(sched.runtime(0).unwrap().parts(), (0, 2, 3));
+        assert_eq!(sched.floor().parts(), (0, 2, 3));
+        assert_eq!(sched.ready(0), Some(true));
     }
 }
