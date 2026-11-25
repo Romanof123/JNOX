@@ -4,7 +4,7 @@ use super::*;
 mod feedback_policy;
 #[path = "proportional_policy.rs"]
 mod policy;
-use policy::{NativeWindowInput, Proportional};
+use policy::{FirstRejection, NativeWindowInput, Proportional, Rejection};
 
 const IDLE_OWNER: usize = 3;
 const TERMINAL: usize = 4;
@@ -45,7 +45,7 @@ fn state() -> &'static mut Runtime {
     unsafe {
         (&mut *(&raw mut STATE))
             .as_mut()
-            .unwrap_or_else(|| fail(24))
+            .unwrap_or_else(|| guard(30, 0, 1))
     }
 }
 fn idle_top() -> *mut u8 {
@@ -61,28 +61,32 @@ fn registers() -> (u64, u64, u64) {
     }
     (cval, ctl, root)
 }
+// Single CPU, masked kernel path. Remains readable if normal terminal dump is unreachable.
+static mut FIRST_REJECTION: FirstRejection = FirstRejection(None);
+static mut GUARD_EVENT: [u64; 6] = [0; 6];
+
 fn guard(code: u64, actual: u64, expected: u64) -> ! {
+    rejected(code, Rejection(0, actual as u128, expected as u128, 0))
+}
+
+fn rejected(code: u64, reason: Rejection) -> ! {
+    let words = unsafe { *(&mut *(&raw mut FIRST_REJECTION)).record(code, reason) };
+    let actual = words[2];
+    let expected = words[4];
+
     let (cval, ctl, root) = registers();
     let (pc, pstate, esr, sp, far): (u64, u64, u64, u64, u64);
     unsafe {
         asm!("mrs {}, elr_el1","mrs {}, spsr_el1","mrs {}, esr_el1","mrs {}, sp_el0","mrs {}, far_el1",
         out(reg)pc,out(reg)pstate,out(reg)esr,out(reg)sp,out(reg)far,options(nostack,preserves_flags));
     }
+    let stamp = counter();
+    print(b"PREDICATE", &words);
+    print(b"GUARD_EVENT", &unsafe { GUARD_EVENT });
     print(
         b"FAULT",
         &[
-            code,
-            actual,
-            expected,
-            counter(),
-            cval,
-            ctl,
-            root,
-            pc,
-            pstate,
-            esr,
-            sp,
-            far,
+            code, actual, expected, stamp, cval, ctl, root, pc, pstate, esr, sp, far,
         ],
     );
     fail(24)
@@ -95,6 +99,9 @@ pub(super) fn validate_sync(
     far: u64,
     entry: u64,
 ) {
+    unsafe {
+        GUARD_EVENT = [2, f.x[8], entry, entry, f.x[0], f.x[1]];
+    }
     let expected = &raw const native_el0_vectors as u64;
     let checks = [
         (vector, 0x400),
@@ -133,10 +140,22 @@ extern "C" fn native_weighted_arm_overflow() -> ! {
 }
 
 pub(super) fn start(hz: u64) -> usize {
-    if !(1..=3).contains(&COUNT) || !(1..=i64::MAX as u64).contains(&NATIVE_QUANTUM_TICKS) {
+    if !(1..=3).contains(&COUNT) {
+        rejected(26, Rejection(12, COUNT as u128, 1, 3));
+    }
+    if NATIVE_QUANTUM_TICKS == 0 {
+        guard(27, 0, 1);
+    }
+    if NATIVE_QUANTUM_TICKS > i64::MAX as u64 {
         guard(1, NATIVE_QUANTUM_TICKS, i64::MAX as u64);
     }
-    if !matches!(NATIVE_POLICY, "lottery" | "stride") || (!LOTTERY && NATIVE_LOTTERY_SEED != 0) {
+    if !matches!(NATIVE_POLICY, "lottery" | "stride") {
+        uart_write(b"NATIVE PROP MODE ");
+        uart_write(NATIVE_POLICY.as_bytes());
+        uart_write(b"\n");
+        guard(28, 0, 1);
+    }
+    if !LOTTERY && NATIVE_LOTTERY_SEED != 0 {
         guard(25, NATIVE_LOTTERY_SEED, 0);
     }
     let weights = NATIVE_WEIGHTS.map(|w| u8::try_from(w).unwrap_or(0));
@@ -145,7 +164,13 @@ pub(super) fn start(hz: u64) -> usize {
     } else {
         Proportional::stride(weights)
     }
-    .unwrap_or_else(|| guard(2, 0, 1));
+    .unwrap_or_else(|| {
+        let id = NATIVE_WEIGHTS
+            .iter()
+            .position(|w| !(1..=16).contains(w))
+            .unwrap();
+        rejected(2, Rejection(17, NATIVE_WEIGHTS[id] as u128, 16, id as u128))
+    });
     if NATIVE_LOTTERY_HORIZON != 0
         || NATIVE_LOTTERY_WINDOW != 0
         || NATIVE_LOTTERY_FLOORS.iter().any(|&f| f != 0)
@@ -160,8 +185,8 @@ pub(super) fn start(hz: u64) -> usize {
             width: NATIVE_LOTTERY_WINDOW,
             floors: NATIVE_LOTTERY_FLOORS,
         }
-        .analyze()
-        .unwrap_or_else(|| guard(4, 0, 1));
+        .try_analyze()
+        .unwrap_or_else(|reason| rejected(4, reason));
         if let Some((s, id, count)) = report.first_short {
             print(
                 b"REFUSED",
@@ -175,9 +200,7 @@ pub(super) fn start(hz: u64) -> usize {
             fail(24)
         }
     }
-    if !p.set_ready_mask(ALL) {
-        guard(5, ALL as u64, 0);
-    }
+    p.try_mask(ALL).unwrap_or_else(|reason| rejected(5, reason));
     unsafe {
         STATE = Some(Runtime {
             p,
@@ -281,9 +304,8 @@ enum Action {
     Exit,
 }
 fn mask(r: &mut Runtime, bits: u32) {
-    if !r.p.set_ready_mask(bits) {
-        guard(10, bits as u64, r.p.ready_mask() as u64);
-    }
+    r.p.try_mask(bits)
+        .unwrap_or_else(|reason| rejected(10, reason));
 }
 fn passes(r: &Runtime) -> [u128; COUNT] {
     core::array::from_fn(|id| r.p.pass_wide(id).unwrap_or(0))
@@ -299,6 +321,9 @@ fn step(
     f: Option<&NativeFrame>,
     action: Action,
 ) -> usize {
+    unsafe {
+        GUARD_EVENT = [kind, op, entry, decision, arg, result];
+    }
     let r = state();
     import_arm(r);
     let (cval, ctl, root) = registers();
@@ -337,9 +362,8 @@ fn step(
         let total = r.cumulative[src]
             .checked_add(dt)
             .unwrap_or_else(|| guard(16, dt, u64::MAX - r.cumulative[src]));
-        if !r.p.stop_elapsed(src, dt) {
-            guard(17, src as u64, dt);
-        }
+        r.p.try_stop_elapsed(src, dt)
+            .unwrap_or_else(|reason| rejected(17, reason));
         r.cumulative[src] = total;
         if r.grants <= NATIVE_LOTTERY_HORIZON as u64
             && (!full || before != ALL)
@@ -384,8 +408,8 @@ fn step(
         } else if r.p.ready_mask() == 0 {
             IDLE_OWNER
         } else {
-            r.p.dispatch()
-                .unwrap_or_else(|| guard(18, 0, r.p.ready_mask() as u64))
+            r.p.try_dispatch()
+                .unwrap_or_else(|reason| rejected(18, reason))
         }
     } else {
         src
@@ -565,6 +589,9 @@ extern "C" fn native_prop_late(entry: u64, f: &mut NativeFrame) {
     transfer(next, f);
 }
 pub(super) fn irq(entry: u64, ptr: *mut NativeFrame, iar: u32) -> u64 {
+    unsafe {
+        GUARD_EVENT = [1, iar as u64, entry, entry, ptr as u64, 0];
+    }
     let f = unsafe { ptr.as_mut() };
     if f.is_some() != (state().owner < COUNT) {
         guard(23, f.is_some() as u64, (state().owner < COUNT) as u64);
@@ -597,8 +624,14 @@ pub(super) fn irq(entry: u64, ptr: *mut NativeFrame, iar: u32) -> u64 {
     (next < COUNT) as u64
 }
 pub(super) fn syscall(entry: u64, f: &mut NativeFrame) {
+    unsafe {
+        GUARD_EVENT = [2, f.x[8], entry, entry, f.x[0], f.x[1]];
+    }
     let src = state().owner;
-    if src >= COUNT || src != unsafe { CURRENT } {
+    if src >= COUNT {
+        guard(29, src as u64, COUNT as u64);
+    }
+    if src != unsafe { CURRENT } {
         guard(24, src as u64, unsafe { CURRENT } as u64);
     }
     let op = f.x[8];

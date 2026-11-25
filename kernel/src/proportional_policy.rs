@@ -53,6 +53,26 @@ fn uniform_ticket(state: &mut u64, total: u32) -> Option<Draw> {
     None
 }
 
+/// Stable UART predicate codes. Operands retain both halves of stride arithmetic.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Rejection(pub(crate) u64, pub(crate) u128, pub(crate) u128, pub(crate) u128);
+
+impl Rejection {
+    pub(crate) fn words(self, site: u64) -> [u64; 8] {
+        [site, self.0, self.1 as u64, (self.1 >> 64) as u64,
+         self.2 as u64, (self.2 >> 64) as u64, self.3 as u64, (self.3 >> 64) as u64]
+    }
+}
+
+/// The first parked transition is retained independently of the normal event journal.
+#[derive(Default)]
+pub(crate) struct FirstRejection(pub(crate) Option<[u64; 8]>);
+impl FirstRejection {
+    pub(crate) fn record(&mut self, site: u64, reason: Rejection) -> &[u64; 8] {
+        self.0.get_or_insert_with(|| reason.words(site))
+    }
+}
+
 enum Method<const N: usize> {
     Lottery { state: u64, last_draw: Option<(u32,u32)> },
     Stride { pass: [u128; N], last_base: Option<u128> },
@@ -92,9 +112,14 @@ impl<const N: usize> Proportional<N> {
     }
 
     pub(crate) fn set_ready_mask(&mut self, mask: u32) -> bool {
+        self.try_mask(mask).is_ok()
+    }
+
+    pub(crate) fn try_mask(&mut self, mask:u32)->Result<(),Rejection> {
         let valid = u32::MAX >> (u32::BITS as usize - N);
-        if self.running.is_some() || mask & !valid != 0 {
-            return false;
+        if let Some(id) = self.running { return Err(Rejection(1,id as u128,u64::MAX as u128,mask as u128)); }
+        if mask & !valid != 0 {
+            return Err(Rejection(2, mask as u128, valid as u128, 0));
         }
         if let Method::Stride { pass, .. } = &mut self.method {
             let floor = pass.iter().enumerate()
@@ -114,7 +139,7 @@ impl<const N: usize> Proportional<N> {
             }
         }
         self.ready = mask;
-        true
+        Ok(())
     }
 
     fn tickets(weights: &[u8; N], ready: u32) -> [u32; N] {
@@ -177,23 +202,30 @@ impl<const N: usize> Proportional<N> {
     }
 
     pub(crate) fn dispatch(&mut self) -> Option<usize> {
-        if self.running.is_some() || self.ready == 0 {
-            return None;
+        self.try_dispatch().ok()
+    }
+
+    pub(crate) fn try_dispatch(&mut self)->Result<usize,Rejection> {
+        if let Some(id) = self.running { return Err(Rejection(3,id as u128,u64::MAX as u128,self.ready as u128)); }
+        if self.ready == 0 {
+            return Err(Rejection(4,0,1,0));
         }
         let winner = match &mut self.method {
             Method::Lottery { state, last_draw } => {
                 let tickets = Self::tickets(&self.weights, self.ready);
                 let total = tickets.iter().sum();
-                let draw = uniform_ticket(state, total)?;
+                if total == 0 { return Err(Rejection(5,0,1,self.ready as u128)); }
+                let before = *state;
+                let draw = uniform_ticket(state, total).ok_or_else(|| Rejection(6,before as u128,*state as u128,total as u128))?;
                 *last_draw = Some((draw.ticket, draw.total));
                 #[cfg(any(test, jnox_ordinary_prop, jnox_native_proportional))]
                 { self.audit = Some(draw); }
-                lottery_winner(&tickets, u64::from(draw.ticket)).expect("accepted ticket has an owner")
+                lottery_winner(&tickets, u64::from(draw.ticket)).ok_or(Rejection(7,draw.ticket as u128,total as u128,self.ready as u128))?
             }
             Method::Stride { pass, last_base } => {
                 let winner = (0..N)
                     .filter(|&id| self.ready & (1u32 << id) != 0)
-                    .min_by_key(|&id| (pass[id], id))?;
+                    .min_by_key(|&id| (pass[id], id)).ok_or(Rejection(8,self.ready as u128,N as u128,0))?;
                 let base = pass[winner];
                 for value in pass {
                     // Only sleepers can fall below the floor. Ready passes and
@@ -205,7 +237,7 @@ impl<const N: usize> Proportional<N> {
             }
         };
         self.running = Some(winner);
-        Some(winner)
+        Ok(winner)
     }
 
     /// Caller-supplied actual integer service for this dispatch. Lottery
@@ -219,19 +251,24 @@ impl<const N: usize> Proportional<N> {
     /// Dispatch normalized its winner to zero, so even the maximum possible
     /// charge fits in 84 bits. Other ready passes retain their relative debt.
     pub(crate) fn stop_elapsed(&mut self, id: usize, service: u64) -> bool {
-        if self.running != Some(id) {
-            return false;
+        self.try_stop_elapsed(id, service).is_ok()
+    }
+
+    pub(crate) fn try_stop_elapsed(&mut self,id:usize,service:u64)->Result<(),Rejection> {
+        let owner = self.running.ok_or(Rejection(9,id as u128,u64::MAX as u128,service as u128))?;
+        if owner != id {
+            return Err(Rejection(10,id as u128,owner as u128,service as u128));
         }
         if let Method::Stride { pass, .. } = &mut self.method {
             let stride = u128::from(STRIDE_SCALE / u64::from(self.weights[id]));
             let increment = stride * u128::from(service);
             let Some(charged) = pass[id].checked_add(increment) else {
-                return false;
+                return Err(Rejection(11,pass[id],increment,id as u128));
             };
             pass[id] = charged;
         }
         self.running = None;
-        true
+        Ok(())
     }
 }
 
@@ -287,18 +324,23 @@ impl<const N: usize> NativeWindowInput<N> {
     /// Scratch policy is intentionally distinct from the live policy. Only
     /// aggregates and the first failing predicate can cross this boundary.
     pub(crate) fn analyze(self) -> Option<WindowReport<N>> {
-        if !(1..=3).contains(&N)
-            || !(1..=WINDOW_CAPACITY).contains(&self.horizon)
-            || !(1..=self.horizon).contains(&self.width)
-            || self.floors.iter().any(|&f| usize::from(f) > self.width)
-            || self.floors.iter().map(|&f| usize::from(f)).sum::<usize>() > self.width
-        {
-            return None;
+        self.try_analyze().ok()
+    }
+
+    pub(crate) fn try_analyze(self)->Result<WindowReport<N>,Rejection> {
+        for (code, value, low, high) in [(12,N,1,3),(13,self.horizon,1,WINDOW_CAPACITY),(14,self.width,1,self.horizon)] {
+            if !(low..=high).contains(&value) { return Err(Rejection(code,value as u128,low as u128,high as u128)); }
         }
-        let mut scratch = Proportional::lottery(self.weights, self.seed)?;
-        if !scratch.set_ready_mask((1u32 << N) - 1) {
-            return None;
+        for (id,&floor) in self.floors.iter().enumerate() {
+            if usize::from(floor)>self.width {return Err(Rejection(15,floor as u128,self.width as u128,id as u128));}
         }
+        let sum=self.floors.iter().map(|&f| usize::from(f)).sum::<usize>();
+        if sum>self.width {return Err(Rejection(16,sum as u128,self.width as u128,0));}
+        let mut scratch=Proportional::lottery(self.weights,self.seed).ok_or_else(|| {
+            let id=self.weights.iter().position(|&w| !(1..=MAX_WEIGHT).contains(&w)).unwrap();
+            Rejection(17,self.weights[id] as u128,MAX_WEIGHT as u128,id as u128)
+        })?;
+        scratch.try_mask((1u32 << N)-1)?;
         let mut ring = [0usize; WINDOW_CAPACITY];
         let mut occupancy = [0u8; N];
         let mut report = WindowReport { minimum: [u8::MAX; N], first_short: None };
@@ -306,14 +348,12 @@ impl<const N: usize> NativeWindowInput<N> {
             let index = slot % self.width;
             if slot >= self.width {
                 let previous = ring[index];
-                occupancy[previous] = occupancy[previous].checked_sub(1)?;
+                occupancy[previous] = occupancy[previous].checked_sub(1).ok_or(Rejection(18,0,previous as u128,slot as u128))?;
             }
-            let winner = scratch.dispatch()?;
-            if !scratch.stop(winner, 0) {
-                return None;
-            }
+            let winner = scratch.try_dispatch()?;
+            scratch.try_stop_elapsed(winner,0)?;
             ring[index] = winner;
-            occupancy[winner] = occupancy[winner].checked_add(1)?;
+            occupancy[winner] = occupancy[winner].checked_add(1).ok_or(Rejection(19,255,winner as u128,slot as u128))?;
             if let Some(start) = (slot + 1).checked_sub(self.width) {
                 for (id, &count) in occupancy.iter().enumerate() {
                     report.minimum[id] = report.minimum[id].min(count);
@@ -323,6 +363,42 @@ impl<const N: usize> NativeWindowInput<N> {
                 }
             }
         }
-        Some(report)
+        Ok(report)
+    }
+}
+
+#[cfg(test)]
+mod rejection_tests {
+    use super::*;
+
+    #[test]
+    fn wrong_owner_is_first_and_distinct_from_no_owner() {
+        let mut first = FirstRejection::default();
+        let mut p = Proportional::stride([1,1]).unwrap();
+        assert!(p.set_ready_mask(3));
+        assert_eq!(p.dispatch(), Some(0));
+        let wrong = p.try_stop_elapsed(1,123).unwrap_err();
+        assert_eq!(*first.record(17,wrong),[17,10,1,0,0,0,123,0]);
+        assert!(p.stop_elapsed(0,123));
+        let absent = p.try_stop_elapsed(1,5).unwrap_err();
+        assert_eq!(absent.words(17),[17,9,1,0,u64::MAX,0,5,0]);
+        assert_eq!(*first.record(17,absent),[17,10,1,0,0,0,123,0]);
+    }
+
+    #[test]
+    fn mask_dispatch_window_and_wide_charge_predicates() {
+        let mut p = Proportional::stride([1]).unwrap();
+        assert_eq!(p.try_dispatch(),Err(Rejection(4,0,1,0)));
+        assert_eq!(p.try_mask(2),Err(Rejection(2,2,1,0)));
+        p.try_mask(1).unwrap();
+        p.try_dispatch().unwrap();
+        assert_eq!(p.try_dispatch(),Err(Rejection(3,0,u64::MAX as u128,1)));
+        assert_eq!(p.try_mask(0),Err(Rejection(1,0,u64::MAX as u128,0)));
+        if let Method::Stride{pass,..}=&mut p.method { pass[0]=u128::MAX; }
+        let reason=p.try_stop_elapsed(0,u64::MAX).unwrap_err();
+        let increment=u128::from(STRIDE_SCALE)*u128::from(u64::MAX);
+        assert_eq!(reason.words(17),[17,11,u64::MAX,u64::MAX,increment as u64,(increment>>64) as u64,0,0]);
+        let input=NativeWindowInput{seed:0,weights:[1],horizon:4,width:2,floors:[3]};
+        assert_eq!(input.try_analyze(),Err(Rejection(15,3,2,0)));
     }
 }
