@@ -260,7 +260,10 @@ pub(super) fn boot() {
 }
 pub(super) fn before_loan(pid:usize,op:u64)->Result<(),i32> {
     let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };
-    if (matches!(op,33|34) && pid!=0) || (op==35 && pid!=1) || (op==36 && pid>1) { return Err(-13); }
+    if (matches!(op,33|34) && pid!=0) || (op==35 && pid!=1) || (op==36 && pid>1) {
+        log(9,[pid as u64,op,(-13i64) as u64,s.generation,0,0,0,0]);
+        return Err(-13);
+    }
     let allow_loan = s.gate;
     #[cfg(jnox_native_safety_downstream)]
     let allow_loan = allow_loan || (pid == 1 && matches!(op,35|36) && s.downstream_injected && !s.dead);

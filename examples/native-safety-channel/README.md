@@ -23,6 +23,25 @@ The supervisor distributes a common future raw-counter epoch over synchronous ro
 | boundary | The first rearm is scheduled for 20 ms after issue 0, with the second issue at 10 ms. The first recovery sample is no longer fresh, so output stays off. |
 | one, no-rearm, bad-spacing | Omit respectively the second sample, the rearm command or the required exact spacing (issues 0 and 11 ms). Check output stays off. |
 
+## Active receiver cases / 활성 수신기 시험
+
+For VER-019, start each selector in its own ordinary three-process package under FIFO and RR. Use the existing build command below with the same selector in all three argument vectors. The supervisor waits for the controller to acknowledge accepted sequence 3 with the gate open, output enabled and fault clear. After this acknowledgement the sender offers a single test input at E+24 ms, a valid sequence 4 at E+30 ms, and a sequence 5 withdrawal at E+36 ms. The prior-generation case operates generation 1 before OPEN at E+35 ms and shifts these three times by 40 ms in generation 2. All wire issue times in these selectors are scheduled inputs. The receiver uses its actual post-decode clock. [Acceptance and traceability #397](https://github.com/Romanof123/JNOX/issues/397).
+
+| Selector | Fixed stimulus | Expected private result |
+| --- | --- | --- |
+| `bad-crc`, `bad-header-crc` | Flip the payload permit or the version after computing the checksum | Crc (2) |
+| `bad-length` | Declare 43 bytes inside a 44-byte loan | Length (1) |
+| `bad-version`, `bad-type`, `bad-channel`, `bad-data-id` | Change the selected header field and recompute CRC | Format (3) |
+| `bad-validity`, `bad-permit`, `bad-reserved` | Change the selected payload field and recompute CRC | Format (3) |
+| `duplicate`, `reordered`, `gap` | Deliver sequence 3, 2 or 5 while 4 is expected | Sequence (8) |
+| `old-generation` | Deliver a generation-1 frame while generation 2 is active | Generation (7) |
+| `future-issue`, `expired-issue`, `issue-order` | Set issue to E+45 ms, E, or the prior accepted issue | Future (9), Expired (10), IssueOrder (11), respectively |
+| `wrong-owner` | With an ordinary writer staged in PID 0, PID 2 requests a producer loan through SVC 33. It receives no handle. PID 0 publishes its original grant. | Kernel EACCES (−13) before allocation |
+
+Check the input handle and complete private payload, selected rejection, unchanged accepted sequence/issue/permit/recovery, absence of a kernel COMMIT for the rejected frame, subsequent sequence-4 acceptance while sequence 3 is still fresh and the physical-counter bracket around output withdrawal. For the role case, match the authenticated PID, operation, errno and generation in safety journal kind 9 to the supervisor's result. Match the sender's staged handle to its later publication and actual delivery. The gate remains under its normal application policy in all cases.
+
+각 입력은 독립 부팅에서 활성 상태의 수신기에 한 번 전달한다. 순번 3이 승인되고 출력이 켜졌는지 먼저 확인한다. 거부 전후의 마지막 승인 순번·발행 시각·허가·복구 횟수, 실제 오류 코드, 커널 커밋 여부를 확인한다. 다음 정상 순번 4는 직전 허가가 만료되기 전에 승인돼야 한다. 권한 시험에서 감독 슬롯은 인자가 없는 대여 획득 호출을 사용한다. 원래 소유자의 핸들과 데이터는 소유자에게 남는다. 실제 커널의 호출자 기록 및 같은 핸들의 정상 게시·수신을 대조한다.
+
 ## Build and capture
 
 Run these commands at the integrated repository revision containing the protected-frame library and safety SDK/runtime. The processor, frequency, user ELF hashes, launch manifest and QEMU binary identity belong to each independent capture.
