@@ -321,4 +321,9 @@ def main():
 
 
 if __name__=="__main__":
-    main()
+    import sys
+    if sys.argv[1:2] == ["source-built"]:
+        from native_extension_source_equivalence import main as source_built
+        source_built(sys.argv[2:])
+    else:
+        main()
