@@ -6,9 +6,9 @@ pub mod pthread;
 use core::time::Duration;
 
 #[repr(C)]
-struct Timespec {
-    seconds: i64,
-    nanoseconds: i64,
+pub struct Timespec {
+    pub tv_sec: i64,
+    pub tv_nsec: i64,
 }
 
 extern "C" {
@@ -30,16 +30,16 @@ pub enum ClockError {
 /// Read elapsed monotonic time from the native system clock.
 pub fn monotonic_time() -> Result<Duration, ClockError> {
     const CLOCK_MONOTONIC: i32 = 1;
-    let mut value = Timespec { seconds: -1, nanoseconds: -1 };
+    let mut value = Timespec { tv_sec: -1, tv_nsec: -1 };
     // The SDK writes a pair of signed LP64 fields to this aligned local.
     if unsafe { clock_gettime(CLOCK_MONOTONIC, &mut value) } != 0 {
         // The C SDK returns a valid errno location for this native application.
         return Err(ClockError::Errno(unsafe { *__jnox_errno_location() }));
     }
-    if value.seconds < 0 || !(0..1_000_000_000).contains(&value.nanoseconds) {
+    if value.tv_sec < 0 || !(0..1_000_000_000).contains(&value.tv_nsec) {
         return Err(ClockError::InvalidTimespec);
     }
-    Ok(Duration::new(value.seconds as u64, value.nanoseconds as u32))
+    Ok(Duration::new(value.tv_sec as u64, value.tv_nsec as u32))
 }
 
 /// Sleep until an absolute deadline on the clock returned by `monotonic_time`.
@@ -48,8 +48,8 @@ pub fn sleep_until(deadline: Duration) -> Result<(), ClockError> {
     const CLOCK_MONOTONIC: i32 = 1;
     const TIMER_ABSTIME: i32 = 1;
     let request = Timespec {
-        seconds: i64::try_from(deadline.as_secs()).map_err(|_| ClockError::Errno(EOVERFLOW))?,
-        nanoseconds: i64::from(deadline.subsec_nanos()),
+        tv_sec: i64::try_from(deadline.as_secs()).map_err(|_| ClockError::Errno(EOVERFLOW))?,
+        tv_nsec: i64::from(deadline.subsec_nanos()),
     };
     // The SDK reads this initialized request and ignores remaining for absolute waits.
     let code = unsafe { clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &request, core::ptr::null_mut()) };

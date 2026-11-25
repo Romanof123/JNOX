@@ -106,6 +106,16 @@ def weighted_notification(value):
     return mode, int(digits)
 
 
+def thread_priorities(value):
+    fields = value.split(",")
+    if len(fields) != 4:
+        raise argparse.ArgumentTypeError("expected exactly four comma-separated thread priorities")
+    values = [unsigned_decimal(field) for field in fields]
+    if any(not 1 <= priority <= 31 for priority in values):
+        raise argparse.ArgumentTypeError("thread priorities must be in 1..31")
+    return values
+
+
 def native_schedule(parser, args):
     if len(args.peer_elf) > 2:
         parser.error("virt supports at most two --peer-elf arguments")
@@ -147,7 +157,12 @@ def native_schedule(parser, args):
             parser.error("EDF and LLF require exactly one job tuple per supplied ELF")
     elif args.job or args.peer_job:
         parser.error("job tuples require --policy edf or llf")
-    if args.threads and policy not in (None, "rr"):
+    if args.threads == ["4"]:
+        if policy not in ("fifo", "rr") or args.thread_priorities is None:
+            parser.error("--threads 4 requires FIFO or RR and --thread-priorities")
+    elif args.thread_priorities is not None:
+        parser.error("--thread-priorities requires --threads 4")
+    if args.threads == ["2"] and policy not in (None, "rr"):
         parser.error("thread scheduling supports only cooperative or RR")
     if policy in ("fifo", "rr") and not args.threads:
         if not args.priority or len(args.peer_priority) != len(args.peer_elf):
@@ -279,8 +294,9 @@ def main():
     for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg")):
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
-    parser.add_argument("--threads", choices=["2"], action="append", default=[],
-                        help="enable two joinable thread contexts for one ordinary ELF")
+    parser.add_argument("--thread-priorities", type=thread_priorities, action=SinglePath)
+    parser.add_argument("--threads", choices=["2", "4"], action="append", default=[],
+                        help="thread context capacity for one ordinary ELF")
     parser.add_argument("--deadline-service-elf", type=Path, action=SinglePath)
     parser.add_argument("--deadline-service-cells", action="append", default=[], metavar="CELL,...")
     parser.add_argument("--deadline-switch-cap", type=unsigned_decimal, action="append", default=[])
@@ -288,7 +304,7 @@ def main():
     if len(args.threads) > 1:
         parser.error("--threads may appear only once")
     if args.threads and (not (args.elf or args.source) or args.peer_elf):
-        parser.error("--threads 2 requires exactly one ordinary application")
+        parser.error("thread scheduling requires exactly one ordinary application")
     policy, priorities, weights, quantum = native_schedule(parser, args)
     board = args.board or "virt"
     if args.weighted_continuous > 1:
@@ -438,10 +454,16 @@ def main():
             env["JNOX_NATIVE_ALLOTMENT_TICKS"] = ",".join(map(str, args.allotment_ticks[0]))
             env["JNOX_NATIVE_BOOST_TICKS"] = str(args.boost_ticks[0])
         if args.threads:
-            metadata["thread_capacity"] = 2
+            metadata["thread_capacity"] = int(args.threads[0])
             if policy == "rr":
                 metadata.update(scheduling_scope="within_process", timing_unit="physical_counter_ticks")
-            env["JNOX_NATIVE_THREADS"] = "2"
+            env["JNOX_NATIVE_THREADS"] = args.threads[0]
+            if args.thread_priorities is not None:
+                metadata.update(scheduling_scope="within_process", thread_slots=[
+                    {"slot": i, "base_priority": priority}
+                    for i, priority in enumerate(args.thread_priorities)
+                ])
+                env["JNOX_NATIVE_THREAD_PRIORITIES"] = ",".join(map(str, args.thread_priorities))
         if policy == "partition":
             env["JNOX_NATIVE_PARTITION_WINDOWS"] = args.partition_windows
             metadata.update(partition_windows=windows, partition_frame_ms=frame_ms,

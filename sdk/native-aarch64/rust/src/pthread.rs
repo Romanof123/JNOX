@@ -1,6 +1,22 @@
 //! Native joinable-thread C bindings. A nonzero return is a positive errno.
 
 use core::ffi::c_void;
+pub use crate::Timespec;
+
+pub const CLOCK_MONOTONIC: i32 = 1;
+pub const SCHED_FIFO: i32 = 1;
+pub const SCHED_RR: i32 = 2;
+pub const PTHREAD_INHERIT_SCHED: i32 = 0;
+pub const PTHREAD_EXPLICIT_SCHED: i32 = 1;
+pub const PTHREAD_PRIO_NONE: i32 = 0;
+pub const PTHREAD_PRIO_INHERIT: i32 = 1;
+pub const PTHREAD_PRIO_PROTECT: i32 = 2;
+pub const ETIMEDOUT: i32 = 110;
+
+#[repr(C)]
+pub struct SchedParam {
+    pub sched_priority: i32,
+}
 
 #[repr(C)]
 pub struct PthreadAttr {
@@ -20,7 +36,19 @@ pub struct PthreadMutexAttr {
 }
 
 extern "C" {
-    /// Initialize writable storage with null attributes. Serialize against all
+    pub fn pthread_attr_init(attr: *mut PthreadAttr) -> i32;
+    pub fn pthread_attr_destroy(attr: *mut PthreadAttr) -> i32;
+    pub fn pthread_attr_setschedpolicy(attr: *mut PthreadAttr, policy: i32) -> i32;
+    pub fn pthread_attr_setschedparam(attr: *mut PthreadAttr, param: *const SchedParam) -> i32;
+    pub fn pthread_attr_setinheritsched(attr: *mut PthreadAttr, inherit: i32) -> i32;
+    pub fn pthread_mutexattr_init(attr: *mut PthreadMutexAttr) -> i32;
+    pub fn pthread_mutexattr_destroy(attr: *mut PthreadMutexAttr) -> i32;
+    pub fn pthread_mutexattr_setprotocol(attr: *mut PthreadMutexAttr, protocol: i32) -> i32;
+    pub fn pthread_mutexattr_setprioceiling(attr: *mut PthreadMutexAttr, ceiling: i32) -> i32;
+    pub fn jnox_mutexattr_setusers(attr: *mut PthreadMutexAttr, mask: u32) -> i32;
+    pub fn pthread_mutex_clocklock(mutex: *mut PthreadMutex, clock: i32, absolute: *const Timespec) -> i32;
+
+    /// Initialize writable storage with null or initialized mutex attributes. Serialize against all
     /// other uses; the storage may be uninitialized on entry.
     pub fn pthread_mutex_init(mutex: *mut PthreadMutex, attr: *const PthreadMutexAttr) -> i32;
     /// Destroy an initialized mutex; exclude concurrent use during destruction.
@@ -32,7 +60,7 @@ extern "C" {
     /// Release a mutex owned by the calling thread.
     pub fn pthread_mutex_unlock(mutex: *mut PthreadMutex) -> i32;
 
-    /// Start a worker with default attributes (null).
+    /// Start a worker with default (null) or initialized scheduling attributes.
     ///
     /// # Safety
     /// Provide writable handle storage. The routine and everything it accesses
