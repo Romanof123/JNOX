@@ -1,0 +1,19 @@
+# Native aperiodic first observations / 네이티브 비주기 서버 최초 관측
+
+Source 67fd4aa10b2916a6cd077f7f601656ea0e0b9470. All five frozen first boots used QEMU 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31), TCG default clock, virt/GICv2, one Cortex-A72, 128 MiB, 62.5 MHz counter, 3,125,000 ticks per cell. Each archive was written before the next guest launched. Archive digests are in archives.log. Both ELF hashes and exact package inputs, toolchain and kernel digest are in each package/manifest.json. Stock QEMU captured the fifth boot with -d int. The two-credit package was reused byte-for-byte for its trace. No injected interrupt or synthetic wake.
+
+|First|Grants before 10|Service / background blocks|Journal rows|Healthy timing|
+|---|---|---:|---:|---|
+|Polling|0,5,6|393216 / 512000|248|Observed|
+|Deferrable|0,3,5,6|532480 / 524288|285|Observed|
+|Sporadic two|0,3,5,8|430080 / 565248|270|Failed, stale return in row 124|
+|Sporadic one|0,3,8,9|323584 / 598016|250|Observed, reconciled in row 247|
+|Sporadic two traced|0,3,5,8|344064 / 499712|233|Observed|
+
+Each service slept from cell 0 until an actual cell-2 wake. The background ran in each initial tail. Every eligible ledger decision was replayed across the complete journal, including remaining quota, merges, due dates, selection, saved PC/SP and actual TTBR. Distinct page-table roots resolve same-VA private variables to different RAM pages. Each RAM checksum equaled 32,640, square total equaled 5,559,680 times blocks and all nine bins equaled the binomial vector times blocks. Each worker completed exactly 4096 blocks per batch and exited 41 or 42 after its required time. The clock calls in results.json, mapped to the batch loops in disassembly, establish continuing progress across grants/suspensions. RAM is frozen at completion only. There were zero skipped indices or lost records. OCCUPIED counts are sampled residency, including assembly entry or return overhead. The fifth external trace matched all 231 actual EL0 return PCs in sequence (20 interrupts, 212 SVCs).
+
+Plain two-credit row 124 selected background in cell 7 at 31688672, crossed compare 31689072, armed at 31689292, returned background at 31689350. Actual PPI30 in row 125 interrupted background at 31692361 and granted due service cell 8. Externally traced sibling had no such crossing. One-credit row 247 entered at 62925975, crossed edge 62927553, reconciled grid 18 at 62928464 and armed a fresh edge before background return. Independent controls rejected nine malformed CLI profiles, direct-build credit capacity 9, and passed seven ledger unit tests and older replay controls. The legacy linked a-ss2 build failed E0004 in request_server.rs when matching ServerError::TimeRegression. These firsts do not qualify a release, WCET, interference or admission.
+
+같은 ELF 두 개를 사용한 다섯 최초 부팅에서 계약의 슬롯 배정, 실제 셀 2 기상, 개별 산출물, 종료값 41·42를 확인했다. 실제 RAM에서 각 프로세스의 페이지 테이블을 따라 체크섬, 제곱합과 히스토그램을 복원했다. 실제 크레딧과 복원 주소를 다시 계산했고, 추적 부팅의 EL0 복귀 PC 231개가 순서대로 일치했다. 일반 산발 2개 크레딧 실행의 124번째 행에서는 셀 경계를 지나 일반 작업으로 복귀하여 시간 검증에 실패했다. 산발 1개 크레딧의 247번째 행에서는 반환 전에 새 슬롯을 처리했다. 기존 링크형 a-ss2는 새 오류 변형의 match 누락(E0004)으로 빌드되지 않았다. 미달한 최초 결과와 원본을 보관했다. 이번 결과의 적용 범위는 이 QEMU 엔지니어링 부하다.
+
+To reproduce the observation from frozen data, extract each archive guest/ to ~/v326/raw/{first-polling,deferrable,sporadic-two,sporadic-one,traced-two} respectively, supply package/user.elf as ~/v326/raw/service.elf and package/native_peer.elf as ~/v326/raw/background.elf, then run python3 replay.py. For a new cohort use a clean checkout at ~/v326/src, create ~/v326/raw, build the two ELFs by the sample README commands, and run capture.py after setting a fresh backup destination. Initial harness setup required git metadata for packaging. No guest ran before the first polling archive. Archive payload includes complete physical RAM, kernel, inputs, UART, exact launch and package commands and the traced boot's raw exception log.
