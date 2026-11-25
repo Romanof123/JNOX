@@ -10,7 +10,7 @@ Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from 
 
 Set priorities for four threads in one process and choose priority inheritance, immediate ceiling or a timed mutex wait. [C and Rust attributes and packaging](docs/native-c-abi.en.md#configure-four-threads-and-priority-aware-mutexes)
 
-The opt-in engineering hierarchy assigns individual CPU quotas and shared parent budgets. [Package the three workers or a single CRC process](docs/native-c-abi.en.md#assign-hierarchical-cpu-budgets-to-native-processes)
+The opt-in engineering hierarchy assigns individual CPU quotas and shared parent budgets. [Package the three workers or a single CRC process](docs/native-c-abi.en.md#assign-hierarchical-cpu-budgets-to-native-processes) Read boot-lifetime idle-refill latency and the first violation from ordinary UART. [Use the health reader](docs/native-c-abi.en.md#read-idle-refill-health)
 
 The EEVDF telemetry deployment runs three linked Rust EL1 tasks, each with its own 16 KiB stack. From the repository root, boot QEMU once into a new capture directory, then reconstruct the result offline using the retained session digest.
 
