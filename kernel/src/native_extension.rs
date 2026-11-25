@@ -159,9 +159,12 @@ extern "C" fn native_extension_stack_if_pending() -> *mut u8 {
 #[unsafe(no_mangle)]
 extern "C" fn native_extension_evaluate() {
     let evaluation = state().tx.begin().unwrap_or_else(|| fail(26));
-    unsafe {
-        asm!("msr daifclr,#2", "isb", options(nostack, preserves_flags));
+    unsafe extern "C" {
+        fn jnox_extension_evaluator_enter(cell: u64);
     }
+    // The entry enables IRQs on this private evaluator stack. A cutoff IRQ
+    // may abandon it before the copy reaches evaluation or publication.
+    unsafe { jnox_extension_evaluator_enter(evaluation.cell) };
     let reply = evaluation.evaluate(NATIVE_EXTENSION_PROGRAM);
     unsafe {
         asm!("msr daifset,#2", "isb", options(nostack, preserves_flags));

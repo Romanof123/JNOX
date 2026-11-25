@@ -382,6 +382,8 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_hierarchy)");
     println!("cargo::rerun-if-changed=build_native_hierarchy.rs");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_extension)");
+    assert!(selector("JNOX_NATIVE_EXTENSION_STOP_BENCH").is_none(),
+            "use the source-built native extension cohort packager");
     let extension = selector("JNOX_NATIVE_EXTENSION_PROGRAM");
     let extension_hash = selector("JNOX_NATIVE_EXTENSION_SHA256");
     assert_eq!(extension.is_some(), policy.as_deref() == Some("extension"), "extension policy requires a program");
@@ -574,6 +576,7 @@ fn main() {
             if let (Some(program), Some(hash)) = (extension, extension_hash) {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
+                link_native_extension_entry();
             }
             write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()));
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
@@ -741,6 +744,7 @@ fn main() {
         None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic, native or deadline"),
     }
     let script = match board.as_str() {
+        "virt" if policy.as_deref() == Some("extension") => "native-extension.ld",
         "virt" => "link.ld",
         "pi4" => {
             // EDF and FIFO also select the scheduler backend. Check the Cargo
@@ -1163,4 +1167,18 @@ fn package_native_image(source: &str, expected: &str, name: &str, digest_env: &s
     let digest = std::str::from_utf8(&actual.stdout).expect("read ELF digest").split_whitespace().next();
     assert!(actual.status.success() && digest == Some(expected), "native ELF hash mismatch");
     println!("cargo::rustc-env={digest_env}={expected}");
+}
+
+fn link_native_extension_entry() {
+    let source = "src/native_extension_entry.S";
+    println!("cargo::rerun-if-changed={source}");
+    let out = std::path::PathBuf::from(env::var_os("OUT_DIR").expect("kernel output directory"));
+    let object = out.join("jnox_extension_entry.o");
+    let status = std::process::Command::new("clang")
+        .args(["--target=aarch64-none-elf", "-c", source, "-o"])
+        .arg(&object)
+        .status()
+        .expect("assemble native extension evaluator entry with clang");
+    assert!(status.success(), "native extension evaluator entry assembly failed");
+    println!("cargo::rustc-link-arg={}", object.display());
 }
