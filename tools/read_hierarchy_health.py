@@ -47,6 +47,57 @@ def eligible(arm, entry, limit):
     return 2 if earliest - due > limit else 1
 
 
+def irq_boundary(entry, idle, previous=None):
+    earliest = entry["earliest_irq"]
+    require(not entry["spsr"] & 0x80, "IRQ interrupted an IRQ-masked context")
+    landing = entry["idle_landing"]
+    unmask = entry["last_before_unmask"]
+    daif = entry["daif_before_unmask"]
+    if idle:
+        require(entry["spsr"] & 15 == 5 and 0 < landing <= unmask <= earliest and daif & 0x80,
+                "invalid idle landing or IRQ unmask boundary")
+        if previous is not None:
+            require(landing == previous[46], "idle landing differs from retained transfer")
+    else:
+        require((landing, unmask, daif) == (0, 0, 0), "idle samples on a user IRQ")
+
+
+def decision_boundary(row, timer, previous, prior_arm):
+    i, kind, op, entry, settle, settled, select, selected = row[:8]
+    require(entry <= settle <= settled <= select <= selected <= timer["arm_before"],
+            f"decision phases out of order at {i}")
+    target = row[9]
+    if target == 4:
+        require(not any(row[44:47]), "terminal transfer samples")
+    else:
+        require(timer["arm_after"] <= row[45], f"transfer before completed arm at {i}")
+        require(row[45] <= row[46] if target == 3 else row[46] == 0,
+                f"unexpected idle transfer stamp at {i}")
+    if previous is not None:
+        require(previous[9] != 4 and max(previous[45:47]) <= entry,
+                f"entry before preceding transfer at {i}")
+        if prior_arm["post_cval"] == prior_arm["due"] and prior_arm["post_ctl"] & 3 == 1:
+            require(timer["pre_cval"] == prior_arm["post_cval"] and
+                timer["pre_ctl"] & 3 == prior_arm["post_ctl"] & 3,
+                f"previous timer programming differs from pre-arm sample at {i}")
+    waits = previous[32:35] if previous is not None else [0]*3
+    exited = previous[12] if previous is not None else 0
+    if kind == 2:
+        require(row[8] < 3, "syscall from idle")
+        if op == 1:
+            exited |= 1 << row[8]
+    require(row[12] == exited, f"exit transition at {i}")
+    for slot, deadline in enumerate(waits):
+        bit = 1 << slot
+        if kind == 2 and op == 7 and row[8] == slot and row[27] == 0:
+            # The pointed-to absolute timespec is absent from this journal.
+            # A newly requested sleep can mature between entry and settlement.
+            continue
+        woke = bool(deadline and deadline <= settle)
+        require(bool(row[11] & bit) == woke and row[32+slot] == (0 if woke else deadline),
+                f"sleep or wake transition at {i} slot {slot}")
+
+
 def read_uart(path, expected=None):
     one = {}
     groups = {tag: [] for tag in ("PARENT", "CHILD", "LEAF")}
@@ -110,6 +161,7 @@ def read_uart(path, expected=None):
     if one["FIRST"] != [0]:
         require(one["FIRST"][:1] == [1], "malformed FIRST")
         first = fields(FIRST, one["FIRST"][1:])
+        irq_boundary(first, True)
         outcome = first["outcome"]
         require(outcome in (2, 3, 4) and first["kind"] in (1, 2) and first["iar"] & 1023 == 30
                 and eligible(first, first, h["limit"]) == outcome, "invalid first violation")
@@ -133,6 +185,7 @@ def read_uart(path, expected=None):
         if i:
             require(row[8] == events[i - 1][9] and row[13] == timers[i - 1]["due"],
                     f"preceding owner or due time mismatch at {i}")
+        decision_boundary(row, timer, events[i-1] if i else None, timers[i-1] if i else None)
         ledger.decision(row, timer)
         require(timer["old_arm_seq"] == i and (i or row[13] == 0), f"previous arm identity at {i}")
         require(all(timer[k] < 8 for k in ("pre_ctl", "post_ctl", "entry_ctl")), f"timer control flags at {i}")
@@ -149,6 +202,8 @@ def read_uart(path, expected=None):
                 f"IRQ identity at {i}")
         require(timer["elr"] == row[19] and timer["spsr"] & 15 == (5 if row[8] == 3 else 0),
                 f"IRQ frame does not match interrupted owner at {i}")
+        irq_boundary(timer, row[8] == 3, events[i-1])
+        require(timer["entry_counter"] <= row[4], f"IRQ sampling overlaps settlement at {i}")
         arm = timers[i - 1]
         if (timer["earliest_irq"] > timer["entry_counter"] or
                 timer["entry_cval"] != arm["due"] or (timer["entry_ctl"] & 3) != 1):
@@ -183,6 +238,7 @@ def read_uart(path, expected=None):
         require(first["event_number"] <= decision and first["arm_seq"] == decision,
                 "first violation decision/arm/IRQ identity mismatch")
         if decision == len(timers) and decision > 0:
+            irq_boundary(first, True, events[-1])
             require(first["event_number"] == tallies["events"] + 1 and events[-1][9] == 3
                     and all(first[k] == timers[-1][k] for k in ARM),
                     "first omitted IRQ contradicts the retained arm")

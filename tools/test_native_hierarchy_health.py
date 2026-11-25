@@ -24,6 +24,13 @@ def fixture(drop=False):
     for i, (now, reason, src, dst, ready, exited, kind, due, reserved, elapsed, over, debt, left) in enumerate(rows):
         event = [0]*47
         event[:5] = [i, reason, 30 if reason == 1 else 0, now, now]
+        event[5:8] = [now]*3
+        if dst != 4:
+            event[45] = now
+        if dst == 3:
+            event[46] = now
+        if reason == 2:
+            event[2] = 1
         event[8:15] = [src, dst, ready, 0, exited, prior, due]
         if src == 0:
             event[15:17] = [rows[i-1][0], rows[i-1][7]]
@@ -33,6 +40,8 @@ def fixture(drop=False):
         arm = [i+1, kind, due, now, prior, int(i > 0), now, due or prior, int(kind != 6)]
         entry = ([now, prior, 1, now, 5 if src == 3 else 0, 2048, 30, 0, 0, 0]
                  if reason == 1 else [0]*10)
+        if reason == 1 and src == 3:
+            entry[7:] = [rows[i-1][0], now, 128]
         outcome = (2 if drop else 1) if i == 2 else 0
         if not drop or i < 2:
             emit("EVENT", event)
@@ -80,6 +89,29 @@ class ArmHealthTest(unittest.TestCase):
             altered[pos] = " ".join(cols)
             with self.assertRaises(ValueError):
                 read(altered)
+
+    def test_decision_and_idle_boundaries(self):
+        for dropped, tag, index, field, value in [
+            (False, "TIMER", 2, 19, 1000000141),
+            (False, "TIMER", 2, 15, 133),
+            (False, "TIMER", 2, 20, 0),
+            (False, "TIMER", 2, 18, 107),
+            (False, "TIMER", 2, 5, 139),
+            (False, "EVENT", 0, 11, 1),
+            (False, "EVENT", 2, 5, 0),
+            (False, "EVENT", 0, 45, 107),
+            (True, "FIRST", 0, 20, 107),
+            (True, "FIRST", 0, 17, 133),
+        ]:
+            with self.subTest(tag=tag, field=field, dropped=dropped):
+                lines = fixture(dropped)
+                pos = [j for j, line in enumerate(lines)
+                       if line.startswith(f"NATIVE HIERARCHY {tag} ")][index]
+                cols = lines[pos].split()
+                cols[3+field] = str(value)
+                lines[pos] = " ".join(cols)
+                with self.assertRaises(ValueError):
+                    read(lines)
 
     def test_wake_tie_checkpoint(self):
         self.assertEqual(cause(0, 10, 50, 50), (3, 50))
