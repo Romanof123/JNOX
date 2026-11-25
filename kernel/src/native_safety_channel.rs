@@ -41,6 +41,23 @@ fn drive(value: u64) {
     let after = counter();
     if old != actual { log(2, [before,after,old,actual,0,0,0,0]); }
 }
+// Preserve the counter operand passed into the real check. The journal's own
+// sample follows the decision and any resulting hardware-register update.
+macro_rules! check_at {
+    ($session:expr, $tick:expr, $site:expr) => {{
+        #[cfg(any(jnox_native_safety_qualification, jnox_native_safety_boundary))]
+        {
+            let tick = $tick;
+            let old_fault = $session.fault;
+            $session.check(tick);
+            log(12, [tick, $site, $session.generation, $session.sequence, $session.issue,
+                     u64::from(old_fault), u64::from($session.fault),
+                     u64::from($session.gate)]);
+        }
+        #[cfg(not(any(jnox_native_safety_qualification, jnox_native_safety_boundary)))]
+        $session.check($tick);
+    }};
+}
 impl Session {
     fn check(&mut self, now: u64) {
         let clock_fault = self.last_check.is_some_and(|previous| now.checked_sub(previous).is_none_or(|d| d > i64::MAX as u64));
@@ -102,7 +119,7 @@ impl Session {
         }
         // Decode first, then recheck the old accepted issue even on a malformed input.
         let now = counter();
-        self.check(now);
+        check_at!(self, now, 0x102);
         if self.fault { return Err(-110); }
         if !crc != u32::from_le_bytes(b[40..44].try_into().unwrap())
             || b[..8] != [1,1,44,0,1,0,1,1] || b[32..36] != 20u32.to_le_bytes()
@@ -110,7 +127,7 @@ impl Session {
             || generation != self.generation || seq != self.sequence.checked_add(1).ok_or(-75)?
             || (self.sequence != 0 && issue <= self.issue) { return Err(-22); }
         let now = counter();
-        self.check(now);
+        check_at!(self, now, 0x202);
         if self.fault || !fresh(now,issue) { return Err(-110); }
         let adjacent = self.streak != 0 && issue.checked_sub(self.issue).is_some_and(|delta|
             u128::from(delta)*1000 == u128::from(hz())*10);
@@ -123,7 +140,7 @@ impl Session {
         Ok(())
     }
     fn control(&mut self, x:&[u64;31]) -> Result<(),i32> {
-        self.check(counter());
+        check_at!(self, counter(), x[0]);
         match x[0] {
             1 if !self.active => { self.active=true; self.attempts=0; self.command=false; }
             2 => return self.commit(x),

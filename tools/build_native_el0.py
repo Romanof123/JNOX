@@ -473,6 +473,12 @@ def main():
                         help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="select a socket service with existing inbound synchronous IPC rights")
+    parser.add_argument("--safety-boundary", action="count", default=0,
+                        help="record single-check safety decisions (same phase or collision argument for all slots)")
+    parser.add_argument("--safety-interference", action="count", default=0,
+                        help="arm a finite independent CNTV IRQ stream during safety qualification")
+    parser.add_argument("--safety-qualification", action="count", default=0,
+                        help="enable the protected channel absolute-phase qualification ABI")
     parser.add_argument("--safety-channel", action="count", default=0,
                         help="select the three-process protected virtual permit bench")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
@@ -546,6 +552,19 @@ def main():
     if args.safety_channel and (args.safety_channel != 1 or board != "virt" or policy not in ("fifo", "rr")
                                 or args.threads or len(args.peer_elf) != 2 or args.loan_route != [(0, 1)]):
         parser.error("--safety-channel requires exactly three virt FIFO/RR processes and --loan-route 0:1")
+    if args.safety_boundary:
+        if args.safety_boundary != 1 or not args.safety_channel or args.safety_qualification or args.safety_interference:
+            parser.error("--safety-boundary requires the single-check --safety-channel profile")
+        if args.arg not in (["phase"], ["collision"]) or not args.arg == args.peer_arg == args.peer2_arg:
+            parser.error("--safety-boundary requires the same single phase or collision argument for all three slots")
+    if args.safety_interference and (args.safety_interference != 1 or args.safety_qualification != 1):
+        parser.error("--safety-interference requires --safety-qualification and may appear once")
+    if args.safety_qualification:
+        if args.safety_qualification != 1 or not args.safety_channel:
+            parser.error("--safety-qualification requires --safety-channel and may appear once")
+        sender, controller, supervisor = priorities
+        if not controller > sender > supervisor:
+            parser.error("qualification priorities must order controller > sender > supervisor")
     validate_pipes(parser, args, policy, board)
     shell = None
     if args.exec_child or args.rom_file:
@@ -737,6 +756,21 @@ def main():
             "control_deadline_ms": 5, "max_check_interval_ms": 5, "validity_ms": 20,
             "detection_limit_ms": 25, "inhibit_limit_ms": 5, "response_limit_ms": 30,
             "output": "virtual_ENABLE", "syscalls": {"supervise": 59, "control": 60, "info": 61},
+        }
+    if args.safety_boundary:
+        env["JNOX_NATIVE_SAFETY_BOUNDARY"] = "1"
+        metadata["safety_boundary"] = {"scenario": args.arg[0], "decision_event": 12}
+        metadata["package_argv"] = sys.argv[:]
+    if args.safety_interference:
+        env["JNOX_NATIVE_SAFETY_INTERFERENCE"] = "1"
+        metadata["safety_interference"] = {"intid": 27, "maximum_irqs": 32, "first_ms": 1,
+                                           "subsequent_ms": 5, "timer": "CNTV"}
+    if args.safety_qualification:
+        env["JNOX_NATIVE_SAFETY_QUALIFICATION"] = "1"
+        metadata["safety_qualification"] = {
+            "syscall": 62, "sender_slot": 0, "controller_slot": 1, "supervisor_slot": 2,
+            "controller_period_us": 5000, "controller_phase_offsets_us": [0, 2500],
+            "sender_period_us": 10000,
         }
     if args.cap_grant or args.cap_route:
         cap_routes = sorted(args.cap_route)

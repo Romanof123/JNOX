@@ -156,3 +156,6 @@ pub mod local_socket;
 pub mod capabilities;
 #[cfg(all(feature = "pubsub", target_arch = "aarch64"))]
 pub mod pubsub;
+
+#[cfg(target_arch = "aarch64")]
+pub mod permit_trace;

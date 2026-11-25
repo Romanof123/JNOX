@@ -97,7 +97,12 @@ global_asm!(".set NATIVE_BATCH,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n
 mod proportional;
 #[cfg(jnox_native_proportional)]
 global_asm!(".set NATIVE_PROPORTIONAL,1\n.set NATIVE_WEIGHTED_CONTINUOUS,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_prop_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(not(any(jnox_native_amc, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
+#[cfg(jnox_native_safety_qualification)]
+#[path = "native_permit_trace.rs"]
+mod permit_trace;
+#[cfg(jnox_native_safety_qualification)]
+global_asm!(".set NATIVE_PERMIT_TRACE,1\n.set NATIVE_EARLY_ENTRY,1\n.set NATIVE_MEASURED,1\n.macro measured_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(not(any(jnox_native_safety_qualification, jnox_native_amc, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
     fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
@@ -224,6 +229,8 @@ fn update_timer(now: u64) -> bool {
 }
 
 fn arm_compare(earliest: Option<u64>) {
+    #[cfg(jnox_native_safety_qualification)]
+    let before = counter();
     unsafe {
         if let Some(target) = earliest {
             asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}", "isb",
@@ -232,6 +239,8 @@ fn arm_compare(earliest: Option<u64>) {
             asm!("msr cntp_ctl_el0, xzr", "isb", options(nostack, preserves_flags));
         }
     }
+    #[cfg(jnox_native_safety_qualification)]
+    permit_trace::compare(earliest, before);
 }
 
 fn sleep_until(f: &NativeFrame) -> Result<u64, i64> {
@@ -316,6 +325,9 @@ mod loans;
 #[cfg(jnox_native_safety_channel)]
 #[path = "native_safety_channel.rs"]
 mod safety;
+#[cfg(jnox_native_safety_interference)]
+#[path = "native_safety_interference.rs"]
+mod interference;
 
 fn policy() -> &'static mut Fixed {
     // Masked, non-nested CPU0 policy entry. Never retain this borrow across idle.
@@ -385,6 +397,8 @@ fn record(now: u64, reason: u64, argument: u64, before: Before, interrupted: Opt
 fn start_fixed() -> usize {
     #[cfg(jnox_native_safety_channel)]
     safety::boot();
+    #[cfg(jnox_native_safety_interference)]
+    interference::boot();
     #[cfg(jnox_native_capability_ipc)]
     ipc::caps::boot();
     #[cfg(jnox_native_pipe_ipc)]
@@ -418,6 +432,8 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     let before = Before {
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
+    #[cfg(jnox_native_safety_qualification)]
+    let previous = (p.permit_runnable_mask(), counter());
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
     #[cfg(jnox_native_safety_channel)]
     if matches!(action, Action::Exit) { safety::exit(p.current().unwrap_or_else(|| fail(9))); }
@@ -438,6 +454,8 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     if !ipc::handles(reason) { ipc::boundary(p, now, matches!(action, Action::Exit)); }
     if p.event(now, action) != Some(true) { fail(9) }
     let next = p.current();
+    #[cfg(jnox_native_safety_qualification)]
+    permit_trace::transition(now, previous, p.permit_runnable_mask(), before.pid, next, action, reason);
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     let compare = compare.into_iter().chain(ipc::next_compare()).min();
@@ -472,8 +490,12 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_safety_qualification)]
+    permit_trace::report();
     #[cfg(jnox_native_safety_channel)]
     safety::report();
+    #[cfg(jnox_native_safety_interference)]
+    interference::report();
     #[cfg(jnox_native_capability_ipc)]
     ipc::caps::report(1);
     #[cfg(jnox_native_pipe_ipc)]
@@ -534,6 +556,13 @@ fn event(kind: &[u8], pid: usize, value: Option<i64>) {
 extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
+    #[cfg(jnox_native_safety_qualification)]
+    permit_trace::irq(iar, entry, frame.is_null());
+    #[cfg(jnox_native_safety_interference)]
+    if id == 27 {
+        interference::irq(entry, iar, frame.is_null());
+        return 0;
+    }
     #[cfg(jnox_native_batch)]
     { return batch::irq(entry, frame, iar); }
     #[cfg(jnox_native_extension)]
@@ -714,17 +743,35 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         fixed_dispatch(now, action, service, f);
         return;
     }
+    #[cfg(jnox_native_safety_qualification)]
+    if f.x[8] == 62 {
+        let action = permit_trace::mark(unsafe { CURRENT }, f, entry, now);
+        fixed_dispatch(now, action, 62, f);
+        return;
+    }
     #[cfg(jnox_native_safety_channel)]
     if matches!(f.x[8], 59..=61) {
         let op = f.x[8];
+        #[cfg(jnox_native_safety_qualification)]
+        let command = f.x[0];
+        #[cfg(jnox_native_safety_interference)]
+        let masked = interference::begin_mask();
         safety::service(unsafe { CURRENT }, f);
+        #[cfg(jnox_native_safety_interference)]
+        interference::end_mask(masked, op);
+        #[cfg(jnox_native_safety_qualification)]
+        if op != 61 { permit_trace::decision(unsafe { CURRENT }, op, command, entry, now, f.x[0]); }
         fixed_dispatch(now, Action::Poll, op, f);
         return;
     }
     #[cfg(jnox_native_loan_ipc)]
     if matches!(f.x[8], 33..=36) {
         let service = f.x[8];
+        #[cfg(jnox_native_safety_interference)]
+        let masked = interference::begin_mask();
         loans::service(unsafe { CURRENT }, f);
+        #[cfg(jnox_native_safety_interference)]
+        interference::end_mask(masked,f.x[8]);
         fixed_dispatch(now, Action::Poll, service, f);
         return;
     }

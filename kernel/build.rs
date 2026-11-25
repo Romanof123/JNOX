@@ -536,7 +536,26 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_rr)");
     let threads = selector("JNOX_NATIVE_THREADS");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_channel)");
-    if let Some(value) = selector("JNOX_NATIVE_SAFETY_CHANNEL") {
+    let safety_channel = selector("JNOX_NATIVE_SAFETY_CHANNEL");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_qualification)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_interference)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_boundary)");
+    let boundary = selector("JNOX_NATIVE_SAFETY_BOUNDARY");
+    let qualification = selector("JNOX_NATIVE_SAFETY_QUALIFICATION");
+    if let Some(value) = selector("JNOX_NATIVE_SAFETY_INTERFERENCE") {
+        assert!(value == "1" && qualification.as_deref() == Some("1"),
+            "safety interference requires the qualification profile");
+        println!("cargo::rustc-cfg=jnox_native_safety_interference");
+    }
+    if let Some(value) = &boundary {
+        assert!(value == "1" && safety_channel.as_deref() == Some("1") && qualification.is_none(),
+            "boundary observations require the single-check protected channel");
+    }
+    if let Some(value) = qualification {
+        assert!(value == "1" && safety_channel.as_deref() == Some("1"),
+            "safety qualification requires the protected channel");
+    }
+    if let Some(value) = safety_channel {
         assert!(value == "1" && profile.as_deref() == Some("native") && app.as_deref() == Some("process")
             && board == "virt" && threads.is_none() && matches!(policy.as_deref(), Some("fifo" | "rr"))
             && peer_image.is_some() && peer2_image.is_some() && peer3_image.is_none()
@@ -633,6 +652,14 @@ fn main() {
         assert!(cap > 0, "deadline switch cap must be positive");
     }
     let native_argv = [0, 1, 2, 3].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    if boundary.is_some() {
+        // One argument, u16 LE byte length, then its UTF-8 bytes: phase or collision.
+        let named = ["0105007068617365", "010900636f6c6c6973696f6e"];
+        assert!(named.iter().any(|wire| native_argv[..3].iter().all(|v|
+            v.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(wire)))),
+            "boundary observations require matching phase or collision arguments");
+        println!("cargo::rustc-cfg=jnox_native_safety_boundary");
+    }
     assert!(amc.is_none() || native_argv.iter().all(Option::is_none), "declare AMC arguments in its manifest");
     for (slot, args) in native_argv.iter().enumerate() {
         if args.is_some() {
@@ -1292,6 +1319,12 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             let list: Vec<u8> = priorities.expect("fixed scheduling requires priorities").split(',')
                 .map(|value| value.parse().expect("priority must be 0..255")).collect();
             assert_eq!(list.len(), slots, "supply one priority per slot");
+            if std::env::var_os("JNOX_NATIVE_SAFETY_QUALIFICATION").is_some() {
+                assert!(matches!(list.as_slice(), [sender, controller, supervisor]
+                    if controller > sender && sender > supervisor),
+                    "qualification priorities must order controller > sender > supervisor");
+                println!("cargo::rustc-cfg=jnox_native_safety_qualification");
+            }
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }

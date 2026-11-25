@@ -59,6 +59,23 @@ native_el0_vectors:
     .endr
 .size native_el0_vectors, .-native_el0_vectors
 
+.macro permit_return_cell cell
+    .ifdef NATIVE_PERMIT_TRACE
+    stp x16,x17,[sp,#-16]!
+    adrp x16,\cell
+    add x16,x16,:lo12:\cell
+    ldr x17,[x16]
+    cbz x17,1f
+    str xzr,[x16]
+    mrs x16,elr_el1
+    str x16,[x17,#8]
+    isb
+    mrs x16,cntpct_el0
+    str x16,[x17]
+1:  ldp x16,x17,[sp],#16
+    .endif
+.endm
+
 .macro cyclic_final_stamp
     .ifdef NATIVE_CYCLIC
     stp x16,x17,[sp,#-16]!
@@ -436,6 +453,8 @@ native_el0_enter:
     cyclic_final_stamp
     weighted_final_arm
     .endif
+    permit_return_cell native_permit_irq_return
+    permit_return_cell native_permit_user_return
     eret
     .endif
 
@@ -588,6 +607,7 @@ native_extension_eval_stack:
     orr x9,x9,#0x80
     msr spsr_el1,x9
 .Lidle_eret:
+    permit_return_cell native_permit_irq_return
     eret
 
 .Lleave_idle:
