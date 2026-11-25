@@ -98,6 +98,63 @@ def decision_boundary(row, timer, previous, prior_arm):
                 f"sleep or wake transition at {i} slot {slot}")
 
 
+def reconcile_omissions(h, rows, timers, counts, prefix_max, first, prefix_first, slots):
+    """Bound omitted observations from recorded positions, disjoint classes and exits."""
+    stored = len(rows)
+    dropped = h["dropped"]
+    total = h["rows_total"]
+    irq = h["events"] - counts["events"]
+    late = h["late"] - counts["late"]
+    regular = h["scored"] - counts["scored"] - late
+    early = h["early"] - counts["early"]
+    invalid = h["invalid"] - counts["invalid"]
+    other = irq - regular - late - early - invalid
+    require(min(regular, late, early, invalid, other) >= 0, "missing IRQ classes are inconsistent")
+    if dropped:
+        require(not rows or rows[-1][9] != 4, "dropped decisions after terminal park")
+    exits_needed = slots - (rows[-1][12].bit_count() if rows else 0)
+    startup_needed = int(not rows)
+    require(irq + exits_needed + startup_needed <= dropped, "missing IRQs displace startup or exits")
+
+    # The immediately following decision cannot score an idle refill unless
+    # its predecessor actually transferred to idle with a refill compare.
+    boundary_ineligible = bool(rows and (rows[-1][9] != 3 or timers[-1]["kind"] not in (1, 2)))
+    if dropped and boundary_ineligible and rows[-1][9] == 3:
+        # An idle predecessor can only re-enter via IRQ.
+        require(other > 0, "missing initial idle IRQ classification")
+    if dropped and rows and rows[-1][9] == 3:
+        require(irq > 0, "missing initial idle IRQ")
+    if dropped and boundary_ineligible and rows[-1][9] != 3:
+        # A running task may enter via SVC, including a required exit.
+        require(regular + late + early + invalid < dropped, "ineligible boundary scored")
+
+    known_max = prefix_max
+    if first and not prefix_first:
+        decision = first["decision_index"]
+        before = first["event_number"] - counts["events"] - 1
+        after = h["events"] - first["event_number"]
+        preceding_rows = decision - stored
+        following_rows = total - decision - 1
+        require(0 <= before <= preceding_rows - startup_needed and 0 <= after < following_rows,
+                "FIRST IRQ ordinal does not fit on both sides of its decision and terminal exit")
+        if preceding_rows and rows and rows[-1][9] == 3:
+            require(before >= 1, "FIRST ordinal skips mandatory initial idle IRQ")
+        # All missing violations other than FIRST must occur in the suffix.
+        require(late + early + invalid - 1 <= after, "too many violations after FIRST")
+        if first["outcome"] == 2:
+            late -= 1
+            known_max = max(known_max, first["lag"])
+        elif first["outcome"] == 3:
+            early -= 1
+        else:
+            invalid -= 1
+        require(min(late, early, invalid) >= 0, "FIRST class absent from omitted IRQs")
+    # A larger maximum needs an unseen score in the corresponding lag class.
+    if h["max_lag"] > known_max:
+        require((late if h["max_lag"] > h["limit"] else regular) > 0,
+                "no unseen score can produce the reported maximum")
+
+
 def read_uart(path, expected=None):
     one = {}
     groups = {tag: [] for tag in ("PARENT", "CHILD", "LEAF")}
@@ -251,13 +308,7 @@ def read_uart(path, expected=None):
     if prefix_first or complete or (first and first["decision_index"] < h["stored"]):
         require(prefix_first == first, "detail first violation mismatch")
     if not h["overflow"]:
-        require(h["events"] - tallies["events"] <= h["dropped"], "event count exceeds missing decisions")
-        missing = sum(h[k] - tallies[k] for k in ("scored", "early", "invalid"))
-        require(missing <= h["events"] - tallies["events"]
-                and h["late"] - tallies["late"] <= h["scored"] - tallies["scored"],
-                "missing outcomes exceed missing observations")
-        if first and not prefix_first:
-            require(first["event_number"] > tallies["events"], "first violation IRQ predates dropped rows")
+        reconcile_omissions(h, events, timers, tallies, prefix_max, first, prefix_first, slots)
     statuses = [exits[i][0] for i in range(slots)]
     if expected is not None:
         require(len(expected) == slots, "supply one expected status per slot")

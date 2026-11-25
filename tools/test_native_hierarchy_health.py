@@ -4,7 +4,9 @@ import unittest
 from pathlib import Path
 
 from native_hierarchy_arm_replay import cause, DISTANCE
-from read_hierarchy_health import read_uart
+from collections import Counter
+
+from read_hierarchy_health import read_uart, reconcile_omissions
 
 
 def fixture(drop=False):
@@ -112,6 +114,33 @@ class ArmHealthTest(unittest.TestCase):
                 lines[pos] = " ".join(cols)
                 with self.assertRaises(ValueError):
                     read(lines)
+
+    def test_omitted_summary_bounds(self):
+        rows = [[0]*47 for _ in range(3)]
+        rows[-1][9] = 3
+        timers = [{"kind": 1}]*3
+        prefix = Counter(events=1)
+        base = dict(events=4, late=1, scored=1, early=0, invalid=0,
+                    rows_total=10, dropped=7, limit=5, max_lag=8)
+        first = dict(decision_index=5, event_number=3, outcome=2, lag=8)
+        def check(changes, sticky=first, seen=prefix, maximum=0, retained=None):
+            reconcile_omissions(base | changes, rows, timers, seen, maximum, sticky, retained, 1)
+        check({})
+        check(dict(scored=2, late=2, max_lag=9))
+        check(dict(scored=2, late=2))  # two distinct scores may tie
+        for changes in (dict(max_lag=9), dict(events=7), dict(scored=3, late=3),
+                        dict(events=8, scored=2)):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                check(changes)
+        with self.assertRaises(ValueError):
+            check(dict(max_lag=9), seen=Counter(events=2, scored=1, late=1),
+                  maximum=8, retained=first)
+        with self.assertRaises(ValueError):
+            check(dict(late=0, max_lag=4), sticky=None,
+                  seen=Counter(events=2, scored=1), maximum=3)
+        with self.assertRaises(ValueError):
+            check(dict(rows_total=4, dropped=1, events=2, scored=0, late=0, max_lag=0),
+                  sticky=None)
 
     def test_wake_tie_checkpoint(self):
         self.assertEqual(cause(0, 10, 50, 50), (3, 50))
