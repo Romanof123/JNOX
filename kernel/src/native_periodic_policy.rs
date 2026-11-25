@@ -87,6 +87,17 @@ impl Slot {
         }
         match action {
             Action::WaitNext | Action::Exit => {
+                // An earlier sample at this counter may have admitted the next
+                // release while this older generation was still outstanding.
+                // Reopen just that admission so the completion precedes it.
+                // If the caller is completing the new generation itself, its
+                // release necessarily precedes this call and stays committed.
+                if let Some(latest) = self.released.checked_sub(1) {
+                    if self.generation < latest && self.release(latest)? == now {
+                        self.released = latest;
+                        self.overlaps = self.overlaps.checked_sub(1).ok_or(Error::Overflow)?;
+                    }
+                }
                 self.generation = self.generation.checked_add(1).ok_or(Error::Overflow)?;
                 self.miss_cursor = self.miss_cursor.max(self.generation);
                 if action == Action::Exit {
@@ -127,6 +138,9 @@ pub(crate) struct Calendar<const N: usize> {
     owner: Option<usize>,
     last: u64,
     compare: Option<u64>,
+    // Slots enqueued exactly at the last sample by polls that retained the
+    // incumbent. Their slot-order tie with a same-counter commit is still open.
+    polled_arrivals: [bool; N],
 }
 
 impl<const N: usize> Calendar<N> {
@@ -144,7 +158,7 @@ impl<const N: usize> Calendar<N> {
             slot.deadline(0)?;
         }
         let compare = slots.iter().map(|slot| slot.first_release).min();
-        Ok(Self { policy, slots, ready: ReadyQueue::new(), owner: None, last: 0, compare })
+        Ok(Self { policy, slots, ready: ReadyQueue::new(), owner: None, last: 0, compare, polled_arrivals: [false; N] })
     }
 
     pub(crate) fn owner(&self) -> Option<usize> { self.owner }
@@ -179,6 +193,22 @@ impl<const N: usize> Calendar<N> {
             }
         }
         // Commit only after every timestamp and counter for all slots is representable.
+        let incumbent = self.owner;
+        let mut provisional = if now == self.last { self.polled_arrivals } else { [false; N] };
+        if matches!(action, Action::WaitNext | Action::Exit) {
+            // Merge previously observed same-instant arrivals with the
+            // submitting owner's next generation in the original slot order.
+            while let Some(id) = self.ready.pop_ranked(
+                |id| provisional[id].then_some(id), |a, b| a < b,
+            ) {
+                arrivals[id] = (now, id);
+            }
+        }
+        if action == Action::Poll {
+            for &(time, id) in &arrivals {
+                if id < N && time == now { provisional[id] = true; }
+            }
+        }
         arrivals.sort_unstable();
         if let Some(id) = self.owner {
             if slots[id].runnable() && !matches!(action, Action::WaitNext | Action::Yield) {
@@ -195,6 +225,11 @@ impl<const N: usize> Calendar<N> {
                 period: s.period, relative_deadline: s.relative_deadline,
             })
         });
+        self.polled_arrivals = if action == Action::Poll && self.owner == incumbent {
+            provisional
+        } else {
+            [false; N]
+        };
         self.slots = slots;
         self.last = now;
         self.compare = compare;
