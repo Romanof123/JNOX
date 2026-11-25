@@ -5,6 +5,11 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import MagicMock, patch
+import io
+from contextlib import redirect_stderr
+
+import pi4_serial_capture as collector
 
 from pi4_serial_capture import EXPECTED, SECOND, build_association, observe
 from pi4_transcript import PROFILES
@@ -31,6 +36,38 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(result["uart_sha256"], hashlib.sha256(data).hexdigest())
         timestamps = (folder / "reads.jsonl").read_text(encoding="utf-8").splitlines()
         return result, data, [json.loads(line) for line in timestamps]
+
+    def test_native_port_disconnect_keeps_first_result(self):
+        prefix = b"JNOX PI4 BOOT\nJNOX PI4 READY\nNATIVE PI4 CNTFRQ 62500000\nNATIVE EL0"[:62]
+        self.assertEqual(len(prefix), 62)
+        with TemporaryDirectory() as tmp:
+            output = Path(tmp) / "capture"
+            argv = ["collector", "--profile", "pi4-native-rr", "--native-manifest", "manifest.json",
+                    "--port", "adapter", "--boot-dir", "boot", "--elf", "kernel.elf",
+                    "--board-revision", "rev", "--eeprom", "version", "--output", str(output)]
+            port = MagicMock()
+            port.read.side_effect = [prefix, OSError("adapter disconnected")]
+            stderr = io.StringIO()
+            with patch("sys.argv", argv), patch.object(collector, "artifacts", return_value={}), \
+                 patch.object(collector, "native_package", return_value={}), \
+                 patch.object(collector, "serial_port", return_value=port), \
+                 patch("builtins.input", return_value=""), redirect_stderr(stderr):
+                self.assertEqual(collector.main(), 2)
+            self.assertIn("adapter disconnected", stderr.getvalue())
+            run = output / "run-1"
+            result = json.loads((run / "result.json").read_bytes())
+            identity = json.loads((run / "identity.json").read_bytes())
+            for key in ("profile", "run", "run_id", "session_id", "mode"):
+                self.assertEqual(result[key], identity[key])
+            self.assertEqual(result["uart_verdict"], "read_error")
+            self.assertEqual(result["terminal_cause"]["type"], "OSError")
+            self.assertEqual(result["bytes"], 62)
+            self.assertEqual(result["read_records"], 1)
+            self.assertEqual(result["uart_sha256"], hashlib.sha256(prefix).hexdigest())
+            self.assertEqual((run / "uart.bin").read_bytes(), prefix)
+            self.assertEqual(json.loads((run / "reads.jsonl").read_bytes())["length"], 62)
+            self.assertIsNone(result["matched_variant"])
+            self.assertFalse((output / "run-2").exists())
 
     def test_deadline_and_quiet_boundaries(self):
         result, data, log = self.capture([(SECOND, EXPECTED[:4]),
