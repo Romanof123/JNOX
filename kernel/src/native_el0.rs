@@ -1,6 +1,7 @@
-//! One trusted, statically packaged native-v1 process on a dedicated virt boot.
+//! Statically packaged native-v1 processes on a dedicated CPU0 virt boot.
 use crate::native_elf::{self, LoadPlan, Permission};
 use crate::native_el0_mmu::{self, STACK_BOTTOM, STACK_TOP};
+use crate::ready_queue::ReadyQueue;
 use crate::{context, park, uart_write};
 use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
@@ -8,7 +9,7 @@ use core::ptr;
 
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
-    fn native_el0_enter(entry: u64, sp: u64) -> !;
+    fn native_el0_enter(entry: u64, sp: u64, spsr: u64) -> !;
     fn native_sleep_switch(idle_top: *mut u8);
     static native_el0_vectors: u8;
 }
@@ -19,6 +20,10 @@ const ELF: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_user.elf"));
 static jnox_native_el0_image: [u8; ELF.len()] =
     *include_bytes!(concat!(env!("OUT_DIR"), "/native_user.elf"));
 
+#[cfg(jnox_native_peer)]
+const PEER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer.elf"));
+
+#[derive(Clone, Copy)]
 #[repr(C, align(16))]
 struct NativeFrame {
     x: [u64; 31],
@@ -30,8 +35,9 @@ struct NativeFrame {
     fpcr: u64,
     fpsr: u64,
     q: [[u64; 2]; 32],
+    tls: [u64; 2],
 }
-const _: () = assert!(size_of::<NativeFrame>() == 816
+const _: () = assert!(size_of::<NativeFrame>() == 832
     && offset_of!(NativeFrame, esr) == 248 && offset_of!(NativeFrame, spsr) == 256
     && offset_of!(NativeFrame, elr) == 264 && offset_of!(NativeFrame, sp_el0) == 272
     && offset_of!(NativeFrame, current_el) == 280 && offset_of!(NativeFrame, q) == 304);
@@ -72,52 +78,66 @@ fn clock_gettime(clock_id: u64, address: usize) -> i64 {
     if native_el0_mmu::copy_to_user(address, &bytes) { 0 } else { -14 }
 }
 
-#[derive(Clone, Copy)]
-struct Resume {
-    frame: *const NativeFrame,
-    ttbr: u64,
-}
+#[derive(Clone, Copy, PartialEq)]
+enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-#[derive(Clone, Copy)]
-enum TaskState {
-    Running,
-    BlockedUntil { target: u64, resume: Resume },
-    Ready(Resume),
-}
+const INITIAL_PSTATE: u64 = if cfg!(jnox_native_peer) { 0x340 } else { 0x3c0 };
+const EMPTY_FRAME: NativeFrame = NativeFrame {
+    x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
+    current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
+};
 
-// The ordinary native profile owns one process on CPU0. All transitions run
-// with IRQ masked. Its SVC frame and Rust continuation stay on the pinned
-// process kernel stack, while idle and its IRQ use this separate stack.
-static mut TASK: TaskState = TaskState::Running;
+// CPU0 masks IRQs on every scheduler entry. The idle continuation keeps no
+// reference into scheduler storage across the interval with IRQs enabled.
+static mut FRAMES: [NativeFrame; 2] = [EMPTY_FRAME; 2];
+static mut STATES: [TaskState; 2] = [TaskState::Running, TaskState::Absent];
+static mut READY: ReadyQueue<2> = ReadyQueue::new();
+static mut CURRENT: usize = 0;
 static mut IDLE: context::Stack = context::Stack([0; context::STACK_BYTES]);
 
-fn disarm() {
-    unsafe { asm!("msr cntp_ctl_el0, xzr", "isb", options(nostack, preserves_flags)) };
+fn enqueue(pid: usize) {
+    unsafe {
+        if !(*(&raw mut READY)).push_back(pid) { fail(9) }
+        STATES[pid] = TaskState::Ready;
+    }
 }
 
-fn wake_due(now: u64) -> bool {
-    if let TaskState::BlockedUntil { target, resume } = unsafe { TASK } {
-        if now >= target {
-            disarm();
-            unsafe { TASK = TaskState::Ready(resume) };
-            return true;
+fn update_timer(now: u64) -> bool {
+    let mut earliest: Option<u64> = None;
+    let mut woke = false;
+    for (pid, state) in unsafe { STATES }.into_iter().enumerate() {
+        if let TaskState::Sleeping(target) = state {
+            if target <= now {
+                enqueue(pid);
+                woke = true;
+            } else {
+                earliest = Some(earliest.map_or(target, |prior| prior.min(target)));
+            }
         }
     }
-    false
+    unsafe {
+        if let Some(target) = earliest {
+            asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}", "isb",
+                 target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
+        } else {
+            asm!("msr cntp_ctl_el0, xzr", "isb", options(nostack, preserves_flags));
+        }
+    }
+    woke
 }
 
-fn sleep_until(f: &NativeFrame, ttbr: u64) -> i64 {
+fn sleep_until(f: &NativeFrame) -> Result<Option<u64>, i64> {
     if f.x[0] != 1 || f.x[1] != 1 {
-        return -22;
+        return Err(-22);
     }
     let mut request = [0u8; 16];
     if !native_el0_mmu::copy_from_user(f.x[2] as usize, &mut request) {
-        return -14;
+        return Err(-14);
     }
     let seconds = i64::from_le_bytes(request[..8].try_into().unwrap());
     let nanos = i64::from_le_bytes(request[8..].try_into().unwrap());
     if seconds < 0 || !(0..1_000_000_000).contains(&nanos) {
-        return -22;
+        return Err(-22);
     }
     let (epoch, frequency) = unsafe { CLOCK_DOMAIN };
     let hz = u128::from(frequency);
@@ -125,30 +145,50 @@ fn sleep_until(f: &NativeFrame, ttbr: u64) -> i64 {
     // including the subsecond contribution and the 64-bit epoch.
     let ticks = u128::from(epoch) + seconds as u128 * hz
         + (nanos as u128 * hz).div_ceil(1_000_000_000);
-    let Ok(target) = u64::try_from(ticks) else { return -75 };
-    if counter() >= target {
-        return 0;
-    }
-    unsafe {
-        TASK = TaskState::BlockedUntil { target, resume: Resume { frame: f, ttbr } };
-        asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}", "isb",
-             target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
-    }
-    if !wake_due(counter()) {
+    let Ok(target) = u64::try_from(ticks) else { return Err(-75) };
+    Ok((counter() < target).then_some(target))
+}
+
+fn dispatch(frame: &mut NativeFrame) {
+    let prior = unsafe { CURRENT };
+    unsafe { FRAMES[prior] = *frame };
+    loop {
+        update_timer(counter());
+        if let Some(next) = unsafe { (*(&raw mut READY)).pop_highest(|_| 0) } {
+            unsafe {
+                if next != prior {
+                    native_el0_mmu::switch(next).unwrap_or_else(|_| fail(9));
+                    *frame = FRAMES[next];
+                }
+                CURRENT = next;
+                STATES[next] = TaskState::Running;
+            }
+            if next != prior { event(b"DISPATCH", next, None); }
+            return;
+        }
+        if !unsafe { STATES }.iter().any(|s| matches!(s, TaskState::Sleeping(_))) {
+            head(10, 1);
+            head(1, 3);
+            unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+            park()
+        }
         let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
         unsafe { native_sleep_switch(top) };
-    } else {
-        // Setup crossed the deadline. Withdraw any latched level before reuse.
-        context::gic_write(context::GICD + 0x280, 1 << context::TIMER_IRQ);
-        unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
     }
-    let TaskState::Ready(resume) = (unsafe { TASK }) else { fail(9) };
-    if !ptr::eq(resume.frame, f) { fail(9) }
-    unsafe {
-        asm!("msr ttbr0_el1, {}", "isb", in(reg) resume.ttbr, options(nostack, preserves_flags));
-        TASK = TaskState::Running;
+}
+
+fn event(kind: &[u8], pid: usize, value: Option<i64>) {
+    if cfg!(jnox_native_peer) {
+        uart_write(b"NATIVE EL0 ");
+        uart_write(kind);
+        uart_write(b" PID ");
+        decimal(pid as i64);
+        if let Some(value) = value {
+            uart_write(b" ");
+            decimal(value);
+        }
+        uart_write(b"\n");
     }
-    0
 }
 
 #[unsafe(no_mangle)]
@@ -156,7 +196,7 @@ extern "C" fn native_sleep_irq() -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
     if id >= 1020 { return 0 }
-    let ready = id == context::TIMER_IRQ && wake_due(counter());
+    let ready = id == context::TIMER_IRQ && update_timer(counter());
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
     context::gic_write(context::GICC + 0x10, iar);
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
@@ -197,9 +237,9 @@ extern "C" fn native_el0_unexpected() -> ! {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn native_el0_sync(frame: *const NativeFrame, vector: u64) -> i64 {
+extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64) {
     // The lower-A64 vector created this private, 16-byte aligned EL1 frame.
-    let f = unsafe { &*frame };
+    let f = unsafe { &mut *frame };
     let vbar: u64;
     let ttbr: u64;
     let far: u64;
@@ -221,10 +261,15 @@ extern "C" fn native_el0_sync(frame: *const NativeFrame, vector: u64) -> i64 {
     }
     // Unsupported services do not dereference a user pointer, acquire
     // descriptors, emit output or claim to have completed a transfer.
+    let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
         6 => clock_gettime(f.x[0], f.x[1] as usize),
-        7 => sleep_until(f, ttbr),
+        7 => match sleep_until(f) {
+            Ok(target) => { deadline = target; 0 }
+            Err(error) => error,
+        },
+        8 if cfg!(jnox_native_process) => 0,
         _ => -38,
     };
     // Keep the first seven calls and the most recent call once the journal fills.
@@ -237,17 +282,33 @@ extern "C" fn native_el0_sync(frame: *const NativeFrame, vector: u64) -> i64 {
         asm!("dmb ishst", options(nostack, preserves_flags));
     }
     head(8, index as u64 + 1);
+    let pid = unsafe { CURRENT };
     if exit {
+        let status = f.x[0] as i32;
         head(9, f.x[0]);
-        head(10, 1);
-        head(1, 3);
-        unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
-        uart_write(b"NATIVE EL0 EXIT ");
-        decimal(f.x[0] as i64);
-        uart_write(b"\n");
-        park()
+        unsafe { STATES[pid] = TaskState::Exited(status) };
+        event(b"EXIT", pid, Some(i64::from(status)));
+        if !cfg!(jnox_native_peer) {
+            head(10, 1);
+            head(1, 3);
+            unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+            uart_write(b"NATIVE EL0 EXIT ");
+            decimal(i64::from(status));
+            uart_write(b"\n");
+        }
+        dispatch(f);
+    } else {
+        f.x[0] = result as u64;
+        if let Some(target) = deadline {
+            unsafe { STATES[pid] = TaskState::Sleeping(target) };
+            event(b"SLEEP", pid, None);
+            dispatch(f);
+        } else if f.x[8] == 8 && result == 0 {
+            update_timer(counter());
+            enqueue(pid);
+            dispatch(f);
+        }
     }
-    result
 }
 
 // The bootstrap source is fixed. The ordinary argument strings and pointers
@@ -328,6 +389,18 @@ fn native_v1_note(image: &[u8], plan: &LoadPlan<'_>) -> Option<()> {
     found.then_some(())
 }
 
+fn validated_image(image: &[u8]) -> LoadPlan<'_> {
+    let plan = native_elf::plan(image, 0x0040_0000..0x0080_0000)
+        .unwrap_or_else(|_| fail(4));
+    let perms = [Permission::ReadExecute, Permission::Read, Permission::ReadWrite];
+    if plan.entry != 0x0040_0000 || !plan.segments().iter().map(|s| s.permission).eq(perms)
+        || native_v1_note(image, &plan).is_none()
+    {
+        fail(5);
+    }
+    plan
+}
+
 pub(super) fn run() -> ! {
     let frequency: u64;
     unsafe {
@@ -343,14 +416,14 @@ pub(super) fn run() -> ! {
     uart_write(b"NATIVE EL0 ELF ");
     uart_write(env!("JNOX_PACKAGED_ELF_SHA256").as_bytes());
     uart_write(b"\n");
-    let plan = native_elf::plan(&jnox_native_el0_image, 0x0040_0000..0x0080_0000)
-        .unwrap_or_else(|_| fail(4));
-    let perms = [Permission::ReadExecute, Permission::Read, Permission::ReadWrite];
-    if plan.entry != 0x0040_0000 || !plan.segments().iter().map(|s| s.permission).eq(perms)
-        || native_v1_note(&jnox_native_el0_image, &plan).is_none()
-    {
-        fail(5);
-    }
+    let plan = validated_image(&jnox_native_el0_image);
+    #[cfg(jnox_native_peer)]
+    let peer = {
+        uart_write(b"NATIVE EL0 PEER ELF ");
+        uart_write(env!("JNOX_PACKAGED_PEER_SHA256").as_bytes());
+        uart_write(b"\n");
+        validated_image(PEER)
+    };
     let tail = initial_stack();
     let sp = STACK_TOP - tail.len();
     // Dedicated virt boot with a quiescent single CPU. Other profiles keep
@@ -363,6 +436,14 @@ pub(super) fn run() -> ! {
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
+        #[cfg(jnox_native_peer)]
+        {
+            native_el0_mmu::install_pair([&plan, &peer], [&tail, &tail]).unwrap_or_else(|_| fail(6));
+            FRAMES[1].elr = peer.entry;
+            FRAMES[1].sp_el0 = sp as u64;
+            enqueue(1);
+        }
+        #[cfg(not(jnox_native_peer))]
         native_el0_mmu::install(&plan, &tail).unwrap_or_else(|_| fail(6));
     }
     let current: u64;
@@ -384,5 +465,6 @@ pub(super) fn run() -> ! {
     head(14, ttbr);
     head(15, ARGS.len() as u64);
     head(1, 2);
-    unsafe { native_el0_enter(plan.entry, sp as u64) }
+    event(b"DISPATCH", 0, None);
+    unsafe { native_el0_enter(plan.entry, sp as u64, INITIAL_PSTATE) }
 }

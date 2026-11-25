@@ -358,6 +358,14 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_eevdf_app)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_el0)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_process)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_peer)");
+    let peer_image = selector("JNOX_NATIVE_PEER_ELF");
+    let peer_hash = selector("JNOX_NATIVE_PEER_ELF_SHA256");
+    assert_eq!(peer_image.is_some(), peer_hash.is_some(), "peer ELF requires its digest");
+    if peer_image.is_some() {
+        assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
+            "peer ELF requires ordinary native process packaging");
+    }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
     if profile.as_deref() != Some("native") {
@@ -384,7 +392,12 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
-                native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"));
+                native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
+                "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
+            if let (Some(source), Some(hash)) = (peer_image.as_deref(), peer_hash.as_deref()) {
+                package_native_image(source, hash, "native_peer.elf", "JNOX_PACKAGED_PEER_SHA256");
+                println!("cargo::rustc-cfg=jnox_native_peer");
+            }
             println!("cargo::rustc-cfg=jnox_native_el0");
         }
         Some("eevdf") => {
@@ -568,18 +581,18 @@ fn validate_architecture() {
     }
 }
 
-fn package_native_image(source: &str, expected: &str) {
+fn package_native_image(source: &str, expected: &str, name: &str, digest_env: &str) {
     use std::{fs, path::Path, process::Command};
     assert!(expected.len() == 64 && expected.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f')),
         "native ELF needs a lowercase SHA-256");
     let source = Path::new(source).canonicalize().expect("locate native ELF");
     println!("cargo::rerun-if-changed={}", source.display());
     let output = Path::new(&env::var_os("OUT_DIR").expect("missing Cargo output directory"))
-        .join("native_user.elf");
+        .join(name);
     let len = fs::copy(source, &output).expect("snapshot native ELF");
     assert!((64..=8 * 1024 * 1024).contains(&len), "native ELF package size");
     let actual = Command::new("sha256sum").arg(&output).output().expect("run sha256sum");
     let digest = std::str::from_utf8(&actual.stdout).expect("read ELF digest").split_whitespace().next();
     assert!(actual.status.success() && digest == Some(expected), "native ELF hash mismatch");
-    println!("cargo::rustc-env=JNOX_PACKAGED_ELF_SHA256={expected}");
+    println!("cargo::rustc-env={digest_env}={expected}");
 }

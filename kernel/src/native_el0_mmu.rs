@@ -1,4 +1,4 @@
-//! One cold, single-core virt EL1 address space. Included only by the native profile.
+//! Private ordinary-process mappings on the single virt CPU.
 use crate::native_elf::{LoadPlan, Permission};
 use core::{arch::asm, ptr};
 
@@ -8,9 +8,9 @@ const IMAGE_HI: usize = 0x0080_0000;
 pub(crate) const STACK_BOTTOM: usize = 0x0100_1000;
 pub(crate) const STACK_TOP: usize = 0x0101_1000;
 const LINK_START: usize = 0x4020_0000;
-// Eight L3 tables cover up to 16 MiB of actual linked kernel (including this
-// module's BSS); an image beyond the pool is rejected before installing TTBR0.
-const HIGH_TABLES: usize = 8;
+// Cover up to 32 MiB of linked kernel, including both embedded ELF files
+// (up to 8 MiB each), their private backing, and the kernel stack.
+const HIGH_TABLES: usize = 16;
 const BLOCK: usize = PAGE * 512;
 
 #[repr(C, align(4096))]
@@ -21,18 +21,37 @@ impl Table {
 #[repr(C, align(4096))]
 struct Storage<const N: usize>([u8; N]);
 
-static mut ROOT: Table = Table::EMPTY;
-static mut LOW: Table = Table::EMPTY;
+const IMAGE_BYTES: usize = IMAGE_HI - IMAGE_LO;
+const NG: u64 = 1 << 11;
+const PA_MASK: u64 = 0xffff_f000; // IPS=32
+
+#[repr(C)]
+struct Space {
+    root: Table,
+    low: Table,
+    image: [Table; 2],
+    stack: Table,
+    image_ram: Storage<IMAGE_BYTES>,
+    stack_ram: Storage<{ STACK_TOP - STACK_BOTTOM }>,
+}
+
+impl Space {
+    const EMPTY: Self = Self {
+        root: Table::EMPTY,
+        low: Table::EMPTY,
+        image: [const { Table::EMPTY }; 2],
+        stack: Table::EMPTY,
+        image_ram: Storage([0; IMAGE_BYTES]),
+        stack_ram: Storage([0; STACK_TOP - STACK_BOTTOM]),
+    };
+}
+
+static mut SPACES: [Space; 2] = [const { Space::EMPTY }; 2];
 static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
-static mut IMAGE: [Table; 2] = [const { Table::EMPTY }; 2];
-static mut STACK: Table = Table::EMPTY;
 static mut UART: Table = Table::EMPTY;
 static mut GIC: Table = Table::EMPTY;
-static mut IMAGE_RAM: Storage<{ IMAGE_HI - IMAGE_LO }> = Storage([0; IMAGE_HI - IMAGE_LO]);
-static mut STACK_RAM: Storage<{ STACK_TOP - STACK_BOTTOM }> = Storage([0; STACK_TOP - STACK_BOTTOM]);
-static mut INSTALLED: bool = false;
-
+static mut PROCESS_COUNT: usize = 0;
 unsafe extern "C" {
     static _start: u8;
     static __native_rw_start: u8;
@@ -63,29 +82,7 @@ unsafe fn page(table: *mut Table, va: usize, pa: usize, attr: u64) {
     unsafe { put(table, (va >> 12) & 511, pa as u64 | attr) }
 }
 
-/// Called once with DAIF masked, on the sole virt CPU, before user execution.
-/// The parser supplies borrowed segments. The caller owns the initial stack
-/// tail (including argc/argv); the initial SP is STACK_TOP - stack_tail.len().
-pub(crate) unsafe fn install(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(), &'static str> {
-    let (el, masks, spsel, ctl, sp, pc): (u64, u64, u64, u64, usize, usize);
-    unsafe {
-        asm!("mrs {}, CurrentEL", "mrs {}, daif", "mrs {}, SPSel", "mrs {}, sctlr_el1",
-             "mov {}, sp", "adr {}, .", out(reg) el, out(reg) masks, out(reg) spsel,
-             out(reg) ctl, out(reg) sp, out(reg) pc, options(nostack, preserves_flags));
-    }
-    // MMU, D-cache, I-cache and big-endian EL0/EL1 must all be off.
-    if el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
-        || ctl & (0x1005 | (3 << 24)) != 0 || unsafe { INSTALLED } {
-        return Err("native VM requires cold masked virt EL1h");
-    }
-    let start = &raw const _start as usize;
-    let rw = &raw const __native_rw_start as usize;
-    let end = &raw const __stack_top as usize;
-    if start != LINK_START || !(start < rw && rw < end) || rw % PAGE != 0
-        || end > start + HIGH_TABLES * BLOCK || !(start..rw).contains(&pc)
-        || !(rw..=end).contains(&sp) {
-        return Err("native kernel identity span");
-    }
+fn validate(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(), &'static str> {
     if stack_tail.is_empty() || stack_tail.len() > STACK_TOP - STACK_BOTTOM
         || stack_tail.len() % 16 != 0 {
         return Err("native stack tail");
@@ -107,14 +104,84 @@ pub(crate) unsafe fn install(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(
         return Err("native executable entry");
     }
 
-    let image = (&raw mut IMAGE_RAM).cast::<u8>();
-    let stack = (&raw mut STACK_RAM).cast::<u8>();
-    // The existing link.ld BSS clear zeroes every table, stack byte, unmapped
-    // image page and segment tail. No earlier call can have modified them:
-    // all possible failures above precede the first write.
+    Ok(())
+}
+
+// Same linker and cold-boot ABI as the one-process native profile. Each
+// process backs the full ordinary image aperture, preserving its existing size.
+unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
     unsafe {
-        link(&raw mut ROOT, 0, 30, &raw mut LOW);
-        link(&raw mut ROOT, start, 30, &raw mut HIGH);
+        let space = &mut *(&raw mut SPACES[pid]);
+        link(&raw mut space.root, 0, 30, &raw mut space.low);
+        link(&raw mut space.root, LINK_START, 30, &raw mut HIGH);
+        link(&raw mut space.low, 0x0900_0000, 21, &raw mut UART);
+        link(&raw mut space.low, 0x0800_0000, 21, &raw mut GIC);
+        let image = space.image_ram.0.as_mut_ptr();
+        for s in plan.segments() {
+            let begin = s.address as usize;
+            ptr::copy_nonoverlapping(s.bytes.as_ptr(), image.add(begin - IMAGE_LO), s.bytes.len());
+            let attr = NORMAL | USER | NG | PXN | match s.permission {
+                Permission::ReadExecute => RO,
+                Permission::Read => RO | UXN,
+                Permission::ReadWrite => UXN,
+            };
+            for va in (begin..s.page_end as usize).step_by(PAGE) {
+                let table = &raw mut space.image[(va - IMAGE_LO) / BLOCK];
+                link(&raw mut space.low, va, 21, table);
+                page(table, va, image.add(va - IMAGE_LO) as usize, attr);
+            }
+        }
+        let stack = space.stack_ram.0.as_mut_ptr();
+        link(&raw mut space.low, STACK_BOTTOM, 21, &raw mut space.stack);
+        for va in (STACK_BOTTOM..STACK_TOP).step_by(PAGE) {
+            page(&raw mut space.stack, va, stack.add(va - STACK_BOTTOM) as usize, NORMAL | USER | NG | PXN | UXN);
+        }
+        ptr::copy_nonoverlapping(stack_tail.as_ptr(), stack.add(STACK_TOP - STACK_BOTTOM - stack_tail.len()), stack_tail.len());
+    }
+}
+
+// The 8-bit ASID is in bits 55:48. TCR.A1=0 selects TTBR0; TCR.AS=0.
+// Neither ASID is recycled. All global translations are identical in both roots.
+fn root_id(pid: usize) -> u64 {
+    let root = unsafe { &raw const SPACES[pid].root };
+    (root as u64) | (((pid + 1) as u64) << 48)
+}
+
+/// The caller supplies validated kernel-resident images and initial stack tails.
+pub(crate) unsafe fn install(plan: &LoadPlan<'_>, tail: &[u8]) -> Result<(), &'static str> {
+    unsafe { install_spaces([plan], [tail]) }
+}
+
+pub(crate) unsafe fn install_pair(plans: [&LoadPlan<'_>; 2], tails: [&[u8]; 2]) -> Result<(), &'static str> {
+    unsafe { install_spaces(plans, tails) }
+}
+
+unsafe fn install_spaces<const N: usize>(plans: [&LoadPlan<'_>; N], stack_tails: [&[u8]; N]) -> Result<(), &'static str> {
+    let (el, masks, spsel, ctl, sp, pc): (u64, u64, u64, u64, usize, usize);
+    unsafe {
+        asm!("mrs {}, CurrentEL", "mrs {}, daif", "mrs {}, SPSel", "mrs {}, sctlr_el1",
+             "mov {}, sp", "adr {}, .", out(reg) el, out(reg) masks, out(reg) spsel,
+             out(reg) ctl, out(reg) sp, out(reg) pc, options(nostack, preserves_flags));
+    }
+    // MMU, D-cache, I-cache and big-endian EL0/EL1 must all be off.
+    if el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
+        || ctl & (0x1005 | (3 << 24)) != 0 || unsafe { PROCESS_COUNT != 0 } {
+        return Err("native VM requires cold masked virt EL1h");
+    }
+    let start = &raw const _start as usize;
+    let rw = &raw const __native_rw_start as usize;
+    let end = &raw const __stack_top as usize;
+    if start != LINK_START || !(start < rw && rw < end) || rw % PAGE != 0
+        || end > start + HIGH_TABLES * BLOCK || !(start..rw).contains(&pc)
+        || !(rw..=end).contains(&sp) {
+        return Err("native kernel identity span");
+    }
+    for pid in 0..N {
+        validate(plans[pid], stack_tails[pid])?;
+    }
+    // Cold startup cleared all BSS. Every input rejection precedes these
+    // writes, including the second process's size and address checks.
+    unsafe {
         for va in (start..end).step_by(PAGE) {
             let table = (&raw mut KERNEL).cast::<Table>().add((va - start) / BLOCK);
             if va % BLOCK == 0 {
@@ -122,31 +189,12 @@ pub(crate) unsafe fn install(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(
             }
             page(table, va, va, NORMAL | UXN | if va < rw { RO } else { PXN });
         }
-        for (va, table) in [(0x0900_0000, &raw mut UART), (0x0800_0000, &raw mut GIC),
-                            (0x0801_0000, &raw mut GIC)] {
-            link(&raw mut LOW, va, 21, table);
-            page(table, va, va, DEVICE);
+        page(&raw mut UART, 0x0900_0000, 0x0900_0000, DEVICE);
+        page(&raw mut GIC, 0x0800_0000, 0x0800_0000, DEVICE);
+        page(&raw mut GIC, 0x0801_0000, 0x0801_0000, DEVICE);
+        for pid in 0..N {
+            populate(pid, plans[pid], stack_tails[pid]);
         }
-        for s in plan.segments() {
-            let begin = s.address as usize;
-            ptr::copy_nonoverlapping(s.bytes.as_ptr(), image.add(begin - IMAGE_LO), s.bytes.len());
-            let attr = NORMAL | USER | PXN | match s.permission {
-                Permission::ReadExecute => RO,
-                Permission::Read => RO | UXN,
-                Permission::ReadWrite => UXN,
-            };
-            for va in (begin..s.page_end as usize).step_by(PAGE) {
-                let table = (&raw mut IMAGE).cast::<Table>().add((va - IMAGE_LO) / BLOCK);
-                link(&raw mut LOW, va, 21, table);
-                page(table, va, image.add(va - IMAGE_LO) as usize, attr);
-            }
-        }
-        link(&raw mut LOW, STACK_BOTTOM, 21, &raw mut STACK);
-        for va in (STACK_BOTTOM..STACK_TOP).step_by(PAGE) {
-            page(&raw mut STACK, va, stack.add(va - STACK_BOTTOM) as usize, NORMAL | USER | PXN | UXN);
-        }
-        ptr::copy_nonoverlapping(stack_tail.as_ptr(), stack.add(STACK_TOP - STACK_BOTTOM - stack_tail.len()), stack_tail.len());
-
         // Single CPU, cold uncached mappings. MAIR[0] Normal non-cacheable,
         // MAIR[1] Device-nGnRnE; no cacheable alias or dirty D-cache line.
         // T0SZ=25 starts at L1 (39-bit VA); TTBR1 walks disabled, 32-bit PA.
@@ -154,65 +202,117 @@ pub(crate) unsafe fn install(plan: &LoadPlan<'_>, stack_tail: &[u8]) -> Result<(
         asm!("dsb sy", "msr mair_el1, {mair}", "msr tcr_el1, {tcr}",
              "msr ttbr0_el1, {root}", "isb", "tlbi vmalle1", "ic iallu",
              "dsb sy", "isb", "msr sctlr_el1, {enable}", "isb",
-             mair = in(reg) 0x44u64, tcr = in(reg) tcr, root = in(reg) &raw const ROOT,
+             mair = in(reg) 0x44u64, tcr = in(reg) tcr, root = in(reg) root_id(0),
              enable = in(reg) ctl | 1, options(nostack, preserves_flags));
-        INSTALLED = true;
+        PROCESS_COUNT = N;
     }
     Ok(())
 }
 
-/// Tests every page against the installed user permissions before a syscall
-/// copy. Empty copies access no bytes; callers separately validate descriptors.
-pub(crate) fn user_range(addr: usize, len: usize, write: bool) -> bool {
-    if !unsafe { INSTALLED } {
+pub(crate) fn space_id(pid: usize) -> Option<u64> {
+    if pid >= unsafe { PROCESS_COUNT } {
+        return None;
+    }
+    Some(root_id(pid))
+}
+
+pub(crate) fn active() -> Option<usize> {
+    let count = unsafe { PROCESS_COUNT };
+    if count == 0 { return None; }
+    let ttbr: u64;
+    unsafe { asm!("mrs {}, ttbr0_el1", out(reg) ttbr, options(nostack, preserves_flags)) };
+    (0..count).find(|&pid| root_id(pid) == ttbr)
+}
+
+fn irq_masked() -> bool {
+    let daif: u64;
+    unsafe { asm!("mrs {}, daif", out(reg) daif, options(nostack, preserves_flags)) };
+    daif & (1 << 7) != 0
+}
+
+/// Scheduler owns EL1 and keeps IRQ masked until the selected frame returns.
+/// For immutable per-ASID nG user entries, a switch does not recycle any TLB
+/// tag. Installation already invalidated all predecessors on this sole CPU.
+pub(crate) unsafe fn switch(pid: usize) -> Result<(), &'static str> {
+    let target = space_id(pid).ok_or("uninstalled native pid")?;
+    if !irq_masked() || active().is_none() {
+        return Err("native switch context");
+    }
+    unsafe {
+        asm!("dsb sy", "msr ttbr0_el1, {}", "isb", in(reg) target, options(nostack, preserves_flags));
+    }
+    if active() != Some(pid) {
+        return Err("native TTBR readback");
+    }
+    Ok(())
+}
+
+fn translation(pid: usize, addr: usize, write: bool) -> Option<usize> {
+    space_id(pid)?;
+    unsafe {
+        let space = &raw const SPACES[pid];
+        let (table, base, size) = if (IMAGE_LO..IMAGE_HI).contains(&addr) {
+            (&raw const (*space).image[(addr - IMAGE_LO) / BLOCK],
+             (&raw const (*space).image_ram) as usize, IMAGE_BYTES)
+        } else if (STACK_BOTTOM..STACK_TOP).contains(&addr) {
+            (&raw const (*space).stack, (&raw const (*space).stack_ram) as usize,
+             STACK_TOP - STACK_BOTTOM)
+        } else {
+            return None;
+        };
+        let entry = table.cast::<u64>().add((addr >> 12) & 511).read();
+        let required = VALID | USER | NG | AF;
+        let pa = (entry & PA_MASK) as usize;
+        if entry & required != required || write && entry & RO != 0
+            || !(base..base + size).contains(&pa) {
+            return None;
+        }
+        Some(pa + (addr & (PAGE - 1)))
+    }
+}
+
+fn can_copy(pid: usize, addr: usize, len: usize, write: bool) -> bool {
+    if !irq_masked() || space_id(pid).is_none() {
         return false;
     }
     if len == 0 {
         return true;
     }
-    let Some(last) = addr.checked_add(len - 1) else { return false };
-    let (tables, base) = if addr >= IMAGE_LO && last < IMAGE_HI {
-        ((&raw const IMAGE).cast::<Table>(), IMAGE_LO)
-    } else if addr >= STACK_BOTTOM && last < STACK_TOP {
-        (&raw const STACK, STACK_BOTTOM & !(BLOCK - 1))
-    } else {
+    let Some(end) = addr.checked_add(len - 1) else { return false };
+    // Both endpoints must lie in a single admitted aperture. This also bounds
+    // validation of adversarial integer lengths to at most 1024 user pages.
+    if !((addr >= IMAGE_LO && end < IMAGE_HI) || (addr >= STACK_BOTTOM && end < STACK_TOP)) {
         return false;
-    };
-    for va in ((addr & !(PAGE - 1))..=last).step_by(PAGE) {
-        let descriptor = unsafe {
-            tables.add((va - base) / BLOCK).cast::<u64>().add((va >> 12) & 511).read()
-        };
-        if descriptor & (VALID | USER) != VALID | USER || (write && descriptor & RO != 0) {
-            return false;
-        }
     }
+    ((addr & !(PAGE - 1))..=end).step_by(PAGE).all(|va| translation(pid, va, write).is_some())
+}
+
+pub(crate) fn user_range(addr: usize, len: usize, write: bool) -> bool {
+    active().is_some_and(|pid| can_copy(pid, addr, len, write))
+}
+
+// Each aperture is backed contiguously at its VA offset. Use its privileged
+// identity alias so a blocked process can receive a result without a switch.
+pub(crate) fn copy_from_process(pid: usize, addr: usize, dst: &mut [u8]) -> bool {
+    if !can_copy(pid, addr, dst.len(), false) { return false; }
+    if dst.is_empty() { return true; }
+    let Some(pa) = translation(pid, addr, false) else { return false; };
+    unsafe { ptr::copy(pa as *const u8, dst.as_mut_ptr(), dst.len()) };
     true
 }
 
-/// Immutable page tables and a single suspended user thread make this copy
-/// all-or-nothing for the caller, including unaligned spans crossing a page.
-pub(crate) fn copy_to_user(addr: usize, bytes: &[u8; 16]) -> bool {
-    if !user_range(addr, bytes.len(), true) {
-        return false;
-    }
-    unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), user_backing(addr), bytes.len()) };
+pub(crate) fn copy_to_process(pid: usize, addr: usize, src: &[u8]) -> bool {
+    if !can_copy(pid, addr, src.len(), true) { return false; }
+    if src.is_empty() { return true; }
+    let Some(pa) = translation(pid, addr, true) else { return false; };
+    unsafe { ptr::copy(src.as_ptr(), pa as *mut u8, src.len()) };
     true
 }
 
-pub(crate) fn copy_from_user(addr: usize, bytes: &mut [u8; 16]) -> bool {
-    if !user_range(addr, bytes.len(), false) {
-        return false;
-    }
-    unsafe { ptr::copy_nonoverlapping(user_backing(addr), bytes.as_mut_ptr(), bytes.len()) };
-    true
+pub(crate) fn copy_from_user(addr: usize, dst: &mut [u8]) -> bool {
+    active().is_some_and(|pid| copy_from_process(pid, addr, dst))
 }
 
-// The caller has validated the complete span against the immutable mappings.
-fn user_backing(addr: usize) -> *mut u8 {
-    let (backing, base) = if addr < IMAGE_HI {
-        ((&raw mut IMAGE_RAM).cast::<u8>(), IMAGE_LO)
-    } else {
-        ((&raw mut STACK_RAM).cast::<u8>(), STACK_BOTTOM)
-    };
-    backing.wrapping_add(addr - base)
+pub(crate) fn copy_to_user(addr: usize, src: &[u8]) -> bool {
+    active().is_some_and(|pid| copy_to_process(pid, addr, src))
 }

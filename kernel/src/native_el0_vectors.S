@@ -1,4 +1,4 @@
-// Opt-in native AArch64 single-process entry. Rust validates the executable
+// Opt-in native AArch64 process entry. Rust validates the executable
 // entry and complete user stack, installs the mappings, and quiesces IRQ sources.
 // Boot enables FP/SIMD. EL1h supplies the kernel stack for every exception.
 .section .text.native_el0,"ax",%progbits
@@ -27,6 +27,7 @@ native_el0_vectors:
 .type native_el0_enter,%function
 native_el0_enter:
     msr daifset,#15
+    mov x3,x2
     mrs x2,CurrentEL
     cmp x2,#4
     b.ne .Lunexpected
@@ -45,8 +46,7 @@ native_el0_enter:
     isb
     msr elr_el1,x0
     msr sp_el0,x1
-    mov x2,#0x3c0                 // EL0t, DAIF masked, NZCV clear
-    msr spsr_el1,x2
+    msr spsr_el1,x3
     msr tpidr_el0,xzr
     msr tpidrro_el0,xzr
     msr fpcr,xzr
@@ -107,7 +107,7 @@ native_el0_enter:
 
 .macro save_native_frame
     msr daifset,#15
-    sub sp,sp,#816
+    sub sp,sp,#832
     native_integer_pairs stp
     str x30,[sp,#240]
     mrs x9,esr_el1
@@ -122,12 +122,16 @@ native_el0_enter:
     mrs x10,fpsr
     stp x9,x10,[sp,#288]
     native_simd_pairs stp
+    mrs x9,tpidr_el0
+    mrs x10,tpidrro_el0
+    str x9,[sp,#816]
+    str x10,[sp,#824]
 .endm
 
 .Luser_irq:
     save_native_frame
     bl native_sleep_irq
-    cbnz x0,.Lunexpected         // A running EL0 process cannot be blocked.
+    // Due sleepers join the queue. The interrupted process keeps its turn.
     b .Lrestore
 
 .Luser_sync:
@@ -135,17 +139,6 @@ native_el0_enter:
     mov x0,sp
     mov x1,#0x400
     bl native_el0_sync
-    // Only the authorized SVC may return a result. Rust can inspect the
-    // complete saved fault frame and terminate other synchronous exceptions.
-    ldr x9,[sp,#248]
-    lsr x10,x9,#26
-    cmp x10,#0x15
-    b.ne .Lunexpected
-    uxth w10,w9
-    mov w11,#0x4a01
-    cmp w10,w11
-    b.ne .Lunexpected
-    str x0,[sp]
 .Lrestore:
     ldp x9,x10,[sp,#256]
     tst x9,#0x1f
@@ -157,10 +150,14 @@ native_el0_enter:
     ldp x9,x10,[sp,#288]
     msr fpcr,x9
     msr fpsr,x10
+    ldr x9,[sp,#816]
+    ldr x10,[sp,#824]
+    msr tpidr_el0,x9
+    msr tpidrro_el0,x10
     native_simd_pairs ldp
     native_integer_pairs ldp
     ldr x30,[sp,#240]
-    add sp,sp,#816
+    add sp,sp,#832
     clrex
     eret
 
