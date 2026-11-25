@@ -2207,3 +2207,5 @@ VER-023,has-partial-evidence,EVD-145
 IMP-145,tested-in,EVD-145
 POL-015,partially-implemented-by,IMP-145
 POL-015,has-switch-evidence,EVD-145
+CHG-300,affects,REQ-023
+CHG-300,affects,REQ-024
