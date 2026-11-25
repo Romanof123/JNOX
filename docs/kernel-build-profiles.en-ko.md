@@ -11,6 +11,12 @@ The examples use the standard kernel build and the native startup probe, respect
 
 기본 release는 크기 최적화 s를 사용한다. speed는 release를 상속하고 opt-level만 3으로 변경한다. 앱은 기존 SDK 설정으로 빌드하며, 이미 만든 앱 ELF는 두 패키지에 동일하게 넣는다.
 
+## Verified build selection / 커널 빌드 선택 검증
+
+Three single-core AArch64 QEMU boots ran the same user ELF. The default and explicit release kernel images matched byte for byte. The speed build produced a different kernel and all three programs exited with status 37. See [the independent build and boot results](evidence/native-kernel-build-profile-selection.en-ko.md).
+
+단일 코어 AArch64 QEMU에서 같은 앱을 세 번 실행했다. 기본 빌드와 명시적 release의 커널은 바이트 단위로 일치했다. speed에서는 커널이 달라졌고 앱 종료 코드는 세 경우 모두 37이었다. [독립 빌드 및 부팅 결과](evidence/native-kernel-build-profile-selection.en-ko.md)
+
 ## Prospective paired validation / 사전 비교 계획
 
 1. Freeze one clean source revision, Rust/Cargo/LLVM linker and QEMU versions, architecture, host, target CPU and SDK ELF hashes. Archive source (including Cargo manifests/config, kernel build script and SDK commands), build logs, input ELFs, both kernel ELFs, manifests and raw captures. Record any Cargo configuration sources, compiler wrappers, profile/target environment overrides and tool paths. Run clean comparisons without ambient overrides. Include size and executable segment sizes in bytes.
