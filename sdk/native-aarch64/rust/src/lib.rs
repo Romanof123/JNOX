@@ -149,3 +149,6 @@ pub mod pipes;
 
 #[cfg(all(feature = "local-socket", target_arch = "aarch64"))]
 pub mod local_socket;
+
+#[cfg(all(feature = "pubsub", target_arch = "aarch64"))]
+pub mod pubsub;

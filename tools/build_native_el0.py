@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package up to three native AArch64 applications for virt or Raspberry Pi 4."""
+"""Package up to four native AArch64 applications for virt or Raspberry Pi 4."""
 import argparse
 import hashlib
 import json
@@ -76,9 +76,33 @@ def budget_tuple(value):
     return quota, period
 
 
+def topic_grant(value):
+    parts = value.split(":")
+    if len(parts) != 2 or parts[0] not in ("0", "1", "2"):
+        raise argparse.ArgumentTypeError("expected client SLOT:MASK for slot 0, 1 or 2")
+    mask = parts[1]
+    base = 16 if mask.startswith("0x") else 10
+    digits = mask[2:] if base == 16 else mask
+    allowed = "0123456789abcdefABCDEF" if base == 16 else "0123456789"
+    if not digits or any(c not in allowed for c in digits) or int(digits, base) > 15:
+        raise argparse.ArgumentTypeError("topic mask must be 0..15 (decimal or 0x hex)")
+    return int(parts[0]), int(digits, base)
+
+
+def topic_vector(parser, grants):
+    masks = [0, 0, 0]
+    seen = set()
+    for slot, mask in grants:
+        if slot in seen:
+            parser.error("duplicate client slot in topic grants for one direction")
+        seen.add(slot)
+        masks[slot] = mask
+    return "".join(format(mask, "x") for mask in masks)
+
+
 def ipc_route(value):
-    if len(value) != 3 or value[1] != ":" or value[0] not in "012" or value[2] not in "012":
-        raise argparse.ArgumentTypeError("expected two colon-separated slots 0, 1 or 2")
+    if len(value) != 3 or value[1] != ":" or value[0] not in "0123" or value[2] not in "0123":
+        raise argparse.ArgumentTypeError("expected two colon-separated slots 0 through 3")
     return int(value[0]), int(value[2])
 
 
@@ -176,7 +200,7 @@ def thread_priorities(value):
 
 
 def native_schedule(parser, args):
-    if len(args.peer_elf) > (3 if args.policy == ["amc"] else 2):
+    if len(args.peer_elf) > (3 if args.policy in (["amc"], ["fifo"], ["rr"]) else 2):
         parser.error("too many peer ELFs for the selected policy")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
@@ -309,7 +333,7 @@ def amc_manifest(source, slots):
 
 
 def encode_arguments(parser, args):
-    vectors = [args.arg, args.peer_arg, args.peer2_arg]
+    vectors = [args.arg, args.peer_arg, args.peer2_arg, args.peer3_arg]
     encoded = {}
     for slot, extras in enumerate(vectors):
         if not extras:
@@ -372,7 +396,7 @@ def main():
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
-                        help="independently linked peer in slot order (up to three peers for AMC, two for other policies)")
+                        help="independently linked peer in slot order (up to three peers for virt FIFO/RR or AMC, two for other policies)")
     parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
@@ -414,7 +438,7 @@ def main():
     parser.add_argument("--peer-class", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--allotment-ticks", type=allotments, action="append", default=[], metavar="TOP,MIDDLE,BOTTOM")
     parser.add_argument("--boost-ticks", type=unsigned_decimal, action="append", default=[])
-    for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg")):
+    for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg", "--peer3-arg")):
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
     parser.add_argument("--thread-priorities", type=thread_priorities, action=SinglePath)
@@ -446,14 +470,35 @@ def main():
                         help="grant one native FIFO/RR process pair a shared-buffer loan channel")
     parser.add_argument("--waitset", action="count", default=0,
                         help="enable waitsets for configured mailbox or notification routes")
+    parser.add_argument("--pubsub-service", choices=["3"], action="append", default=[])
+    parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
+    parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if len(args.pubsub_service) > 1:
+        parser.error("--pubsub-service may appear only once")
+    if (args.pubsub_publish or args.pubsub_subscribe) and not args.pubsub_service:
+        parser.error("topic grants require --pubsub-service")
+    if args.pubsub_service:
+        if (args.board not in (None, "virt") or args.policy not in (["fifo"], ["rr"])
+                or args.threads or len(args.peer_elf) != 3 or args.peer3_arg):
+            parser.error("pubsub requires four ordinary virt FIFO/RR applications and kernel-generated slot 3 arguments")
+        if not all((pid, 3) in args.ipc_route for pid in range(3)):
+            parser.error("pubsub requires explicit IPC routes 0:3, 1:3 and 2:3")
+        publish = topic_vector(parser, args.pubsub_publish)
+        subscribe = topic_vector(parser, args.pubsub_subscribe)
     if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
         parser.error("--net-service must appear once and match --socket-service")
+    if args.net_service and len(args.peer_elf) > 2:
+        parser.error("--net-service supports at most three native processes")
     if len(args.socket_service) > 1:
         parser.error("--socket-service may appear only once")
     if args.socket_service:
+        if len(args.peer_elf) > 2 and not args.pubsub_service:
+            parser.error("--socket-service supports at most three native processes")
         service_slot = int(args.socket_service[0])
         service_clients = sorted(caller for caller, server in args.ipc_route if server == service_slot)
+        if 3 in service_clients:
+            parser.error("socket service accepts identities 0..2")
         if not service_clients:
             parser.error("--socket-service requires an explicit --ipc-route into its slot")
     if len(args.loan_route) > 1:
@@ -503,8 +548,9 @@ def main():
         if not routes:
             continue
         count = 1 + len(args.peer_elf)
-        if board != "virt" or policy not in ("fifo", "rr") or args.threads or count not in (2, 3):
-            parser.error(f"--{kind}-route requires two or three native processes under FIFO or RR on virt")
+        maximum = 4 if kind == "ipc" else 3
+        if board != "virt" or policy not in ("fifo", "rr") or args.threads or not 2 <= count <= maximum:
+            parser.error(f"--{kind}-route requires 2..{maximum} native processes under FIFO or RR on virt")
         if len(set(routes)) != len(routes):
             parser.error(f"duplicate --{kind}-route")
         if any(caller == server or max(caller, server) >= count for caller, server in routes):
@@ -538,6 +584,8 @@ def main():
     elif args.partition_windows is not None:
         parser.error("--partition-windows requires --policy partition")
     vectors, encoded_arguments = encode_arguments(parser, args)
+    if args.pubsub_service:
+        vectors[3] = [publish, subscribe]
     service = args.deadline_service_elf
     cells = []
     if service or args.deadline_service_cells or args.deadline_switch_cap:
@@ -620,6 +668,12 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.pubsub_service:
+        env["JNOX_NATIVE_PUBSUB_SERVICE"] = "3"
+        env["JNOX_NATIVE_PUBSUB_PUBLISH"] = publish
+        env["JNOX_NATIVE_PUBSUB_SUBSCRIBE"] = subscribe
+        metadata["pubsub_service"] = {"slot": 3, "authorized_clients": [0, 1, 2],
+                                      "publish_masks": publish, "subscribe_masks": subscribe}
     if shell is not None:
         names, files, image = shell
         rom = out / "native_shell.rom"
@@ -811,6 +865,9 @@ def main():
                 env["JNOX_NATIVE_LOTTERY_FLOORS"] = ",".join(map(str, floors))
                 metadata.update(lottery_window=[horizon, width], lottery_floors=floors)
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
+        if len(slots) == 4 and policy in ("fifo", "rr"):
+            metadata["fixed_event_layout"] = {"fields": 24, "ready_start": 12, "service_start": 16,
+                                              "remaining_start": 20, "slots_per_group": 4}
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy
         if priorities:
@@ -830,7 +887,7 @@ def main():
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
-    if policy == "amc":
+    if policy == "amc" or (policy in ("fifo", "rr") and len(slots) == 4):
         for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
             slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")

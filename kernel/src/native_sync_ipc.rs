@@ -7,10 +7,12 @@ use super::{Action, CLOCK_DOMAIN, COUNT, CURRENT, FRAMES, Fixed, NativeFrame, fa
 mod endpoints;
 #[cfg(jnox_native_sync_ipc)]
 static mut ENDPOINTS: endpoints::SyncIpc<COUNT> = {
+    let state = endpoints::SyncIpc::new(super::NATIVE_IPC_ROUTES);
     #[cfg(jnox_native_socket_service)]
-    { endpoints::SyncIpc::with_broker(super::NATIVE_IPC_ROUTES, super::NATIVE_SOCKET_SERVICE) }
-    #[cfg(not(jnox_native_socket_service))]
-    { endpoints::SyncIpc::new(super::NATIVE_IPC_ROUTES) }
+    let state = state.register_broker(super::NATIVE_SOCKET_SERVICE);
+    #[cfg(jnox_native_pubsub_service)]
+    let state = state.register_broker(super::NATIVE_PUBSUB_SERVICE);
+    state
 };
 
 #[cfg(jnox_native_mailbox_ipc)]
@@ -67,6 +69,7 @@ fn attach(id: usize, owner: usize, source: u64, mask: u64) -> Result<u64, i32> {
 pub(super) fn handles(service: u64) -> bool {
     (cfg!(jnox_native_sync_ipc) && matches!(service, 21..=23))
         || (cfg!(jnox_native_socket_service) && service == 37)
+        || (cfg!(jnox_native_pubsub_service) && service == 52)
         || (cfg!(jnox_native_net_service) && matches!(service, 38..=40))
         || (cfg!(jnox_native_mailbox_ipc) && matches!(service, 24..=25))
         || (cfg!(jnox_native_notify_ipc) && matches!(service, 26..=29))
@@ -192,12 +195,20 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
             #[cfg(jnox_native_sync_ipc)]
             23 => unsafe { (&mut *(&raw mut ENDPOINTS)).reply(id, frame.x[0], frame.x[1], now) },
             #[cfg(jnox_native_socket_service)]
-            37 => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_receive(id, now) },
+            37 if id == super::NATIVE_SOCKET_SERVICE => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_receive(id, now) },
+            #[cfg(jnox_native_socket_service)]
+            37 => Err(-13),
+            #[cfg(jnox_native_pubsub_service)]
+            52 if id == super::NATIVE_PUBSUB_SERVICE => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_receive(id, now) },
+            #[cfg(jnox_native_pubsub_service)]
+            52 => Err(-13),
             #[cfg(jnox_native_net_service)]
             38 | 39 => net_frame(id, op, frame.x[0] as usize, frame.x[1] as usize)
                 .map(|n| transferred = n as u64),
             #[cfg(jnox_native_net_service)]
-            40 => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_try_receive(id, now) },
+            40 if id == super::NATIVE_SOCKET_SERVICE => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_try_receive(id, now) },
+            #[cfg(jnox_native_net_service)]
+            40 => Err(-13),
             #[cfg(jnox_native_mailbox_ipc)]
             24 => unsafe { (&mut *(&raw mut MAIL)).send(id, frame.x[0] as usize, frame.x[1], deadline, now) },
             #[cfg(jnox_native_mailbox_ipc)]
@@ -231,6 +242,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
     if op <= 23 || op == 27 || op == 32 { frame.x[2] = 0; }
     #[cfg(jnox_native_socket_service)]
     if op == 37 || (cfg!(jnox_native_net_service) && op == 40) { frame.x[2] = 0; frame.x[3] = 0; }
+    #[cfg(jnox_native_pubsub_service)]
+    if op == 52 { frame.x[2] = 0; frame.x[3] = 0; }
     drain(policy(), Some((id, frame)));
     #[cfg(jnox_native_sync_ipc)]
     if unsafe { (&*(&raw const ENDPOINTS)).blocked(id) } { return Action::BlockIpc; }
