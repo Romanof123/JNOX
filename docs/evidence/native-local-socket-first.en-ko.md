@@ -19,3 +19,5 @@ The two ordinary regression packages use the default SDK linkage and omit the so
 # 한국어
 
 `e7d3ded`에서 스트림·데이터그램·순차 패킷의 FIFO/RR 여섯 첫 부팅 모두 세 ELF 해시를 출력한 뒤 `FAULT 5`로 멈췄다. 일반 로더가 요구하는 세 번째 RW LOAD 세그먼트가 브로커에 없다. 소켓 연산, 상대 종료, 대기 해제를 게스트에서 관측할 수 없었다. 소켓 옵션을 끈 일반 C/Rust 인자 처리와 동기 IPC는 두 정책에서 성공했고, 각 슬롯의 최종 RAM에서 결과를 확인했다. 로컬 AF_UNIX 인수는 미통과이며 실제 IPv4 TCP/UDP 상대 트래픽과 보드 검증은 이 실행 범위 밖이다.
+
+[Download captures and replay / 실행 원본과 재현 도구](native-local-socket-first.tar.gz). SHA-256 `0447796723282912334595938d6372b30c77960917afc068bb0d77c28bd3ccd4`.
