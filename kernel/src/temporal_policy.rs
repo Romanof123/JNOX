@@ -97,6 +97,9 @@ pub(crate) enum CbsError {
     JobPending,
     MissedDeadline(usize),
     TimeOverflow,
+    InvalidOpening,
+    StaleOwner,
+    InactiveTransition,
 }
 
 fn gcd(mut a: u128, mut b: u128) -> u128 {
@@ -109,24 +112,28 @@ fn gcd(mut a: u128, mut b: u128) -> u128 {
 /// Accumulate exact reduced fractions in input order. Each intermediate
 /// cross-product has a u64 factor and a u32 factor, so their sum fits u128.
 /// Reject if the reduced running total exceeds one or cannot fit in two u64s.
-fn admits(reservations: &[(u32, u32)]) -> Option<()> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u64)]
+pub(crate) enum AdmissionError { Invalid = 1, Capacity, Arithmetic }
+
+fn admits(reservations: &[(u32, u32)]) -> Result<(), AdmissionError> {
     let (mut numerator, mut denominator) = (0u64, 1u64);
     for &(quota, period) in reservations {
         if quota == 0 || quota > period {
-            return None;
+            return Err(AdmissionError::Invalid);
         }
         let period = u128::from(period);
         let denominator_wide = u128::from(denominator);
         let total = u128::from(numerator) * period + u128::from(quota) * denominator_wide;
         let scale = denominator_wide * period;
         if total > scale {
-            return None;
+            return Err(AdmissionError::Capacity);
         }
         let divisor = gcd(total, scale);
-        numerator = u64::try_from(total / divisor).ok()?;
-        denominator = u64::try_from(scale / divisor).ok()?;
+        numerator = u64::try_from(total / divisor).map_err(|_| AdmissionError::Arithmetic)?;
+        denominator = u64::try_from(scale / divisor).map_err(|_| AdmissionError::Arithmetic)?;
     }
-    Some(())
+    Ok(())
 }
 
 /// Hard constant-bandwidth servers under preemptive uniprocessor EDF. Each
@@ -144,7 +151,7 @@ pub(crate) struct HardCbs<const N: usize> {
 impl<const N: usize> HardCbs<N> {
     /// Reservation parameters are (quota, period), in whole ticks.
     pub(crate) fn new(start_tick: u64, reservations: [(u32, u32); N]) -> Option<Self> {
-        admits(&reservations)?;
+        admits(&reservations).ok()?;
         let servers = reservations.map(|(quota, period)| Server {
             quota,
             period,
@@ -179,17 +186,7 @@ impl<const N: usize> HardCbs<N> {
         if server.work != 0 {
             return Err(CbsError::JobPending);
         }
-        let time_left = server.deadline.saturating_sub(self.now);
-        if time_left == 0
-            || u128::from(server.remaining) * u128::from(server.period)
-                > u128::from(server.quota) * u128::from(time_left)
-        {
-            server.deadline = self
-                .now
-                .checked_add(u64::from(server.period))
-                .ok_or(CbsError::TimeOverflow)?;
-            server.remaining = server.quota;
-        }
+        activate(server, self.now)?;
         server.work = work;
         Ok(())
     }
@@ -201,30 +198,7 @@ impl<const N: usize> HardCbs<N> {
     /// deadline. Any error leaves the clock and all allocations unchanged.
     pub(crate) fn tick(&mut self) -> Result<Option<usize>, CbsError> {
         let next = self.now.checked_add(1).ok_or(CbsError::TimeOverflow)?;
-        let mut winner = None;
-        for (id, server) in self.servers.iter().enumerate() {
-            if server.work == 0 {
-                continue;
-            }
-            let (deadline, remaining) = if server.remaining == 0 {
-                if self.now < server.deadline {
-                    continue;
-                }
-                let deadline = server
-                    .deadline
-                    .checked_add(u64::from(server.period))
-                    .ok_or(CbsError::TimeOverflow)?;
-                (deadline, server.quota)
-            } else {
-                (server.deadline, server.remaining)
-            };
-            if deadline <= self.now {
-                return Err(CbsError::MissedDeadline(id));
-            }
-            if winner.is_none_or(|(_, earliest, _)| deadline < earliest) {
-                winner = Some((id, deadline, remaining));
-            }
-        }
+        let winner = choose_grant(&self.servers, self.now, |_, server| server.work != 0, |_, _, _| {})?;
         self.now = next;
         Ok(winner.map(|(id, deadline, remaining)| {
             let server = &mut self.servers[id];
@@ -233,6 +207,138 @@ impl<const N: usize> HardCbs<N> {
             server.work -= 1;
             id
         }))
+    }
+}
+
+fn activate(server: &mut Server, now: u64) -> Result<(), CbsError> {
+    let time_left = server.deadline.saturating_sub(now);
+    if time_left == 0
+        || u128::from(server.remaining) * u128::from(server.period)
+            > u128::from(server.quota) * u128::from(time_left)
+    {
+        server.deadline = now
+            .checked_add(u64::from(server.period))
+            .ok_or(CbsError::TimeOverflow)?;
+        server.remaining = server.quota;
+    }
+    Ok(())
+}
+
+// A candidate includes the allocation after any due hard replenishment.
+fn candidate(server: &Server, now: u64, id: usize) -> Result<Option<(u64, u32)>, CbsError> {
+    let (deadline, remaining) = if server.remaining == 0 {
+        if now < server.deadline { return Ok(None); }
+        (server.deadline.checked_add(u64::from(server.period)).ok_or(CbsError::TimeOverflow)?,
+         server.quota)
+    } else { (server.deadline, server.remaining) };
+    if deadline <= now { return Err(CbsError::MissedDeadline(id)); }
+    Ok(Some((deadline, remaining)))
+}
+
+fn choose_grant<const N: usize>(
+    servers: &[Server; N], now: u64, active: impl Fn(usize, &Server) -> bool,
+    mut allocation: impl FnMut(usize, u64, u32),
+) -> Result<Option<(usize, u64, u32)>, CbsError> {
+    let mut winner = None;
+    for (id, server) in servers.iter().enumerate() {
+        if !active(id, server) { continue; }
+        if let Some((deadline, remaining)) = candidate(server, now, id)? {
+            allocation(id, deadline, remaining);
+            if winner.is_none_or(|(_, earliest, _)| deadline < earliest) {
+                winner = Some((id, deadline, remaining));
+            }
+        }
+    }
+    Ok(winner)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Readiness { Active(u64), Sleeping, Exited }
+
+/// An admitted persistent process consumes one entitlement per selected opening.
+/// The native timer and saved process frames belong to the caller.
+pub(crate) struct NativeCbs<const N: usize> {
+    servers: [Server; N],
+    states: [Readiness; N],
+    first_unopened: u64,
+    owner: Option<usize>,
+}
+
+impl<const N: usize> NativeCbs<N> {
+    pub(crate) fn new(reservations: [(u32, u32); N]) -> Result<Self, AdmissionError> {
+        if !(1..=3).contains(&N) { return Err(AdmissionError::Invalid); }
+        admits(&reservations)?;
+        let servers = reservations.map(|(quota, period)| Server {
+            quota, period, remaining: quota, deadline: u64::from(period), work: 0,
+        });
+        Ok(Self { servers, states: [Readiness::Active(0); N], first_unopened: 0, owner: None })
+    }
+
+    pub(crate) fn allocation(&self, id: usize) -> Option<(u32, u64)> {
+        self.servers.get(id).map(|s| (s.remaining, s.deadline))
+    }
+    pub(crate) fn active(&self, id: usize) -> bool {
+        matches!(self.states.get(id), Some(Readiness::Active(_)))
+    }
+    pub(crate) fn exited(&self, id: usize) -> bool {
+        self.states.get(id) == Some(&Readiness::Exited)
+    }
+    pub(crate) fn owner(&self) -> Option<usize> { self.owner }
+
+    pub(crate) fn next_slot(&self) -> Option<u64> {
+        self.servers.iter().zip(self.states).filter_map(|(s, state)| {
+            let Readiness::Active(first) = state else { return None; };
+            let eligible = if s.remaining == 0 { first.max(s.deadline) } else { first };
+            Some(eligible.max(self.first_unopened))
+        }).min()
+    }
+
+    pub(crate) fn open(&mut self, t: u64) -> Result<Option<usize>, CbsError> {
+        if self.owner.is_some() || t < self.first_unopened || self.next_slot().is_some_and(|due| t > due) {
+            return Err(CbsError::InvalidOpening);
+        }
+        let next = t.checked_add(1).ok_or(CbsError::TimeOverflow)?;
+        let active = |id: usize, _: &Server| matches!(self.states[id], Readiness::Active(first) if first <= t);
+        // Stage all due refills, including equal-deadline peers that lose this slot.
+        let mut allocations = self.servers;
+        let winner = choose_grant(&self.servers, t, active, |id, deadline, remaining| {
+            allocations[id].deadline = deadline;
+            allocations[id].remaining = remaining;
+        })?;
+        self.servers = allocations;
+        self.owner = winner.map(|(id, _, _)| {
+            self.servers[id].remaining -= 1;
+            id
+        });
+        self.first_unopened = next;
+        Ok(self.owner)
+    }
+
+    fn take_owner(&mut self, id: usize) -> Result<(), CbsError> {
+        if self.owner != Some(id) { return Err(CbsError::StaleOwner); }
+        self.owner = None;
+        Ok(())
+    }
+    pub(crate) fn yield_grant(&mut self, id: usize) -> Result<(), CbsError> { self.take_owner(id) }
+    pub(crate) fn cutoff(&mut self, id: usize) -> Result<(), CbsError> { self.take_owner(id) }
+    pub(crate) fn sleep(&mut self, id: usize) -> Result<(), CbsError> {
+        self.take_owner(id)?;
+        self.states[id] = Readiness::Sleeping;
+        Ok(())
+    }
+    pub(crate) fn exit(&mut self, id: usize) -> Result<(), CbsError> {
+        self.take_owner(id)?;
+        self.states[id] = Readiness::Exited;
+        Ok(())
+    }
+    pub(crate) fn wake(&mut self, id: usize, t: u64) -> Result<(), CbsError> {
+        let state = self.states.get(id).ok_or(CbsError::UnknownServer)?;
+        if *state != Readiness::Sleeping || t < self.first_unopened {
+            return Err(CbsError::InactiveTransition);
+        }
+        activate(&mut self.servers[id], t)?;
+        self.states[id] = Readiness::Active(t);
+        Ok(())
     }
 }
 
@@ -421,5 +527,76 @@ mod tests {
     #[test]
     fn hard_cbs_rejects_invalid_transitions() {
         assert!(cbs_error_checks());
+    }
+}
+#[cfg(test)]
+mod native_reservation_tests {
+    use super::{AdmissionError, CbsError, NativeCbs};
+
+    fn grants<const N: usize>(table: [(u32, u32); N], expected: &[Option<usize>]) {
+        let mut p = NativeCbs::new(table).unwrap();
+        for (t, &winner) in expected.iter().enumerate() {
+            assert_eq!(p.open(t as u64), Ok(winner));
+            if let Some(id) = winner { p.cutoff(id).unwrap(); }
+        }
+    }
+
+    #[test]
+    fn admitted_processes_receive_only_their_own_opening() {
+        let (a, b, c) = (Some(0), Some(1), Some(2));
+        grants([(1, 2), (1, 2)], &[a,b,a,b,a,b,a,b]);
+        grants([(1, 4), (1, 4)], &[a,b,None,None,a,b,None,None]);
+        grants([(1, 4), (1, 4), (1, 2)], &[c,a,b,c]);
+        assert!(matches!(NativeCbs::new([(1, 2), (1, 2), (1, 8)]), Err(AdmissionError::Capacity)));
+        assert!(matches!(NativeCbs::new([(0, 2)]), Err(AdmissionError::Invalid)));
+        let p = 1 << 31;
+        assert!(matches!(NativeCbs::new([(1, p), (1, p-1), (1, p-3)]), Err(AdmissionError::Arithmetic)));
+    }
+
+    #[test]
+    fn wake_density_equality_zero_and_strict_excess_preserve_or_renew() {
+        for (wake, allocation) in [(3, (1, 8)), (4, (1, 8)), (5, (2, 13)), (8, (2, 16))] {
+            let mut p = NativeCbs::new([(2, 8)]).unwrap();
+            assert_eq!(p.open(0), Ok(Some(0)));
+            p.sleep(0).unwrap();
+            assert_eq!(p.next_slot(), None);
+            p.wake(0, wake).unwrap();
+            assert_eq!(p.allocation(0), Some(allocation));
+            assert_eq!(p.next_slot(), Some(wake));
+            assert_eq!(p.open(wake), Ok(Some(0)));
+        }
+        let mut p = NativeCbs::new([(1, 4)]).unwrap();
+        assert_eq!(p.open(0), Ok(Some(0)));
+        p.sleep(0).unwrap();
+        p.wake(0, 1).unwrap();
+        assert_eq!(p.allocation(0), Some((0, 4)));
+        assert_eq!(p.next_slot(), Some(4));
+        assert_eq!(p.open(4), Ok(Some(0)));
+    }
+
+    #[test]
+    fn failed_transitions_leave_debit_owner_and_next_opening_intact() {
+        let mut p = NativeCbs::new([(1, 4), (1, 4)]).unwrap();
+        assert_eq!(p.open(0), Ok(Some(0)));
+        assert_eq!(p.cutoff(1), Err(CbsError::StaleOwner));
+        assert_eq!(p.owner(), Some(0));
+        p.yield_grant(0).unwrap();
+        assert_eq!(p.open(0), Err(CbsError::InvalidOpening));
+        assert_eq!(p.open(2), Err(CbsError::InvalidOpening));
+        assert_eq!(p.allocation(0), Some((0, 4)));
+        assert_eq!(p.next_slot(), Some(1));
+        assert_eq!(p.open(1), Ok(Some(1)));
+        p.exit(1).unwrap();
+        assert_eq!(p.wake(1, 2), Err(CbsError::InactiveTransition));
+        assert!(p.exited(1));
+        assert_eq!(p.next_slot(), Some(4));
+        assert_eq!(p.open(4), Ok(Some(0)));
+        p.sleep(0).unwrap();
+        assert_eq!(p.wake(0, u64::MAX), Err(CbsError::TimeOverflow));
+        assert!(!p.active(0));
+        assert_eq!(p.allocation(0), Some((0, 8)));
+        assert_eq!(p.open(u64::MAX), Err(CbsError::TimeOverflow));
+        assert_eq!(p.owner(), None);
+        assert_eq!(p.next_slot(), None);
     }
 }

@@ -162,3 +162,13 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tc
 ~~~
 
 DM 패키지는 커널 경로를 `$run/dm/kernel.elf`로 바꿔 부팅한다. 프로세스는 main에 한 번 진입한다. 배치 하나를 완료하면 C는 `<jnox/periodic.h>`의 `jnox_periodic_wait_next()`를 호출한다(성공 0, 실패 −1과 errno). Rust는 `jnox_native::wait_next_period()`를 호출해 `Result<(), i32>`를 받는다. 성공 시 같은 프로세스가 전용 데이터와 스택을 보존한 채 다음 세대를 시작한다. 종료는 현재 세대를 완료한다. [EVD-118](evidence/evd-118.md)
+
+## 네이티브 앱의 CPU 예산 예약
+
+Linux 또는 WSL에서 저장소 루트를 기준으로 [C CRC 작업과 Rust 히스토그램 작업](../examples/native-cbs/README.md)의 SDK 빌드 및 QEMU 실행 명령을 사용한다. 두 ELF를 패키징하는 명령은 다음과 같다.
+
+~~~sh
+python3 tools/build_native_el0.py --out isolated --policy cbs --elf crc.elf --reservation 1,4 --peer-elf histogram.elf --peer-reservation 1,4
+~~~
+
+ELF 순서에 맞춰 예산,주기 튜플을 하나씩 지정한다. 단위는 50 ms 슬롯 수다. 이 예제에서 각 앱은 네 슬롯(200 ms)마다 명목 실행권 하나를 받으며 사용하지 않은 용량은 유휴 상태로 남는다. 예산은 주기 이하인 양의 정수이고 각 예산/주기 분수의 합은 1 이하여야 한다. 주 앱 외에 동료 ELF를 두 개까지 지정할 수 있다. 각 앱은 실행권 사이에도 자기 블록 수와 계산 결과를 유지한다. 실제 CPU 서비스는 명목 실행권과 별도로 측정한다.

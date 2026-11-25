@@ -8,3 +8,6 @@ jnox-native = { path = "../../sdk/native-aarch64/rust" }
 
 [profile.release]
 panic = "abort"
+
+[features]
+extended-input = []

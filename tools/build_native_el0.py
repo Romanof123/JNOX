@@ -50,12 +50,22 @@ def periodic_parameters(value):
     return phase, period, deadline
 
 
+def cbs_reservation(value):
+    fields = value.split(",")
+    if len(fields) != 2 or any(not (field.isascii() and field.isdecimal()) for field in fields):
+        raise argparse.ArgumentTypeError("expected quota,period in unsigned decimal 50 ms slots")
+    quota, period = map(int, fields)
+    if not 0 < quota <= period <= 2**32 - 1:
+        raise argparse.ArgumentTypeError("require 0 < quota <= period <= 2^32-1")
+    return quota, period
+
+
 def native_schedule(parser, args):
     if len(args.peer_elf) > 2:
         parser.error("virt supports at most two --peer-elf arguments")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
-    for name in ("policy", "priority", "weight", "job", "periodic", "quantum_ticks"):
+    for name in ("policy", "priority", "weight", "job", "periodic", "reservation", "quantum_ticks"):
         values = getattr(args, name)
         if len(values) > 1:
             parser.error(f"--{name.replace('_', '-')} may appear only once")
@@ -65,6 +75,11 @@ def native_schedule(parser, args):
             parser.error("RM and DM require one periodic tuple per supplied ELF")
     elif args.periodic or args.peer_periodic:
         parser.error("periodic tuples require --policy rm or dm")
+    if policy == "cbs":
+        if not args.reservation or len(args.peer_reservation) != len(args.peer_elf):
+            parser.error("CBS requires one reservation per supplied ELF")
+    elif args.reservation or args.peer_reservation:
+        parser.error("reservations require --policy cbs")
     if policy in ("edf", "llf"):
         if not args.job or len(args.peer_job) != len(args.peer_elf):
             parser.error("EDF and LLF require exactly one job tuple per supplied ELF")
@@ -102,7 +117,7 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs"], action="append", default=[])
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
     parser.add_argument("--weight", type=int, action="append", default=[], help="primary CPU service weight")
@@ -116,6 +131,10 @@ def main():
                         help="primary phase, period and relative deadline in nanoseconds")
     parser.add_argument("--peer-periodic", type=periodic_parameters, action="append", default=[], metavar="PHASE,T,D",
                         help="periodic parameters in peer order")
+    parser.add_argument("--reservation", type=cbs_reservation, action="append", default=[], metavar="Q,P",
+                        help="primary CBS quota and period in 50 ms slots")
+    parser.add_argument("--peer-reservation", type=cbs_reservation, action="append", default=[], metavar="Q,P",
+                        help="CBS quota and period in 50 ms slots, in peer order")
     args = parser.parse_args()
     policy, priorities, weights, quantum = native_schedule(parser, args)
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
@@ -172,6 +191,7 @@ def main():
             var = f"JNOX_NATIVE_PEER{suffix}_ELF"
             env[var], env[var + "_SHA256"] = str(peer_elf), peer_digest
         periodic = args.periodic + args.peer_periodic
+        reservations = args.reservation + args.peer_reservation
         jobs = args.job + args.peer_job
         for slot in slots:
             slot["priority"] = priorities[slot["slot"]] if priorities else None
@@ -180,6 +200,9 @@ def main():
             if periodic:
                 phase, period, deadline = periodic[slot["slot"]]
                 slot["periodic"] = {"phase_ns": phase, "period_ns": period, "relative_deadline_ns": deadline}
+            if reservations:
+                quota, period = reservations[slot["slot"]]
+                slot["reservation"] = {"quota_slots": quota, "period_slots": period}
             if jobs:
                 release, deadline, cost = jobs[slot["slot"]]
                 slot["job"] = {"release": release, "deadline": deadline, "cost": cost}
@@ -188,6 +211,9 @@ def main():
             env["JNOX_NATIVE_EDF_JOBS"] = ";".join(",".join(map(str, job)) for job in jobs)
         if periodic:
             env["JNOX_NATIVE_PERIODIC"] = ";".join(",".join(map(str, item)) for item in periodic)
+        if reservations:
+            metadata["reservation_slot_ms"] = 50
+            env["JNOX_NATIVE_RESERVATIONS"] = ";".join(f"{quota},{period}" for quota, period in reservations)
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy
