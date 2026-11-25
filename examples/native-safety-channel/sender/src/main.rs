@@ -243,10 +243,12 @@ impl Sender {
             return Ok(());
         }
         self.normal(1, 2, if case == Case::BadSpacing { 11 } else { 10 }, true)?;
-        if matches!(
-            case,
-            Case::Early | Case::Boundary | Case::NoRearm | Case::BadSpacing
-        ) {
+        if case.rearm_target_ms().is_some()
+            || matches!(
+                case,
+                Case::Early | Case::Boundary | Case::NoRearm | Case::BadSpacing
+            )
+        {
             return Ok(());
         }
         self.normal(1, 3, 20, true)?;

@@ -44,6 +44,12 @@ Check the input handle and complete private payload, selected rejection, unchang
 
 ## Build and capture
 
+For the measured REARM cases, give all three apps the selector `rearm-15` or `rearm-20`. Package with `--safety-boundary` in addition to the safety channel and loan route. The optional second supervisor argument (`--peer2-arg 00000` through `--peer2-arg 12500`) advances only its wake request, in counter ticks. Omission selects zero. The sender issues exactly two set permits at E and E+10 ms. The supervisor verifies inhibited sequence 2, then makes its first REARM call. The four words in `safety_rearm_launch` give the nominal decision target, lead, requested wake, and observed wake. The ordinary command row records the actual return. Its expected-status sentinel 2⁶³ allows either normal outcome during measurement.
+
+In a boundary image, safety event 15 records the journal timestamp followed by the original eligibility operand, caller PID, generation, first issue, second issue, streak, pending before consumption, and eligibility. A journal stamp or requested wake can differ from the decision tick. For standalone reproduction use the ordinary build command below with your selector and add `--safety-boundary` to the package command. [Acceptance and measurement rules](../../docs/native-safety-boundary-bench.en-ko.md) · [#398](https://github.com/Romanof123/JNOX/issues/398).
+
+세 앱에 같은 재무장 선택자를 지정한다. 두 허가의 발행 시각과 수신기의 검사는 원래 경로를 따른다. 감독자의 기상 요청만 틱 단위로 앞당길 수 있다. 이벤트 15에서 실제 권한 주체·재무장 판정 시각·허가 두 건과 결과를 읽고 출력 전이와 대조한다. 목표 틱과 실제 틱의 편차를 부팅마다 남긴다.
+
 Run these commands at the integrated repository revision containing the protected-frame library and safety SDK/runtime. The processor, frequency, user ELF hashes, launch manifest and QEMU binary identity belong to each independent capture.
 
 ```bash
@@ -56,17 +62,19 @@ done
 revision=$(git rev-parse HEAD)
 cases=(healthy observed live-startup silence phase collision invalid saturation queued delayed restart early boundary one no-rearm bad-spacing
        bad-crc bad-header-crc bad-length bad-version bad-type bad-channel bad-data-id bad-validity bad-permit bad-reserved
-       duplicate reordered gap old-generation future-issue expired-issue issue-order wrong-owner)
+       duplicate reordered gap old-generation future-issue expired-issue issue-order wrong-owner rearm-15 rearm-20)
 for policy in fifo rr; do
   quantum=()
   if [ "$policy" = rr ]; then quantum=(--quantum-ticks 625000); fi
   for scenario in "${cases[@]}"; do
+    boundary=()
+    if [[ "$scenario" = rearm-* ]]; then boundary=(--safety-boundary); fi
     pkg="$out/$policy-$scenario"
     python3 tools/build_native_el0.py --out "$pkg" --board virt --policy "$policy" "${quantum[@]}" \
       --elf "$out/sender.elf" --peer-elf "$out/receiver.elf" --peer-elf "$out/supervisor.elf" \
       --arg "$scenario" --peer-arg "$scenario" --peer2-arg "$scenario" \
       --priority 7 --peer-priority 6 --peer-priority 4 --ipc-route 2:0 --ipc-route 2:1 \
-      --safety-channel --loan-route 0:1
+      --safety-channel --loan-route 0:1 "${boundary[@]}"
     python3 tools/native_el0_capture.py "$out/cap-$policy-$scenario" "$pkg/kernel.elf" \
       "$out/sender.elf" "$app/sender/src/main.rs" "$revision" --manifest "$pkg/manifest.json" \
       --plain --expect-exit 71 --timeout 25 --uart-limit 8388608

@@ -25,6 +25,8 @@ static mut safety_live_startup: [u64; 5] = [0; 5];
 static mut safety_active_ipc: [[u64; 4]; 4] = [[0; 4]; 4];
 #[no_mangle]
 static mut safety_wrong_owner: [u64; 14] = [0; 14];
+#[no_mangle]
+static mut safety_rearm_launch: [u64; 4] = [0; 4];
 struct Supervisor {
     time: Timeline,
     failed: u64,
@@ -39,7 +41,7 @@ impl Supervisor {
         enable: Option<bool>,
         seq: Option<u64>,
     ) -> Bench<()> {
-        self.capture_matching(planned, cmd, gen, want_rc, |_, after| {
+        self.capture_matching(planned, cmd, gen, Some(want_rc), |_, after| {
             enable.is_none_or(|v| v == (after.flags & dev::ENABLED != 0))
                 && seq.is_none_or(|s| s == after.last_sequence)
         })
@@ -49,13 +51,16 @@ impl Supervisor {
         planned: u64,
         cmd: Option<Command>,
         gen: u64,
-        want_rc: i64,
+        want_rc: Option<i64>,
         matches: impl FnOnce(&dev::State, &dev::State) -> bool,
     ) -> Bench<()> {
         let before = state()?;
         let rc = cmd.map_or(0, |c| status(dev::supervise(c, gen)));
         let after = state()?;
-        let ok = rc == want_rc && matches(&before, &after);
+        // Calibration accepts either ordinary REARM outcome. Exact decisions are
+        // scored against the kernel's recorded operand, not the planned release.
+        let ok =
+            want_rc.map_or(matches!(rc, 0 | -11), |want| rc == want) && matches(&before, &after);
         if !ok {
             self.failed += 1;
         }
@@ -73,7 +78,7 @@ impl Supervisor {
                     cmd.map_or(0, |c| c as u64),
                     gen,
                     rc as u64,
-                    want_rc as u64,
+                    want_rc.unwrap_or(i64::MIN) as u64,
                     before.flags,
                     after.flags,
                     before.generation,
@@ -108,7 +113,7 @@ impl Supervisor {
         self.time.wait(ms)?;
         let issue = self.time.at(issue_ms)?;
         let hz = self.time.hz;
-        self.capture_matching(self.time.at(ms)?, None, gen, 0, |before, after| {
+        self.capture_matching(self.time.at(ms)?, None, gen, Some(0), |before, after| {
             [before, after]
                 .into_iter()
                 .all(|s| active_state(s, hz, gen, seq, issue, enabled))
@@ -119,6 +124,26 @@ impl Supervisor {
         self.observe_active(offset + 13, generation, 2, offset + 10, false)?;
         self.command(offset + 15, Command::Rearm, generation, 0)?;
         self.observe_active(offset + 18, generation, 2, offset + 10, true)
+    }
+    fn rearm_at(&mut self, ms: u64, lead_ticks: u64) -> Bench<()> {
+        let prior_failures = self.failed;
+        self.observe_active(13, 1, 2, 10, false)?;
+        if self.failed != prior_failures {
+            return Err(95);
+        }
+        let target = self.time.at(ms)?;
+        let wake = target.checked_sub(lead_ticks).ok_or(83)?;
+        let observed_wake = self.time.until(wake)?;
+        self.capture_matching(target, Some(Command::Rearm), 1, None, |_, _| true)?;
+        unsafe {
+            write_volatile(
+                &raw mut safety_rearm_launch,
+                [target, lead_ticks, wake, observed_wake],
+            );
+        }
+        self.time.wait(ms + 3)?;
+        self.capture(self.time.at(ms + 3)?, None, 1, 0, None, Some(2))?;
+        self.observe(35, false, Some(2))
     }
     fn active_reply(&mut self, row: usize, pid: u64, word: u64, expected: u64) -> bool {
         let reply = ipc::call(pid, word, u64::MAX);
@@ -368,7 +393,7 @@ fn call(pid: u64, word: u64, want: u64) -> Bench<()> {
         Err(84)
     }
 }
-fn run(case: Case) -> Bench<()> {
+fn run(case: Case, lead_ticks: u64) -> Bench<()> {
     let first = state()?;
     let schedule = Timeline::new(first.ticks, first.hz)?;
     let time = Timeline::new(schedule.at(50)?, first.hz)?;
@@ -385,7 +410,10 @@ fn run(case: Case) -> Bench<()> {
     for pid in [0, 1] {
         call(pid, time.epoch, ACK | case as u64)?;
     }
-    let result = s.scenario(case);
+    let result = match case.rearm_target_ms() {
+        Some(ms) => s.rearm_at(ms, lead_ticks),
+        None => s.scenario(case),
+    };
     time.wait(85)?;
     // Both applications acknowledge READY after all private memory accesses,
     // before any permitted process exit can revoke an outstanding loan.
@@ -420,5 +448,33 @@ fn panic(_: &PanicInfo<'_>) -> ! {
 }
 #[no_mangle]
 pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
-    Case::parse(argc, argv).and_then(run).err().unwrap_or(73)
+    (|| {
+        if !matches!(argc, 2 | 3) {
+            return Err(81);
+        }
+        let case = Case::parse(2, argv)?;
+        let mut lead_ticks = 0;
+        if argc == 3 {
+            let arg = *argv.add(2);
+            if case.rearm_target_ms().is_none() || arg.is_null() {
+                return Err(81);
+            }
+            for i in 0..=5 {
+                let ch = *arg.add(i);
+                if ch == 0 && i != 0 {
+                    break;
+                }
+                if i == 5 || !ch.is_ascii_digit() {
+                    return Err(81);
+                }
+                lead_ticks = lead_ticks * 10 + u64::from(ch - b'0');
+            }
+            if lead_ticks > 12_500 {
+                return Err(81);
+            }
+        }
+        run(case, lead_ticks)
+    })()
+    .err()
+    .unwrap_or(73)
 }

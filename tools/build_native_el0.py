@@ -476,7 +476,7 @@ def main():
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="select a socket service with existing inbound synchronous IPC rights")
     parser.add_argument("--safety-boundary", action="count", default=0,
-                        help="record single-check safety decisions (same phase or collision argument for all slots)")
+                        help="record single-check phase, collision or rearm decisions for the virtual safety bench")
     parser.add_argument("--safety-downstream-injector", action="count", default=0,
                         help="include the fixed invalid-frame source in a closed-gate virtual qualification run")
     parser.add_argument("--safety-watchdog", action="count", default=0,
@@ -573,8 +573,18 @@ def main():
     if args.safety_boundary:
         if args.safety_boundary != 1 or not args.safety_channel or args.safety_qualification or args.safety_interference:
             parser.error("--safety-boundary requires the single-check --safety-channel profile")
-        if args.arg not in (["phase"], ["collision"]) or not args.arg == args.peer_arg == args.peer2_arg:
-            parser.error("--safety-boundary requires the same single phase or collision argument for all three slots")
+        if (args.arg not in (["phase"], ["collision"], ["rearm-15"], ["rearm-20"])
+                or args.peer_arg != args.arg or args.peer2_arg[:1] != args.arg):
+            parser.error("--safety-boundary requires one matching boundary selector for all three slots")
+        rearm_boundary = args.arg[0] in ("rearm-15", "rearm-20")
+        rearm_lead = 0
+        if args.peer2_arg != args.arg:
+            if not rearm_boundary or len(args.peer2_arg) != 2:
+                parser.error("only a rearm boundary permits one optional supervisor lead in ticks")
+            value = args.peer2_arg[1]
+            if not (1 <= len(value) <= 5 and value.isascii() and value.isdecimal() and int(value) <= 12500):
+                parser.error("supervisor lead must be 1 to 5 ASCII decimal digits in the range 0..12500 ticks")
+            rearm_lead = int(value)
     if args.safety_downstream_injector:
         if args.safety_downstream_injector != 1 or args.safety_qualification != 1:
             parser.error("--safety-downstream-injector requires --safety-qualification and may appear once")
@@ -798,6 +808,8 @@ def main():
     if args.safety_boundary:
         env["JNOX_NATIVE_SAFETY_BOUNDARY"] = "1"
         metadata["safety_boundary"] = {"scenario": args.arg[0], "decision_event": 12}
+        if rearm_boundary:
+            metadata["safety_boundary"].update(rearm_eligibility_event=15, supervisor_lead_ticks=rearm_lead)
         metadata["package_argv"] = sys.argv[:]
     if args.safety_downstream_injector:
         env["JNOX_NATIVE_SAFETY_DOWNSTREAM"] = "1"

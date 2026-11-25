@@ -135,6 +135,20 @@ impl Session {
         self.gate && !self.fault && !self.rearmed && self.streak == 2
             && fresh(now,self.prior) && fresh(now,self.issue)
     }
+    #[inline(always)]
+    fn rearm_eligible(&self, _was_pending: bool) -> bool {
+        let now = counter();
+        let accepted = self.eligible(now);
+        #[cfg(jnox_native_safety_boundary)]
+        {
+            // CURRENT is the authenticated caller for this masked SVC. Record
+            // pending before the controller consumes it and the actual operand.
+            let caller = unsafe { super::CURRENT };
+            log(15, [now, caller as u64, self.generation, self.prior, self.issue,
+                     u64::from(self.streak), u64::from(_was_pending), u64::from(accepted)]);
+        }
+        accepted
+    }
     #[cfg(jnox_native_safety_downstream)]
     fn inject_downstream(&mut self, pid: usize, generation: u64, entry: u64) -> Result<(), i32> {
         let before = loans::occupancy() as u64;
@@ -182,7 +196,7 @@ impl Session {
         if generation == 0 || generation != self.generation { return Err(-116); }
         match cmd {
             2 => {
-                if self.pending || !self.eligible(counter()) { return Err(-11); }
+                if self.pending || !self.rearm_eligible(self.pending) { return Err(-11); }
                 self.rearm_first = self.prior;
                 self.pending = true;
             }
@@ -245,7 +259,8 @@ impl Session {
             3 if self.active => { self.pending=false; self.active=false; self.snapshot=None; self.released=false; }
             4 if self.active && !self.command => {
                 self.command=true;
-                if !core::mem::take(&mut self.pending) || !self.eligible(counter()) { return Err(-11); }
+                let was_pending = core::mem::take(&mut self.pending);
+                if !was_pending || !self.rearm_eligible(was_pending) { return Err(-11); }
                 self.rearmed=true; drive(1);
             }
             _ => return Err(-22),

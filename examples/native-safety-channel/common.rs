@@ -39,8 +39,17 @@ pub enum Case {
     ExpiredIssue,
     IssueOrder,
     WrongOwner,
+    Rearm15,
+    Rearm20,
 }
 impl Case {
+    pub fn rearm_target_ms(self) -> Option<u64> {
+        match self {
+            Self::Rearm15 => Some(15),
+            Self::Rearm20 => Some(20),
+            _ => None,
+        }
+    }
     pub fn active_case(self) -> bool {
         matches!(
             self,
@@ -128,6 +137,8 @@ impl Case {
             b"expired-issue" => Ok(Self::ExpiredIssue),
             b"issue-order" => Ok(Self::IssueOrder),
             b"wrong-owner" => Ok(Self::WrongOwner),
+            b"rearm-15" => Ok(Self::Rearm15),
+            b"rearm-20" => Ok(Self::Rearm20),
             _ => Err(81),
         }
     }
