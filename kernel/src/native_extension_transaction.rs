@@ -6,7 +6,7 @@ use super::group_policy::DelegatedTask;
 pub(super) struct Evaluation {
     policy: Extension<3>,
     snapshot: [DelegatedTask; 3],
-    cell: u64,
+    pub(super) cell: u64,
     progress: u64,
 }
 
