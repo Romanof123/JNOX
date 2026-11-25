@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 
+from native_amc_roots import expected_roots
 from build_native_el0 import amc_manifest
 from native_el0_capture import command
 from native_el0_replay import Snapshot, elf_file, need, symbol, vread
@@ -38,7 +39,13 @@ def package(root, case):
     need(desc == m["amc"] and digest(raw) == m["amc_input"]["sha256"], "raw deployment identity")
     need(wire == (root / "amc-v1.txt").read_bytes() and digest(wire) == m["amc_canonical"]["sha256"], "canonical deployment identity")
     need(sha(root / "kernel.elf") == m["kernel_elf_sha256"], "kernel identity")
+    symbols = elf_file((root / "kernel.elf").read_bytes()).get_section_by_name(".symtab")
+    need(symbols is not None, "kernel symbol table for private roots")
+    linked = expected_roots(((s.name, s["st_value"], s["st_size"]) for s in symbols.iter_symbols()
+                             if s["st_info"]["type"] == "STT_OBJECT"), len(slots))
     for i, s in enumerate(slots):
+        need(type(s.get("expected_ttbr0_el1")) is int and s["expected_ttbr0_el1"] == linked[i],
+             "missing or incorrect packaged private TTBR0_EL1 for slot " + str(i))
         need(s["slot"] == i and s["amc_task"] == desc["tasks"][i] and
              sha(root / f"slot{i}.elf") == s["elf_sha256"], "ordered task/image identity")
     return m
@@ -159,7 +166,13 @@ def score(a):
     if session["marker"] != "end":
         print(json.dumps(dict(status="incomplete", marker=session["marker"], session=a.digest)))
         return 2
-    records, one = parse_uart((root / "uart.bin").read_bytes())
+    raw_uart = (root / "uart.bin").read_bytes()
+    image_lines = [line for line in raw_uart.splitlines() if re.match(rb"^NATIVE EL0 (?:PEER[23]? )?ELF ", line)]
+    labels = ("", "PEER ", "PEER2 ", "PEER3 ")
+    need(image_lines == [f"NATIVE EL0 {labels[i]}ELF {s['elf_sha256']}".encode("ascii")
+                         for i,s in enumerate(m["slots"])], "ordered UART image identities")
+    expected = [s["expected_ttbr0_el1"] for s in m["slots"]]
+    records, one = parse_uart(raw_uart)
     ver, epoch, hz, q, count, idle, term, origin = one("CONFIG")
     tasks = m["amc"]["tasks"]
     need((ver,hz,q,count,idle,term) == (1,62500000,3125000,len(tasks),len(tasks),len(tasks)+1), "deployment clock/shape")
@@ -195,11 +208,14 @@ def score(a):
         if i:
             need(intervals[i-1][13]==src, "decision owner discontinuity")
         if src < count:
+            need(r[12] == expected[src], "actual source TTBR0_EL1 differs from linked slot identity")
             frame[src,gen]=r[10:13]
             if i and intervals[i-1][21] and cause != 3:
                 need(intervals[i-1][21]==r[12],"prepared versus actual root")
         dst,dg=r[13:15]
         if dst<count:
+            if r[21]:
+                need(r[21] == expected[dst], "prepared destination TTBR0_EL1 differs from linked slot identity")
             if (dst,dg) in frame:
                 need(r[15:17]==frame[dst,dg][:2],"restored PC/SP")
             else:
@@ -252,7 +268,7 @@ def score(a):
             if not lost:
                 check(any(r[0]==2 and r[1]==1 and r[2]==stamp and r[4:6]==(slot,gen) and r[19]==slot for r in intervals),"actual exit syscall")
         if slot in roots and gen==max((e[3] for e in life if e[0]==1 and e[2]==slot),default=-1):
-            check(vread(mem,roots[slot],vas[slot],936)==data,"last generation private RAM")
+            check(vread(mem,m["slots"][slot]["expected_ttbr0_el1"],vas[slot],936)==data,"last generation private RAM")
     boundaries=lambda k:epoch+k*q
     switches=[e for e in life if e[0]==9]
     crossing=None
@@ -328,7 +344,7 @@ def score(a):
             unknown.append("task stamp loss")
     report=dict(case=case,session=a.digest,raw_deployment_sha256=m["amc_input"]["sha256"],
                 canonical_sha256=m["amc_canonical"]["sha256"],rows=rows,lost=lost,life_lost=missing,
-                idle_landing=landing,roots=roots,crossing=crossing,carry=carry,products={f"{i}.{g}":p for (i,g),p in products.items()},
+                idle_landing=landing,expected_roots=[s["expected_ttbr0_el1"] for s in m["slots"]],roots=roots,crossing=crossing,carry=carry,products={f"{i}.{g}":p for (i,g),p in products.items()},
                 lifecycle=life,issues=issues,unknown=unknown)
     report["status"]="incomplete" if (lost or missing) else "failed" if issues else "incomplete" if unknown else "observations-met"
     print(json.dumps(report,indent=2))

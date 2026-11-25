@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from native_amc_roots import linked_roots
 from native_hierarchy import parse_topology, unique_keys
 from native_lottery_admission import forecast
 
@@ -652,6 +653,9 @@ def main():
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
+    if policy == "amc":
+        for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
+            slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     print(f"kernel {metadata['kernel_elf_sha256']}  {kernel_elf}")
     print(f"native {digest}  {user_elf}")
