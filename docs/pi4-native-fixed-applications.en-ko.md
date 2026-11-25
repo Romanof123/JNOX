@@ -5,7 +5,7 @@
 ## Operator workflow / 실행 방법
 
 ~~~sh
-sh sdk/native-aarch64/build-c.sh examples/native-fixed/prime_low.c low.elf
+sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c low.elf
 sh sdk/native-aarch64/build-rust.sh examples/native-fixed-rust/Cargo.toml high.elf
 python3 tools/build_native_el0.py --out pi-fifo --board pi4 --policy fifo --elf low.elf --priority 2 --peer-elf high.elf --peer-priority 2
 python3 tools/build_native_el0.py --out pi-rr --board pi4 --policy rr --quantum-ticks 1250000 --elf low.elf --priority 2 --peer-elf high.elf --peer-priority 2
