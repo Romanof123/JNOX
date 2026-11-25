@@ -79,7 +79,7 @@ impl<const T: usize, const L: usize> LockSet<T, L> {
         self.blocked_on.get(task).copied().flatten()
     }
 
-    #[cfg(jnox_mutex_chain)]
+    #[cfg(any(jnox_mutex_chain, jnox_mutex_survivors))]
     pub(crate) fn wait_order(&self) -> &[u8] {
         &self.arrivals[..self.wait_count]
     }

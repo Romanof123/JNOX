@@ -125,11 +125,13 @@ mod mutex_policy;
 #[cfg(jnox_mutex_chain)]
 #[path = "ordinary_mutex_chain.rs"]
 mod ordinary_mutex;
-#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo))))]
+#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo, jnox_mutex_survivors))))]
 mod ordinary_mutex;
 #[cfg(jnox_mutex_fifo)]
 mod ordinary_mutex_fifo;
-#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo))))]
+#[cfg(jnox_mutex_survivors)]
+mod ordinary_mutex_survivors;
+#[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_chain, jnox_mutex_fifo, jnox_mutex_survivors))))]
 mod ordinary_mutex_manifest;
 #[cfg(jnox_bench = "multilevel")]
 mod multilevel;
@@ -254,10 +256,12 @@ extern "C" fn kernel_main() -> ! {
     ordinary_deadline::run();
     #[cfg(jnox_ordinary_prop)]
     ordinary_proportional::run();
-    #[cfg(all(jnox_ordinary_mutex, not(jnox_mutex_fifo)))]
+    #[cfg(all(jnox_ordinary_mutex, not(any(jnox_mutex_fifo, jnox_mutex_survivors))))]
     ordinary_mutex::run();
     #[cfg(jnox_mutex_fifo)]
     ordinary_mutex_fifo::run();
+    #[cfg(jnox_mutex_survivors)]
+    ordinary_mutex_survivors::run();
     #[cfg(jnox_eevdf_app)]
     eevdf_app::run();
     #[cfg(jnox_rust_amc)]
