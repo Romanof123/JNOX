@@ -96,6 +96,16 @@ def partition_table(parser, raw):
     return windows, frame
 
 
+def weighted_notification(value):
+    mode, separator, count = value.partition(":")
+    if mode not in ("closures", "wakes") or not separator or not (count.isascii() and count.isdecimal()):
+        raise argparse.ArgumentTypeError("expected closures:N or wakes:N")
+    digits = count.lstrip("0")
+    if not digits or len(digits) > 20 or int(digits) >= 2**64:
+        raise argparse.ArgumentTypeError("notification threshold must be a positive u64")
+    return mode, int(digits)
+
+
 def native_schedule(parser, args):
     if len(args.peer_elf) > 2:
         parser.error("virt supports at most two --peer-elf arguments")
@@ -243,6 +253,10 @@ def main():
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
+    parser.add_argument("--weighted-continuous", action="count", default=0,
+                        help="apply recurring leases even with one runnable weighted process")
+    parser.add_argument("--weighted-notify", type=weighted_notification, action=SinglePath,
+                        metavar="closures:N|wakes:N")
     parser.add_argument("--weight", type=int, action="append", default=[], help="primary CPU service weight")
     parser.add_argument("--peer-weight", type=int, action="append", default=[], help="CPU service weights in peer order")
     parser.add_argument("--quantum-ticks", action="append", default=[], help="common RR, weighted or MLQ grant in physical counter ticks")
@@ -277,6 +291,12 @@ def main():
         parser.error("--threads 2 requires exactly one ordinary application")
     policy, priorities, weights, quantum = native_schedule(parser, args)
     board = args.board or "virt"
+    if args.weighted_continuous > 1:
+        parser.error("--weighted-continuous may appear only once")
+    if args.weighted_continuous and (policy != "weighted" or board != "virt"):
+        parser.error("--weighted-continuous requires weighted scheduling on virt")
+    if args.weighted_notify is not None and not args.weighted_continuous:
+        parser.error("--weighted-notify requires --weighted-continuous")
     if board == "pi4" and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
                            or not (args.source or args.elf) or args.threads):
         parser.error("pi4 requires a primary application and one peer under FIFO or RR")
@@ -433,6 +453,13 @@ def main():
                             server_period_slots=period, server_credits=args.server_credits)
             if policy == "sporadic":
                 env["JNOX_NATIVE_SERVER_CREDITS"] = str(args.server_credits)
+        if args.weighted_continuous:
+            env["JNOX_NATIVE_WEIGHTED_CONTINUOUS"] = "1"
+            metadata.update(weighted_continuous=True, weighted_notify=None)
+            if args.weighted_notify is not None:
+                mode, count = args.weighted_notify
+                env["JNOX_NATIVE_WEIGHTED_NOTIFY"] = f"{mode}:{count}"
+                metadata["weighted_notify"] = {"mode": mode, "count": count}
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy
