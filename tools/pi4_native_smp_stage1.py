@@ -89,6 +89,31 @@ def margin(left, right, offset):
     return min(u-t+(peer-cpu)*d for d in offset)
 
 
+def continued_user_margins(current, peer, following, peer_following, offset):
+    """Bound peer's trap inside current's uninterrupted EL0 interval, and vice versa.
+
+    pairs() supplies adjacent, advancing, same-frame PPI rows. A post-return
+    stamp, when available, must independently identify EL0 in that very interval
+    on the same local counter. The sealed RAM format supplies no such stamp.
+    """
+    margins = []
+    for start, end, observation in ((current, following, peer),
+                                    (peer, peer_following, following)):
+        cpu = start["cpu"]
+        post = end.get("el0_after_return")
+        if (post is None or end["row"] != start["row"] + 1 or end["cpu"] != cpu
+                or observation["cpu"] == cpu or not end["resume"] <= post <= end["entry"]):
+            return None
+        # Latest actual return <= post. Trap lies between its earliest
+        # possible time and its entry MRS. Strict containment excludes ties.
+        obs_cpu = observation["cpu"]
+        earliest_observation = max(observation["resume"], observation["prior_cval"])
+        earliest_end = max(end["resume"], end["prior_cval"], post)
+        margins.extend((margin((post, cpu), (earliest_observation, obs_cpu), offset),
+                        margin((observation["entry"], obs_cpu), (earliest_end, cpu), offset)))
+    return margins
+
+
 def evaluate(samples, offset):
     best = None
     for a, b in itertools.product(*samples):
@@ -105,16 +130,12 @@ def evaluate(samples, offset):
             def earliest(p):
                 return max(p["resume"],p["prior_cval"]), p["cpu"]
             physical = [margin(stamp(i,"entry"),earliest(j),offset) for i,j in ((x,v),(v,y),(y,w))]
-            # The next EL0-origin exception bounds actual resumption from
-            # above. The recorded pre-ERET operand only bounds it from below.
-            closure = [margin(stamp(y,"entry"),earliest(v),offset),
-                       margin(stamp(v,"entry"),earliest(y),offset),
-                       margin(stamp(w,"entry"),earliest(y),offset),
-                       margin(stamp(y,"entry"),earliest(w),offset)]
+            closure = continued_user_margins(x, v, y, w, offset)
+            proven = closure is not None and min(physical + closure + margins) > 0
             candidate = dict(events=[[p["cpu"],p["row"]] for p in (x,v,y,w)],
                              timestamp_margins=margins, exception_order_margins=physical,
-                             continued_user_margins=closure, architectural_proof=min(physical+closure+margins)>0)
-            score = (candidate["architectural_proof"], min(margins), min(physical+closure))
+                             continued_user_margins=closure, architectural_proof=proven)
+            score = (proven, min(margins), min(physical))
             if best is None or score > best[0]:
                 best = score,candidate
     return None if best is None else best[1]
