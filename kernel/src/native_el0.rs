@@ -378,6 +378,10 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let id = iar & 0x3ff;
     #[cfg(jnox_native_cbs)]
     if let Some(f) = unsafe { frame.as_ref() } { cbs::witness(entry, f, 0); }
+    #[cfg(jnox_native_edf)]
+    if NATIVE_DEADLINE_SERVICE_MASK != 0 {
+        return edf::recurring::interrupt(entry, frame, iar);
+    }
     if id >= 1020 { return 0 }
     #[cfg(jnox_native_threads)]
     if id == context::TIMER_IRQ {
@@ -493,7 +497,14 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         || f.esr & 0xffff != 0x4a01 || !native_el0_mmu::user_range(f.elr as usize, 4, false)
         || !(STACK_BOTTOM as u64..=STACK_TOP as u64).contains(&f.sp_el0) || f.sp_el0 % 16 != 0
     {
+        #[cfg(jnox_native_edf)]
+        if NATIVE_DEADLINE_SERVICE_MASK != 0 { edf::recurring::fault(entry, f); }
         fail(2);
+    }
+    #[cfg(jnox_native_edf)]
+    if NATIVE_DEADLINE_SERVICE_MASK != 0 {
+        edf::recurring::syscall(entry, f);
+        return;
     }
     let exit = f.x[8] == 1;
     if exit && f.x[0] as i32 as i64 as u64 != f.x[0] {
@@ -517,7 +528,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         },
         8 if cfg!(jnox_native_process) => 0,
         9 if cfg!(jnox_native_periodic) => 0,
-        9..=12 => -95,
+        9..=12 | 18 => -95,
         _ => -38,
     };
     // Keep the first seven calls and the most recent call once the journal fills.
@@ -531,7 +542,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     head(8, index as u64 + 1);
     let pid = unsafe { CURRENT };
-    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=12).contains(&f.x[8]) {
+    if (f.x[8] == 9 && !cfg!(jnox_native_periodic)) || (10..=12).contains(&f.x[8]) || f.x[8] == 18 {
         f.x[0] = result as u64;
         return;
     }
