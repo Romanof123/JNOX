@@ -23,3 +23,13 @@ Require F=62,500,000, Q=6,250,000, D=S+1,562,500. A timely publication must prec
 EL1h IRQ 진입에서 원래 평가기 스택을 복구하거나 예외 레지스터를 바꾸기 전에 SPSR_EL1·ELR_EL1·진입 SP를 기록한다. 기존 레지스터와 마스크, 기존 카운터 표본, 실제 IAR 단일 승인 및 EOI를 유지한다. 추가 명령 비용을 명시하고 기존 진입 표본을 하드웨어 도착 시각으로 간주하지 않는다. 실제 IAR 확인 뒤 같은 행·셀·설정 세대와 결합한다. 실제 PPI30, 해당 ELF의 루프 주소, 저장 EL1h/I=0, 추적 x0와 평가기 스택을 대조한다. 시작·종료, 같은 값 재설정, 서비스·깨움, 예약·유휴를 구분한다. 설정과 진입은 각각 최대 512행, 시도·보존·손실 횟수와 종료표를 남기고 덮어쓰지 않는다. 누락·모호한 연결은 미검증이다.
 
 비활성 기준선과 활성 도구·소스·ELF·원래 앱/인자·규칙·기계를 봉인한다. 활성 A/B별 신뢰 오브젝트와 링크 코드의 위치별 동등성, 독립 일반 빌드 재현성을 확인한다. 기존 6개 일반 설정과 B 일반을 각각 일반/추적으로 검증하고 공유 거래·변이 및 연결형 대조군을 유지한다. 이후 같은 4개 휴면/활성 설정을 각각 일반·추적 최초 1회씩 별도 식별하여 취득한다. F/Q/D, 첫 작업의 엄격한 반 셀 한계와 종료의 1/4셀 오차, 예약 우회와 실제 하트비트·사설 결과·종료 코드를 원래 기준으로 판정한다. A1 미게시, A3 준비 작업으로 만료 대체, B9 정확히 두 셀에서 유휴 대체를 확인한다. 관측 프로파일의 추가 비용과 모든 실패를 보존한다. 자연 고장·늦은 실제 게시·보드·제품 출시는 별도 범위다.
+
+## Disabled-image comparison after AMC clock integration / AMC 시계 통합 후 비활성 이미지 비교
+
+At 9a63cfd9 the first fresh disabled A/B builds each differed from 2c4b0c2 by 12 loaded .rodata bytes in eleven Rust source-location records. Instructions and layout matched. Preserve both first differences. Isolate AMC vector selection behind one AMC-only include, move clock-page declarations into a feature unit, and keep a single optional user-mapping hook at the existing weighted mapping site. Preserve the original weighted mapping and the per-process read-only AMC clock mapping. Keep ordinary extension inputs, flags and genuine diagnostic locations. Do not patch images, substitute diagnostic values, or pad source to obtain a match.
+
+Before enabled observations, independently compare all six frozen disabled builds with their original complete PT_LOAD bytes, addresses and permissions. Record hashes, section/byte differences and any failure. Compare enabled AMC clock and weighted-notification selectors against their own approved images and mappings, including vectors, data permissions and publication behavior. Requalify affected behavior on the original respective fixtures if equivalence cannot be established. Keep guest timing attached to its measured image.
+
+9a63cfd9의 최초 비활성 A/B 빌드는 각각 2c4b0c2와 비교해 Rust 소스 위치 11곳의 적재 .rodata 12바이트가 달랐다. 명령·배치는 같았으며 최초 차이를 보존한다. AMC 벡터 선택과 시계 페이지 선언을 기능 전용 소스로 옮기고 기존 weighted 매핑 위치에 공통 선택 훅 하나를 둔다. 원래 weighted 매핑 및 프로세스별 읽기 전용 AMC 매핑을 유지한다. 일반 확장의 빌드 입력·옵션과 실제 진단 위치를 보존한다. 이미지 수정·진단값 대체·소스 패딩은 사용하지 않는다.
+
+활성 관측 전에 고정한 비활성 빌드 여섯 개 각각의 전체 PT_LOAD 바이트·주소·권한을 원본과 독립 비교하고 해시·차이·실패를 기록한다. 활성 AMC 시계와 weighted 알림은 각자 승인된 이미지와 매핑을 기준으로 벡터·데이터 권한·게시 동작을 대조한다. 동등성을 확정할 수 없는 동작은 해당 원래 시험에서 다시 검증하고 게스트 시간 측정은 그 이미지에 귀속한다.
