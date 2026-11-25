@@ -275,3 +275,15 @@ python3 tools/build_native_el0.py --out share --policy weighted --weighted-conti
 선택 사항인 --weighted-notify closures:N은 타이머 IRQ로 끝난 전체 퀀텀 N개, wakes:N은 실제 차단 해제 N회를 센다. 통지를 설정한 앱은 `<jnox/weighted_notify.h>`의 `jnox_weighted_notification()`으로 읽기 전용 값을 확인할 수 있다. 값은 0에서 1로 한 번 바뀐다. 통지를 받은 뒤에도 각 앱은 스스로 종료할 때까지 계속 실행된다.
 
 [Archive extraction and QEMU commands / 원본 추출 및 실행](../examples/native-weighted/README.md#original-weighted-monitor--원래-가중치-모니터) · [#327](native-weighted-continuous.en-ko.md)
+
+## 텔레메트리 게시 기한과 결과 읽기
+
+MLQ 또는 MLFQ로 report.elf와 crc.elf를 패키징할 때 기자 앱의 인자로 --arg=--publication-deadline-ms=40을 전달한다. 각 회차의 요청 시각에서 완료된 경보를 게시한 뒤 얻은 표본까지 40 ms를 적용한다. 보고 주기는 그대로 40 ms다. 인자를 생략하면 기존 무기한 판정 모드로 실행한다. 정상 완료는 53, 잘못된 설정은 게시 전 106, 기한 초과는 결과와 표본을 남긴 뒤 107이다.
+
+패키지와 해당 부팅의 캡처 디렉터리를 판독기에 전달한다. JSON에는 회차별 게시 지연과 여유 시간(ns), 경보 수, 백그라운드 CRC 결과가 들어 있다.
+
+~~~sh
+python3 tools/read_multilevel_telemetry.py "$pkg" "$dir" > "$dir/results.json"
+~~~
+
+[Bash / SDK / QEMU](../examples/native-multilevel/README.md#m4-telemetry-deployment--m4-경보-게시-배포)
