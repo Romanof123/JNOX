@@ -105,11 +105,16 @@ def capture(args):
     return int(outcome != "captured")
 
 
-def linked(kernel, fragment, size):
+def linked(kernel, name, size):
     table = kernel.get_section_by_name(".symtab")
-    found = [s for s in table.iter_symbols() if fragment in s.name and
-             "native_proportional" in s.name and s["st_size"] == size]
-    need(len(found) == 1, "missing or ambiguous " + fragment)
+    need(table is not None, "missing kernel symbol table")
+    # Exact legacy Rust module path. LLVM may append its numeric LTO suffix.
+    path = rf"_ZN11jnox_kernel10native_el012proportional{len(name)}{re.escape(name)}"
+    mangled = re.compile(path + r"17h[0-9a-f]{16}E(?:\.llvm\.[0-9]+)?")
+    found = [s for s in table.iter_symbols() if mangled.fullmatch(s.name)]
+    need(len(found) == 1, "missing or ambiguous " + name)
+    need(found[0]["st_info"]["type"] == "STT_OBJECT" and found[0]["st_size"] == size,
+         "unexpected object type or extent for " + name)
     return found[0]["st_value"]
 
 
@@ -217,15 +222,20 @@ def replay(args):
         pos = raw.find(anchor)
         while pos >= 0:
             addr = base + pos - 248
-            if addr >= base and addr % 16 == 0 and addr+832 <= base+size and mem.read(addr+64,8) == struct.pack("<Q",8):
+            if addr >= base and addr % 16 == 0 and addr+848 <= base+size and mem.read(addr+64,8) == struct.pack("<Q",8):
                 candidates.append(addr)
             pos = raw.find(anchor,pos+1)
         need(len(candidates) == 1, "missing or ambiguous lower-A64 exception frame")
-        frame = mem.read(candidates[0],832)
+        # The measured lower vector pushes x2 and CNTPCT before saving the
+        # 832-byte Rust NativeFrame. The complete exception stack is 848 bytes.
+        frame = mem.read(candidates[0],848)
+        saved_x2, saved_entry = struct.unpack_from("<2Q", frame, 832)
+        need(saved_x2 == struct.unpack_from("<Q", frame, 16)[0] and saved_entry == entry,
+             "lower vector x2/entry scratch differs from the frame or event")
         need(previous_frame in (None, frame), "parked frame changed")
         previous_frame = frame
         samples.append(dict(host_ns=cpu["host_ns"], parked_pc=park_pc, frame=candidates[0],
-                            first_address=first, return_counter=arm[3], eret_pc=arm[7]))
+                            first_address=first, return_counter=arm[3], vector_entry=saved_entry, eret_pc=arm[7]))
     need(samples[1]["host_ns"] > samples[0]["host_ns"], "undistinguished park samples")
     print(json.dumps(dict(status="recovered", predicate=pred, event=event, fault=fault, vector=vector,
                           parked_samples=samples, revision=json.loads((out/"launch.json").read_bytes())["revision"]),
