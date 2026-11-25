@@ -2295,3 +2295,5 @@ IMP-311,partially-verified-by,VER-024
 VER-019,has-partial-evidence,EVD-311
 VER-024,has-partial-evidence,EVD-311
 IMP-311,tested-in,EVD-311
+CHG-312,affects,REQ-019
+CHG-312,affects,REQ-024
