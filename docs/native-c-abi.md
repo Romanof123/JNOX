@@ -75,6 +75,19 @@ python3 tools/native_el0_capture.py "$run/c-first" "$run/c/kernel.elf" "$run/c/u
 python3 tools/native_el0_capture.py "$run/rust-first" "$run/rust/kernel.elf" "$run/rust/user.elf" examples/native-periodic-rust/src/main.rs "$rev" --expect-exit 0
 ~~~
 
+## 협력형 네이티브 프로세스 두 개 실행
+
+Rust 동료 앱을 별도로 빌드한 후 그 ELF를 주 C 앱 소스와 함께 패키저에 전달한다. 이미 링크한 주 앱을 사용하려면 `--source PATH.c` 대신 `--elf PATH.elf`를 지정한다. Linux 또는 WSL에서 저장소 루트를 기준으로 실행한다.
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build-rust.sh examples/native-cooperative-rust/Cargo.toml "$run/peer.elf"
+python3 tools/build_native_el0.py --source examples/portability/native_cooperative_report.c --peer-elf "$run/peer.elf" --out "$run/package"
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/package/kernel.elf"
+~~~
+
+[주 C 앱](../examples/portability/native_cooperative_report.c)은 `<sched.h>`의 `sched_yield()`를 호출한다. [Rust 동료 앱](../examples/native-cooperative-rust/src/main.rs)은 안전한 `jnox_native::yield_now()`를 호출해 `Result<(), i32>`를 받는다. 양보하면 준비된 동료에게 CPU0을 넘기고, 준비된 동료가 없으면 즉시 성공한다. 절대 기한 대기는 호출자만 차단하므로 준비된 동료는 실행을 계속한다. 각 프로세스가 전용 스택과 쓰기 가능 데이터를 사용해 두 예제의 누계 변수는 같은 가상 주소 `0x402000`에서 서로 다른 값을 유지한다. UART에 각 PID와 종료값이 표시된다. 두 앱이 종료하면 게스트가 정지 대기에 들어간다. Ctrl+C로 QEMU를 종료한다.
+
 ## 독립 ELF 앱의 스케줄링
 
 주 앱은 `--source` 또는 `--elf`로 지정하고 `--peer-elf`를 두 번까지 추가한다. 주 앱은 슬롯 0이고 동료는 입력 순서대로 슬롯 1, 2를 받는다. 정책 생략 시 협력형으로 동작한다. `--policy fifo` 또는 `--policy rr` 지정 시 주 앱에 `--priority` 하나, 동료마다 `--peer-priority` 하나가 필요하다. 우선순위는 0~255이며 큰 값이 먼저 실행된다. RR의 공통 퀀텀은 1~9223372036854775807 물리 카운터 틱이다. FIFO는 퀀텀을 받지 않는다.
