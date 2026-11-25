@@ -332,7 +332,7 @@ python3 tools/build_native_el0.py --out lottery1 --policy lottery --quantum-tick
 python3 tools/build_native_el0.py --out stride --policy stride --quantum-ticks 625000 --elf crc.elf --weight 1 --peer-elf histogram.elf --peer-weight 2 --peer-elf energy.elf --peer-weight 4
 ~~~
 
-[SDK / QEMU](../examples/native-proportional/README.md) · [POL-010](native-proportional-applications.en-ko.md)
+[SDK / QEMU](../examples/native-proportional/README.md) · [POL-010](native-proportional-applications.en-ko.md) · [Six approved configurations and limits](evidence/evd-137.en.md)
 
 ## Read idle-refill health
 

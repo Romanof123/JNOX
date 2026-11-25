@@ -332,7 +332,7 @@ python3 tools/build_native_el0.py --out lottery1 --policy lottery --quantum-tick
 python3 tools/build_native_el0.py --out stride --policy stride --quantum-ticks 625000 --elf crc.elf --weight 1 --peer-elf histogram.elf --peer-weight 2 --peer-elf energy.elf --peer-weight 4
 ~~~
 
-[SDK / QEMU](../examples/native-proportional/README.md) · [POL-010](native-proportional-applications.en-ko.md)
+[SDK / QEMU](../examples/native-proportional/README.md) · [POL-010](native-proportional-applications.en-ko.md) · [승인된 6개 구성과 한도](evidence/evd-137.md)
 
 ## 유휴 재충전 상태 확인
 
