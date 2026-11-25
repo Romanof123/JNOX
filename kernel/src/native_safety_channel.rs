@@ -61,13 +61,10 @@ macro_rules! check_at {
     }};
 }
 #[cfg(jnox_native_safety_watchdog)]
-#[derive(Default)]
-struct CompletionWatchdog {
-    last: Option<u64>,
-    due: Option<u64>,
-    observed: Option<u64>,
-    fault: bool,
-}
+#[path = "completion_watchdog.rs"]
+mod watchdog_policy;
+#[cfg(jnox_native_safety_watchdog)]
+use watchdog_policy::{CompletionWatchdog, Decision};
 
 #[cfg(jnox_native_safety_watchdog)]
 impl Session {
@@ -80,8 +77,11 @@ impl Session {
 
     fn watch_stop(&mut self, kind:u64, now:u64, source:u64) {
         let old = (self.watchdog.last,self.watchdog.due);
-        self.watchdog.due = None;
-        self.watchdog.fault = true;
+        self.watchdog.stop();
+        self.watch_inhibit(kind,old,now,source);
+    }
+
+    fn watch_inhibit(&mut self, kind:u64, old:(Option<u64>,Option<u64>), now:u64, source:u64) {
         self.fault = true;
         self.pending = false;
         drive(0);
@@ -89,28 +89,28 @@ impl Session {
     }
 
     fn watch_poll(&mut self, now:u64, source:u64) {
-        if self.generation == 0 || self.dead || self.watchdog.fault { return; }
-        let previous = self.watchdog.observed.replace(now);
-        if previous.is_some_and(|p| now.checked_sub(p).is_none_or(|d| d > i64::MAX as u64)) {
-            self.watch_stop(5,now,source);
-        } else if self.watchdog.due.is_some_and(|due| now >= due) {
-            self.watch_stop(4,now,source);
+        if self.generation == 0 || self.dead { return; }
+        let old = (self.watchdog.last,self.watchdog.due);
+        match self.watchdog.poll(now) {
+            Decision::Clock => self.watch_inhibit(5,old,now,source),
+            Decision::Expired => self.watch_inhibit(4,old,now,source),
+            _ => {}
         }
     }
 
     fn watch_complete(&mut self, now:u64, source:u64) -> Result<(),i32> {
-        self.watch_poll(now,source);
-        if self.watchdog.fault || self.dead { return Err(-110); }
+        if self.dead { return Err(-110); }
         if self.generation == 0 { return Ok(()); }
         let old = (self.watchdog.last,self.watchdog.due);
-        let allowed = u64::try_from(u128::from(hz()) * 5 / 1000).unwrap();
-        let Some(due) = now.checked_add(allowed).and_then(|end| end.checked_add(1)) else {
-            self.watch_stop(5,now,source);
-            return Err(-75);
-        };
-        self.watchdog.last = Some(now);
-        self.watchdog.due = Some(due);
-        self.watch_record(if old.0.is_some() {3} else {2},old,now,source);
+        match self.watchdog.complete(now,hz()) {
+            Decision::Primed => self.watch_record(2,old,now,source),
+            Decision::Renewed => self.watch_record(3,old,now,source),
+            Decision::Expired => { self.watch_inhibit(4,old,now,source); return Err(-110); }
+            Decision::Clock => { self.watch_inhibit(5,old,now,source); return Err(-110); }
+            Decision::Unrepresentable => { self.watch_inhibit(5,old,now,source); return Err(-75); }
+            Decision::Latched => return Err(-110),
+            Decision::Unchanged => unreachable!(),
+        }
         Ok(())
     }
 }
