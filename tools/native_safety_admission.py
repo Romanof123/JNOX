@@ -64,7 +64,45 @@ def deployment_digest(manifest):
     return digest(json.dumps(normalize(manifest), sort_keys=True, separators=(",", ":")).encode())
 
 
-def verify_launch(launch, package_directory):
+PLATFORM = {"machine": "virt,gic-version=2", "cpu": "cortex-a72", "smp": 1,
+            "accel": "tcg", "memory_mib": 128, "clock": "default", "counter_hz": 62500000}
+
+
+def reviewed_position(path, expected_digest, position, manifest, kernel):
+    if path is None or not isinstance(expected_digest, str) or not re.fullmatch("[0-9a-f]{64}", expected_digest):
+        raise ValueError("external profile requires both a file and its independently supplied SHA-256")
+    raw = path.read_bytes()
+    if digest(raw) != expected_digest:
+        raise ValueError("external profile digest mismatch")
+
+    def unique(items):
+        obj = dict(items)
+        if len(items) != len(obj):
+            raise ValueError("duplicate external profile key")
+        return obj
+
+    spec = json.loads(raw, object_pairs_hook=unique)
+    if (set(spec) != {"format", "platform", "qemu", "positions"} or spec["format"] != 1
+            or json.dumps(spec["platform"], sort_keys=True) != json.dumps(PLATFORM, sort_keys=True)):
+        raise ValueError("unsupported external deployment platform or schema")
+    qemu = spec["qemu"]
+    if (set(qemu) != {"sha256", "version"} or not re.fullmatch("[0-9a-f]{64}", qemu["sha256"])
+            or not isinstance(qemu["version"], str) or not qemu["version"].startswith("QEMU emulator version ")):
+        raise ValueError("invalid external emulator identity")
+    entry = spec["positions"][position]
+    if set(entry) != {"policy", "commit", "manifest_sha256", "kernel_sha256", "slot_sha256", "ram_bytes"}:
+        raise ValueError("incomplete or unsupported external position")
+    if (entry["policy"] not in ("fifo","rr") or entry["policy"] != manifest["policy"]
+            or manifest["board"] != "virt" or manifest.get("tracked_changes") != ""
+            or not re.fullmatch("[0-9a-f]{40}", entry["commit"]) or entry["commit"] != manifest["commit"]
+            or entry["manifest_sha256"] != deployment_digest(manifest)
+            or entry["kernel_sha256"] != kernel
+            or entry["slot_sha256"] != [slot["elf_sha256"] for slot in manifest["slots"]]
+            or not integer(entry["ram_bytes"], 1) or entry["ram_bytes"] > 128*1024*1024):
+        raise ValueError("external position differs from the captured deployment")
+    return qemu, entry["ram_bytes"]
+
+def verify_launch(launch, package_directory, qemu_sha256=QEMU_SHA256, qemu_version=QEMU_VERSION):
     argv = launch["argv"]
     if not isinstance(argv, list) or not all(isinstance(word, str) for word in argv) or not argv:
         raise ValueError("invalid QEMU argv")
@@ -80,8 +118,8 @@ def verify_launch(launch, package_directory):
     ]
     if PurePosixPath(argv[0]).name != "qemu-system-aarch64" or argv[1:] != expected:
         raise ValueError("unsupported QEMU executable, platform, clock, devices or captured paths")
-    if (launch["version"] != 1 or launch["qemu_sha256"] != QEMU_SHA256
-            or launch["qemu_version"].splitlines()[0] != QEMU_VERSION):
+    if (launch["version"] != 1 or launch["qemu_sha256"] != qemu_sha256
+            or launch["qemu_version"].splitlines()[0] != qemu_version):
         raise ValueError("unsupported emulator build or launch format")
 
 def integer(value, minimum=0):
@@ -153,7 +191,7 @@ def verify_slot_images(pkg, cap, manifest, launch, receipt, uart, kernel_image):
             if (recorded or path.exists()) and digest(path.read_bytes()) != wanted:
                 raise ValueError(f"{path}: ELF bytes differ from the package")
 
-def assess(directory, bounds_path):
+def assess(directory, bounds_path, profile_path=None, profile_digest=None):
     pkg, cap = directory / "pkg", directory / "cap"
     manifest_bytes = (pkg / "manifest.json").read_bytes()
     manifest = json.loads(manifest_bytes)
@@ -176,12 +214,18 @@ def assess(directory, bounds_path):
                   failures=failures, missing=gaps, segments=segments)
     case = manifest["slots"][0]["argv"][1]
     profile = f"{policy}-{case}" + ("-irq" if "safety_interference" in manifest else "")
-    if deployment_digest(manifest) != PACKAGE_DIGESTS.get(profile):
-        raise ValueError("unsupported or inconsistent #389 package configuration")
     package_args = manifest["package_argv"]
-    verify_launch(launch, package_args[package_args.index("--out")+1])
+    package_directory = package_args[package_args.index("--out")+1]
+    if profile_path is not None or profile_digest is not None:
+        emulator, extent = reviewed_position(profile_path, profile_digest, profile, manifest, kernel)
+        result["deployment_profile_sha256"] = profile_digest
+        verify_launch(launch, package_directory, emulator["sha256"], emulator["version"])
+    else:
+        if deployment_digest(manifest) != PACKAGE_DIGESTS.get(profile):
+            raise ValueError("unsupported or inconsistent #389 package configuration")
+        verify_launch(launch, package_directory)
+        extent = 13459520 if "safety_interference" in manifest else 13451264
     ram = (cap / "ram.bin").read_bytes()
-    extent = 13459520 if "safety_interference" in manifest else 13451264
     if (launch["ram_base"] != 0x40200000 or launch["ram_bytes"] != extent or len(ram) != extent
             or receipt["ram.bin"] != digest(ram) or launch["probe_sha256"] != receipt["probe.c"]
             or receipt["probe.c"] != digest((cap / "probe.c").read_bytes())):
@@ -294,9 +338,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("capture", type=Path, help="extracted case with pkg/ and cap/")
     parser.add_argument("--bounds", type=Path)
+    parser.add_argument("--deployment-profile", type=Path)
+    parser.add_argument("--deployment-profile-sha256")
     args=parser.parse_args()
     try:
-        result=assess(args.capture,args.bounds)
+        result=assess(args.capture,args.bounds,args.deployment_profile,args.deployment_profile_sha256)
     except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError) as error:
         result=dict(status="UNKNOWN/HOLD",input_error=str(error))
     print(json.dumps(result,indent=2))
