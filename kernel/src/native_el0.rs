@@ -54,11 +54,14 @@ mod threads;
 mod threads;
 #[cfg(jnox_native_threads)]
 global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_threads_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(jnox_native_smp_partitioned)]
+#[cfg(any(jnox_native_smp_migration, jnox_native_smp_partitioned))]
 #[path = "pi4_native_smp.rs"]
-mod bsp;
+pub(crate) mod bsp;
 #[cfg(jnox_native_smp_partitioned)]
 #[path = "native_pi4_smp.rs"]
+mod smp;
+#[cfg(jnox_native_smp_migration)]
+#[path = "native_pi4_migration.rs"]
 mod smp;
 #[cfg(jnox_native_partition)]
 #[path = "native_cyclic.rs"]
@@ -859,7 +862,7 @@ pub(super) fn run() -> ! {
         asm!("msr daifset, #0xf", "msr cntp_ctl_el0, xzr", "msr cntv_ctl_el0, xzr",
             "isb", options(nostack, preserves_flags));
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
-        #[cfg(not(jnox_native_smp_partitioned))]
+        #[cfg(not(any(jnox_native_smp_migration, jnox_native_smp_partitioned)))]
         context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         native_el0_mmu::install_processes(&plans, &tails).unwrap_or_else(|_| fail(6));
@@ -869,7 +872,7 @@ pub(super) fn run() -> ! {
             FRAMES[pid].sp_el0 = layout.sp as u64;
             ptr::write_volatile(&raw mut jnox_native_startup_slots[pid],
                 [plan.entry, layout.sp as u64, layout.len as u64, layout.argc as u64]);
-            if !cfg!(any(jnox_native_amc, jnox_native_smp_partitioned, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
+            if !cfg!(any(jnox_native_amc, jnox_native_smp_migration, jnox_native_smp_partitioned, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
                 if pid == 0 { STATES[pid] = TaskState::Running; } else { enqueue(pid); }
             }
         }
@@ -893,7 +896,7 @@ pub(super) fn run() -> ! {
     head(14, ttbr);
     head(15, layouts[0].argc as u64);
     head(1, 2);
-    #[cfg(jnox_native_smp_partitioned)]
+    #[cfg(any(jnox_native_smp_migration, jnox_native_smp_partitioned))]
     smp::start(frequency, plans.map(|p|p.entry), layouts.map(|l|l.sp as u64));
     #[cfg(jnox_native_weighted)]
     let first = weighted::start();

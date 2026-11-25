@@ -170,24 +170,28 @@ pub(crate) fn amc_clock_alias(pid: usize) -> *mut u64 {
     unsafe { (&raw mut jnox_native_amc_clock_pages[pid]).cast::<u64>() }
 }
 
-const COUNT_LOAD: Ordering = if cfg!(jnox_native_smp_partitioned) { Ordering::Acquire } else { Ordering::Relaxed };
-const COUNT_STORE: Ordering = if cfg!(jnox_native_smp_partitioned) { Ordering::Release } else { Ordering::Relaxed };
+const COUNT_LOAD: Ordering = if cfg!(any(jnox_native_smp_partitioned, jnox_native_smp_migration)) { Ordering::Acquire } else { Ordering::Relaxed };
+const COUNT_STORE: Ordering = if cfg!(any(jnox_native_smp_partitioned, jnox_native_smp_migration)) { Ordering::Release } else { Ordering::Relaxed };
 static PROCESS_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-#[cfg(jnox_native_smp_partitioned)]
+#[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
 static mut SPIN_TABLE: Table = Table::EMPTY;
-#[cfg(jnox_native_smp_partitioned)]
+#[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
 unsafe extern "C" {
     static pi4_native_smp_stacks: u8;
 }
 
-#[cfg(jnox_native_smp_partitioned)]
+#[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
 fn guard(va: usize) -> bool {
     let base = &raw const pi4_native_smp_stacks as usize;
-    (0..4).any(|unit| va == base + unit * 5 * PAGE)
+    #[cfg(jnox_native_smp_migration)]
+    let units = 2 * crate::native_el0::bsp::CPU_COUNT;
+    #[cfg(not(jnox_native_smp_migration))]
+    let units = 4;
+    (0..units).any(|unit| va == base + unit * 5 * PAGE)
 }
 
-#[cfg(jnox_native_smp_partitioned)]
+#[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
 fn affinity() -> u64 {
     let mpidr: u64;
     unsafe { asm!("mrs {}, mpidr_el1", out(reg) mpidr, options(nostack, preserves_flags)) };
@@ -283,7 +287,7 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
                 link(&raw mut space.low, va, 21, kernel);
             }
             link(&raw mut space.root, GPIO, 30, &raw mut HIGH);
-            #[cfg(jnox_native_smp_partitioned)]
+            #[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
             link(&raw mut space.low, 0, 21, &raw mut SPIN_TABLE);
         }
         #[cfg(jnox_native_weighted_notify)]
@@ -354,7 +358,7 @@ unsafe fn install_spaces<'a>(
     plans: &[impl Borrow<LoadPlan<'a>>],
     stack_tails: &[&[u8]],
 ) -> Result<(), &'static str> {
-    #[cfg(jnox_native_smp_partitioned)]
+    #[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
     if affinity() != 0 { return Err("only CPU0 populates native mappings"); }
     let count = plans.len();
     if !(1..=SPACE_CAPACITY).contains(&count) || stack_tails.len() != count {
@@ -378,7 +382,7 @@ unsafe fn install_spaces<'a>(
     let rw = &raw const __native_rw_start as usize;
     let end = &raw const __stack_top as usize;
     #[cfg(jnox_pi4)]
-    if end > 0x0400_0000 || !(2..=2 + cfg!(jnox_native_smp_partitioned) as usize).contains(&count) {
+    if end > 0x0400_0000 || !(2..=2 + cfg!(any(jnox_native_smp_partitioned, jnox_native_smp_migration)) as usize).contains(&count) {
         return Err("Pi 4 native kernel aperture or process count");
     }
     if start != LINK_START || !(start < rw && rw < end) || rw % PAGE != 0
@@ -393,7 +397,7 @@ unsafe fn install_spaces<'a>(
     // writes, including size and address checks for the last slot.
     unsafe {
         for va in (start..end).step_by(PAGE) {
-            #[cfg(jnox_native_smp_partitioned)]
+            #[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
             if guard(va) { continue; }
             let table = (&raw mut KERNEL).cast::<Table>().add((va - start) / BLOCK);
             #[cfg(not(jnox_pi4))]
@@ -410,7 +414,7 @@ unsafe fn install_spaces<'a>(
             link(&raw mut HIGH, crate::context::GICD, 21, &raw mut GIC);
             page(&raw mut UART, GPIO, GPIO, DEVICE);
         }
-        #[cfg(jnox_native_smp_partitioned)]
+        #[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
         page(&raw mut SPIN_TABLE, 0, 0, NORMAL | PXN | UXN);
         page(&raw mut UART, crate::UART0, crate::UART0, DEVICE);
         page(&raw mut GIC, crate::context::GICD, crate::context::GICD, DEVICE);
@@ -436,6 +440,19 @@ unsafe fn install_spaces<'a>(
 // invalidates its own stale translations and instructions before enabling M.
 unsafe fn enable_local(root: u64, ctl: u64) {
     let tcr = 25u64 | (3 << 12) | (25 << 16) | (1 << 23) | (2 << 30);
+    // On Cortex-A72 request coherent participation before this core uses
+    // the shared translations. The pinned model can expose SMPEN as RAZ/WI,
+    // as in pi4_smp_boot.S. The hardware GIC-400 advertises SecurityExtn.
+    #[cfg(jnox_native_smp_migration)]
+    unsafe {
+        let mut ext: u64;
+        asm!("mrs {0}, S3_1_C15_C2_1", "orr {0}, {0}, #64",
+             "msr S3_1_C15_C2_1, {0}", "isb", "mrs {0}, S3_1_C15_C2_1",
+             out(reg) ext, options(nostack));
+        if ext & 64 == 0 && ptr::read_volatile((crate::context::GICD + 4) as *const u32) & (1 << 10) != 0 {
+            asm!("msr daifset,#15", "2: wfe", "b 2b", options(noreturn));
+        }
+    }
     unsafe {
         asm!("dsb sy", "msr mair_el1, {mair}", "msr tcr_el1, {tcr}",
              "msr ttbr0_el1, {root}", "isb", "tlbi vmalle1", "ic iallu",
@@ -445,8 +462,8 @@ unsafe fn enable_local(root: u64, ctl: u64) {
     }
 }
 
-/// CPU1 enters with its dedicated identity-mapped stack and masked exceptions.
-#[cfg(jnox_native_smp_partitioned)]
+/// A released secondary enters with its dedicated identity-mapped stack and masked exceptions.
+#[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
 pub(crate) unsafe fn enable_secondary(pid: usize) -> Result<(), &'static str> {
     let (el, masks, spsel, ctl): (u64, u64, u64, u64);
     unsafe {
@@ -454,8 +471,15 @@ pub(crate) unsafe fn enable_secondary(pid: usize) -> Result<(), &'static str> {
              out(reg) el, out(reg) masks, out(reg) spsel, out(reg) ctl,
              options(nostack, preserves_flags));
     }
-    if affinity() != 1 || el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
+    #[cfg(jnox_native_smp_migration)]
+    let is_secondary = (1..crate::native_el0::bsp::CPU_COUNT as u64).contains(&affinity());
+    #[cfg(not(jnox_native_smp_migration))]
+    let is_secondary = affinity() == 1;
+    if !is_secondary || el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
         || ctl & (0x1005 | (3 << 24)) != 0 {
+        #[cfg(jnox_native_smp_migration)]
+        return Err("secondary VM requires cold masked online secondary EL1h");
+        #[cfg(not(jnox_native_smp_migration))]
         return Err("secondary VM requires cold masked CPU1 EL1h");
     }
     let root = space_id(pid).ok_or("unpublished secondary native root")?;
@@ -573,7 +597,7 @@ pub(crate) fn copy_to_user(addr: usize, src: &[u8]) -> bool {
 }
 
 /// Report a verified private backing address for terminal or owner-local observations.
-#[cfg(jnox_native_smp_partitioned)]
+#[cfg(any(jnox_native_smp_partitioned, jnox_native_smp_migration))]
 pub(crate) fn private_address(pid: usize, va: usize) -> Option<usize> {
     translation(pid, va, false)
 }

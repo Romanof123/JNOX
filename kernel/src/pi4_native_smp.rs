@@ -3,8 +3,17 @@ use core::{
     arch::{asm, global_asm},
     mem::{offset_of, size_of},
     ptr,
-    sync::atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
+    sync::atomic::{AtomicU8, AtomicU64, Ordering},
 };
+#[cfg(jnox_native_smp_migration)]
+pub(crate) const CPU_COUNT: usize = super::NATIVE_SMP_ONLINE_CPUS;
+#[cfg(not(jnox_native_smp_migration))]
+pub(crate) const CPU_COUNT: usize = 2;
+const _: () = assert!(CPU_COUNT == 2 || CPU_COUNT == 3);
+#[cfg(jnox_native_smp_migration)]
+global_asm!(".set PI4_NATIVE_MIGRATION_CPUS,{count}", include_str!("pi4_native_smp.S"),
+            count = const CPU_COUNT);
+#[cfg(not(jnox_native_smp_migration))]
 global_asm!(include_str!("pi4_native_smp.S"), options(raw));
 
 #[repr(C, align(16))]
@@ -39,7 +48,7 @@ const _: () = assert!(
 unsafe extern "C" {
     static pi4_native_smp_vectors: u8;
     static pi4_native_smp_stacks: u8;
-    static pi4_native_smp_stamps: [AtomicU64; 16];
+    static pi4_native_smp_stamps: [AtomicU64; CPU_COUNT * 8];
     static pi4_native_smp_trampoline: u8;
     static __native_payload_start: u8;
     static __stack_top: u8;
@@ -47,8 +56,13 @@ unsafe extern "C" {
 }
 const GICD: usize = 0xff841000;
 const GICC: usize = 0xff842000;
-static TARGET: [AtomicU8; 2] = [const { AtomicU8::new(0) }; 2];
-static RELEASED: AtomicBool = AtomicBool::new(false);
+static TARGET: [AtomicU8; CPU_COUNT] = [const { AtomicU8::new(0) }; CPU_COUNT];
+#[cfg(jnox_native_smp_migration)]
+static CLAIMED_TARGETS: AtomicU8 = AtomicU8::new(0);
+#[cfg(jnox_native_smp_migration)]
+static RELEASED_CPUS: AtomicU8 = AtomicU8::new(1);
+#[cfg(not(jnox_native_smp_migration))]
+static RELEASED: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
 fn read(addr: usize) -> u32 {
     unsafe { ptr::read_volatile(addr as *const u32) }
 }
@@ -68,11 +82,11 @@ fn local() -> usize {
     let el: u64;
     unsafe { asm!("mrs {},mpidr_el1","mrs {},CurrentEL",out(reg)id,out(reg)el,options(nostack)) }
     let cpu = id & 0xff00ffffff;
-    require(cpu < 2 && el == 4);
+    require(cpu < CPU_COUNT as u64 && el == 4);
     cpu as usize
 }
 pub(super) fn stack_state(cpu: usize) -> [u64; 6] {
-    require(cpu < 2);
+    require(cpu < CPU_COUNT);
     let base = (&raw const pi4_native_smp_stacks as u64) + cpu as u64 * 0xa000;
     [
         base,
@@ -84,11 +98,11 @@ pub(super) fn stack_state(cpu: usize) -> [u64; 6] {
     ]
 }
 pub(super) fn return_stamp(cpu: usize) -> u64 {
-    require(cpu < 2);
+    require(cpu < CPU_COUNT);
     unsafe { pi4_native_smp_stamps[cpu * 8].load(Ordering::Acquire) }
 }
 pub(super) fn idle_stamp(cpu: usize) -> u64 {
-    require(cpu < 2);
+    require(cpu < CPU_COUNT);
     unsafe { pi4_native_smp_stamps[cpu * 8 + 1].load(Ordering::Acquire) }
 }
 pub(super) fn init_distributor() {
@@ -116,23 +130,55 @@ pub(super) fn init_local(cpu: usize) {
     write(GICC, read(GICC) | if secure { 1 } else { 6 });
     sync();
     let mask = unsafe { ptr::read_volatile((GICD + 0x800) as *const u8) };
+    #[cfg(jnox_native_smp_migration)]
+    let distinct = CLAIMED_TARGETS.fetch_or(mask, Ordering::AcqRel) & mask == 0;
+    #[cfg(not(jnox_native_smp_migration))]
+    let distinct = mask != TARGET[1 - cpu].load(Ordering::Acquire);
     require(
         mask.count_ones() == 1
-            && mask != TARGET[1 - cpu].load(Ordering::Acquire)
+            && distinct
             && read(GICD + 0x100) & lines == lines
             && read(GICC) & (1 << 9) == 0,
     );
     TARGET[cpu].store(mask, Ordering::Release);
 }
+#[cfg(jnox_native_smp_migration)]
+pub(super) fn target_mask(cpu: usize) -> u8 {
+    require(cpu < CPU_COUNT);
+    TARGET[cpu].load(Ordering::Acquire)
+}
+
+#[cfg(jnox_native_smp_migration)]
+pub(super) fn release_secondary() {
+    for cpu in 1..CPU_COUNT {
+        release_cpu(cpu);
+    }
+}
+
+#[cfg(jnox_native_smp_migration)]
+pub(super) fn release_cpu(cpu: usize) {
+    require(local() == 0 && (1..CPU_COUNT).contains(&cpu) && target_mask(0) != 0);
+    let previous = (1u8 << cpu) - 1;
+    require(RELEASED_CPUS.compare_exchange(previous, previous | (1 << cpu),
+                                           Ordering::AcqRel, Ordering::Acquire).is_ok());
+    publish_secondary(cpu);
+}
+
+#[cfg(not(jnox_native_smp_migration))]
 pub(super) fn release_secondary() {
     require(
         local() == 0
             && TARGET[0].load(Ordering::Acquire) != 0
             && !RELEASED.swap(true, Ordering::AcqRel),
     );
+    publish_secondary(1);
+}
+
+#[inline(always)]
+fn publish_secondary(cpu: usize) {
     let entry = &raw const pi4_native_smp_trampoline as usize;
     require((0x80000..0x81000).contains(&entry) && entry % 4 == 0);
-    let slot = 0xe0 as *mut u64;
+    let slot = (0xd8 + 8 * cpu) as *mut u64;
     let start = &raw const __native_payload_start as usize;
     let end = &raw const __stack_top as usize;
     let guards = &raw const pi4_native_smp_stacks as usize;
@@ -141,11 +187,15 @@ pub(super) fn release_secondary() {
         asm!("mrs {},ctr_el0",out(reg)ctr,options(nostack));
         let line = 4usize << ((ctr >> 16) & 15);
         require(ptr::read_volatile(slot) == 0);
-        for addr in (start..end).step_by(line) {
-            if addr >= guards && addr - guards < 0x14000 && (addr - guards) % 0x5000 < 4096 {
-                continue;
+        // Publish the image once, before a secondary can modify shared state.
+        if cpu == 1 {
+            for addr in (start..end).step_by(line) {
+                if addr >= guards && addr - guards < CPU_COUNT * 0xa000
+                    && (addr - guards) % 0x5000 < 4096 {
+                    continue;
+                }
+                asm!("dc cvac,{}",in(reg)addr,options(nostack));
             }
-            asm!("dc cvac,{}",in(reg)addr,options(nostack));
         }
         asm!("dsb sy", options(nostack));
         ptr::write_volatile(slot, entry as u64);
@@ -153,7 +203,7 @@ pub(super) fn release_secondary() {
     }
 }
 pub(super) fn send_sgi(cpu: usize, id: u8) {
-    require(cpu < 2 && cpu != local() && matches!(id, 1 | 2));
+    require(cpu < CPU_COUNT && cpu != local() && matches!(id, 1 | 2));
     let target = TARGET[cpu].load(Ordering::Acquire);
     require(target.count_ones() == 1);
     unsafe { asm!("dsb ishst", options(nostack)) }
@@ -177,6 +227,18 @@ pub(super) fn arm(at: u64) {
 pub(super) fn disable_timer() {
     unsafe { asm!("msr cntp_ctl_el0,xzr", "isb", options(nostack)) }
 }
+/// Called on the stopping secondary after its last owner retired and raw IAR
+/// was EOI'd. CPU0 acquires the mask before reading this core's final records.
+#[cfg(jnox_native_smp_migration)]
+pub(super) fn acknowledge_park(cpu: usize, parked: &AtomicU8) -> ! {
+    require(cpu != 0 && local() == cpu);
+    unsafe { asm!("msr daifset,#15", options(nostack)) }
+    disable_timer();
+    sync();
+    parked.fetch_or(1 << cpu, Ordering::Release);
+    unsafe { asm!("dsb sy", "sev", "2: wfe", "b 2b", options(noreturn)) }
+}
+
 pub(super) unsafe fn enter(cpu: usize, frame: *const Frame) -> ! {
     require(local() == cpu);
     unsafe { pi4_native_smp_enter(cpu, frame) }
