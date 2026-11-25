@@ -50,10 +50,10 @@ def periodic_parameters(value):
     return phase, period, deadline
 
 
-def cbs_reservation(value):
+def budget_tuple(value):
     fields = value.split(",")
     if len(fields) != 2 or any(not (field.isascii() and field.isdecimal()) for field in fields):
-        raise argparse.ArgumentTypeError("expected quota,period in unsigned decimal 50 ms slots")
+        raise argparse.ArgumentTypeError("expected quota,period in unsigned decimal slots")
     quota, period = map(int, fields)
     if not 0 < quota <= period <= 2**32 - 1:
         raise argparse.ArgumentTypeError("require 0 < quota <= period <= 2^32-1")
@@ -246,7 +246,10 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic"], action="append", default=[])
+    parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
+    parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
@@ -265,9 +268,9 @@ def main():
                         help="primary phase, period and relative deadline in nanoseconds")
     parser.add_argument("--peer-periodic", type=periodic_parameters, action="append", default=[], metavar="PHASE,T,D",
                         help="periodic parameters in peer order")
-    parser.add_argument("--reservation", type=cbs_reservation, action="append", default=[], metavar="Q,P",
+    parser.add_argument("--reservation", type=budget_tuple, action="append", default=[], metavar="Q,P",
                         help="primary CBS quota and period in 50 ms slots")
-    parser.add_argument("--peer-reservation", type=cbs_reservation, action="append", default=[], metavar="Q,P",
+    parser.add_argument("--peer-reservation", type=budget_tuple, action="append", default=[], metavar="Q,P",
                         help="CBS quota and period in 50 ms slots, in peer order")
     parser.add_argument("--class", dest="primary_class", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--peer-class", type=unsigned_decimal, action="append", default=[])
@@ -297,6 +300,19 @@ def main():
     if board == "pi4" and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
                            or not (args.source or args.elf) or args.threads):
         parser.error("pi4 requires a primary application and one peer under FIFO or RR")
+    server_policy = policy in ("polling", "deferrable", "sporadic")
+    if server_policy:
+        if len(args.peer_elf) != 1 or args.server_budget is None or args.server_slot_ms is None:
+            parser.error("native servers require two applications, --server-budget and --server-slot-ms")
+        quota, period = args.server_budget
+        if not 0 < args.server_slot_ms * period < 2**64:
+            parser.error("server slot and period must fit in positive u64 milliseconds")
+        if (args.server_credits is not None) != (policy == "sporadic"):
+            parser.error("--server-credits is required exclusively for sporadic")
+        if policy == "sporadic" and not 1 <= args.server_credits <= 8:
+            parser.error("sporadic credit capacity must be in 1..8")
+    elif any(v is not None for v in (args.server_slot_ms, args.server_budget, args.server_credits)):
+        parser.error("server options require polling, deferrable or sporadic")
     if policy == "partition":
         if len(args.peer_elf) != 1 or args.partition_windows is None:
             parser.error("partition requires two applications and --partition-windows")
@@ -430,6 +446,13 @@ def main():
             env["JNOX_NATIVE_PARTITION_WINDOWS"] = args.partition_windows
             metadata.update(partition_windows=windows, partition_frame_ms=frame_ms,
                             partition_windows_input=args.partition_windows)
+        if server_policy:
+            env.update(JNOX_NATIVE_SERVER_SLOT_MS=str(args.server_slot_ms),
+                       JNOX_NATIVE_SERVER_BUDGET=f"{quota},{period}")
+            metadata.update(server_slot_ms=args.server_slot_ms, server_quota_slots=quota,
+                            server_period_slots=period, server_credits=args.server_credits)
+            if policy == "sporadic":
+                env["JNOX_NATIVE_SERVER_CREDITS"] = str(args.server_credits)
         if args.weighted_continuous:
             env["JNOX_NATIVE_WEIGHTED_CONTINUOUS"] = "1"
             metadata.update(weighted_continuous=True, weighted_notify=None)

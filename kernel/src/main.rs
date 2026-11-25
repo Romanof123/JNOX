@@ -22,7 +22,7 @@ mod amc;
 mod amc_policy;
 #[cfg(jnox_rust_amc)]
 mod ordinary_amc;
-#[cfg(any(jnox_ap, jnox_bench = "rr", jnox_bench = "aperiodic"))]
+#[cfg(any(jnox_native_aperiodic, jnox_ap, jnox_bench = "rr", jnox_bench = "aperiodic"))]
 mod aperiodic_policy;
 #[cfg(jnox_bench = "batch")]
 mod batch;
