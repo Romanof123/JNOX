@@ -217,6 +217,24 @@ impl LoanIpc {
         Ok(())
     }
 
+    /// Publish the virtual bench's read-only 44-byte fixture. No EL0 writer owns it.
+    /// The callback must finish initializing a free page before its handle becomes visible.
+    #[cfg(jnox_native_safety_downstream)]
+    pub fn enqueue_invalid_fixture(&mut self, fill: impl FnOnce(usize) -> Result<(), i32>) -> Result<u64, i32> {
+        if !self.writer_live || !self.reader_live { return Err(-32); }
+        let (tail, occupancy) = self.ring.enqueue_position()?;
+        let slot = self.pages.iter().position(|page| matches!(page, Page::Free)).ok_or(-11)?;
+        if self.generation == MAX_GENERATION { return Err(-75); }
+        let generation = self.generation + 1;
+        let handle = (generation << 2) | slot as u64;
+        fill(slot)?;
+        self.generation = generation;
+        self.pages[slot] = Page::Queued(Grant { slot, handle, len: 44 });
+        self.ring.publish(tail, handle);
+        self.peak = self.peak.max(occupancy);
+        Ok(handle)
+    }
+
     // The host phase probe times this call, including refusals on an empty ring.
     #[inline(never)]
     pub fn receive(
@@ -342,6 +360,27 @@ mod tests {
         panic!("refusal must precede MMU work")
     }
 
+    #[cfg(jnox_native_safety_downstream)]
+    #[test]
+    fn downstream_fixture_publishes_only_after_initialization_and_respects_capacity() {
+        let mut channel = LoanIpc::new(0, 1);
+        assert_eq!(channel.enqueue_invalid_fixture(|_| Err(-5)), Err(-5));
+        assert_eq!((channel.generation, channel.occupancy()), (0, 0));
+        let first = channel.enqueue_invalid_fixture(|_| Ok(())).unwrap();
+        let second = channel.enqueue_invalid_fixture(|_| Ok(())).unwrap();
+        assert_eq!(channel.enqueue_invalid_fixture(|_| panic!("full ring")), Err(-11));
+        assert_eq!((channel.generation, channel.tail()), (2, 2));
+        for handle in [first, second] {
+            let grant = channel.receive(1, ok).unwrap();
+            assert_eq!((grant.handle, grant.len), (handle, 44));
+            channel.release(1, handle, ok).unwrap();
+        }
+        channel.generation = MAX_GENERATION;
+        assert_eq!(channel.enqueue_invalid_fixture(|_| panic!("generation exhausted")), Err(-75));
+        channel.exit(1, ok).unwrap();
+        assert_eq!(channel.enqueue_invalid_fixture(|_| panic!("endpoint exited")), Err(-32));
+    }
+
     #[test]
     fn full_and_oversize_keep_writer_then_publish_in_order_across_wrap() {
         let mut c = LoanIpc::new(0, 1);
@@ -367,7 +406,11 @@ mod tests {
         }
         assert_eq!((c.head(), c.tail(), c.occupancy()), (u64::MAX - 1, 0, 2));
         assert_eq!(c.publish(0, d.handle, 4097, unexpected), Err(-90));
+        let counters = (c.head(), c.tail(), c.high_water(), c.generation);
+        let pages = [a.slot, b.slot, d.slot].map(|slot| c.page(slot));
         assert_eq!(c.publish(0, d.handle, 3, unexpected), Err(-11));
+        assert_eq!((c.head(), c.tail(), c.high_water(), c.generation), counters);
+        assert_eq!([a.slot, b.slot, d.slot].map(|slot| c.page(slot)), pages);
         assert_eq!(c.page(d.slot).unwrap().state, 1);
         assert_eq!(c.receive(1, ok).unwrap().handle, a.handle);
         c.publish(0, d.handle, 3, ok).unwrap();
@@ -432,6 +475,38 @@ mod tests {
         assert_eq!(c.receive(1, unexpected), Err(-32));
         c.release(1, a.handle, ok).unwrap();
         c.release(1, b.handle, ok).unwrap();
+    }
+
+    #[cfg(jnox_native_safety_channel)]
+    #[test]
+    fn invalidation_revokes_live_views_and_preserves_handle_generation() {
+        let mut c = LoanIpc::new(0, 1);
+        let reader = c.acquire(0, ok).unwrap();
+        let queued = c.acquire(0, ok).unwrap();
+        let writer = c.acquire(0, ok).unwrap();
+        c.publish(0, reader.handle, 44, ok).unwrap();
+        c.publish(0, queued.handle, 44, ok).unwrap();
+        assert_eq!(c.receive(1, ok).unwrap().handle, reader.handle);
+
+        let mut revoked = [None; PAGES];
+        c.invalidate(|op| {
+            let MapOp::Revoke { pid, slot } = op else { panic!("unexpected map operation") };
+            assert!(revoked[slot].replace(pid).is_none());
+            Ok(())
+        }).unwrap();
+        assert_eq!(revoked[reader.slot], Some(1));
+        assert_eq!(revoked[queued.slot], None);
+        assert_eq!(revoked[writer.slot], Some(0));
+        assert_eq!((c.occupancy(), c.high_water()), (0, 2));
+        assert!((0..PAGES).all(|slot| c.page(slot).unwrap().state == 0));
+        c.invalidate(unexpected).unwrap();
+        assert_eq!(c.receive(1, unexpected), Err(-11));
+
+        let fresh = c.acquire(0, ok).unwrap();
+        assert_eq!(fresh.slot, reader.slot);
+        assert_eq!(fresh.handle >> 2, (writer.handle >> 2) + 1);
+        assert_eq!(c.release(1, reader.handle, unexpected), Err(-116));
+        assert_eq!(c.publish(0, writer.handle, 44, unexpected), Err(-116));
     }
 
     #[test]

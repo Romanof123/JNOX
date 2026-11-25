@@ -36,6 +36,11 @@ pub fn supervise(command: Command, generation: u64) -> Result<(), i64> {
     operation(59, command as u64, generation, 0, 0, 0)
 }
 
+/// Request one immutable CRC-invalid frame from the closed-gate virtual qualification fixture.
+pub fn inject_invalid(generation: u64) -> Result<(), i64> {
+    operation(59, 5, generation, 0, 0, 0)
+}
+
 pub fn check() -> Result<(), i64> { operation(60, 1, 0, 0, 0, 0) }
 
 /// Submit fields from a completely validated private snapshot.

@@ -36,6 +36,11 @@ static inline long jnox_safety_supervise(enum jnox_safety_command command, uint6
 {
     return jnox_safety_operation(59, command, generation, 0, 0, 0);
 }
+/* Closed-gate virtual qualification fixture. Only slot 2 can request its fixed frame. */
+static inline long jnox_safety_inject_invalid(uint64_t generation)
+{
+    return jnox_safety_operation(59, 5, generation, 0, 0, 0);
+}
 static inline long jnox_safety_check(void)
 {
     return jnox_safety_operation(60, 1, 0, 0, 0, 0);

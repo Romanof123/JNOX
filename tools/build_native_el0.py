@@ -477,6 +477,8 @@ def main():
                         help="select a socket service with existing inbound synchronous IPC rights")
     parser.add_argument("--safety-boundary", action="count", default=0,
                         help="record single-check safety decisions (same phase or collision argument for all slots)")
+    parser.add_argument("--safety-downstream-injector", action="count", default=0,
+                        help="include the fixed invalid-frame source in a closed-gate virtual qualification run")
     parser.add_argument("--safety-watchdog", action="count", default=0,
                         help="enable the kernel watchdog for the three-role safety qualification profile")
     parser.add_argument("--safety-interference", action="count", default=0,
@@ -573,6 +575,12 @@ def main():
             parser.error("--safety-boundary requires the single-check --safety-channel profile")
         if args.arg not in (["phase"], ["collision"]) or not args.arg == args.peer_arg == args.peer2_arg:
             parser.error("--safety-boundary requires the same single phase or collision argument for all three slots")
+    if args.safety_downstream_injector:
+        if args.safety_downstream_injector != 1 or args.safety_qualification != 1:
+            parser.error("--safety-downstream-injector requires --safety-qualification and may appear once")
+        if (args.arg not in (["gate-invalid"], ["gate-saturation"]) or args.peer2_arg != args.arg
+                or args.peer_arg not in (args.arg, args.arg + ["fused-phase"])):
+            parser.error("downstream qualification requires the same closed-gate case for all three roles")
     if args.safety_watchdog and (args.safety_watchdog != 1 or args.safety_qualification != 1):
         parser.error("--safety-watchdog requires --safety-qualification and may appear once")
     if args.safety_interference and (args.safety_interference != 1 or args.safety_qualification != 1):
@@ -791,6 +799,12 @@ def main():
         env["JNOX_NATIVE_SAFETY_BOUNDARY"] = "1"
         metadata["safety_boundary"] = {"scenario": args.arg[0], "decision_event": 12}
         metadata["package_argv"] = sys.argv[:]
+    if args.safety_downstream_injector:
+        env["JNOX_NATIVE_SAFETY_DOWNSTREAM"] = "1"
+        metadata["safety_downstream_injector"] = {
+            "scenario": args.arg[0], "issuer_slot": 2, "command": 5, "event": 14,
+            "maximum_attempts_per_generation": 64, "fixture_bytes": 44,
+        }
     if args.safety_watchdog:
         env["JNOX_NATIVE_SAFETY_WATCHDOG"] = "1"
         metadata["safety_watchdog"] = {

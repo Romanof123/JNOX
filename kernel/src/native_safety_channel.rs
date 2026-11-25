@@ -27,6 +27,10 @@ struct Session {
     sequence: u64, issue: u64, permit: u64, streak: u8, prior: u64,
     snapshot: Option<(u64, [u8; 44])>, released: bool,
     rearm_first: u64, last_check: Option<u64>,
+    #[cfg(jnox_native_safety_downstream)]
+    downstream_injected: bool,
+    #[cfg(jnox_native_safety_downstream)]
+    downstream_attempts: u8,
     #[cfg(jnox_native_safety_watchdog)]
     watchdog: CompletionWatchdog,
 }
@@ -131,6 +135,36 @@ impl Session {
         self.gate && !self.fault && !self.rearmed && self.streak == 2
             && fresh(now,self.prior) && fresh(now,self.issue)
     }
+    #[cfg(jnox_native_safety_downstream)]
+    fn inject_downstream(&mut self, pid: usize, generation: u64, entry: u64) -> Result<(), i32> {
+        let before = loans::occupancy() as u64;
+        let result = if pid != 2 {
+            Err(-13)
+        } else if self.dead {
+            Err(-32)
+        } else if generation == 0 || generation != self.generation {
+            Err(-116)
+        } else if self.gate || !self.marked {
+            Err(-16)
+        } else if self.downstream_attempts >= 64 {
+            Err(-75)
+        } else {
+            // Charge the generation even when a full queue refuses the fixture.
+            self.downstream_attempts += 1;
+            loans::inject_invalid_fixture()
+        };
+        let (status, handle) = match result {
+            Ok(handle) => {
+                self.downstream_injected = true;
+                (0, handle)
+            }
+            Err(errno) => (i64::from(errno) as u64, 0),
+        };
+        // The row timestamp bounds the completed attempt; kind 5 carries the current generation.
+        log(14, [entry, pid as u64, generation, status, handle, before,
+                 loans::occupancy() as u64, u64::from(!self.gate)]);
+        result.map(|_| ())
+    }
     #[inline(never)]
     fn supervisor(&mut self, cmd:u64, generation:u64) -> Result<(),i32> {
         if self.dead { return Err(-32); }
@@ -227,7 +261,10 @@ pub(super) fn boot() {
 pub(super) fn before_loan(pid:usize,op:u64)->Result<(),i32> {
     let s = unsafe { (&mut *(&raw mut STATE)).as_mut().unwrap() };
     if (matches!(op,33|34) && pid!=0) || (op==35 && pid!=1) || (op==36 && pid>1) { return Err(-13); }
-    if !s.gate {
+    let allow_loan = s.gate;
+    #[cfg(jnox_native_safety_downstream)]
+    let allow_loan = allow_loan || (pid == 1 && matches!(op,35|36) && s.downstream_injected && !s.dead);
+    if !allow_loan {
         log(9,[pid as u64,op,(-32i64) as u64,s.generation,0,0,0,0]);
         return Err(-32);
     }
@@ -283,6 +320,8 @@ pub(super) fn service(pid:usize,f:&mut NativeFrame) {
         return;
     }
     let result=match (op,pid) {
+        #[cfg(jnox_native_safety_downstream)]
+        (59,_) if cmd==5 => s.inject_downstream(pid, f.x[1], entry),
         (59,2)=>s.supervisor(cmd,f.x[1]),
         (60,1)=>s.control(&f.x),
         #[cfg(jnox_native_safety_qualification)]

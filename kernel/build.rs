@@ -549,9 +549,15 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_qualification)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_interference)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_watchdog)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_downstream)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_boundary)");
     let boundary = selector("JNOX_NATIVE_SAFETY_BOUNDARY");
     let qualification = selector("JNOX_NATIVE_SAFETY_QUALIFICATION");
+    let downstream = selector("JNOX_NATIVE_SAFETY_DOWNSTREAM");
+    if let Some(value) = &downstream {
+        assert!(value == "1" && qualification.as_deref() == Some("1"),
+            "downstream injection requires the protected virtual qualification profile");
+    }
     if let Some(value) = selector("JNOX_NATIVE_SAFETY_WATCHDOG") {
         assert!(value == "1" && qualification.as_deref() == Some("1"),
             "safety watchdog requires the qualification profile");
@@ -667,6 +673,16 @@ fn main() {
         assert!(cap > 0, "deadline switch cap must be positive");
     }
     let native_argv = [0, 1, 2, 3].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    if downstream.is_some() {
+        let [sender, controller, supervisor, extra] = core::array::from_fn(|slot|
+            native_extra_args(slot, native_argv[slot].as_deref()));
+        let named = sender.len() == 1 && matches!(sender[0].as_slice(), b"gate-invalid" | b"gate-saturation");
+        let controller_matches = controller == sender || (controller.len() == 2
+            && controller.first() == sender.first() && controller[1] == b"fused-phase");
+        assert!(named && supervisor == sender && controller_matches && extra.is_empty(),
+            "downstream fixture requires matching gate-invalid or gate-saturation scenarios");
+        println!("cargo::rustc-cfg=jnox_native_safety_downstream");
+    }
     if boundary.is_some() {
         // One argument, u16 LE byte length, then its UTF-8 bytes: phase or collision.
         let named = ["0105007068617365", "010900636f6c6c6973696f6e"];
@@ -989,8 +1005,8 @@ fn multilevel_duration(field: &str) -> u64 {
 }
 
 // Hex wire: u8 count, then (u16 little-endian byte length, UTF-8 payload) per extra.
-fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
-    let Some(encoded) = encoded else { return "&[]".to_owned() };
+fn native_extra_args(slot: usize, encoded: Option<&str>) -> Vec<Vec<u8>> {
+    let Some(encoded) = encoded else { return Vec::new() };
     const MAX_COUNT: usize = 15;
     const MAX_BYTES: usize = 1024;
     // Two length bytes per item, one of which replaces its budgeted NUL.
@@ -1004,7 +1020,7 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
     assert!(count <= MAX_COUNT, "slot {slot}: at most {MAX_COUNT} extra arguments");
     let mut rest = &raw[1..];
     let mut used = 0;
-    let mut literals = Vec::with_capacity(count);
+    let mut args = Vec::with_capacity(count);
     for _ in 0..count {
         assert!(rest.len() >= 2, "slot {slot}: missing argument length");
         let size = usize::from(u16::from_le_bytes([rest[0], rest[1]]));
@@ -1016,9 +1032,15 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
         assert!(used <= MAX_BYTES, "slot {slot}: arguments exceed {MAX_BYTES} bytes including NULs");
         assert!(!value.contains(&0), "slot {slot}: argument contains NUL");
         assert!(std::str::from_utf8(value).is_ok(), "slot {slot}: invalid UTF-8");
-        literals.push(format!("&{value:?}"));
+        args.push(value.to_vec());
     }
     assert!(rest.is_empty(), "slot {slot}: trailing argument bytes");
+    args
+}
+
+fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
+    let args = native_extra_args(slot, encoded);
+    let literals: Vec<_> = args.iter().map(|value| format!("&{value:?}")).collect();
     format!("&[{}]", literals.join(", "))
 }
 

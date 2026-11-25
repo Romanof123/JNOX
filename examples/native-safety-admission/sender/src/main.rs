@@ -164,6 +164,8 @@ fn run(case: Case, t: Time) -> Result<()> {
                         | Case::Collision
                         | Case::BoundaryWitness
                         | Case::Silence
+                        | Case::GateInvalid
+                        | Case::GateSaturation
                 );
             let mut data = encode(Permit {
                 generation: 1,
@@ -194,6 +196,27 @@ fn run(case: Case, t: Time) -> Result<()> {
         }
         common::completed(k + 1);
         seg.finish()?;
+    }
+    if case.closed_gate() {
+        // Check the ordinary upstream path after all eight jobs are recorded.
+        if unsafe { core::ptr::read_volatile(&raw const admission_sender_count) } != N {
+            return Err(94);
+        }
+        for k in 0..N {
+            let row = unsafe { core::ptr::read_volatile(&raw const admission_sender_rows[k]) };
+            let expected = if k < 3 {
+                (0, 0)
+            } else {
+                ((-32_i64) as u64, SKIP)
+            };
+            if row[0] != k as u64
+                || row[4] != (k + 1) as u64
+                || (row[7], row[8]) != expected
+                || row[9] != 0
+            {
+                return Err(94);
+            }
+        }
     }
     Ok(())
 }
