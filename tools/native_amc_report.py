@@ -151,6 +151,28 @@ def parse_uart(raw):
     return records, one
 
 
+def overlap_control(life, epoch, q):
+    """Match admitted LO0, its latched miss, refused next attempt and real exit."""
+    low = [event for event in life if event[2] == 0]
+    peer = [event for event in life if event[2] == 1]
+    if ([e[0] for e in low] != [1, 7, 2, 3] or
+            [e[0] for e in peer] != [1, 3] or len(life) != 6 or
+            any(e[4] != 0 for e in life)):
+        return False
+    admitted, miss, refused, exited = low
+    due = epoch + q
+    return (admitted[3] == 0 and admitted[5:] == (epoch, due, 0, 0, 0)
+            and epoch <= admitted[1] < due <= miss[1] == refused[1] < exited[1]
+            and miss[3] == 0 and miss[5] == due and miss[7:] == (0, 0, 0)
+            and refused[3] == 1 and refused[5:] == (due, due + q, 1, 1, 0)
+            and exited[3] == 0 and 0 <= miss[6] < exited[5] <= q
+            and exited[6:] == (due, 0, MAX, 936)
+            and peer[0][3] == peer[1][3] == 0
+            and peer[0][5:] == (epoch, epoch + 3*q, 0, 0, 0)
+            and epoch <= peer[0][1] <= peer[1][1] <= epoch + 3*q
+            and 0 < peer[1][5] <= 2*q)
+
+
 def score(a):
     root = a.root
     need(sha(root / "session.json") == a.digest, "session identity")
@@ -264,7 +286,13 @@ def score(a):
             check(all((wall,cpu) in samples for wall,cpu,n in recorded),"task clock product/syscall mismatch")
         if kind==3:
             exit_at[slot,gen]=stamp
-            check(v[2]==slot and stamp<=due,"signed exit/deadline slot "+str(slot))
+            check(v[2] == slot, "signed exit slot " + str(slot))
+            if case == "overlap" and (slot, gen) == (0, 0):
+                check(stamp > due, "overlap control requires actual overdue LO0 exit")
+                p["completion_lateness_ticks"] = stamp - due
+                p["completion_lateness_ns"] = (stamp - due) * 1000000000 // hz
+            else:
+                check(stamp <= due, "completion after deadline slot " + str(slot))
             if not lost:
                 check(any(r[0]==2 and r[1]==1 and r[2]==stamp and r[4:6]==(slot,gen) and r[19]==slot for r in intervals),"actual exit syscall")
         if slot in roots and gen==max((e[3] for e in life if e[0]==1 and e[2]==slot),default=-1):
@@ -323,8 +351,13 @@ def score(a):
         check([(e[5],e[6],e[7]) for e in life if e[0]==6]==[(boundaries(2),1,0),(boundaries(3),0,0),(boundaries(4),1,1)],"reset refusals")
         check(any(e[0]==2 and e[2]==0 and e[5]==boundaries(2) and e[8]==2 for e in life),"LO refused in HI")
     else:
-        check(any(e[0]==7 and e[2]==0 and e[5]==boundaries(1) for e in life) and
-              any(e[0]==2 and e[2]==0 and e[5]==boundaries(1) and e[8]==1 for e in life),"deadline and overlap refusal")
+        check(overlap_control(life, epoch, q), "overlap admission, single b1 miss, refusal and continuing service to exit")
+        if not lost:
+            misses = [e for e in life if e[0] == 7 and e[2:4] == (0, 0)]
+            if len(misses) == 1:
+                at = misses[0][1]
+                check(sum(r[6] for r in intervals if r[4:6] == (0, 0) and r[2] <= at)
+                      == misses[0][6], "LO0 service at recorded deadline fault")
     if launch["trace"]:
         raw=(root/"exceptions.log").read_bytes()
         entries=re.findall(rb"Taking exception (?:2 \[SVC\]|5 \[IRQ\])[^\n]*\r?\n\.\.\.from EL0 to EL1\r?\n(?:\.\.\.with ESR [^\n]+\n)?\.\.\.with ELR (0x[0-9a-fA-F]+)",raw)
