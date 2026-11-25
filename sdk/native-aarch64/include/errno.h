@@ -5,6 +5,7 @@
 #define EOVERFLOW 75
 #define EINVAL 22
 #define ENOSYS 38
+#define ENOTSUP 95
 int *__jnox_errno_location(void);
 #define errno (*__jnox_errno_location())
 #endif

@@ -74,6 +74,8 @@ mod ordinary_deadline;
 mod deadline_jobs;
 #[cfg(any(jnox_native_edf, jnox_ordinary_deadline, jnox_bench = "deadline"))]
 mod deadline_policy;
+#[cfg(jnox_native_periodic)]
+mod native_periodic_policy;
 #[cfg(any(
     jnox_bench = "scheduler",
     jnox_bench = "rr",
@@ -81,6 +83,7 @@ mod deadline_policy;
     jnox_bench = "periodic",
     jnox_bench = "batch",
     jnox_batch,
+    jnox_native_periodic,
     jnox_bench = "periodic_overrun"
 ))]
 mod dispatch_policy;

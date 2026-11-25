@@ -364,12 +364,14 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_fixed)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_weighted)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_edf)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_periodic)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_cbs)");
     let peer2_image = selector("JNOX_NATIVE_PEER2_ELF");
     let peer2_hash = selector("JNOX_NATIVE_PEER2_ELF_SHA256");
     let policy = selector("JNOX_NATIVE_POLICY");
     let priorities = selector("JNOX_NATIVE_PRIORITIES");
     let weights = selector("JNOX_NATIVE_WEIGHTS");
+    let periodic = selector("JNOX_NATIVE_PERIODIC");
     let reservations = selector("JNOX_NATIVE_RESERVATIONS");
     let edf_jobs = selector("JNOX_NATIVE_EDF_JOBS");
     let quantum = selector("JNOX_NATIVE_QUANTUM_TICKS");
@@ -380,7 +382,7 @@ fn main() {
     assert_eq!(peer_image.is_some(), peer_hash.is_some(), "peer ELF requires its digest");
     assert_eq!(peer2_image.is_some(), peer2_hash.is_some(), "second peer requires its digest");
     assert!(peer2_image.is_none() || peer_image.is_some(), "missing first peer");
-    if peer_image.is_some() || policy.is_some() || priorities.is_some() || weights.is_some() || edf_jobs.is_some() || reservations.is_some() || quantum.is_some() {
+    if peer_image.is_some() || policy.is_some() || priorities.is_some() || weights.is_some() || edf_jobs.is_some() || periodic.is_some() || reservations.is_some() || quantum.is_some() {
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
             "native peers and scheduling require ordinary native process packaging");
     }
@@ -410,7 +412,7 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), reservations.as_deref());
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref());
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -609,15 +611,20 @@ fn validate_architecture() {
     }
 }
 
-fn parse_edf_job(value: &str) -> (u64, u64, u64) {
+fn parse_native_tuple(value: &str) -> (u64, u64, u64) {
     let mut fields = value.split(',');
     let mut next = || {
-        let field = fields.next().expect("EDF job requires release,deadline,cost");
-        assert!(!field.is_empty() && field.bytes().all(|c| c.is_ascii_digit()), "invalid EDF number");
-        field.parse::<u64>().expect("EDF number exceeds u64")
+        let field = fields.next().expect("native scheduling tuple requires three integers");
+        assert!(!field.is_empty() && field.bytes().all(|c| c.is_ascii_digit()), "invalid scheduling tuple number");
+        field.parse::<u64>().expect("scheduling tuple number exceeds u64")
     };
     let job = (next(), next(), next());
-    assert!(fields.next().is_none(), "extra EDF job fields");
+    assert!(fields.next().is_none(), "extra scheduling tuple fields");
+    job
+}
+
+fn parse_edf_job(value: &str) -> (u64, u64, u64) {
+    let job = parse_native_tuple(value);
     assert!(job.0 < job.1 && job.1 <= 16 && job.2 > 0, "invalid finite EDF job");
     job
 }
@@ -633,7 +640,7 @@ fn parse_cbs_reservation(value: &str) -> (u32, u32) {
     (quota, period)
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, reservations: Option<&str>) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>) {
     let mode = policy.unwrap_or("cooperative");
     let slot_weights = if mode == "weighted" {
         let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
@@ -655,6 +662,18 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(edf_jobs.is_none(), "job tuples require EDF");
         vec![(0, 0, 0); slots]
     };
+    let periods = if matches!(mode, "rm" | "dm") {
+        let list: Vec<_> = periodic.expect("RM and DM require periodic tuples")
+            .split(';').map(parse_native_tuple).collect();
+        assert_eq!(list.len(), slots, "supply one periodic tuple per slot");
+        assert!(list.iter().all(|&(_, period, deadline)| deadline > 0 && deadline <= period),
+            "require 0 < relative deadline <= period");
+        println!("cargo::rustc-cfg=jnox_native_periodic");
+        list
+    } else {
+        assert!(periodic.is_none(), "periodic tuples require RM or DM");
+        vec![(0, 0, 0); slots]
+    };
     let servers = if mode == "cbs" {
         let list: Vec<_> = reservations.expect("CBS requires reservations")
             .split(';').map(parse_cbs_reservation).collect();
@@ -673,7 +692,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("weighted" | "edf" | "cbs") | None => {
+        Some("weighted" | "edf" | "rm" | "dm" | "cbs") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
@@ -688,7 +707,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         0
     };
     let generated = format!(
-        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");

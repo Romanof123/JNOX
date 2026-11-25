@@ -10,6 +10,7 @@ struct Timespec {
 }
 
 extern "C" {
+    fn jnox_periodic_wait_next() -> i32;
     fn sched_yield() -> i32;
     fn clock_gettime(clock: i32, result: *mut Timespec) -> i32;
     fn clock_nanosleep(clock: i32, flags: i32, request: *const Timespec, remaining: *mut Timespec) -> i32;
@@ -55,6 +56,15 @@ pub fn sleep_until(deadline: Duration) -> Result<(), ClockError> {
 /// Give another ready application a turn. An error carries the native errno.
 pub fn yield_now() -> Result<(), i32> {
     if unsafe { sched_yield() } == 0 {
+        Ok(())
+    } else {
+        Err(unsafe { *__jnox_errno_location() })
+    }
+}
+
+/// Complete this generation and wait for the next release under RM or DM.
+pub fn wait_next_period() -> Result<(), i32> {
+    if unsafe { jnox_periodic_wait_next() } == 0 {
         Ok(())
     } else {
         Err(unsafe { *__jnox_errno_location() })
