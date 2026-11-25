@@ -287,3 +287,38 @@ python3 tools/read_multilevel_telemetry.py "$pkg" "$dir" > "$dir/results.json"
 ~~~
 
 [Bash / SDK / QEMU](../examples/native-multilevel/README.md#m4-telemetry-deployment--m4-경보-게시-배포)
+
+## 프로세스별 계층형 CPU 예산 설정
+
+단일 CPU virt에서 --policy hierarchy와 --hierarchy로 JSON 파일을 지정한다. ELF를 넣은 순서가 리프 번호가 된다. period_ticks와 예산은 카운터 틱 단위다. 두 리프가 같은 부모에 속하면 그 부모의 예산을 공유한다. 아래 명령은 예제에서 빌드한 CRC, 히스토그램, 에너지 앱 순으로 배치한다.
+
+~~~sh
+out=output/native-hierarchy
+python3 tools/build_native_el0.py --out "$out/saturated" --policy hierarchy --hierarchy examples/native-hierarchy/baseline.json --elf "$out/crc.elf" --peer-elf "$out/histogram.elf" --peer-elf "$out/energy.elf"
+~~~
+
+단일 프로세스 대조에서는 같은 CRC ELF만 지정한다. 62.5 MHz에서 15,625,000틱 주기마다 리프에 3,906,250틱, 부모와 자식에는 한 주기씩 배정한다.
+
+~~~sh
+printf '%s\n' '{"period_ticks":15625000,"parents":[15625000],"children":[[0,15625000]],"leaves":[[0,3906250]]}' > "$out/single.json"
+python3 tools/build_native_el0.py --out "$out/single" --policy hierarchy --hierarchy "$out/single.json" --elf "$out/crc.elf"
+~~~
+
+[SDK / QEMU](../examples/native-hierarchy/README.md) · [Single leaf / 단일 리프](native-hierarchical-applications.en-ko.md#single-leaf-control--단일-리프-대조)
+
+선택형 공학 구성이다. 최초 10건의 산출물·원장은 일치했지만 포화·교환 일반 부팅의 유휴 타이머 지연이 기준을 넘었다.
+ [EVD-135](evidence/evd-135.md)
+
+## 네 스레드의 우선순위와 뮤텍스 설정
+
+단일 CPU virt에서 한 프로세스의 메인과 조인 가능한 작업자 셋을 패키징한다. --thread-priorities는 슬롯 0~3의 기본 우선순위(1~31, 큰 수 우선)를 지정한다. 기존 --threads 2는 협력형 또는 동순위 RR 동작을 유지한다.
+
+~~~sh
+mkdir -p output/priority
+sh sdk/native-aarch64/build-rust.sh examples/native-priority-mutex/Cargo.toml output/priority/priority.elf
+python3 tools/build_native_el0.py --out output/priority/chain --elf output/priority/priority.elf --arg chain --threads 4 --policy fifo --thread-priorities 1,2,3,4
+~~~
+
+C의 pthread_attr_t와 Rust pthread 모듈의 PthreadAttr로 작업자를 설정한다. pthread_attr_setinheritsched, pthread_attr_setschedpolicy, pthread_attr_setschedparam으로 명시적 정책·우선순위를 선택한다. 뮤텍스 속성(pthread_mutexattr_t / PthreadMutexAttr)의 기본 프로토콜은 PTHREAD_PRIO_NONE이다. pthread_mutexattr_setprotocol으로 PTHREAD_PRIO_INHERIT 또는 PTHREAD_PRIO_PROTECT를 지정하고 즉시 천장은 pthread_mutexattr_setprioceiling으로 설정한다. jnox_mutexattr_setusers는 참여 슬롯 마스크를 설정하는 확장이다. pthread_mutex_clocklock에 CLOCK_MONOTONIC과 절대 timespec을 넘겨 기한까지 대기한다. 실물 M3 최장 차단 시간 및 제품별 천장 승인은 별도 판정 대상이다.
+
+[C / Rust / QEMU](../examples/native-priority-mutex/README.md) · [POL-014](native-thread-priority-protocols.en-ko.md)

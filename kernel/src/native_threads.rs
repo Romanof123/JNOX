@@ -273,7 +273,8 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
             } as u64;
         }
         8 => { f.x[0] = 0; policy().yield_now(); }
-        9 | 18 => f.x[0] = (-95i64) as u64,
+        9 | 18 | 19 => f.x[0] = (-95i64) as u64,
+        10 if f.x[3] != 0 => f.x[0] = (-95i64) as u64,
         10 => match create(a, b, c) {
             Ok(handle) => { f.x[0] = 0; f.x[1] = handle; }
             Err(error) => f.x[0] = (-i64::from(error)) as u64,
@@ -287,6 +288,7 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
                 unsafe { SAVED[0].x[0] = 0; SAVED[0].x[1] = value; }
             }
         }
+        13 if c != 0 || f.x[3] != 0 => f.x[0] = (-95i64) as u64,
         13..=17 => mutex_call(f, op, a, b),
         _ => f.x[0] = (-38i64) as u64,
     }

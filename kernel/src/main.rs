@@ -87,7 +87,7 @@ mod native_periodic_policy;
     jnox_bench = "periodic_overrun"
 ))]
 mod dispatch_policy;
-#[cfg(any(jnox_pi4_migration, jnox_rust_amc, jnox_ordinary_mutex, jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
+#[cfg(any(jnox_native_thread_fixed, jnox_pi4_migration, jnox_rust_amc, jnox_ordinary_mutex, jnox_bench = "rr", jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"))]
 #[cfg_attr(any(jnox_bench = "smp", jnox_bench = "mutex", jnox_bench = "amc"), allow(dead_code))]
 mod domain_policy;
 #[cfg(any(jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]

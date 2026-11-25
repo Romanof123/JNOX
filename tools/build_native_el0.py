@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from native_hierarchy import parse_topology
 from native_lottery_admission import forecast
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -108,6 +109,16 @@ def weighted_notification(value):
     return mode, int(digits)
 
 
+def thread_priorities(value):
+    fields = value.split(",")
+    if len(fields) != 4:
+        raise argparse.ArgumentTypeError("expected exactly four comma-separated thread priorities")
+    values = [unsigned_decimal(field) for field in fields]
+    if any(not 1 <= priority <= 31 for priority in values):
+        raise argparse.ArgumentTypeError("thread priorities must be in 1..31")
+    return values
+
+
 def native_schedule(parser, args):
     if len(args.peer_elf) > 2:
         parser.error("virt supports at most two --peer-elf arguments")
@@ -149,7 +160,12 @@ def native_schedule(parser, args):
             parser.error("EDF and LLF require exactly one job tuple per supplied ELF")
     elif args.job or args.peer_job:
         parser.error("job tuples require --policy edf or llf")
-    if args.threads and policy not in (None, "rr"):
+    if args.threads == ["4"]:
+        if policy not in ("fifo", "rr") or args.thread_priorities is None:
+            parser.error("--threads 4 requires FIFO or RR and --thread-priorities")
+    elif args.thread_priorities is not None:
+        parser.error("--thread-priorities requires --threads 4")
+    if args.threads == ["2"] and policy not in (None, "rr"):
         parser.error("thread scheduling supports only cooperative or RR")
     if policy in ("fifo", "rr") and not args.threads:
         if not args.priority or len(args.peer_priority) != len(args.peer_elf):
@@ -254,10 +270,11 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "lottery", "stride"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
@@ -290,8 +307,9 @@ def main():
     for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg")):
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
-    parser.add_argument("--threads", choices=["2"], action="append", default=[],
-                        help="enable two joinable thread contexts for one ordinary ELF")
+    parser.add_argument("--thread-priorities", type=thread_priorities, action=SinglePath)
+    parser.add_argument("--threads", choices=["2", "4"], action="append", default=[],
+                        help="thread context capacity for one ordinary ELF")
     parser.add_argument("--deadline-service-elf", type=Path, action=SinglePath)
     parser.add_argument("--deadline-service-cells", action="append", default=[], metavar="CELL,...")
     parser.add_argument("--deadline-switch-cap", type=unsigned_decimal, action="append", default=[])
@@ -299,7 +317,7 @@ def main():
     if len(args.threads) > 1:
         parser.error("--threads may appear only once")
     if args.threads and (not (args.elf or args.source) or args.peer_elf):
-        parser.error("--threads 2 requires exactly one ordinary application")
+        parser.error("thread scheduling requires exactly one ordinary application")
     policy, priorities, weights, quantum = native_schedule(parser, args)
     if (args.lottery_seed is not None) != (policy == "lottery"):
         parser.error("--lottery-seed is required exclusively for lottery")
@@ -365,6 +383,15 @@ def main():
             parser.error("service cells must increase strictly within 0..15")
         calendar = ",".join(map(str, cells))
         vectors[2] = [calendar]
+    if (args.hierarchy is not None) != (policy == "hierarchy"):
+        parser.error("--hierarchy is required exclusively with --policy hierarchy")
+    if policy == "hierarchy":
+        try:
+            hierarchy_path = args.hierarchy.resolve(strict=True)
+            hierarchy_source = hierarchy_path.read_bytes()
+            topology, raw_topology = parse_topology(hierarchy_source, 1 + len(args.peer_elf))
+        except (ValueError, OSError, RecursionError) as exc:
+            parser.error(f"invalid --hierarchy: {exc}")
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
     if service:
         peer_inputs.append(service.resolve(strict=True))
@@ -396,6 +423,13 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if policy == "hierarchy":
+        name = str(hierarchy_path.relative_to(ROOT) if hierarchy_path.is_relative_to(ROOT) else hierarchy_path)
+        digest = hashlib.sha256(hierarchy_source).hexdigest()
+        inputs[name] = digest
+        metadata.update(hierarchy=topology, timing_unit="physical_counter_ticks",
+                        hierarchy_input={"path": name, "sha256": digest}, package_argv=sys.argv[:])
+        env["JNOX_NATIVE_HIERARCHY"] = raw_topology
     with (out / "build.log").open("w", encoding="utf-8") as log:
         if args.elf:
             shutil.copyfile(app_input, user_elf)
@@ -466,10 +500,16 @@ def main():
             env["JNOX_NATIVE_ALLOTMENT_TICKS"] = ",".join(map(str, args.allotment_ticks[0]))
             env["JNOX_NATIVE_BOOST_TICKS"] = str(args.boost_ticks[0])
         if args.threads:
-            metadata["thread_capacity"] = 2
+            metadata["thread_capacity"] = int(args.threads[0])
             if policy == "rr":
                 metadata.update(scheduling_scope="within_process", timing_unit="physical_counter_ticks")
-            env["JNOX_NATIVE_THREADS"] = "2"
+            env["JNOX_NATIVE_THREADS"] = args.threads[0]
+            if args.thread_priorities is not None:
+                metadata.update(scheduling_scope="within_process", thread_slots=[
+                    {"slot": i, "base_priority": priority}
+                    for i, priority in enumerate(args.thread_priorities)
+                ])
+                env["JNOX_NATIVE_THREAD_PRIORITIES"] = ",".join(map(str, args.thread_priorities))
         if policy == "partition":
             env["JNOX_NATIVE_PARTITION_WINDOWS"] = args.partition_windows
             metadata.update(partition_windows=windows, partition_frame_ms=frame_ms,
