@@ -382,13 +382,8 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_hierarchy)");
     println!("cargo::rerun-if-changed=build_native_hierarchy.rs");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_extension)");
-    println!("cargo::rustc-check-cfg=cfg(jnox_native_extension_stop_bench)");
-    let stop_bench = selector("JNOX_NATIVE_EXTENSION_STOP_BENCH");
-    if stop_bench.is_some() {
-        assert!(board == "virt" && profile.as_deref() == Some("native") &&
-                app.as_deref() == Some("process") && policy.as_deref() == Some("extension"),
-                "stopped evaluator bench requires the native virt extension");
-    }
+    assert!(selector("JNOX_NATIVE_EXTENSION_STOP_BENCH").is_none(),
+            "use the source-built native extension cohort packager");
     let extension = selector("JNOX_NATIVE_EXTENSION_PROGRAM");
     let extension_hash = selector("JNOX_NATIVE_EXTENSION_SHA256");
     assert_eq!(extension.is_some(), policy.as_deref() == Some("extension"), "extension policy requires a program");
@@ -570,11 +565,7 @@ fn main() {
             if let (Some(program), Some(hash)) = (extension, extension_hash) {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
-                if let Some(position) = stop_bench.as_deref() {
-                    configure_stopped_evaluator(position, &hash,
-                        [native_hash.as_deref(), peer_hash.as_deref(), peer2_hash.as_deref()],
-                        native_argv.each_ref().map(|v| v.as_deref()));
-                }
+                link_native_extension_entry();
             }
             write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref());
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
@@ -738,6 +729,7 @@ fn main() {
         None => assert!(app.is_none(), "JNOX_APP requires JNOX_PROFILE=fixed, batch, groups, weighted, eevdf, multilevel, periodic, aperiodic, native or deadline"),
     }
     let script = match board.as_str() {
+        "virt" if policy.as_deref() == Some("extension") => "native-extension.ld",
         "virt" => "link.ld",
         "pi4" => {
             // EDF and FIFO also select the scheduler backend. Check the Cargo
@@ -1094,29 +1086,16 @@ fn package_native_image(source: &str, expected: &str, name: &str, digest_env: &s
     println!("cargo::rustc-env={digest_env}={expected}");
 }
 
-fn configure_stopped_evaluator(position: &str, program: &str, images: [Option<&str>; 3],
-                               argv: [Option<&str>; 3]) {
-    const VOLTAGE: &str = "5a2e06c7865ea29f88e0856803e9a75be29188471f878157992170135e81f1f5";
-    const TEMPERATURE: &str = "5a5e88cf7c66ec8cc65842220e03285a42976483925f8367a8357a13743e8814";
-    const ALARMS: &str = "28cbf4b5d4842c3b2b3e29ed68ac57fb6965358bb8c0dea7769516e82c745210";
-    const FOUR_BATCHES: &str = "010c00666f75722d62617463686573";
-    assert_eq!(program, "2bb65a55e57041171a5f812a934efd7309f026556ce1ecae74895725ec4be03c",
-               "stopped evaluator bench requires the archived accepted program");
-    let (expected, extras, cells) = match position {
-        "a-dormant" => ([VOLTAGE,TEMPERATURE,ALARMS], None, [u64::MAX;2]),
-        "a-active" => ([VOLTAGE,TEMPERATURE,ALARMS], None, [1,3]),
-        "b-dormant" => ([ALARMS,TEMPERATURE,VOLTAGE], Some(FOUR_BATCHES), [u64::MAX;2]),
-        "b-active" => ([ALARMS,TEMPERATURE,VOLTAGE], Some(FOUR_BATCHES), [9,u64::MAX]),
-        _ => panic!("unknown stopped evaluator bench position"),
-    };
-    assert_eq!(images, expected.map(Some), "wrong stopped evaluator workload identities");
-    assert_eq!(argv, [extras,None,None], "wrong stopped evaluator workload arguments");
-    // Include the immutable position in the assembler input name so switching
-    // a raw build in an existing Cargo target cannot reuse a stale object.
-    let filename = format!("extension-stop-{position}.bin");
-    let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join(&filename);
-    println!("cargo::rustc-env=JNOX_EXTENSION_STOP_TABLE={filename}");
-    let bytes: Vec<u8> = cells.into_iter().flat_map(u64::to_le_bytes).collect();
-    std::fs::write(path, bytes).expect("write immutable stopped evaluator selector");
-    println!("cargo::rustc-cfg=jnox_native_extension_stop_bench");
+fn link_native_extension_entry() {
+    let source = "src/native_extension_entry.S";
+    println!("cargo::rerun-if-changed={source}");
+    let out = std::path::PathBuf::from(env::var_os("OUT_DIR").expect("kernel output directory"));
+    let object = out.join("jnox_extension_entry.o");
+    let status = std::process::Command::new("clang")
+        .args(["--target=aarch64-none-elf", "-c", source, "-o"])
+        .arg(&object)
+        .status()
+        .expect("assemble native extension evaluator entry with clang");
+    assert!(status.success(), "native extension evaluator entry assembly failed");
+    println!("cargo::rustc-link-arg={}", object.display());
 }

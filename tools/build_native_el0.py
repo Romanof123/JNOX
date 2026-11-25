@@ -290,9 +290,6 @@ def main():
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
-    parser.add_argument("--extension-stop-bench", action=SinglePath,
-                        choices=("a-dormant", "a-active", "b-dormant", "b-active"),
-                        help="package one frozen stopped-evaluator bench cohort")
     parser.add_argument("--extension-program", type=Path, action=SinglePath, metavar="RULE.txt")
     parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
@@ -407,8 +404,6 @@ def main():
             parser.error("service cells must increase strictly within 0..15")
         calendar = ",".join(map(str, cells))
         vectors[2] = [calendar]
-    if args.extension_stop_bench and (policy != "extension" or board != "virt" or not args.elf):
-        parser.error("--extension-stop-bench requires --policy extension and the archived virt workload ELFs")
     if (args.extension_program is not None) != (policy == "extension"):
         parser.error("--extension-program is required exclusively with --policy extension")
     if policy == "extension":
@@ -436,17 +431,6 @@ def main():
     app_input = (args.elf or args.source or SOURCE).resolve(strict=True)
     input_digest = sha256(app_input)
     app = "process" if args.source or args.elf else "startup-probe"
-    if args.extension_stop_bench:
-        position = args.extension_stop_bench
-        voltage = "5a2e06c7865ea29f88e0856803e9a75be29188471f878157992170135e81f1f5"
-        temperature = "5a5e88cf7c66ec8cc65842220e03285a42976483925f8367a8357a13743e8814"
-        alarms = "28cbf4b5d4842c3b2b3e29ed68ac57fb6965358bb8c0dea7769516e82c745210"
-        expected = [voltage, temperature, alarms] if position.startswith("a-") else [alarms, temperature, voltage]
-        if [input_digest, *peer_digests] != expected:
-            parser.error("stopped evaluator bench requires the archived ELF hashes in the frozen order")
-        argv = [[], [], []] if position.startswith("a-") else [["four-batches"], [], []]
-        if vectors != argv or list(ops) != ["ready 2 1 2", "propose 2 17 0 1", "yield"]:
-            parser.error("stopped evaluator bench requires the frozen arguments and accepted program")
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     user_elf = out / "user.elf"
@@ -480,10 +464,6 @@ def main():
         metadata.update(extension_program={"file": program.name, "sha256": digest, "operations": ops,
                                            "source": source_name}, package_argv=sys.argv[:])
         env.update(JNOX_NATIVE_EXTENSION_PROGRAM=str(program), JNOX_NATIVE_EXTENSION_SHA256=digest)
-        if args.extension_stop_bench:
-            cells = {"a-active": [1, 3], "b-active": [9]}.get(position, [])
-            metadata["extension_stop_bench"] = {"position": position, "cells": cells}
-            env["JNOX_NATIVE_EXTENSION_STOP_BENCH"] = position
     if policy == "hierarchy":
         name = str(hierarchy_path.relative_to(ROOT) if hierarchy_path.is_relative_to(ROOT) else hierarchy_path)
         digest = hashlib.sha256(hierarchy_source).hexdigest()

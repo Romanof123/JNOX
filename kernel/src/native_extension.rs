@@ -159,35 +159,12 @@ extern "C" fn native_extension_stack_if_pending() -> *mut u8 {
 #[unsafe(no_mangle)]
 extern "C" fn native_extension_evaluate() {
     let evaluation = state().tx.begin().unwrap_or_else(|| fail(26));
-    #[cfg(not(jnox_native_extension_stop_bench))]
-    unsafe {
-        asm!("msr daifclr,#2", "isb", options(nostack, preserves_flags));
+    unsafe extern "C" {
+        fn jnox_extension_evaluator_enter(cell: u64);
     }
-    #[cfg(jnox_native_extension_stop_bench)]
-    unsafe {
-        asm!(
-            "msr daifclr,#2",
-            "isb",
-            ".global jnox_native_extension_stop_hook",
-            ".set jnox_native_extension_stop_hook, .",
-            "adr x16, jnox_native_extension_stop_cells",
-            "ldp x16, x17, [x16]",
-            "eor x16, x16, {cell}",
-            "cbz x16, 2f",
-            "eor x17, x17, {cell}",
-            "cbnz x17, 3f",
-            "2:",
-            ".global jnox_native_extension_stop_loop",
-            ".set jnox_native_extension_stop_loop, .",
-            "b 2b",
-            "3:",
-            ".global jnox_native_extension_stop_resume",
-            ".set jnox_native_extension_stop_resume, .",
-            cell = in(reg) evaluation.cell,
-            out("x16") _, out("x17") _,
-            options(nostack, preserves_flags),
-        );
-    }
+    // The entry enables IRQs on this private evaluator stack. A cutoff IRQ
+    // may abandon it before the copy reaches evaluation or publication.
+    unsafe { jnox_extension_evaluator_enter(evaluation.cell) };
     let reply = evaluation.evaluate(NATIVE_EXTENSION_PROGRAM);
     unsafe {
         asm!("msr daifset,#2", "isb", options(nostack, preserves_flags));
@@ -517,12 +494,3 @@ fn finish() -> ! {
     head(1, 3);
     park()
 }
-
-#[cfg(jnox_native_extension_stop_bench)]
-core::arch::global_asm!(concat!(
-    ".pushsection .rodata.extension_stop_cells,\"a\",%progbits\n",
-    ".balign 8\n.global jnox_native_extension_stop_cells\n",
-    ".type jnox_native_extension_stop_cells,%object\n",
-    "jnox_native_extension_stop_cells:\n.incbin \"", env!("OUT_DIR"), "/", env!("JNOX_EXTENSION_STOP_TABLE"), "\"\n",
-    ".size jnox_native_extension_stop_cells,.-jnox_native_extension_stop_cells\n.popsection\n",
-));
