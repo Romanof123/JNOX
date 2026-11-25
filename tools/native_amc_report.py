@@ -226,6 +226,12 @@ def score(a, *, clock=None):
     need((addr, 8192*23*8) == symbol(kernel,"native_amc_intervals") and width == 23 and rows <= 8192, "interval ELF extent")
     need((pa,count*16*1024) == symbol(kernel,"native_amc_results") and (generations,stride)==(16,1024), "result ELF extent")
     intervals = list(struct.iter_unpack("<23Q",mem.read(addr,rows*width*8)))
+    # CPU0-only virt AMC enables only its physical timer interrupt. The producer
+    # stores the full GICC_IAR read in column 1 for IRQs; SVC and gate rows reuse
+    # that column. GICv2 IHI 0048B.b section 4.4.4: CPUID is RAZ for non-SGIs.
+    for index, row in enumerate(intervals):
+        if row[0] == 1:
+            need(row[1] == 30, f"AMC IRQ row {index}: expected raw PPI30 IAR 0x1e, got {row[1]:#x}")
     if clock:
         clock.load(root, launch, m, records, mem, kernel, intervals, hz, origin)
     life = records["LIFE"]
@@ -344,7 +350,7 @@ def score(a, *, clock=None):
             for e in life:
                 if e[0]==5:
                     check(not any(r[13:15]==e[2:4] and r[2]>=c for r in intervals),"return to discarded generation")
-            irq=[r for r in intervals if r[0]==1 and r[1]&1023==30 and r[4:6]==(1,0) and b<=r[2]<=c]
+            irq=[r for r in intervals if r[0]==1 and r[1]==30 and r[4:6]==(1,0) and b<=r[2]<=c]
             stamps=products.get((1,0),{}).get("stamps",[])
             witnesses=[r for r in intervals if r[0:2]==(2,6) and r[4:6]==(1,0) and r[19:21]==(1,0) and
                        r[2]>=c and any((r[2]-origin)*1000000000//hz==s[0] for s in stamps)]
@@ -363,7 +369,7 @@ def score(a, *, clock=None):
         if case=="staggered":
             check(exit_at.get((2,0),MAX)<boundaries(2) and (1,0) in exit_at and exit_at.get((3,0),MAX)<boundaries(8),"survivor before b8")
             wfi=symbol(kernel,"native_sleep_idle")[0]
-            check(any(r[10] in (wfi,wfi+4) and r[0]==1 and r[4]==idle and r[1]&1023==30 and r[9]==boundaries(2) and r[13]==0 for r in intervals),"idle PPI30 b2 release")
+            check(any(r[10] in (wfi,wfi+4) and r[0]==1 and r[4]==idle and r[1]==30 and r[9]==boundaries(2) and r[13]==0 for r in intervals),"idle PPI30 b2 release")
         else:
             check(any(e[0]==6 and e[5:8]==(boundaries(5),1,1) and any(v[0]==1 and v[2:4]==(0,1) for v in life[index+1:]) for index,e in enumerate(life)),"approved reset b5")
             check(exit_at.get((0,1),MAX)<boundaries(6) and exit_at.get((3,0),MAX)<boundaries(6),"fresh LO and survivor before b6")

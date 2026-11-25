@@ -154,7 +154,7 @@ class ClockEvidence:
         if not self.check(bool(candidates),"missing HI1 budget crossing"):
             return None
         row = candidates[-1]
-        irq = row[0] == 1 and row[1]&1023 == 30
+        irq = row[0] == 1 and row[1] == 30
         if self.enabled:
             self.check(irq,"HI1 transition did not enter through PPI30")
         owned = [g for g,n in self.matches[1,0] if g >= commit and n>0]
@@ -189,7 +189,7 @@ class ClockEvidence:
                          prev[17] == handoff[9] == release <= handoff[2] and
                          tuple(prev[13:15]) == low and prev[15:17] == handoff[10:12])
             elif cause == 1:
-                valid = op & 1023 == 30 and handoff[9] == release <= handoff[2]
+                valid = op == 30 and handoff[9] == release <= handoff[2]
             else:
                 valid = (cause == 2 and op == 6 and handoff[19] in (1,2) and
                          handoff[20] == 0 and handoff[9] == release)
