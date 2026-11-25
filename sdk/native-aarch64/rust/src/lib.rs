@@ -14,6 +14,7 @@ pub struct Timespec {
 extern "C" {
     fn jnox_deadline_service_wait_next() -> i32;
     fn jnox_periodic_wait_next() -> i32;
+    fn jnox_clock_sample() -> RawClockPair;
     fn sched_yield() -> i32;
     fn clock_gettime(clock: i32, result: *mut Timespec) -> i32;
     fn clock_nanosleep(clock: i32, flags: i32, request: *const Timespec, remaining: *mut Timespec) -> i32;
@@ -25,6 +26,39 @@ extern "C" {
 pub enum ClockError {
     Errno(i32),
     InvalidTimespec,
+}
+
+#[repr(C)]
+struct RawClockPair {
+    monotonic_ns: u64,
+    process_cpu_ns: u64,
+    backend: u32,
+    error: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClockPairBackend {
+    Page,
+    Syscall,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClockPair {
+    pub monotonic_ns: u64,
+    pub process_cpu_ns: u64,
+    pub backend: ClockPairBackend,
+}
+
+/// Read both clocks at one counter instant on a negotiated native time page.
+/// The syscall fallback reads process CPU time first and monotonic time second.
+pub fn clock_sample() -> Result<ClockPair, ClockError> {
+    let pair = unsafe { jnox_clock_sample() };
+    let backend = match pair.backend {
+        1 => ClockPairBackend::Page,
+        2 => ClockPairBackend::Syscall,
+        _ => return Err(ClockError::Errno(pair.error as i32)),
+    };
+    Ok(ClockPair { monotonic_ns: pair.monotonic_ns, process_cpu_ns: pair.process_cpu_ns, backend })
 }
 
 const CLOCK_MONOTONIC: i32 = 1;

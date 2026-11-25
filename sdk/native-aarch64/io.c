@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <jnox/native_abi.h>
+#include <jnox/clock_pair.h>
 #include <jnox/deadline.h>
 #include <jnox/periodic.h>
 #include <pthread.h>
@@ -100,6 +101,80 @@ _Static_assert(sizeof(struct timespec) == 16 &&
 int clock_gettime(clockid_t clock, struct timespec *result)
 {
     return (int)service(JNOX_CALL_CLOCK_GETTIME, clock, (long)result, 0);
+}
+
+/* All cache state is in the application's private, pristine-on-restart BSS. */
+static unsigned pair_discovery;
+static unsigned pair_identity;
+
+static int ticks_to_ns(uint64_t ticks, uint64_t hz, uint64_t *ns)
+{
+    /* CNTFRQ is a 32-bit architectural field. Splitting at whole seconds
+     * computes the wide product/division exactly without a runtime helper. */
+    uint64_t seconds = ticks / hz;
+    uint64_t fraction = (ticks % hz) * 1000000000ULL / hz;
+    if (seconds > (UINT64_MAX - fraction) / 1000000000ULL)
+        return EOVERFLOW;
+    *ns = seconds * 1000000000ULL + fraction;
+    return 0;
+}
+
+static int syscall_ns(clockid_t id, uint64_t *ns)
+{
+    struct timespec t;
+    long rc = raw_service(JNOX_CALL_CLOCK_GETTIME, id, (long)&t, 0, 0);
+    if (rc < 0)
+        return (int)-rc;
+    if (t.tv_sec < 0 || t.tv_nsec < 0 || t.tv_nsec >= 1000000000 ||
+        (uint64_t)t.tv_sec > (UINT64_MAX - (uint64_t)t.tv_nsec) / 1000000000ULL)
+        return EOVERFLOW;
+    *ns = (uint64_t)t.tv_sec * 1000000000ULL + (uint64_t)t.tv_nsec;
+    return 0;
+}
+
+struct jnox_clock_pair jnox_clock_sample(void)
+{
+    const long va = 0x01400000;
+    unsigned discovery = __atomic_load_n(&pair_discovery, __ATOMIC_RELAXED);
+    if (!discovery) {
+        discovery = raw_service(JNOX_CALL_CLOCK_PAGE, 0, 0, 0, 0) == va ? 1 : 2;
+        __atomic_store_n(&pair_discovery, discovery, __ATOMIC_RELAXED);
+    }
+    const uint64_t *page = (const uint64_t *)va;
+    struct jnox_clock_pair pair = {0};
+    for (unsigned attempt = 0; discovery == 1 && attempt < 2; ++attempt) {
+        uint64_t seq = __atomic_load_n(page, __ATOMIC_ACQUIRE);
+        if (!seq || (seq & 1))
+            continue;
+        uint64_t fields[7];
+        for (unsigned i = 0; i < 7; ++i)
+            fields[i] = __atomic_load_n(page + 1 + i, __ATOMIC_RELAXED);
+        uint64_t now;
+        __asm__ volatile("isb\n\tmrs %0,cntpct_el0\n\tdmb ishld" : "=r"(now) :: "memory");
+        if (__atomic_load_n(page, __ATOMIC_ACQUIRE) != seq)
+            continue;
+        uint64_t hz = fields[3], origin = fields[4], settled = fields[5], ret = fields[6];
+        if (fields[0] != 1 || fields[1] >= 4 || fields[2] >= 16 ||
+            !hz || hz > 0xffffffffULL || !ret || now < ret || now < origin)
+            continue;
+        unsigned id = 1 + (unsigned)(fields[1] * 16 + fields[2]);
+        if (pair_identity && pair_identity != id)
+            continue;
+        pair_identity = id;
+        if (now - ret > UINT64_MAX - settled ||
+            ticks_to_ns(now - origin, hz, &pair.monotonic_ns) ||
+            ticks_to_ns(settled + (now - ret), hz, &pair.process_cpu_ns))
+            return (struct jnox_clock_pair){.error = EOVERFLOW};
+        pair.backend = 1;
+        return pair;
+    }
+    int err = syscall_ns(CLOCK_PROCESS_CPUTIME_ID, &pair.process_cpu_ns);
+    if (!err)
+        err = syscall_ns(CLOCK_MONOTONIC, &pair.monotonic_ns);
+    if (err)
+        return (struct jnox_clock_pair){.error = (uint32_t)err};
+    pair.backend = 2;
+    return pair;
 }
 
 int clock_nanosleep(clockid_t clock, int flags, const struct timespec *request,
