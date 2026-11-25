@@ -4,12 +4,85 @@ import hashlib
 import json
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+
+
+QEMU_SHA256 = "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8"
+QEMU_VERSION = "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)"
+PACKAGE_DIGESTS = {
+    "fifo-boundary-witness": "489647be1d8881b85932f6e89ae4599421220643740478ed232cb6dc2f05848e",
+    "fifo-collision": "28bac3c1a28acac59457d1a640d271c266e88f025b82964df52e207d80980d35",
+    "fifo-delayed": "4c6f8ebb2ffec8e44cccca9be5b54c1ec6b1eee8b14deaeb1959d48768126b3f",
+    "fifo-healthy-irq": "c411efbaaef42fea026b49582b15cc9ff4a205b40b6fde81cab6122b1a63a94d",
+    "fifo-healthy": "8413e0be34b6aa2a59fe14c7477e01de227597deed9b4c15ddad0ffae58c8274",
+    "fifo-invalid": "e280c199ff523876ab7244d834327b6786f6d41ffbbdd6d173e6bcae66a4e2d0",
+    "fifo-live": "e11b33e215736c3be33015a1fc518cc837840aadb0da2f70b2be1f00f2765710",
+    "fifo-lower-work-irq": "87a15e6ba545ad3c5e461254c7e63dad3edce2abb5504be2d4251db20eba5def",
+    "fifo-lower-work": "e334d23ee60bd41aad2bff073b88091ade0e7d60a492c68a303e0ddf3c57d8e2",
+    "fifo-overrun": "b309a8c57b3aaa752adebaf0b43694d307caa8b4c2f083b31c0c79686674ea18",
+    "fifo-saturation": "86fd9f511782ebc9b8eb78881fb5088bab105e5f7c7cd585b9dc65ca2a03d9d4",
+    "fifo-silence": "c328d295ababbc3fee5f5f40e75b4c2a0c247039283762b8c080dd95cda4d522",
+    "rr-boundary-witness": "57b86b22ae280a9968d23827ad1cd223738c1a485352e4fd6c61e9d5c74a6ce7",
+    "rr-collision": "f56f7b10549b87c3c3190c395038365a7f90d1c2e4592eae7ae4adc92fdcd079",
+    "rr-delayed": "b7cefc30e39bd41359530c8b5831f2e25409e2da8583f4eaf4a8da77b21fc988",
+    "rr-healthy-irq": "33da323d287bd79df374da318753c4aa64e387bc155e25eda038abfdc0c64ab5",
+    "rr-healthy": "79992fcc3dc2a88ec02712d0c47426ad76e74efec376554943607b76af576bec",
+    "rr-invalid": "976947b30fdc334bd37e03a27ebe44d77551219c1cd2f86297cd166f56866516",
+    "rr-live": "8579268673f842551efc6dccd3a4bdbdc7ced693f0194916a4cdb868f8c44c91",
+    "rr-lower-work-irq": "2e96a0bfe145e2c63828443723f907bb3bd47bfba086b64e03ed0f56d522a955",
+    "rr-lower-work": "e3b0c7b4422ee0039b1d650535734ceeac8e8c33321251066416c8a1d406f4f7",
+    "rr-overrun": "e9ad1b10ebdcd1035f171e318f6c14af3618326bc681c444ac98306c0391c6ab",
+    "rr-saturation": "a4047b0f0f8f781ba1f61dfc2ba2d90ce4da4304519cb6b548a487c59063bf4a",
+    "rr-silence": "4030e29643d3e9300696ce0f6eab5534f011d26f6264e438c4bcad98f6d274b5"
+}
 
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
+
+# Configuration digests for the 24 first-position #389 packages on fbbb5cea.
+# Normalize only source/output locations; all build arguments, slot metadata,
+# kernel hash, timing mode and service configuration remain part of the digest.
+def deployment_digest(manifest):
+    package = manifest["package_argv"]
+    locations = [(package[package.index("--out") + 1], "@output")]
+    locations.extend((slot["input"]["path"], f"@slot{slot['slot']}") for slot in manifest["slots"])
+    replacements = dict(locations)
+    if len(replacements) != 4:
+        raise ValueError("ambiguous package input/output paths")
+
+    def normalize(item):
+        if isinstance(item, str):
+            return replacements.get(item, item)
+        if isinstance(item, list):
+            return [normalize(value) for value in item]
+        if isinstance(item, dict):
+            return {normalize(key): normalize(value) for key, value in item.items()}
+        return item
+
+    return digest(json.dumps(normalize(manifest), sort_keys=True, separators=(",", ":")).encode())
+
+
+def verify_launch(launch, package_directory):
+    argv = launch["argv"]
+    if not isinstance(argv, list) or not all(isinstance(word, str) for word in argv) or not argv:
+        raise ValueError("invalid QEMU argv")
+    output = PurePosixPath(package_directory)
+    if output.name != "pkg" or ".." in output.parts:
+        raise ValueError("unsupported capture package layout")
+    capture = output.parent / "cap"
+    expected = [
+        "-machine", "virt,gic-version=2", "-cpu", "cortex-a72", "-smp", "1",
+        "-accel", "tcg", "-m", "128M", "-nodefaults", "-display", "none",
+        "-monitor", "none", "-no-reboot", "-qmp", "stdio",
+        "-serial", "file:" + str(capture / "uart.bin"), "-kernel", str(capture / "kernel.elf"),
+    ]
+    if PurePosixPath(argv[0]).name != "qemu-system-aarch64" or argv[1:] != expected:
+        raise ValueError("unsupported QEMU executable, platform, clock, devices or captured paths")
+    if (launch["version"] != 1 or launch["qemu_sha256"] != QEMU_SHA256
+            or launch["qemu_version"].splitlines()[0] != QEMU_VERSION):
+        raise ValueError("unsupported emulator build or launch format")
 
 def integer(value, minimum=0):
     return type(value) is int and value >= minimum
@@ -101,11 +174,18 @@ def assess(directory, bounds_path):
     result = dict(policy=policy, commit=manifest["commit"], kernel_sha256=kernel,
                   manifest_sha256=digest(manifest_bytes), uart_sha256=digest(uart_bytes),
                   failures=failures, missing=gaps, segments=segments)
-    argv = launch["argv"]
-    if (policy not in ("fifo", "rr") or manifest["board"] != "virt"
-            or manifest.get("tracked_changes") or "-smp" not in argv
-            or argv.count("-smp") != 1 or argv[argv.index("-smp")+1] != "1"):
-        raise ValueError("requires a clean single-core native virt FIFO or RR capture")
+    case = manifest["slots"][0]["argv"][1]
+    profile = f"{policy}-{case}" + ("-irq" if "safety_interference" in manifest else "")
+    if deployment_digest(manifest) != PACKAGE_DIGESTS.get(profile):
+        raise ValueError("unsupported or inconsistent #389 package configuration")
+    package_args = manifest["package_argv"]
+    verify_launch(launch, package_args[package_args.index("--out")+1])
+    ram = (cap / "ram.bin").read_bytes()
+    extent = 13459520 if "safety_interference" in manifest else 13451264
+    if (launch["ram_base"] != 0x40200000 or launch["ram_bytes"] != extent or len(ram) != extent
+            or receipt["ram.bin"] != digest(ram) or launch["probe_sha256"] != receipt["probe.c"]
+            or receipt["probe.c"] != digest((cap / "probe.c").read_bytes())):
+        raise ValueError("capture memory or probe provenance mismatch")
     qual = manifest.get("safety_qualification", {})
     if (qual.get("controller_phase_offsets_us") != [0, 2500]
             or [qual.get(k) for k in ("syscall", "sender_slot", "controller_slot", "supervisor_slot",
@@ -132,7 +212,7 @@ def assess(directory, bounds_path):
     if len(counts) != 1 or len(counts[0]) != 4:
         raise ValueError("missing or ambiguous qualification counter metadata")
     hz, attempts, kept, lost = counts[0]
-    if hz <= 0 or kept != len(raw) or attempts != kept + lost:
+    if hz != 62500000 or kept != len(raw) or attempts != kept + lost:
         raise ValueError("invalid counter metadata")
     if any(len(r) != 13 or r[0] != i for i,r in enumerate(raw)):
         raise ValueError("missing or malformed retained journal rows")
@@ -217,7 +297,7 @@ def main():
     args=parser.parse_args()
     try:
         result=assess(args.capture,args.bounds)
-    except (OSError, ValueError, KeyError, IndexError, TypeError) as error:
+    except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError) as error:
         result=dict(status="UNKNOWN/HOLD",input_error=str(error))
     print(json.dumps(result,indent=2))
     return 1 if result["status"]=="FAIL" else 2
