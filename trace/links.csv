@@ -2241,3 +2241,4 @@ IPC-004,partially-implemented-by,IMP-305
 IMP-305,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-305
 IMP-305,tested-in,EVD-305
+CHG-306,affects,REQ-024
