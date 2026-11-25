@@ -73,7 +73,7 @@ const EMPTY: Client = Client { request: None, response: None, pending: None };
 // app.ld places .data.* in the process-private RW load. Initialize the live
 // socket table in its final location, without constructing it on the EL0 stack.
 #[link_section = ".data.socket_service"]
-static mut SERVICE: Local = Local::new();
+static mut BANKS: [Local; 2] = [Local::new(), Local::new()];
 static mut CLIENT_STATE: [Client; CLIENTS] = [EMPTY; CLIENTS];
 
 fn execute(s: &mut Local, id: usize, r: &Request) -> Result<(u64, Option<Response>), i32> {
@@ -119,7 +119,7 @@ fn commit(s: &mut Local, c: &mut Client, id: usize, token: u64) -> Option<Result
 fn request(s: &mut Local, c: &mut Client, id: usize, token: u64, w: u64) -> Option<Result<u64, i32>> {
     // The kernel permits only one outstanding CALL per authenticated slot.
     // A new token proves the older, still-pending call was canceled.
-    if c.pending.is_some() { *c = EMPTY; }
+    debug_assert!(c.pending.is_none());
     let tag = (w >> 56) as u8;
     let args = w & 0x00ff_ffff_ffff_ffff;
     Some(match tag {
@@ -138,28 +138,67 @@ fn request(s: &mut Local, c: &mut Client, id: usize, token: u64, w: u64) -> Opti
     })
 }
 
-fn answer(token: u64, result: Result<u64, i32>) -> Result<(), i64> {
-    let word = result.unwrap_or_else(|errno| i64::from(errno) as u64);
-    match ipc::reply(token, word) {
-        Err(-116) => Ok(()), // The kernel already canceled this one-shot reply.
-        other => other,
-    }
+// A successful kernel reply consumes this unique token. The single broker
+// cannot observe another request or death between that SVC and bank selection.
+struct Service<'a> {
+    banks: &'a mut [Local; 2],
+    live: usize,
 }
 
-fn retry(s: &mut Local, clients: &mut [Client; CLIENTS]) -> Result<(), i64> {
-    // Each successful pass removes at least one token. No new requests arrive
-    // during the scan and each owner can hold at most one pending transaction.
-    loop {
-        let mut completed = false;
-        for (id, c) in clients.iter_mut().enumerate() {
-            if let Some(token) = c.pending {
-                if let Some(reply) = commit(s, c, id, token) {
-                    answer(token, reply)?;
-                    completed = true;
+impl Service<'_> {
+    fn step(&mut self, client: &mut Client, id: usize, token: u64, word: Option<u64>)
+        -> Result<bool, i64>
+    {
+        if word.is_some() && client.pending.is_some() {
+            // Receiving another authenticated call from this PID proves that
+            // its former one-shot call ended, even if the new call also expires.
+            *client = EMPTY;
+        }
+        let mut trial = *client;
+        let is_commit = word.is_none() || word == Some(0x13u64 << 56);
+        let bank = if is_commit {
+            let (left, right) = self.banks.split_at_mut(1);
+            if self.live == 0 { right[0].copy_from(&left[0]); }
+            else { left[0].copy_from(&right[0]); }
+            1 - self.live
+        } else {
+            // Non-COMMIT framing operations only access the private client copy.
+            self.live
+        };
+        let result = match word {
+            Some(w) => request(&mut self.banks[bank], &mut trial, id, token, w),
+            None => commit(&mut self.banks[bank], &mut trial, id, token),
+        };
+        let Some(result) = result else {
+            client.pending = Some(token);
+            return Ok(false);
+        };
+        let value = result.unwrap_or_else(|errno| i64::from(errno) as u64);
+        match ipc::reply(token, value) {
+            Ok(()) => {
+                if is_commit && result.is_ok() { self.live = bank; }
+                *client = trial;
+            }
+            Err(-116) => {
+                // A canceled COMMIT ends this request without publishing a
+                // descriptor, bytes, response metadata, or a retryable token.
+                if is_commit { *client = EMPTY; }
+            }
+            Err(errno) => return Err(errno),
+        }
+        Ok(true)
+    }
+
+    fn retry(&mut self, clients: &mut [Client; CLIENTS]) -> Result<(), i64> {
+        loop {
+            let mut completed = false;
+            for (id, client) in clients.iter_mut().enumerate() {
+                if let Some(token) = client.pending {
+                    completed |= self.step(client, id, token, None)?;
                 }
             }
+            if !completed { return Ok(()); }
         }
-        if !completed { return Ok(()); }
     }
 }
 
@@ -183,19 +222,19 @@ pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
     let mut live = *arg - b'0';
     // Native startup calls main once. Only this single-threaded broker loop
     // accesses these objects, including while a kernel receive is blocked.
-    let service = &mut *core::ptr::addr_of_mut!(SERVICE);
+    let mut service = Service { banks: &mut *core::ptr::addr_of_mut!(BANKS), live: 0 };
     let clients = &mut *core::ptr::addr_of_mut!(CLIENT_STATE);
     while live != 0 {
         let Ok((token, word, id)) = receive() else { return 82 };
         if id >= CLIENTS || live & (1 << id) == 0 { return 83; }
         if token == 0 {
-            service.exit(id);
+            service.banks[service.live].exit(id);
             clients[id] = EMPTY;
             live &= !(1 << id);
-        } else if let Some(result) = request(service, &mut clients[id], id, token, word) {
-            if answer(token, result).is_err() { return 84; }
+        } else if service.step(&mut clients[id], id, token, Some(word)).is_err() {
+            return 84;
         }
-        if retry(service, clients).is_err() { return 84; }
+        if service.retry(clients).is_err() { return 84; }
     }
     0
 }

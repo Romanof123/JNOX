@@ -28,3 +28,19 @@ BEGIN opens a transaction. A second BEGIN during input returns EBUSY. CHUNK cove
 | 9 | close | zero | none |
 
 All operations other than socket address the current caller's descriptor. Paths occupy at most 31 bytes. A send transaction stages at most 64 data bytes. Record sends have an additional 32-byte limit and commit one complete record. Flags bit 0 requests nonblocking behavior. All other bits are reserved. Blocking connect, accept, send and receive retain the COMMIT token when the service reports EAGAIN. A state change or authenticated client exit prompts another bounded pass over pending operations. Stream partial success returns its actual byte count immediately.
+
+A raw finite-deadline COMMIT takes effect when the kernel accepts its one-shot
+reply. The broker copies its live socket table into a second process-private
+static table, tries the operation there, and selects that table only after a
+successful operation and accepted reply. The kernel arbitrates expiry at the
+reply SVC, including expiry during preemption. A stale token discards the
+trial and ends the staged COMMIT. No other broker operation can run between
+reply acceptance and table selection. BEGIN, CHUNK and response framing
+likewise publish their per-client updates only on reply acceptance.
+
+Each COMMIT attempt, including a blocked retry, copies one fixed socket table.
+The two tables occupy static storage. Each client retains at most one blocked
+token and its bounded request. A subsequent authenticated call from that
+client cancels its old pending slot; an authenticated death clears its staging,
+closes its live descriptors and prompts retries. Infinite-deadline SDK calls
+use the same protocol. The earlier 32 captures describe the earlier binary.
