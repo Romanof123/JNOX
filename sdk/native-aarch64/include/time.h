@@ -9,6 +9,7 @@ struct timespec {
 };
 
 #define CLOCK_MONOTONIC 1
+#define CLOCK_PROCESS_CPUTIME_ID 2
 #define TIMER_ABSTIME 1
 
 int clock_gettime(clockid_t clock, struct timespec *result);

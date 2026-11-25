@@ -82,7 +82,8 @@ const LINK_START: usize = 0x4020_0000;
 const LINK_START: usize = 0x0200_0000;
 #[cfg(jnox_pi4)]
 const GPIO: usize = 0xfe20_0000;
-const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize;
+const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize
+    + cfg!(all(jnox_native_amc, jnox_native_peer3)) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
 // Leave another 4 MiB per slot for tables, stacks and the linked kernel.
 const HIGH_TABLES: usize = 8 * SPACE_CAPACITY;
@@ -148,6 +149,8 @@ pub(crate) fn publish_weighted_notification() {
     }
 }
 
+const COUNT_LOAD: Ordering = if cfg!(jnox_native_smp_partitioned) { Ordering::Acquire } else { Ordering::Relaxed };
+const COUNT_STORE: Ordering = if cfg!(jnox_native_smp_partitioned) { Ordering::Release } else { Ordering::Relaxed };
 static PROCESS_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg(jnox_native_smp_partitioned)]
@@ -170,6 +173,12 @@ fn affinity() -> u64 {
     mpidr & 0xff00_ffffff
 }
 
+
+#[cfg(jnox_native_amc)]
+#[path = "native_amc_space.rs"]
+mod amc_space;
+#[cfg(jnox_native_amc)]
+pub(crate) use amc_space::amc_reload;
 unsafe extern "C" {
     #[cfg(not(jnox_pi4))]
     static _start: u8;
@@ -332,7 +341,7 @@ unsafe fn install_spaces<'a>(
     }
     // MMU, D-cache, I-cache and big-endian EL0/EL1 must all be off.
     if el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
-        || ctl & (0x1005 | (3 << 24)) != 0 || PROCESS_COUNT.load(Ordering::Acquire) != 0 {
+        || ctl & (0x1005 | (3 << 24)) != 0 || PROCESS_COUNT.load(COUNT_LOAD) != 0 {
         return Err("native VM requires cold masked EL1h");
     }
     #[cfg(not(jnox_pi4))]
@@ -384,9 +393,13 @@ unsafe fn install_spaces<'a>(
              (&raw const WEIGHTED_NOTIFICATION_PAGE) as usize, NORMAL | USER | RO | NG | PXN | UXN);
         for pid in 0..count {
             populate(pid, plans[pid].borrow(), stack_tails[pid]);
+            #[cfg(jnox_native_amc)]
+            amc_space::remember(pid, plans[pid].borrow());
         }
+        #[cfg(jnox_native_amc)]
+        amc_space::prepare_kernel_root();
         enable_local(root_id(0), ctl);
-        PROCESS_COUNT.store(count, Ordering::Release);
+        PROCESS_COUNT.store(count, COUNT_STORE);
     }
     Ok(())
 }
@@ -425,14 +438,14 @@ pub(crate) unsafe fn enable_secondary(pid: usize) -> Result<(), &'static str> {
 }
 
 pub(crate) fn space_id(pid: usize) -> Option<u64> {
-    if pid >= PROCESS_COUNT.load(Ordering::Acquire) {
+    if pid >= PROCESS_COUNT.load(COUNT_LOAD) {
         return None;
     }
     Some(root_id(pid))
 }
 
 pub(crate) fn active() -> Option<usize> {
-    let count = PROCESS_COUNT.load(Ordering::Acquire);
+    let count = PROCESS_COUNT.load(COUNT_LOAD);
     if count == 0 { return None; }
     let ttbr: u64;
     unsafe { asm!("mrs {}, ttbr0_el1", out(reg) ttbr, options(nostack, preserves_flags)) };

@@ -1,0 +1,7 @@
+{
+  "tasks": [
+    {"tier": "LO", "priority": 1, "c_lo": 1, "c_hi": 1, "deadline": 1, "period": 1, "offset": 0, "generations": 4, "argv": [["0", "finite", "8"], ["1", "finite", "8"], ["2", "finite", "8"], ["3", "finite", "8"]]},
+    {"tier": "HI", "priority": 4, "c_lo": 1, "c_hi": 3, "deadline": 4, "period": 6, "offset": 0, "generations": 1, "argv": [["0", "stream", "110"]]}
+  ],
+  "resets": [{"cell": 2, "approved": true}, {"cell": 3, "approved": false}, {"cell": 4, "approved": true}]
+}

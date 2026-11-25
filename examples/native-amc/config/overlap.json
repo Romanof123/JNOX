@@ -1,0 +1,7 @@
+{
+  "tasks": [
+    {"tier": "LO", "priority": 1, "c_lo": 1, "c_hi": 1, "deadline": 1, "period": 1, "offset": 0, "generations": 2, "argv": [["0", "finite", "8"], ["1", "finite", "8"]]},
+    {"tier": "LO", "priority": 4, "c_lo": 2, "c_hi": 2, "deadline": 3, "period": 3, "offset": 0, "generations": 1, "argv": [["0", "stream", "75"]]}
+  ],
+  "resets": []
+}
