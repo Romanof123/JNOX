@@ -25,3 +25,42 @@ python3 tools/build_native_el0.py --board pi4 --policy energy-placement \
 ~~~
 
 Operating points and energy costs are model inputs. Physical calibration, clock control and deployment approval require separate evidence. 운용점과 에너지 비용은 모델 입력이며 실물 교정·클록 제어·제품 승인은 별도 근거가 필요하다. [Case definitions / 사례 정의](../../docs/pi4-native-energy-placement.en-ko.md)
+
+## Capture and replay / 최초 부팅과 재생
+
+Freeze the prime ELF hash and all seven manifest hashes before the first launch. Keep this list outside the capture directories. Use a fresh directory per first boot, including separate traced positions for base (CPU0) and thermal (CPU1). Each command prints its session digest, including a timeout that reaches session finalization. Preserve the original terminal result and any incomplete session.
+
+최초 부팅 전에 소수 ELF와 매니페스트 7개의 해시를 고정하고 캡처 디렉터리 밖에 보관한다. 일반 실행 7회와 별도 추적 실행 2회(base·thermal)는 각각 새 디렉터리를 사용한다. 출력된 세션 해시와 최초 실패도 보관한다.
+
+~~~sh
+sha256sum prime.elf image-*/manifest.json > first-inputs.sha256
+elf=$(awk '$2=="prime.elf" {print $1}' first-inputs.sha256)
+run_first() {
+    case_name=$1
+    directory=$2
+    shift 2
+    manifest=$(awk -v p="image-$case_name/manifest.json" '$2==p {print $1}' first-inputs.sha256)
+    python3 tools/native_energy_capture.py boot "$case_name" "image-$case_name" "$directory" \
+        --elf-sha256 "$elf" --manifest-sha256 "$manifest" "$@"
+}
+for name in base thermal shared fallback empty deadline zero-mask; do
+    run_first "$name" "first-$name"
+done
+run_first base first-base-trace --trace
+run_first thermal first-thermal-trace --trace
+python3 tools/native_energy_capture.py refusal profiles/missing-limit.json prime.elf first-invalid --elf-sha256 "$elf"
+~~~
+
+For each boot, supply its original printed digest, frozen manifest hash and matching trace flag. The example below scores the plain base capture. The optional controls alter and rehash copies. To score the CLI refusal, use case `missing-limit`, its own captured directory and digest, and omit the manifest flag.
+
+각 부팅의 최초 세션 해시·매니페스트 해시와 같은 추적 옵션을 사용한다. 아래 예시는 base 일반 실행이다. 음성 대조는 복사본을 변조한 뒤 다시 해시한다. CLI 거부는 `missing-limit`과 해당 디렉터리·해시를 사용하고 매니페스트 옵션은 생략한다.
+
+~~~sh
+base_manifest=$(awk '$2=="image-base/manifest.json" {print $1}' first-inputs.sha256)
+python3 tools/native_energy_replay.py base first-base --session-sha256 "$BASE_SESSION_SHA" \
+    --elf-sha256 "$elf" --manifest-sha256 "$base_manifest"
+python3 tools/native_energy_controls.py base first-base --session-sha256 "$BASE_SESSION_SHA" \
+    --elf-sha256 "$elf" --manifest-sha256 "$base_manifest"
+~~~
+
+First return and the next EL0-origin exception bracket entry into the application. A prime-loop sample or the final verified product supplies an upper bound on first computation. CPU1 comparisons use its calibrated counter interval. Idle and model refusal have no execution margin. 최초 복귀와 이후 EL0 예외는 앱 진입을 뒷받침한다. 첫 계산 시점의 상한은 소수 루프 표본 또는 최종 산출물로 확인한다. CPU1은 보정 구간을 적용하며 유휴·모델 거부에는 실행 여유값이 없다.

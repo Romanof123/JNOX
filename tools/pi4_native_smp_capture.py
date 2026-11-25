@@ -14,7 +14,7 @@ from ordinary_amc_capture import save, sha
 from qemu_capture import request
 
 
-def capture(a):
+def capture(a, prepare=None):
     root = a.out.resolve()
     root.mkdir()
     package = a.package.resolve()
@@ -23,6 +23,8 @@ def capture(a):
     files = {s["elf"]: s["elf_sha256"] for s in manifest["slots"]}
     files.update({"kernel.elf": manifest["kernel_elf_sha256"],
                   "kernel8.img": manifest["kernel8_img_sha256"]})
+    if prepare is not None:
+        files.update(prepare(root, manifest))
     for name, digest in files.items():
         if Path(name).name != name:
             raise ValueError("invalid package filename")
