@@ -202,7 +202,7 @@ mod smp;
 mod smp_boot;
 #[cfg(any(jnox_pi4_migration, jnox_bench = "smp"))]
 mod smp_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "cbs_wake", jnox_bench = "partition"))]
+#[cfg(any(jnox_native_cbs, jnox_bench = "rr", jnox_bench = "cbs", jnox_bench = "cbs_wake", jnox_bench = "partition"))]
 mod temporal_policy;
 #[cfg(jnox_bench = "vruntime")]
 mod vruntime;
