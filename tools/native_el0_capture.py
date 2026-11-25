@@ -40,9 +40,33 @@ def command(qemu, root):
     ]
 
 
+def argument_manifest(args):
+    path = args.manifest or args.kernel.parent / "manifest.json"
+    requested = [args.arg, args.peer_arg, args.peer2_arg]
+    if not path.exists() and not args.manifest and not any(requested):
+        return None
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if "slots" not in manifest and not args.manifest and not any(requested):
+        return None
+    slots = manifest["slots"]
+    if not 1 <= len(slots) <= 3:
+        raise ValueError("expected one to three package slots")
+    for i, extras in enumerate(requested):
+        if extras and (manifest["app"] != "process" or i >= len(slots)
+                       or slots[i].get("argv") != ["/bin/app", *extras]):
+            raise ValueError(f"slot {i} arguments differ from the packaged kernel")
+    if manifest["app"] != "process" or not (args.manifest or len(slots) > 1 or
+            any(len(slot.get("argv", ["/bin/app"])) > 1 for slot in slots)):
+        return None
+    if sha(args.kernel) != manifest["kernel_elf_sha256"] or sha(args.user) != slots[0]["elf_sha256"]:
+        raise ValueError("package digest mismatch")
+    return manifest
+
+
 def capture(args):
     if not re.fullmatch("[0-9a-f]{40}", args.revision):
         raise ValueError("full source revision required")
+    manifest = argument_manifest(args)
     root = args.root.resolve()
     root.mkdir()
     for src, name in [
@@ -56,7 +80,7 @@ def capture(args):
     )
     base = symbol_address(symbols, "_start")
     limit = symbol_address(symbols, "__stack_top")
-    if base != 0x40200000 or not base < limit <= base + (16 << 20):
+    if base != 0x40200000 or not base < limit <= base + (16 << 20) * (len(manifest["slots"]) if manifest else 1):
         raise ValueError("unexpected linked kernel RAM extent")
     qemu = str(Path(shutil.which(args.qemu) or args.qemu).resolve(strict=True))
     cmd = command(qemu, root)
@@ -64,6 +88,7 @@ def capture(args):
         root / "launch.json",
         dict(
             version=1,
+            **({"argument_package": manifest} if manifest else {}),
             argv=cmd,
             qemu_sha256=sha(Path(qemu)),
             qemu_version=subprocess.check_output([qemu, "--version"], text=True),
@@ -103,11 +128,17 @@ def capture(args):
                     if uart.exists():
                         if uart.stat().st_size > 1 << 20:
                             raise ValueError("oversize UART")
+                        raw = uart.read_bytes()
+                        exits = {}
+                        if manifest and len(manifest["slots"]) > 1:
+                            exits = {int(i): int(code) for i, code in re.findall(
+                                rb"(?m)^NATIVE EL0 EXIT PID ([0-9]+) (-?[0-9]+)\r?\n", raw)}
                         terminal = re.search(
                             rb"(?m)^NATIVE EL0 (EXIT -?[0-9]+|FAULT [0-9]+)\r?\n",
-                            uart.read_bytes(),
+                            raw,
                         )
-                        if terminal:
+                        all_slots = manifest and set(exits) == set(range(len(manifest["slots"])))
+                        if terminal or all_slots:
                             request(pipe, "stop")
                             request(
                                 pipe,
@@ -116,7 +147,7 @@ def capture(args):
                                 size=limit - base,
                                 filename=str(root / "ram.bin"),
                             )
-                            marker = terminal[1].decode("ascii")
+                            marker = terminal[1].decode("ascii") if terminal else f"EXIT {exits[0]}"
                             break
                     time.sleep(0.005)
             finally:
@@ -151,6 +182,10 @@ if __name__ == "__main__":
         parser.add_argument(name, type=Path)
     parser.add_argument("revision")
     parser.add_argument("--expect-exit", type=int, default=37, help="expected signed process exit")
+    parser.add_argument("--manifest", type=Path, help="audit packaged ordinary-process arguments")
+    for option in ("arg", "peer-arg", "peer2-arg"):
+        parser.add_argument("--" + option, action="append", default=[],
+                            help="check an argument against the already packaged slot")
     parser.add_argument("--qemu", default="qemu-system-aarch64")
     parser.add_argument("--nm", default="aarch64-linux-gnu-nm")
     sys.exit(capture(parser.parse_args()))

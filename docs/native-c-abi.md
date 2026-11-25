@@ -186,3 +186,16 @@ python3 tools/build_native_el0.py --out strict --policy mlq --quantum-ticks 6250
 ~~~
 
 피드백 큐는 같은 ELF 인자에 `--policy mlfq --allotment-ticks 625000,1250000,2500000 --boost-ticks 6250000`를 사용하고 클래스 인자를 생략한다. 시간 단위는 물리 카운터 틱이다. 기준 62.5 MHz 시계에서 세 단계의 할당량은 10·20·40 ms, 우선순위 복구 간격은 100 ms다. [실행 예제](../examples/native-multilevel/README.md)에서 C 보고·CRC·양보 앱 및 Rust 히스토그램 빌드와 패키지 부팅 명령을 확인할 수 있다.
+
+## 네이티브 프로세스별 시작 인수
+
+슬롯 0·1·2에 각각 `--arg`, `--peer-arg`, `--peer2-arg`를 반복해 UTF-8 문자열을 하나씩 추가한다. 첫 인수는 /bin/app이다. 공백은 따옴표로 묶고 빈 문자열은 명시적으로 전달한다. 대시로 시작하는 값은 `--arg=-west`처럼 지정한다. 슬롯별로 추가 문자열은 최대 15개이며 각 NUL 종료 문자를 포함해 총 1,024바이트까지 허용한다. 네이티브 main은 argc와 argv를 자기 스택에서 받는다. 추가 인수가 없는 슬롯은 SP 0x01010fb0의 기존 80바이트 레이아웃과 포인터·종료값·패딩을 보존한다. 시작 프로브도 기존 별도 80바이트 레이아웃을 유지한다.
+
+~~~sh
+sh sdk/native-aarch64/build.sh examples/native-argv/sensor.c sensor.elf
+python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
+    --arg sum --arg 16 --arg 32 --arg 'west rack' \
+    --peer-elf sensor.elf --peer-arg minmax --peer-arg 64 --peer-arg 96 --peer-arg ''
+~~~
+
+[패키지 부팅과 Rust UTF-8 예제](../examples/native-argv/README.md)

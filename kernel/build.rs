@@ -391,6 +391,15 @@ fn main() {
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
             "native peers and scheduling require ordinary native process packaging");
     }
+    let native_argv = [0, 1, 2].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    for (slot, args) in native_argv.iter().enumerate() {
+        if args.is_some() {
+            assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
+                "slot {slot}: arguments require an ordinary native application");
+            assert!(slot == 0 || (slot == 1 && peer_image.is_some()) || (slot == 2 && peer2_image.is_some()),
+                "slot {slot}: arguments supplied without an ELF");
+        }
+    }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
     if profile.as_deref() != Some("native") {
@@ -417,7 +426,7 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -656,7 +665,41 @@ fn multilevel_duration(field: &str) -> u64 {
     value
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3]) {
+// Hex wire: u8 count, then (u16 little-endian byte length, UTF-8 payload) per extra.
+fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
+    let Some(encoded) = encoded else { return "&[]".to_owned() };
+    const MAX_COUNT: usize = 15;
+    const MAX_BYTES: usize = 1024;
+    // Two length bytes per item, one of which replaces its budgeted NUL.
+    const MAX_HEX: usize = 2 * (1 + MAX_BYTES + MAX_COUNT);
+    assert!(!encoded.is_empty() && encoded.len() <= MAX_HEX && encoded.len() % 2 == 0,
+        "slot {slot}: invalid argument vector hex length (up to {MAX_HEX} digits)");
+    assert!(encoded.bytes().all(|c| c.is_ascii_hexdigit()), "slot {slot}: invalid hex digit");
+    let raw: Vec<u8> = (0..encoded.len()).step_by(2)
+        .map(|i| u8::from_str_radix(&encoded[i..i + 2], 16).unwrap()).collect();
+    let count = usize::from(raw[0]);
+    assert!(count <= MAX_COUNT, "slot {slot}: at most {MAX_COUNT} extra arguments");
+    let mut rest = &raw[1..];
+    let mut used = 0;
+    let mut literals = Vec::with_capacity(count);
+    for _ in 0..count {
+        assert!(rest.len() >= 2, "slot {slot}: missing argument length");
+        let size = usize::from(u16::from_le_bytes([rest[0], rest[1]]));
+        rest = &rest[2..];
+        assert!(rest.len() >= size, "slot {slot}: truncated argument");
+        let (value, tail) = rest.split_at(size);
+        rest = tail;
+        used += size + 1;
+        assert!(used <= MAX_BYTES, "slot {slot}: arguments exceed {MAX_BYTES} bytes including NULs");
+        assert!(!value.contains(&0), "slot {slot}: argument contains NUL");
+        assert!(std::str::from_utf8(value).is_ok(), "slot {slot}: invalid UTF-8");
+        literals.push(format!("&{value:?}"));
+    }
+    assert!(rest.is_empty(), "slot {slot}: trailing argument bytes");
+    format!("&[{}]", literals.join(", "))
+}
+
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3]) {
     let mode = policy.unwrap_or("cooperative");
     let slot_weights = if mode == "weighted" {
         let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
@@ -747,8 +790,11 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(quantum.is_none(), "quantum ticks require RR, weighted scheduling or MLQ");
         0
     };
+    let extras: Vec<_> = argv[..slots].iter().enumerate()
+        .map(|(slot, value)| native_extra_literals(slot, value.as_deref())).collect();
+    let extra_slots = extras.join(", ");
     let generated = format!(
-        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");

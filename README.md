@@ -8,6 +8,17 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
+Package the same native sensor executable twice with separate argument vectors. From the repository root on Linux or WSL, this example assigns a sum over [16,32) to the primary and a min/max over [64,96) to the peer.
+
+~~~sh
+sh sdk/native-aarch64/build.sh examples/native-argv/sensor.c sensor.elf
+python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
+    --arg sum --arg 16 --arg 32 --arg 'west rack' \
+    --peer-elf sensor.elf --peer-arg minmax --peer-arg 64 --peer-arg 96 --peer-arg ''
+~~~
+
+[Boot the package and try the Rust UTF-8 example](examples/native-argv/README.md)
+
 Run recurring C and Rust batches under rate-monotonic or deadline-monotonic scheduling. Each application keeps its private state between periods. [Package recurring native jobs](docs/native-c-abi.en.md#recurring-native-jobs-under-rm-and-dm)
 
 Package up to three native jobs with their release times, deadlines and estimated CPU costs. Sampled EDF lets an urgent job interrupt a batch calculation when it becomes eligible at a grid boundary. [Build a native EDF package](docs/native-c-abi.en.md#sampled-edf-for-native-applications)

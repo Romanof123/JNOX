@@ -607,26 +607,14 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
 }
 
-// The bootstrap source is fixed. The ordinary argument strings and pointers
-// are copied to private physical backing before the user mapping is enabled.
-#[cfg(jnox_native_process)]
-const ARGS: &[&[u8]] = &[b"/bin/app\0"];
-#[cfg(not(jnox_native_process))]
-const ARGS: &[&[u8]] = &[b"/bin/native_startup_probe\0", b"8\0", b"13\0"];
+#[path = "native_stack.rs"]
+mod native_stack;
 
-fn initial_stack() -> [u8; 80] {
-    let mut tail = [0u8; 80];
-    let sp = STACK_TOP - tail.len();
-    tail[..8].copy_from_slice(&(ARGS.len() as u64).to_le_bytes());
-    let mut offset = 48;
-    for (i, arg) in ARGS.iter().enumerate() {
-        let pointer = ((sp + offset) as u64).to_le_bytes();
-        tail[8 * (i + 1)..8 * (i + 2)].copy_from_slice(&pointer);
-        tail[offset..offset + arg.len()].copy_from_slice(arg);
-        offset += arg.len();
-    }
-    tail
-}
+// Boot scratch is kernel-owned and populated once before installing any user
+// mapping. Avoid allocating three maximum-sized tails on the EL1 boot stack.
+static mut STARTUP_TAILS: [[u8; native_stack::MAX_TAIL]; COUNT] = [[0; native_stack::MAX_TAIL]; COUNT];
+#[unsafe(no_mangle)]
+static mut jnox_native_startup_slots: [[u64; 4]; COUNT] = [[0; 4]; COUNT];
 
 fn u32_at(bytes: &[u8], at: usize) -> Option<u32> {
     Some(u32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?))
@@ -722,8 +710,12 @@ pub(super) fn run() -> ! {
         uart_write(b"\n");
     }
     let plans = images.map(|(image, _)| validated_image(image));
-    let tail = initial_stack();
-    let sp = STACK_TOP - tail.len();
+    let buffers = unsafe { &mut *(&raw mut STARTUP_TAILS) };
+    let layouts: [native_stack::Layout; COUNT] = core::array::from_fn(|pid| {
+        native_stack::build(NATIVE_ARGV_EXTRAS[pid], !cfg!(jnox_native_process),
+            STACK_BOTTOM, STACK_TOP, &mut buffers[pid]).unwrap_or_else(|| fail(19))
+    });
+    let tails: [&[u8]; COUNT] = core::array::from_fn(|pid| &buffers[pid][..layouts[pid].len]);
     // Dedicated virt boot with a quiescent single CPU. Other profiles keep
     // their own interrupt and timer setup.
     unsafe {
@@ -734,10 +726,13 @@ pub(super) fn run() -> ! {
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
-        native_el0_mmu::install_processes(&plans, &[tail.as_slice(); COUNT]).unwrap_or_else(|_| fail(6));
+        native_el0_mmu::install_processes(&plans, &tails).unwrap_or_else(|_| fail(6));
         for (pid, plan) in plans.iter().enumerate() {
             FRAMES[pid].elr = plan.entry;
-            FRAMES[pid].sp_el0 = sp as u64;
+            let layout = layouts[pid];
+            FRAMES[pid].sp_el0 = layout.sp as u64;
+            ptr::write_volatile(&raw mut jnox_native_startup_slots[pid],
+                [plan.entry, layout.sp as u64, layout.len as u64, layout.argc as u64]);
             if !cfg!(any(jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
                 if pid == 0 { STATES[pid] = TaskState::Running; } else { enqueue(pid); }
             }
@@ -750,17 +745,17 @@ pub(super) fn run() -> ! {
         asm!("mrs {}, CurrentEL", "mrs {}, sctlr_el1", "mrs {}, ttbr0_el1",
             out(reg) current, out(reg) sctlr, out(reg) ttbr, options(nostack, preserves_flags));
     }
-    if current != 4 || sctlr & 1 == 0 || !native_el0_mmu::user_range(sp, tail.len(), true) {
+    if current != 4 || sctlr & 1 == 0 || !native_el0_mmu::user_range(layouts[0].sp, layouts[0].len, true) {
         fail(7);
     }
     head(4, plans[0].entry);
-    head(5, sp as u64);
+    head(5, layouts[0].sp as u64);
     head(6, STACK_BOTTOM as u64);
     head(7, STACK_TOP as u64);
     head(12, current);
     head(13, sctlr);
     head(14, ttbr);
-    head(15, ARGS.len() as u64);
+    head(15, layouts[0].argc as u64);
     head(1, 2);
     #[cfg(jnox_native_weighted)]
     let first = weighted::start();
@@ -782,6 +777,6 @@ pub(super) fn run() -> ! {
     unsafe {
         if first != 0 { native_el0_mmu::switch(first).unwrap_or_else(|_| fail(9)); }
         CURRENT = first;
-        native_el0_enter(plans[first].entry, sp as u64, INITIAL_PSTATE)
+        native_el0_enter(FRAMES[first].elr, FRAMES[first].sp_el0, INITIAL_PSTATE)
     }
 }

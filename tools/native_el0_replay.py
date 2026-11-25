@@ -54,8 +54,8 @@ class Snapshot:
         return self.raw[offset : offset + size]
 
     def leaf(self, root, va):
-        need(root == root & PA_MASK and 0 <= va < 1 << 39, "TTBR/VA range")
-        table = root
+        need(root & ~(PA_MASK | (0xffff << 48)) == 0 and 0 <= va < 1 << 39, "TTBR/VA range")
+        table = root & PA_MASK
         for shift in (30, 21, 12):
             addr = table + 8 * ((va >> shift) & 511)
             desc = int.from_bytes(self.read(addr, 8), "little")
@@ -105,7 +105,83 @@ def permissions(mem, root, va, access, device=False):
     return hex(desc)
 
 
-def audit(kernel, user, mem, clock_app=False):
+def startup_tail(argv, probe=False):
+    default = ["/bin/native_startup_probe", "8", "13"] if probe else ["/bin/app"]
+    need(isinstance(argv, list) and 1 <= len(argv) <= 16
+         and all(isinstance(a, str) and "\0" not in a for a in argv)
+         and argv[0] == default[0], "invalid process argument vector")
+    values = [value.encode("utf-8") + b"\0" for value in argv]
+    need(sum(map(len, values[1:])) <= 1024 and (not probe or argv == default),
+         "invalid process argument bytes")
+    legacy = argv == default
+    pos = 48 if legacy else (len(argv) + 3) * 8
+    size = 80 if legacy else (pos + sum(map(len, values)) + 15) & ~15
+    top = 0x01011000
+    data = bytearray(size)
+    struct.pack_into("<Q", data, 0, len(argv))
+    for i, value in enumerate(values):
+        struct.pack_into("<Q", data, (i + 1) * 8, top - size + pos)
+        data[pos:pos + len(value)] = value
+        pos += len(value)
+    return top - size, bytes(data)
+
+
+def argument_stacks(kernel, mem, package, uart):
+    slots = package["slots"]
+    need(package["app"] == "process" and 1 <= len(slots) <= 3, "ordinary slot count")
+    k = elf_file(kernel)
+    start, _ = symbol(k, "_start")
+    limit, _ = symbol(k, "__stack_top")
+    need(start == mem.base == 0x40200000 and limit - start == len(mem.raw), "kernel capture extent")
+    journal, _ = symbol(k, "jnox_native_el0_journal")
+    header = struct.unpack("<16Q", mem.read(journal, 128))
+    table = k.get_section_by_name(".symtab")
+    starts = table.get_symbol_by_name("jnox_native_startup_slots") or []
+    need(len(starts) <= 1, "ambiguous startup slots")
+    if starts:
+        addr, size = symbol(k, "jnox_native_startup_slots")
+        need(size == len(slots) * 32, "startup slot records")
+        records = list(struct.iter_unpack("<4Q", mem.read(addr, size)))
+    else:
+        need(all("argv" not in s for s in slots), "missing startup slot records")
+        records = None
+    # Each native MMU Space starts with its private root and the spaces form
+    # one contiguous Rust array. Derive the stride from the linked symbol.
+    spaces = [s for s in table.iter_symbols() if "native_el0_mmu" in s.name and "6SPACES" in s.name]
+    need(len(spaces) == 1 and spaces[0]["st_value"] == header[14] & PA_MASK
+         and spaces[0]["st_size"] % len(slots) == 0, "private root array")
+    stride = spaces[0]["st_size"] // len(slots)
+    reports, backing = [], set()
+    for i, slot in enumerate(slots):
+        need(slot["slot"] == i and re.fullmatch("[0-9a-f]{64}", slot["elf_sha256"]), "slot identity")
+        prefix = ("", "PEER ", "PEER2 ")[i]
+        need(f"NATIVE EL0 {prefix}ELF {slot['elf_sha256']}".encode() in uart.splitlines(),
+             "booted slot ELF digest")
+        argv = slot.get("argv", ["/bin/app"])
+        sp, expected = startup_tail(argv)
+        root = spaces[0]["st_value"] + i * stride
+        leaf = mem.leaf(root, sp)
+        need(leaf is not None and (leaf & PA_MASK) not in backing, "private slot stack")
+        backing.add(leaf & PA_MASK)
+        permissions(mem, root, sp, "user rw")
+        need(vread(mem, root, sp, len(expected)) == expected, "slot stack bytes")
+        if records:
+            entry, initial_sp, length, count = records[i]
+            need((initial_sp, length, count) == (sp, len(expected), len(argv)), "slot startup record")
+            permissions(mem, root, entry, "user rx")
+        if i == 0:
+            need((header[5], header[15]) == (sp, len(argv)), "primary startup journal")
+            if records:
+                need(entry == header[4], "primary startup entry")
+        reports.append(dict(slot=i, elf_sha256=slot["elf_sha256"], argv=argv,
+                            initial_sp=sp, tail_bytes=len(expected), root=root))
+    return reports
+
+
+def audit(kernel, user, mem, clock_app=False, argv=None):
+    if argv is None:
+        argv = ["/bin/app"] if clock_app else ["/bin/native_startup_probe", "8", "13"]
+    initial_sp, expected_tail = startup_tail(argv, probe=not clock_app)
     k = elf_file(kernel)
     u = elf_file(user)
     start, _ = symbol(k, "_start")
@@ -176,7 +252,7 @@ def audit(kernel, user, mem, clock_app=False):
             0,
             len(user),
             0x400000,
-            0x01010FB0,
+            initial_sp,
             0x01001000,
             0x01011000,
             3 if clock_app else 2,
@@ -184,7 +260,7 @@ def audit(kernel, user, mem, clock_app=False):
             1,
             0,
             4,
-            1 if clock_app else 3,
+            len(argv),
         ),
         "terminal journal",
     )
@@ -250,25 +326,7 @@ def audit(kernel, user, mem, clock_app=False):
         (0x09000000, "kernel rw", True),
     ):
         mappings[hex(addr)] = permissions(mem, root, addr, access, device)
-    if clock_app:
-        count, arg, argv_end, env_end = struct.unpack("<4Q", vread(mem, root, sp, 32))
-        need((count, argv_end, env_end) == (1, 0, 0) and sp + 32 <= arg <= top - 9
-             and vread(mem, root, arg, 9) == b"/bin/app\0", "process startup arguments")
-    else:
-        stack = struct.unpack("<6Q", vread(mem, root, sp, 48))
-        need(
-            stack[0] == 3 and stack[4:] == (0, 0),
-            "bootstrap argc, argv terminator and empty environment",
-        )
-        for ptr, value in zip(
-            stack[1:4], (b"/bin/native_startup_probe\0", b"8\0", b"13\0")
-        ):
-            need(
-                sp + 48 <= ptr <= top - len(value)
-                and vread(mem, root, ptr, len(value)) == value,
-                "bootstrap argv string",
-            )
-        need(stack[1:4] == (sp + 48, sp + 74, sp + 76), "exact startup string addresses")
+    need(vread(mem, root, sp, len(expected_tail)) == expected_tail, "startup bytes")
     for va in range(start, limit, PAGE):
         permissions(mem, root, va, "kernel rx" if va < rw else "kernel rw")
     final_data = {}
@@ -453,6 +511,30 @@ def replay(folder, digest, clock_app=False):
         ("probe", "probe.c"),
     ):
         need(run[key + "_sha256"] == hashes[name], "launch asset digest")
+    package = run.get("argument_package")
+    if package is not None:
+        need(package["kernel_elf_sha256"] == hashes["kernel.elf"]
+             and package["slots"][0]["elf_sha256"] == hashes["user.elf"], "argument package identity")
+        raw_uart = bounded(folder / "uart.bin", 1 << 20)
+        count = len(package["slots"])
+        if count == 1:
+            match = re.findall(rb"(?m)^NATIVE EL0 EXIT (-?[0-9]+)\r?$", raw_uart)
+            need(len(match) == 1, "single process exit")
+            exits = {0: int(match[0])}
+        else:
+            pairs = re.findall(rb"(?m)^NATIVE EL0 EXIT PID ([0-9]+) (-?[0-9]+)\r?$", raw_uart)
+            exits = {int(i): int(code) for i, code in pairs}
+            need(len(pairs) == count and set(exits) == set(range(count)), "complete process exits")
+        need(rec["marker"] == f"EXIT {exits[0]}", "primary terminal marker")
+        raw = bounded(folder / "ram.bin", count * (16 << 20))
+        need(len(raw) == run["ram_bytes"], "physical snapshot size")
+        stacks = argument_stacks(bounded(folder / "kernel.elf", 64 << 20),
+                                 Snapshot(run["ram_base"], raw), package, raw_uart)
+        if not clock_app:
+            return dict(scope="packaged native process argument stacks at terminal capture",
+                        slots=stacks, exit_statuses=exits, source_revision=run["revision"],
+                        session_sha256=digest)
+        need(count == 1, "clock application requires one slot")
     status = 0 if clock_app else 37
     need(rec["marker"] == f"EXIT {status}", "terminal capture marker")
     check_uart(bounded(folder / "uart.bin", 1 << 20), hashes["user.elf"], status)
@@ -463,6 +545,7 @@ def replay(folder, digest, clock_app=False):
         bounded(folder / "user.elf", 16 << 20),
         Snapshot(run["ram_base"], memory),
         clock_app,
+        stacks[0]["argv"] if package is not None else None,
     )
     trace_check(bounded(folder / "exceptions.log", 16 << 20), report)
     report.update(

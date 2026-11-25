@@ -8,6 +8,17 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
+같은 센서 실행 파일을 두 슬롯에 배치하고 각각 다른 인수를 전달할 수 있습니다. Linux 또는 WSL의 저장소 루트에서 아래 명령을 실행하면 주 앱은 [16,32)의 합을, 동료는 [64,96)의 최솟값과 최댓값을 계산합니다.
+
+~~~sh
+sh sdk/native-aarch64/build.sh examples/native-argv/sensor.c sensor.elf
+python3 tools/build_native_el0.py --out sensor-pair --elf sensor.elf \
+    --arg sum --arg 16 --arg 32 --arg 'west rack' \
+    --peer-elf sensor.elf --peer-arg minmax --peer-arg 64 --peer-arg 96 --peer-arg ''
+~~~
+
+[패키지 부팅과 Rust UTF-8 예제](examples/native-argv/README.md)
+
 C·Rust 앱을 주기 또는 상대 마감 순위로 스케줄링해 반복 실행할 수 있습니다. 각 앱은 주기 사이에도 자기 상태를 유지합니다. [네이티브 주기 작업 패키징](docs/native-c-abi.md#네이티브-주기-작업의-rmdm-실행)
 
 네이티브 작업 최대 세 개에 시작 가능 시각·마감·예상 CPU 비용을 지정할 수 있습니다. 격자 경계에서 긴급 작업이 실행 가능해지면 EDF가 배치 계산을 선점할 수 있습니다. [네이티브 EDF 패키지 실행](docs/native-c-abi.md#네이티브-앱의-격자-기반-edf)
