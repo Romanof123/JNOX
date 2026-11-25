@@ -143,3 +143,22 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tc
 ~~~
 
 [examples/native-edf](../examples/native-edf/README.md) · [EVD-117](evidence/evd-117.en.md)
+
+## Recurring native jobs under RM and DM
+
+Package one to three independently built applications. Each tuple is `phase_ns,period_ns,relative_deadline_ns`. The deadline must be positive and at most the period. Positive durations must convert exactly to physical timer ticks. Here C runs every 100 ms with a 90 ms deadline, and Rust every 120 ms with a 40 ms deadline. RM ranks the shorter period first. DM ranks the shorter relative deadline first. From the repository root on Linux or WSL:
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-periodic-job/crc.c "$run/crc.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-periodic-job-rust/Cargo.toml "$run/hist.elf"
+for policy in rm dm; do
+    python3 tools/build_native_el0.py --out "$run/$policy" --policy "$policy" \
+        --elf "$run/crc.elf" --periodic 0,100000000,90000000 \
+        --peer-elf "$run/hist.elf" --peer-periodic 0,120000000,40000000
+done
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg \
+    -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/rm/kernel.elf"
+~~~
+
+Use `$run/dm/kernel.elf` to boot the DM package. Each process enters main once. After each completed batch, C calls `jnox_periodic_wait_next()` from `<jnox/periodic.h>` (0 on success, −1 with errno on failure). Rust calls `jnox_native::wait_next_period()`, returning `Result<(), i32>`. Successful return resumes the same process for its next generation, with its private data and stack preserved. Exit finishes the current generation. [EVD-118](evidence/evd-118.en.md)

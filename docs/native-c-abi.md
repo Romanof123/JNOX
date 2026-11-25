@@ -143,3 +143,22 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tc
 ~~~
 
 [examples/native-edf](../examples/native-edf/README.md) · [EVD-117](evidence/evd-117.md)
+
+## 네이티브 주기 작업의 RM·DM 실행
+
+독립 빌드한 앱 1~3개를 패키징한다. 각 튜플은 `초기위상_ns,주기_ns,상대마감_ns` 순서다. 마감은 양수이며 주기 이하여야 하고 양의 시간은 물리 타이머 틱으로 정확히 변환돼야 한다. 아래 C 앱은 주기 100 ms·마감 90 ms, Rust 앱은 주기 120 ms·마감 40 ms다. RM은 주기가 짧은 앱을, DM은 상대 마감이 짧은 앱을 먼저 실행한다. Linux 또는 WSL에서 저장소 루트를 기준으로 실행한다.
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-periodic-job/crc.c "$run/crc.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-periodic-job-rust/Cargo.toml "$run/hist.elf"
+for policy in rm dm; do
+    python3 tools/build_native_el0.py --out "$run/$policy" --policy "$policy" \
+        --elf "$run/crc.elf" --periodic 0,100000000,90000000 \
+        --peer-elf "$run/hist.elf" --peer-periodic 0,120000000,40000000
+done
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg \
+    -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/rm/kernel.elf"
+~~~
+
+DM 패키지는 커널 경로를 `$run/dm/kernel.elf`로 바꿔 부팅한다. 프로세스는 main에 한 번 진입한다. 배치 하나를 완료하면 C는 `<jnox/periodic.h>`의 `jnox_periodic_wait_next()`를 호출한다(성공 0, 실패 −1과 errno). Rust는 `jnox_native::wait_next_period()`를 호출해 `Result<(), i32>`를 받는다. 성공 시 같은 프로세스가 전용 데이터와 스택을 보존한 채 다음 세대를 시작한다. 종료는 현재 세대를 완료한다. [EVD-118](evidence/evd-118.md)
