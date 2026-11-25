@@ -2248,3 +2248,4 @@ IPC-005,partially-implemented-by,IMP-306
 IMP-306,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-306
 IMP-306,tested-in,EVD-306
+CHG-307,affects,REQ-024
