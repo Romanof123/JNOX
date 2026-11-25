@@ -2,9 +2,9 @@
 
 English · [한국어](README.ko.md)
 
-J-NOX is a lightweight real-time microkernel written in Rust for embedded systems with functional safety requirements.
+J-NOX is developing a full-featured real-time operating system in Rust for embedded systems with functional safety requirements. Its priorities are predictable timing, isolation, multithreading, applications and device drivers.
 
-The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture calls for isolated services, native Rust drivers and a compatibility domain for Linux drivers.
+The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture keeps the trusted kernel small and calls for isolated services, native Rust drivers and a compatibility domain for Linux drivers.
 
 On AArch64 QEMU `virt`, one static C executable built with the native v1 SDK entered user mode (EL0), computed 37 and exited with status 37. Its stdout write returned `-ENOSYS` at the syscall boundary and emitted zero bytes. [Native C startup and exit](docs/native-el0-startup.en.md)
 
