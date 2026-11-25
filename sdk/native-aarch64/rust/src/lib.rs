@@ -144,8 +144,13 @@ pub mod waitset;
 #[cfg(all(feature = "loan", target_arch = "aarch64"))]
 pub mod loan;
 
+#[cfg(all(feature = "pipes", target_arch = "aarch64"))]
+pub mod pipes;
+
 #[cfg(all(feature = "local-socket", target_arch = "aarch64"))]
 pub mod local_socket;
 
 #[cfg(all(feature = "capabilities", target_arch = "aarch64"))]
 pub mod capabilities;
+#[cfg(all(feature = "pubsub", target_arch = "aarch64"))]
+pub mod pubsub;

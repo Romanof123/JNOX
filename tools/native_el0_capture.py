@@ -39,15 +39,26 @@ def command(qemu, root, plain=False):
 
 def argument_manifest(args):
     path = args.manifest or args.kernel.parent / "manifest.json"
-    requested = [args.arg, args.peer_arg, args.peer2_arg]
+    requested = [args.arg, args.peer_arg, args.peer2_arg, getattr(args, "peer3_arg", [])]
     if not path.exists() and not args.manifest and not any(requested):
         return None
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if "slots" not in manifest and not args.manifest and not any(requested):
         return None
     slots = manifest["slots"]
-    if not 1 <= len(slots) <= 3:
-        raise ValueError("expected one to three package slots")
+    if len(slots) == 4:
+        if (manifest.get("app") != "process" or manifest.get("board") != "virt"
+                or manifest.get("policy") not in ("fifo", "rr") or "thread_capacity" in manifest):
+            raise ValueError("four slots require ordinary virt FIFO/RR processes")
+        names = ("user.elf", "native_peer.elf", "native_peer2.elf", "native_peer3.elf")
+        for pid, (slot, name) in enumerate(zip(slots, names)):
+            if slot.get("slot") != pid or slot.get("elf") != name:
+                raise ValueError(f"unexpected packaged ELF for slot {pid}")
+            source = args.user if pid == 0 else path.parent / name
+            if sha(source) != slot.get("elf_sha256"):
+                raise ValueError(f"package ELF digest mismatch for slot {pid}")
+    elif not 1 <= len(slots) <= 3:
+        raise ValueError("expected one to three slots or four ordinary fixed processes")
     for i, extras in enumerate(requested):
         if extras and (manifest["app"] != "process" or i >= len(slots)
                        or slots[i].get("argv") != ["/bin/app", *extras]):
@@ -75,6 +86,16 @@ def capture(args, *, command_factory=command):
         (args.probe, "probe.c"),
     ]:
         shutil.copyfile(src, root / name)
+    four_fixed = manifest is not None and len(manifest["slots"]) == 4
+    if four_fixed:
+        package_dir = args.manifest.parent if args.manifest else args.kernel.parent
+        for slot in manifest["slots"][1:]:
+            name = slot["elf"]
+            shutil.copyfile(package_dir / name, root / name)
+            if sha(root / name) != slot["elf_sha256"]:
+                raise ValueError(f"copied package ELF digest mismatch for {name}")
+        if sha(root / "user.elf") != manifest["slots"][0]["elf_sha256"] or sha(root / "kernel.elf") != manifest["kernel_elf_sha256"]:
+            raise ValueError("copied package digest mismatch")
     symbols = subprocess.check_output(
         [args.nm, "-nS", str(root / "kernel.elf")], text=True
     )
@@ -101,6 +122,7 @@ def capture(args, *, command_factory=command):
         ),
     )
     marker = "unobserved"
+    terminal_exits = {}
     proc = None
     try:
         with (root / "stderr").open("xb") as err:
@@ -150,6 +172,11 @@ def capture(args, *, command_factory=command):
                         )
                         all_slots = manifest and set(exits) == set(range(len(manifest["slots"])))
                         fault = terminal and terminal[1].startswith(b"FAULT ")
+                        if four_fixed:
+                            # A single-process exit cannot terminate a four-process capture.
+                            terminal = terminal if fault else None
+                            all_slots = all_slots and re.search(rb"(?m)^NATIVE FIXED DROPPED [0-9]+\r?\n", raw)
+                            terminal_exits = exits
                         if (terminal or all_slots) and hierarchy_health and not fault:
                             # HEALTH precedes the exits. A fragmented final line is not a footer.
                             last_exit = raw.rfind(b"NATIVE EL0 EXIT ")
@@ -186,6 +213,7 @@ def capture(args, *, command_factory=command):
             root / "session.json",
             dict(
                 marker=marker,
+                **({"observed_slot_exits": terminal_exits} if four_fixed else {}),
                 pid=proc.pid if proc else None,
                 hashes={p.name: sha(p) for p in sorted(root.iterdir()) if p.is_file()},
             ),
@@ -204,7 +232,7 @@ if __name__ == "__main__":
     parser.add_argument("--plain", action="store_true", help="capture RAM and UART without external exception tracing")
     parser.add_argument("--expect-exit", type=int, default=37, help="expected signed process exit")
     parser.add_argument("--manifest", type=Path, help="audit packaged ordinary-process arguments")
-    for option in ("arg", "peer-arg", "peer2-arg"):
+    for option in ("arg", "peer-arg", "peer2-arg", "peer3-arg"):
         parser.add_argument("--" + option, action="append", default=[],
                             help="check an argument against the already packaged slot")
     parser.add_argument("--qemu", default="qemu-system-aarch64")

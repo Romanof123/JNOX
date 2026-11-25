@@ -18,17 +18,10 @@ pub(crate) fn build(
     if extras.len() > MAX_EXTRAS || (probe && !extras.is_empty()) || top % 16 != 0 {
         return None;
     }
-    let mut extra_bytes = 0usize;
-    for &arg in extras {
-        extra_bytes = extra_bytes.checked_add(arg.len().checked_add(1)?)?;
-        if extra_bytes > MAX_EXTRA_BYTES || arg.contains(&0) || core::str::from_utf8(arg).is_err() {
-            return None;
-        }
-    }
-
+    let extra_bytes = string_bytes(extras)?;
     let primary: &[&[u8]] = if probe { PROBE } else { &[APP] };
     let argc = primary.len().checked_add(extras.len())?;
-    let (mut offset, len) = if extras.is_empty() {
+    let (offset, len) = if extras.is_empty() {
         // Existing ordinary and probe images have a fixed string offset.
         (48, 80)
     } else {
@@ -37,12 +30,39 @@ pub(crate) fn build(
         let used = header.checked_add(APP.len() + 1)?.checked_add(extra_bytes)?;
         (header, used.checked_add(15)? & !15)
     };
+    encode(primary.iter().chain(extras.iter()).copied(), argc, offset, len, bottom, top, output)
+}
+
+fn string_bytes(args: &[&[u8]]) -> Option<usize> {
+    let mut bytes = 0usize;
+    for &arg in args {
+        bytes = bytes.checked_add(arg.len().checked_add(1)?)?;
+        if bytes > MAX_EXTRA_BYTES || arg.contains(&0) || core::str::from_utf8(arg).is_err() {
+            return None;
+        }
+    }
+    Some(bytes)
+}
+
+/// Spawn supplies the entire vector, including its executable's argv[0].
+#[cfg(any(jnox_native_shell, test))]
+pub(crate) fn build_argv(argv: &[&[u8]], bottom: usize, top: usize, output: &mut [u8]) -> Option<Layout> {
+    let argc = argv.len();
+    if argc == 0 || argc > MAX_EXTRAS + 1 || argv[0].is_empty() || top % 16 != 0 { return None; }
+    let string_len = string_bytes(argv)?;
+    let header = (argc + 3) * 8;
+    let len = (header + string_len + 15) & !15;
+    encode(argv.iter().copied(), argc, header, len, bottom, top, output)
+}
+
+fn encode<'a>(args: impl Iterator<Item = &'a [u8]>, argc: usize, mut offset: usize, len: usize,
+              bottom: usize, top: usize, output: &mut [u8]) -> Option<Layout> {
     let sp = top.checked_sub(len)?;
     if sp < bottom || len > MAX_TAIL { return None; }
     let tail = output.get_mut(..len)?;
     tail.fill(0);
     tail[..8].copy_from_slice(&(argc as u64).to_le_bytes());
-    for (i, &arg) in primary.iter().chain(extras.iter()).enumerate() {
+    for (i, arg) in args.enumerate() {
         let end = offset.checked_add(arg.len())?;
         let next = end.checked_add(1)?;
         let ptr_offset = i.checked_add(1)?.checked_mul(8)?;
@@ -59,6 +79,19 @@ pub(crate) fn build(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shell_arguments_keep_the_supplied_program_name_and_both_null_sentinels() {
+        let mut bytes = [0xff; MAX_TAIL];
+        let layout = build_argv(&[b"cat", b"sample.txt", b""], 0, 4096, &mut bytes).unwrap();
+        let word = |index: usize| u64::from_le_bytes(bytes[index*8..index*8+8].try_into().unwrap());
+        assert_eq!((layout.sp, layout.argc, layout.len), (4032, 3, 64));
+        assert_eq!([word(0), word(1), word(2), word(3), word(4), word(5)], [3, 4080, 4084, 4095, 0, 0]);
+        assert_eq!(&bytes[48..64], b"cat\0sample.txt\0\0");
+        for invalid in [&[][..], &[&b""[..]][..], &[&b"wc"[..], &b"bad\0arg"[..]][..]] {
+            assert!(build_argv(invalid, 0, 4096, &mut bytes).is_none());
+        }
+    }
 
     #[test]
     fn omitted_args_reproduce_legacy_ordinary_and_probe_tails() {
