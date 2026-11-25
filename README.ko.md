@@ -18,6 +18,8 @@ python3 tools/build_native_el0.py --out output/native-threads/c --threads 2 --so
 
 메인과 작업 스레드가 CPU0에서 시간을 나눠 쓰도록 하려면 두 스레드 패키지에 `--policy rr --quantum-ticks 625000`을 추가합니다. [라운드로빈 스트림 예제](examples/native-thread-rr/README.md)
 
+두 스레드 네이티브 패키지에서 C 메인과 Rust 작업자는 같은 뮤텍스로 공유 집계를 보호할 수 있습니다. 예제는 잠금 하나로 표본 수·합·제곱합을 갱신합니다. [C·Rust 센서 예제 빌드 및 부팅](examples/native-thread-mutex/README.md)
+
 같은 센서 실행 파일을 두 슬롯에 배치하고 각각 다른 인수를 전달할 수 있습니다. Linux 또는 WSL의 저장소 루트에서 아래 명령을 실행하면 주 앱은 [16,32)의 합을, 동료는 [64,96)의 최솟값과 최댓값을 계산합니다.
 
 ~~~sh

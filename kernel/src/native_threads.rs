@@ -109,6 +109,7 @@ fn describe(state: State) -> (u64, u64) {
         State::Vacant => (0, 0), State::Running => (1, 0), State::Ready => (2, 0),
         State::Sleeping(at) => (3, at), State::Joining => (4, 0),
         State::Zombie(value) => (5, value), State::Ended => (6, 0),
+        State::MutexWait(token) => (7, token),
     }
 }
 
@@ -213,6 +214,46 @@ pub(super) fn irq(now: u64, frame: Option<&mut NativeFrame>) -> bool {
     next.is_some()
 }
 
+// Rows share the index and loss accounting of the main thread journal.
+static mut MUTEX_ROWS: [[u64; 12]; LIMIT] = [[0; 12]; LIMIT];
+
+fn mutex_snapshot(addr: u64) -> [u64; 6] {
+    for (index, slot) in policy().mutex_slots().iter().enumerate() {
+        if slot.address == Some(addr) {
+            return [index as u64, slot.generation,
+                slot.owner.map_or(NO_PID, |t| t.tid as u64), slot.owner.map_or(0, |t| t.generation),
+                slot.waiter.map_or(NO_PID, |t| t.tid as u64), slot.waiter.map_or(0, |t| t.generation)];
+        }
+    }
+    [NO_PID, 0, NO_PID, 0, NO_PID, 0]
+}
+
+fn mutex_call(f: &mut NativeFrame, op: u64, addr: u64, token: u64) {
+    let before = mutex_snapshot(addr);
+    let valid = addr != 0 && addr % 8 == 0 && native_el0_mmu::user_range(addr as usize, 8, true);
+    let result = if valid { policy().mutex(op, addr, token) } else { Err(22) };
+    match result {
+        Ok(value) => {
+            f.x[0] = 0;
+            if op == 13 { f.x[1] = value; }
+            if op == 17 && before[4] != NO_PID {
+                // The policy transferred ownership to this incarnation before
+                // queuing it. Complete its blocked SVC in its own saved frame.
+                unsafe { SAVED[before[4] as usize].x[0] = 0; }
+            }
+        }
+        Err(errno) => f.x[0] = (-i64::from(errno)) as u64,
+    }
+    let index = unsafe { USED };
+    if index < LIMIT {
+        let after = mutex_snapshot(addr);
+        unsafe {
+            MUTEX_ROWS[index][..6].copy_from_slice(&before);
+            MUTEX_ROWS[index][6..].copy_from_slice(&after);
+        }
+    }
+}
+
 pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
     let id = policy().current().unwrap_or_else(|| fail(20));
     validate(id, f);
@@ -232,7 +273,7 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
             } as u64;
         }
         8 => { f.x[0] = 0; policy().yield_now(); }
-        9 => f.x[0] = (-95i64) as u64,
+        9 | 18 => f.x[0] = (-95i64) as u64,
         10 => match create(a, b, c) {
             Ok(handle) => { f.x[0] = 0; f.x[1] = handle; }
             Err(error) => f.x[0] = (-i64::from(error)) as u64,
@@ -246,6 +287,7 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
                 unsafe { SAVED[0].x[0] = 0; SAVED[0].x[1] = value; }
             }
         }
+        13..=17 => mutex_call(f, op, a, b),
         _ => f.x[0] = (-38i64) as u64,
     }
     unsafe { SAVED[id] = *f };
@@ -255,7 +297,8 @@ pub(super) fn syscall(now: u64, f: &mut NativeFrame) {
     record(now, 1, Some(id), op, [a, b, c], Some(f), policy().current().map(saved), old_compare);
     if let Some(status) = policy().status() { finish(status); }
     if policy().current().is_none() {
-        if policy().next_compare().is_none() { fail(20) }
+        // An orphaned non-robust mutex or dependency cycle may have no
+        // future timer event. The idle continuation then stays asleep.
         let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
         unsafe { native_sleep_switch(top); }
     }
@@ -280,7 +323,14 @@ fn finish(status: i32) -> ! {
         print(b"NATIVE THREAD STACK", &[id as u64, low as u64, high as u64, locator(id)]);
     }
     unsafe {
-        for i in 0..USED { print(b"NATIVE THREAD EVENT", &*(&raw const ROWS[i])); }
+        for i in 0..USED {
+            print(b"NATIVE THREAD EVENT", &*(&raw const ROWS[i]));
+            if (13..=17).contains(&ROWS[i][4]) {
+                uart_write(b"NATIVE THREAD MUTEX ");
+                unsigned(i as u64);
+                print(b"", &*(&raw const MUTEX_ROWS[i]));
+            }
+        }
         print(b"NATIVE THREAD DROPPED", &[LOST]);
     }
     #[cfg(jnox_native_thread_rr)]
