@@ -2,6 +2,8 @@
 #![no_std]
 
 pub mod pthread;
+#[cfg(target_arch = "aarch64")]
+pub mod task_policy;
 
 use core::time::Duration;
 

@@ -6,6 +6,7 @@ mod feedback_policy;
 mod proportional_policy;
 
 mod build_native_extension;
+mod build_task_policy;
 use std::env;
 mod build_native_hierarchy;
 
@@ -86,6 +87,14 @@ fn all_package_features_enabled() -> bool {
 fn main() {
     validate_architecture();
     let profile = selector("JNOX_PROFILE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_task_policy)");
+    println!("cargo::rerun-if-changed=build_task_policy.rs");
+    println!("cargo::rerun-if-changed=native/elf.rs");
+    println!("cargo::rerun-if-changed=src/native_v1_note.rs");
+    let task_bin = selector("JNOX_TASK_POLICY_BIN");
+    let task_hash = selector("JNOX_TASK_POLICY_SHA256");
+    assert!(profile.as_deref() == Some("task-policy") || (task_bin.is_none() && task_hash.is_none()),
+            "task policy binary and digest require JNOX_PROFILE=task-policy");
     let app = selector("JNOX_APP");
     configure_ap_admission(profile.as_deref());
     println!("cargo::rustc-check-cfg=cfg(jnox_batch_telemetry)");
@@ -696,6 +705,18 @@ fn main() {
         && app.as_deref() == Some("process") && peer_image.is_some() && peer2_image.is_none()
         && matches!(policy.as_deref(), Some("fifo" | "rr"));
     match profile.as_deref() {
+        Some("task-policy") => {
+            assert!(board == "virt", "task-policy requires virt");
+            for (key, _) in env::vars_os() {
+                let key = key.to_string_lossy();
+                assert!(!key.starts_with("CARGO_FEATURE_") && (!key.starts_with("JNOX_")
+                    || matches!(key.as_ref(), "JNOX_BOARD" | "JNOX_ARCH" | "JNOX_PROFILE"
+                        | "JNOX_TASK_POLICY_BIN" | "JNOX_TASK_POLICY_SHA256")),
+                    "task-policy conflicts with {key}");
+            }
+            build_task_policy::configure(task_bin.as_deref().expect("task-policy needs binary"),
+                                         task_hash.as_deref().expect("task-policy needs digest"));
+        }
         Some("native") => {
             assert!((board == "virt" || pi4_native_fixed) && matches!(app.as_deref(), Some("startup-probe" | "process"))
                 && bench == "boot" && trace.is_none() && scenario.is_none()
