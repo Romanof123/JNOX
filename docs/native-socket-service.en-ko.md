@@ -1,8 +1,20 @@
 # Native socket service / 네이티브 소켓 서비스
 
-CHG-307 follows REQ-024 → DES-013 → IPC-006 → VER-024. IPC-006 has two acceptance groups. Local AF_UNIX behavior runs in an isolated ordinary Rust broker on single-core AArch64 QEMU virt under FIFO or RR. Network acceptance requires real IPv4 TCP/UDP traffic with an independent peer. The local implementation awaits independent results at this revision. Both groups remain open. [IPC-006 #376](https://github.com/Romanof123/JNOX/issues/376) · [IPC acceptance #24](https://github.com/Romanof123/JNOX/issues/24)
+CHG-307 follows REQ-024 → DES-013 → IPC-006 → VER-024. IPC-006 has two acceptance groups. Local AF_UNIX behavior runs in an isolated ordinary Rust broker on single-core AArch64 QEMU virt under FIFO or RR. Network acceptance requires real IPv4 TCP/UDP traffic with an independent peer. [IPC-006 #376](https://github.com/Romanof123/JNOX/issues/376) · [IPC acceptance #24](https://github.com/Romanof123/JNOX/issues/24)
 
-CHG-307의 IPC-006 인수 범위는 두 그룹이다. 로컬 AF_UNIX는 단일 코어 AArch64 QEMU virt의 FIFO 또는 RR에서 격리된 일반 Rust 브로커가 처리한다. 네트워크 그룹에는 독립 상대와 주고받은 실제 IPv4 TCP·UDP 트래픽이 필요하다. 이 판본에서는 로컬 구현의 독립 실행 결과를 기다리고 있으며 두 그룹 모두 승인 전이다.
+CHG-307의 IPC-006 인수 범위는 두 그룹이다. 로컬 AF_UNIX는 단일 코어 AArch64 QEMU virt의 FIFO 또는 RR에서 격리된 일반 Rust 브로커가 처리한다. 네트워크 그룹에는 독립 상대와 주고받은 실제 IPv4 TCP·UDP 트래픽이 필요하다.
+
+**IPC-006 local component · IMP-307 · EVD-307.** Independent Release accepted the exercised AF_UNIX service on one emulated Cortex-A72 under FIFO and RR. IPv4 TCP/UDP with an independent peer remains unapproved, so IPC-006 remains open and #24 stays at 5/10. [First loader results / 최초 부팅](evidence/native-local-socket-first.en-ko.md) · [Corrected captures / 수정본](evidence/native-local-socket-corrected.en-ko.md) · [Release decision / 출시 판정](evidence/native-local-socket-release.en-ko.md)
+
+**IPC-006 로컬 구성요소 · IMP-307 · EVD-307.** 독립 Release는 에뮬레이션 Cortex-A72 한 코어에서 FIFO·RR로 실행한 AF_UNIX 검증 범위를 승인했다. 독립 상대를 둔 IPv4 TCP·UDP는 승인 전이며 IPC-006은 미결, #24는 5/10을 유지한다.
+
+The six original socket boots on `e7d3ded` stopped at FAULT 5 before any client exit. Four ordinary socket-disabled control boots were retained. On corrected source `70f2ab812d1d0a444da04c0f8ecdf1f568d533d7`, independent verification completed 12 ordinary boots and 12 traced repeats. Independent Release rebuilt the C server, Rust client and isolated Rust broker for 24 ordinary and eight traced boots. All 32 Release terminal RAM walks found zero socket objects, descriptor entries, queued connections, bytes, records, staged transactions, held tokens and kernel pending exits. The generic scheduler journal dropped up to 256 rows; the indicated broker registers were captured separately.
+
+최초 소켓 부팅 6회는 앱 종료 전에 FAULT 5로 멈췄고, 소켓 비활성 일반 대조 부팅 4회도 보존됐다. 수정 커밋에서 독립 검증은 일반 부팅 12회와 추적 재부팅 12회를 마쳤다. Release는 C 서버·Rust 클라이언트·격리된 Rust 브로커를 다시 빌드해 일반 24회와 추적 8회를 수행했다. Release 부팅 32회 모두 종료 시 소켓 객체·기술자·대기 연결·바이트·레코드·조립 중 트랜잭션·보유 토큰·커널 미처리 종료 건수가 0이었다. 일반 스케줄러 기록은 최대 256행이 누락됐으며 브로커 레지스터는 별도로 수집했다.
+
+V1 accepts C `accept(fd, NULL, NULL)` and Rust `accept(fd)`. C accept with address storage returned ENOTSUP before dequeuing a connection. The eight-object limit returned C errno 23 (ENFILE). The tested C header omitted the ENFILE, ENOENT, EPROTOTYPE and EDESTADDRREQ macros; their SDK correction is tracked separately. Full-backlog connect was observed in nonblocking mode followed by retry. Blocking connect at saturation still needs a guest witness. The ordinary SDK uses an infinite RPC deadline. Raw finite-deadline evidence covers timeout followed by prompt ABORT. Establishing general cancellation requires broker-side evidence of whether a pending operation committed before expiry was detected. These results qualify the documented local subset only.
+
+V1에서 C는 주소 인자를 비운 `accept(fd, NULL, NULL)`, Rust는 `accept(fd)`를 지원한다. C에 주소 버퍼를 주면 대기 연결을 소비하기 전에 ENOTSUP를 반환했다. 객체 8개 한도에서 C errno 23(ENFILE)을 관측했다. 검증한 C 헤더에서 누락된 ENFILE·ENOENT·EPROTOTYPE·EDESTADDRREQ 매크로 수정은 별도로 추적한다. 연결 대기열 포화는 비차단 connect와 재시도로 확인했고, 포화 시 차단 connect 대기는 게스트 관측이 남았다. 일반 SDK의 RPC 기한은 무한이다. 유한 기한 원시 호출은 타임아웃 직후 ABORT한 경우만 확인했다. 일반 취소를 판정하려면 만료를 감지하기 전에 보류 연산이 브로커 상태에 반영됐는지 보여 주는 근거가 필요하다. 이번 승인은 문서화된 로컬 부분집합에 한정된다.
 
 ## Setup and identity / 설정과 신원
 

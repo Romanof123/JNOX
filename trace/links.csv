@@ -2249,3 +2249,9 @@ IMP-306,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-306
 IMP-306,tested-in,EVD-306
 CHG-307,affects,REQ-024
+REQ-024,partially-implemented-by,IMP-307
+DES-013,partially-implemented-by,IMP-307
+IPC-006,partially-implemented-by,IMP-307
+IMP-307,partially-verified-by,VER-024
+VER-024,has-partial-evidence,EVD-307
+IMP-307,tested-in,EVD-307
