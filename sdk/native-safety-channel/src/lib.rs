@@ -56,13 +56,29 @@ pub fn validate_loan(sender: usize, receiver: usize, slot: usize, published_len:
     Ok(())
 }
 
+// One reflected CRC-32/ISO-HDLC byte update. Build the read-only table at
+// compile time so the first protected frame needs no initialization.
+static CRC32_TABLE: [u32; 256] = {
+    let mut table = [0; 256];
+    let mut index = 0;
+    while index < table.len() {
+        let mut value = index as u32;
+        let mut bit = 0;
+        while bit < 8 {
+            value = (value >> 1) ^ if value & 1 != 0 { 0xedb8_8320 } else { 0 };
+            bit += 1;
+        }
+        table[index] = value;
+        index += 1;
+    }
+    table
+};
+
 pub fn crc32(bytes: &[u8]) -> u32 {
     let mut crc = u32::MAX;
     for &byte in bytes {
-        crc ^= u32::from(byte);
-        for _ in 0..8 {
-            crc = (crc >> 1) ^ if crc & 1 != 0 { 0xedb8_8320 } else { 0 };
-        }
+        let index = usize::from((crc as u8) ^ byte);
+        crc = (crc >> 8) ^ CRC32_TABLE[index];
     }
     !crc
 }
@@ -432,6 +448,13 @@ mod tests {
         assert_eq!(validate_loan(2, 1, 2, 44), Err(Error::Route));
         assert_eq!(validate_loan(0, 1, 3, 44), Err(Error::Slot));
         assert_eq!(validate_loan(0, 1, 1, 45), Err(Error::Length));
+    }
+
+    #[test]
+    fn crc_matches_reference_for_empty_and_full_byte_alphabet() {
+        let alphabet: [u8; 256] = core::array::from_fn(|i| i as u8);
+        assert_eq!(crc32(&[]), 0);
+        assert_eq!(crc32(&alphabet), 0x2905_8c73);
     }
 
     #[test]
