@@ -70,7 +70,10 @@ impl Tx {
 fn frame(op: u64, address: usize, len: usize) -> i64 {
     let mut status = address as i64;
     unsafe {
-        asm!("svc #0x4a01",in("x8") op,inout("x0") status,in("x1") len,options(nostack));
+        // The dispatcher clears x1 on return. The caller can still need the
+        // original length to distinguish a complete frame from a short write.
+        asm!("svc #0x4a01", in("x8") op, inout("x0") status,
+             inlateout("x1") len => _, options(nostack));
     }
     status
 }
