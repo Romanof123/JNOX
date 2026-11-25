@@ -684,11 +684,20 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_native_safety_downstream");
     }
     if boundary.is_some() {
-        // One argument, u16 LE byte length, then its UTF-8 bytes: phase or collision.
-        let named = ["0105007068617365", "010900636f6c6c6973696f6e"];
-        assert!(named.iter().any(|wire| native_argv[..3].iter().all(|v|
-            v.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(wire)))),
-            "boundary observations require matching phase or collision arguments");
+        let [sender, controller, supervisor, extra] = core::array::from_fn(|slot|
+            native_extra_args(slot, native_argv[slot].as_deref()));
+        assert!(sender.len() == 1 && controller == sender && supervisor.first() == sender.first()
+            && extra.is_empty(), "boundary observations require matching selectors for three slots");
+        let rearm = matches!(sender[0].as_slice(), b"rearm-15" | b"rearm-20");
+        assert!(rearm || matches!(sender[0].as_slice(), b"phase" | b"collision"),
+            "unknown boundary observation selector");
+        if supervisor.len() != 1 {
+            assert!(rearm && supervisor.len() == 2, "only rearm accepts one supervisor lead");
+            let lead = supervisor[1].as_slice();
+            assert!((1..=5).contains(&lead.len()) && lead.iter().all(u8::is_ascii_digit)
+                && lead.iter().fold(0u32, |n, digit| n * 10 + u32::from(*digit - b'0')) <= 12_500,
+                "supervisor lead must be 1 to 5 ASCII decimal digits in the range 0..12500 ticks");
+        }
         println!("cargo::rustc-cfg=jnox_native_safety_boundary");
     }
     assert!(amc.is_none() || native_argv.iter().all(Option::is_none), "declare AMC arguments in its manifest");
