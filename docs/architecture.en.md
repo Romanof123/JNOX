@@ -99,6 +99,8 @@ The minimum safety configuration can omit the Linux user-space ABI service. Dire
 
 ## DES-012 Scheduling policy layers
 
+CHG-300 selects seven policy families for this release. Fixed-priority FIFO and RR share the POL-002 acceptance boundary. Their mechanism uses the existing timer, exception frames, ready queues and memory protection. The eleven deferred selectors and their past integration records remain in the architecture; common kernel, board and application facilities keep their original roles. [Current family decisions](scheduling-release-cases.en.md)
+
 The kernel owns the ready queue and execution contexts. Selectors order eligible tasks. Budget, weighted-service and time-partition modules compute which task or group may run and for how long. The timer, preemption points, context restoration and protection boundaries have separate integration and acceptance steps. The minimum boot image and extended policy bench use different build profiles. [Policy scope and conditions](scheduling-policies.en.md) · [Round-robin execution test](m1-rr.en.md)
 
 The sampled EDF/LLF profile accounts elapsed service to the designated incumbent and permits at most one involuntary switch at a grid boundary. Its evidence separates dispatch after completion from preemption of an active context. [Decision grid and tie rules](m1-deadline.en.md)

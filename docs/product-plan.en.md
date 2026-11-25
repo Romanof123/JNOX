@@ -51,6 +51,8 @@ The BSP contract accounts for differences between Arm A/R/M profiles and across 
 
 CHG-007 sets the implementation order across these milestones. Develop scheduling first. The PM links the completed per-profile scheduling cases and applicable board evidence in #21 before opening IPC development in #24. The IPC-dependent parts of M1, M2 and M4 follow this dependency. [Scheduling tracker](https://github.com/Romanof123/JNOX/issues/21) · [IPC workstream](https://github.com/Romanof123/JNOX/issues/24)
 
+CHG-300 fixes the current #21 release gate at seven families. The six approved families are POL-003, POL-005, POL-009, POL-010, POL-011 and POL-012, each within its recorded configurations and limits. The seventh, POL-002 fixed-priority FIFO and RR, remains open for physical acquisition under #34 and approval of the applicable safety timing and product configuration. The current gate is 6/7. The owner deferred the other eleven scheduling families from this release and its IPC prerequisite. Their implementations, evidence and history remain available. Foundational OS milestones continue under their existing scope. After PM records the seven-family decision, #24 proceeds with its original ten IPC mechanisms. [Release cases and decisions](scheduling-release-cases.en.md)
+
 | Milestone | Deliverables | Completion criteria |
 | --- | --- | --- |
 | M0 Planning | Product plan, safety and security concept, requirements, draft design, verification plan, and trace links | Review the relationships between documents. Record the first bench scenario and open decisions. |

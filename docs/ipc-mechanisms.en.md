@@ -2,7 +2,13 @@
 
 [한국어](ipc-mechanisms.md) · English
 
-**CHG-007 → REQ-024 → DES-013 → VER-024.** These are planned contracts. IPC implementation starts only after scheduling release tracker [#21](https://github.com/Romanof123/JNOX/issues/21) completes its approved cases for each profile, including the applicable board evidence. Retain the [scheduling release criteria](scheduling-policies.en.md).
+## Current release scope
+
+**Six of seven retained scheduling families have scoped approvals (6/7).** POL-002 fixed priority remains open for both FIFO and round robin (RR). Existing approvals cover POL-003 batch (named native and linked profiles), POL-005 deadlines (finite M1/M3 EDF and sampled LLF), POL-009 multilevel queues (telemetry deployment), POL-010 proportional share (six native configurations), POL-011 weighted scheduling (named configurations), and POL-012 EEVDF (linked EL1 telemetry).
+
+REQ-023 retains all eighteen families and their historical evidence. POL-001, POL-004, POL-006 through POL-008 and POL-013 through POL-018 are catalog-only for this release. Physical Pi 4 verification under [#34](https://github.com/Romanof123/JNOX/issues/34), customer workload and WCET qualification, and ASIL qualification remain open. Development of the ten IPC families follows the retained scheduling gate. [Scheduling tracker #21](https://github.com/Romanof123/JNOX/issues/21) · [IPC tracker #24](https://github.com/Romanof123/JNOX/issues/24)
+
+**CHG-007 → REQ-024 → DES-013 → VER-024.** The ten IPC families are planned under the following release sequence.
 
 | ID | Scope, ownership and service contract | Bound and discriminating acceptance case |
 | --- | --- | --- |
