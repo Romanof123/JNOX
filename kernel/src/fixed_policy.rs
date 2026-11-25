@@ -34,7 +34,7 @@ pub enum Mode {
 #[derive(Clone, Copy)]
 pub enum Action {
     Poll,
-    #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
+    #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
     BlockIpc,
     Yield,
     Sleep(u64),
@@ -45,7 +45,7 @@ pub enum Action {
 enum State {
     Ready,
     Running,
-    #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
+    #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
     BlockedIpc,
     Sleeping(u64),
     Exited,
@@ -124,7 +124,7 @@ impl Fixed {
         }
     }
 
-    #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
+    #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
     pub(crate) fn ipc_wake(&mut self, id: usize) {
         assert!(self.tasks[id].state == State::BlockedIpc);
         self.join_tail(id);
@@ -236,7 +236,7 @@ impl Fixed {
         if let Some(id) = self.owner {
             match action {
                 Action::Poll => {}
-                #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
+                #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
                 Action::BlockIpc => {
                     self.tasks[id].state = State::BlockedIpc;
                     self.owner = None;

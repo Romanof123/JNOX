@@ -87,6 +87,43 @@ def unsigned_decimal(value):
     return int(value)
 
 
+def pipe_fields(value):
+    return tuple(unsigned_decimal(field) for field in value.split(":"))
+
+
+def validate_pipes(parser, args, policy, board):
+    if not args.pipes:
+        if args.fifo_grant or args.pipe_link:
+            parser.error("--fifo-grant and --pipe-link require --pipes")
+        return
+    slots = len(args.peer_elf) + 1
+    if args.pipes != 1 or board != "virt" or policy not in ("fifo", "rr") or args.threads or slots > 3:
+        parser.error("--pipes requires one to three ordinary FIFO/RR processes on virt")
+    owners = set()
+    for grant in args.fifo_grant:
+        if len(grant) != 3:
+            parser.error("--fifo-grant requires OWNER:READERMASK:WRITERMASK")
+        owner, readers, writers = grant
+        if owner >= slots or owner in owners or not readers or not writers or (readers | writers) >= (1 << slots):
+            parser.error("duplicate FIFO owner, empty grant, or slot outside package")
+        owners.add(owner)
+    if len(args.pipe_link) > 4:
+        parser.error("at most four boot pipe links")
+    occupied = set()
+    references = [0] * slots
+    for link in args.pipe_link:
+        if len(link) != 4:
+            parser.error("--pipe-link requires WRITER:WFD:READER:RFD")
+        writer, wfd, reader, rfd = link
+        for slot, fd in ((writer, wfd), (reader, rfd)):
+            if slot >= slots or fd > 10 or (slot, fd) in occupied:
+                parser.error("pipe link has an unavailable slot or descriptor")
+            if references[slot] >= 8:
+                parser.error("at most eight pipe descriptors per process")
+            occupied.add((slot, fd))
+            references[slot] += 1
+
+
 def allotments(value):
     values = [unsigned_decimal(field) for field in value.split(",")]
     if len(values) != 3 or any(not 1 <= ticks < 2**63 for ticks in values):
@@ -391,6 +428,11 @@ def main():
                         help="grant a send right to another native FIFO/RR process's mailbox")
     parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
                         help="grant a notification right to another native FIFO/RR process")
+    parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
+    parser.add_argument("--fifo-grant", type=pipe_fields, action="append", default=[],
+                        metavar="OWNER:READERMASK:WRITERMASK")
+    parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
+                        metavar="WRITER:WFD:READER:RFD")
     parser.add_argument("--loan-route", type=ipc_route, action="append", default=[], metavar="PRODUCER:CONSUMER",
                         help="grant one native FIFO/RR process pair a shared-buffer loan channel")
     parser.add_argument("--waitset", action="count", default=0,
@@ -425,6 +467,7 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
+    validate_pipes(parser, args, policy, board)
     grants = [
         ("ipc", "caller", "server", sorted(args.ipc_route)),
         ("mailbox", "caller", "owner", sorted(args.mailbox_route)),
@@ -551,6 +594,16 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.pipes:
+        env["JNOX_NATIVE_PIPES"] = "1"
+        fifo_grants = sorted(args.fifo_grant)
+        for key, rows in (("JNOX_NATIVE_FIFO_GRANTS", fifo_grants), ("JNOX_NATIVE_PIPE_LINKS", args.pipe_link)):
+            if rows:
+                env[key] = ",".join(":".join(map(str, row)) for row in rows)
+        metadata.update(pipes=True,
+                        fifo_grants=[dict(owner=o, reader_mask=r, writer_mask=w) for o, r, w in fifo_grants],
+                        pipe_links=[dict(writer=w, writer_fd=a, reader=r, reader_fd=b) for w, a, r, b in args.pipe_link],
+                        package_argv=sys.argv[:])
     if args.loan_route:
         producer, consumer = args.loan_route[0]
         env["JNOX_NATIVE_LOAN_ROUTE"] = f"{producer}:{consumer}"

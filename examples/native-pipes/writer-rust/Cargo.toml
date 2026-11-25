@@ -1,0 +1,10 @@
+[package]
+name = "native-fifo-sample-writer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jnox-native = { path = "../../../sdk/native-aarch64/rust", features = ["pipes"] }
+
+[profile.release]
+panic = "abort"

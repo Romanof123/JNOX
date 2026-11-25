@@ -185,7 +185,7 @@ fn write_clock(address:usize, elapsed:u64, frequency:u64)->i64 {
 #[derive(Clone, Copy, PartialEq)]
 enum TaskState { Absent, Ready, Running, Sleeping(u64), Exited(i32) }
 
-const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(any(jnox_native_amc, jnox_native_batch, jnox_native_proportional)) || cfg!(jnox_native_weighted_continuous) || cfg!(jnox_native_threads) || cfg!(any(jnox_native_extension, jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
+const INITIAL_PSTATE: u64 = if COUNT > 1 || cfg!(jnox_native_pipe_ipc) || cfg!(any(jnox_native_amc, jnox_native_batch, jnox_native_proportional)) || cfg!(jnox_native_weighted_continuous) || cfg!(jnox_native_threads) || cfg!(any(jnox_native_extension, jnox_native_hierarchy, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { 0x340 } else { 0x3c0 };
 const EMPTY_FRAME: NativeFrame = NativeFrame {
     x: [0; 31], esr: 0, spsr: INITIAL_PSTATE, elr: 0, sp_el0: 0,
     current_el: 4, fpcr: 0, fpsr: 0, q: [[0; 2]; 32], tls: [0; 2],
@@ -297,6 +297,9 @@ static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
 #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
 #[path = "native_sync_ipc.rs"]
 mod ipc;
+#[cfg(jnox_native_pipe_ipc)]
+#[path = "native_pipe_ipc.rs"]
+mod pipes;
 
 #[cfg(jnox_native_loan_ipc)]
 #[path = "native_loan_ipc.rs"]
@@ -367,6 +370,11 @@ fn record(now: u64, reason: u64, argument: u64, before: Before, interrupted: Opt
 }
 
 fn start_fixed() -> usize {
+    #[cfg(jnox_native_pipe_ipc)]
+    {
+        pipes::boot();
+        pipes::report(0);
+    }
     #[cfg(jnox_native_notify_ipc)]
     ipc::report_notifications(0);
     let config = NATIVE_PRIORITIES.map(|priority| Config { priority, delay: 0 });
@@ -391,6 +399,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
+    #[cfg(jnox_native_pipe_ipc)]
+    if matches!(action, Action::Exit) {
+        pipes::exit(p.current().unwrap_or_else(|| fail(9)), p);
+    }
     #[cfg(jnox_native_loan_ipc)]
     if matches!(action, Action::Exit) {
         loans::exit(p.current().unwrap_or_else(|| fail(9)));
@@ -418,7 +430,7 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
         let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
         unsafe { native_sleep_switch(top) };
         let next = policy().current().unwrap_or_else(|| fail(9));
-        #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
+        #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
         unsafe {
             // An idle IRQ can complete the very owner that went to sleep.
             // FRAMES holds the completion. The interrupted SVC stack still
@@ -427,12 +439,14 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
             *f = FRAMES[next];
             CURRENT = next;
         }
-        #[cfg(not(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset)))]
+        #[cfg(not(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc)))]
         activate(next, f);
     }
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_pipe_ipc)]
+    pipes::report(1);
     #[cfg(jnox_native_loan_ipc)]
     loans::report();
     #[cfg(jnox_native_notify_ipc)]
@@ -670,6 +684,13 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         fixed_dispatch(now, Action::Poll, service, f);
         return;
     }
+    #[cfg(jnox_native_pipe_ipc)]
+    if matches!(f.x[8], 41..=49) {
+        let service = f.x[8];
+        let action = pipes::service(unsafe { CURRENT }, f, policy());
+        fixed_dispatch(now, action, service, f);
+        return;
+    }
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
@@ -749,7 +770,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         };
         if !exit { f.x[0] = result as u64; }
         let reason = match action { Action::Exit => 3, Action::Sleep(_) => 2, Action::Yield => 1, Action::Poll => 5,
-            #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))] Action::BlockIpc => unreachable!(),
+            #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))] Action::BlockIpc => unreachable!(),
         };
         fixed_dispatch(now, action, reason, f);
         return;

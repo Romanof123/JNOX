@@ -11,6 +11,16 @@
 #define EINVAL 22
 #define ENOSYS 38
 #define ENOTSUP 95
+#define ENOENT 2
+#define ENXIO 6
+#define EBADF 9
+#define EACCES 13
+#define EEXIST 17
+#define ENFILE 23
+#define EMFILE 24
+#define ENOSPC 28
+#define EPIPE 32
+#define ENAMETOOLONG 36
 #define ETIMEDOUT 110
 int *__jnox_errno_location(void);
 #define errno (*__jnox_errno_location())
