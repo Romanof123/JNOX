@@ -123,6 +123,10 @@ The mutex configuration checks effective priority on real block, timer timeout a
 
 [EEVDF](m4-eevdf.en.md) · [Hierarchical groups](m4-hierarchy.en.md) · [Energy-aware placement](m3-power-placement.en.md) · [Bounded policy extension](m4-bounded-extension.en.md)
 
+## DES-014 Compiled native application and task policy
+
+A versioned policy binds ELF images to application roots and named task entries to private frames and guarded local stacks. A single CPU orders ready tasks by priority and FIFO tie order; a timer covers releases, outstanding job deadlines and each enabled completion watchdog. [Policy v1](native-task-policy.en-ko.md)
+
 ## Scheduling state transitions under test
 
 The three single-CPU profiles below exercise queue order, periodic job generations and server replenishment. Each build selects one profile.

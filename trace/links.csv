@@ -2284,3 +2284,8 @@ REQ-023,partially-implemented-by,IMP-301
 IMP-301,partially-verified-by,VER-023
 VER-023,has-partial-evidence,EVD-301
 IMP-301,tested-in,EVD-301
+CHG-313,affects,REQ-025
+REQ-025,implemented-by-design,DES-014
+REQ-025,verified-by,VER-025
+HAZ-001,derives,REQ-025
+OBJ-004,derives,REQ-025
