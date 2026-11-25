@@ -21,8 +21,14 @@ pub enum Case {
     BoundaryWitness,
     LowerWork,
     Overrun,
+    GateInvalid,
+    GateSaturation,
 }
 impl Case {
+    pub fn closed_gate(self) -> bool {
+        matches!(self, Self::GateInvalid | Self::GateSaturation)
+    }
+
     pub unsafe fn parse(argc: i32, argv: *const *const u8) -> Result<Self> {
         if argc != 2 || argv.is_null() || (*argv.add(1)).is_null() {
             return Err(81);
@@ -40,6 +46,8 @@ impl Case {
             b"boundary-witness" => Ok(Self::BoundaryWitness),
             b"lower-work" => Ok(Self::LowerWork),
             b"overrun" => Ok(Self::Overrun),
+            b"gate-invalid" => Ok(Self::GateInvalid),
+            b"gate-saturation" => Ok(Self::GateSaturation),
             _ => Err(81),
         }
     }

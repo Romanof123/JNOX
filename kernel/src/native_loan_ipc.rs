@@ -57,6 +57,16 @@ pub(super) fn invalidate() {
     unsafe { (&mut *(&raw mut CHANNEL)).invalidate(apply) }.unwrap_or_else(|_| fail(9));
 }
 
+#[cfg(jnox_native_safety_downstream)]
+pub(super) fn inject_invalid_fixture() -> Result<u64, i32> {
+    unsafe { (&mut *(&raw mut CHANNEL)).enqueue_invalid_fixture(mmu::load_invalid_fixture) }
+}
+
+#[cfg(jnox_native_safety_downstream)]
+pub(super) fn occupancy() -> usize {
+    unsafe { (&*(&raw const CHANNEL)).occupancy() }
+}
+
 // Keep the service boundary visible to the host phase probe.
 #[inline(never)]
 pub(super) fn service(pid: usize, f: &mut NativeFrame) {

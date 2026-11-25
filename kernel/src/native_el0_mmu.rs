@@ -213,6 +213,8 @@ static mut PROCESS_COUNT: usize = 0;
 mod loan;
 #[cfg(jnox_native_loan_ipc)]
 pub(crate) use loan::{loan_map_reader, loan_map_writer, loan_pte, loan_publish, loan_revoke, loan_va};
+#[cfg(jnox_native_safety_downstream)]
+pub(crate) use loan::load_invalid_fixture;
 #[cfg(jnox_native_amc)]
 #[path = "native_amc_space.rs"]
 mod amc_space;

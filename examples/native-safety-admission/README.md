@@ -22,6 +22,10 @@ The supervisor opens generation 1, chooses a common raw-counter epoch E 50 ms ah
 | `boundary-witness` | Seq 3 carries E+20 ms **plus one raw tick**. Subsequent sender jobs stay empty. On a clone of the real accepted and enabled seq 3 state, check one tick before expiry then precisely 5 ms later. On another clone submit valid seq 4 exactly at expiry. The actual guest controller continues on the 2.5 ms grid throughout. |
 | `lower-work` | Healthy stream plus 32 finite rounds of 128 EL0 arithmetic operations and a clock SVC per round, bracketed by two reads, at 19.9 ms. This changes the timer calendar. Determine any actual lower-priority residual kernel work at a higher-rank release from the trace. |
 | `overrun` | Healthy stream plus finite extra work at job 4 A. Up to 4096 batches of 128 EL0 operations, stopping at the first observed 1.1 ms interval. Require refusal when the measured response exceeds the inclusive 1 ms phase limit. A run hitting its sample cap early needs independent scoring. |
+| `gate-invalid` (11) | The supervisor requests REARM at 15 ms, observes ENABLE high with accepted sequence 3 immediately before CLOSE at 22.5 ms, then requests one fixed invalid downstream fixture at each of 25, 30, 35, 40, 45, 50 and 55 ms. |
+| `gate-saturation` (12) | Same calendar, with three fixture requests per release on the two-entry queue. At least one full-queue EAGAIN must occur. Observe actual results and any intervening controller drain for every request. |
+
+The two gate cases require the downstream qualification package. Their supervisor also observes at 17.5, 57.5, 77.5 and 80 ms. The regular sender submits valid, enabled permits on its original eight releases. It checks that three publications succeeded and that all five later acquisitions returned EPIPE. The controller follows its ordinary 32 phases. For each successful fixture, join its handle and bytes to the controller receive, release and rejection. Check actual occupancy around EAGAIN, preserve the last accepted sequence and issue, and match protected expiry to the low output transition. At least one fixture must complete before expiry and another must begin at or after it.
 
 ## Reproduce on the integrated revision
 
@@ -38,13 +42,15 @@ done
 for policy in fifo rr; do
   quantum=()
   if [ "$policy" = rr ]; then quantum=(--quantum-ticks 625000); fi
-  for scenario in healthy live silence invalid saturation collision delayed boundary-witness lower-work overrun; do
+  for scenario in healthy live silence invalid saturation collision delayed boundary-witness lower-work overrun gate-invalid gate-saturation; do
     pkg="$out/$policy-$scenario"
+    fixture=()
+    case "$scenario" in gate-invalid|gate-saturation) fixture=(--safety-downstream-injector);; esac
     python3 tools/build_native_el0.py --out "$pkg" --board virt --policy "$policy" "${quantum[@]}" \
       --elf "$out/sender.elf" --peer-elf "$out/controller.elf" --peer-elf "$out/supervisor.elf" \
       --arg "$scenario" --peer-arg "$scenario" --peer2-arg "$scenario" \
       --priority 6 --peer-priority 7 --peer-priority 4 \
-      --ipc-route 2:0 --ipc-route 2:1 --loan-route 0:1 --safety-channel --safety-qualification
+      --ipc-route 2:0 --ipc-route 2:1 --loan-route 0:1 --safety-channel --safety-qualification "${fixture[@]}"
     sha256sum "$out"/{sender,controller,supervisor}.elf "$pkg/kernel.elf" "$pkg/manifest.json" > "$pkg/qualification.sha256"
     python3 tools/native_el0_capture.py "$out/capture-$policy-$scenario" "$pkg/kernel.elf" \
       "$out/sender.elf" "$app/sender/src/main.rs" "$rev" --manifest "$pkg/manifest.json" \
@@ -66,10 +72,13 @@ All columns below are u64 in the private address space of the corresponding ELF.
 | `admission_supervisor_rows` | Target, before/after, command or 0, signed command result, before/after flags, before/after seq, before/after issue, generation. |
 | `admission_boundary_inputs` | Present, last valid issue, one-tick-before input and latch bit, 5-ms-later input and latch bit, exact-expiry input, private frame error, equal-input final seq/enabled, gap-input final enabled. A zero present field leaves the witness open. |
 | `admission_overrun`, `admission_lower_work` | Respectively start/end/batch count, and start/end/round count/checksum. |
+| `admission_gate_attempts`, `admission_gate_attempt_count` | Supervisor-only. Each of up to 21 rows holds supervisor job index, index within the burst, ticks sampled before and after the request, and signed status. The count identifies written rows. |
 
 Join `NATIVE QUAL ROW` markers by PID/job/phase/raw target. Stage 1 requests an absolute wait, stage 2 is the first EL0 marker after it returns, stage 3 follows segment work. Establish actual block, kernel-ready transition, dispatch/return interval, decision brackets, next block or final park from the scheduler/IRQ rows. The EL0 markers alone cannot timestamp actual ready or all trailing cost. Cross-check SVC 60 decisions with `NATIVE SAFETY EVENT` types 2 (register change), 3 (expiry), 4 (injection), 6/7 (loan and bytes), 10 (completion) and 11 (publication). Require all expected rows and zero dropped records. Score target→finish, consecutive completed-check gaps including B→next A, sender responses, 25/5/30 ms fault bounds and one-tick outcomes with raw integer ticks and documented observer uncertainty. A decision based on the live counter is a separate observation from a scripted or private-clone tick.
 
 ## 한국어 재현 및 판정
+
+게이트 검증은 15 ms에 재무장하고 22.5 ms에 마지막 수락 순번 3과 ENABLE을 확인한 뒤 닫는다. 이후 송신자의 정상 프레임 다섯 개는 대여 요청에서 EPIPE를 받아야 한다. 감독자는 25~55 ms 동안 5 ms마다 고정 시험 프레임을 한 건 또는 세 건 요청한다. 실제 대여 핸들, 수신 바이트, 거부 상태와 큐 점유율을 원자료에서 연결하고 마지막 수락 시각, 보호 만료 판정 및 출력 하강을 확인한다.
 
 통합 커밋에서 위 Bash 명령으로 송신자·제어자·감독자 ELF를 한 번 빌드한 후 FIFO와 RR의 각 시나리오를 별도 디렉터리에 패키징한다. 우선순위는 제어자 7, 송신자 6, 감독자 4다. ELF·커널·매니페스트의 해시, QEMU 및 도구 버전, 카운터 주파수, 실제 양자와 UART/RAM 원본을 함께 보관한다. 세 프로세스가 E 전에 초기 교신을 마치고 모두 대기했는지 확인한다.
 
