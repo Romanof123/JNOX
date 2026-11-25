@@ -378,7 +378,13 @@ unsafe fn install_spaces<'a>(
     let rw = &raw const __native_rw_start as usize;
     let end = &raw const __stack_top as usize;
     #[cfg(jnox_pi4)]
-    if end > 0x0400_0000 || !(2..=2 + cfg!(jnox_native_smp_partitioned) as usize).contains(&count) {
+    let valid_pi_count = if cfg!(jnox_native_energy_placement) {
+        count == 1
+    } else {
+        (2..=2 + cfg!(jnox_native_smp_partitioned) as usize).contains(&count)
+    };
+    #[cfg(jnox_pi4)]
+    if end > 0x0400_0000 || !valid_pi_count {
         return Err("Pi 4 native kernel aperture or process count");
     }
     if start != LINK_START || !(start < rw && rw < end) || rw % PAGE != 0

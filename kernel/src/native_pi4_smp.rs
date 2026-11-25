@@ -1,9 +1,16 @@
 //! Partitioned native-v1 scheduling on the two identified Pi 4 cores.
 use super::{
-    COUNT, NATIVE_PRIORITIES, NATIVE_SMP_CPU_MASKS, NATIVE_SMP_RELEASE_CELLS, STACK_BOTTOM,
+    COUNT, NATIVE_PRIORITIES, STACK_BOTTOM,
     STACK_TOP, bsp, clock_gettime, counter, decimal, head, monotonic_target, native_el0_mmu, park,
     uart_write, unsigned,
 };
+#[cfg(not(jnox_native_energy_placement))]
+use super::{NATIVE_SMP_CPU_MASKS, NATIVE_SMP_RELEASE_CELLS};
+#[cfg(jnox_native_energy_placement)]
+const NATIVE_SMP_RELEASE_CELLS: [u64; COUNT] = [0; COUNT];
+#[cfg(jnox_native_energy_placement)]
+#[path = "native_energy_placement.rs"]
+mod energy;
 use bsp::Frame;
 use core::{
     arch::asm,
@@ -15,7 +22,17 @@ const IDLE: usize = COUNT;
 const ALL: u32 = (1 << COUNT) - 1;
 const CAP: usize = 256;
 const WORDS: usize = 37;
+#[cfg(not(jnox_native_energy_placement))]
 const _: () = assert!(COUNT >= 2 && COUNT <= 3);
+#[cfg(jnox_native_energy_placement)]
+const _: () = assert!(COUNT == 1);
+
+fn mask(slot: usize) -> u8 {
+    #[cfg(jnox_native_energy_placement)]
+    { let _ = slot; energy::owner_mask() }
+    #[cfg(not(jnox_native_energy_placement))]
+    { NATIVE_SMP_CPU_MASKS[slot] }
+}
 const NONE: u64 = u64::MAX;
 
 static ONLINE: AtomicBool = AtomicBool::new(false);
@@ -158,17 +175,15 @@ fn print(tag: &[u8], row: &[u64]) {
     uart_write(b"\n");
 }
 pub(super) fn start(hz: u64, entry: [u64; COUNT], sp: [u64; COUNT]) -> ! {
-    if identity() != (0, hz)
-        || hz < 50
-        || !NATIVE_SMP_CPU_MASKS.contains(&1)
-        || !NATIVE_SMP_CPU_MASKS.contains(&2)
-    {
+    #[cfg(not(jnox_native_energy_placement))]
+    if !NATIVE_SMP_CPU_MASKS.contains(&1) || !NATIVE_SMP_CPU_MASKS.contains(&2) { fatal(4); }
+    if identity() != (0, hz) || hz < 50 {
         fatal(4);
     }
     HZ.store(hz, Relaxed);
     for i in 0..COUNT {
-        let mask = NATIVE_SMP_CPU_MASKS[i];
-        if !matches!(mask, 1 | 2) || NATIVE_PRIORITIES[i] == 0 || NATIVE_SMP_RELEASE_CELLS[i] > 255
+        #[cfg(not(jnox_native_energy_placement))]
+        if !matches!(mask(i), 1 | 2) || NATIVE_PRIORITIES[i] == 0 || NATIVE_SMP_RELEASE_CELLS[i] > 255
         {
             fatal(4);
         }
@@ -177,9 +192,10 @@ pub(super) fn start(hz: u64, entry: [u64; COUNT], sp: [u64; COUNT]) -> ! {
         f.sp = sp[i];
         f.pstate = 0x340;
         // CPU1 has not been released from its firmware spin slot yet.
-        unsafe {
-            LOCAL[(mask - 1) as usize].frames[i] = f;
-        }
+        #[cfg(not(jnox_native_energy_placement))]
+        unsafe { LOCAL[(mask(i) - 1) as usize].frames[i] = f; }
+        #[cfg(jnox_native_energy_placement)]
+        energy::initialize(f);
     }
     bsp::init_distributor();
     bsp::init_local(0);
@@ -240,10 +256,12 @@ fn publish(now: u64) -> (u32, u64, u64, u64) {
     let old = RELEASED.load(Relaxed);
     let mut new = 0;
     let mut remote = 0;
+    #[cfg(jnox_native_energy_placement)]
+    if old == 0 && now >= epoch() { energy::decide(now); }
     for i in 0..COUNT {
         if old & (1 << i) == 0 && due(NATIVE_SMP_RELEASE_CELLS[i]) <= now {
             new |= 1 << i;
-            if NATIVE_SMP_CPU_MASKS[i] == 2 {
+            if mask(i) == 2 {
                 remote |= 1 << i;
             }
         }
@@ -272,6 +290,8 @@ fn syscall(l: &mut Local, id: usize, f: &mut Frame, entry: u64) -> u64 {
             if f.x[0] as i32 as i64 as u64 != f.x[0] {
                 fatal(10);
             }
+            #[cfg(jnox_native_energy_placement)]
+            energy::exit(entry);
             l.jobs[id] = State::Exit(f.x[0] as i32);
             EXITED.fetch_or(1 << id, Release);
             0
@@ -338,7 +358,7 @@ fn select(cpu: usize, fp: *mut Frame, entry: u64, irq: Option<u32>, esr: u64) ->
     let op = irq.map_or_else(|| unsafe { (*fp).x[8] }, u64::from);
     let mut saved = Frame::ZERO;
     if src != IDLE {
-        if native_el0_mmu::active() != Some(src) || NATIVE_SMP_CPU_MASKS[src] != (1 << cpu) {
+        if native_el0_mmu::active() != Some(src) || mask(src) != (1 << cpu) {
             fatal(8);
         }
         saved = unsafe { *fp };
@@ -352,6 +372,8 @@ fn select(cpu: usize, fp: *mut Frame, entry: u64, irq: Option<u32>, esr: u64) ->
         if returned == 0 {
             fatal(9);
         }
+        #[cfg(jnox_native_energy_placement)]
+        energy::observed(returned, entry);
         delta = entry.checked_sub(returned).unwrap_or_else(|| fatal(9));
         l.charge[src] = add(l.charge[src], delta);
         let mut continuation = saved;
@@ -384,10 +406,12 @@ fn select(cpu: usize, fp: *mut Frame, entry: u64, irq: Option<u32>, esr: u64) ->
     let mut acquired = 0;
     let mut woke = 0;
     for i in 0..COUNT {
-        if NATIVE_SMP_CPU_MASKS[i] != (1 << cpu) {
+        if mask(i) != (1 << cpu) {
             continue;
         }
         if published & (1 << i) != 0 && l.arrivals & (1 << i) == 0 {
+            #[cfg(jnox_native_energy_placement)]
+            { l.frames[i] = energy::initial_frame(); }
             l.arrivals |= 1 << i;
             acquired |= 1 << i;
             l.ready(i);
@@ -499,7 +523,10 @@ fn select(cpu: usize, fp: *mut Frame, entry: u64, irq: Option<u32>, esr: u64) ->
         notify();
         park();
     }
-    if cpu == 0 && EXITED.load(Acquire) == ALL && MAIL.load(Acquire) == 0 {
+    let complete = EXITED.load(Acquire) == ALL;
+    #[cfg(jnox_native_energy_placement)]
+    let complete = complete || (RELEASED.load(Acquire) == ALL && mask(0) == 0);
+    if cpu == 0 && complete && MAIL.load(Acquire) == 0 {
         if target != IDLE || RELEASED.load(Acquire) != ALL {
             fatal(13);
         }
@@ -575,7 +602,7 @@ fn finish() -> ! {
             ],
         );
         for i in 0..COUNT {
-            if NATIVE_SMP_CPU_MASKS[i] != (1 << cpu) {
+            if mask(i) != (1 << cpu) {
                 continue;
             }
             if let State::Exit(s) = l.jobs[i] {
@@ -602,6 +629,8 @@ fn finish() -> ! {
     }
     head(10, 1);
     head(1, 3);
-    print(b"END", &[1, ALL as u64, 1, 1]);
+    #[cfg(jnox_native_energy_placement)]
+    energy::emit();
+    print(b"END", &[1, u64::from(EXITED.load(Acquire)), 1, 1]);
     park()
 }
