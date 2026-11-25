@@ -438,11 +438,24 @@ def main():
                         metavar="OWNER:READERMASK:WRITERMASK")
     parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
                         metavar="WRITER:WFD:READER:RFD")
+    parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
+                        help="give the selected socket service the virtio network interface")
+    parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
+                        help="select a socket service with existing inbound synchronous IPC rights")
     parser.add_argument("--loan-route", type=ipc_route, action="append", default=[], metavar="PRODUCER:CONSUMER",
                         help="grant one native FIFO/RR process pair a shared-buffer loan channel")
     parser.add_argument("--waitset", action="count", default=0,
                         help="enable waitsets for configured mailbox or notification routes")
     args = parser.parse_args()
+    if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
+        parser.error("--net-service must appear once and match --socket-service")
+    if len(args.socket_service) > 1:
+        parser.error("--socket-service may appear only once")
+    if args.socket_service:
+        service_slot = int(args.socket_service[0])
+        service_clients = sorted(caller for caller, server in args.ipc_route if server == service_slot)
+        if not service_clients:
+            parser.error("--socket-service requires an explicit --ipc-route into its slot")
     if len(args.loan_route) > 1:
         parser.error("--loan-route may appear only once")
     if args.waitset > 1:
@@ -625,6 +638,14 @@ def main():
                         fifo_grants=[dict(owner=o, reader_mask=r, writer_mask=w) for o, r, w in fifo_grants],
                         pipe_links=[dict(writer=w, writer_fd=a, reader=r, reader_fd=b) for w, a, r, b in args.pipe_link],
                         package_argv=sys.argv[:])
+    if args.net_service:
+        env["JNOX_NATIVE_NET_SERVICE"] = str(service_slot)
+        metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",
+                                   "mac": "52:54:00:12:34:56",
+                                   "syscalls": {"rx": 38, "tx": 39, "try_receive": 40}}
+    if args.socket_service:
+        env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
+        metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
     if args.loan_route:
         producer, consumer = args.loan_route[0]
         env["JNOX_NATIVE_LOAN_ROUTE"] = f"{producer}:{consumer}"

@@ -22,6 +22,17 @@
 #define EPIPE 32
 #define ENAMETOOLONG 36
 #define ETIMEDOUT 110
+#define EIO 5
+#define EWOULDBLOCK EAGAIN
+#define EDESTADDRREQ 89
+#define EMSGSIZE 90
+#define EPROTOTYPE 91
+#define ESOCKTNOSUPPORT 94
+#define EOPNOTSUPP ENOTSUP
+#define EADDRINUSE 98
+#define EISCONN 106
+#define ENOTCONN 107
+#define ECONNREFUSED 111
 int *__jnox_errno_location(void);
 #define errno (*__jnox_errno_location())
 #endif

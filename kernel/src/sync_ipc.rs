@@ -24,18 +24,25 @@ struct Request {
     delivered: bool,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ReceiveMode {
+    Ordinary,
+    Broker,
+}
+
 #[derive(Clone, Copy)]
 struct Slot {
     alive: bool,
-    receiving: bool,
+    receiving: Option<ReceiveMode>,
     request: Option<Request>,
-    completion: Option<Completion>,
+    // Only a broker receive carries an authenticated caller or deceased peer.
+    completion: Option<(Completion, Option<usize>)>,
 }
 
 impl Slot {
     const FRESH: Self = Self {
         alive: true,
-        receiving: false,
+        receiving: None,
         request: None,
         completion: None,
     };
@@ -45,6 +52,8 @@ pub struct SyncIpc<const N: usize> {
     routes: [u8; N],
     slots: [Slot; N],
     last_token: u64,
+    broker: Option<usize>,
+    pending_exits: u8,
 }
 
 impl<const N: usize> SyncIpc<N> {
@@ -54,12 +63,21 @@ impl<const N: usize> SyncIpc<N> {
             routes,
             slots: [Slot::FRESH; N],
             last_token: 0,
+            broker: None,
+            pending_exits: 0,
         }
+    }
+
+    pub const fn with_broker(routes: [u8; N], broker: usize) -> Self {
+        assert!(broker < N);
+        let mut state = Self::new(routes);
+        state.broker = Some(broker);
+        state
     }
 
     fn available(&self, pid: usize) -> Result<(), i32> {
         let slot = self.slots.get(pid).filter(|s| s.alive).ok_or(-3)?;
-        if slot.request.is_some() || slot.receiving || slot.completion.is_some() {
+        if slot.request.is_some() || slot.receiving.is_some() || slot.completion.is_some() {
             return Err(-16);
         }
         Ok(())
@@ -68,7 +86,7 @@ impl<const N: usize> SyncIpc<N> {
     pub fn blocked(&self, pid: usize) -> bool {
         self.slots
             .get(pid)
-            .is_some_and(|s| s.receiving || s.request.is_some())
+            .is_some_and(|s| s.receiving.is_some() || s.request.is_some())
     }
 
     pub fn next_deadline(&self) -> Option<u64> {
@@ -81,13 +99,17 @@ impl<const N: usize> SyncIpc<N> {
     }
 
     pub fn take(&mut self, pid: usize) -> Option<Completion> {
+        self.take_with_caller(pid).map(|(done, _)| done)
+    }
+
+    pub fn take_with_caller(&mut self, pid: usize) -> Option<(Completion, Option<usize>)> {
         self.slots.get_mut(pid)?.completion.take()
     }
 
     fn finish_call(&mut self, pid: usize, status: i32, word: u64) {
         let slot = &mut self.slots[pid];
         slot.request = None;
-        slot.completion = Some(Completion::new(status, word, 0));
+        slot.completion = Some((Completion::new(status, word, 0), None));
     }
 
     pub fn advance(&mut self, now: u64) {
@@ -102,7 +124,15 @@ impl<const N: usize> SyncIpc<N> {
     }
 
     fn match_receive(&mut self, server: usize) {
-        if !self.slots[server].receiving {
+        let Some(mode) = self.slots[server].receiving else { return };
+        // Deliver pending cleanup before further requests. Ordinary RECEIVE
+        // continues to select only the oldest undelivered request.
+        if mode == ReceiveMode::Broker && self.pending_exits != 0 {
+            let dead = self.pending_exits.trailing_zeros() as usize;
+            self.pending_exits &= !(1 << dead);
+            let receiver = &mut self.slots[server];
+            receiver.receiving = None;
+            receiver.completion = Some((Completion::new(0, 0, 0), Some(dead)));
             return;
         }
         let oldest = self
@@ -115,8 +145,9 @@ impl<const N: usize> SyncIpc<N> {
         if let Some((pid, r)) = oldest {
             self.slots[pid].request.as_mut().unwrap().delivered = true;
             let receiver = &mut self.slots[server];
-            receiver.receiving = false;
-            receiver.completion = Some(Completion::new(0, r.token, r.word));
+            receiver.receiving = None;
+            let caller = (mode == ReceiveMode::Broker).then_some(pid);
+            receiver.completion = Some((Completion::new(0, r.token, r.word), caller));
         }
     }
 
@@ -166,9 +197,29 @@ impl<const N: usize> SyncIpc<N> {
     }
 
     pub fn receive(&mut self, server: usize, now: u64) -> Result<(), i32> {
+        self.start_receive(server, now, ReceiveMode::Ordinary)
+    }
+
+    pub fn broker_receive(&mut self, server: usize, now: u64) -> Result<(), i32> {
+        if self.broker != Some(server) { return Err(-13); }
+        self.start_receive(server, now, ReceiveMode::Broker)
+    }
+
+    #[cfg(any(test, jnox_native_net_service))]
+    pub fn broker_try_receive(&mut self, server: usize, now: u64) -> Result<(), i32> {
+        self.broker_receive(server, now)?;
+        if self.slots[server].receiving.is_some() {
+            // The serialized poll found neither an undelivered call nor a death.
+            self.slots[server].receiving = None;
+            return Err(-11);
+        }
+        Ok(())
+    }
+
+    fn start_receive(&mut self, server: usize, now: u64, mode: ReceiveMode) -> Result<(), i32> {
         self.advance(now);
         self.available(server)?;
-        self.slots[server].receiving = true;
+        self.slots[server].receiving = Some(mode);
         self.match_receive(server);
         Ok(())
     }
@@ -204,16 +255,26 @@ impl<const N: usize> SyncIpc<N> {
                 self.finish_call(peer, -32, 0);
             }
         }
+        if let Some(broker) = self.broker {
+            if pid == broker {
+                self.pending_exits = 0;
+            } else if self.slots[broker].alive && self.routes[pid] & (1 << broker) != 0 {
+                self.pending_exits |= 1 << pid;
+                self.match_receive(broker);
+            }
+        }
     }
 
     /// Reuse a retired slot only after its old execution context is gone.
     /// The domain-wide token sequence survives slot reuse.
     pub fn restart(&mut self, pid: usize) -> Result<(), i32> {
-        let slot = self.slots.get_mut(pid).ok_or(-22)?;
-        if slot.alive {
+        let slot = self.slots.get(pid).ok_or(-22)?;
+        // Reusing a numeric identity must not merge two client deaths into
+        // one pending bit or let a fresh request precede its predecessor's cleanup.
+        if slot.alive || self.pending_exits & (1 << pid) != 0 {
             return Err(-16);
         }
-        *slot = Slot::FRESH;
+        self.slots[pid] = Slot::FRESH;
         Ok(())
     }
 
@@ -234,6 +295,89 @@ impl<const N: usize> SyncIpc<N> {
 mod tests {
     use super::*;
     const FOREVER: u64 = u64::MAX;
+
+    #[test]
+    fn try_broker_never_enrolls_an_empty_wait() {
+        let mut ipc = SyncIpc::with_broker([4, 4, 0], 2);
+        assert_eq!(ipc.broker_try_receive(1, 0), Err(-13));
+        assert_eq!(ipc.broker_try_receive(2, 0), Err(-11));
+        assert!(!ipc.blocked(2));
+        ipc.call(1, 2, 17, FOREVER, 1).unwrap();
+        assert_eq!(ipc.take_with_caller(2), None);
+        ipc.broker_try_receive(2, 2).unwrap();
+        let (msg, caller) = ipc.take_with_caller(2).unwrap();
+        assert_eq!((caller, msg.x2), (Some(1), 17));
+        assert_ne!(msg.x1, 0);
+        ipc.exit(1, 3);
+        ipc.broker_try_receive(2, 4).unwrap();
+        assert_eq!(ipc.take_with_caller(2), Some((Completion::new(0, 0, 0), Some(1))));
+        assert_eq!(ipc.broker_try_receive(2, 4), Err(-11));
+        assert!(!ipc.blocked(2));
+    }
+
+    #[test]
+    fn broker_uses_the_actual_caller_in_both_receive_orders() {
+        let mut ipc = SyncIpc::with_broker([0, 1, 1], 0);
+        assert_eq!(ipc.broker_receive(1, 0), Err(-13));
+        // Both callers send the same word. Its value happens to name slot 1.
+        ipc.broker_receive(0, 0).unwrap();
+        ipc.call(2, 0, 1, FOREVER, 1).unwrap();
+        let (first, sender) = ipc.take_with_caller(0).unwrap();
+        assert_eq!((sender, first.x2), (Some(2), 1));
+        assert_ne!(first.x1, 0);
+        ipc.call(1, 0, 1, FOREVER, 2).unwrap();
+        ipc.broker_receive(0, 3).unwrap();
+        let (second, sender) = ipc.take_with_caller(0).unwrap();
+        assert_eq!((sender, second.x2), (Some(1), 1));
+        assert!(second.x1 > first.x1);
+        ipc.reply(0, second.x1, 101, 4).unwrap();
+        ipc.reply(0, first.x1, 202, 4).unwrap();
+        assert_eq!(ipc.take_with_caller(1), Some((Completion::new(0, 101, 0), None)));
+        assert_eq!(ipc.take_with_caller(2), Some((Completion::new(0, 202, 0), None)));
+    }
+
+    #[test]
+    fn blocked_broker_wakes_once_on_last_authorized_client_exit() {
+        let mut ipc = SyncIpc::with_broker([4, 0, 0], 2);
+        ipc.broker_receive(2, 0).unwrap();
+        ipc.exit(1, 1); // No 1→2 route.
+        assert!(ipc.blocked(2));
+        assert_eq!(ipc.take_with_caller(2), None);
+        ipc.exit(0, 2);
+        assert!(!ipc.blocked(2));
+        assert_eq!(ipc.take_with_caller(2), Some((Completion::new(0, 0, 0), Some(0))));
+        ipc.broker_receive(2, 3).unwrap();
+        ipc.exit(0, 4);
+        assert!(ipc.blocked(2));
+        assert_eq!(ipc.take_with_caller(2), None);
+    }
+
+    #[test]
+    fn pending_deaths_survive_ordinary_receive_and_retire_reply_tokens() {
+        let mut ipc = SyncIpc::with_broker([4, 4, 0], 2);
+        ipc.call(0, 2, 61, FOREVER, 0).unwrap();
+        ipc.broker_receive(2, 0).unwrap();
+        let (request, sender) = ipc.take_with_caller(2).unwrap();
+        assert_eq!(sender, Some(0));
+        ipc.receive(2, 0).unwrap(); // This receive cannot consume a death.
+        ipc.exit(0, 1);
+        assert!(ipc.blocked(2));
+        assert_eq!(ipc.restart(0), Err(-16));
+        ipc.call(1, 2, 18, FOREVER, 2).unwrap();
+        let (plain, sender) = ipc.take_with_caller(2).unwrap();
+        assert_eq!((plain.x2, sender), (18, None));
+        assert_eq!(ipc.reply(2, request.x1, 99, 2), Err(-116));
+        ipc.exit(1, 3);
+        assert_eq!(ipc.priorities([9, 8, 1]), [9, 8, 1]);
+        for pid in [0, 1] {
+            ipc.broker_receive(2, 4).unwrap();
+            assert_eq!(ipc.take_with_caller(2), Some((Completion::new(0, 0, 0), Some(pid))));
+        }
+        ipc.restart(0).unwrap();
+        ipc.call(0, 2, 7, FOREVER, 5).unwrap();
+        ipc.exit(2, 6);
+        assert_eq!(ipc.take_with_caller(0), Some((Completion::new(-32, 0, 0), None)));
+    }
 
     #[test]
     fn timeout_wins_equality_and_a_reply_one_tick_earlier_wins() {

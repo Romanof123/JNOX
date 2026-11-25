@@ -6,7 +6,12 @@ use super::{Action, CLOCK_DOMAIN, COUNT, CURRENT, FRAMES, Fixed, NativeFrame, fa
 #[path = "sync_ipc.rs"]
 mod endpoints;
 #[cfg(jnox_native_sync_ipc)]
-static mut ENDPOINTS: endpoints::SyncIpc<COUNT> = endpoints::SyncIpc::new(super::NATIVE_IPC_ROUTES);
+static mut ENDPOINTS: endpoints::SyncIpc<COUNT> = {
+    #[cfg(jnox_native_socket_service)]
+    { endpoints::SyncIpc::with_broker(super::NATIVE_IPC_ROUTES, super::NATIVE_SOCKET_SERVICE) }
+    #[cfg(not(jnox_native_socket_service))]
+    { endpoints::SyncIpc::new(super::NATIVE_IPC_ROUTES) }
+};
 
 #[cfg(jnox_native_mailbox_ipc)]
 #[path = "mailbox_ipc.rs"]
@@ -61,6 +66,8 @@ fn attach(id: usize, owner: usize, source: u64, mask: u64) -> Result<u64, i32> {
 
 pub(super) fn handles(service: u64) -> bool {
     (cfg!(jnox_native_sync_ipc) && matches!(service, 21..=23))
+        || (cfg!(jnox_native_socket_service) && service == 37)
+        || (cfg!(jnox_native_net_service) && matches!(service, 38..=40))
         || (cfg!(jnox_native_mailbox_ipc) && matches!(service, 24..=25))
         || (cfg!(jnox_native_notify_ipc) && matches!(service, 26..=29))
         || (cfg!(jnox_native_waitset) && matches!(service, 30..=32))
@@ -96,15 +103,15 @@ pub(super) fn next_compare() -> Option<u64> {
 // Complete immediate results on the actual trap stack and deferred results in FRAMES.
 fn drain(fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
     for id in 0..COUNT {
-        let mut result: Option<(i32, u64, Option<u64>)> = None;
+        let mut result: Option<(i32, u64, Option<u64>, Option<usize>)> = None;
         #[cfg(jnox_native_sync_ipc)]
-        if let Some(done) = unsafe { (&mut *(&raw mut ENDPOINTS)).take(id) } {
-            result = Some((done.status, done.x1, Some(done.x2)));
+        if let Some((done, caller)) = unsafe { (&mut *(&raw mut ENDPOINTS)).take_with_caller(id) } {
+            result = Some((done.status, done.x1, Some(done.x2), caller));
         }
         #[cfg(jnox_native_mailbox_ipc)]
         if let Some(done) = unsafe { (&mut *(&raw mut MAIL)).take(id) } {
             if result.is_some() { fail(9); }
-            result = Some((done.status, done.x1, None));
+            result = Some((done.status, done.x1, None, None));
         }
         #[cfg(jnox_native_notify_ipc)]
         if let Some(done) = unsafe { (&mut *(&raw mut NOTIFY)).take(id) } {
@@ -113,14 +120,14 @@ fn drain(fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
                 Some((issuer, frame)) if *issuer == id => frame.x[8],
                 _ => unsafe { FRAMES[id].x[8] },
             };
-            result = Some((done.status, done.x1, (service == 27).then_some(done.x2)));
+            result = Some((done.status, done.x1, (service == 27).then_some(done.x2), None));
         }
         #[cfg(jnox_native_waitset)]
         if let Some(done) = unsafe { (&mut *(&raw mut SETS)).take(id) } {
             if result.is_some() { fail(9); }
-            result = Some((done.status, done.x1, Some(done.x2)));
+            result = Some((done.status, done.x1, Some(done.x2), None));
         }
-        let Some((status, word, extra)) = result else { continue };
+        let Some((status, word, extra, caller)) = result else { continue };
         let frame = match live.as_mut() {
             Some((issuer, frame)) if *issuer == id => &mut **frame,
             _ => {
@@ -131,6 +138,7 @@ fn drain(fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
         frame.x[0] = i64::from(status) as u64;
         frame.x[1] = word;
         if let Some(value) = extra { frame.x[2] = value; }
+        if let Some(pid) = caller { frame.x[3] = pid as u64; }
     }
     #[cfg(jnox_native_sync_ipc)]
     fixed.ipc_priorities(&unsafe { (&*(&raw const ENDPOINTS)).priorities(super::NATIVE_PRIORITIES) });
@@ -171,6 +179,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
     let deadline = match op { 21 | 24 => frame.x[2], 25 | 27 | 32 => frame.x[0], 29 => frame.x[1], _ => u64::MAX };
     #[cfg(jnox_native_waitset)]
     let mut handle = 0;
+    #[cfg(jnox_native_net_service)]
+    let mut transferred = 0;
     let result = if deadline != u64::MAX && compare(deadline).is_none() {
         Err(-75)
     } else {
@@ -181,6 +191,13 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
             22 => unsafe { (&mut *(&raw mut ENDPOINTS)).receive(id, now) },
             #[cfg(jnox_native_sync_ipc)]
             23 => unsafe { (&mut *(&raw mut ENDPOINTS)).reply(id, frame.x[0], frame.x[1], now) },
+            #[cfg(jnox_native_socket_service)]
+            37 => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_receive(id, now) },
+            #[cfg(jnox_native_net_service)]
+            38 | 39 => net_frame(id, op, frame.x[0] as usize, frame.x[1] as usize)
+                .map(|n| transferred = n as u64),
+            #[cfg(jnox_native_net_service)]
+            40 => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_try_receive(id, now) },
             #[cfg(jnox_native_mailbox_ipc)]
             24 => unsafe { (&mut *(&raw mut MAIL)).send(id, frame.x[0] as usize, frame.x[1], deadline, now) },
             #[cfg(jnox_native_mailbox_ipc)]
@@ -203,6 +220,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
         }
     };
     frame.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
+    #[cfg(jnox_native_net_service)]
+    if matches!(op, 38 | 39) && result.is_ok() { frame.x[0] = transferred; }
     frame.x[1] = 0;
     #[cfg(jnox_native_waitset)]
     {
@@ -210,6 +229,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
         refresh(now);
     }
     if op <= 23 || op == 27 || op == 32 { frame.x[2] = 0; }
+    #[cfg(jnox_native_socket_service)]
+    if op == 37 || (cfg!(jnox_native_net_service) && op == 40) { frame.x[2] = 0; frame.x[3] = 0; }
     drain(policy(), Some((id, frame)));
     #[cfg(jnox_native_sync_ipc)]
     if unsafe { (&*(&raw const ENDPOINTS)).blocked(id) } { return Action::BlockIpc; }
@@ -247,4 +268,38 @@ pub(super) fn report_notifications(phase: u64) {
         }
         super::uart_write(b"\n");
     }
+}
+
+#[cfg(jnox_native_net_service)]
+fn net_frame(pid: usize, op: u64, address: usize, length: usize) -> Result<usize, i32> {
+    use super::{native_el0_mmu as mmu, virtio_net};
+    const MAX_FRAME: usize = 1514;
+    if pid != super::NATIVE_SOCKET_SERVICE { return Err(-13); }
+    if mmu::active() != Some(pid) { fail(9); }
+    let mut data = [0u8; MAX_FRAME];
+    if op == 38 {
+        if length < MAX_FRAME { return Err(-90); }
+        // Check every declared writable page before consuming the descriptor.
+        // IRQs remain masked, so the active mapping cannot change before copyout.
+        if !mmu::user_range(address, length, true) { return Err(-14); }
+        let count = virtio_net::rx(&mut data)?;
+        if !(14..=MAX_FRAME).contains(&count) { return Err(-5); }
+        if !mmu::copy_to_user(address, &data[..count]) { fail(9); }
+        Ok(count)
+    } else {
+        if !(14..=MAX_FRAME).contains(&length) { return Err(-90); }
+        if !mmu::copy_from_user(address, &mut data[..length]) { return Err(-14); }
+        virtio_net::tx(&data[..length])
+    }
+}
+
+#[cfg(jnox_native_net_service)]
+pub(super) fn report_net() {
+    let s = super::virtio_net::stats();
+    super::uart_write(b"NATIVE NET DEVICE");
+    for value in [1, s.base, s.rx_frames, s.tx_frames, s.tx_completed, s.rx_empty, s.tx_full, s.faults] {
+        super::uart_write(b" ");
+        super::unsigned(value);
+    }
+    super::uart_write(b"\n");
 }
