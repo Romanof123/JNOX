@@ -69,6 +69,8 @@ def capture(a, observer=None):
                 raw = uart.read_bytes() if uart.exists() else b""
                 end_marker = (rb"(?m)^NATIVE SMP END [0-9 ]+\r?\n" if manifest["policy"] != "fifo"
                               else rb"(?m)^NATIVE EL0 EXIT PID 1 -?\d+\r?\n")
+                if manifest["policy"] in ("smp-global", "smp-clustered"):
+                    end_marker = rb"(?m)^NATIVE MIG END [0-9 ]+\r?\n"
                 if re.search(end_marker, raw):
                     request(Pipe, "stop")
                     request(Pipe, "pmemsave", val=base, size=end-base, filename=str(root / "ram.bin"))

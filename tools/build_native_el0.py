@@ -184,7 +184,7 @@ def native_schedule(parser, args):
         parser.error("--thread-priorities requires --threads 4")
     if args.threads == ["2"] and policy not in (None, "rr"):
         parser.error("thread scheduling supports only cooperative or RR")
-    if policy in ("fifo", "rr", "smp-partitioned") and not args.threads:
+    if policy in ("fifo", "rr", "smp-partitioned", "smp-global", "smp-clustered") and not args.threads:
         if not args.priority or len(args.peer_priority) != len(args.peer_elf):
             parser.error("fixed scheduling requires exactly one priority per supplied ELF")
     elif args.priority or args.peer_priority:
@@ -329,7 +329,7 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to three peers for AMC, two for other policies)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc", "smp-partitioned"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc", "smp-partitioned", "smp-global", "smp-clustered"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
@@ -338,6 +338,10 @@ def main():
     parser.add_argument("--amc-manifest", type=Path, action=SinglePath, metavar="DEPLOYMENT.json")
     parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
+    parser.add_argument("--online-cpus", type=unsigned_decimal, choices=(2, 3), action=SinglePath)
+    parser.add_argument("--cluster-masks", action=SinglePath, metavar="MASK,...")
+    parser.add_argument("--cluster", type=unsigned_decimal, action=SinglePath)
+    parser.add_argument("--peer-cluster", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--cpu-mask", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--peer-cpu-mask", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--release-cell", type=unsigned_decimal, action=SinglePath)
@@ -413,20 +417,56 @@ def main():
         parser.error("--weighted-continuous requires weighted scheduling on virt")
     if args.weighted_notify is not None and not args.weighted_continuous:
         parser.error("--weighted-notify requires --weighted-continuous")
-    smp = policy == "smp-partitioned"
+    migrating = policy in ("smp-global", "smp-clustered")
+    smp = migrating or policy == "smp-partitioned"
+    if migrating != (args.online_cpus is not None):
+        parser.error("--online-cpus is required exclusively for smp-global and smp-clustered")
+    if policy != "smp-clustered" and (args.cluster_masks is not None or args.cluster is not None or args.peer_cluster):
+        parser.error("cluster options require smp-clustered")
     if smp:
         if board != "pi4" or not 1 <= len(args.peer_elf) <= 2 or args.threads:
-            parser.error("smp-partitioned requires two or three Pi 4 native processes")
+            parser.error("SMP requires two or three Pi 4 native processes")
         masks = [args.cpu_mask, *args.peer_cpu_mask]
-        if len(masks) != 1 + len(args.peer_elf) or set(masks) != {1, 2}:
+        if len(masks) != 1 + len(args.peer_elf) or args.cpu_mask is None:
+            parser.error("supply one CPU mask per ELF")
+        online = args.online_cpus or 2
+        online_mask = (1 << online) - 1
+        if any(not 1 <= mask <= online_mask for mask in masks):
+            parser.error("CPU mask must be nonempty and use online CPUs")
+        if not migrating and set(masks) != {1, 2}:
             parser.error("supply a singleton CPU mask per slot, using both CPU0 and CPU1")
+        if migrating and (args.release_cell is None or len(args.peer_release_cell) != len(args.peer_elf)):
+            parser.error("migration requires an explicit release cell for every ELF")
+        cluster_masks = []
+        clusters = []
+        effective = masks.copy()
+        if policy == "smp-clustered":
+            if not args.cluster_masks or args.cluster is None or len(args.peer_cluster) != len(args.peer_elf):
+                parser.error("supply a cluster partition and one cluster index per ELF")
+            try:
+                cluster_masks = [unsigned_decimal(field) for field in args.cluster_masks.split(",")]
+            except argparse.ArgumentTypeError as exc:
+                parser.error(str(exc))
+            covered = 0
+            for mask in cluster_masks:
+                if not 1 <= mask <= online_mask or mask & covered:
+                    parser.error("cluster masks must be disjoint, nonzero and online")
+                covered |= mask
+            if covered != online_mask:
+                parser.error("cluster masks must cover every online CPU")
+            clusters = [args.cluster, *args.peer_cluster]
+            if any(index >= len(cluster_masks) for index in clusters):
+                parser.error("cluster index outside the declared partition")
+            effective = [mask & cluster_masks[index] for mask, index in zip(masks, clusters)]
+            if not all(effective):
+                parser.error("every process needs an eligible CPU in its assigned cluster")
         if args.peer_release_cell and len(args.peer_release_cell) != len(args.peer_elf):
             parser.error("supply one release cell per peer or omit all peer release cells")
         smp_release_cells = [args.release_cell or 0, *(args.peer_release_cell or [0] * len(args.peer_elf))]
         if max(smp_release_cells) > 255 or min(priorities) < 1:
             parser.error("release cells must be 0..255 and priorities 1..255")
     elif args.cpu_mask is not None or args.peer_cpu_mask or args.release_cell is not None or args.peer_release_cell:
-        parser.error("CPU masks and release cells require smp-partitioned")
+        parser.error("CPU masks and release cells require an SMP policy")
     if board == "pi4" and not smp and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
                            or not (args.source or args.elf) or args.threads):
         parser.error("pi4 requires a primary application and one peer under FIFO or RR")
@@ -597,11 +637,19 @@ def main():
         if smp:
             env["JNOX_NATIVE_CPU_MASKS"] = ",".join(map(str, masks))
             env["JNOX_NATIVE_RELEASE_CELLS"] = ",".join(map(str, smp_release_cells))
-            metadata.update(online_cpus=[0, 1], release_grid_hz=50, bsp="raspi4b")
+            metadata.update(online_cpus=list(range(online)), release_grid_hz=50, bsp="raspi4b")
+            if migrating:
+                env["JNOX_NATIVE_ONLINE_CPUS"] = str(online)
+                metadata["cluster_masks"] = cluster_masks
+            if clusters:
+                env["JNOX_NATIVE_CLUSTER_MASKS"] = ",".join(map(str, cluster_masks))
+                env["JNOX_NATIVE_CLUSTERS"] = ",".join(map(str, clusters))
         for slot in slots:
             if smp:
                 i = slot["slot"]
                 slot.update(cpu_mask=masks[i], release_cell=smp_release_cells[i])
+                if migrating:
+                    slot.update(effective_cpu_mask=effective[i], cluster=clusters[i] if clusters else None)
             if policy == "extension":
                 i = slot["slot"]
                 slot.update(generation=(7, 11, 17)[i], cpu=0, role="reserved" if i == 0 else "delegated")

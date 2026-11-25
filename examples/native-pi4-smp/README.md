@@ -52,3 +52,31 @@ Repeat replay with each retained digest. Omit candidate registers if their meani
 UART terminal records locate core-indexed event/frame pairs in the post-stop physical RAM snapshot. The replay walks each task's actual root to read private words. It compares the complete saved and selected frames, accounts EL0 service from return stamps, and widens cross-core comparisons using the startup counter bracket. Inspect the two disassemblies alongside the reported productive PPI PCs. The external trace count uses only lines carrying their own CPU identity. Nonzero TLS preservation needs a separate sentinel control; terminal zero TLS cannot establish it. Legacy RAM/exit checks alone cannot prove every secondary remained parked.
 
 각 최초 부팅을 순서대로 보존하고 세션 해시를 별도로 기록한다. 재생은 CPU별 물리 인터럽트, 전체 복귀 프레임, 서비스량, 독립 페이지 테이블 및 전용 결과를 검사한다. 작업 레지스터와 실제 PC의 관계가 불확실하면 레지스터 옵션을 생략한다. CPU 간 시각 불확실성 또는 관측 누락은 미확인으로 남긴다. 호스트 실행 속도나 물리 보드 병렬성의 측정값으로 해석하지 않는다.
+
+
+## Global and clustered placement / 전역·클러스터 배치
+
+From the repository root, build the private odd/even clients and the pinned prime worker. Use fresh package directories. Each peer's mask, priority, release cell, cluster index and argument vector follow ELF order. Release cell k means E+kQ, with Q=floor(counter frequency/50). Slot numbers identify the processes throughout migration.
+
+저장소 루트에서 전용 ELF를 빌드한다. 각 피어의 마스크·우선순위·릴리스 셀·클러스터 번호·인자 벡터는 ELF 순서를 따른다. 새 출력 디렉터리를 사용한다. 릴리스 셀 1은 기준 E에서 Q가 지난 시점이며, 이동 전후 슬롯 번호는 같다.
+
+~~~sh
+sh examples/native-pi4-smp/abi/build.sh abi-jobs
+sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c low.elf
+migrate() {
+    python3 tools/build_native_el0.py --board pi4 --elf abi-jobs/odd.elf \
+        --priority 2 --release-cell 0 --peer-elf low.elf --peer-priority 5 \
+        --peer-cpu-mask 1 --peer-release-cell 1 "$@"
+}
+migrate --policy smp-global --online-cpus 2 --cpu-mask 3 --out global2
+migrate --policy smp-clustered --online-cpus 3 --cpu-mask 7 \
+    --cluster-masks 3,4 --cluster 0 --peer-cluster 0 \
+    --peer-elf abi-jobs/even.elf --peer-priority 4 --peer-cpu-mask 4 \
+    --peer-release-cell 0 --peer-cluster 1 --out clustered3
+qemu-system-aarch64 -M raspi4b -kernel global2/kernel8.img -display none \
+    -serial stdio -monitor none
+~~~
+
+The global primary may run on CPU0 or CPU1. In the clustered package its requested mask 7 becomes 3 in cluster 0, while the even worker remains pinned to CPU2. Select the other package by changing the kernel image path. [Placement cases and observation criteria](../../docs/pi4-native-migrating-applications.en-ko.md)
+
+전역 구성의 첫 프로세스는 CPU0과 CPU1에서 실행할 수 있다. 클러스터 구성에서는 요청 마스크 7과 클러스터 0의 교집합인 3을 사용하고 짝수 계산 작업은 CPU2에 고정된다. 다른 패키지를 부팅할 때는 커널 이미지 경로를 바꾼다.

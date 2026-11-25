@@ -3,12 +3,20 @@
 .global pi4_native_smp_stacks
 pi4_native_smp_stacks:
     // Each unit begins with a 4 KiB page omitted from every process root.
+.ifdef PI4_NATIVE_MIGRATION_CPUS
+    .skip PI4_NATIVE_MIGRATION_CPUS * 0xa000
+.else
     .skip 4 * 0x5000
+.endif
 .section .bss.pi4_native_smp_stamps,"aw",%nobits
 .balign 64
 .global pi4_native_smp_stamps
 pi4_native_smp_stamps:
+.ifdef PI4_NATIVE_MIGRATION_CPUS
+    .skip PI4_NATIVE_MIGRATION_CPUS * 64
+.else
     .skip 2 * 64
+.endif
 
 .section .text.pi4_native_smp,"ax",%progbits
 .balign 4
@@ -18,8 +26,14 @@ pi4_native_smp_secondary:
     mrs x0,mpidr_el1
     ldr x1,=0xff00ffffff
     and x0,x0,x1
+.ifdef PI4_NATIVE_MIGRATION_CPUS
+    cbz x0,.Lpi4_native_smp_park
+    cmp x0,#PI4_NATIVE_MIGRATION_CPUS
+    b.hs .Lpi4_native_smp_park
+.else
     cmp x0,#1
     b.ne .Lpi4_native_smp_park
+.endif
     mrs x0,CurrentEL
     cmp x0,#4
     b.eq .Lpi4_native_smp_check_el1
@@ -56,7 +70,15 @@ pi4_native_smp_secondary:
     msr S3_1_C15_C2_1,x0
     isb
     msr spsel,#1
+.ifdef PI4_NATIVE_MIGRATION_CPUS
+    mrs x4,mpidr_el1
+    and x4,x4,#255
+    ldr x0,=pi4_native_smp_stacks + 0x5000
+    mov x1,#0xa000
+    madd x0,x4,x1,x0
+.else
     ldr x0,=pi4_native_smp_stacks + 0xf000
+.endif
     mov sp,x0
     mrs x0,cpacr_el1
     orr x0,x0,#(3<<20)
@@ -64,7 +86,11 @@ pi4_native_smp_secondary:
     ic iallu
     dsb sy
     isb
+.ifdef PI4_NATIVE_MIGRATION_CPUS
+    mov x0,x4
+.else
     mov x0,#1
+.endif
     b native_partitioned_entry
 .Lpi4_native_smp_park:
     msr daifset,#15
@@ -217,8 +243,14 @@ pi4_native_smp_trampoline:
     mrs x0,mpidr_el1
     ldr x1,=0xff00ffffff
     and x0,x0,x1
+.ifdef PI4_NATIVE_MIGRATION_CPUS
+    cbz x0,2f
+    cmp x0,#PI4_NATIVE_MIGRATION_CPUS
+    b.hs 2f
+.else
     cmp x0,#1
     b.ne 2f
+.endif
     mrs x0,CurrentEL
     cmp x0,#8
     b.eq 1f
