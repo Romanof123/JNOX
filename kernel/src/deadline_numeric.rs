@@ -16,6 +16,7 @@ pub enum Refusal {
     Overflow,
     Demand,
     Miss,
+    SwitchCap,
 }
 
 pub fn absolute(origin: u64, q: u64, k: u64) -> Result<u64, Refusal> {
@@ -74,7 +75,38 @@ pub(crate) fn admit_edf(jobs: &[NumericJob], hz: u64, origin: u64) -> Result<(),
 }
 
 pub(crate) fn admit_native(policy: DeadlinePolicy, jobs: &[NumericJob], hz: u64, origin: u64) -> Result<(), Refusal> {
-    let q = validate_table(jobs.len(), hz, 0)?;
+    admit_native_supply(policy, jobs, hz, origin, 0)
+}
+
+/// One changing IRQ and at most one service receipt per intersected cell,
+/// plus at most one exit for each of the two ordinary jobs.
+pub(crate) const RECURRING_SWITCH_BOUND: u64 = 2 * (1 + 1) + 2;
+
+pub(crate) fn admit_native_recurring(
+    policy: DeadlinePolicy, jobs: &[NumericJob], hz: u64, origin: u64, mask: u64, cap: u64,
+) -> Result<(), Refusal> {
+    if jobs.len() != 2 { return Err(Refusal::Table); }
+    if mask == 0 || mask >> HORIZON != 0 { return Err(Refusal::Grid); }
+    if cap < RECURRING_SWITCH_BOUND { return Err(Refusal::SwitchCap); }
+    admit_native_supply(policy, jobs, hz, origin, mask)
+}
+
+/// A sample at a cell's end belongs to the next cell. The final end is outside.
+pub(crate) fn recurring_cell(origin: u64, q: u64, sample: u64) -> Option<u64> {
+    sample.checked_sub(origin)?.checked_div(q).filter(|&k| k < HORIZON)
+}
+
+/// Counting strictly earlier reserved cells also covers adjacent activations.
+pub(crate) fn recurring_ordinal(mask: u64, cell: u64) -> Option<u64> {
+    if cell >= HORIZON || mask >> HORIZON != 0 { return None; }
+    let bit = 1u64 << cell;
+    (mask & bit != 0).then(|| u64::from((mask & (bit - 1)).count_ones()))
+}
+
+fn admit_native_supply(
+    policy: DeadlinePolicy, jobs: &[NumericJob], hz: u64, origin: u64, mask: u64,
+) -> Result<(), Refusal> {
+    let q = validate_table(jobs.len(), hz, mask)?;
     absolute(origin, q, HORIZON)?;
     let mut seen = [false; N];
     for job in jobs {
@@ -84,8 +116,8 @@ pub(crate) fn admit_native(policy: DeadlinePolicy, jobs: &[NumericJob], hz: u64,
     if jobs.iter().enumerate().any(|(slot, job)| job.id != slot) {
         return Err(Refusal::Table);
     }
-    check_demand(jobs, 0)?;
-    simulate_dispatch(policy, jobs, 0)
+    check_demand(jobs, mask)?;
+    simulate_dispatch(policy, jobs, mask)
 }
 
 /// Callers have validated IDs, costs, deadlines and the supply mask.
@@ -138,4 +170,59 @@ fn simulate_dispatch(policy: DeadlinePolicy, jobs: &[NumericJob], mask: u64) -> 
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod recurring_tests {
+    use super::*;
+
+    fn pair() -> [NumericJob; 2] {
+        [NumericJob { id: 0, release: 0, deadline: 12, cost: 1 },
+         NumericJob { id: 1, release: 0, deadline: 13, cost: 4 }]
+    }
+
+    #[test]
+    fn cap_and_interval_supply_are_independent_for_both_policies() {
+        for policy in [DeadlinePolicy::Edf, DeadlinePolicy::Llf] {
+            let jobs = pair();
+            let admit = |jobs: &[NumericJob], mask, cap|
+                admit_native_recurring(policy, jobs, 100, 50, mask, cap);
+            assert_eq!(admit(&jobs, 0b1010, 6), Ok(()));
+            assert_eq!(admit(&jobs, 0b1010, 5), Err(Refusal::SwitchCap));
+            assert_eq!(admit(&jobs[..1], 0b1010, 6), Err(Refusal::Table));
+            assert_eq!(admit(&jobs, 0, 6), Err(Refusal::Grid));
+            assert_eq!(admit(&jobs, 1 << HORIZON, 6), Err(Refusal::Grid));
+            let mut constrained = jobs;
+            constrained[0].cost = 2;
+            constrained[0].deadline = 2;
+            assert_eq!(admit(&constrained, 0b1010, 6), Err(Refusal::Demand));
+            // Enough supply globally, but two jobs compete for one available
+            // cell strictly inside the horizon.
+            for j in &mut constrained { j.release = 6; j.deadline = 8; j.cost = 1; }
+            assert_eq!(admit(&constrained, 1 << 7, 6), Err(Refusal::Demand));
+            assert_eq!(admit(&constrained, 1 << 8, 6), Ok(()));
+            assert_eq!(admit_native_recurring(policy, &jobs, 100, u64::MAX - 159, 1, 6),
+                       Err(Refusal::Overflow));
+        }
+    }
+
+    #[test]
+    fn first_last_and_adjacent_cells_use_exclusive_ends_and_distinct_ordinals() {
+        let mask = 1 | (1 << 1) | (1 << 14) | (1 << 15);
+        let jobs = pair();
+        for policy in [DeadlinePolicy::Edf, DeadlinePolicy::Llf] {
+            assert_eq!(admit_native_recurring(policy, &jobs, 100, 50, mask, 6), Ok(()));
+        }
+        assert_eq!(recurring_cell(50, 10, 49), None);
+        assert_eq!(recurring_cell(50, 0, 50), None);
+        for k in 0..HORIZON {
+            let first = 50 + 10 * k;
+            assert_eq!(recurring_cell(50, 10, first), Some(k));
+            assert_eq!(recurring_cell(50, 10, first + 9), Some(k));
+            let ordinal = [0, 1, 14, 15].iter().position(|&reserved| reserved == k);
+            assert_eq!(recurring_ordinal(mask, k), ordinal.map(|i| i as u64));
+        }
+        assert_eq!(recurring_cell(50, 10, 210), None);
+        assert_eq!(recurring_ordinal(mask, HORIZON), None);
+    }
 }

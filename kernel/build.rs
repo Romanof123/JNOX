@@ -401,6 +401,29 @@ fn main() {
             "JNOX_NATIVE_THREADS=2 requires a single ordinary ELF and cooperative or RR scheduling");
         println!("cargo::rustc-cfg=jnox_native_threads");
     }
+    let service_image = selector("JNOX_NATIVE_DEADLINE_SERVICE_ELF");
+    let service_hash = selector("JNOX_NATIVE_DEADLINE_SERVICE_ELF_SHA256");
+    let service_cells = selector("JNOX_NATIVE_DEADLINE_SERVICE_CELLS");
+    let switch_cap = selector("JNOX_NATIVE_DEADLINE_SWITCH_CAP");
+    let mut service_mask = 0u16;
+    let mut cap = 0u64;
+    if service_image.is_some() || service_hash.is_some() || service_cells.is_some() || switch_cap.is_some() {
+        assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process")
+            && matches!(policy.as_deref(), Some("edf" | "llf")) && peer_image.is_some() && peer2_image.is_none()
+            && service_image.is_some() && service_hash.is_some(), "deadline service requires two ordinary deadline jobs and its own ELF/hash");
+        let mut previous = None;
+        for field in service_cells.as_deref().expect("missing deadline service calendar").split(',') {
+            assert!(!field.is_empty() && field.bytes().all(|c| c.is_ascii_digit()), "invalid deadline service cell");
+            let cell: u8 = field.parse().expect("invalid service cell");
+            assert!(cell < 16 && previous.is_none_or(|v| v < cell), "service cells must increase within 0..15");
+            previous = Some(cell);
+            service_mask |= 1u16 << cell;
+        }
+        let value = switch_cap.as_deref().expect("missing deadline switch cap");
+        assert!(!value.is_empty() && value.bytes().all(|c| c.is_ascii_digit()), "invalid deadline switch cap");
+        cap = value.parse().expect("deadline switch cap exceeds u64");
+        assert!(cap > 0, "deadline switch cap must be positive");
+    }
     let native_argv = [0, 1, 2].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
     for (slot, args) in native_argv.iter().enumerate() {
         if args.is_some() {
@@ -438,8 +461,10 @@ fn main() {
             if app.as_deref() == Some("process") {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
+            let peer2_image = peer2_image.or(service_image);
+            let peer2_hash = peer2_hash.or(service_hash);
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -712,7 +737,7 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
     format!("&[{}]", literals.join(", "))
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64) {
     let mode = policy.unwrap_or("cooperative");
     let slot_weights = if mode == "weighted" {
         let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
@@ -728,7 +753,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     let llf = mode == "llf";
     let jobs = if matches!(mode, "edf" | "llf") {
         let jobs: Vec<_> = edf_jobs.expect("EDF and LLF require job tuples").split(';').map(parse_deadline_job).collect();
-        assert_eq!(jobs.len(), slots, "supply one deadline job per slot");
+        assert_eq!(jobs.len(), slots - usize::from(service_mask != 0), "supply one tuple per ordinary deadline job");
         println!("cargo::rustc-cfg=jnox_native_edf");
         jobs
     } else {
@@ -814,11 +839,18 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(quantum.is_none(), "quantum ticks require RR, weighted scheduling or MLQ");
         0
     };
-    let extras: Vec<_> = argv[..slots].iter().enumerate()
+    let mut extras: Vec<_> = argv[..slots].iter().enumerate()
         .map(|(slot, value)| native_extra_literals(slot, value.as_deref())).collect();
+    if service_mask != 0 {
+        // Only the package calendar can supply slot 2's argv[1].
+        let calendar = (0..16).filter(|&k| service_mask & (1 << k) != 0)
+            .map(|k| k.to_string()).collect::<Vec<_>>().join(",");
+        extras[2] = format!("&[&{:?}]", calendar.as_bytes());
+    }
+    let job_count = jobs.len();
     let extra_slots = extras.join(", ");
     let generated = format!(
-        "pub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");

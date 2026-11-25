@@ -5,6 +5,9 @@ use crate::deadline_policy::{
     absolute, admit_native, grid_quantum, DeadlinePolicy, DeadlineScheduler, NumericJob,
 };
 
+#[path = "native_deadline_recurring.rs"]
+pub(super) mod recurring;
+
 struct Runtime {
     policy: DeadlineScheduler<COUNT>,
     epoch: u64,
@@ -42,6 +45,7 @@ pub(super) fn owner() -> Option<usize> { state().running }
 pub(super) fn finished() -> bool { state().exits.iter().all(Option::is_some) }
 
 pub(super) fn start(hz: u64) -> usize {
+    if NATIVE_DEADLINE_SERVICE_MASK != 0 { return recurring::start(hz); }
     let jobs: [NumericJob; COUNT] = core::array::from_fn(|id| {
         let (release, deadline, cost) = NATIVE_EDF_JOBS[id];
         NumericJob { id, release, deadline, cost }
@@ -200,6 +204,7 @@ pub(super) fn boundary(now: u64, reason: u64, sleep: Option<u64>, frame: Option<
 
 #[unsafe(no_mangle)]
 extern "C" fn native_edf_return() {
+    if NATIVE_DEADLINE_SERVICE_MASK != 0 { recurring::returning(); return; }
     let r = state();
     if r.needs_start {
         let stamp = counter();

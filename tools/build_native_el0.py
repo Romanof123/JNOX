@@ -240,6 +240,9 @@ def main():
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
     parser.add_argument("--threads", choices=["2"], action="append", default=[],
                         help="enable two joinable thread contexts for one ordinary ELF")
+    parser.add_argument("--deadline-service-elf", type=Path, action=SinglePath)
+    parser.add_argument("--deadline-service-cells", action="append", default=[], metavar="CELL,...")
+    parser.add_argument("--deadline-switch-cap", type=unsigned_decimal, action="append", default=[])
     args = parser.parse_args()
     if len(args.threads) > 1:
         parser.error("--threads may appear only once")
@@ -251,7 +254,26 @@ def main():
                            or not (args.source or args.elf) or args.threads):
         parser.error("pi4 requires a primary application and one peer under FIFO or RR")
     vectors, encoded_arguments = encode_arguments(parser, args)
+    service = args.deadline_service_elf
+    cells = []
+    if service or args.deadline_service_cells or args.deadline_switch_cap:
+        if not service or len(args.deadline_service_cells) != 1 or len(args.deadline_switch_cap) != 1:
+            parser.error("specify one service ELF, calendar and switch cap together")
+        if policy not in ("edf", "llf") or len(args.peer_elf) != 1:
+            parser.error("a recurring service requires two ordinary EDF or LLF jobs")
+        if not 0 < args.deadline_switch_cap[0] < 2**64:
+            parser.error("switch cap must be a positive u64")
+        fields = args.deadline_service_cells[0].split(",")
+        if not 1 <= len(fields) <= 16 or any(not (v.isascii() and v.isdecimal()) for v in fields):
+            parser.error("service cells must be a list of decimal indices")
+        cells = list(map(int, fields))
+        if cells != sorted(set(cells)) or cells[-1] > 15:
+            parser.error("service cells must increase strictly within 0..15")
+        calendar = ",".join(map(str, cells))
+        vectors[2] = [calendar]
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
+    if service:
+        peer_inputs.append(service.resolve(strict=True))
     peer_digests = [sha256(path) for path in peer_inputs]
     app_input = (args.elf or args.source or SOURCE).resolve(strict=True)
     input_digest = sha256(app_input)
@@ -303,6 +325,8 @@ def main():
             metadata[f"peer{suffix}_input"] = peer
             metadata[f"peer{suffix}_elf_sha256"] = peer_digest
             var = f"JNOX_NATIVE_PEER{suffix}_ELF"
+            if slot == 2 and service:
+                var = "JNOX_NATIVE_DEADLINE_SERVICE_ELF"
             env[var], env[var + "_SHA256"] = str(peer_elf), peer_digest
         periodic = args.periodic + args.peer_periodic
         reservations = args.reservation + args.peer_reservation
@@ -322,12 +346,18 @@ def main():
                 slot["reservation"] = {"quota_slots": quota, "period_slots": period}
             if classes:
                 slot["class"] = classes[slot["slot"]]
-            if jobs:
+            if jobs and slot["slot"] < len(jobs):
                 release, deadline, cost = jobs[slot["slot"]]
                 slot["job"] = {"release": release, "deadline": deadline, "cost": cost}
         if jobs:
             metadata[f"{policy}_profile"] = {"name": "finite", "grid_ms": 100, "horizon_grids": 16}
             env["JNOX_NATIVE_EDF_JOBS"] = ";".join(",".join(map(str, job)) for job in jobs)
+        if service:
+            metadata["deadline_service"] = {"slot": 2, "elf_sha256": peer_digests[1],
+                                            "cells": cells, "mask": sum(1 << cell for cell in cells),
+                                            "switch_cap": args.deadline_switch_cap[0]}
+            env["JNOX_NATIVE_DEADLINE_SERVICE_CELLS"] = calendar
+            env["JNOX_NATIVE_DEADLINE_SWITCH_CAP"] = str(args.deadline_switch_cap[0])
         if periodic:
             env["JNOX_NATIVE_PERIODIC"] = ";".join(",".join(map(str, item)) for item in periodic)
         if reservations:
