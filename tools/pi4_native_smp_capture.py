@@ -14,7 +14,7 @@ from ordinary_amc_capture import save, sha
 from qemu_capture import request
 
 
-def capture(a):
+def capture(a, observer=None):
     root = a.out.resolve()
     root.mkdir()
     package = a.package.resolve()
@@ -45,6 +45,8 @@ def capture(a):
            "-kernel", str(root / "kernel8.img")]
     if a.trace:
         cmd += ["-d", "int", "-D", str(root / "exceptions.log")]
+    if observer is not None:
+        cmd += observer.arguments(root)
     save(root / "launch.json", dict(argv=cmd, qemu_sha256=sha(qemu),
          version=subprocess.check_output([qemu, "--version"], text=True), timeout=120,
          ram_base=base, ram_end=end, trace=a.trace))
@@ -70,6 +72,8 @@ def capture(a):
                 if re.search(end_marker, raw):
                     request(Pipe, "stop")
                     request(Pipe, "pmemsave", val=base, size=end-base, filename=str(root / "ram.bin"))
+                    if observer is not None:
+                        observer.stopped(root)
                     reason = "terminal"
                     break
                 time.sleep(0.025)
