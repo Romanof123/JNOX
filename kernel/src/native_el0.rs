@@ -441,7 +441,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         1 => 0,
         6 => clock_gettime(f.x[0], f.x[1] as usize, now),
         7 => match sleep_until(f) {
-            Ok(target) if cfg!(jnox_native_fixed) && target.saturating_sub(now) > i64::MAX as u64 => -75,
+            Ok(target) if cfg!(any(jnox_native_fixed, jnox_native_edf)) && target.saturating_sub(now) > i64::MAX as u64 => -75,
             Ok(target) => { deadline = (target > now).then_some(target); 0 }
             Err(error) => error,
         },
