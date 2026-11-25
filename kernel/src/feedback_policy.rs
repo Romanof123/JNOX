@@ -43,7 +43,7 @@ impl FeedbackTask {
     }
 
     /// Settle delayed interrupts in constant time, including multiple bottom-level quanta.
-    #[cfg(jnox_multilevel)]
+    #[cfg(any(test, jnox_multilevel, jnox_native_multilevel))]
     pub(crate) fn charge_interval(&mut self, mut service: u64) {
         while self.level < 2 && service >= self.left {
             service -= self.left;

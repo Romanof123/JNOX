@@ -130,7 +130,7 @@ impl<const N: usize> Multilevel<N> {
         true
     }
 
-    #[cfg(jnox_multilevel)]
+    #[cfg(any(test, jnox_multilevel, jnox_native_multilevel))]
     pub(crate) fn close_interval(&mut self, id: usize, elapsed: u64, blocked: bool) -> bool {
         if self.running != Some(id) { return false; }
         if let Ranking::Feedback(tasks) = &mut self.ranking {
@@ -142,7 +142,7 @@ impl<const N: usize> Multilevel<N> {
         true
     }
 
-    #[cfg(any(jnox_multilevel_trace, jnox_mlfq_wake))]
+    #[cfg(any(test, jnox_multilevel_trace, jnox_mlfq_wake, jnox_native_multilevel))]
     pub(crate) fn queued(&self) -> &[usize] { self.ready.entries() }
 
     #[cfg(all(jnox_multilevel_limits, jnox_multilevel_trace))]
@@ -261,5 +261,38 @@ mod tests {
         assert!(q.stop(1, 1, Stop::Yield));
         assert_eq!((q.priority(1), q.remaining(1)), (Some(1), Some(4)));
         assert_eq!((q.priority(2), q.remaining(2)), (None, None));
+    }
+
+    #[test]
+    fn measured_late_service_charges_the_owner_once_and_retains_fifo_on_boost() {
+        let mut q = Multilevel::<3>::feedback([2, 3, 7]).unwrap();
+        for id in [1, 2, 0] { assert!(q.wake(id)); }
+        assert_eq!(q.dispatch(), Some(1));
+        assert!(!q.close_interval(2, u64::MAX, false));
+        assert!(!q.boost());
+        assert_eq!(q.remaining(1), Some(2));
+        assert!(q.close_interval(1, u64::MAX, true));
+        assert!(!q.close_interval(1, 1, false));
+        assert_eq!(q.priority(1), Some(0));
+        assert_eq!(q.remaining(1), Some(7 - (u64::MAX - 5) % 7));
+        assert_eq!(q.queued(), &[2, 0]);
+        assert!(q.boost());
+        assert_eq!(q.remaining(1), Some(2));
+        assert!(q.wake(1));
+        assert_eq!(q.queued(), &[2, 0, 1]);
+        assert_eq!(q.dispatch(), Some(2));
+    }
+
+    #[test]
+    fn fixed_late_close_rotates_once_and_grants_a_fresh_quantum() {
+        let mut q = Multilevel::fixed([1, 7, 7], 3).unwrap();
+        for id in 0..3 { assert!(q.wake(id)); }
+        assert_eq!(q.dispatch(), Some(1));
+        assert!(q.close_interval(1, 13, false));
+        assert_eq!(q.queued(), &[0, 2, 1]);
+        assert_eq!(q.dispatch(), Some(2));
+        assert!(q.close_interval(2, 0, true));
+        assert_eq!(q.dispatch(), Some(1));
+        assert_eq!(q.remaining(1), Some(3));
     }
 }

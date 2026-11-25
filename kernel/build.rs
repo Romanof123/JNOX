@@ -366,12 +366,17 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_edf)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_periodic)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_cbs)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_multilevel)");
     let peer2_image = selector("JNOX_NATIVE_PEER2_ELF");
     let peer2_hash = selector("JNOX_NATIVE_PEER2_ELF_SHA256");
     let policy = selector("JNOX_NATIVE_POLICY");
     let priorities = selector("JNOX_NATIVE_PRIORITIES");
     let weights = selector("JNOX_NATIVE_WEIGHTS");
     let periodic = selector("JNOX_NATIVE_PERIODIC");
+    let classes = selector("JNOX_NATIVE_CLASSES");
+    let allotments = selector("JNOX_NATIVE_ALLOTMENT_TICKS");
+    let boost = selector("JNOX_NATIVE_BOOST_TICKS");
+    let multilevel = [classes.as_deref(), allotments.as_deref(), boost.as_deref()];
     let reservations = selector("JNOX_NATIVE_RESERVATIONS");
     let edf_jobs = selector("JNOX_NATIVE_EDF_JOBS");
     let quantum = selector("JNOX_NATIVE_QUANTUM_TICKS");
@@ -382,7 +387,7 @@ fn main() {
     assert_eq!(peer_image.is_some(), peer_hash.is_some(), "peer ELF requires its digest");
     assert_eq!(peer2_image.is_some(), peer2_hash.is_some(), "second peer requires its digest");
     assert!(peer2_image.is_none() || peer_image.is_some(), "missing first peer");
-    if peer_image.is_some() || policy.is_some() || priorities.is_some() || weights.is_some() || edf_jobs.is_some() || periodic.is_some() || reservations.is_some() || quantum.is_some() {
+    if multilevel.iter().any(Option::is_some) || peer_image.is_some() || policy.is_some() || priorities.is_some() || weights.is_some() || edf_jobs.is_some() || periodic.is_some() || reservations.is_some() || quantum.is_some() {
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
             "native peers and scheduling require ordinary native process packaging");
     }
@@ -412,7 +417,7 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref());
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -640,7 +645,18 @@ fn parse_cbs_reservation(value: &str) -> (u32, u32) {
     (quota, period)
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>) {
+fn multilevel_number(field: &str) -> u64 {
+    assert!(!field.is_empty() && field.bytes().all(|c| c.is_ascii_digit()), "expected unsigned decimal digits");
+    field.parse().expect("multilevel setting exceeds u64")
+}
+
+fn multilevel_duration(field: &str) -> u64 {
+    let value = multilevel_number(field);
+    assert!((1..=i64::MAX as u64).contains(&value), "duration must be in 1..=i64::MAX");
+    value
+}
+
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3]) {
     let mode = policy.unwrap_or("cooperative");
     let slot_weights = if mode == "weighted" {
         let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
@@ -684,6 +700,28 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(reservations.is_none(), "reservations require CBS");
         vec![(0, 0); slots]
     };
+    let [class_arg, allotment_arg, boost_arg] = multilevel;
+    let mut classes = vec![0u8; slots];
+    let mut allotments = [0u64; 3];
+    let mut boost = 0u64;
+    assert!(class_arg.is_none() || mode == "mlq", "classes require MLQ");
+    assert!((allotment_arg.is_none() && boost_arg.is_none()) || mode == "mlfq",
+        "allotments and boost require MLFQ");
+    if mode == "mlq" {
+        classes = class_arg.expect("MLQ requires classes").split(',').map(|field| {
+            u8::try_from(multilevel_number(field)).expect("class must be 0..255")
+        }).collect();
+        assert_eq!(classes.len(), slots, "supply one MLQ class per slot");
+    }
+    if mode == "mlfq" {
+        let values: Vec<_> = allotment_arg.expect("MLFQ requires allotments").split(',')
+            .map(multilevel_duration).collect();
+        allotments = values.try_into().expect("MLFQ requires three allotments");
+        boost = multilevel_duration(boost_arg.expect("MLFQ requires boost period"));
+    }
+    if matches!(mode, "mlq" | "mlfq") {
+        println!("cargo::rustc-cfg=jnox_native_multilevel");
+    }
     let values = match policy {
         Some("fifo" | "rr") => {
             let list: Vec<u8> = priorities.expect("fixed scheduling requires priorities").split(',')
@@ -692,22 +730,24 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("weighted" | "edf" | "rm" | "dm" | "cbs") | None => {
+        Some("weighted" | "edf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
         Some(other) => panic!("invalid native policy {other:?}"),
     };
-    let ticks: u64 = if matches!(mode, "rr" | "weighted") {
+    let ticks: u64 = if mode == "mlq" {
+        multilevel_duration(quantum.expect("MLQ requires quantum ticks"))
+    } else if matches!(mode, "rr" | "weighted") {
         let value = quantum.expect("RR and weighted scheduling require quantum ticks").parse().expect("invalid quantum ticks");
         assert!((1..=i64::MAX as u64).contains(&value), "quantum ticks must be in 1..=i64::MAX");
         value
     } else {
-        assert!(quantum.is_none(), "quantum ticks require RR or weighted scheduling");
+        assert!(quantum.is_none(), "quantum ticks require RR, weighted scheduling or MLQ");
         0
     };
     let generated = format!(
-        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");
