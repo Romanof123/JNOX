@@ -8,6 +8,8 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
+Assign a weight to each native ELF to divide CPU service among ready applications, such as a C checksum worker and a Rust histogram worker. [Build a weighted package](docs/native-c-abi.en.md#weighted-cpu-service-for-native-applications)
+
 Package up to three native C or Rust applications with fixed priorities. FIFO preserves equal-priority order, and RR lets equal-priority calculations take turns without an explicit yield. [Build and run a fixed-priority package](docs/native-c-abi.en.md#scheduling-independently-linked-applications)
 
 An ordinary C process and an independently packaged Rust process can share CPU0 and yield to each other while keeping private writable data. [Package and run two native processes](docs/native-c-abi.en.md#package-two-cooperative-native-processes)

@@ -108,3 +108,19 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 \
 ~~~
 
 The small examples use a 1,250,000-tick quantum so the two priority-3 calculations overlap multiple quanta. The original frozen example used 12,500,000 ticks. The quantum is a package setting in physical counter ticks. [Native FIFO and RR evidence](evidence/evd-115.en.md)
+
+## Weighted CPU service for native applications
+
+Give the primary ELF one `--weight` and each peer ELF one `--peer-weight` in argument order. Weights from 1 through 4,294,967,295 specify relative CPU service while clients remain ready. The package uses one common grant in physical counter ticks. From the repository root on Linux or WSL, package a C CRC-32 calculation and a Rust bit-count histogram:
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-weighted/checksum.c "$run/crc.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-weighted-rust/Cargo.toml "$run/hist.elf"
+python3 tools/build_native_el0.py --out "$run/weighted" --elf "$run/crc.elf" \
+    --peer-elf "$run/hist.elf" --policy weighted --weight 1 --peer-weight 2 --quantum-ticks 625000
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg \
+    -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/weighted/kernel.elf"
+~~~
+
+[examples/native-weighted](../examples/native-weighted/README.md) · [EVD-116](evidence/evd-116.en.md)
