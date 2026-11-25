@@ -127,7 +127,11 @@ native_weighted_arm:
     mrs x13,cntp_cval_el0
     mrs x14,cntp_ctl_el0
     stp x13,x14,[x12,#32]
+    .ifdef NATIVE_PROPORTIONAL
+    adr x13,90f
+    .else
     adr x13,.Lweighted_eret\@
+    .endif
     mrs x14,ttbr0_el1
     stp x13,x14,[x12,#56]
     str xzr,[x12]
@@ -188,8 +192,14 @@ native_el0_enter:
     .endr
     clrex
     isb
+    .ifdef NATIVE_PROPORTIONAL
+    weighted_final_arm
+    cyclic_final_stamp
+90:
+    .else
     cyclic_final_stamp
     weighted_final_arm
+    .endif
     eret
 .size native_el0_enter,.-native_el0_enter
 
@@ -314,13 +324,34 @@ native_el0_enter:
     bl native_server_reselect
     b .Lrestore
     .else
+    .ifdef NATIVE_PROPORTIONAL
+    adrp x16,native_prop_continuation_deadline
+    ldr x16,[x16,:lo12:native_prop_continuation_deadline]
+    cbz x16,.Lprop_return_ok
+    isb
+    mrs x17,cntpct_el0
+    cmp x17,x16
+    b.lo .Lprop_return_ok
+    mov x0,x17
+    mov x1,sp
+    bl native_prop_late
+    b .Lrestore
+.Lprop_return_ok:
+    ldp x16,x17,[sp,#128]
+    .endif
     .ifdef NATIVE_WEIGHTED_CONTINUOUS
     add sp,sp,#848
     .else
     add sp,sp,#832
     .endif
+    .ifdef NATIVE_PROPORTIONAL
+    weighted_final_arm
+    cyclic_final_stamp
+90:
+    .else
     cyclic_final_stamp
     weighted_final_arm
+    .endif
     eret
     .endif
 

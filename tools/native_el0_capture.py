@@ -63,6 +63,8 @@ def argument_manifest(args):
 def capture(args):
     if not re.fullmatch("[0-9a-f]{40}", args.revision):
         raise ValueError("full source revision required")
+    if getattr(args, "timeout", 20) <= 0 or getattr(args, "uart_limit", 1 << 20) <= 0:
+        raise ValueError("capture limits must be positive")
     manifest = argument_manifest(args)
     root = args.root.resolve()
     root.mkdir()
@@ -108,7 +110,7 @@ def capture(args):
                 stderr=err,
                 bufsize=0,
             )
-            timer = threading.Timer(20, proc.kill)
+            timer = threading.Timer(getattr(args, "timeout", 20), proc.kill)
             timer.start()
             try:
                 if "QMP" not in json.loads(proc.stdout.readline()):
@@ -123,7 +125,7 @@ def capture(args):
                 while proc.poll() is None:
                     uart = root / "uart.bin"
                     if uart.exists():
-                        if uart.stat().st_size > 1 << 20:
+                        if uart.stat().st_size > getattr(args, "uart_limit", 1 << 20):
                             raise ValueError("oversize UART")
                         raw = uart.read_bytes()
                         exits = {}
@@ -178,6 +180,8 @@ if __name__ == "__main__":
     for name in ("root", "kernel", "user", "probe"):
         parser.add_argument(name, type=Path)
     parser.add_argument("revision")
+    parser.add_argument("--timeout", type=int, default=20, help="wall-clock capture limit in seconds")
+    parser.add_argument("--uart-limit", type=int, default=1 << 20, help="maximum retained UART bytes")
     parser.add_argument("--plain", action="store_true", help="capture RAM and UART without external exception tracing")
     parser.add_argument("--expect-exit", type=int, default=37, help="expected signed process exit")
     parser.add_argument("--manifest", type=Path, help="audit packaged ordinary-process arguments")

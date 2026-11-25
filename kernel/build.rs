@@ -1,3 +1,10 @@
+#[allow(dead_code, unexpected_cfgs)]
+#[path = "src/feedback_policy.rs"]
+mod feedback_policy;
+#[allow(dead_code, unexpected_cfgs)]
+#[path = "src/proportional_policy.rs"]
+mod proportional_policy;
+
 use std::env;
 
 fn selector(key: &str) -> Option<String> {
@@ -392,6 +399,14 @@ fn main() {
     } else {
         ("none", 0)
     };
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_proportional)");
+    let seed = selector("JNOX_NATIVE_LOTTERY_SEED");
+    let lottery_window = selector("JNOX_NATIVE_LOTTERY_WINDOW");
+    let lottery_floors = selector("JNOX_NATIVE_LOTTERY_FLOORS");
+    assert_eq!(seed.is_some(), policy.as_deref() == Some("lottery"), "only lottery requires a seed");
+    assert_eq!(lottery_window.is_some(), lottery_floors.is_some(), "supply window and floors together");
+    assert!(lottery_window.is_none() || seed.is_some(), "window requires lottery");
+    let lottery = [seed.as_deref(), lottery_window.as_deref(), lottery_floors.as_deref()];
     let weights = selector("JNOX_NATIVE_WEIGHTS");
     let periodic = selector("JNOX_NATIVE_PERIODIC");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_partition)");
@@ -407,11 +422,11 @@ fn main() {
     assert_eq!(budget.is_some(), server, "server policies require quota and period exclusively");
     assert_eq!(credits.is_some(), policy.as_deref() == Some("sporadic"), "only sporadic requires credits");
     let server_settings = server.then(|| {
-        let ms = multilevel_number(slot_ms.as_deref().unwrap());
+        let ms = decimal_number(slot_ms.as_deref().unwrap());
         let (q, p) = parse_budget_tuple(budget.as_deref().unwrap());
         assert!(ms > 0 && ms.checked_mul(u64::from(p)).is_some(), "invalid server period in milliseconds");
         let cap = credits.as_deref().map(|s| {
-            let cap = multilevel_number(s);
+            let cap = decimal_number(s);
             assert!((1..=8).contains(&cap), "sporadic credits must be in 1..8");
             cap
         }).unwrap_or(0);
@@ -508,7 +523,7 @@ fn main() {
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, lottery);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -736,13 +751,13 @@ fn parse_budget_tuple(value: &str) -> (u32, u32) {
     (quota, period)
 }
 
-fn multilevel_number(field: &str) -> u64 {
+fn decimal_number(field: &str) -> u64 {
     assert!(!field.is_empty() && field.bytes().all(|c| c.is_ascii_digit()), "expected unsigned decimal digits");
-    field.parse().expect("multilevel setting exceeds u64")
+    field.parse().expect("decimal setting exceeds u64")
 }
 
 fn multilevel_duration(field: &str) -> u64 {
-    let value = multilevel_number(field);
+    let value = decimal_number(field);
     assert!((1..=i64::MAX as u64).contains(&value), "duration must be in 1..=i64::MAX");
     value
 }
@@ -805,7 +820,19 @@ fn partition_windows(table: &str) -> Vec<(Option<usize>, u64)> {
     windows
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64)) {
+fn forecast_lottery<const N: usize>(weights: &[u32], seed: u64, horizon: usize, width: usize, floors: &[u8]) {
+    let input = proportional_policy::NativeWindowInput::<N> {
+        weights: std::array::from_fn(|id| weights[id] as u8), seed, horizon, width,
+        floors: floors.try_into().expect("one floor per owner"),
+    };
+    let report = input.analyze().expect("invalid lottery admission configuration");
+    if let Some((start, owner, count)) = report.first_short {
+        panic!("lottery interval [{start},{}) owner {owner}: count {count} < floor {}",
+            start + width, floors[owner]);
+    }
+}
+
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), lottery: [Option<&str>; 3]) {
     if server_settings.is_some() {
         assert_eq!(slots, 2, "native servers require exactly two ordinary applications");
         println!("cargo::rustc-cfg=jnox_native_aperiodic");
@@ -820,7 +847,17 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         Vec::new()
     };
     let mode = policy.unwrap_or("cooperative");
-    let slot_weights = if mode == "weighted" {
+    let slot_weights = if matches!(mode, "lottery" | "stride") {
+        let list: Vec<u32> = weights.expect("proportional scheduling requires weights").split(',')
+            .map(|field| {
+                let value = decimal_number(field);
+                assert!((1..=16).contains(&value), "proportional weights must be in 1..16");
+                value as u32
+            }).collect();
+        assert_eq!(list.len(), slots, "supply one weight per slot");
+        println!("cargo::rustc-cfg=jnox_native_proportional");
+        list
+    } else if mode == "weighted" {
         let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
             .map(|value| value.parse().expect("weight must be a positive u32")).collect();
         assert_eq!(values.len(), slots, "supply one weight per slot");
@@ -831,6 +868,26 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(weights.is_none(), "weights require weighted scheduling");
         vec![0; slots]
     };
+    let [seed, window, floors] = lottery;
+    let seed = seed.map(decimal_number).unwrap_or(0);
+    let mut horizon = 0usize;
+    let mut width = 0usize;
+    let mut counts = vec![0u8; slots];
+    if let (Some(window), Some(floors)) = (window, floors) {
+        let (h, w) = window.split_once(',').expect("expected H,W");
+        let (h, w) = (decimal_number(h), decimal_number(w));
+        assert!(1 <= w && w <= h && h <= 64, "require 1 <= W <= H <= 64");
+        (horizon, width) = (h as usize, w as usize);
+        counts = floors.split(',').map(|v| u8::try_from(decimal_number(v)).expect("floor exceeds u8")).collect();
+        assert!(counts.len() == slots && counts.iter().map(|&v| usize::from(v)).sum::<usize>() <= width,
+            "supply one floor per slot summing to at most W");
+        match slots {
+            1 => forecast_lottery::<1>(&slot_weights, seed, horizon, width, &counts),
+            2 => forecast_lottery::<2>(&slot_weights, seed, horizon, width, &counts),
+            3 => forecast_lottery::<3>(&slot_weights, seed, horizon, width, &counts),
+            _ => unreachable!(),
+        }
+    }
     let llf = mode == "llf";
     let jobs = if matches!(mode, "edf" | "llf") {
         let jobs: Vec<_> = edf_jobs.expect("EDF and LLF require job tuples").split(';').map(parse_deadline_job).collect();
@@ -872,7 +929,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         "allotments and boost require MLFQ");
     if mode == "mlq" {
         classes = class_arg.expect("MLQ requires classes").split(',').map(|field| {
-            u8::try_from(multilevel_number(field)).expect("class must be 0..255")
+            u8::try_from(decimal_number(field)).expect("class must be 0..255")
         }).collect();
         assert_eq!(classes.len(), slots, "supply one MLQ class per slot");
     }
@@ -898,17 +955,17 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic") | None => {
+        Some("lottery" | "stride" | "weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
         Some(other) => panic!("invalid native policy {other:?}"),
     };
-    let ticks: u64 = if thread_rr {
-        let raw = quantum.expect("thread RR requires quantum ticks");
-        assert!(!raw.is_empty() && raw.bytes().all(|b| b.is_ascii_digit()), "invalid thread quantum");
-        let value = raw.parse().expect("invalid thread quantum");
-        assert!((1..=i64::MAX as u64).contains(&value), "thread quantum must be in 1..=i64::MAX");
+    let ticks: u64 = if thread_rr || matches!(mode, "lottery" | "stride") {
+        let raw = quantum.expect("quantum ticks required");
+        assert!(!raw.is_empty() && raw.bytes().all(|b| b.is_ascii_digit()), "expected unsigned decimal quantum");
+        let value = raw.parse().expect("expected unsigned decimal quantum");
+        assert!((1..=i64::MAX as u64).contains(&value), "quantum must be in 1..=i64::MAX");
         value
     } else if mode == "mlq" {
         multilevel_duration(quantum.expect("MLQ requires quantum ticks"))
@@ -931,7 +988,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     let job_count = jobs.len();
     let extra_slots = extras.join(", ");
     let generated = format!(
-        "pub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_LOTTERY_SEED: u64 = {seed};\npub const NATIVE_LOTTERY_HORIZON: usize = {horizon};\npub const NATIVE_LOTTERY_WINDOW: usize = {width};\npub const NATIVE_LOTTERY_FLOORS: [u8; {slots}] = {counts:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");
