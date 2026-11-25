@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "work": 12,
+  "minimum_capacity": 1,
+  "allowed_cpus": 3,
+  "deadline_ticks": 12,
+  "deadline_reserve": 1,
+  "limits": [
+    {"available": true, "thermal_capacity": 3, "shared_load": 0, "reserve_capacity": 0},
+    {"available": true, "thermal_capacity": 6, "shared_load": 0, "reserve_capacity": 0}
+  ],
+  "points": [
+    {"cpu": 0, "opp": 0, "capacity": 3, "energy_per_work": 1, "wake_energy": 1, "wake_ticks": 1},
+    {"cpu": 1, "opp": 1, "capacity": 6, "energy_per_work": 3, "wake_energy": 2, "wake_ticks": 1}
+  ],
+  "fallback": null
+}

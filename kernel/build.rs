@@ -565,6 +565,30 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_smp_partitioned)");
     let smp_masks = selector("JNOX_NATIVE_CPU_MASKS");
     let smp_cells = selector("JNOX_NATIVE_RELEASE_CELLS");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_energy_placement)");
+    let energy = policy.as_deref() == Some("energy-placement");
+    let energy_source = selector("JNOX_NATIVE_PLACEMENT_PROFILE");
+    let source_hash = selector("JNOX_NATIVE_PLACEMENT_SOURCE_SHA256");
+    let wire_hash = selector("JNOX_NATIVE_PLACEMENT_WIRE_SHA256");
+    assert!(energy == energy_source.is_some() && energy == source_hash.is_some() &&
+            energy == wire_hash.is_some(), "energy placement requires a bound model profile");
+    if energy {
+        assert!(board == "pi4" && profile.as_deref() == Some("native") &&
+                app.as_deref() == Some("process") && peer_image.is_none() &&
+                threads.is_none() && service_image.is_none() && priorities.is_none(),
+                "energy placement requires one Pi 4 native process");
+        let source = std::fs::canonicalize(energy_source.unwrap()).expect("placement model path");
+        assert!(!source.to_string_lossy().contains(['\r', '\n']), "invalid placement model path");
+        let out = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_energy_profile.rs");
+        let generator = "../tools/native_energy_profile.py";
+        println!("cargo::rerun-if-changed={}", source.display());
+        println!("cargo::rerun-if-changed={generator}");
+        assert!(std::process::Command::new("python3").arg("-I").arg(generator).arg(source)
+                .arg(source_hash.unwrap()).arg(wire_hash.unwrap()).arg(out)
+                .status().expect("validate placement profile").success(), "invalid placement profile");
+        println!("cargo::rustc-cfg=jnox_native_energy_placement");
+        println!("cargo::rustc-cfg=jnox_native_smp_partitioned");
+    }
     let pi4_native_smp = policy.as_deref() == Some("smp-partitioned");
     let smp_table = if pi4_native_smp {
         assert!(board == "pi4" && profile.as_deref() == Some("native") &&
@@ -585,7 +609,7 @@ fn main() {
         && matches!(policy.as_deref(), Some("fifo" | "rr"));
     match profile.as_deref() {
         Some("native") => {
-            assert!((board == "virt" || pi4_native_fixed || pi4_native_smp) && matches!(app.as_deref(), Some("startup-probe" | "process"))
+            assert!((board == "virt" || pi4_native_fixed || pi4_native_smp || energy) && matches!(app.as_deref(), Some("startup-probe" | "process"))
                 && bench == "boot" && trace.is_none() && scenario.is_none()
                 && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
                 "native requires virt or two Pi fixed processes and no benchmark features");
@@ -779,7 +803,7 @@ fn main() {
                 "JNOX_BOARD=pi4 supports serial boot, sched-bench, or uninstrumented fixed FIFO/RR"
             );
             println!("cargo::rustc-cfg=jnox_pi4");
-            if pi4_native_fixed || pi4_native_smp { "pi4-native.ld" } else { "pi4.ld" }
+            if pi4_native_fixed || pi4_native_smp || energy { "pi4-native.ld" } else { "pi4.ld" }
         }
         _ => panic!("unknown JNOX_BOARD {board:?}; expected virt or pi4"),
     };
@@ -1135,7 +1159,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("amc" | "sjf" | "srtf" | "hrrn" | "lottery" | "stride" | "weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy" | "extension") | None => {
+        Some("energy-placement" | "amc" | "sjf" | "srtf" | "hrrn" | "lottery" | "stride" | "weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy" | "extension") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }

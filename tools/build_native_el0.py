@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from native_energy_profile import MAX_BYTES as MAX_PLACEMENT_BYTES, parse_profile
 from native_extension_program import parse_program
 from native_amc_roots import linked_roots
 from native_hierarchy import parse_topology, unique_keys
@@ -329,13 +330,14 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to three peers for AMC, two for other policies)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc", "smp-partitioned"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc", "smp-partitioned", "energy-placement"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--extension-program", type=Path, action=SinglePath, metavar="RULE.txt")
     parser.add_argument("--amc-clock-page", action="count", default=0)
     parser.add_argument("--amc-manifest", type=Path, action=SinglePath, metavar="DEPLOYMENT.json")
+    parser.add_argument("--placement-profile", type=Path, action=SinglePath, metavar="PROFILE.json")
     parser.add_argument("--hierarchy", type=Path, action=SinglePath, metavar="TOPOLOGY.json")
     parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--cpu-mask", type=unsigned_decimal, action=SinglePath)
@@ -427,7 +429,20 @@ def main():
             parser.error("release cells must be 0..255 and priorities 1..255")
     elif args.cpu_mask is not None or args.peer_cpu_mask or args.release_cell is not None or args.peer_release_cell:
         parser.error("CPU masks and release cells require smp-partitioned")
-    if board == "pi4" and not smp and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
+    energy = policy == "energy-placement"
+    if energy != (args.placement_profile is not None):
+        parser.error("--placement-profile is required exclusively with --policy energy-placement")
+    if energy:
+        if board != "pi4" or args.peer_elf or args.threads:
+            parser.error("energy-placement requires a singleton Pi 4 process")
+        try:
+            profile_path = args.placement_profile.resolve(strict=True)
+            with profile_path.open("rb") as stream:
+                profile_source = stream.read(MAX_PLACEMENT_BYTES + 1)
+            placement = parse_profile(profile_source)
+        except (OSError, ValueError) as exc:
+            parser.error(f"invalid --placement-profile: {exc}")
+    if board == "pi4" and not smp and not energy and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
                            or not (args.source or args.elf) or args.threads):
         parser.error("pi4 requires a primary application and one peer under FIFO or RR")
     server_policy = policy in ("polling", "deferrable", "sporadic")
@@ -532,6 +547,20 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if energy:
+        source = out / "placement-source.json"
+        canonical = out / "placement-v1.json"
+        source.write_bytes(profile_source)
+        canonical.write_bytes(placement.wire)
+        source_name = str(profile_path.relative_to(ROOT) if profile_path.is_relative_to(ROOT) else profile_path)
+        inputs[source_name] = placement.source_sha256
+        metadata.update(placement_input={"path": source_name, "file": source.name, "sha256": placement.source_sha256},
+                        placement_canonical={"file": canonical.name, "sha256": placement.wire_sha256},
+                        timing_unit="floor(CNTFRQ/10) counter ticks", online_cpus=[0, 1],
+                        package_argv=sys.argv[:])
+        env.update(JNOX_NATIVE_PLACEMENT_PROFILE=str(source),
+                   JNOX_NATIVE_PLACEMENT_SOURCE_SHA256=placement.source_sha256,
+                   JNOX_NATIVE_PLACEMENT_WIRE_SHA256=placement.wire_sha256)
     if policy == "extension":
         program = out / "extension_program.txt"
         program.write_bytes(("\n".join(ops) + "\n").encode("ascii"))
@@ -609,6 +638,9 @@ def main():
                 slot["amc_task"] = amc["tasks"][slot["slot"]]
             slot["argv"] = (["/bin/app", *vectors[slot["slot"]]] if app == "process"
                             else ["/bin/native_startup_probe", "8", "13"])
+            if energy:
+                argv_bytes = json.dumps(slot["argv"], ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+                slot["argv_sha256"] = hashlib.sha256(argv_bytes).hexdigest()
             slot["priority"] = priorities[slot["slot"]] if priorities else None
             if weights:
                 slot["weight"] = weights[slot["slot"]]

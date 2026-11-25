@@ -111,7 +111,7 @@ mod fair_policy;
 #[cfg(any(jnox_ordinary_prop, jnox_multilevel, jnox_native_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_ordinary_prop, jnox_multilevel, jnox_native_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
 mod feedback_policy;
-#[cfg(any(jnox_bench = "rr", jnox_bench = "power", jnox_bench = "extension"))]
+#[cfg(any(jnox_bench = "rr", jnox_bench = "power", jnox_bench = "extension", jnox_native_energy_placement))]
 #[cfg_attr(any(jnox_bench = "power", jnox_bench = "extension"), allow(dead_code))]
 mod group_policy;
 #[cfg(jnox_bench = "hierarchy")]
@@ -162,7 +162,7 @@ mod partition;
 mod periodic;
 #[cfg(jnox_bench = "power")]
 mod power;
-#[cfg(jnox_bench = "power")]
+#[cfg(any(jnox_bench = "power", jnox_native_energy_placement))]
 mod power_policy;
 #[cfg(jnox_bench = "proportional")]
 mod proportional;
