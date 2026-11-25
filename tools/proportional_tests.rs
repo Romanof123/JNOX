@@ -207,3 +207,41 @@ fn finite_windows_cover_edges_and_reject_unsupported_contracts() {
         assert!(invalid.analyze().is_none());
     }
 }
+
+#[test]
+fn native_stride_charges_long_intervals_and_preserves_a_rejected_lease() {
+    let mut p = Proportional::stride([1, 2]).unwrap();
+    assert!(p.set_ready_mask(3));
+    assert_eq!(p.dispatch(), Some(0));
+    assert!(!p.stop_elapsed(1, u64::MAX));
+    assert_eq!(p.pass_wide(0), Some(0));
+    assert!(p.stop_elapsed(0, u64::MAX));
+    let full = u128::from(u64::MAX) * 720_720;
+    assert_eq!(p.pass_wide(0), Some(full));
+    assert_eq!(p.pass(0), None);
+    assert_eq!(p.dispatch(), Some(1));
+    let ticks = u64::from(u32::MAX) + 1;
+    assert!(p.stop_elapsed(1, ticks));
+    let peer = u128::from(ticks) * 360_360;
+    assert_eq!(p.pass_wide(1), Some(peer));
+    assert_eq!(p.dispatch(), Some(1));
+    assert_eq!(p.last_normalization_wide(), Some(peer));
+    assert_eq!(p.pass_wide(0), Some(full - peer));
+}
+
+#[test]
+fn native_windows_accept_one_to_three_slots_and_zero_floors() {
+    use crate::proportional_policy::NativeWindowInput;
+
+    let solo = NativeWindowInput { seed: 0, weights: [16], horizon: 64, width: 64, floors: [0] };
+    assert_eq!(solo.analyze().unwrap().minimum, [64]);
+    let pair = NativeWindowInput { seed: u64::MAX, weights: [1, 16], horizon: 1, width: 1, floors: [0, 0] };
+    let min = pair.analyze().unwrap().minimum;
+    assert_eq!(min[0] + min[1], 1);
+    let named = NativeWindowInput { seed: 1, weights: WEIGHTS, horizon: 48, width: 24, floors: [6, 0, 0] };
+    let report = named.analyze().unwrap();
+    assert_eq!(report.minimum, [5, 3, 11]);
+    assert_eq!(report.first_short, Some((24, 0, 5)));
+    let invalid = NativeWindowInput { seed: 0, weights: [1; 4], horizon: 1, width: 1, floors: [0; 4] };
+    assert!(invalid.analyze().is_none());
+}

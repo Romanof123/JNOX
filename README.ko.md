@@ -8,6 +8,8 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
+앱별 가중치로 추첨 또는 스트라이드 스케줄링을 선택할 수 있습니다. [시드·배정 창 설정과 앱 실행](docs/native-c-abi.md#네이티브-앱-추첨과-스트라이드-배정)
+
 한 프로세스의 네 스레드에 우선순위를 지정하고 우선순위 상속·즉시 천장·기한부 뮤텍스 대기를 선택할 수 있습니다. [C·Rust 속성과 패키징](docs/native-c-abi.md#네-스레드의-우선순위와-뮤텍스-설정)
 
 선택형 공학 구성에서 네이티브 프로세스에 개별 CPU 예산과 공유 상위 예산을 지정할 수 있습니다. [계층형 앱과 단일 CRC 설정](docs/native-c-abi.md#프로세스별-계층형-cpu-예산-설정) 부팅 전체의 유휴 재충전 지연과 최초 위반은 일반 UART에서 읽을 수 있습니다. [상태 판독기](docs/native-c-abi.md#유휴-재충전-상태-확인)
