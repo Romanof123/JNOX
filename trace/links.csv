@@ -2225,4 +2225,12 @@ IPC-002,partially-implemented-by,IMP-303
 IMP-303,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-303
 IMP-303,tested-in,EVD-303
+CHG-304,affects,REQ-024
+REQ-024,partially-implemented-by,IMP-304
+DES-013,partially-implemented-by,IMP-304
+IPC-003,partially-implemented-by,IMP-304
+IMP-304,partially-verified-by,VER-024
+VER-024,has-partial-evidence,EVD-304
+IMP-304,tested-in,EVD-304
+IPC-003,depends-on-policy,POL-002
 IPC-002,depends-on-policy,POL-002

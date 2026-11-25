@@ -389,6 +389,8 @@ def main():
                         help="grant a directed synchronous call right between native FIFO/RR processes")
     parser.add_argument("--mailbox-route", type=ipc_route, action="append", default=[], metavar="CALLER:OWNER",
                         help="grant a send right to another native FIFO/RR process's mailbox")
+    parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
+                        help="grant a notification right to another native FIFO/RR process")
     args = parser.parse_args()
     if len(args.threads) > 1:
         parser.error("--threads may appear only once")
@@ -413,8 +415,12 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
-    grants = [("ipc", "server", sorted(args.ipc_route)), ("mailbox", "owner", sorted(args.mailbox_route))]
-    for kind, _, routes in grants:
+    grants = [
+        ("ipc", "caller", "server", sorted(args.ipc_route)),
+        ("mailbox", "caller", "owner", sorted(args.mailbox_route)),
+        ("notify", "sender", "owner", sorted(args.notify_route)),
+    ]
+    for kind, _, _, routes in grants:
         if not routes:
             continue
         count = 1 + len(args.peer_elf)
@@ -535,10 +541,10 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
-    for kind, endpoint, routes in grants:
+    for kind, origin, endpoint, routes in grants:
         if routes:
             env[f"JNOX_NATIVE_{kind.upper()}_ROUTES"] = ",".join(f"{caller}:{dest}" for caller, dest in routes)
-            metadata[f"{kind}_routes"] = [{"caller": caller, endpoint: dest} for caller, dest in routes]
+            metadata[f"{kind}_routes"] = [{origin: caller, endpoint: dest} for caller, dest in routes]
             metadata["package_argv"] = sys.argv[:]
     if policy == "extension":
         program = out / "extension_program.txt"
