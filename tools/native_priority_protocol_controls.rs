@@ -85,9 +85,9 @@ fn donation_and_withdrawal_preserve_one_rr_turn() {
     assert_eq!(p.residual(OWNER), 50);
     for id in [HIGH, PEER, BACKGROUND] { assert_eq!(p.state(id), State::Ready); }
     lock(&p, token, Some(p.handle(OWNER)), None);
-    returns(&mut p, HIGH, D);
     assert_eq!(p.take_completion(HIGH), Some(Completion::Mutex(TIMEOUT)));
     assert_eq!(p.take_completion(HIGH), None);
+    returns(&mut p, HIGH, D);
     assert_eq!(p.next_timer(D), None);
     // FIFO runs for more than Q. None of this time belongs to OWNER.
     enter(&mut p, 260, 261);
@@ -167,3 +167,29 @@ fn unlock_boundary(at: u64) {
 #[test] fn unlock_before_deadline() { unlock_boundary(D - 1); }
 #[test] fn unlock_at_deadline() { unlock_boundary(D); }
 #[test] fn unlock_after_deadline() { unlock_boundary(D + 1); }
+
+#[test]
+fn due_waiter_completes_before_owner_unlock() {
+    let (mut p, token) = contended();
+    enter(&mut p, D, D);
+    assert_eq!(p.current(), Some(OWNER));
+    assert_eq!(p.take_completion(HIGH), Some(Completion::Mutex(TIMEOUT)));
+    lock(&p, token, Some(p.handle(OWNER)), None);
+    p.mutex(17, ADDRESS, token, None).unwrap();
+    assert_eq!(p.take_completion(HIGH), None);
+    lock(&p, token, None, None);
+}
+
+#[test]
+fn handoff_completes_at_unlock_before_deadline_advance() {
+    let (mut p, token) = contended();
+    enter(&mut p, D - 1, D - 1);
+    assert_eq!(p.take_completion(HIGH), None);
+    p.mutex(17, ADDRESS, token, None).unwrap();
+    assert_eq!(p.take_completion(HIGH), Some(Completion::Mutex(0)));
+    lock(&p, token, Some(p.handle(HIGH)), None);
+    returns(&mut p, HIGH, D - 1);
+    enter(&mut p, D, D);
+    assert_eq!(p.take_completion(HIGH), None);
+    lock(&p, token, Some(p.handle(HIGH)), None);
+}
