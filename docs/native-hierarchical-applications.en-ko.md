@@ -46,3 +46,19 @@ Apply [#212's timing criteria](nested-group-recurring-service.en-ko.md). P = 15,
 Record sampled dispatch/settlement ticks, compare/IRQ sample, ready state, owners, all three balances/debts and frame addresses. Bracket measured handling with ordered architectural counter samples on exception entry, before/after settlement and arbitration, and after mapping/frame selection immediately before return. Report count, min/max, total ticks and maximum observed interval share for same owner, process switch, idle entry/recovery and SVC versus IRQ. Identify absent categories, trace mode and included probe overhead. Preserve the existing sample-to-sample attribution of switch overhead. Never debit diagnostic subintervals twice. The last pre-return sample precedes actual ERET. Independently replay early close, repeated debt across refills, stale observations, empty masks/groups, exact-zero recovery, long skipped periods and the u64 horizon using the pure ledger. Preserve original arithmetic checks. Use natural positive overshoot in the native cases and synthetic ticks only at the host boundary.
 
 일반·유휴 만료는 IRQ 관측−비교 시각이 0~1,953,125틱, 연속 관측 간격은 125,000,000틱 이하여야 한다. 수면 때문에 앞당긴 비교값과 실행권 끝을 구분한다. 비교값이 예산 만료와 같은 연속 실행의 점유는 예약량+1,953,125틱 이하다. 해당 N회에서 양수 초과량 합은 N배 한도 안에 들어야 하며 실제 합도 남긴다. 세 노드에 기록된 동일 구간은 하나의 CPU 점유 구간이다. IRQ·SVC 진입, 정산·선택 전후, 매핑과 프레임 선택 후 복귀 직전의 카운터로 동일 앱·앱 전환·유휴 진입과 복귀 비용의 표본 수·최소·최대·합계와 최대 비율을 구한다. 계측 시간을 포함하며 실행자에게 이중 부과하지 않는다. 순수 정책에서 반복 지연·정확한 0 잔액·이전 시각·빈 그룹·긴 누락·u64 경계를 확인한다. 앱에서 IRQ 지연을 주입하지 않는다. 가상 비용은 해당 입력과 모드의 관측값이다. Item/load authority remains #1, physical timing #34, and safety timing #10. 제품 부하·실보드 시간·안전 시간의 승인 주체는 각각 #1·#34·#10이다.
+
+## Single-leaf control / 단일 리프 대조
+
+After the four positions above, retain first plain and externally traced cold boots of the same CPU-bound CRC ELF alone. Use the normal native package command below and the exact contents shown for single.json.
+
+~~~sh
+python3 tools/build_native_el0.py --out output/hierarchy-one --policy hierarchy --hierarchy single.json --elf checksum.elf
+~~~
+
+~~~json
+{"period_ticks":15625000,"parents":[15625000],"children":[[0,15625000]],"leaves":[[0,3906250]]}
+~~~
+
+Require at least one actual PPI30 interruption of running EL0 before exit. Show the leaf exhausted while its ancestors retain credit, followed by idle with zero charge, a timer-driven eligible refill and restoration of the interrupted CRC PC, SP and private mapping. Decode the initial and restored user exception state as EL0t with PSTATE.I clear (SPSR_EL1 bit 7 at ERET). Correlate the saved frame and external exception return with private progress after resumption. Apply the same 0…1,953,125 tick reaction bound to each quota and idle timer expiry, the 125,000,000 tick observation-spacing bound, and the existing gap-free coverage rules. Check all 134,217,728 bytes processed, CRC 2,124,873,618 and exit 237. Let the normal hardware timer interrupt the unmodified computation. Preserve missing events or exceeded bounds in the first verdict.
+
+기존 네 구성 뒤에 같은 CRC ELF 하나를 위 설정으로 일반·외부 추적 모드에서 각각 최초 부팅한다. 리프 예산은 주기의 1/4이며 부모와 자식의 예산은 각각 한 주기다. 실제 EL0 계산 중 PPI30이 적어도 한 번 진입하고, 상위 예산이 남은 채 리프가 소진된 뒤 유휴 무과금, 타이머 보충과 중단 지점 복귀가 이어져야 한다. 최초 및 복구 ERET에서 EL0t와 IRQ 허용 상태(I=0)를 확인하고 PC·SP·매핑과 복귀 후 진행을 대조한다. 실행 및 유휴 만료마다 지연 한도 1,953,125틱, 연속 관측 간격 125,000,000틱과 전체 순번 조건을 적용한다. 지연 주입 없이 최종 처리 바이트 수·CRC·종료값까지 확인한다.
