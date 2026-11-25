@@ -377,8 +377,8 @@ def main():
             parser.error("supply a singleton CPU mask per slot, using both CPU0 and CPU1")
         if args.peer_release_cell and len(args.peer_release_cell) != len(args.peer_elf):
             parser.error("supply one release cell per peer or omit all peer release cells")
-        cells = [args.release_cell or 0, *(args.peer_release_cell or [0] * len(args.peer_elf))]
-        if max(cells) > 255 or min(priorities) < 1:
+        smp_release_cells = [args.release_cell or 0, *(args.peer_release_cell or [0] * len(args.peer_elf))]
+        if max(smp_release_cells) > 255 or min(priorities) < 1:
             parser.error("release cells must be 0..255 and priorities 1..255")
     elif args.cpu_mask is not None or args.peer_cpu_mask or args.release_cell is not None or args.peer_release_cell:
         parser.error("CPU masks and release cells require smp-partitioned")
@@ -525,12 +525,12 @@ def main():
         jobs = args.job + args.peer_job
         if smp:
             env["JNOX_NATIVE_CPU_MASKS"] = ",".join(map(str, masks))
-            env["JNOX_NATIVE_RELEASE_CELLS"] = ",".join(map(str, cells))
+            env["JNOX_NATIVE_RELEASE_CELLS"] = ",".join(map(str, smp_release_cells))
             metadata.update(online_cpus=[0, 1], release_grid_hz=50, bsp="raspi4b")
         for slot in slots:
             if smp:
                 i = slot["slot"]
-                slot.update(cpu_mask=masks[i], release_cell=cells[i])
+                slot.update(cpu_mask=masks[i], release_cell=smp_release_cells[i])
             if policy == "extension":
                 i = slot["slot"]
                 slot.update(generation=(7, 11, 17)[i], cpu=0, role="reserved" if i == 0 else "delegated")
