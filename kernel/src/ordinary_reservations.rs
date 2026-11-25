@@ -195,11 +195,22 @@ struct Progress {
     cells: [[AtomicU64; 2]; 2],
     active: AtomicUsize,
 }
-static POINTER: [AtomicPtr<Progress>; 2] = [const { AtomicPtr::new(ptr::null_mut()) }; 2];
-static GOAL: [AtomicU64; 2] = [const { AtomicU64::new(NA) }; 2];
-static ACTION: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
-static GENERATION: [AtomicU64; 2] = [const { AtomicU64::new(NA) }; 2];
-static FIRST: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
+struct WorkerMailbox {
+    generation: AtomicU64,
+    action: AtomicU64,
+    goal: AtomicU64,
+    first: AtomicU64,
+    progress: AtomicPtr<Progress>,
+}
+static MAILBOXES: [WorkerMailbox; 2] = [const {
+    WorkerMailbox {
+        generation: AtomicU64::new(NA),
+        action: AtomicU64::new(0),
+        goal: AtomicU64::new(NA),
+        first: AtomicU64::new(0),
+        progress: AtomicPtr::new(ptr::null_mut()),
+    }
+}; 2];
 static MASK_FROM: AtomicU64 = AtomicU64::new(NA);
 static MASK_UNTIL: AtomicU64 = AtomicU64::new(NA);
 static NOMINAL_END: AtomicU64 = AtomicU64::new(NA);
@@ -248,12 +259,13 @@ extern "C" fn reservation_rust_work(id: usize) -> ! {
         cells: core::array::from_fn(|_| [AtomicU64::new(0), AtomicU64::new(acc)]),
         active: AtomicUsize::new(0),
     };
-    POINTER[id].store(&raw mut progress, Ordering::Release);
+    let mailbox = &MAILBOXES[id];
+    mailbox.progress.store(&raw mut progress, Ordering::Release);
     let mut observed = NA;
     loop {
-        let generation = GENERATION[id].load(Ordering::Acquire);
+        let generation = mailbox.generation.load(Ordering::Acquire);
         if generation != observed {
-            FIRST[id].store(now(), Ordering::Release);
+            mailbox.first.store(now(), Ordering::Release);
             observed = generation;
         }
         if LATE && id == 0 {
@@ -267,8 +279,8 @@ extern "C" fn reservation_rust_work(id: usize) -> ! {
         progress.cells[index][0].store(n, Ordering::Relaxed);
         progress.cells[index][1].store(acc, Ordering::Relaxed);
         progress.active.store(index, Ordering::Release);
-        if n == GOAL[id].load(Ordering::Acquire) {
-            if ACTION[id].load(Ordering::Relaxed) == 2 {
+        if n == mailbox.goal.load(Ordering::Acquire) {
+            if mailbox.action.load(Ordering::Relaxed) == 2 {
                 unsafe { asm!("svc #1", options(nostack)) }
             } else {
                 unsafe { asm!("svc #2", options(noreturn)) }
@@ -291,7 +303,7 @@ fn advanced(mut x: u64, mut steps: u64) -> u64 {
     x
 }
 fn snapshot(id: usize) -> (u64, u64, usize) {
-    let p = POINTER[id].load(Ordering::Acquire);
+    let p = MAILBOXES[id].progress.load(Ordering::Acquire);
     if p.is_null() {
         return (0, SEED[id], 0);
     }
@@ -317,6 +329,10 @@ struct Grant {
     acc: u64,
     deadline: u64,
 }
+enum ActiveGrant {
+    First(&'static Grant),
+    Ordinary(Grant),
+}
 struct FirstFrame {
     address: usize,
     pc: u64,
@@ -327,6 +343,7 @@ struct FirstFrame {
     accumulator: u64,
 }
 struct Prepared {
+    grant: Grant,
     setup_start: u64,
     decision: Decision,
     descriptor: u64,
@@ -538,7 +555,7 @@ struct Runtime {
     opened: u64,
     current: usize,
     frames: [*mut Frame; 3],
-    grant: Option<Grant>,
+    grant: Option<ActiveGrant>,
     target: u64,
     kind: u64,
     allocation_deadline: [u64; 2],
@@ -549,7 +566,7 @@ struct Runtime {
 }
 
 impl Runtime {
-    #[inline(always)]
+    #[inline(never)]
     fn validate_first_frame(&self, id: usize, expected: &FirstFrame) {
         let frame = self.frames[id];
         if frame.addr() != expected.address
@@ -557,21 +574,23 @@ impl Runtime {
         {
             unexpected()
         }
+        let mailbox = &MAILBOXES[id];
         let f = unsafe { &*frame };
-        if f.elr != expected.pc
-            || f.spsr != expected.mode
-            || f.gpr[19] != expected.register
-            || f.tpidr_el1 != expected.thread
-            || GENERATION[id].load(Ordering::Acquire) != NA
-            || ACTION[id].load(Ordering::Acquire) != 0
-            || GOAL[id].load(Ordering::Acquire) != NA
-            || FIRST[id].load(Ordering::Acquire) != 0
-            || !POINTER[id].load(Ordering::Acquire).is_null()
-            || self.last_count[id] != expected.updates
-            || self.last_acc[id] != expected.accumulator
-            || self.allocation_deadline[id] != NA
-            || self.allocation_service[id] != 0
-        {
+        // An OR of exact word differences cannot cancel two mismatches.
+        let frame_difference = (f.elr ^ expected.pc)
+            | (f.spsr ^ expected.mode)
+            | (f.gpr[19] ^ expected.register)
+            | (f.tpidr_el1 ^ expected.thread);
+        let mailbox_difference = (mailbox.generation.load(Ordering::Acquire) ^ NA)
+            | mailbox.action.load(Ordering::Acquire)
+            | (mailbox.goal.load(Ordering::Acquire) ^ NA)
+            | mailbox.first.load(Ordering::Acquire)
+            | u64::from(!mailbox.progress.load(Ordering::Acquire).is_null());
+        let accounting_difference = (self.last_count[id] ^ expected.updates)
+            | (self.last_acc[id] ^ expected.accumulator)
+            | (self.allocation_deadline[id] ^ NA)
+            | self.allocation_service[id];
+        if (frame_difference | mailbox_difference | accounting_difference) != 0 {
             unexpected()
         }
     }
@@ -608,6 +627,15 @@ impl Runtime {
                 .unwrap_or_else(|| unexpected())
         };
         let p = Prepared {
+            grant: Grant {
+                id,
+                action,
+                slot: 0,
+                ret: 1,
+                count: self.last_count[id],
+                acc: self.last_acc[id],
+                deadline: decision.after[id].d,
+            },
             setup_start: begin,
             decision,
             descriptor: 1
@@ -730,7 +758,7 @@ impl Runtime {
         let word = AUTHORITY.load(Ordering::Acquire);
         // Resolve through the read-back authority before accepting the debit.
         let observed = self
-            .ledger()
+            .ledger_at(word)
             .pending_grant()
             .map_or(NA, |(id, _)| id as u64);
         let post = now();
@@ -747,21 +775,13 @@ impl Runtime {
             finish(2, 5, 0, IDLE, post, p.epoch)
         }
         self.opened = 0;
-        let deadline = p.decision.after[id].d;
-        self.allocation_deadline[id] = deadline;
-        self.grant = Some(Grant {
-            id,
-            action,
-            slot: 0,
-            ret: 1,
-            count: self.last_count[id],
-            acc: self.last_acc[id],
-            deadline,
-        });
-        GOAL[id].store(p.goal, Ordering::Release);
-        ACTION[id].store(1 + action as u64, Ordering::Relaxed);
-        FIRST[id].store(0, Ordering::Relaxed);
-        GENERATION[id].store(0, Ordering::Release);
+        self.allocation_deadline[id] = p.grant.deadline;
+        self.grant = Some(ActiveGrant::First(&p.grant));
+        let mailbox = &MAILBOXES[id];
+        mailbox.goal.store(p.goal, Ordering::Release);
+        mailbox.action.store(1 + action as u64, Ordering::Relaxed);
+        mailbox.first.store(0, Ordering::Relaxed);
+        mailbox.generation.store(0, Ordering::Release);
         self.kind = 1;
         self.target = p.cutoff;
         let (compare, ctl) = program_timer(p.cutoff);
@@ -804,7 +824,10 @@ impl Runtime {
         if LATE {
             return &mut self.jobs;
         }
-        match AUTHORITY.load(Ordering::Acquire) {
+        self.ledger_at(AUTHORITY.load(Ordering::Acquire))
+    }
+    fn ledger_at(&mut self, word: u64) -> &mut Jobs {
+        match word {
             0 => &mut self.jobs,
             3 => self.destination.as_mut().unwrap_or_else(|| unexpected()),
             _ => unexpected(),
@@ -868,7 +891,7 @@ impl Runtime {
                 self.allocation_deadline[id] = d.after[id].d;
                 self.allocation_service[id] = 0;
             }
-            self.grant = Some(Grant {
+            self.grant = Some(ActiveGrant::Ordinary(Grant {
                 id,
                 action,
                 slot,
@@ -876,8 +899,9 @@ impl Runtime {
                 count,
                 acc,
                 deadline: d.after[id].d,
-            });
-            GOAL[id].store(
+            }));
+            let mailbox = &MAILBOXES[id];
+            mailbox.goal.store(
                 if action == Action::Long {
                     NA
                 } else {
@@ -885,9 +909,9 @@ impl Runtime {
                 },
                 Ordering::Release,
             );
-            ACTION[id].store(1 + action as u64, Ordering::Relaxed);
-            FIRST[id].store(0, Ordering::Relaxed);
-            GENERATION[id].store(slot, Ordering::Release);
+            mailbox.action.store(1 + action as u64, Ordering::Relaxed);
+            mailbox.first.store(0, Ordering::Relaxed);
+            mailbox.generation.store(slot, Ordering::Release);
             let cutoff = checked(self.clock.cutoff(slot));
             if LATE && slot == 0 {
                 MASK_FROM.store(cutoff - self.clock.millisecond, Ordering::Relaxed);
@@ -910,7 +934,11 @@ impl Runtime {
         frame
     }
     fn close(&mut self, frame: *mut Frame, entry: u64, action: Action, syndrome: u64) {
-        let grant = self.grant.take().unwrap_or_else(|| unexpected());
+        let active = self.grant.take().unwrap_or_else(|| unexpected());
+        let grant = match &active {
+            ActiveGrant::First(sealed) => *sealed,
+            ActiveGrant::Ordinary(owned) => owned,
+        };
         let id = grant.id;
         let slot = grant.slot;
         if self.current != id || !within(id, frame.addr(), size_of::<Frame>()) {
@@ -918,7 +946,7 @@ impl Runtime {
         }
         let saved = unsafe { &*frame };
         let (count, acc, p) = snapshot(id);
-        let first = FIRST[id].load(Ordering::Acquire);
+        let first = MAILBOXES[id].first.load(Ordering::Acquire);
         let start = checked(self.clock.boundary(slot));
         let end = checked(self.clock.boundary(slot + 1));
         let cutoff = checked(self.clock.cutoff(slot));
