@@ -1549,3 +1549,16 @@ VER-023,has-partial-evidence,EVD-110
 POL-014,partially-implemented-by,IMP-110
 IMP-110,tested-in,EVD-110
 POL-014,has-partial-policy-evidence,EVD-110
+CHG-112,affects,REQ-014
+REQ-014,partially-implemented-by,IMP-112
+IMP-112,partially-verified-by,VER-014
+VER-014,has-partial-evidence,EVD-112
+CHG-112,affects,REQ-020
+REQ-020,partially-implemented-by,IMP-112
+IMP-112,partially-verified-by,VER-020
+VER-020,has-partial-evidence,EVD-112
+CHG-112,affects,REQ-022
+REQ-022,partially-implemented-by,IMP-112
+IMP-112,partially-verified-by,VER-022
+VER-022,has-partial-evidence,EVD-112
+IMP-112,tested-in,EVD-112
