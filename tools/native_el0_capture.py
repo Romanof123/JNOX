@@ -63,7 +63,8 @@ def argument_manifest(args):
 def capture(args):
     if not re.fullmatch("[0-9a-f]{40}", args.revision):
         raise ValueError("full source revision required")
-    if getattr(args, "timeout", 20) <= 0 or getattr(args, "uart_limit", 1 << 20) <= 0:
+    uart_limit = getattr(args, "uart_limit", None)
+    if getattr(args, "timeout", 20) <= 0 or (uart_limit is not None and uart_limit <= 0):
         raise ValueError("capture limits must be positive")
     manifest = argument_manifest(args)
     root = args.root.resolve()
@@ -122,12 +123,23 @@ def capture(args):
 
                 pipe = Pipe()
                 request(pipe, "qmp_capabilities")
+                hierarchy_health = False
                 while proc.poll() is None:
                     uart = root / "uart.bin"
                     if uart.exists():
-                        if uart.stat().st_size > getattr(args, "uart_limit", 1 << 20):
+                        size = uart.stat().st_size
+                        # With no explicit cap, only the hierarchy TIMER producer
+                        # gets its larger allowance for 4096 EVENT/TIMER pairs.
+                        if size > (uart_limit if uart_limit is not None else 8 << 20):
                             raise ValueError("oversize UART")
+                        if size > 1 << 20 and not hierarchy_health:
+                            with uart.open("rb") as stream:
+                                hierarchy_health = b"\nNATIVE HIERARCHY TIMER " in stream.read(1 << 20)
+                            if uart_limit is None and not hierarchy_health:
+                                raise ValueError("oversize UART")
                         raw = uart.read_bytes()
+                        if not hierarchy_health:
+                            hierarchy_health = bool(re.search(rb"(?m)^NATIVE HIERARCHY HEALTH 1 ", raw))
                         exits = {}
                         if manifest and len(manifest["slots"]) > 1:
                             exits = {int(i): int(code) for i, code in re.findall(
@@ -137,6 +149,13 @@ def capture(args):
                             raw,
                         )
                         all_slots = manifest and set(exits) == set(range(len(manifest["slots"])))
+                        fault = terminal and terminal[1].startswith(b"FAULT ")
+                        if (terminal or all_slots) and hierarchy_health and not fault:
+                            # HEALTH precedes the exits. A fragmented final line is not a footer.
+                            last_exit = raw.rfind(b"NATIVE EL0 EXIT ")
+                            if not re.search(rb"(?m)^NATIVE HIERARCHY HEALTH END 1\r?\n", raw[last_exit:]):
+                                time.sleep(0.005)
+                                continue
                         if terminal or all_slots:
                             request(pipe, "stop")
                             request(
@@ -181,7 +200,7 @@ if __name__ == "__main__":
         parser.add_argument(name, type=Path)
     parser.add_argument("revision")
     parser.add_argument("--timeout", type=int, default=20, help="wall-clock capture limit in seconds")
-    parser.add_argument("--uart-limit", type=int, default=1 << 20, help="maximum retained UART bytes")
+    parser.add_argument("--uart-limit", type=int, help="maximum UART bytes (default: 1 MiB, or 8 MiB for hierarchy health)")
     parser.add_argument("--plain", action="store_true", help="capture RAM and UART without external exception tracing")
     parser.add_argument("--expect-exit", type=int, default=37, help="expected signed process exit")
     parser.add_argument("--manifest", type=Path, help="audit packaged ordinary-process arguments")

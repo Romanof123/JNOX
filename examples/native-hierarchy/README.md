@@ -41,3 +41,22 @@ At 62,500,000 Hz the period is 250 ms. In saturated and swap, leaves 0 and 1 sha
 Read each symbol through its ELF's private mapping. For the reporter compare each of three u64 report_observed_ns samples with the corresponding report_deadline_ns after its 40 ms absolute wait. Independently reproduce the products with `python3 examples/native-weighted-analytics/oracle.py`. For timing and quota decisions use the [hierarchy deployment criteria](../../docs/native-hierarchical-applications.en-ko.md).
 
 각 ELF의 사설 매핑에서 결과를 읽는다. 보고 앱은 40 ms 절대 대기마다 report_observed_ns의 실제 관측값이 해당 report_deadline_ns 이상인지 세 번 모두 확인한다. 위 Python 명령으로 각 계산값을 독립 재현하고, 시간·예산 판정에는 [계층형 배포 기준](../../docs/native-hierarchical-applications.en-ko.md)을 적용한다.
+
+## Read the idle-refill health report / 유휴 재충전 상태 읽기
+
+Keep the ordinary UART stream through the final `NATIVE HIERARCHY HEALTH END 1` line. For saturated CRC/histogram/energy in slot order, run:
+
+~~~sh
+pkg=output/native-hierarchy/saturated
+capture=output/native-hierarchy/saturated-health-plain
+revision=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$pkg/manifest.json")
+python3 tools/native_el0_capture.py "$capture" "$pkg/kernel.elf" "$pkg/user.elf" \
+    examples/native-weighted-analytics/checksum.c "$revision" --manifest "$pkg/manifest.json" --plain --expect-exit 237
+python3 tools/read_hierarchy_health.py "$capture/uart.bin" --expect-exit 237 --expect-exit 70 --expect-exit 179
+~~~
+
+The optional exit codes correspond to the actual package slot order. JSON shows the process exit codes, whether they matched, instrumentation validity, scored refill count, threshold and worst lag in guest ticks, and the complete first violation record when present. The maximum's detail row is null if the maximum was seen only after detail storage filled. A retained prefix still exposes the boot-lifetime late count and maximum. A zero count of scored refills leaves timing unobserved. Use the private-output oracle above to verify the actual products.
+
+Exit 0 indicates valid instrumentation, at least one scored refill within the limit, no violations and matching exits if requested. Exit 1 retains the JSON for a late, unqualified or unobserved result or an exit mismatch. Exit 2 reports incomplete or contradictory UART. The reader requires the versioned #340 health producer.
+
+마지막 HEALTH END 줄까지 UART를 보관한 후 위 명령을 실행한다. 기대 종료 코드는 패키지 슬롯 순서로 지정하거나 생략한다. JSON은 계측 유효성, 재충전 판정 수, 틱 단위 한도와 최대 지연, 최초 위반의 타이머 레지스터, 프로세스 종료값과 상세 기록 보존 범위를 구분한다. 일부 기록이 누락돼도 종단 집계의 초과 횟수와 최대 지연을 확인할 수 있다. 실제 계산 결과는 위의 사설 메모리 검증 절차로 확인한다. 종료값 0은 통과, 1은 초과·미관측·판정 불가 또는 종료값 불일치, 2는 기록 절단이나 모순이다.
