@@ -391,9 +391,13 @@ def main():
                         help="grant a send right to another native FIFO/RR process's mailbox")
     parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
                         help="grant a notification right to another native FIFO/RR process")
+    parser.add_argument("--loan-route", type=ipc_route, action="append", default=[], metavar="PRODUCER:CONSUMER",
+                        help="grant one native FIFO/RR process pair a shared-buffer loan channel")
     parser.add_argument("--waitset", action="count", default=0,
                         help="enable waitsets for configured mailbox or notification routes")
     args = parser.parse_args()
+    if len(args.loan_route) > 1:
+        parser.error("--loan-route may appear only once")
     if args.waitset > 1:
         parser.error("--waitset may appear only once")
     if args.waitset and not (args.mailbox_route or args.notify_route):
@@ -426,7 +430,7 @@ def main():
         ("mailbox", "caller", "owner", sorted(args.mailbox_route)),
         ("notify", "sender", "owner", sorted(args.notify_route)),
     ]
-    for kind, _, _, routes in grants:
+    for kind, routes in [(kind, routes) for kind, _, _, routes in grants] + [("loan", args.loan_route)]:
         if not routes:
             continue
         count = 1 + len(args.peer_elf)
@@ -547,6 +551,12 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.loan_route:
+        producer, consumer = args.loan_route[0]
+        env["JNOX_NATIVE_LOAN_ROUTE"] = f"{producer}:{consumer}"
+        metadata["loan_route"] = {"producer": producer, "consumer": consumer}
+        metadata["loan_pool"] = {"pages": 3, "page_bytes": 4096, "ring_entries": 2, "max_length_bytes": 4096}
+        metadata["package_argv"] = sys.argv[:]
     if args.waitset:
         env["JNOX_NATIVE_WAITSET"] = "1"
         metadata["waitset"] = True

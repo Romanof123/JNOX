@@ -1,0 +1,10 @@
+[package]
+name = "loan-block-reader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jnox-native = { path = "../../../sdk/native-aarch64/rust", features = ["loan"] }
+
+[profile.release]
+panic = "abort"
