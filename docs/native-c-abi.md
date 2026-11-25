@@ -287,3 +287,24 @@ python3 tools/read_multilevel_telemetry.py "$pkg" "$dir" > "$dir/results.json"
 ~~~
 
 [Bash / SDK / QEMU](../examples/native-multilevel/README.md#m4-telemetry-deployment--m4-경보-게시-배포)
+
+## 프로세스별 계층형 CPU 예산 설정
+
+단일 CPU virt에서 --policy hierarchy와 --hierarchy로 JSON 파일을 지정한다. ELF를 넣은 순서가 리프 번호가 된다. period_ticks와 예산은 카운터 틱 단위다. 두 리프가 같은 부모에 속하면 그 부모의 예산을 공유한다. 아래 명령은 예제에서 빌드한 CRC, 히스토그램, 에너지 앱 순으로 배치한다.
+
+~~~sh
+out=output/native-hierarchy
+python3 tools/build_native_el0.py --out "$out/saturated" --policy hierarchy --hierarchy examples/native-hierarchy/baseline.json --elf "$out/crc.elf" --peer-elf "$out/histogram.elf" --peer-elf "$out/energy.elf"
+~~~
+
+단일 프로세스 대조에서는 같은 CRC ELF만 지정한다. 62.5 MHz에서 15,625,000틱 주기마다 리프에 3,906,250틱, 부모와 자식에는 한 주기씩 배정한다.
+
+~~~sh
+printf '%s\n' '{"period_ticks":15625000,"parents":[15625000],"children":[[0,15625000]],"leaves":[[0,3906250]]}' > "$out/single.json"
+python3 tools/build_native_el0.py --out "$out/single" --policy hierarchy --hierarchy "$out/single.json" --elf "$out/crc.elf"
+~~~
+
+[SDK / QEMU](../examples/native-hierarchy/README.md) · [Single leaf / 단일 리프](native-hierarchical-applications.en-ko.md#single-leaf-control--단일-리프-대조)
+
+선택형 공학 구성이다. 최초 10건의 산출물·원장은 일치했지만 포화·교환 일반 부팅의 유휴 타이머 지연이 기준을 넘었다.
+ [EVD-135](evidence/evd-135.md)
