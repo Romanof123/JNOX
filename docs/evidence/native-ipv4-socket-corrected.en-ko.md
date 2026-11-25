@@ -37,10 +37,12 @@ Six two-slot control boots covered enabled, local-only and plain kernels under F
 
 ## Provenance and replay
 
-The immediate parent `906fdd07e36fa9e2e6d53ba5aee412bd31e580b4` timed out at the host peer and exited 103/113/85 after the first successful ARP transmission. The retained previous report, parsed results and archive digest are in `previous/`. Its full sibling archive is `376-ipv4-first-906fdd0.tar.gz`, SHA-256 `d4cf67f8d285b3a0125199ffe4d25cfc850f283c31fe8ee9725bcdf9a46e5c6e`. The single candidate change marks x1 read-write around the Ethernet frame SVC. The first outcomes of the corrected executable positions are in the respective capture directories.
+The immediate parent `906fdd07e36fa9e2e6d53ba5aee412bd31e580b4` timed out at the host peer and exited 103/113/85 after the first successful ARP transmission. The retained previous report, parsed results and archive digest are in `previous/`. Its full sibling archive is [the first IPv4 capture packet](native-ipv4-socket-first.tar.gz), SHA-256 `d4cf67f8d285b3a0125199ffe4d25cfc850f283c31fe8ee9725bcdf9a46e5c6e`. The single candidate change marks x1 read-write around the Ethernet frame SVC. The first outcomes of the corrected executable positions are in the respective capture directories.
 
 The packaged workload used the example priorities 4/4/7 and RR quantum 625000. Build and run scripts preserve observed commands. The additional IPC route 1:0 in the resource fixture coordinates its two ordinary clients. The controlled-link host fixture changes the QEMU backend and host send sequence. All six traffic positions use identical application and broker ELF hashes. Raw artifacts include 14 full 128 MiB RAM images, package manifests, kernel and user ELFs, QEMU argv, UART, application peer journals and eight raw pcaps. The archive also includes the tested sources and capture/replay scripts.
 
 After verifying the archive SHA-256, extract into a new directory, then run `sha256sum -c SHA256SUMS` and `python3 replay.py` there. Python 3, pyelftools and GNU aarch64-linux-gnu-nm are needed. Compare the output with `replay.json`. The clean extraction receipt records a separate check of every file and a byte-identical replay.
 
 **재현.** 이전 후보의 원본 실패와 진단은 별도 보존했다. 이번 패키지에는 콜드 부팅 14회의 RAM, 원본 pcap 8개, ELF, 매니페스트, UART, 독립 피어 로그와 검사 스크립트가 있다. 압축 파일 해시를 확인하고 새 디렉터리에 풀어 각 파일 해시와 replay.json을 대조할 수 있다.
+
+[Download packet captures, ELFs and replay / 패킷·실행 파일 및 재현 도구](native-ipv4-socket-corrected.tar.gz). SHA-256 `55b524ec7425b4b831d44422896ee4deaa259fcde2e23c9e2f5749ce68fc4a9e`.
