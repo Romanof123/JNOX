@@ -101,8 +101,8 @@ mod event_loop;
 mod extension;
 #[cfg(jnox_bench = "extension")]
 mod extension_policy;
-#[cfg(any(jnox_eevdf_app, jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
-#[cfg_attr(any(jnox_eevdf_app, jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
+#[cfg(any(jnox_native_weighted, jnox_eevdf_app, jnox_weighted, jnox_bench = "rr", jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"))]
+#[cfg_attr(any(jnox_native_weighted, jnox_eevdf_app, jnox_weighted, jnox_bench = "vruntime", jnox_bench = "eevdf", jnox_bench = "eevdf_wake", jnox_bench = "eevdf_dynamic"), allow(dead_code))]
 mod fair_policy;
 #[cfg(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "rr", jnox_bench = "multilevel", jnox_bench = "proportional"))]
 #[cfg_attr(any(jnox_ordinary_prop, jnox_multilevel, jnox_bench = "multilevel", jnox_bench = "proportional"), allow(dead_code))]
@@ -206,7 +206,7 @@ mod temporal_policy;
 mod vruntime;
 #[cfg(jnox_weighted)]
 mod weighted;
-#[cfg(any(jnox_weighted, jnox_bench = "vruntime"))]
+#[cfg(any(jnox_native_weighted, jnox_weighted, jnox_bench = "vruntime"))]
 mod vruntime_policy;
 
 #[cfg(jnox_pi4_smp)]

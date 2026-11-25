@@ -361,10 +361,12 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_peer)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_peer2)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_fixed)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_weighted)");
     let peer2_image = selector("JNOX_NATIVE_PEER2_ELF");
     let peer2_hash = selector("JNOX_NATIVE_PEER2_ELF_SHA256");
     let policy = selector("JNOX_NATIVE_POLICY");
     let priorities = selector("JNOX_NATIVE_PRIORITIES");
+    let weights = selector("JNOX_NATIVE_WEIGHTS");
     let quantum = selector("JNOX_NATIVE_QUANTUM_TICKS");
     assert!(selector("JNOX_NATIVE_PEER3_ELF").is_none()
         && selector("JNOX_NATIVE_PEER3_ELF_SHA256").is_none(), "virt supports at most three native slots");
@@ -373,7 +375,7 @@ fn main() {
     assert_eq!(peer_image.is_some(), peer_hash.is_some(), "peer ELF requires its digest");
     assert_eq!(peer2_image.is_some(), peer2_hash.is_some(), "second peer requires its digest");
     assert!(peer2_image.is_none() || peer_image.is_some(), "missing first peer");
-    if peer_image.is_some() || policy.is_some() || priorities.is_some() || quantum.is_some() {
+    if peer_image.is_some() || policy.is_some() || priorities.is_some() || weights.is_some() || quantum.is_some() {
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
             "native peers and scheduling require ordinary native process packaging");
     }
@@ -403,7 +405,7 @@ fn main() {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), quantum.as_deref());
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref());
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -598,8 +600,19 @@ fn validate_architecture() {
     }
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, quantum: Option<&str>) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>) {
     let mode = policy.unwrap_or("cooperative");
+    let slot_weights = if mode == "weighted" {
+        let values: Vec<u32> = weights.expect("weighted scheduling requires weights").split(',')
+            .map(|value| value.parse().expect("weight must be a positive u32")).collect();
+        assert_eq!(values.len(), slots, "supply one weight per slot");
+        assert!(values.iter().all(|&value| value != 0), "weights must be positive");
+        println!("cargo::rustc-cfg=jnox_native_weighted");
+        values
+    } else {
+        assert!(weights.is_none(), "weights require weighted scheduling");
+        vec![0; slots]
+    };
     let values = match policy {
         Some("fifo" | "rr") => {
             let list: Vec<u8> = priorities.expect("fixed scheduling requires priorities").split(',')
@@ -608,22 +621,22 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        None => {
+        Some("weighted") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
         Some(other) => panic!("invalid native policy {other:?}"),
     };
-    let ticks: u64 = if mode == "rr" {
-        let value = quantum.expect("RR requires quantum ticks").parse().expect("invalid quantum ticks");
+    let ticks: u64 = if matches!(mode, "rr" | "weighted") {
+        let value = quantum.expect("RR and weighted scheduling require quantum ticks").parse().expect("invalid quantum ticks");
         assert!((1..=i64::MAX as u64).contains(&value), "quantum ticks must be in 1..=i64::MAX");
         value
     } else {
-        assert!(quantum.is_none(), "quantum ticks require RR");
+        assert!(quantum.is_none(), "quantum ticks require RR or weighted scheduling");
         0
     };
     let generated = format!(
-        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");

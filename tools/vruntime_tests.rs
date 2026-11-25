@@ -156,3 +156,60 @@ fn validates_task_count_weights_and_readiness_transitions() {
     assert!(sched.charge(lease, 1));
     assert!(sched.wake(31));
 }
+
+#[test]
+fn coincident_samples_validate_the_owner_and_preserve_the_exact_floor() {
+    let mut sched = VruntimeScheduler::new([2, 4]).unwrap();
+    serve(&mut sched, 0, 1);
+    serve(&mut sched, 1, 2);
+    let floor = sched.floor().parts();
+    assert_eq!(sched.runtime(0).unwrap().parts(), (0, 1, 2));
+    assert_eq!(sched.runtime(1).unwrap().parts(), (0, 2, 4));
+
+    let first = sched.dispatch().unwrap();
+    assert_eq!(first.task, 0);
+    assert!(!sched.charge(first, 0));
+    assert!(sched.retire_zero(first));
+    assert!(!sched.retire_zero(first));
+    let next = sched.dispatch().unwrap();
+    assert_eq!(next.task, 0);
+    assert!(!sched.retire_zero(first));
+    assert!(!sched.retire_zero(super::vruntime_policy::Lease { task: 1, ..next }));
+    assert!(!sched.sleep(1));
+    assert!(sched.retire_zero(next));
+    assert_eq!(sched.service(0), Some(1));
+    assert_eq!(sched.service(1), Some(2));
+    assert_eq!(sched.runtime(0).unwrap().parts(), (0, 1, 2));
+    assert_eq!(sched.floor().parts(), floor);
+    assert_eq!(sched.ready(0), Some(true));
+    assert!(sched.sleep(0));
+    assert_eq!(sched.ready(0), Some(false));
+    assert_eq!(sched.ready(2), None);
+}
+
+#[test]
+fn partial_grants_equal_one_combined_grant_at_the_largest_weight() {
+    let weight = u32::MAX;
+    let ticks = u64::from(weight);
+    let mut split = VruntimeScheduler::new([weight]).unwrap();
+    let mut combined = VruntimeScheduler::new([weight]).unwrap();
+    for part in [ticks - 1, 1, 7] {
+        serve(&mut split, 0, part);
+    }
+    serve(&mut combined, 0, ticks + 7);
+    assert_eq!(split.runtime(0).unwrap().parts(), (1, 7, ticks));
+    assert_eq!(split.service(0), combined.service(0));
+    assert_eq!(split.runtime(0).unwrap().parts(), combined.runtime(0).unwrap().parts());
+    assert_eq!(split.floor().parts(), combined.floor().parts());
+}
+
+#[test]
+fn physical_grant_expiry_requires_a_positive_bounded_quantum_and_representable_sum() {
+    use super::vruntime_policy::grant_expiry;
+    let max_quantum = i64::MAX as u64;
+    assert_eq!(grant_expiry(0, 0), None);
+    assert_eq!(grant_expiry(0, max_quantum + 1), None);
+    assert_eq!(grant_expiry(u64::MAX - max_quantum, max_quantum), Some(u64::MAX));
+    assert_eq!(grant_expiry(u64::MAX - max_quantum + 1, max_quantum), None);
+    assert_eq!(grant_expiry(u64::MAX, 1), None);
+}
