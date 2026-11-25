@@ -389,6 +389,12 @@ fn main() {
     let loan_route = selector("JNOX_NATIVE_LOAN_ROUTE");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_socket_service)");
     let socket_service = selector("JNOX_NATIVE_SOCKET_SERVICE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_net_service)");
+    if let Some(net_service) = selector("JNOX_NATIVE_NET_SERVICE") {
+        assert!(socket_service.as_ref() == Some(&net_service),
+            "network service must match the configured native socket service");
+        println!("cargo::rustc-cfg=jnox_native_net_service");
+    }
     assert!(socket_service.is_none() || ipc_routes.is_some(),
         "socket service requires explicit synchronous IPC routes");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_waitset)");
