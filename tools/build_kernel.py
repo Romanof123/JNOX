@@ -12,6 +12,16 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def add_kernel_profile(parser):
+    parser.add_argument("--kernel-profile", choices=("release", "speed"), default="release",
+                        help="Cargo kernel profile: compact release (default) or speed")
+
+
+def cargo_command(target, profile):
+    selection = ["--release"] if profile == "release" else ["--profile", profile]
+    return ["cargo", "build", "--locked", *selection, "-j1", "--target", target]
+
+
 def read_registry(root):
     """Each descriptor contains one built-in Rust target triple."""
     entries = {}
@@ -28,6 +38,7 @@ def read_registry(root):
 
 def main(argv=None, *, root=ROOT, environ=None, run=subprocess.run):
     parser = argparse.ArgumentParser(description=__doc__)
+    add_kernel_profile(parser)
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--list-arches", action="store_true",
                            help="list implemented architecture names, one per line")
@@ -51,7 +62,7 @@ def main(argv=None, *, root=ROOT, environ=None, run=subprocess.run):
         parser.error(f"CARGO_BUILD_TARGET={env['CARGO_BUILD_TARGET']!r} conflicts with "
                      f"architecture {arch!r}, which requires {target!r}")
     env["JNOX_ARCH"] = arch
-    command = ["cargo", "build", "--locked", "--release", "-j1", "--target", target]
+    command = cargo_command(target, args.kernel_profile)
     try:
         result = run(command, cwd=root / "kernel", env=env)
     except OSError as exc:

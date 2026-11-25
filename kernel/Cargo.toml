@@ -51,3 +51,7 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 opt-level = "s"
+
+[profile.speed]
+inherits = "release"
+opt-level = 3
