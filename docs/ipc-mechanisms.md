@@ -8,6 +8,8 @@
 
 **IPC-003 출시 판정 · IMP-304 · EVD-304.** 독립 Release는 단일 코어 AArch64 QEMU virt FIFO·RR에서 일반 네이티브 앱 두 개의 알림을 승인했다. 이 승인으로 #24에서 3번째 계열을 승인했다. 최초 열 번 중 아홉 번이 예상과 일치했다. 한 건은 실제 EACCES를 시험의 예상값에서 누락했으며 예상값을 수정한 열한 번째 실행을 별도로 보존했다. 추가 RR 실행에서는 통신 권한을 반대로 설정하고 75/76으로 종료했다. 같은 펄스 두 건은 따로 수신됐고 반복 설정한 이벤트 비트는 하나로 합쳐졌다. 정확한 기한 동시성, 강제 종료와 모든 비트 검사는 호스트 사례다. [First report / 최초 보고서](evidence/native-notify-ipc-first.en-ko.md) · [First archive / 최초 자료](evidence/native-notify-ipc-first.tar.gz) · [Release decision / 출시 판정](evidence/native-notify-ipc-release.en-ko.md) · [Supplement / 추가 자료](evidence/native-notify-ipc-release-supplement.tar.gz)
 
+**IPC-004 출시 판정 · IMP-305 · EVD-305.** 독립 Release는 단일 코어 AArch64 QEMU virt의 네이티브 FIFO·RR 대기 집합을 승인했다. 이 판정으로 #24에서 네 번째 계열이 승인됐다(4/10). 최초 콜드 부팅 16회 뒤 Release가 FIFO·RR 이미지를 다시 빌드해 각각 한 번 부팅했다. 추가 두 부팅에서 앱 종료값은 71/72였고 스케줄러 기록 누락은 없었다. 스케줄러 기록 33행을 사설 RAM과 대조해 준비 조회 후 데이터 보존, 실제 송신에 의한 깨움, 슬롯 재사용 후 이전 핸들 거부, 만료 상태 −110을 확인했다. 기한이 정확히 일치하는 경우, 강제 종료 및 세대 상한은 호스트에서 검사했다. 실물 및 일반 인증은 별도 범위다. [First report / 최초 보고서](evidence/native-waitset-ipc-first.en-ko.md) · [First archive / 최초 자료](evidence/native-waitset-ipc-first.tar.gz) · [Release decision / 출시 판정](evidence/native-waitset-ipc-release.en-ko.md) · [Release supplement / 추가 자료](evidence/native-waitset-ipc-release-supplement.tar.gz)
+
 ## 현재 릴리스 범위
 
 **이번 릴리스의 스케줄링 7개 계열 중 6개가 지정 범위에서 승인됐다(6/7).** POL-002 고정 우선순위는 FIFO와 라운드로빈(RR) 두 방식 모두 미결이다. 기존 승인은 POL-003 배치(지정 네이티브·링크형 프로필), POL-005 기한 기반 스케줄링(유한 M1/M3 EDF·표본 LLF), POL-009 다단계 큐(텔레메트리 배포), POL-010 비례 배분(네이티브 구성 6개), POL-011 가중 스케줄링(지정 구성), POL-012 EEVDF(링크형 EL1 텔레메트리)에 적용된다.

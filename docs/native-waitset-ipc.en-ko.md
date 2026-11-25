@@ -1,8 +1,8 @@
 # IPC-004 · Native waitsets / 네이티브 대기 집합
 
-CHG-305 specifies the optional `--waitset` package switch for ordinary AArch64 QEMU virt FIFO/RR processes with a mailbox or notifications enabled. Each process may register up to four sources and obtain one readiness result per wait. A registration observes only the issuing process's own enabled receive endpoint. Underlying IPC grants, inactive syscall results, memory protection and timer behavior retain their respective contracts. This is the candidate contract for REQ-024, DES-013 and VER-024. [Issue #373](https://github.com/Romanof123/JNOX/issues/373) · [IPC acceptance #24](https://github.com/Romanof123/JNOX/issues/24)
+CHG-305 specifies the optional `--waitset` package switch for ordinary AArch64 QEMU virt FIFO/RR processes with a mailbox or notifications enabled. Each process may register up to four sources and obtain one readiness result per wait. A registration observes only the issuing process's own enabled receive endpoint. Underlying IPC grants, inactive syscall results, memory protection and timer behavior retain their respective contracts. Independent Release accepted this single-core virtual FIFO/RR profile under REQ-024, DES-013 and VER-024. [Release decision](evidence/native-waitset-ipc-release.en-ko.md) [Issue #373](https://github.com/Romanof123/JNOX/issues/373) · [IPC acceptance #24](https://github.com/Romanof123/JNOX/issues/24)
 
-CHG-305는 우편함 또는 알림을 사용하는 AArch64 QEMU virt FIFO·RR 일반 프로세스에 선택형 패키지 옵션 `--waitset`을 정의한다. 프로세스당 최대 네 소스를 등록하고 한 번에 준비 결과 하나를 얻는다. 등록은 현재 프로세스 소유의 활성 수신 엔드포인트에 한정한다. 기존 IPC 권한·미활성 호출의 반환값·메모리 보호·타이머 규약을 유지한다. 인수 여부는 #24에서 추적한다.
+CHG-305는 우편함 또는 알림을 사용하는 AArch64 QEMU virt FIFO·RR 일반 프로세스에 선택형 패키지 옵션 `--waitset`을 정의한다. 프로세스당 최대 네 소스를 등록하고 한 번에 준비 결과 하나를 얻는다. 등록은 현재 프로세스 소유의 활성 수신 엔드포인트에 한정한다. 기존 IPC 권한·미활성 호출의 반환값·메모리 보호·타이머 규약을 유지한다. 독립 Release는 이 단일 코어 가상 FIFO·RR 프로파일을 승인했다. [출시 판정](evidence/native-waitset-ipc-release.en-ko.md)
 
 | Native SVC 0x4a01 | Inputs / 입력 | Result / 결과 |
 | --- | --- | --- |
