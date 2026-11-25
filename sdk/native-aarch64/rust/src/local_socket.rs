@@ -1,4 +1,4 @@
-//! AF_UNIX broker service using the same wire client as the C socket API.
+//! AF_UNIX and IPv4 broker services using the same wire client as the C socket API.
 //! Errors are negative errno values. Paths contain 1..=31 non-NUL bytes.
 use core::{ffi::c_void, ptr};
 
@@ -87,6 +87,7 @@ pub fn recv_from(fd: i32, bytes: &mut [u8], flags: i32) -> Result<(usize, PeerNa
     let mut addr = Address { family: 0, path: [0; 32] };
     let mut len = core::mem::size_of::<Address>() as u32;
     let n = count(unsafe { c::recvfrom(fd, bytes.as_mut_ptr().cast(), bytes.len(), flags, &mut addr, &mut len) })?;
+    if addr.family != 1 { return Err(-5); }
     let path_len = match len { 2 => 0, 4..=34 => len as usize - 3, _ => return Err(-5) };
     Ok((n, PeerName { path: addr.path, len: path_len }))
 }
@@ -95,4 +96,49 @@ pub fn shutdown(fd: i32, how: i32) -> Result<(), i32> {
 }
 pub fn close(fd: i32) -> Result<(), i32> {
     result(unsafe { c::close(fd) }).map(|_| ())
+}
+
+/// IPv4 octets in network order and a host-order port number.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ipv4Endpoint {
+    pub address: [u8; 4],
+    pub port: u16,
+}
+
+#[repr(C)]
+struct InetAddress { family: u16, port: u16, address: u32, padding: [u8; 8] }
+const INET_LEN: u32 = core::mem::size_of::<InetAddress>() as u32;
+
+impl From<Ipv4Endpoint> for InetAddress {
+    fn from(ep: Ipv4Endpoint) -> Self {
+        Self { family: 2, port: ep.port.to_be(), address: u32::from_ne_bytes(ep.address), padding: [0; 8] }
+    }
+}
+
+pub fn socket4(kind: i32, nonblocking: bool) -> Result<i32, i32> {
+    let flags = if nonblocking { 0x800 } else { 0 };
+    result(unsafe { c::socket(2, kind | flags, 0) })
+}
+pub fn bind4(fd: i32, endpoint: Ipv4Endpoint) -> Result<(), i32> {
+    let addr = InetAddress::from(endpoint);
+    result(unsafe { c::bind(fd, (&raw const addr).cast(), INET_LEN) }).map(|_| ())
+}
+pub fn connect4(fd: i32, endpoint: Ipv4Endpoint) -> Result<(), i32> {
+    let addr = InetAddress::from(endpoint);
+    result(unsafe { c::connect(fd, (&raw const addr).cast(), INET_LEN) }).map(|_| ())
+}
+pub fn send_to4(fd: i32, bytes: &[u8], flags: i32, endpoint: Ipv4Endpoint) -> Result<usize, i32> {
+    let addr = InetAddress::from(endpoint);
+    count(unsafe { c::sendto(fd, bytes.as_ptr().cast(), bytes.len(), flags, (&raw const addr).cast(), INET_LEN) })
+}
+/// Datagram receives supply a source; stream receives omit it. With MSG_TRUNC
+/// the count may exceed the destination length for a truncated UDP datagram.
+pub fn recv_from4(fd: i32, bytes: &mut [u8], flags: i32) -> Result<(usize, Option<Ipv4Endpoint>), i32> {
+    let mut addr = InetAddress { family: 0, port: 0, address: 0, padding: [0; 8] };
+    let mut len = INET_LEN;
+    let n = count(unsafe { c::recvfrom(fd, bytes.as_mut_ptr().cast(), bytes.len(), flags,
+                                      (&raw mut addr).cast(), &mut len) })?;
+    if len == 0 { return Ok((n, None)); }
+    if len != INET_LEN || addr.family != 2 { return Err(-5); }
+    Ok((n, Some(Ipv4Endpoint { address: addr.address.to_ne_bytes(), port: u16::from_be(addr.port) })))
 }

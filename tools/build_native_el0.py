@@ -391,6 +391,8 @@ def main():
                         help="grant a send right to another native FIFO/RR process's mailbox")
     parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
                         help="grant a notification right to another native FIFO/RR process")
+    parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
+                        help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="select a socket service with existing inbound synchronous IPC rights")
     parser.add_argument("--loan-route", type=ipc_route, action="append", default=[], metavar="PRODUCER:CONSUMER",
@@ -398,6 +400,8 @@ def main():
     parser.add_argument("--waitset", action="count", default=0,
                         help="enable waitsets for configured mailbox or notification routes")
     args = parser.parse_args()
+    if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
+        parser.error("--net-service must appear once and match --socket-service")
     if len(args.socket_service) > 1:
         parser.error("--socket-service may appear only once")
     if args.socket_service:
@@ -560,6 +564,11 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.net_service:
+        env["JNOX_NATIVE_NET_SERVICE"] = str(service_slot)
+        metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",
+                                   "mac": "52:54:00:12:34:56",
+                                   "syscalls": {"rx": 38, "tx": 39, "try_receive": 40}}
     if args.socket_service:
         env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}

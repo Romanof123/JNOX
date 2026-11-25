@@ -127,6 +127,10 @@ static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
 static mut UART: Table = Table::EMPTY;
 static mut GIC: Table = Table::EMPTY;
+#[cfg(jnox_native_net_service)]
+const VIRTIO_MMIO_BASE: usize = 0x0a00_0000;
+#[cfg(jnox_native_net_service)]
+static mut VIRTIO_MMIO: Table = Table::EMPTY;
 // The horizon word has a privileged writable identity mapping and one
 // read-only EL0 alias shared by all participating processes.
 #[cfg(jnox_native_weighted_notify)]
@@ -253,6 +257,8 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         {
             link(&raw mut space.root, LINK_START, 30, &raw mut HIGH);
             link(&raw mut space.low, crate::UART0, 21, &raw mut UART);
+            #[cfg(jnox_native_net_service)]
+            link(&raw mut space.low, VIRTIO_MMIO_BASE, 21, &raw mut VIRTIO_MMIO);
             link(&raw mut space.low, crate::context::GICD, 21, &raw mut GIC);
         }
         #[cfg(jnox_pi4)]
@@ -387,6 +393,11 @@ unsafe fn install_spaces<'a>(
             link(&raw mut HIGH, GPIO, 21, &raw mut UART);
             link(&raw mut HIGH, crate::context::GICD, 21, &raw mut GIC);
             page(&raw mut UART, GPIO, GPIO, DEVICE);
+        }
+        #[cfg(jnox_native_net_service)]
+        for offset in (0..0x4000).step_by(PAGE) {
+            let addr = VIRTIO_MMIO_BASE + offset;
+            page(&raw mut VIRTIO_MMIO, addr, addr, DEVICE);
         }
         page(&raw mut UART, crate::UART0, crate::UART0, DEVICE);
         page(&raw mut GIC, crate::context::GICD, crate::context::GICD, DEVICE);
