@@ -47,13 +47,35 @@ def eligible(arm, entry, limit):
     return 2 if earliest - due > limit else 1
 
 
-def irq_boundary(entry, idle, previous=None):
+def timer_controls(sample, *keys):
+    require(all(sample[k] < 8 for k in keys), "reserved timer control bits")
+
+
+def previous_program(arm, previous):
+    if previous["post_cval"] == previous["due"] and previous["post_ctl"] & 3 == 1:
+        require(arm["pre_cval"] == previous["post_cval"] and
+                arm["pre_ctl"] & 3 == previous["post_ctl"] & 3,
+                "pre-arm readback contradicts preceding programming")
+
+
+def irq_boundary(arm, entry, idle, previous=None, floor=None):
+    # Use only samples supplied by the packets. A retained restore belongs
+    # to this arm only when its own decision row is available.
+    timer_controls(arm, "pre_ctl", "post_ctl")
+    timer_controls(entry, "entry_ctl")
+    if floor is not None:
+        require(floor <= arm["arm_before"], "arm predates known counter boundary")
+    require(arm["arm_before"] <= arm["arm_after"], "arm samples reversed")
     earliest = entry["earliest_irq"]
     require(not entry["spsr"] & 0x80, "IRQ interrupted an IRQ-masked context")
     landing = entry["idle_landing"]
     unmask = entry["last_before_unmask"]
     daif = entry["daif_before_unmask"]
+    require(arm["arm_after"] <= earliest <= entry["entry_counter"], "IRQ sample order")
+    if previous is not None:
+        require(arm["arm_after"] <= previous[45] <= earliest, "restore outside arm/IRQ interval")
     if idle:
+        require(arm["arm_after"] <= landing, "landing before completed arm")
         require(entry["spsr"] & 15 == 5 and 0 < landing <= unmask <= earliest and daif & 0x80,
                 "invalid idle landing or IRQ unmask boundary")
         if previous is not None:
@@ -76,10 +98,7 @@ def decision_boundary(row, timer, previous, prior_arm):
     if previous is not None:
         require(previous[9] != 4 and max(previous[45:47]) <= entry,
                 f"entry before preceding transfer at {i}")
-        if prior_arm["post_cval"] == prior_arm["due"] and prior_arm["post_ctl"] & 3 == 1:
-            require(timer["pre_cval"] == prior_arm["post_cval"] and
-                timer["pre_ctl"] & 3 == prior_arm["post_ctl"] & 3,
-                f"previous timer programming differs from pre-arm sample at {i}")
+        previous_program(timer, prior_arm)
     waits = previous[32:35] if previous is not None else [0]*3
     exited = previous[12] if previous is not None else 0
     if kind == 2:
@@ -218,7 +237,17 @@ def read_uart(path, expected=None):
     if one["FIRST"] != [0]:
         require(one["FIRST"][:1] == [1], "malformed FIRST")
         first = fields(FIRST, one["FIRST"][1:])
-        irq_boundary(first, True)
+        decision = first["decision_index"]
+        require(decision >= 2, "startup cannot arm an idle refill")
+        arm_row = decision - 1
+        retained_arm = events[arm_row] if arm_row < len(events) else None
+        floor = config[1]
+        if arm_row > 0 and events:
+            predecessor = events[min(arm_row, len(events)) - 1]
+            floor = max(floor, *predecessor[45:47])
+        if arm_row == len(timers) and timers:
+            previous_program(first, timers[-1])
+        irq_boundary(first, first, True, retained_arm, floor)
         outcome = first["outcome"]
         require(outcome in (2, 3, 4) and first["kind"] in (1, 2) and first["iar"] & 1023 == 30
                 and eligible(first, first, h["limit"]) == outcome, "invalid first violation")
@@ -239,13 +268,16 @@ def read_uart(path, expected=None):
         require(timer["kind"] <= 6 and row[1] in (0, 1, 2) and timer["due"] == row[14]
                 and timer["arm_seq"] == i + 1, f"arm mismatch at {i}")
         require((i == 0) == (row[1] == 0), f"startup sequence at {i}")
+        if not i:
+            require(row[3] == config[1] and row[8] == 3 and row[2] == 0,
+                    "startup contradicts configuration epoch or initial owner")
         if i:
             require(row[8] == events[i - 1][9] and row[13] == timers[i - 1]["due"],
                     f"preceding owner or due time mismatch at {i}")
         decision_boundary(row, timer, events[i-1] if i else None, timers[i-1] if i else None)
         ledger.decision(row, timer)
         require(timer["old_arm_seq"] == i and (i or row[13] == 0), f"previous arm identity at {i}")
-        require(all(timer[k] < 8 for k in ("pre_ctl", "post_ctl", "entry_ctl")), f"timer control flags at {i}")
+        timer_controls(timer, "pre_ctl", "post_ctl", "entry_ctl")
         disabled = timer["kind"] == 6
         if (timer["arm_before"] > timer["arm_after"]
                 or (timer["post_ctl"] & 3) != (0 if disabled else 1)
@@ -259,7 +291,7 @@ def read_uart(path, expected=None):
                 f"IRQ identity at {i}")
         require(timer["elr"] == row[19] and timer["spsr"] & 15 == (5 if row[8] == 3 else 0),
                 f"IRQ frame does not match interrupted owner at {i}")
-        irq_boundary(timer, row[8] == 3, events[i-1])
+        irq_boundary(timers[i-1], timer, row[8] == 3, events[i-1])
         require(timer["entry_counter"] <= row[4], f"IRQ sampling overlaps settlement at {i}")
         arm = timers[i - 1]
         if (timer["earliest_irq"] > timer["entry_counter"] or
@@ -295,7 +327,6 @@ def read_uart(path, expected=None):
         require(first["event_number"] <= decision and first["arm_seq"] == decision,
                 "first violation decision/arm/IRQ identity mismatch")
         if decision == len(timers) and decision > 0:
-            irq_boundary(first, True, events[-1])
             require(first["event_number"] == tallies["events"] + 1 and events[-1][9] == 3
                     and all(first[k] == timers[-1][k] for k in ARM),
                     "first omitted IRQ contradicts the retained arm")
