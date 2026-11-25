@@ -1,0 +1,21 @@
+# Kernel build profiles and prospective permit comparison / 커널 빌드 프로파일 및 비교 계획
+
+Both build entry points accept `--kernel-profile release` (default) and `--kernel-profile speed`. The release profile uses Rust's size optimization `s`. The speed profile inherits release, including abort-on-panic, and sets optimization level 3. The current AArch64 kernel target uses Cortex-A72 code generation. Apply the option to any otherwise valid architecture selection in the kernel builder, or to a native AArch64 package command. For example:
+
+~~~sh
+python3 tools/build_kernel.py --arch aarch64 --kernel-profile speed
+python3 tools/build_native_el0.py --board virt --out /tmp/native-speed --kernel-profile speed
+~~~
+
+The examples use the standard kernel build and the native startup probe, respectively. Each package needs a fresh output directory. Its manifest records the architecture target, Cargo command/profile, artifact path relative to the package, kernel configuration hashes, Cargo profile environment overrides, tool versions and packaged kernel/user ELF hashes. Cargo profile settings refer to the kernel manifest root. The native packager provides a per-package CARGO_TARGET_DIR and copies the appropriate target/profile binary. A direct kernel build follows Cargo's configured target directory. User Rust admission applications use Cargo release for the softfloat target and specify panic=abort, with no explicit application optimization override in their manifests. SDK C objects use clang -O2. Prebuilt user ELFs enter the packager unchanged.
+
+기본 release는 크기 최적화 s를 사용한다. speed는 release를 상속하고 opt-level만 3으로 변경한다. 앱은 기존 SDK 설정으로 빌드하며, 이미 만든 앱 ELF는 두 패키지에 동일하게 넣는다.
+
+## Prospective paired validation / 사전 비교 계획
+
+1. Freeze one clean source revision, Rust/Cargo/LLVM linker and QEMU versions, architecture, host, target CPU and SDK ELF hashes. Archive source (including Cargo manifests/config, kernel build script and SDK commands), build logs, input ELFs, both kernel ELFs, manifests and raw captures. Record any Cargo configuration sources, compiler wrappers, profile/target environment overrides and tool paths. Run clean comparisons without ambient overrides. Include size and executable segment sizes in bytes.
+2. Use the original ten phase scenarios on FIFO and RR plus four independent IRQ-load positions, four authentic boundary observers with their original clock, and six default authentic controls. Repeat full paired blocks on an exclusive host lane; alternate release/speed ordering by block, declare block count before collecting data, and record all attempted boots. Keep RR quantum 625000, app args, priorities, routes, workload/probe instrumentation, RAM layout inputs, fault calendars, interference and original capture termination identical. Use the original ordinary real-counter clock. Preserve boot failures, losses, truncation, missing waits and unsuccessful controls.
+3. Join the original stage and scheduler markers through actual block, ready transition, dispatch, first EL0 marker and final block/park. Report job 0 A and B separately, later maxima, open intervals, all 32 completed checks and their adjacent gaps, whole-job and sender responses. Score the original inclusive 62500-tick full-phase budget, 5 ms check gap and original per-job and fault criteria (25/5/30 ms). Compare matched positions and keep each individual endpoint, rank, IRQ occupancy, timer readback and output transition. Decode wire issue times from the actual frames and check first-pair spacing of 625000 ticks and 18/37 ms device state. Retain boundary cases and deliberate overrun refusals separately.
+4. Repeat finite deadline/donation cancellation, indefinite request/reply, same-root idle saved-frame and distinct-root switches, and loan grant/revoke/transfer checks. Record target boot identity, event loss, policy, result and tool/flag provenance. A source selection or a finite timing sample cannot establish a hard-time guarantee. Any measured improvements and all missed admission criteria belong in the eventual evidence report.
+
+동일 커밋·도구·앱 ELF로 일반 20개, IRQ 부하 4개, 경계 관측 4개, 기존 대조군 6개를 짝지어 실행한다. 실행 전 반복 횟수를 정하고 순번을 교대한다. 최초 작업 A/B와 후속 작업, 실제 대기 누락, 검사 간격, 선로 프레임 시각, 오류·출력 시각 및 회귀 결과를 보존한다. 유한한 관측으로 최악시간을 보장할 수 없다.
