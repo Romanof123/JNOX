@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="ko" viewBox="0 0 792 518" width="792" height="518" role="img" aria-labelledby="title desc">
+  <title id="title">J-NOX 시스템 아키텍처</title>
+  <desc id="desc">위에서부터 사용자 앱, 앱 인터페이스와 시스템 서비스, 특권 Rust 마이크로커널, 드라이버와 보드 지원, 하드웨어의 다섯 계층이다. 네이티브 Rust 드라이버 서비스와 Linux 드라이버 영역은 마이크로커널에서 격리된다. 점선 테두리는 계획 중인 구성을 뜻한다.</desc>
+  <style>
+    text { font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif; }
+    .platform { font-size: 22px; font-weight: 700; fill: #153746; }
+    .layer-label { font-size: 16px; font-weight: 700; }
+    .name, .detail { text-anchor: middle; }
+    .name { font-size: 15px; font-weight: 600; fill: #173541; }
+    .detail { font-size: 13px; fill: #435d67; }
+  </style>
+  <rect x="1" y="1" width="790" height="516" rx="10" fill="#fafcfd" stroke="#476573" stroke-width="2"/>
+  <text class="platform" x="24" y="37">J-NOX 시스템 아키텍처</text>
+  <g class="layer" id="layer-1">
+    <rect x="14" y="59" width="764" height="82" rx="7" fill="#eef3f5" stroke="#bdccd2"/>
+    <text class="layer-label" x="28" y="83" fill="#193c4b">사용자 애플리케이션</text>
+    <g class="component">
+      <rect x="26" y="92" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
+      <text class="name" x="147" y="119">네이티브 Rust 앱</text>
+    </g>
+    <g class="component">
+      <rect x="275" y="92" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
+      <text class="name" x="396" y="119">네이티브 C 앱</text>
+    </g>
+    <g class="component">
+      <rect x="524" y="92" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
+      <text class="name" x="645" y="119">기존 Linux 실행 파일</text>
+    </g>
+  </g>
+  <g class="layer" id="layer-2">
+    <rect x="14" y="149" width="764" height="82" rx="7" fill="#eef3f5" stroke="#bdccd2"/>
+    <text class="layer-label" x="28" y="173" fill="#193c4b">앱 인터페이스와 시스템 서비스</text>
+    <g class="component">
+      <rect x="26" y="182" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
+      <text class="name" x="147" y="200">네이티브 사용자 ABI</text>
+      <text class="detail" x="147" y="215">J-NOX 시스템 호출</text>
+    </g>
+    <g class="component">
+      <rect x="275" y="182" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
+      <text class="name" x="396" y="200">POSIX 서비스</text>
+      <text class="detail" x="396" y="215">소켓과 파일시스템</text>
+    </g>
+    <g class="component">
+      <rect x="524" y="182" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
+      <text class="name" x="645" y="200">Linux 사용자 ABI</text>
+      <text class="detail" x="645" y="215">Linux ELF 호환</text>
+    </g>
+  </g>
+  <g class="layer" id="layer-3">
+    <rect x="14" y="239" width="764" height="82" rx="7" fill="#163c50" stroke="#163c50"/>
+    <text class="layer-label" x="28" y="263" fill="#ffffff">Rust 마이크로커널 · 특권 모드 EL1</text>
+    <g class="component">
+      <rect x="26" y="272" width="242" height="39" rx="4" fill="#e9f5f4" stroke="#b3d8d5"/>
+      <text class="name" x="147" y="299">스레드와 스케줄링</text>
+    </g>
+    <g class="component">
+      <rect x="275" y="272" width="242" height="39" rx="4" fill="#e9f5f4" stroke="#b3d8d5"/>
+      <text class="name" x="396" y="299">IPC와 엔드포인트 권한</text>
+    </g>
+    <g class="component">
+      <rect x="524" y="272" width="242" height="39" rx="4" fill="#e9f5f4" stroke="#b3d8d5"/>
+      <text class="name" x="645" y="299">주소 공간</text>
+    </g>
+  </g>
+  <g class="layer" id="layer-4">
+    <rect x="14" y="329" width="764" height="82" rx="7" fill="#eef3f5" stroke="#bdccd2"/>
+    <text class="layer-label" x="28" y="353" fill="#193c4b">드라이버와 보드 지원</text>
+    <g class="component">
+      <rect x="26" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
+      <text class="name" x="147" y="380">네이티브 Rust 드라이버</text>
+      <text class="detail" x="147" y="395">격리된 드라이버 서비스</text>
+    </g>
+    <g class="component">
+      <rect x="275" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
+      <text class="name" x="396" y="380">Linux 드라이버 영역</text>
+      <text class="detail" x="396" y="395">게이트웨이로 기존 드라이버 연결</text>
+    </g>
+    <g class="component">
+      <rect x="524" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
+      <text class="name" x="645" y="380">보드 지원 계층(BSP)</text>
+      <text class="detail" x="645" y="395">MMU, 인터럽트, 타이머</text>
+    </g>
+  </g>
+  <g class="layer" id="layer-5">
+    <rect x="14" y="419" width="764" height="82" rx="7" fill="#e5ecef" stroke="#bdccd2"/>
+    <text class="layer-label" x="28" y="443" fill="#193c4b">하드웨어 및 에뮬레이션 대상</text>
+    <g class="component">
+      <rect x="26" y="452" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
+      <text class="name" x="147" y="479">CPU 코어</text>
+    </g>
+    <g class="component">
+      <rect x="275" y="452" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
+      <text class="name" x="396" y="479">메모리</text>
+    </g>
+    <g class="component">
+      <rect x="524" y="452" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
+      <text class="name" x="645" y="479">주변장치와 컨트롤러</text>
+    </g>
+  </g>
+</svg>

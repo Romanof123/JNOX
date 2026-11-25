@@ -8,21 +8,9 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 ## 시스템 아키텍처
 
-```mermaid
-flowchart TB
-  accTitle: J-NOX 시스템 아키텍처
-  accDescr: 네이티브 Rust·C 앱은 권한 모드의 Rust 마이크로커널을 호출하고 커널은 AArch64 보드 지원 계층을 사용한다. 설계에는 격리된 서비스, Linux 사용자 ABI 및 별도 Linux 영역의 드라이버 게이트웨이도 포함된다.
-  app["네이티브 Rust·C 앱 · EL0"] -->|"네이티브 ABI"| kernel["Rust 마이크로커널 · EL1<br/>스레드, 스케줄링, IPC, 주소 공간"]
-  binary["기존 Linux 실행 파일"] -.-> compat["Linux 사용자 ABI"]
-  compat -.-> kernel
-  services["격리된 OS 서비스<br/>POSIX, 소켓, 파일시스템"] -.-> kernel
-  kernel --> bsp["AArch64 보드 지원 계층<br/>MMU, 인터럽트, 타이머"]
-  kernel -.-> driver["네이티브 Rust 드라이버<br/>격리된 서비스"]
-  kernel -.-> gateway["장치 게이트웨이<br/>IPC 검증 및 공유 큐"]
-  gateway -.-> linux["별도 Linux 영역<br/>Linux 커널과 기존 드라이버"]
-```
+![사용자 앱, Rust 마이크로커널, 격리된 드라이버, 보드 지원, 하드웨어 순서로 쌓은 J-NOX 계층도](docs/diagrams/system-architecture.ko.svg)
 
-실선은 AArch64 QEMU에서 실행한 네이티브 경로입니다. C 앱과 Rust 앱 사이의 동기 IPC도 이 경로를 사용합니다. 점선은 설계 중인 서비스와 호환 경로입니다. [아키텍처와 격리 설계](docs/architecture.md) · [IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
+점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 기존 Linux 드라이버는 별도 Linux 영역에서 게이트웨이를 통해 J-NOX와 통신하도록 설계했습니다. 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
 
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
