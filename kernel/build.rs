@@ -1,3 +1,4 @@
+mod build_native_extension;
 use std::env;
 mod build_native_hierarchy;
 
@@ -373,6 +374,11 @@ fn main() {
     let policy = selector("JNOX_NATIVE_POLICY");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_hierarchy)");
     println!("cargo::rerun-if-changed=build_native_hierarchy.rs");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_extension)");
+    let extension = selector("JNOX_NATIVE_EXTENSION_PROGRAM");
+    let extension_hash = selector("JNOX_NATIVE_EXTENSION_SHA256");
+    assert_eq!(extension.is_some(), policy.as_deref() == Some("extension"), "extension policy requires a program");
+    assert_eq!(extension_hash.is_some(), extension.is_some(), "extension requires a canonical digest");
     let hierarchy = selector("JNOX_NATIVE_HIERARCHY");
     assert_eq!(hierarchy.is_some(), policy.as_deref() == Some("hierarchy"),
         "hierarchy policy requires JNOX_NATIVE_HIERARCHY exclusively");
@@ -535,6 +541,10 @@ fn main() {
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
+            if let (Some(program), Some(hash)) = (extension, extension_hash) {
+                assert_eq!(slots, 3, "extension requires three ordinary applications");
+                build_native_extension::configure(&program, &hash);
+            }
             write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
@@ -927,7 +937,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy") | None => {
+        Some("weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy" | "extension") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
@@ -964,6 +974,9 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         "pub const NATIVE_THREAD_PRIORITIES: [u8; 4] = {thread_bases:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
+    if mode == "extension" {
+        generated.push_str("include!(concat!(env!(\"OUT_DIR\"), \"/native_extension_ops.rs\"));\n");
+    }
     if let Some(raw) = hierarchy {
         generated.push_str(&build_native_hierarchy::constants(raw, slots));
         println!("cargo::rustc-cfg=jnox_native_hierarchy");
