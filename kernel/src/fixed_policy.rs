@@ -113,15 +113,18 @@ impl Fixed {
             .any(|task| task.state == State::Ready && task.priority == self.tasks[id].priority)
     }
 
-    pub fn deadline(&self) -> Result<Option<u64>, CompareOverflow> {
-        let wake = self.tasks[..self.count]
+    pub(crate) fn next_wake(&self) -> Option<u64> {
+        self.tasks[..self.count]
             .iter()
             .filter_map(|task| match task.state {
                 State::Sleeping(at) => Some(at),
                 _ => None,
             })
-            .min();
-        let expiry = self
+            .min()
+    }
+
+    pub(crate) fn expiry(&self) -> Result<Option<u64>, CompareOverflow> {
+        self
             .owner
             .filter(|&id| self.quantum.is_some() && self.has_peer(id))
             .map(|id| {
@@ -129,8 +132,29 @@ impl Fixed {
                     .checked_add(self.tasks[id].remaining)
                     .ok_or(CompareOverflow)
             })
-            .transpose()?;
-        Ok(wake.into_iter().chain(expiry).min())
+            .transpose()
+    }
+
+    pub fn deadline(&self) -> Result<Option<u64>, CompareOverflow> {
+        Ok(self.next_wake().into_iter().chain(self.expiry()?).min())
+    }
+
+    #[cfg(jnox_native_el0)]
+    pub(crate) fn remaining(&self, id: usize) -> u64 { self.tasks[id].remaining }
+
+    /// Decoding a decision must not consume or reorder the live ready queue.
+    #[cfg(jnox_native_el0)]
+    pub(crate) fn ready_order(&self, output: &mut [u64]) {
+        let mut len = 0;
+        for &id in self.ready.entries() {
+            let mut at = len;
+            while at > 0 && self.tasks[output[at - 1] as usize].priority < self.tasks[id].priority {
+                output[at] = output[at - 1];
+                at -= 1;
+            }
+            output[at] = id as u64;
+            len += 1;
+        }
     }
 
     fn join_tail(&mut self, id: usize) {
