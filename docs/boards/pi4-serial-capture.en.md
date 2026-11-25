@@ -60,3 +60,12 @@ The optional build-record JSON carries `profile`, `revision`, `build_options`, `
 Each run records its session/run IDs before opening the source. The final result adds the selected profile, exact variant, first mismatching byte offset when applicable, host arm time and observed quiet duration. An operator acknowledgment records that power was off. Keep the separately witnessed actual application of power with the capture. Replay times describe host file reads. The EVD-031 model and EVD-014 package replays can verify the host tool; physical FIFO/RR acceptance remains tracked in [#34](https://github.com/Romanof123/JNOX/issues/34).
 
 The integrated host collector passed 566 timed checks, eight observer API checks, four simulated-port cases and seven upstream capture tests. [Pi 4 serial capture tool · Host qualification](../evidence/pi4-fixed-serial-host.en.md)
+
+## Native FIFO/RR on the physical card
+
+Extract the [EVD-129 ZIP](../evidence/pi4-native-fixed-applications-first.zip) into an empty directory. From its root set `p=fifo` or `p=rr` and `repo` to the checkout path. Put the matching `d905/boot-$p/` tree on the card. Keep the complete `d905/$p/` package together. The collector checks the original policy-specific manifest, kernel ELF and raw image, ordered process ELF hashes, firmware, config and build log before arming. The source paths inside the manifest identify the original build. Replay saves the entire submitted file as `replay-input.bin` even if the matcher stops early. Each run distinguishes a complete journal, a supported observation from its retained prefix, or an inconclusive prefix. Keep both first captures and their power witnesses. UART cannot independently establish return PC/SP, private RAM results, board timing or physical power cycles.
+
+~~~sh
+python3 "$repo/tools/pi4_serial_capture.py" --profile "pi4-native-$p" --native-manifest "d905/$p/manifest.json" --elf "d905/$p/kernel.elf" --boot-dir /mnt/pi-boot --port /dev/ttyUSB0 --board-revision "$REV" --eeprom "$EEPROM" --witness "$WITNESS" --card-id "$CARD" --adapter-id "$ADAPTER" --boot-dir-source mounted-card --output "physical-$p-01"
+python3 "$repo/tools/pi4_serial_capture.py" --profile "pi4-native-$p" --native-manifest "d905/$p/manifest.json" --elf "d905/$p/kernel.elf" --boot-dir "d905/boot-$p" --replay /archive/run1/uart.bin /archive/run2/uart.bin --boot-dir-source archive --output "replay-$p-01"
+~~~
