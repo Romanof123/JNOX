@@ -4,7 +4,7 @@
 use super::ready_queue::ReadyQueue;
 #[path = "deadline_numeric.rs"]
 pub(crate) mod numeric;
-pub(crate) use numeric::{absolute, admit_edf, grid_quantum, NumericJob, Refusal};
+pub(crate) use numeric::{absolute, admit_edf, admit_native, grid_quantum, NumericJob, Refusal};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum DeadlinePolicy {

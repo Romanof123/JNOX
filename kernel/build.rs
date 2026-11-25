@@ -621,9 +621,9 @@ fn parse_native_tuple(value: &str) -> (u64, u64, u64) {
     job
 }
 
-fn parse_edf_job(value: &str) -> (u64, u64, u64) {
+fn parse_deadline_job(value: &str) -> (u64, u64, u64) {
     let job = parse_native_tuple(value);
-    assert!(job.0 < job.1 && job.1 <= 16 && job.2 > 0, "invalid finite EDF job");
+    assert!(job.0 < job.1 && job.1 <= 16 && job.2 > 0, "invalid finite deadline job");
     job
 }
 
@@ -640,13 +640,14 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(weights.is_none(), "weights require weighted scheduling");
         vec![0; slots]
     };
-    let jobs = if mode == "edf" {
-        let jobs: Vec<_> = edf_jobs.expect("EDF requires job tuples").split(';').map(parse_edf_job).collect();
-        assert_eq!(jobs.len(), slots, "supply one EDF job per slot");
+    let llf = mode == "llf";
+    let jobs = if matches!(mode, "edf" | "llf") {
+        let jobs: Vec<_> = edf_jobs.expect("EDF and LLF require job tuples").split(';').map(parse_deadline_job).collect();
+        assert_eq!(jobs.len(), slots, "supply one deadline job per slot");
         println!("cargo::rustc-cfg=jnox_native_edf");
         jobs
     } else {
-        assert!(edf_jobs.is_none(), "job tuples require EDF");
+        assert!(edf_jobs.is_none(), "job tuples require EDF or LLF");
         vec![(0, 0, 0); slots]
     };
     let periods = if matches!(mode, "rm" | "dm") {
@@ -669,7 +670,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("weighted" | "edf" | "rm" | "dm") | None => {
+        Some("weighted" | "edf" | "llf" | "rm" | "dm") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
@@ -684,7 +685,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         0
     };
     let generated = format!(
-        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {slots}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     std::fs::write(path, generated).expect("write native schedule");

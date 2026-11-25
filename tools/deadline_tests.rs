@@ -344,3 +344,26 @@ fn native_edf_checks_the_last_cell_and_admits_an_exact_deadline_finish() {
     assert_eq!(admit_edf(&[NumericJob { cost: 3, ..job }], 10, 0), Err(Refusal::Demand));
     assert_eq!(admit_edf(&[NumericJob { id: 1, ..job }], 10, 0), Err(Refusal::Table));
 }
+
+#[test]
+fn native_llf_pair_keeps_the_tie_then_changes_owner_without_a_release() {
+    use super::deadline_policy::{admit_native, NumericJob, Refusal};
+    let pair = [
+        NumericJob { id: 0, release: 0, deadline: 6, cost: 1 },
+        NumericJob { id: 1, release: 0, deadline: 7, cost: 3 },
+    ];
+    assert_eq!(admit_native(DeadlinePolicy::Llf, &pair, 10, 0), Ok(()));
+    let over = NumericJob { deadline: 1, cost: 2, ..pair[0] };
+    assert_eq!(admit_native(DeadlinePolicy::Llf, &[over], 10, 0), Err(Refusal::Demand));
+    let mut scheduler = DeadlineScheduler::<2>::new(DeadlinePolicy::Llf, 0, 1).unwrap();
+    for job in pair { scheduler.release(0, job.id, job.cost, job.deadline).unwrap(); }
+    for (k, owner, ranks) in [(0, 1, [5, 4]), (1, 1, [4, 4]), (2, 0, [3, 4])] {
+        assert_eq!(scheduler.decide(k).unwrap(), Some(owner));
+        assert_eq!([0, 1].map(|id| scheduler.laxity(id).unwrap()), ranks);
+        assert_eq!(scheduler.decide(k).unwrap(), Some(owner));
+    }
+    scheduler.complete(3, 0).unwrap();
+    assert_eq!(scheduler.decide(3).unwrap(), Some(1));
+    scheduler.complete(4, 1).unwrap();
+    assert_eq!(scheduler.decide(4).unwrap(), None);
+}

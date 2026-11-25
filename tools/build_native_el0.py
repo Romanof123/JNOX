@@ -30,7 +30,7 @@ class SinglePath(argparse.Action):
         setattr(namespace, self.dest, value)
 
 
-def edf_job(value):
+def deadline_job(value):
     fields = value.split(",")
     if len(fields) != 3 or any(not (field.isascii() and field.isdecimal()) for field in fields):
         raise argparse.ArgumentTypeError("expected release,deadline,cost in unsigned decimal grid units")
@@ -65,11 +65,11 @@ def native_schedule(parser, args):
             parser.error("RM and DM require one periodic tuple per supplied ELF")
     elif args.periodic or args.peer_periodic:
         parser.error("periodic tuples require --policy rm or dm")
-    if policy == "edf":
+    if policy in ("edf", "llf"):
         if not args.job or len(args.peer_job) != len(args.peer_elf):
-            parser.error("EDF requires exactly one job tuple per supplied ELF")
+            parser.error("EDF and LLF require exactly one job tuple per supplied ELF")
     elif args.job or args.peer_job:
-        parser.error("job tuples require --policy edf")
+        parser.error("job tuples require --policy edf or llf")
     if policy in ("fifo", "rr"):
         if not args.priority or len(args.peer_priority) != len(args.peer_elf):
             parser.error("fixed scheduling requires exactly one priority per supplied ELF")
@@ -102,16 +102,16 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "rm", "dm"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm"], action="append", default=[])
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
     parser.add_argument("--weight", type=int, action="append", default=[], help="primary CPU service weight")
     parser.add_argument("--peer-weight", type=int, action="append", default=[], help="CPU service weights in peer order")
     parser.add_argument("--quantum-ticks", type=int, action="append", default=[], help="common RR or weighted grant in physical counter ticks")
-    parser.add_argument("--job", type=edf_job, action="append", default=[], metavar="R,D,C",
-                        help="EDF primary release, absolute deadline and cost in 100 ms units")
-    parser.add_argument("--peer-job", type=edf_job, action="append", default=[], metavar="R,D,C",
-                        help="EDF job tuple for each peer, in peer order")
+    parser.add_argument("--job", type=deadline_job, action="append", default=[], metavar="R,D,C",
+                        help="EDF/LLF primary release, absolute deadline and cost in 100 ms units")
+    parser.add_argument("--peer-job", type=deadline_job, action="append", default=[], metavar="R,D,C",
+                        help="EDF/LLF job tuple for each peer, in peer order")
     parser.add_argument("--periodic", type=periodic_parameters, action="append", default=[], metavar="PHASE,T,D",
                         help="primary phase, period and relative deadline in nanoseconds")
     parser.add_argument("--peer-periodic", type=periodic_parameters, action="append", default=[], metavar="PHASE,T,D",
@@ -184,7 +184,7 @@ def main():
                 release, deadline, cost = jobs[slot["slot"]]
                 slot["job"] = {"release": release, "deadline": deadline, "cost": cost}
         if jobs:
-            metadata["edf_profile"] = {"name": "finite", "grid_ms": 100, "horizon_grids": 16}
+            metadata[f"{policy}_profile"] = {"name": "finite", "grid_ms": 100, "horizon_grids": 16}
             env["JNOX_NATIVE_EDF_JOBS"] = ";".join(",".join(map(str, job)) for job in jobs)
         if periodic:
             env["JNOX_NATIVE_PERIODIC"] = ";".join(",".join(map(str, item)) for item in periodic)
