@@ -101,8 +101,10 @@ sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c "$run/a.elf"
 sh sdk/native-aarch64/build-rust.sh examples/native-fixed-rust/Cargo.toml "$run/b.elf"
 python3 tools/build_native_el0.py --out "$run/rr" --elf "$run/high.elf" \
     --peer-elf "$run/a.elf" --peer-elf "$run/b.elf" --policy rr \
-    --priority 7 --peer-priority 3 --peer-priority 3 --quantum-ticks 12500000
+    --priority 7 --peer-priority 3 --peer-priority 3 --quantum-ticks 1250000
 qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 \
     -accel tcg -m 128M -nodefaults -display none -monitor none -no-reboot \
     -serial stdio -kernel "$run/rr/kernel.elf"
 ~~~
+
+The small examples use a 1,250,000-tick quantum so the two priority-3 calculations overlap multiple quanta. The original frozen example used 12,500,000 ticks. The quantum is a package setting in physical counter ticks. [Native FIFO and RR evidence](evidence/evd-115.en.md)

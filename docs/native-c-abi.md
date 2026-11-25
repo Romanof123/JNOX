@@ -101,8 +101,10 @@ sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c "$run/a.elf"
 sh sdk/native-aarch64/build-rust.sh examples/native-fixed-rust/Cargo.toml "$run/b.elf"
 python3 tools/build_native_el0.py --out "$run/rr" --elf "$run/high.elf" \
     --peer-elf "$run/a.elf" --peer-elf "$run/b.elf" --policy rr \
-    --priority 7 --peer-priority 3 --peer-priority 3 --quantum-ticks 12500000
+    --priority 7 --peer-priority 3 --peer-priority 3 --quantum-ticks 1250000
 qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 \
     -accel tcg -m 128M -nodefaults -display none -monitor none -no-reboot \
     -serial stdio -kernel "$run/rr/kernel.elf"
 ~~~
+
+작은 예제에서는 3순위 계산 두 개가 여러 퀀텀에 걸쳐 실행되도록 1,250,000틱을 사용한다. 최초 고정 예제의 설정은 12,500,000틱이었다. 퀀텀은 패키지에서 물리 카운터 틱 단위로 지정한다. [네이티브 FIFO·RR 근거](evidence/evd-115.md)
