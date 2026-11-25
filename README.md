@@ -6,6 +6,24 @@ J-NOX is developing a full-featured real-time operating system in Rust for embed
 
 The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture keeps the trusted kernel small and calls for isolated services, native Rust drivers and a compatibility domain for Linux drivers.
 
+## System architecture
+
+```mermaid
+flowchart TB
+  accTitle: J-NOX system architecture
+  accDescr: Native Rust and C apps call the privileged Rust microkernel, which uses AArch64 board support. The design also defines isolated services, a Linux user ABI and a gateway to drivers in a separate Linux domain.
+  app["Native Rust and C apps · EL0"] -->|"Native ABI"| kernel["Rust microkernel · EL1<br/>Threads, scheduling, IPC and address spaces"]
+  binary["Prebuilt Linux apps"] -.-> compat["Linux user ABI"]
+  compat -.-> kernel
+  services["Isolated OS services<br/>POSIX, sockets and filesystems"] -.-> kernel
+  kernel --> bsp["AArch64 board support<br/>MMU, interrupts and timers"]
+  kernel -.-> driver["Native Rust drivers<br/>Isolated services"]
+  kernel -.-> gateway["Device gateway<br/>Validated IPC and shared queues"]
+  gateway -.-> linux["Separate Linux domain<br/>Linux kernel and existing drivers"]
+```
+
+Solid arrows show the native path exercised on AArch64 QEMU, including synchronous IPC between C and Rust apps. Dotted arrows show the planned service and compatibility paths. [Architecture and isolation](docs/architecture.en.md) · [IPC verification](docs/evidence/native-sync-ipc-release.en-ko.md)
+
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
 Give native batch applications release offsets and service estimates, then run them under SJF, SRTF or HRRN. [Build and schedule the applications](examples/native-batch/README.md)
