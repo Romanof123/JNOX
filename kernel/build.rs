@@ -335,6 +335,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_pi4_smp)");
     println!("cargo::rustc-check-cfg=cfg(jnox_ordinary_mutex)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_fifo)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_mutex_survivors)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_chain)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_ceiling)");
     println!("cargo::rustc-check-cfg=cfg(jnox_mutex_anchor)");
@@ -432,11 +433,15 @@ fn main() {
         Some("mutex") => {
             assert!(board == "virt" && bench == "boot" && trace.is_none() && scenario.is_none(),
                 "ordinary mutex requires virt, no benchmark, trace or control case");
-            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling" | "ordinary-fifo" | "ordinary-chain")),
-                "ordinary mutex requires ordinary-pi, ordinary-ceiling, ordinary-fifo or ordinary-chain");
+            assert!(matches!(app.as_deref(), Some("ordinary-pi" | "ordinary-ceiling" | "ordinary-fifo" | "ordinary-chain" | "ordinary-survivors")),
+                "ordinary mutex requires ordinary-pi, ordinary-ceiling, ordinary-fifo, ordinary-chain or ordinary-survivors");
             println!("cargo::rustc-cfg=jnox_ordinary_mutex");
             if app.as_deref() == Some("ordinary-fifo") {
                 println!("cargo::rustc-cfg=jnox_mutex_fifo");
+            } else if app.as_deref() == Some("ordinary-survivors") {
+                assert!(!env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
+                    "ordinary-survivors requires no benchmark or diagnostic features");
+                println!("cargo::rustc-cfg=jnox_mutex_survivors");
             } else if app.as_deref() == Some("ordinary-chain") {
                 println!("cargo::rustc-cfg=jnox_mutex_chain");
             } else if app.as_deref() == Some("ordinary-ceiling") {

@@ -31,3 +31,18 @@ Use the shared LockSet acquire, timeout(HIGH), release and effective priorities,
 Freeze the exact combined source and release ELFs before any scored launch. Use one Cortex-A72 on QEMU virt/GICv2, 128 MiB and the ordinary clock. One new opt-in workload runs both epochs in each first plain and externally traced cold boot. Then run the eight [accepted comparison positions](evidence/evd-110.en.md) in order: chain, FIFO, original PI and original ceiling, each plain then traced. Preserve each original criterion: chain mid-work 1 ms expiry and protected batch, FIFO both arrival orders per boot, PI and ceiling 100 µs comparators and original protected-work qualification. Keep all first captures including failures. Keep the prior combined chain 2/2 and original controls 2/4, with the two traced reason-16 failures, separate from the later accepted 8/8. Retain existing host/selector checks. #49 retains physical maximum blocking and #21 retains product acceptance.
 
 최초 실행 전 통합 소스와 릴리스 ELF를 고정한다. 단일 Cortex-A72 QEMU virt/GICv2, 128 MiB, 기본 시계에서 새 선택 작업의 최초 일반·외부 추적 콜드 부팅 각각에 두 도착 순서를 모두 실행한다. 이후 기존 연쇄·FIFO·PI·천장 순으로 각각 일반과 추적을 실행해 [기존 비교 8회](evidence/evd-110.md)를 보존한다. 연쇄의 작업 중 1 ms 만료와 배치 결과, FIFO의 두 순서, 기존 PI·천장의 100 µs 및 보호 작업 판정을 각각 유지한다. 실패한 최초 원본도 보존한다. 앞선 통합의 연쇄 2/2와 기존 대조 2/4(추적 2건 사유 16), 이후 통과한 8/8은 별도 집단이다. 기존 호스트·선택자 검사를 유지한다. 실물 최대 차단 시간은 #49, 제품 승인은 #21에서 판정한다.
+
+## Build and run / 빌드 및 실행
+
+From the repository root on Linux or WSL, select the two-epoch workload with the ordinary mutex profile. Linux 또는 WSL의 저장소 루트에서 아래와 같이 두 도착 순서를 실행하는 일반 뮤텍스 작업을 선택한다.
+
+~~~sh
+run=$(mktemp -d)
+CARGO_TARGET_DIR="$run" JNOX_BOARD=virt JNOX_PROFILE=mutex JNOX_APP=ordinary-survivors \
+    python3 tools/build_kernel.py --arch aarch64
+elf="$run/aarch64-unknown-none/release/jnox-kernel"
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg \
+    -m 128M -nodefaults -display none -monitor none -serial stdio -kernel "$elf"
+~~~
+
+For an externally traced boot of the same release ELF, add `-d int -D "$run/exceptions.log"` to the QEMU command. 같은 릴리스 ELF의 외부 예외 추적은 QEMU 명령에 해당 옵션을 추가해 기록한다.
