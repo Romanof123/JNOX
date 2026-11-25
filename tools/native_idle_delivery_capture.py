@@ -28,6 +28,7 @@ import subprocess
 import threading
 import time
 
+from native_idle_kernel_layout import nm_layout
 from ordinary_amc_capture import FLAGS, sha
 from qemu_capture import request
 
@@ -199,14 +200,9 @@ def capture(args, out):
     table = subprocess.check_output(["nm", "-Sn", kernel], text=True)
     (out / "symbols").write_text(table)
 
-    def address(suffix):
-        lines = [line for line in table.splitlines() if suffix in line]
-        if len(lines) != 1:
-            raise ValueError(f"ambiguous or missing symbol {suffix}")
-        return int(lines[0].split()[0], 16)
-
-    base, end = address(" _start"), address(" __stack_top")
-    spaces, frames = address("6SPACES"), address("6FRAMES")
+    symbols = nm_layout(table)
+    base, end = symbols["_start"], symbols["__stack_top"]
+    spaces, frames = symbols["spaces"], symbols["frames"]
     ranges = [(spaces + i * 0x415000 + 0x7000, 128) for i in range(3)] + [(frames, 2496)]
     argv = [str(qemu), *FLAGS, "-qmp", "stdio", "-serial", "file:" + str(out / "uart"),
             "-kernel", str(kernel), "-d", "int", "-D", str(out / "exceptions")]

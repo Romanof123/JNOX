@@ -18,6 +18,7 @@ from pathlib import Path
 import struct
 import sys
 
+from native_idle_kernel_layout import elf_layout, nm_layout
 from native_idle_markers import APP_HASHES, ELF_HASH, correlate, sites
 from ordinary_amc_capture import FLAGS
 from read_hierarchy_health import read_uart
@@ -44,18 +45,12 @@ def digest(path):
         return h.hexdigest()
 
 
-def symbol(table, name):
-    hits = [line.split()[0] for line in table.splitlines() if line.split()[-1].endswith(name)]
-    check(len(hits) == 1, f"ambiguous/missing {name}")
-    return int(hits[0], 16)
-
-
-def product_data(root, apps):
-    table = (root / "symbols").read_text()
-    starts = [line.split()[0] for line in table.splitlines() if line.endswith(" _start")]
-    check(len(starts) == 1, "missing/ambiguous kernel load base")
-    base = int(starts[0],16)
-    spaces = symbol(table, "6SPACES")
+def product_data(root, apps, linked):
+    captured = nm_layout((root / "symbols").read_text())
+    check(captured == linked, "captured kernel layout differs from pinned ELF")
+    base, spaces = linked["_start"], linked["spaces"]
+    check((root/"ram.bin").stat().st_size == linked["__stack_top"]-base,
+          "terminal RAM dump differs from linked capture size")
     specs = [{"private_progress":"I", "private_result":"I", "report_deadline_ns":"3Q", "report_observed_ns":"3Q"},
              {"private_progress":"I", "private_result":"9I"}, {"private_progress":"I", "private_result":"Q"}]
     products = []
@@ -85,7 +80,7 @@ def product_data(root, apps):
     return {"private_values":products, "match":ok}
 
 
-def guest(root, mode, apps):
+def guest(root, mode, apps, linked):
     launch = load(root/"launch.json")
     argv = launch["argv"]
     prefix = ["/usr/bin/qemu-system-aarch64", *FLAGS, "-qmp","stdio","-serial"]
@@ -109,7 +104,7 @@ def guest(root, mode, apps):
     expiry = [(r[0],r[3]-r[13]) for r in rows if r[1:3] == [1,30]]
     regular = [(r[0],max(0,r[18])) for r in rows if r[1:3] == [1,30] and r[8]<3 and r[13]==r[16]]
     return {"root":str(root.resolve()), "launch":launch, "outcome":out, "health":health,
-            "uart_sha256":digest(uart),"products":product_data(root, apps),
+            "uart_sha256":digest(uart),"products":product_data(root, apps, linked),
             "timing":{"detail":health["detail"], "limit_ticks":P//8,"decision_limit_ticks":8*P,
                       "max_entry_gap_ticks":max(gaps,default=None),"decision_gap_violations":[r[0] for r,g in zip(rows[1:],gaps) if g>8*P],
                       "irq_expiry_violations":[p for p in expiry if not 0<=p[1]<=P//8],
@@ -215,15 +210,17 @@ def contribution(series, start, stop, witness, calibrated, resolution=0):
 
 
 def analyze(args):
-    control = guest(args.control,"control",args.apps)
-    observed = guest(args.observed,"observed",args.apps)
+    idle,addr = sites(args.kernel)
+    with args.kernel.open("rb") as stream:
+        linked = elf_layout(ELFFile(stream))
+    control = guest(args.control,"control",args.apps,linked)
+    observed = guest(args.observed,"observed",args.apps,linked)
     host = load(args.observed/"host.json")
     pre = load(args.preflight)
     check(control["launch"]["platform"]==observed["launch"]["platform"]==pre["platform"],
           "acquisition/preflight platforms differ")
     check(host["version"]==1 and host["clock"]=="CLOCK_MONOTONIC ns" and host["cpu0_tid"]>0,
           "unexpected host clock or CPU0 identity")
-    idle,addr = sites(args.kernel)
     marker = correlate(argparse.Namespace(markers=args.markers,uart=args.observed/"uart",tid=host["cpu0_tid"]),idle,addr)
     limits = list(marker["limitations"])
     if observed["health"]["instrumentation"]!="valid":

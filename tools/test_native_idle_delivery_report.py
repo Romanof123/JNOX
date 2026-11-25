@@ -1,6 +1,7 @@
 """Offline mathematical controls; no guest or host acquisition."""
 import unittest
 
+from native_idle_kernel_layout import nm_layout
 from native_idle_delivery_report import contribution, projection
 
 
@@ -11,6 +12,18 @@ def anchor(t, due, outcome=1):
 
 
 class IdleDeliveryBounds(unittest.TestCase):
+    def test_linked_storage_identity(self):
+        table = """40200000 5c T _start
+4109f030 B __stack_top
+40234000 c3f000 b _ZN11jnox_kernel14native_el0_mmu6SPACES17h746e7fcfb4f25aceE.llvm.14211063895235707904
+40212000 9c0 d _ZN11jnox_kernel10native_el06FRAMES17hd20826ea19958adeE
+4021b000 9c0 d _ZN11jnox_kernel5other6FRAMES17h0123456789abcdefE"""
+        self.assertEqual(nm_layout(table)["spaces"],0x40234000)
+        for altered in (table.replace("9c0 d", "9c0 b"),table.replace("c3f000","1000"),
+                        table.replace("14native_el0_mmu","14foreign_module"),table+"\n"+table):
+            with self.assertRaises(ValueError):
+                nm_layout(altered)
+
     def test_held_out_fit_never_replaces_causal_interval(self):
         rows=[anchor(10,12),anchor(30,34,2),anchor(50,53)]
         causal=projection(rows,1,1)
