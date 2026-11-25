@@ -37,7 +37,8 @@ static mut THREAD_CODE: [(usize, usize); crate::native_elf::MAX_LOADS] =
     [(0, 0); crate::native_elf::MAX_LOADS];
 
 #[cfg(jnox_native_threads)]
-pub(crate) fn valid_thread_entry(addr: usize) -> bool {
+pub(crate) fn valid_thread_entry(address: u64) -> bool {
+    let Ok(addr) = usize::try_from(address) else { return false };
     let Some(end) = addr.checked_add(4) else { return false };
     // Immutable after boot. Keep precise ELF payload bounds rather than page-rounded bounds.
     addr % 4 == 0 && unsafe { THREAD_CODE }.iter().any(|&(lo, hi)| lo <= addr && end <= hi)
