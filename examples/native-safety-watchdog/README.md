@@ -4,7 +4,7 @@ This opt-in example runs three ordinary Rust processes on single-core QEMU virt.
 
 The supervisor opens generation 1 before exchanging a common raw-counter epoch E. It checks both role/case acknowledgements before E. The first successful controller COMPLETE after OPEN primes the watchdog. If L is the actual heartbeat tick and F the counter rate, the first disallowed tick is `D = L + floor(F × 5 / 1000) + 1`. OPEN alone has no heartbeat deadline. The existing 20 ms permit freshness check remains independent.
 
-The controller normally checks every 2.5 ms from E through E+70 ms, in A/B phases on a 5 ms job calendar. Each phase makes one nonblocking loan attempt, copies and releases a received 44-byte frame, validates its protected fields and submits an eligible private snapshot. Each job shares a single command budget. Successful fused CHECK/COMPLETE calls return device state from the same protected syscall. The lower-ranked sender has seven releases at 10 ms intervals. The first pair uses the explicit E/E+10 ms calendar for reproducible ENABLE setup. Both are real publications through the ordinary loan route. Capture the actual construction and publication ticks separately.
+The controller normally checks every 2.5 ms from E through E+70 ms, in A/B phases on a 5 ms job calendar. Each phase makes one nonblocking loan attempt, copies and releases a received 44-byte frame, validates its protected fields and submits an eligible private snapshot. Each job shares a single command budget. In the qualification build, successful fused CHECK/COMPLETE calls return device state from the same protected syscall. The lower-ranked sender has seven releases at 10 ms intervals. The first pair uses the explicit E/E+10 ms calendar for reproducible ENABLE setup. Both are real publications through the ordinary loan route. Capture the actual construction and publication ticks separately.
 
 | Argument | Stimulus and evidence required |
 | --- | --- |
@@ -17,7 +17,19 @@ The controller normally checks every 2.5 ms from E through E+70 ms, in A/B phase
 
 The supervisor requests the first rearm at 15 ms, then independently reads the actual register flags at the 17.5 ms release. Immediately before injection, the controller's actual CHECK snapshot must show primed and enabled in generation 1, at least two committed samples, and a prior successful COMPLETE. It records that guard before exiting, sleeping or computing. Code 95 records unsuccessful setup. A startup gap or later teardown fault cannot satisfy the active-fault case. The delayed completion is attempted on the same open phase with SVC 60/3; expected status is -110. The fault profiles skip 22.5–32.5 ms controller releases and resume observation at 35 ms. They deliberately violate the normal schedule. Completion of the fixture does not admit a timing policy.
 
-## Capture from the integrated revision
+## Ordinary package / 일반 패키지
+
+The ordinary worker uses CLOCK_MONOTONIC absolute waits and protected CHECK and COMPLETE through SVC60. Each successful operation is followed by an SVC61 state sample. The kernel records the actual heartbeat before this user-space sample. All three roles share the same raw-counter release calendar. Each future release uses a raw-counter sample followed by a monotonic sample, one absolute sleep and a counter check on return. The separation between the two initial samples contributes to observed lateness.
+
+일반 실행에서는 감시기와 세 역할을 그대로 사용한다. 5 ms 작업마다 두 번 검사하고 각 위상은 2.5 ms 떨어져 있다. 마지막 정상 완료를 기준으로 커널이 다음 감시 기한을 정한다. 고장 반응과 위상 실행 시간은 각각 측정한다.
+
+For the ordinary version of the recipe below, build the worker with the following command and pass `--safety-channel --safety-watchdog` as the safety options to the packager. The qualification recipe uses the default Cargo features and adds `--safety-qualification`. Select a distinct output directory for each package. / 일반 패키지는 아래 명령으로 앱을 빌드하고 패키저에 `--safety-channel --safety-watchdog`를 지정한다.
+
+```sh
+sh sdk/native-aarch64/build-rust.sh --features ordinary examples/native-safety-watchdog/Cargo.toml worker.elf
+```
+
+## Qualification capture / 검증용 이미지 실행
 
 Use Bash with the native Rust SDK, the protected virtual watchdog kernel and package flag, and QEMU virt. Build once and retain separate output directories for each policy and case.
 

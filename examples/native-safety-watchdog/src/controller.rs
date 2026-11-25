@@ -153,7 +153,7 @@ pub fn run(case: Case, t: Time, rounds: u64) -> Result<()> {
             phase: if a { Phase::A } else { Phase::B },
             target: t.at(i as u64 * 2500)?,
         };
-        seg.start()?;
+        crate::mode::start(&seg, t.hz)?;
         let observed = info()?;
         if a {
             command_used = false;
@@ -183,13 +183,13 @@ pub fn run(case: Case, t: Time, rounds: u64) -> Result<()> {
             if !inhibited(&observed) {
                 return Err(97);
             }
-            seg.finish()?;
+            crate::mode::finish(&seg)?;
             continue;
         }
-        let entry = dev::check_and_sample().map_err(|_| 87)?;
+        let entry = crate::mode::check_and_sample().map_err(|_| 87)?;
         if i == 8 && case != Case::Healthy {
             inject(case, &entry, last_complete, rounds)?;
-            seg.finish()?;
+            crate::mode::finish(&seg)?;
             continue;
         }
         if model.snapshot().generation != entry.generation {
@@ -217,7 +217,7 @@ pub fn run(case: Case, t: Time, rounds: u64) -> Result<()> {
                 }
             }
         }
-        let end = dev::complete_and_sample().map_err(|_| 87)?;
+        let end = crate::mode::complete_and_sample().map_err(|_| 87)?;
         last_complete = end.ticks;
         row[9] = end.ticks;
         row[10] = end.flags;
@@ -225,7 +225,7 @@ pub fn run(case: Case, t: Time, rounds: u64) -> Result<()> {
         unsafe {
             write_volatile(&raw mut wd_controller_rows[i], row);
         }
-        seg.finish()?;
+        crate::mode::finish(&seg)?;
     }
     Ok(())
 }

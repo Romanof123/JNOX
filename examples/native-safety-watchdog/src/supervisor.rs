@@ -27,7 +27,7 @@ pub fn run(case: Case, t: Time) -> Result<()> {
             phase: Phase::Supervisor,
             target: t.at(us)?,
         };
-        seg.start()?;
+        crate::mode::start(&seg, t.hz)?;
         let pre = info()?;
         let mut command = None;
         let mut expected = SKIP;
@@ -142,7 +142,7 @@ pub fn run(case: Case, t: Time) -> Result<()> {
                 ],
             );
         }
-        seg.finish()?;
+        crate::mode::finish(&seg)?;
     }
     if missed {
         Err(98)

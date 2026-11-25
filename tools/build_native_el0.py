@@ -492,7 +492,7 @@ def main():
     parser.add_argument("--safety-downstream-injector", action="count", default=0,
                         help="include the fixed invalid-frame source in a closed-gate virtual qualification run")
     parser.add_argument("--safety-watchdog", action="count", default=0,
-                        help="enable the kernel watchdog for the three-role safety qualification profile")
+                        help="enable the kernel watchdog for the ordinary or qualification protected three-role profile")
     parser.add_argument("--safety-interference", action="count", default=0,
                         help="arm a finite independent CNTV IRQ stream during safety qualification")
     parser.add_argument("--safety-qualification", action="count", default=0,
@@ -613,16 +613,17 @@ def main():
         if (args.arg not in (["gate-invalid"], ["gate-saturation"]) or args.peer2_arg != args.arg
                 or args.peer_arg not in (args.arg, args.arg + ["fused-phase"])):
             parser.error("downstream qualification requires the same closed-gate case for all three roles")
-    if args.safety_watchdog and (args.safety_watchdog != 1 or args.safety_qualification != 1):
-        parser.error("--safety-watchdog requires --safety-qualification and may appear once")
+    if args.safety_watchdog and (args.safety_watchdog != 1 or not args.safety_channel or args.safety_boundary):
+        parser.error("--safety-watchdog requires --safety-channel, excludes --safety-boundary and may appear once")
     if args.safety_interference and (args.safety_interference != 1 or args.safety_qualification != 1):
         parser.error("--safety-interference requires --safety-qualification and may appear once")
     if args.safety_qualification:
         if args.safety_qualification != 1 or not args.safety_channel:
             parser.error("--safety-qualification requires --safety-channel and may appear once")
+    if args.safety_qualification or args.safety_watchdog:
         sender, controller, supervisor = priorities
         if not controller > sender > supervisor:
-            parser.error("qualification priorities must order controller > sender > supervisor")
+            parser.error("qualification or watchdog priorities must order controller > sender > supervisor")
     validate_pipes(parser, args, policy, board)
     shell = None
     if args.exec_child or args.rom_file:
@@ -849,6 +850,9 @@ def main():
             "sender_slot": 0, "controller_slot": 1, "supervisor_slot": 2,
             "status_flags": {"primed": 16, "watchdog_fault": 32},
             "clock": "kernel_physical_counter_ticks",
+            "mode": "qualification" if args.safety_qualification else "ordinary",
+            "max_completion_gap_ms": 5,
+            "completion_syscalls": [60, 63] if args.safety_qualification else [60],
         }
     if args.safety_interference:
         env["JNOX_NATIVE_SAFETY_INTERFERENCE"] = "1"

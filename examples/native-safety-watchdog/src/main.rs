@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 mod controller;
+mod mode;
 #[allow(dead_code)]
 #[path = "../../native-safety-admission/common.rs"]
 mod schedule;

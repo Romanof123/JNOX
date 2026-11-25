@@ -560,8 +560,8 @@ fn main() {
             "downstream injection requires the protected virtual qualification profile");
     }
     if let Some(value) = selector("JNOX_NATIVE_SAFETY_WATCHDOG") {
-        assert!(value == "1" && qualification.as_deref() == Some("1"),
-            "safety watchdog requires the qualification profile");
+        assert!(value == "1" && safety_channel.as_deref() == Some("1") && boundary.is_none(),
+            "safety watchdog requires the protected channel and excludes boundary fixtures");
         println!("cargo::rustc-cfg=jnox_native_safety_watchdog");
     }
     if let Some(value) = selector("JNOX_NATIVE_SAFETY_INTERFERENCE") {
@@ -1401,10 +1401,13 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             let list: Vec<u8> = priorities.expect("fixed scheduling requires priorities").split(',')
                 .map(|value| value.parse().expect("priority must be 0..255")).collect();
             assert_eq!(list.len(), slots, "supply one priority per slot");
-            if std::env::var_os("JNOX_NATIVE_SAFETY_QUALIFICATION").is_some() {
+            let qualification = std::env::var_os("JNOX_NATIVE_SAFETY_QUALIFICATION").is_some();
+            if qualification || std::env::var_os("JNOX_NATIVE_SAFETY_WATCHDOG").is_some() {
                 assert!(matches!(list.as_slice(), [sender, controller, supervisor]
                     if controller > sender && sender > supervisor),
-                    "qualification priorities must order controller > sender > supervisor");
+                    "qualification or watchdog priorities must order controller > sender > supervisor");
+            }
+            if qualification {
                 println!("cargo::rustc-cfg=jnox_native_safety_qualification");
             }
             println!("cargo::rustc-cfg=jnox_native_fixed");

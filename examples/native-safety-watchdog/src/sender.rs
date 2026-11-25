@@ -17,7 +17,7 @@ pub fn run(case: Case, t: Time) -> Result<()> {
             phase: Phase::Sender,
             target: t.at(k as u64 * 10_000)?,
         };
-        seg.start()?;
+        crate::mode::start(&seg, t.hz)?;
         let s = info()?;
         if case == Case::Exit && k >= 2 {
             unsafe {
@@ -37,7 +37,7 @@ pub fn run(case: Case, t: Time) -> Result<()> {
                     ],
                 );
             }
-            seg.finish()?;
+            crate::mode::finish(&seg)?;
             continue;
         }
         let sequence = if case.recovery() && s.generation == 2 {
@@ -92,7 +92,7 @@ pub fn run(case: Case, t: Time) -> Result<()> {
             write_volatile(&raw mut wd_sender_bytes[k], data);
             write_volatile(&raw mut wd_sender_rows[k], row);
         }
-        seg.finish()?;
+        crate::mode::finish(&seg)?;
     }
     Ok(())
 }
