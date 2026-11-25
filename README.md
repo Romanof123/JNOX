@@ -8,6 +8,8 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md) Applications can also wait until a monotonic deadline with C `clock_nanosleep` or Rust `jnox_native::sleep_until`. [Native sleep examples and commands](docs/native-c-abi.en.md#sleep-until-a-monotonic-deadline)
 
+Choose lottery or stride scheduling with a weight per application. [Configure the seed and grant window and run the apps](docs/native-c-abi.en.md#schedule-native-applications-with-lottery-or-stride)
+
 Set priorities for four threads in one process and choose priority inheritance, immediate ceiling or a timed mutex wait. [C and Rust attributes and packaging](docs/native-c-abi.en.md#configure-four-threads-and-priority-aware-mutexes)
 
 The opt-in engineering hierarchy assigns individual CPU quotas and shared parent budgets. [Package the three workers or a single CRC process](docs/native-c-abi.en.md#assign-hierarchical-cpu-budgets-to-native-processes) Read boot-lifetime idle-refill latency and the first violation from ordinary UART. [Use the health reader](docs/native-c-abi.en.md#read-idle-refill-health)
