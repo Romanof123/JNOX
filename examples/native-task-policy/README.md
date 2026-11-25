@@ -2,9 +2,10 @@
 
 ## Build / 빌드
 
-From the repository root on Linux or WSL, use Clang, LLD, Cargo, Python 3 and the Rust target `aarch64-unknown-none-softfloat`. Keep the same shell for both command blocks. Linux 또는 WSL의 저장소 루트에서 아래 두 명령 블록을 같은 셸에서 실행합니다.
+From the repository root on Linux or WSL, use Clang, LLD, Cargo, Python 3 and QEMU system AArch64. Rust uses `aarch64-unknown-none` for the kernel and `aarch64-unknown-none-softfloat` for the application SDK. Install both targets and run the commands in the same shell. Linux 또는 WSL에서 커널용·앱용 Rust 타깃을 모두 설치하고, 저장소 루트의 같은 셸에서 아래 명령을 실행합니다.
 
 ```sh
+rustup target add aarch64-unknown-none aarch64-unknown-none-softfloat
 run_dir=$(mktemp -d)
 sh examples/native-task-policy/build.sh "$run_dir/apps"
 for config in policy unmonitored scale20; do
