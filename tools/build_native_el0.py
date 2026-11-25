@@ -391,11 +391,20 @@ def main():
                         help="grant a send right to another native FIFO/RR process's mailbox")
     parser.add_argument("--notify-route", type=ipc_route, action="append", default=[], metavar="SENDER:OWNER",
                         help="grant a notification right to another native FIFO/RR process")
+    parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
+                        help="select a socket service with existing inbound synchronous IPC rights")
     parser.add_argument("--loan-route", type=ipc_route, action="append", default=[], metavar="PRODUCER:CONSUMER",
                         help="grant one native FIFO/RR process pair a shared-buffer loan channel")
     parser.add_argument("--waitset", action="count", default=0,
                         help="enable waitsets for configured mailbox or notification routes")
     args = parser.parse_args()
+    if len(args.socket_service) > 1:
+        parser.error("--socket-service may appear only once")
+    if args.socket_service:
+        service_slot = int(args.socket_service[0])
+        service_clients = sorted(caller for caller, server in args.ipc_route if server == service_slot)
+        if not service_clients:
+            parser.error("--socket-service requires an explicit --ipc-route into its slot")
     if len(args.loan_route) > 1:
         parser.error("--loan-route may appear only once")
     if args.waitset > 1:
@@ -551,6 +560,9 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.socket_service:
+        env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
+        metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
     if args.loan_route:
         producer, consumer = args.loan_route[0]
         env["JNOX_NATIVE_LOAN_ROUTE"] = f"{producer}:{consumer}"

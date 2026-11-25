@@ -387,6 +387,10 @@ fn main() {
     let notify_routes = selector("JNOX_NATIVE_NOTIFY_ROUTES");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_loan_ipc)");
     let loan_route = selector("JNOX_NATIVE_LOAN_ROUTE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_socket_service)");
+    let socket_service = selector("JNOX_NATIVE_SOCKET_SERVICE");
+    assert!(socket_service.is_none() || ipc_routes.is_some(),
+        "socket service requires explicit synchronous IPC routes");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_waitset)");
     if let Some(value) = selector("JNOX_NATIVE_WAITSET") {
         assert!(value == "1" && (mailbox_routes.is_some() || notify_routes.is_some()),
@@ -601,7 +605,7 @@ fn main() {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
             }
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()), [ipc_routes.as_deref(), mailbox_routes.as_deref(), notify_routes.as_deref()], loan_route.as_deref());
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()), [ipc_routes.as_deref(), mailbox_routes.as_deref(), notify_routes.as_deref()], loan_route.as_deref(), socket_service.as_deref());
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -1001,7 +1005,7 @@ fn parse_ipc_route(pair: &str, slots: usize) -> [usize; 2] {
     [caller, server]
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>, socket_service: Option<&str>) {
     let batch_jobs = if let Some(raw) = batch {
         let jobs: Vec<_> = raw.split(';').map(parse_batch_job).collect();
         assert_eq!(jobs.len(), slots, "provide one batch tuple per slot");
@@ -1194,6 +1198,20 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             let bit = 1u8 << server;
             assert_eq!(routes[caller] & bit, 0, "duplicate IPC route");
             routes[caller] |= bit;
+        }
+        if cfg == "jnox_native_sync_ipc" {
+            if let Some(raw_slot) = socket_service {
+                let slot = match raw_slot {
+                    "0" => 0usize,
+                    "1" => 1,
+                    "2" => 2,
+                    _ => panic!("invalid socket service slot"),
+                };
+                assert!(slot < slots && routes.iter().any(|mask| *mask & (1u8 << slot) != 0),
+                    "socket service requires a live slot with inbound synchronous IPC rights");
+                generated.push_str(&format!("pub const NATIVE_SOCKET_SERVICE: usize = {slot};\n"));
+                println!("cargo::rustc-cfg=jnox_native_socket_service");
+            }
         }
         generated.push_str(&format!("pub const {name}: [u8; {slots}] = {routes:?};\n"));
         println!("cargo::rustc-cfg={cfg}");
