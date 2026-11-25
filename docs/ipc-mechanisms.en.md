@@ -2,6 +2,8 @@
 
 [한국어](ipc-mechanisms.md) · English
 
+**IPC-001 release.** Independent Release approved local synchronous call, receive and reply on single-core AArch64 QEMU virt FIFO and RR with two or three configured processes, directed call rights and an eight-byte request/reply. The twelve original boots and one additional round-robin boot cover both arrival orders, donation and restoration, and cleanup. Exact-time caller death and reply order were checked on the host. [Release decision](evidence/native-sync-ipc-release.en-ko.md) · [Supplemental raw data](evidence/native-sync-ipc-release-supplement.tar.gz) · [Live family decisions](https://github.com/Romanof123/JNOX/issues/24).
+
 ## Current release scope
 
 **Six of seven retained scheduling families have scoped approvals (6/7).** POL-002 fixed priority remains open for both FIFO and round robin (RR). Existing approvals cover POL-003 batch (named native and linked profiles), POL-005 deadlines (finite M1/M3 EDF and sampled LLF), POL-009 multilevel queues (telemetry deployment), POL-010 proportional share (six native configurations), POL-011 weighted scheduling (named configurations), and POL-012 EEVDF (linked EL1 telemetry).
