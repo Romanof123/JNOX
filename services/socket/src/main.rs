@@ -70,6 +70,12 @@ struct Client {
 }
 const EMPTY: Client = Client { request: None, response: None, pending: None };
 
+// app.ld places .data.* in the process-private RW load. Initialize the live
+// socket table in its final location, without constructing it on the EL0 stack.
+#[link_section = ".data.socket_service"]
+static mut SERVICE: Local = Local::new();
+static mut CLIENT_STATE: [Client; CLIENTS] = [EMPTY; CLIENTS];
+
 fn execute(s: &mut Local, id: usize, r: &Request) -> Result<(u64, Option<Response>), i32> {
     let fd = r.fd;
     let path = &r.bytes[..r.path];
@@ -175,8 +181,10 @@ pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
     let arg = *argv.add(1);
     if arg.is_null() || !(b'1'..=b'7').contains(&*arg) || *arg.add(1) != 0 { return 81; }
     let mut live = *arg - b'0';
-    let mut service = Local::new();
-    let mut clients = [EMPTY; CLIENTS];
+    // Native startup calls main once. Only this single-threaded broker loop
+    // accesses these objects, including while a kernel receive is blocked.
+    let service = &mut *core::ptr::addr_of_mut!(SERVICE);
+    let clients = &mut *core::ptr::addr_of_mut!(CLIENT_STATE);
     while live != 0 {
         let Ok((token, word, id)) = receive() else { return 82 };
         if id >= CLIENTS || live & (1 << id) == 0 { return 83; }
@@ -184,10 +192,10 @@ pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
             service.exit(id);
             clients[id] = EMPTY;
             live &= !(1 << id);
-        } else if let Some(result) = request(&mut service, &mut clients[id], id, token, word) {
+        } else if let Some(result) = request(service, &mut clients[id], id, token, word) {
             if answer(token, result).is_err() { return 84; }
         }
-        if retry(&mut service, &mut clients).is_err() { return 84; }
+        if retry(service, clients).is_err() { return 84; }
     }
     0
 }
