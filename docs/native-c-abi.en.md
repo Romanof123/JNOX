@@ -253,3 +253,13 @@ python3 tools/build_native_el0.py --out table-p --policy partition --partition-w
 ~~~
 
 [Build the energy and bit-density workers and boot the package on QEMU](../examples/native-cyclic/README.md)
+
+## Run an aperiodic service with a background application
+
+On single-CPU virt the primary ELF runs the service and the peer ELF runs background work. This example budgets two service grants per five 50 ms slots. Each grant consumes a whole unit. A ready background worker can use the rest of the slot when the service blocks. Sporadic credit capacity is 1–8 replenishment records. For polling or deferrable, change the policy name and omit --server-credits.
+
+~~~sh
+python3 tools/build_native_el0.py --out ss --policy sporadic --server-slot-ms 50 --server-budget 2,5 --server-credits 2 --elf service.elf --peer-elf background.elf
+~~~
+
+[SDK build / QEMU 실행](../examples/native-aperiodic/README.md)
