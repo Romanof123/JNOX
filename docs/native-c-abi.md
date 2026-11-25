@@ -225,3 +225,21 @@ python3 tools/build_native_el0.py --out output/thread-rr/rr --source examples/na
 ## 두 마감 작업과 반복 서비스의 시간표
 
 일반 작업 튜플 2개에 `--deadline-service-elf service.elf`, 오름차순 시간표(예: `--deadline-service-cells 1,3`), `--deadline-switch-cap 6`을 지정한다. 시간표는 100 ms 슬롯 16개로 구성된다. 서비스는 한 번 시작해 argv[1]에서 시간표를 읽는다. 마지막을 제외한 각 계산 뒤 C의 `<jnox/deadline.h>`에 선언된 `jnox_deadline_service_wait_next()` 또는 Rust의 `jnox_native::deadline_service_wait_next()`를 호출하면 다음 활성화 순번을 받는다. 마지막 계산 후 종료하며 예약 슬롯의 남은 시간은 유휴로 둔다. [빌드·패키징·부팅 예제](../examples/native-deadline-service/README.md)
+
+## Pi 4 모델에서 두 네이티브 앱 실행
+
+저장소 루트에서 C 및 Rust 소수 계산 앱을 빌드한다. 같은 두 ELF를 우선순위 2로 패키징해 CPU0에서 FIFO 또는 RR로 실행한다. 퀀텀 단위는 타이머 틱이다.
+
+~~~sh
+sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c low.elf
+sh sdk/native-aarch64/build-rust.sh examples/native-fixed-rust/Cargo.toml high.elf
+python3 tools/build_native_el0.py --out pi-fifo --board pi4 --policy fifo --elf low.elf --priority 2 --peer-elf high.elf --peer-priority 2
+python3 tools/build_native_el0.py --out pi-rr --board pi4 --policy rr --quantum-ticks 1250000 --elf low.elf --priority 2 --peer-elf high.elf --peer-priority 2
+qemu-system-aarch64 -M raspi4b -accel tcg -display none -serial stdio -kernel pi-rr/kernel8.img
+~~~
+
+FIFO로 실행하려면 마지막 이미지 경로를 `pi-fifo/kernel8.img`로 바꾼다. 직접 적재는 EEPROM·SD·VideoCore 펌웨어를 거치지 않는다. 아래 명령으로 FAT32 카드에 복사할 고정 펌웨어를 준비한다. 이미 내려받은 펌웨어는 `--firmware-dir pinned-boot`로 지정한다. 실물 부팅과 보드 시간 측정은 별도 검증 대상이다. [카드 준비와 확인](boards/pi4-p1.md)
+
+~~~sh
+python3 tools/package_pi4.py --kernel pi-rr/kernel8.img --output pi-rr-boot
+~~~
