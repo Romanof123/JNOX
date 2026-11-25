@@ -63,3 +63,5 @@ Extract the release supplement and place the first capture archive beside it. Ru
 python3 decode.py native-local-socket-commit-first.tar.gz -o recomputed.json
 python3 -c "from pathlib import Path; assert Path('recomputed.json').read_bytes() == Path('findings.json').read_bytes()"
 ```
+
+[Release decoder and results / 배포 검산 도구·결과](native-local-socket-commit-release.tar.gz) · [Original 36 captures / 최초 36회 원본](native-local-socket-commit-first.tar.gz). Release supplement SHA-256 `5037e83f10af4e1aac048f146d223c3786542ba81509a4fd8f93789c973e4df9`.
