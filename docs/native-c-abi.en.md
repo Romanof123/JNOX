@@ -322,3 +322,15 @@ python3 tools/build_native_el0.py --out output/priority/chain --elf output/prior
 Configure worker attributes with C pthread_attr_t or Rust PthreadAttr in the SDK pthread module. Use pthread_attr_setinheritsched, pthread_attr_setschedpolicy and pthread_attr_setschedparam for explicit scheduling. Mutex attributes (pthread_mutexattr_t or PthreadMutexAttr) default to PTHREAD_PRIO_NONE. Use pthread_mutexattr_setprotocol for PTHREAD_PRIO_INHERIT or PTHREAD_PRIO_PROTECT and pthread_mutexattr_setprioceiling for the immediate ceiling. The J-NOX extension jnox_mutexattr_setusers declares the participating slot mask. Pass CLOCK_MONOTONIC and an absolute timespec to pthread_mutex_clocklock for a timed wait. Physical M3 maximum blocking and product-specific ceiling approval remain separate.
 
 [C / Rust / QEMU](../examples/native-priority-mutex/README.md) · [POL-014](native-thread-priority-protocols.en-ko.md)
+
+## Read idle-refill health
+
+Keep ordinary UART through the final NATIVE HIERARCHY HEALTH END 1 line. For the saturated CRC/histogram/energy package, give expected exits in slot order. The JSON includes boot-lifetime late-refill count, worst lag in guest ticks and the first violation. The counters persist when detailed rows fill.
+
+~~~sh
+python3 tools/read_hierarchy_health.py output/native-hierarchy/saturated-health-plain/uart.bin --expect-exit 237 --expect-exit 70 --expect-exit 179
+~~~
+
+Reader exit 0 requires valid instrumentation, at least one scored refill, no violations and matching requested exits. Exit 1 retains late, unobserved or unqualified results or exit mismatches. Exit 2 identifies incomplete or contradictory UART. The two original #334 idle WFI refill misses remain tracked in #339. Full POL-016 timing qualification remains open.
+
+[Capture / UART](../examples/native-hierarchy/README.md#read-the-idle-refill-health-report--유휴-재충전-상태-읽기) · [#339](https://github.com/Romanof123/JNOX/issues/339) · [#21](https://github.com/Romanof123/JNOX/issues/21)

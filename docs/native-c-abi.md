@@ -322,3 +322,15 @@ python3 tools/build_native_el0.py --out output/priority/chain --elf output/prior
 C의 pthread_attr_t와 Rust pthread 모듈의 PthreadAttr로 작업자를 설정한다. pthread_attr_setinheritsched, pthread_attr_setschedpolicy, pthread_attr_setschedparam으로 명시적 정책·우선순위를 선택한다. 뮤텍스 속성(pthread_mutexattr_t / PthreadMutexAttr)의 기본 프로토콜은 PTHREAD_PRIO_NONE이다. pthread_mutexattr_setprotocol으로 PTHREAD_PRIO_INHERIT 또는 PTHREAD_PRIO_PROTECT를 지정하고 즉시 천장은 pthread_mutexattr_setprioceiling으로 설정한다. jnox_mutexattr_setusers는 참여 슬롯 마스크를 설정하는 확장이다. pthread_mutex_clocklock에 CLOCK_MONOTONIC과 절대 timespec을 넘겨 기한까지 대기한다. 실물 M3 최장 차단 시간 및 제품별 천장 승인은 별도 판정 대상이다.
 
 [C / Rust / QEMU](../examples/native-priority-mutex/README.md) · [POL-014](native-thread-priority-protocols.en-ko.md)
+
+## 유휴 재충전 상태 확인
+
+포화 CRC·히스토그램·에너지 패키지의 일반 UART를 마지막 NATIVE HIERARCHY HEALTH END 1까지 보관한다. 아래 명령의 기대 종료값은 패키지 슬롯 순서다. JSON에는 부팅 이후 누적한 재충전 지연 초과 횟수, 최대 지연(게스트 틱), 최초 위반이 남는다. 상세 행이 가득 차도 누적값은 유지된다.
+
+~~~sh
+python3 tools/read_hierarchy_health.py output/native-hierarchy/saturated-health-plain/uart.bin --expect-exit 237 --expect-exit 70 --expect-exit 179
+~~~
+
+판독기 종료값 0은 유효한 계측과 하나 이상의 측정 및 기준 통과, 1은 지연·미관측·판정 불가 또는 종료값 불일치, 2는 불완전하거나 모순된 UART를 뜻한다. #334의 유휴 WFI 재충전 최초 실패 두 건은 #339에서 추적한다. POL-016 전체 시간 승인은 미결이다.
+
+[Capture / UART](../examples/native-hierarchy/README.md#read-the-idle-refill-health-report--유휴-재충전-상태-읽기) · [#339](https://github.com/Romanof123/JNOX/issues/339) · [#21](https://github.com/Romanof123/JNOX/issues/21)
