@@ -4,7 +4,7 @@ use super::{
     native_vruntime_deadline, native_vruntime_quantum, native_vruntime_start, observe_trap, park,
     result_object, row, ticks, uart_write,
 };
-use crate::temporal_policy::{CyclicExecutive, WindowDecision};
+use crate::temporal_policy::{CyclicCursor, CyclicExecutive, WindowDecision};
 use core::arch::asm;
 
 const IDLE: usize = 2;
@@ -18,8 +18,8 @@ const RESULT_WORDS: usize = 6;
 static mut native_partition_irq_phase_v1: [[u64; 17]; 12] = [[0; 17]; 12];
 
 enum Table {
-    P(CyclicExecutive<3>),
-    Q(CyclicExecutive<4>),
+    P(CyclicCursor<3>),
+    Q(CyclicCursor<4>),
 }
 
 impl Table {
@@ -31,17 +31,19 @@ impl Table {
                     5 * q,
                     [(Some(1), q), (None, q), (Some(0), 2 * q), (Some(1), q)],
                 )
-                .unwrap_or_else(|| fail(51)),
+                .unwrap_or_else(|| fail(51))
+                .into_cursor(),
             )
         } else {
             Self::P(
                 CyclicExecutive::new(2, 4 * q, [(Some(0), 2 * q), (Some(1), q), (None, q)])
-                    .unwrap_or_else(|| fail(51)),
+                    .unwrap_or_else(|| fail(51))
+                    .into_cursor(),
             )
         }
     }
 
-    fn decision(&self, offset: u64, released: bool) -> WindowDecision {
+    fn decision(&mut self, offset: u64, released: bool) -> WindowDecision {
         let ready = |pid| pid == 0 || released;
         match self {
             Self::P(table) => table.decision(offset, ready),

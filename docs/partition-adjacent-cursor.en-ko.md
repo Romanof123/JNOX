@@ -1,0 +1,17 @@
+# Prospective adjacent-window cursor experiment (#249, #216, #21)
+
+Baseline ccbfd4db36c00de8ad720e4b9d1627cd5b632bb3. The ordinary native P/Q dispatcher will own its validated cyclic table and two cursor words for the next index and expected relative opening. The first opening at zero and exact exclusive boundaries use bounded indexed accesses, wrap and checked absolute end arithmetic. Any other opening resynchronizes by phase and slot search. Readiness is sampled once for an owned representable decision. Idle release, drains, MMU, journal and timing origins retain the baseline behavior.
+
+기준 커밋은 위 해시다. 일반 네이티브 P/Q 디스패처는 검증된 테이블과 다음 인덱스·예정 시작 틱을 보유한다. 0 및 연속 반개구간 경계에서는 일정 개수의 인덱스 접근과 검사된 덧셈으로 끝을 구한다. 불연속 입력은 위상과 슬롯 검색으로 복구한다. 실행 가능 여부, 유휴 슬롯의 해제, 종료 처리, MMU, 저널과 시간 원점은 기존 의미를 보존한다.
+
+Freeze five first cold old/new ordinary pairs for each P/Q and default/icount3 cell, old-new/new-old/old-new/new-old/old-new. Retain every first attempt including failure, zero warm-ups, replacements or outlier removal. Record tool versions, flags, hashes, package manifests, raw UART/RAM, pair order and replay artifacts. Compare identical user ELFs within each table. Reapply the baseline package/phase, replay, frame, isolation, idle/blocked, release, drain, repeated PID, absolute timer and deliberate negative controls. Report per-transition opening-to-user latency and margin (62,500 ticks minus latency at 62.5 MHz), gen 2 separately, later maxima, worst and misses per arm. Record IRQ-to-selection, selection-to-return and return-to-user separately. Keep the original bound on every required transition. A structural improvement alone cannot close the timing issue.
+
+P/Q와 기본 클록/icount3 각 조합은 최초 콜드 부팅 5쌍으로 고정한다. 이전·신규 순서를 매 회 반전하며 이전부터 시작한다. 모든 최초 실패도 보존하고 워밍업·대체·이상치 제거 없이 기록한다. 도구·플래그·해시·매니페스트·UART/RAM·순서·재생 결과 및 동일 사용자 ELF를 확인한다. 기존 패키징·계측·재생·프레임·격리·유휴·차단·해제·종료·동일 PID·절대 타이머·음성 대조를 반복한다. 모든 전환의 지연·여유, 2세대, 이후 최댓값, 구간별 지연 및 초과 횟수를 기록한다. 62.5 MHz에서 62,500틱 원래 한계를 그대로 적용한다.
+
+Host positive controls must distinguish adjacent wrap, blocked owner, explicit idle and discontinuity recovery against arbitrary-time decisions. Include exact MAX boundary, overflow and subsequent recovery. For each old/new plain linked P/Q kernel, disassemble dispatch and any reached helpers, identify PCs/branches for ordinary versus drain, and trace equality through wrap/nonwrap to selection. Identify baseline phase reduction and slot comparisons, and new indexed loads and checked end. Confirm the adjacent trace bypasses phase reduction (including reciprocal multiplication) and table search; identify the mismatch branch that still reaches them. Retain annotated disassembly with ELF hash; symbol counts or grep alone cannot establish path behavior.
+
+호스트 양성 대조로 순환 경계·차단 소유자·유휴·불연속 복구·MAX 및 오버플로 후 복구를 임의 시각 결정과 비교한다. 이전·신규 일반 P/Q 링크 ELF 해시와 주석 붙인 역어셈블리를 보존한다. 디스패치 및 호출 함수에서 분기 주소를 따라 일반·종료, 경계 일치·불일치, 순환·비순환을 추적한다. 연속 경로가 나눗셈·역수 곱셈 및 슬롯 검색을 우회하고 불일치 경로가 위상을 복구하는지 확인한다.
+
+[First forty paired captures and linked-code analysis](evidence/native-cyclic-adjacent-cursor-first.en-ko.md).
+
+[EVD-096 English](evidence/evd-096.en.md) · [한국어](evidence/evd-096.md).

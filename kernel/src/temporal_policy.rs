@@ -54,7 +54,8 @@ impl<const N: usize> CyclicExecutive<N> {
     /// A blocked partition leaves its window idle. No other partition may
     /// borrow that window. Partition-local thread selection is up to the caller.
     pub(crate) fn dispatch(&self, tick: u64, ready: impl FnOnce(usize) -> bool) -> Option<usize> {
-        let (window, _) = self.window_at(tick)?;
+        let (index, _) = self.window_at(tick)?;
+        let window = &self.windows[index];
         window.partition.filter(|&id| ready(id))
     }
 
@@ -65,7 +66,18 @@ impl<const N: usize> CyclicExecutive<N> {
         tick: u64,
         ready: impl FnOnce(usize) -> bool,
     ) -> Option<WindowDecision> {
-        let (window, phase) = self.window_at(tick)?;
+        let (index, phase) = self.window_at(tick)?;
+        self.timed_decision(index, tick, phase, ready)
+    }
+
+    fn timed_decision(
+        &self,
+        index: usize,
+        tick: u64,
+        phase: u64,
+        ready: impl FnOnce(usize) -> bool,
+    ) -> Option<WindowDecision> {
+        let window = &self.windows[index];
         let end_tick = tick.checked_add(window.end - phase)?;
         Some(WindowDecision {
             owner: window.partition,
@@ -74,10 +86,42 @@ impl<const N: usize> CyclicExecutive<N> {
         })
     }
 
-    fn window_at(&self, tick: u64) -> Option<(&Window, u64)> {
+    fn window_at(&self, tick: u64) -> Option<(usize, u64)> {
         let phase = tick % self.frame_ticks;
-        let window = self.windows.iter().find(|window| phase < window.end)?;
-        Some((window, phase))
+        let index = self.windows.iter().position(|window| phase < window.end)?;
+        Some((index, phase))
+    }
+
+    pub(crate) fn into_cursor(self) -> CyclicCursor<N> {
+        CyclicCursor { table: self, next: 0, opening: 0 }
+    }
+}
+
+/// A validated nonempty table paired with its next expected slot boundary.
+pub(crate) struct CyclicCursor<const N: usize> {
+    table: CyclicExecutive<N>,
+    next: usize,
+    opening: u64,
+}
+
+impl<const N: usize> CyclicCursor<N> {
+    pub(crate) fn decision(
+        &mut self,
+        tick: u64,
+        ready: impl FnOnce(usize) -> bool,
+    ) -> Option<WindowDecision> {
+        let (index, phase) = if tick == self.opening {
+            let phase = if self.next == 0 { 0 } else { self.table.windows[self.next - 1].end };
+            (self.next, phase)
+        } else {
+            self.table.window_at(tick)?
+        };
+        let decision = self.table.timed_decision(index, tick, phase, ready)?;
+        // Commit only a representable decision. An overflow leaves the last
+        // known boundary intact for a later seek or replay.
+        self.next = if index + 1 == N { 0 } else { index + 1 };
+        self.opening = decision.end_tick;
+        Some(decision)
     }
 }
 
