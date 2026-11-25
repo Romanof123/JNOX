@@ -23,7 +23,7 @@ def symbol_address(symbols, name):
     return int(matches[0][0], 16)
 
 
-def command(qemu, root):
+def command(qemu, root, plain=False):
     return [
         qemu,
         *FLAGS,
@@ -31,10 +31,7 @@ def command(qemu, root):
         "stdio",
         "-serial",
         "file:" + str(root / "uart.bin"),
-        "-d",
-        "int",
-        "-D",
-        str(root / "exceptions.log"),
+        *([] if plain else ["-d", "int", "-D", str(root / "exceptions.log")]),
         "-kernel",
         str(root / "kernel.elf"),
     ]
@@ -83,7 +80,7 @@ def capture(args):
     if base != 0x40200000 or not base < limit <= base + (16 << 20) * (len(manifest["slots"]) if manifest else 1):
         raise ValueError("unexpected linked kernel RAM extent")
     qemu = str(Path(shutil.which(args.qemu) or args.qemu).resolve(strict=True))
-    cmd = command(qemu, root)
+    cmd = command(qemu, root, getattr(args, "plain", False))
     save(
         root / "launch.json",
         dict(
@@ -181,6 +178,7 @@ if __name__ == "__main__":
     for name in ("root", "kernel", "user", "probe"):
         parser.add_argument(name, type=Path)
     parser.add_argument("revision")
+    parser.add_argument("--plain", action="store_true", help="capture RAM and UART without external exception tracing")
     parser.add_argument("--expect-exit", type=int, default=37, help="expected signed process exit")
     parser.add_argument("--manifest", type=Path, help="audit packaged ordinary-process arguments")
     for option in ("arg", "peer-arg", "peer2-arg"):
