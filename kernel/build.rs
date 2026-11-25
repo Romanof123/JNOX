@@ -453,12 +453,15 @@ fn main() {
             && all_package_features_enabled(),
             "pi4-stream-v1 requires a Pi 4 SMP migration application");
     }
+    let pi4_native_fixed = board == "pi4" && profile.as_deref() == Some("native")
+        && app.as_deref() == Some("process") && peer_image.is_some() && peer2_image.is_none()
+        && matches!(policy.as_deref(), Some("fifo" | "rr"));
     match profile.as_deref() {
         Some("native") => {
-            assert!(board == "virt" && matches!(app.as_deref(), Some("startup-probe" | "process"))
+            assert!((board == "virt" || pi4_native_fixed) && matches!(app.as_deref(), Some("startup-probe" | "process"))
                 && bench == "boot" && trace.is_none() && scenario.is_none()
                 && !env::vars_os().any(|(key, _)| key.to_string_lossy().starts_with("CARGO_FEATURE_")),
-                "native startup-probe or process requires virt and no benchmark features");
+                "native requires virt or two Pi fixed processes and no benchmark features");
             if app.as_deref() == Some("process") {
                 println!("cargo::rustc-cfg=jnox_native_process");
             }
@@ -641,7 +644,7 @@ fn main() {
                 "JNOX_BOARD=pi4 supports serial boot, sched-bench, or uninstrumented fixed FIFO/RR"
             );
             println!("cargo::rustc-cfg=jnox_pi4");
-            "pi4.ld"
+            if pi4_native_fixed { "pi4-native.ld" } else { "pi4.ld" }
         }
         _ => panic!("unknown JNOX_BOARD {board:?}; expected virt or pi4"),
     };

@@ -78,11 +78,13 @@ pub(super) fn configure_timer_ppi() {
 }
 
 #[cfg(all(jnox_pi4, not(jnox_pi4_smp)))]
-fn configure_timer_ppi() {
+pub(super) fn configure_timer_ppi() {
     #[cfg(jnox_fixed)]
     use super::fixed_runtime::fail;
-    #[cfg(not(jnox_fixed))]
+    #[cfg(not(any(jnox_fixed, jnox_native_el0)))]
     use super::sched::fail;
+    #[cfg(jnox_native_el0)]
+    let fail = || super::native_el0::fail(22);
 
     let ppi = 1 << TIMER_IRQ;
     // CPU0 owns this banked PPI. CNTP is deasserted and DAIF masked; leave

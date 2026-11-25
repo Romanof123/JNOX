@@ -1,8 +1,14 @@
 .section .text.boot, "ax"
 .balign 4
+.if {pi4_native}
+.global pi4_native_payload_entry
+.type pi4_native_payload_entry, %function
+pi4_native_payload_entry:
+.else
 .global _start
 .type _start, %function
 _start:
+.endif
     .if {cold}
     isb
     mrs x17, cntpct_el0
@@ -93,4 +99,8 @@ _start:
 .Lpark:
     wfe
     b .Lpark
+.if {pi4_native}
+.size pi4_native_payload_entry, . - pi4_native_payload_entry
+.else
 .size _start, . - _start
+.endif

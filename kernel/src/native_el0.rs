@@ -470,7 +470,7 @@ fn unsigned(mut n: u64) {
     uart_write(&digits[i..]);
 }
 
-fn fail(code: u64) -> ! {
+pub(super) fn fail(code: u64) -> ! {
     head(2, code);
     head(1, 4);
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
@@ -729,6 +729,12 @@ pub(super) fn run() -> ! {
         }
         CLOCK_DOMAIN = (counter(), frequency);
     }
+    #[cfg(jnox_pi4)]
+    {
+        uart_write(b"NATIVE PI4 CNTFRQ ");
+        unsigned(frequency);
+        uart_write(b"\n");
+    }
     head(0, 1);
     head(1, 1);
     head(3, jnox_native_el0_image.len() as u64);
@@ -755,13 +761,11 @@ pub(super) fn run() -> ! {
             stack_bottom, STACK_TOP, &mut buffers[pid]).unwrap_or_else(|| fail(19))
     });
     let tails: [&[u8]; COUNT] = core::array::from_fn(|pid| &buffers[pid][..layouts[pid].len]);
-    // Dedicated virt boot with a quiescent single CPU. Other profiles keep
-    // their own interrupt and timer setup.
+    // The board-specific PPI setup owns the distributor and CPU interface.
+    // On Pi it must preserve firmware configuration for unrelated interrupts.
     unsafe {
         asm!("msr daifset, #0xf", "msr cntp_ctl_el0, xzr", "msr cntv_ctl_el0, xzr",
             "isb", options(nostack, preserves_flags));
-        ptr::write_volatile(0x0801_0000 as *mut u32, 0);
-        ptr::write_volatile(0x0800_0000 as *mut u32, 0);
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
