@@ -4,6 +4,24 @@
 
 CHG-025 · POL-012 · REQ-002/005/023 → DES-003/012 → IMP-023 → VER-002/005/023. 검증 기록 번호는 EVD-023으로 예정되어 있다. 아래 표는 Cortex-A72 가상 CPU 한 개와 GICv2, 비보안 EL1 물리 타이머를 쓰는 시험의 기대값이다. 깨우기부터 작업 코드 복귀까지의 실제 카운터 값은 게스트에서 수집한다.
 
+## 유한 텔레메트리 배포 실행
+
+Linux 또는 WSL의 저장소 루트에서 실행한다. Python 3와 pyelftools, Cargo, 커널이 지정한 Rust 도구 체인과 `aarch64-unknown-none` 타깃, `qemu-system-aarch64`, AArch64 GNU binutils의 `aarch64-linux-gnu-nm`과 `aarch64-linux-gnu-objdump`가 필요하다. 새 출력 디렉터리를 지정하면 잠금 파일 기준으로 릴리스 이미지를 빌드하고 기본 시계의 QEMU virt/GICv2에서 Cortex-A72 한 개, RAM 128 MiB로 한 번 부팅한다.
+
+~~~sh
+python3 tools/eevdf_telemetry.py run --out first-run
+~~~
+
+출력된 세션 SHA-256을 별도로 보관한다. 오프라인 재생 시 아래 DIGEST 자리에 그 값을 넣고 같은 실행 디렉터리를 지정한다. 재생은 빌드나 부팅 없이 보관한 원본을 확인한다.
+
+~~~sh
+python3 tools/eevdf_telemetry.py replay --run first-run --session-sha256 DIGEST
+~~~
+
+`first-run/build.json`과 `build.log`에서 빌드 정보를 확인한다. `first-run/capture/`에는 UART 원본 `uart.bin`, RAM 저널 `journal.bin`, 예외·복귀 기록 `exceptions.log`, ELF, 심볼, 역어셈블리, `session.json`이 있다. 실행 디렉터리 바로 아래에는 `session.sha256`과 `result.json`이 있다. 엄격 재생은 두 배치 작업 각각의 처리 개수·합·가중합, 소비자의 최종 값 `(2,128,27028,115128)`, 서비스량 비교 15개와 기상 응답 8개를 대조한다. [텔레메트리 배포 기준](eevdf-telemetry-deployment.en-ko.md)
+
+`QUALIFIED`는 통과로 종료값 0이다. 해시 불일치 등 검사 실패는 `INVALID`와 종료값 1, 필수 증거 누락은 `UNOBSERVED`와 종료값 2다. 세션 생성 전 빌드·도구·기동 오류는 `ERROR`와 종료값 1을 반환한다. 실패해도 부분 파일을 포함한 최초 디렉터리를 보관하고 이후 실행에는 다른 경로를 지정한다.
+
 ## 실행 자격과 요청 변경
 
 작업의 가중치를 `w`, 가상 실행시간을 `n/w`라 한다. 스케줄러는 선택할 때마다 준비된 작업들의 값을 합산해 기준 가상 시간 `V = sum(n) / sum(w)`를 정확한 분수로 구한다. `n/w ≤ V`인 작업에 실행 자격이 있다. 이 중 가상 마감이 가장 이른 작업을 고르고, 마감이 같으면 작업 ID가 작은 쪽을 고른다. 시작 분자가 `s`, 요청량이 `q`이면 마감은 `(s+q)/w`다. 물리 실행량 한 단위를 사용하면 `n`이 1 증가한다. 요청을 일부만 실행하면 마감이 유지되고, 요청량을 모두 쓰면 기존 마감에서 새 요청이 시작된다. [선택 함수](../kernel/src/fair_policy.rs) · [실행 요청 정책](../kernel/src/eevdf_policy.rs)
