@@ -6,6 +6,8 @@ J-NOX is developing a full-featured real-time operating system in Rust for embed
 
 The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture keeps the trusted kernel small and calls for isolated services, native Rust drivers and a compatibility domain for Linux drivers.
 
+Native AArch64 applications on QEMU `virt` can read elapsed monotonic time from user mode (EL0). C uses `clock_gettime(CLOCK_MONOTONIC, &ts)`; Rust uses the safe `jnox_native::monotonic_time()` API, which returns a `Duration` on success. [Application clock evidence](docs/evidence/evd-112.en.md)
+
 On AArch64 QEMU `virt`, one static C executable built with the native v1 SDK entered user mode (EL0), computed 37 and exited with status 37. Its stdout write returned `-ENOSYS` at the syscall boundary and emitted zero bytes. [Native C startup and exit](docs/native-el0-startup.en.md)
 
 On AArch64 QEMU, the kernel runs linked Rust tasks using fixed-priority FIFO or round robin. Both policies also boot on the Raspberry Pi 4 model. In six separate Pi 4 model runs, an interrupted CRC job finished on the other core under global scheduling and on its original core under partitioned or clustered scheduling. [CRC resume evidence](https://github.com/Romanof123/JNOX/blob/447e777d7a007fef405d5f9a6ac3c38ead475a15/docs/evidence/pi4-crc-mainline-first.en-ko.md) The scheduling release matrix links each tested configuration to its evidence and lists the remaining work. [Run linked Rust tasks](docs/fixed-runtime.en.md) · [Pi 4 model results](docs/evidence/evd-031.en.md) · [Scheduling release matrix](docs/scheduling-release-cases.en.md)
