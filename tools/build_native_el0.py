@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from build_kernel import add_kernel_profile, cargo_command, read_registry
 from native_shell_rom import shell_package
 from native_extension_program import parse_program
 from native_amc_roots import linked_roots
@@ -18,7 +19,6 @@ from native_lottery_admission import forecast
 ROOT = Path(__file__).resolve().parents[1]
 SDK = ROOT / "sdk/native-aarch64"
 SOURCE = ROOT / "examples/portability/native_startup_probe.c"
-TARGET = "aarch64-unknown-none"
 
 
 def sha256(path):
@@ -397,6 +397,7 @@ def package_pi4_image(out, kernel, env):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    add_kernel_profile(parser)
     parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
     parser.add_argument("--board", choices=["virt", "pi4"], action=SinglePath)
     group = parser.add_mutually_exclusive_group()
@@ -682,7 +683,19 @@ def main():
     inputs[input_name] = input_digest
     user_command = None if args.elf else ["sh", str(SDK / "build.sh"), str(app_input), str(user_elf)]
     kernel_command = [sys.executable, "tools/build_kernel.py", "--arch", "aarch64"]
+    if args.kernel_profile != "release":
+        kernel_command.extend(["--kernel-profile", args.kernel_profile])
+    kernel_target = read_registry(ROOT)["aarch64"]
+    kernel_artifact = Path("target") / kernel_target / args.kernel_profile / "jnox-kernel"
     metadata = {
+        "kernel_build": {
+            "cargo_profile": args.kernel_profile, "target": kernel_target,
+            "cargo_command": cargo_command(kernel_target, args.kernel_profile),
+            "artifact": kernel_artifact.as_posix(),
+            "config_sha256": {p: sha256(ROOT / p) for p in
+                              ("kernel/Cargo.toml", "kernel/.cargo/config.toml", "kernel/Cargo.lock")},
+            "profile_environment": {k: v for k, v in env.items() if k.startswith("CARGO_PROFILE_")},
+        },
         "format": 1, "profile": "native", "app": app, "board": board,
         "commit": commit, "tracked_changes": dirty, "source_sha256": inputs,
         "input": {"kind": "elf" if args.elf else "c", "path": input_name, "sha256": input_digest},
@@ -914,7 +927,7 @@ def main():
                    CARGO_TARGET_DIR=str(out / "target"))
         subprocess.run(kernel_command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                        check=True)
-    shutil.copyfile(out / "target" / TARGET / "release/jnox-kernel", kernel_elf)
+    shutil.copyfile(out / kernel_artifact, kernel_elf)
     if board == "pi4":
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
