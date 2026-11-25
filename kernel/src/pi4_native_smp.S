@@ -19,17 +19,17 @@ pi4_native_smp_secondary:
     ldr x1,=0xff00ffffff
     and x0,x0,x1
     cmp x0,#1
-    b.ne .Lpark
+    b.ne .Lpi4_native_smp_park
     mrs x0,CurrentEL
     cmp x0,#4
-    b.eq .Lcheck_el1
+    b.eq .Lpi4_native_smp_check_el1
     cmp x0,#8
-    b.ne .Lpark
+    b.ne .Lpi4_native_smp_park
     mrs x0,sctlr_el2
     tst x0,#1
-    b.ne .Lpark
+    b.ne .Lpi4_native_smp_park
     tst x0,#4
-    b.ne .Lpark
+    b.ne .Lpi4_native_smp_park
     mov x0,#(1<<31)
     msr hcr_el2,x0
     mrs x0,cnthctl_el2
@@ -39,18 +39,18 @@ pi4_native_smp_secondary:
     msr cptr_el2,x0
     ldr x0,=0x30d00800
     msr sctlr_el1,x0
-    adr x0,.Lcheck_el1
+    adr x0,.Lpi4_native_smp_check_el1
     msr elr_el2,x0
     mov x0,#0x3c5
     msr spsr_el2,x0
     isb
     eret
-.Lcheck_el1:
+.Lpi4_native_smp_check_el1:
     mrs x0,sctlr_el1
     tst x0,#1
-    b.ne .Lpark
+    b.ne .Lpi4_native_smp_park
     tst x0,#4
-    b.ne .Lpark
+    b.ne .Lpi4_native_smp_park
     mrs x0,S3_1_C15_C2_1
     orr x0,x0,#64
     msr S3_1_C15_C2_1,x0
@@ -66,34 +66,34 @@ pi4_native_smp_secondary:
     isb
     mov x0,#1
     b native_partitioned_entry
-.Lpark:
+.Lpi4_native_smp_park:
     msr daifset,#15
 1:  wfe
     b 1b
 
-.macro vector target
+.macro pi4_native_smp_vector target
     .balign 128
     b \target
 .endm
 .balign 2048
 .global pi4_native_smp_vectors
 pi4_native_smp_vectors:
-    vector .Lpark
-    vector .Lpark
-    vector .Lpark
-    vector .Lpark
-    vector .Lpark
-    vector .Lidle_irq
-    vector .Lpark
-    vector .Lpark
-    vector .Lsvc
-    vector .Lirq
-    vector .Lpark
-    vector .Lpark
-    vector .Lpark
-    vector .Lpark
-    vector .Lpark
-    vector .Lpark
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_idle_irq
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_svc
+    pi4_native_smp_vector .Lpi4_native_smp_irq
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
+    pi4_native_smp_vector .Lpi4_native_smp_park
 .balign 128
 
 // x0 = CPU, x1 = selected frame or zero. IRQ masked until architectural return.
@@ -104,7 +104,7 @@ pi4_native_smp_enter:
     mov x3,#0xa000
     madd x2,x0,x3,x2
     mov sp,x2
-    cbz x1,.Lidle
+    cbz x1,.Lpi4_native_smp_idle
     mov x30,x1
     ldp x2,x3,[x30,#248]
     msr sp_el0,x2
@@ -134,15 +134,15 @@ pi4_native_smp_enter:
     ldp x16,x17,[x30,#128]
     ldr x30,[x30,#240]
     eret
-.Lidle:
+.Lpi4_native_smp_idle:
     add x2,x2,#5,lsl #12
     mov sp,x2
-    adr x1,.Lidle_landed
+    adr x1,.Lpi4_native_smp_idle_landed
     msr elr_el1,x1
     mov x1,#0x3c5
     msr spsr_el1,x1
     eret
-.Lidle_landed:
+.Lpi4_native_smp_idle_landed:
     ldr x1,=pi4_native_smp_stamps + 8
     add x1,x1,x0,lsl #6
     isb
@@ -153,7 +153,7 @@ pi4_native_smp_enter:
 1:  wfi
     b 1b
 
-.macro save_user
+.macro pi4_native_smp_save_user
     sub sp,sp,#832
     stp x0,x1,[sp]
     isb
@@ -181,15 +181,15 @@ pi4_native_smp_enter:
     mov x1,sp
     ldr x2,[sp,#816]
 .endm
-.Lsvc:
-    save_user
+.Lpi4_native_smp_svc:
+    pi4_native_smp_save_user
     mrs x3,esr_el1
     bl native_partitioned_sync
-    b .Lselected
-.Lirq:
-    save_user
-    b .Lack
-.Lidle_irq:
+    b .Lpi4_native_smp_selected
+.Lpi4_native_smp_irq:
+    pi4_native_smp_save_user
+    b .Lpi4_native_smp_ack
+.Lpi4_native_smp_idle_irq:
     isb
     mrs x2,cntpct_el0
     mrs x0,mpidr_el1
@@ -199,11 +199,11 @@ pi4_native_smp_enter:
     madd x1,x0,x3,x1
     mov sp,x1
     mov x1,xzr
-.Lack:
+.Lpi4_native_smp_ack:
     ldr x3,=0xff84200c
     ldr w3,[x3]
     bl native_partitioned_irq
-.Lselected:
+.Lpi4_native_smp_selected:
     mov x1,x0
     mrs x0,mpidr_el1
     and x0,x0,#255
