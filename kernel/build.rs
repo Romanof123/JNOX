@@ -443,6 +443,10 @@ fn main() {
     let boost = selector("JNOX_NATIVE_BOOST_TICKS");
     let multilevel = [classes.as_deref(), allotments.as_deref(), boost.as_deref()];
     let reservations = selector("JNOX_NATIVE_RESERVATIONS");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_batch)");
+    let batch = selector("JNOX_NATIVE_BATCH_JOBS");
+    assert_eq!(batch.is_some(), matches!(policy.as_deref(), Some("sjf" | "srtf" | "hrrn")),
+        "native batch policies require JNOX_NATIVE_BATCH_JOBS exclusively");
     let edf_jobs = selector("JNOX_NATIVE_EDF_JOBS");
     let quantum = selector("JNOX_NATIVE_QUANTUM_TICKS");
     assert!(selector("JNOX_NATIVE_PEER3_ELF").is_none()
@@ -550,7 +554,7 @@ fn main() {
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
             let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some());
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref());
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -749,6 +753,19 @@ fn validate_architecture() {
     }
 }
 
+fn parse_batch_job(value: &str) -> (u64, u64) {
+    let (offset, estimate) = value.split_once(',').expect("batch job requires offset,estimate");
+    let parse = |s: &str| {
+        assert!(!s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()), "invalid batch job decimal");
+        let ticks = s.parse::<u64>().expect("batch ticks exceed u64");
+        assert!(ticks <= i64::MAX as u64, "batch ticks exceed i64::MAX");
+        ticks
+    };
+    let job = (parse(offset), parse(estimate));
+    assert!(job.1 > 0, "batch estimate must be positive");
+    job
+}
+
 fn parse_native_tuple(value: &str) -> (u64, u64, u64) {
     let mut fields = value.split(',');
     let mut next = || {
@@ -859,7 +876,15 @@ fn forecast_lottery<const N: usize>(weights: &[u32], seed: u64, horizon: usize, 
     }
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3]) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 3], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>) {
+    let batch_jobs = if let Some(raw) = batch {
+        let jobs: Vec<_> = raw.split(';').map(parse_batch_job).collect();
+        assert_eq!(jobs.len(), slots, "provide one batch tuple per slot");
+        println!("cargo::rustc-cfg=jnox_native_batch");
+        jobs
+    } else {
+        vec![(0, 0); slots]
+    };
     if server_settings.is_some() {
         assert_eq!(slots, 2, "native servers require exactly two ordinary applications");
         println!("cargo::rustc-cfg=jnox_native_aperiodic");
@@ -984,7 +1009,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
-        Some("lottery" | "stride" | "weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy") | None => {
+        Some("sjf" | "srtf" | "hrrn" | "lottery" | "stride" | "weighted" | "edf" | "llf" | "rm" | "dm" | "cbs" | "mlq" | "mlfq" | "partition" | "polling" | "deferrable" | "sporadic" | "hierarchy") | None => {
             assert!(priorities.is_none(), "priorities require an explicit fixed policy");
             vec![0; slots]
         }
@@ -1018,7 +1043,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
     let extra_slots = extras.join(", ");
     let thread_bases = thread_priorities.unwrap_or_default();
     let mut generated = format!(
-        "pub const NATIVE_THREAD_PRIORITIES: [u8; 4] = {thread_bases:?};\npub const NATIVE_LOTTERY_SEED: u64 = {seed};\npub const NATIVE_LOTTERY_HORIZON: usize = {horizon};\npub const NATIVE_LOTTERY_WINDOW: usize = {width};\npub const NATIVE_LOTTERY_FLOORS: [u8; {slots}] = {counts:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_BATCH_JOBS: [(u64, u64); {slots}] = {batch_jobs:?};\npub const NATIVE_THREAD_PRIORITIES: [u8; 4] = {thread_bases:?};\npub const NATIVE_LOTTERY_SEED: u64 = {seed};\npub const NATIVE_LOTTERY_HORIZON: usize = {horizon};\npub const NATIVE_LOTTERY_WINDOW: usize = {width};\npub const NATIVE_LOTTERY_FLOORS: [u8; {slots}] = {counts:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     if let Some(raw) = hierarchy {

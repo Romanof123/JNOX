@@ -345,3 +345,14 @@ python3 tools/read_hierarchy_health.py output/native-hierarchy/saturated-health-
 Reader exit 0 requires valid instrumentation, at least one scored refill, no violations and matching requested exits. Exit 1 retains late, unobserved or unqualified results or exit mismatches. Exit 2 identifies incomplete or contradictory UART. The two original #334 idle WFI refill misses remain tracked in #339. Full POL-016 timing qualification remains open.
 
 [Capture / UART](../examples/native-hierarchy/README.md#read-the-idle-refill-health-report--유휴-재충전-상태-읽기) · [#339](https://github.com/Romanof123/JNOX/issues/339) · [#21](https://github.com/Romanof123/JNOX/issues/21)
+
+## Set arrival and service estimates for native batch jobs
+
+Supply each ELF with a release offset from a common epoch and an estimated service time in physical counter ticks. SRTF can interrupt a running app when a shorter remaining job becomes ready. SJF and HRRN retain the running app while it can continue. HRRN accounts for waiting time as well as the estimate when selecting the next app.
+
+~~~sh
+out=output/native-batch
+python3 tools/build_native_el0.py --out "$out/arrival-srtf" --policy srtf --elf "$out/batch.elf" --arg=--blocks --arg 32768 --batch-job 0,18750000 --peer-elf "$out/urgent.elf" --peer-batch-job 6250000,625000
+~~~
+
+[SDK / QEMU](../examples/native-batch/README.md) · [POL-003](native-batch-applications.en-ko.md)

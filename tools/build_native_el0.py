@@ -33,6 +33,16 @@ class SinglePath(argparse.Action):
         setattr(namespace, self.dest, value)
 
 
+def batch_job(value):
+    fields = value.split(",")
+    if len(fields) != 2:
+        raise argparse.ArgumentTypeError("expected offset,estimate in physical counter ticks")
+    offset, estimate = map(unsigned_decimal, fields)
+    if not (0 <= offset < 2**63 and 1 <= estimate < 2**63):
+        raise argparse.ArgumentTypeError("batch offset must be 0..2^63-1 and estimate 1..2^63-1")
+    return offset, estimate
+
+
 def deadline_job(value):
     fields = value.split(",")
     if len(fields) != 3 or any(not (field.isascii() and field.isdecimal()) for field in fields):
@@ -124,7 +134,7 @@ def native_schedule(parser, args):
         parser.error("virt supports at most two --peer-elf arguments")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
-    for name in ("policy", "priority", "weight", "job", "periodic", "reservation", "quantum_ticks", "primary_class", "allotment_ticks", "boost_ticks"):
+    for name in ("policy", "priority", "weight", "job", "batch_job", "periodic", "reservation", "quantum_ticks", "primary_class", "allotment_ticks", "boost_ticks"):
         values = getattr(args, name)
         if len(values) > 1:
             option = "class" if name == "primary_class" else name.replace("_", "-")
@@ -155,6 +165,11 @@ def native_schedule(parser, args):
             parser.error("CBS requires one reservation per supplied ELF")
     elif args.reservation or args.peer_reservation:
         parser.error("reservations require --policy cbs")
+    if policy in ("sjf", "srtf", "hrrn"):
+        if not args.batch_job or len(args.peer_batch_job) != len(args.peer_elf):
+            parser.error("batch scheduling requires one offset,estimate tuple per supplied application")
+    elif args.batch_job or args.peer_batch_job:
+        parser.error("batch job tuples require --policy sjf, srtf or hrrn")
     if policy in ("edf", "llf"):
         if not args.job or len(args.peer_job) != len(args.peer_elf):
             parser.error("EDF and LLF require exactly one job tuple per supplied ELF")
@@ -270,7 +285,7 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
     parser.add_argument("--server-credits", type=unsigned_decimal, action=SinglePath)
@@ -288,6 +303,10 @@ def main():
     parser.add_argument("--weight", action="append", default=[], help="primary CPU service weight")
     parser.add_argument("--peer-weight", action="append", default=[], help="CPU service weights in peer order")
     parser.add_argument("--quantum-ticks", action="append", default=[], help="common RR, weighted or MLQ grant in physical counter ticks")
+    parser.add_argument("--batch-job", type=batch_job, action="append", default=[], metavar="OFFSET,ESTIMATE",
+                        help="primary initial ready offset and service estimate in physical counter ticks")
+    parser.add_argument("--peer-batch-job", type=batch_job, action="append", default=[], metavar="OFFSET,ESTIMATE",
+                        help="offset and estimate for each peer in ELF order, in physical counter ticks")
     parser.add_argument("--job", type=deadline_job, action="append", default=[], metavar="R,D,C",
                         help="EDF/LLF primary release, absolute deadline and cost in 100 ms units")
     parser.add_argument("--peer-job", type=deadline_job, action="append", default=[], metavar="R,D,C",
@@ -459,6 +478,10 @@ def main():
         periodic = args.periodic + args.peer_periodic
         reservations = args.reservation + args.peer_reservation
         classes = args.primary_class + args.peer_class
+        batch_jobs = args.batch_job + args.peer_batch_job
+        if batch_jobs:
+            metadata.update(timing_unit="physical_counter_ticks", package_argv=sys.argv[:])
+            env["JNOX_NATIVE_BATCH_JOBS"] = ";".join(f"{offset},{estimate}" for offset, estimate in batch_jobs)
         jobs = args.job + args.peer_job
         for slot in slots:
             slot["argv"] = (["/bin/app", *vectors[slot["slot"]]] if app == "process"
@@ -474,6 +497,9 @@ def main():
                 slot["reservation"] = {"quota_slots": quota, "period_slots": period}
             if classes:
                 slot["class"] = classes[slot["slot"]]
+            if batch_jobs:
+                offset, estimate = batch_jobs[slot["slot"]]
+                slot["batch_job"] = {"offset_ticks": offset, "estimate_ticks": estimate}
             if jobs and slot["slot"] < len(jobs):
                 release, deadline, cost = jobs[slot["slot"]]
                 slot["job"] = {"release": release, "deadline": deadline, "cost": cost}

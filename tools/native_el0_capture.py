@@ -60,7 +60,7 @@ def argument_manifest(args):
     return manifest
 
 
-def capture(args):
+def capture(args, *, command_factory=command):
     if not re.fullmatch("[0-9a-f]{40}", args.revision):
         raise ValueError("full source revision required")
     uart_limit = getattr(args, "uart_limit", None)
@@ -83,7 +83,7 @@ def capture(args):
     if base != 0x40200000 or not base < limit <= base + (16 << 20) * (len(manifest["slots"]) if manifest else 1):
         raise ValueError("unexpected linked kernel RAM extent")
     qemu = str(Path(shutil.which(args.qemu) or args.qemu).resolve(strict=True))
-    cmd = command(qemu, root, getattr(args, "plain", False))
+    cmd = command_factory(qemu, root, getattr(args, "plain", False))
     save(
         root / "launch.json",
         dict(

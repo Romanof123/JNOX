@@ -10,6 +10,12 @@
     .space 124
 .endm
 .ifdef NATIVE_WEIGHTED_CONTINUOUS
+.set NATIVE_EARLY_ENTRY,1
+.endif
+.ifdef NATIVE_BATCH
+.set NATIVE_EARLY_ENTRY,1
+.endif
+.ifdef NATIVE_EARLY_ENTRY
 // Keep the earliest ordered exception timestamp before the common frame save.
 // The normal 832-byte frame remains at SP for the Rust handlers. The extra
 // 16 bytes above it are private to this vector and removed before EL0 return.
@@ -27,7 +33,7 @@ native_el0_vectors:
     .rept 5                        // Current EL SP0 slots, then EL1h sync
         native_vector .Lunexpected
     .endr
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_EARLY_ENTRY
     isb
     mrs x1,cntpct_el0
     b .Lidle_irq
@@ -38,7 +44,7 @@ native_el0_vectors:
     // Current EL, SP_EL1 IRQ
     native_vector .Lunexpected
     native_vector .Lunexpected
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_EARLY_ENTRY
     weighted_user_vector .Luser_sync
     weighted_user_vector .Luser_irq
     .else
@@ -153,6 +159,19 @@ native_weighted_arm:
     .endif
 .endm
 
+.ifdef NATIVE_BATCH
+.global native_batch_enter
+native_batch_enter:
+    sub sp,sp,#848
+    mov x1,sp
+    mov x2,#52
+1:  ldp x3,x4,[x0],#16
+    stp x3,x4,[x1],#16
+    subs x2,x2,#1
+    b.ne 1b
+    b .Lrestore
+.endif
+
 .global native_el0_enter
 .type native_el0_enter,%function
 native_el0_enter:
@@ -251,7 +270,7 @@ native_el0_enter:
     sub sp,sp,#832
     native_integer_pairs stp
     str x30,[sp,#240]
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_EARLY_ENTRY
     ldr x2,[sp,#840]
     .else
     .ifdef NATIVE_MEASURED
@@ -339,7 +358,22 @@ native_el0_enter:
 .Lprop_return_ok:
     ldp x16,x17,[sp,#128]
     .endif
-    .ifdef NATIVE_WEIGHTED_CONTINUOUS
+    .ifdef NATIVE_BATCH
+    adrp x16,native_batch_next_compare
+    ldr x16,[x16,:lo12:native_batch_next_compare]
+    cbz x16,.Lbatch_return_ok
+    isb
+    mrs x17,cntpct_el0
+    cmp x17,x16
+    b.lo .Lbatch_return_ok
+    mov x0,x17
+    mov x1,sp
+    bl native_batch_recheck
+    b .Lrestore
+.Lbatch_return_ok:
+    ldp x16,x17,[sp,#128]
+    .endif
+    .ifdef NATIVE_EARLY_ENTRY
     add sp,sp,#848
     .else
     add sp,sp,#832
@@ -408,7 +442,7 @@ native_sleep_idle:
     // IRQ delivery at EL1h is enabled only inside the assembly idle loop.
     // Its only live value is x19. IRQ entry masked delivery before this call.
     mov x0,xzr
-    .ifndef NATIVE_WEIGHTED_CONTINUOUS
+    .ifndef NATIVE_EARLY_ENTRY
     .ifdef NATIVE_MEASURED
     isb
     mrs x1,cntpct_el0
