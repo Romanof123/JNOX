@@ -74,3 +74,22 @@ python3 tools/build_native_el0.py --elf "$run/report.elf" --out "$run/rust"
 python3 tools/native_el0_capture.py "$run/c-first" "$run/c/kernel.elf" "$run/c/user.elf" examples/portability/periodic_report.c "$rev" --expect-exit 0
 python3 tools/native_el0_capture.py "$run/rust-first" "$run/rust/kernel.elf" "$run/rust/user.elf" examples/native-periodic-rust/src/main.rs "$rev" --expect-exit 0
 ~~~
+
+## Scheduling independently linked applications
+
+Provide the primary with `--source` or `--elf` and append up to two `--peer-elf` arguments. Slot 0 is the primary. Slots 1 and 2 follow argument order. Without a policy these apps yield cooperatively. With `--policy fifo` or `--policy rr`, supply one `--priority` for slot 0 and one `--peer-priority` for each peer. Priorities range from 0 to 255, highest first. RR requires a shared quantum of 1 through 9223372036854775807 physical counter ticks. FIFO takes no quantum.
+
+Build three ELF files and boot the package from Linux or WSL. The package manifest lists the input identity, ELF digest and priority of each slot. The serial console stays attached when the kernel parks after the final exit.
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-fixed/calendar_report.c "$run/high.elf"
+sh sdk/native-aarch64/build.sh examples/native-fixed/prime_low.c "$run/a.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-fixed-rust/Cargo.toml "$run/b.elf"
+python3 tools/build_native_el0.py --out "$run/rr" --elf "$run/high.elf" \
+    --peer-elf "$run/a.elf" --peer-elf "$run/b.elf" --policy rr \
+    --priority 7 --peer-priority 3 --peer-priority 3 --quantum-ticks 12500000
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 \
+    -accel tcg -m 128M -nodefaults -display none -monitor none -no-reboot \
+    -serial stdio -kernel "$run/rr/kernel.elf"
+~~~

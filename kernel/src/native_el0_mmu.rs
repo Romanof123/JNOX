@@ -1,6 +1,6 @@
 //! Private ordinary-process mappings on the single virt CPU.
 use crate::native_elf::{LoadPlan, Permission};
-use core::{arch::asm, ptr};
+use core::{arch::asm, borrow::Borrow, ptr};
 
 const PAGE: usize = 4096;
 const IMAGE_LO: usize = 0x0040_0000;
@@ -8,9 +8,10 @@ const IMAGE_HI: usize = 0x0080_0000;
 pub(crate) const STACK_BOTTOM: usize = 0x0100_1000;
 pub(crate) const STACK_TOP: usize = 0x0101_1000;
 const LINK_START: usize = 0x4020_0000;
-// Cover up to 32 MiB of linked kernel, including both embedded ELF files
-// (up to 8 MiB each), their private backing, and the kernel stack.
-const HIGH_TABLES: usize = 16;
+const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize;
+// Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
+// Leave another 4 MiB per slot for tables, stacks and the linked kernel.
+const HIGH_TABLES: usize = 8 * SPACE_CAPACITY;
 const BLOCK: usize = PAGE * 512;
 
 #[repr(C, align(4096))]
@@ -46,7 +47,7 @@ impl Space {
     };
 }
 
-static mut SPACES: [Space; 2] = [const { Space::EMPTY }; 2];
+static mut SPACES: [Space; SPACE_CAPACITY] = [const { Space::EMPTY }; SPACE_CAPACITY];
 static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
 static mut UART: Table = Table::EMPTY;
@@ -141,7 +142,7 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
 }
 
 // The 8-bit ASID is in bits 55:48. TCR.A1=0 selects TTBR0; TCR.AS=0.
-// Neither ASID is recycled. All global translations are identical in both roots.
+// No ASID is recycled. All global translations are identical across roots.
 fn root_id(pid: usize) -> u64 {
     let root = unsafe { &raw const SPACES[pid].root };
     (root as u64) | (((pid + 1) as u64) << 48)
@@ -149,14 +150,25 @@ fn root_id(pid: usize) -> u64 {
 
 /// The caller supplies validated kernel-resident images and initial stack tails.
 pub(crate) unsafe fn install(plan: &LoadPlan<'_>, tail: &[u8]) -> Result<(), &'static str> {
-    unsafe { install_spaces([plan], [tail]) }
+    unsafe { install_processes(core::slice::from_ref(plan), &[tail]) }
 }
 
 pub(crate) unsafe fn install_pair(plans: [&LoadPlan<'_>; 2], tails: [&[u8]; 2]) -> Result<(), &'static str> {
-    unsafe { install_spaces(plans, tails) }
+    unsafe { install_spaces(&plans, &tails) }
 }
 
-unsafe fn install_spaces<const N: usize>(plans: [&LoadPlan<'_>; N], stack_tails: [&[u8]; N]) -> Result<(), &'static str> {
+pub(crate) unsafe fn install_processes(plans: &[LoadPlan<'_>], stack_tails: &[&[u8]]) -> Result<(), &'static str> {
+    unsafe { install_spaces(plans, stack_tails) }
+}
+
+unsafe fn install_spaces<'a>(
+    plans: &[impl Borrow<LoadPlan<'a>>],
+    stack_tails: &[&[u8]],
+) -> Result<(), &'static str> {
+    let count = plans.len();
+    if !(1..=SPACE_CAPACITY).contains(&count) || stack_tails.len() != count {
+        return Err("native process count");
+    }
     let (el, masks, spsel, ctl, sp, pc): (u64, u64, u64, u64, usize, usize);
     unsafe {
         asm!("mrs {}, CurrentEL", "mrs {}, daif", "mrs {}, SPSel", "mrs {}, sctlr_el1",
@@ -176,11 +188,11 @@ unsafe fn install_spaces<const N: usize>(plans: [&LoadPlan<'_>; N], stack_tails:
         || !(rw..=end).contains(&sp) {
         return Err("native kernel identity span");
     }
-    for pid in 0..N {
-        validate(plans[pid], stack_tails[pid])?;
+    for pid in 0..count {
+        validate(plans[pid].borrow(), stack_tails[pid])?;
     }
     // Cold startup cleared all BSS. Every input rejection precedes these
-    // writes, including the second process's size and address checks.
+    // writes, including size and address checks for the last slot.
     unsafe {
         for va in (start..end).step_by(PAGE) {
             let table = (&raw mut KERNEL).cast::<Table>().add((va - start) / BLOCK);
@@ -192,8 +204,8 @@ unsafe fn install_spaces<const N: usize>(plans: [&LoadPlan<'_>; N], stack_tails:
         page(&raw mut UART, 0x0900_0000, 0x0900_0000, DEVICE);
         page(&raw mut GIC, 0x0800_0000, 0x0800_0000, DEVICE);
         page(&raw mut GIC, 0x0801_0000, 0x0801_0000, DEVICE);
-        for pid in 0..N {
-            populate(pid, plans[pid], stack_tails[pid]);
+        for pid in 0..count {
+            populate(pid, plans[pid].borrow(), stack_tails[pid]);
         }
         // Single CPU, cold uncached mappings. MAIR[0] Normal non-cacheable,
         // MAIR[1] Device-nGnRnE; no cacheable alias or dirty D-cache line.
@@ -204,7 +216,7 @@ unsafe fn install_spaces<const N: usize>(plans: [&LoadPlan<'_>; N], stack_tails:
              "dsb sy", "isb", "msr sctlr_el1, {enable}", "isb",
              mair = in(reg) 0x44u64, tcr = in(reg) tcr, root = in(reg) root_id(0),
              enable = in(reg) ctl | 1, options(nostack, preserves_flags));
-        PROCESS_COUNT = N;
+        PROCESS_COUNT = count;
     }
     Ok(())
 }
