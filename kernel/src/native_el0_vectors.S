@@ -36,6 +36,33 @@ native_el0_vectors:
     .endif
 .endm
 
+.ifdef NATIVE_SERVER
+// IRQs remain masked. A rejected frame still lives at SP and has never
+// executed; enter Rust with the sampled crossing timestamp in x17.
+.macro server_gate retry
+    adrp x16,native_server_compare
+    ldr x16,[x16,:lo12:native_server_compare]
+    isb
+    mrs x17,cntpct_el0
+    cmp x17,x16
+    b.hs \retry
+    adrp x16,native_server_last_return
+    str x17,[x16,:lo12:native_server_last_return]
+.endm
+
+.global native_server_enter
+native_server_enter:
+    // Use exactly the normal frame restore, including on the first entry.
+    sub sp,sp,#832
+    mov x1,sp
+    mov x2,#52
+1:  ldp x3,x4,[x0],#16
+    stp x3,x4,[x1],#16
+    subs x2,x2,#1
+    b.ne 1b
+    b .Lrestore
+.endif
+
 .global native_el0_enter
 .type native_el0_enter,%function
 native_el0_enter:
@@ -184,10 +211,22 @@ native_el0_enter:
     native_simd_pairs ldp
     native_integer_pairs ldp
     ldr x30,[sp,#240]
-    add sp,sp,#832
     clrex
+    .ifdef NATIVE_SERVER
+    server_gate .Lserver_user_retry
+    ldp x16,x17,[sp,#128]
+    add sp,sp,#832
+    eret
+.Lserver_user_retry:
+    mov x0,x17
+    mov x1,sp
+    bl native_server_reselect
+    b .Lrestore
+    .else
+    add sp,sp,#832
     cyclic_final_stamp
     eret
+    .endif
 
 // Keep the calling Rust continuation and its NativeFrame on the process
 // stack. x19 holds the process SP throughout idle (AAPCS callee-saved).
@@ -198,9 +237,22 @@ native_sleep_switch:
     mov x19,sp
     mov sp,x0
     .ifdef NATIVE_CYCLIC
+ .Lidle_prepare:
     bl native_cyclic_return
+    .ifdef NATIVE_SERVER
+    server_gate .Lserver_idle_retry
+    .else
     cyclic_final_stamp
+    .endif
     b native_cyclic_idle_landing
+    .ifdef NATIVE_SERVER
+.Lserver_idle_retry:
+    mov x0,x17
+    mov x1,xzr
+    bl native_server_reselect
+    cbnz x0,.Lleave_idle
+    b .Lidle_prepare
+    .endif
 .global native_cyclic_idle_landing
 native_cyclic_idle_landing:
     isb
@@ -226,14 +278,26 @@ native_sleep_idle:
     bl native_sleep_irq
     .ifdef NATIVE_CYCLIC
     cbnz x0,.Lcyclic_leave
+.Lidle_eret_prepare:
     adr x9,native_cyclic_idle_landing
     msr elr_el1,x9
     mrs x9,spsr_el1
     orr x9,x9,#0x80
     msr spsr_el1,x9
     bl native_cyclic_return
+    .ifdef NATIVE_SERVER
+    server_gate .Lserver_idle_eret_retry
+    eret
+.Lserver_idle_eret_retry:
+    mov x0,x17
+    mov x1,xzr
+    bl native_server_reselect
+    cbnz x0,.Lcyclic_leave
+    b .Lidle_eret_prepare
+    .else
     cyclic_final_stamp
     b .Lidle_eret
+    .endif
 .Lcyclic_leave:
     .else
     cbz x0,.Lidle_eret

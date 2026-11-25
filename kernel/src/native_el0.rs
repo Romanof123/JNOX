@@ -55,7 +55,9 @@ mod cyclic;
 #[cfg(jnox_native_aperiodic)]
 #[path = "native_aperiodic.rs"]
 mod aperiodic;
-#[cfg(any(jnox_native_partition, jnox_native_aperiodic))]
+#[cfg(jnox_native_aperiodic)]
+global_asm!(".set NATIVE_SERVER,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_cyclic_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(jnox_native_partition)]
 global_asm!(".set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_cyclic_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
 #[cfg(not(any(jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
@@ -831,6 +833,11 @@ pub(super) fn run() -> ! {
     unsafe {
         if first != 0 { native_el0_mmu::switch(first).unwrap_or_else(|_| fail(9)); }
         CURRENT = first;
+        #[cfg(jnox_native_aperiodic)]
+        {
+            unsafe extern "C" { fn native_server_enter(frame: *const NativeFrame) -> !; }
+            native_server_enter(&raw const FRAMES[first])
+        }
         #[cfg(jnox_native_threads)]
         let locator = threads::start(FRAMES[first]);
         #[cfg(not(jnox_native_threads))]

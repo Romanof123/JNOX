@@ -37,6 +37,7 @@ pub(crate) struct Replenishment {
 
 /// R is the maximum number of pending sporadic replenishments. Periodic
 /// servers may use R=0. Backlog is an aggregate of at most u32::MAX ticks.
+#[derive(Clone)]
 pub(crate) struct AperiodicServer<const R: usize> {
     kind: ServerKind,
     start: u64,
@@ -205,6 +206,26 @@ impl<const R: usize> AperiodicServer<R> {
         Ok(run)
     }
 }
+
+/// The assembly return fast path implements this unsigned half-open comparison.
+pub(crate) fn return_due(sample: u64, edge: u64) -> bool { sample >= edge }
+
+/// A debit for a prepared but never entered cell cannot produce a replenishment.
+/// Within that same cell a wake-only recheck retains the provisional debit.
+pub(crate) fn discard_missed_grant<const R: usize>(
+    live: &mut AperiodicServer<R>, prepared: &mut Option<AperiodicServer<R>>,
+    observed_cell: u64,
+) -> Result<Option<u64>, ServerError> {
+    if prepared.as_ref().is_none_or(|saved| observed_cell <= saved.now()) {
+        return Ok(None);
+    }
+    let mut saved = prepared.take().unwrap();
+    let missed = saved.now();
+    saved.tick_live(true, false)?;
+    *live = saved;
+    Ok(Some(missed))
+}
+
 
 fn service_trace_checks() -> bool {
     use ServerKind::*;
@@ -452,4 +473,30 @@ mod tests {
         assert!(AperiodicServer::<8>::new_live(ServerKind::Polling, 0, 2, 5, 1).is_none());
     }
 
+}
+
+#[cfg(test)]
+mod unentered_return_tests {
+    use super::*;
+
+    #[test]
+    fn midcell_recheck_retains_one_grant_and_exact_next_edge_discards_it() {
+        assert!(!return_due(99, 100));
+        assert!(return_due(100, 100));
+        assert!(return_due(351, 100));
+        let mut live = AperiodicServer::<2>::new_live(ServerKind::Sporadic, 0, 1, 5, 2).unwrap();
+        let mut saved = Some(live.clone());
+        assert!(live.tick_live(true, true).unwrap());
+        // Wake in cell 0: still the same unentered candidate, no second debit.
+        assert_eq!(discard_missed_grant(&mut live, &mut saved, 0).unwrap(), None);
+        assert_eq!(live.remaining_quota(), 0);
+        assert_eq!(discard_missed_grant(&mut live, &mut saved, 1).unwrap(), Some(0));
+        assert_eq!(live.remaining_quota(), 1);
+        assert!(live.pending_replenishments().is_empty());
+        live.skip_live_to(7, true).unwrap();
+        assert!(live.tick_live(true, true).unwrap());
+        assert_eq!(live.pending_replenishments()[0].due, 12);
+        // A delivered/non-service decision has no tentative grant to undo.
+        assert_eq!(discard_missed_grant(&mut live, &mut saved, 8).unwrap(), None);
+    }
 }

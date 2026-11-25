@@ -1,14 +1,17 @@
 //! Single-CPU native service plus independently runnable background process.
 use super::*;
-use crate::aperiodic_policy::{AperiodicServer, ServerKind};
+use crate::aperiodic_policy::{discard_missed_grant, return_due, AperiodicServer, ServerKind};
 
 const IDLE_OWNER: usize = 2;
 const TERMINAL: usize = 3;
 const LIMIT: usize = 2048;
-static mut ROWS: [[u64; 37]; LIMIT] = [[0; 37]; LIMIT];
+static mut ROWS: [[u64; 40]; LIMIT] = [[0; 40]; LIMIT];
 static mut CREDITS: [[(u64, u32); 8]; LIMIT] = [[(0, 0); 8]; LIMIT];
 static mut STATE: Option<Runtime> = None;
+#[unsafe(export_name = "native_server_last_return")]
 static mut LAST_RETURN: u64 = 0;
+#[unsafe(no_mangle)]
+static mut native_server_compare: u64 = 0;
 // Reuse the late register-preserving ERET and EL1 idle landing in the native vectors.
 #[unsafe(no_mangle)]
 static mut native_cyclic_return_cell: *mut u64 = &raw mut LAST_RETURN;
@@ -16,6 +19,7 @@ unsafe extern "C" { static native_cyclic_idle_landing: u8; }
 
 struct Runtime {
     ledger: AperiodicServer<8>,
+    prepared: Option<AperiodicServer<8>>,
     kind: u64,
     hz: u64,
     epoch: u64,
@@ -53,7 +57,7 @@ pub(super) fn start(hz: u64) -> usize {
     let epoch = counter().checked_add(hz / 10).unwrap_or_else(|| fail(22));
     epoch.checked_add(h).unwrap_or_else(|| fail(22));
     unsafe {
-        STATE = Some(Runtime { ledger, kind: tag, hz, epoch, h, compare: 0, owner: IDLE_OWNER,
+        STATE = Some(Runtime { ledger, prepared: None, kind: tag, hz, epoch, h, compare: 0, owner: IDLE_OWNER,
             grant: false, wake: [None; 2], exited: 0, used: 0, lost: 0, row: None, occupied: [0; 3] });
         asm!("msr vbar_el1, {}", "isb", in(reg) &raw const native_el0_vectors, options(nostack));
     }
@@ -70,11 +74,25 @@ fn select(entry: u64, decision: u64, kind: u64, op: u64, arg: u64,
           f: Option<&NativeFrame>, action: Action) -> usize {
     let r = state();
     let src = r.owner;
-    let start = unsafe { ptr::read_volatile(&raw const LAST_RETURN) };
-    if let Some(i) = r.row { unsafe { ROWS[i][32] = start; } }
+    let cell = decision.checked_sub(r.epoch).map(|v| v / r.h);
+    let retry = kind == 3;
+    let start = if retry { 0 } else { unsafe { ptr::read_volatile(&raw const LAST_RETURN) } };
+    if let Some(i) = r.row {
+        unsafe {
+            ROWS[i][32] = start;
+            ROWS[i][37] = if retry { 0 } else { 1 };
+            if retry { ROWS[i][38] = entry; }
+        }
+    }
     let occupied = if start == 0 { 0 } else { entry.checked_sub(start).unwrap_or_else(|| fail(22)) };
     r.occupied[src] = r.occupied[src].checked_add(occupied).unwrap_or_else(|| fail(22));
-    let cell = decision.checked_sub(r.epoch).map(|v| v / r.h);
+    let rolled_back = if retry {
+        discard_missed_grant(&mut r.ledger, &mut r.prepared, cell.unwrap_or(0)).unwrap_or_else(|_| fail(22))
+    } else {
+        // An actual exception followed an accepted transfer. Its grant stands.
+        r.prepared = None;
+        None
+    };
     let expected = r.ledger.now();
     let grid = cell.is_some_and(|k| k >= expected);
     let skip = cell.map_or(0, |k| k.saturating_sub(expected));
@@ -112,13 +130,16 @@ fn select(entry: u64, decision: u64, kind: u64, op: u64, arg: u64,
     if grid {
         let edge = at(expected + skip);
         let demand = ready & 1 != 0 && wake_service.is_none_or(|wake| wake <= edge);
+        let snapshot = r.ledger.clone();
         debit = r.ledger.tick_live(demand, true).unwrap_or_else(|_| fail(22));
+        r.prepared = debit.then_some(snapshot);
         r.grant = debit;
     }
     let next = if r.exited == 3 { TERMINAL } else if r.grant && ready & 1 != 0 { 0 }
         else if cell.is_some() && ready & 2 != 0 { 1 } else { IDLE_OWNER };
     let edge = at(r.ledger.now());
     let compare = r.wake.iter().flatten().copied().fold(edge, u64::min);
+    unsafe { ptr::write_volatile(&raw mut native_server_compare, compare); }
     arm_compare((next != TERMINAL).then_some(compare));
     let arm_stamp = counter();
     if r.used < LIMIT {
@@ -139,7 +160,7 @@ fn select(entry: u64, decision: u64, kind: u64, op: u64, arg: u64,
                 if next == TERMINAL { 0 } else { compare }, entry.saturating_sub(at(expected)),
                 ready as u64, woke as u64, r.wake[0].unwrap_or(0), r.wake[1].unwrap_or(0), r.exited as u64,
                 grid as u64, debit as u64, surrender as u64, before as u64, pre_tick as u64,
-                r.ledger.remaining_quota() as u64, src_pc, src_sp, root(), pc, sp, 0, 0, 0, start, occupied, arm_stamp];
+                r.ledger.remaining_quota() as u64, src_pc, src_sp, root(), pc, sp, 0, 0, 0, start, occupied, arm_stamp, if next == TERMINAL { 2 } else { 0 }, 0, rolled_back.unwrap_or(NO_PID)];
             for (j, credit) in r.ledger.pending_replenishments().iter().enumerate() {
                 CREDITS[index][j] = (credit.due, credit.amount);
             }
@@ -166,6 +187,17 @@ fn transfer(next: usize, f: &mut NativeFrame) {
         activate(state().owner, f);
     } else { activate(next, f); }
 }
+// The source is a prepared context with its complete frame still resident.
+// Reconsider current readiness only: no acknowledgement or repeated syscall.
+#[unsafe(no_mangle)]
+extern "C" fn native_server_reselect(crossing: u64, frame: *mut NativeFrame) -> u64 {
+    if !return_due(crossing, state().compare) { fail(22); }
+    let f = unsafe { frame.as_mut() };
+    let next = select(crossing, counter(), 3, 0, 0, f.as_deref(), Action::Keep);
+    if let Some(f) = f { transfer(next, f); }
+    (next < IDLE_OWNER) as u64
+}
+
 pub(super) fn irq(now: u64, frame: *mut NativeFrame, iar: u32) -> u64 {
     let irq = iar & 0x3ff;
     let f = unsafe { frame.as_mut() };
@@ -208,7 +240,7 @@ fn print(label: &[u8], fields: &[u64]) {
 }
 fn finish() -> ! {
     let r = state();
-    print(b"CONFIG", &[1, r.kind, r.epoch, r.hz, r.h, NATIVE_SERVER_SLOT_MS, NATIVE_SERVER_QUOTA,
+    print(b"CONFIG", &[2, r.kind, r.epoch, r.hz, r.h, NATIVE_SERVER_SLOT_MS, NATIVE_SERVER_QUOTA,
         NATIVE_SERVER_PERIOD, NATIVE_SERVER_CREDITS as u64]);
     for i in 0..r.used {
         print(b"EVENT", unsafe { &*(&raw const ROWS[i]) });

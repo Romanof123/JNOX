@@ -33,6 +33,7 @@ pub(crate) enum RequestError {
     CompletionPending,
     NoPendingCompletion,
     WrongReceipt,
+    TimeRegression,
 }
 
 impl From<ServerError> for RequestError {
@@ -41,6 +42,7 @@ impl From<ServerError> for RequestError {
             ServerError::EmptyRelease => Self::EmptyRequest,
             ServerError::BacklogOverflow => Self::WorkOverflow,
             ServerError::TimeOverflow => Self::TimeOverflow,
+            ServerError::TimeRegression => Self::TimeRegression,
         }
     }
 }
