@@ -287,3 +287,24 @@ python3 tools/read_multilevel_telemetry.py "$pkg" "$dir" > "$dir/results.json"
 ~~~
 
 [Bash / SDK / QEMU](../examples/native-multilevel/README.md#m4-telemetry-deployment--m4-경보-게시-배포)
+
+## Assign hierarchical CPU budgets to native processes
+
+On single-CPU virt, select --policy hierarchy and supply a JSON configuration with --hierarchy. The ELF order determines each leaf index. The period and quotas use counter ticks. Leaves under the same parent share its budget. The command below packages the CRC, histogram and energy ELFs built by the example in that order.
+
+~~~sh
+out=output/native-hierarchy
+python3 tools/build_native_el0.py --out "$out/saturated" --policy hierarchy --hierarchy examples/native-hierarchy/baseline.json --elf "$out/crc.elf" --peer-elf "$out/histogram.elf" --peer-elf "$out/energy.elf"
+~~~
+
+For the single-process control, package the same CRC ELF alone. At 62.5 MHz the leaf receives 3,906,250 ticks per 15,625,000-tick period. Its parent and child each have one full period of credit.
+
+~~~sh
+printf '%s\n' '{"period_ticks":15625000,"parents":[15625000],"children":[[0,15625000]],"leaves":[[0,3906250]]}' > "$out/single.json"
+python3 tools/build_native_el0.py --out "$out/single" --policy hierarchy --hierarchy "$out/single.json" --elf "$out/crc.elf"
+~~~
+
+[SDK / QEMU](../examples/native-hierarchy/README.md) · [Single leaf / 단일 리프](native-hierarchical-applications.en-ko.md#single-leaf-control--단일-리프-대조)
+
+This opt-in engineering configuration verified products and budgets in ten first boots. Saturated and swapped plain boots exceeded the idle timer limit.
+ [EVD-135](evidence/evd-135.en.md)

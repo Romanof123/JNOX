@@ -4,6 +4,24 @@
 
 CHG-025 · POL-012 · REQ-002/005/023 → DES-003/012 → IMP-023 → VER-002/005/023. EVD-023 is the planned verification record. The table below gives the expected results for one Cortex-A72 virtual CPU, GICv2 and the nonsecure EL1 physical timer. The measured wake timestamps must come from the captured guest.
 
+## Run the finite telemetry deployment
+
+From the repository root on Linux or WSL, install Python 3 with pyelftools, Cargo and the kernel's pinned Rust toolchain with target `aarch64-unknown-none`, `qemu-system-aarch64`, and AArch64 GNU binutils (`aarch64-linux-gnu-nm` and `aarch64-linux-gnu-objdump`). Choose a new output directory. The command builds the locked release image and starts one default-clock QEMU virt/GICv2 guest with one Cortex-A72 and 128 MiB.
+
+~~~sh
+python3 tools/eevdf_telemetry.py run --out first-run
+~~~
+
+Keep the printed session SHA-256 separately. For offline replay, supply that recorded digest and the same run directory. Replay verifies the retained evidence without rebuilding or booting.
+
+~~~sh
+python3 tools/eevdf_telemetry.py replay --run first-run --session-sha256 DIGEST
+~~~
+
+`first-run/build.json` and `build.log` identify the build. Under `first-run/capture/`, inspect `uart.bin`, the frozen RAM journal `journal.bin`, `exceptions.log`, the ELF, symbols, disassembly and `session.json`. The run root contains `session.sha256` and `result.json`. The strict replay checks both batch workers’ counts, sums and weighted sums, the consumer tuple `(2,128,27028,115128)`, all 15 service comparisons and all eight wake responses. [Telemetry deployment criteria](eevdf-telemetry-deployment.en-ko.md)
+
+`QUALIFIED` exits 0. `INVALID` exits 1 for a failed check, including a wrong digest. `UNOBSERVED` exits 2 when required evidence is unavailable. A build, tool or launch error before a session exists prints `ERROR` and exits 1. Retain the entire first directory, including partial files from a failed attempt. Use a different directory for any later launch.
+
 ## Selection and request changes
 
 For task weight `w`, let `n/w` be its virtual runtime. At each decision the fair clock is exactly `V = sum(n) / sum(w)` over ready tasks. A task is eligible when `n/w ≤ V`. Among eligible tasks the earliest virtual deadline wins. A tie goes to the smaller task ID. A request starting at numerator `s` with slice `q` has deadline `(s+q)/w`. Charging one physical service unit increments `n` by one. Partial service keeps that deadline. Exhaustion renews the request at the old deadline. [Selection](../kernel/src/fair_policy.rs) · [Live request policy](../kernel/src/eevdf_policy.rs)
