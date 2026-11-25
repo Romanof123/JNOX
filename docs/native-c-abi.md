@@ -108,3 +108,19 @@ qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 \
 ~~~
 
 작은 예제에서는 3순위 계산 두 개가 여러 퀀텀에 걸쳐 실행되도록 1,250,000틱을 사용한다. 최초 고정 예제의 설정은 12,500,000틱이었다. 퀀텀은 패키지에서 물리 카운터 틱 단위로 지정한다. [네이티브 FIFO·RR 근거](evidence/evd-115.md)
+
+## 네이티브 앱의 가중 CPU 서비스
+
+주 ELF에 `--weight` 하나를 지정하고 동료 ELF마다 입력 순서에 맞춰 `--peer-weight` 하나를 지정한다. 1에서 4,294,967,295 사이의 가중치는 앱들이 계속 준비 상태일 때의 상대 CPU 서비스 비율을 지정한다. 같은 패키지의 앱은 물리 카운터 틱 단위의 공통 실행량을 사용한다. Linux 또는 WSL에서 저장소 루트를 기준으로 C CRC-32 계산과 Rust 비트 개수 히스토그램을 패키징한다.
+
+~~~sh
+run=$(mktemp -d)
+sh sdk/native-aarch64/build.sh examples/native-weighted/checksum.c "$run/crc.elf"
+sh sdk/native-aarch64/build-rust.sh examples/native-weighted-rust/Cargo.toml "$run/hist.elf"
+python3 tools/build_native_el0.py --out "$run/weighted" --elf "$run/crc.elf" \
+    --peer-elf "$run/hist.elf" --policy weighted --weight 1 --peer-weight 2 --quantum-ticks 625000
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -smp 1 -accel tcg \
+    -m 128M -nodefaults -display none -monitor none -no-reboot -serial stdio -kernel "$run/weighted/kernel.elf"
+~~~
+
+[examples/native-weighted](../examples/native-weighted/README.md) · [EVD-116](evidence/evd-116.md)

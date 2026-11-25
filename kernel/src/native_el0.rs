@@ -8,12 +8,22 @@ use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
 use core::ptr;
 
+#[cfg(jnox_native_weighted)]
+#[path = "native_weighted.rs"]
+mod weighted;
 #[cfg(jnox_native_edf)]
 #[path = "native_edf.rs"]
 mod edf;
+#[cfg(jnox_native_weighted)]
+use weighted as measured;
 #[cfg(jnox_native_edf)]
-global_asm!(".set NATIVE_EDF,1", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(not(jnox_native_edf))]
+use edf as measured;
+
+#[cfg(jnox_native_weighted)]
+global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_weighted_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(jnox_native_edf)]
+global_asm!(".set NATIVE_MEASURED,1\n.macro measured_return\nbl native_edf_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(not(any(jnox_native_weighted, jnox_native_edf)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
     fn native_el0_enter(entry: u64, sp: u64, spsr: u64) -> !;
@@ -341,8 +351,11 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
     if id >= 1020 { return 0 }
-    #[cfg(jnox_native_edf)]
+    #[cfg(any(jnox_native_weighted, jnox_native_edf))]
     if id == context::TIMER_IRQ {
+        #[cfg(jnox_native_weighted)]
+        let next = weighted::timer(entry, unsafe { frame.as_ref() });
+        #[cfg(jnox_native_edf)]
         let next = edf::irq(entry, unsafe { frame.as_ref() });
         unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
         context::gic_write(context::GICC + 0x10, iar);
@@ -399,6 +412,8 @@ fn fail(code: u64) -> ! {
     head(2, code);
     head(1, 4);
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+    #[cfg(jnox_native_weighted)]
+    weighted::dump();
     uart_write(b"NATIVE EL0 FAULT ");
     decimal(code as i64);
     uart_write(b"\n");
@@ -435,13 +450,13 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     // Unsupported services do not dereference a user pointer, acquire
     // descriptors, emit output or claim to have completed a transfer.
-    let now = if cfg!(jnox_native_edf) { entry } else { counter() };
+    let now = if cfg!(any(jnox_native_weighted, jnox_native_edf)) { entry } else { counter() };
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
         6 => clock_gettime(f.x[0], f.x[1] as usize, now),
         7 => match sleep_until(f) {
-            Ok(target) if cfg!(any(jnox_native_fixed, jnox_native_edf)) && target.saturating_sub(now) > i64::MAX as u64 => -75,
+            Ok(target) if cfg!(any(jnox_native_fixed, jnox_native_weighted, jnox_native_edf)) && target.saturating_sub(now) > i64::MAX as u64 => -75,
             Ok(target) => { deadline = (target > now).then_some(target); 0 }
             Err(error) => error,
         },
@@ -459,23 +474,25 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     head(8, index as u64 + 1);
     let pid = unsafe { CURRENT };
-    #[cfg(jnox_native_edf)]
+    #[cfg(any(jnox_native_weighted, jnox_native_edf))]
     {
         let service = f.x[8];
         if exit {
             head(9, f.x[0]);
             unsafe { EXIT_STATUS[pid] = f.x[0] as i32 };
         } else { f.x[0] = result as u64; }
+        #[cfg(jnox_native_weighted)]
+        if service == 6 { weighted::clock(pid, now, result, f.elr); }
         let reason = if exit { 3 } else if deadline.is_some() { 2 } else if service == 8 && result == 0 { 1 } else { return };
-        if let Some(next) = edf::boundary(now, reason, deadline, Some(f)) {
+        if let Some(next) = measured::boundary(now, reason, deadline, Some(f)) {
             activate(next, f);
-        } else if edf::finished() {
-            edf::finish();
+        } else if measured::finished() {
+            measured::finish();
         } else {
             unsafe { FRAMES[pid] = *f };
             let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
             unsafe { native_sleep_switch(top) };
-            activate(edf::owner().unwrap_or_else(|| fail(12)), f);
+            activate(measured::owner().unwrap_or_else(|| fail(if cfg!(jnox_native_edf) { 12 } else { 11 })), f);
         }
         return;
     }
@@ -666,7 +683,7 @@ pub(super) fn run() -> ! {
         for (pid, plan) in plans.iter().enumerate() {
             FRAMES[pid].elr = plan.entry;
             FRAMES[pid].sp_el0 = sp as u64;
-            if !cfg!(any(jnox_native_fixed, jnox_native_edf)) {
+            if !cfg!(any(jnox_native_fixed, jnox_native_weighted, jnox_native_edf)) {
                 if pid == 0 { STATES[pid] = TaskState::Running; } else { enqueue(pid); }
             }
         }
@@ -690,9 +707,11 @@ pub(super) fn run() -> ! {
     head(14, ttbr);
     head(15, ARGS.len() as u64);
     head(1, 2);
+    #[cfg(jnox_native_weighted)]
+    let first = weighted::start();
     #[cfg(jnox_native_edf)]
     let first = edf::start(frequency);
-    #[cfg(not(jnox_native_edf))]
+    #[cfg(not(any(jnox_native_weighted, jnox_native_edf)))]
     let first = if cfg!(jnox_native_fixed) {
         start_fixed()
     } else {

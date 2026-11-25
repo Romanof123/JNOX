@@ -23,6 +23,13 @@ def output(args, cwd=ROOT, env=None):
     return subprocess.check_output(args, cwd=cwd, env=env, text=True).strip()
 
 
+class SinglePath(argparse.Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        if getattr(namespace, self.dest) is not None:
+            parser.error(f"{option_string} may appear only once")
+        setattr(namespace, self.dest, value)
+
+
 def edf_job(value):
     fields = value.split(",")
     if len(fields) != 3 or any(not (field.isascii() and field.isdecimal()) for field in fields):
@@ -38,7 +45,7 @@ def native_schedule(parser, args):
         parser.error("virt supports at most two --peer-elf arguments")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
-    for name in ("policy", "priority", "quantum_ticks", "job"):
+    for name in ("policy", "priority", "weight", "job", "quantum_ticks"):
         values = getattr(args, name)
         if len(values) > 1:
             parser.error(f"--{name.replace('_', '-')} may appear only once")
@@ -56,32 +63,42 @@ def native_schedule(parser, args):
     priorities = args.priority + args.peer_priority
     if any(value < 0 or value > 255 for value in priorities):
         parser.error("priorities must be in 0..255")
-    if bool(args.quantum_ticks) != (policy == "rr"):
-        parser.error("--quantum-ticks is required exclusively with --policy rr")
+    weights = args.weight + args.peer_weight
+    if policy == "weighted":
+        if not args.weight or len(args.peer_weight) != len(args.peer_elf):
+            parser.error("weighted scheduling requires exactly one weight per supplied ELF")
+        if any(not 1 <= value <= 2**32 - 1 for value in weights):
+            parser.error("weights must be in 1..2^32-1")
+    elif weights:
+        parser.error("application weights require --policy weighted")
+    if bool(args.quantum_ticks) != (policy in ("rr", "weighted")):
+        parser.error("--quantum-ticks is required exclusively with --policy rr or weighted")
     quantum = args.quantum_ticks[0] if args.quantum_ticks else None
     if quantum is not None and not 1 <= quantum <= 2**63 - 1:
         parser.error("--quantum-ticks must be in 1..2^63-1")
-    return policy, priorities, quantum
+    return policy, priorities, weights, quantum
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", required=True, type=Path, help="new package directory")
+    parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--source", type=Path, help="C application to compile with the native SDK")
-    group.add_argument("--elf", type=Path, help="already linked native AArch64 application")
+    group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
+    group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "edf"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf"], action="append", default=[])
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
-    parser.add_argument("--quantum-ticks", type=int, action="append", default=[], help="RR physical counter ticks")
+    parser.add_argument("--weight", type=int, action="append", default=[], help="primary CPU service weight")
+    parser.add_argument("--peer-weight", type=int, action="append", default=[], help="CPU service weights in peer order")
+    parser.add_argument("--quantum-ticks", type=int, action="append", default=[], help="common RR or weighted grant in physical counter ticks")
     parser.add_argument("--job", type=edf_job, action="append", default=[], metavar="R,D,C",
                         help="EDF primary release, absolute deadline and cost in 100 ms units")
     parser.add_argument("--peer-job", type=edf_job, action="append", default=[], metavar="R,D,C",
                         help="EDF job tuple for each peer, in peer order")
     args = parser.parse_args()
-    policy, priorities, quantum = native_schedule(parser, args)
+    policy, priorities, weights, quantum = native_schedule(parser, args)
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
     peer_digests = [sha256(path) for path in peer_inputs]
     app_input = (args.elf or args.source or SOURCE).resolve(strict=True)
@@ -138,6 +155,8 @@ def main():
         jobs = args.job + args.peer_job
         for slot in slots:
             slot["priority"] = priorities[slot["slot"]] if priorities else None
+            if weights:
+                slot["weight"] = weights[slot["slot"]]
             if jobs:
                 release, deadline, cost = jobs[slot["slot"]]
                 slot["job"] = {"release": release, "deadline": deadline, "cost": cost}
@@ -149,6 +168,8 @@ def main():
             env["JNOX_NATIVE_POLICY"] = policy
         if priorities:
             env["JNOX_NATIVE_PRIORITIES"] = ",".join(map(str, priorities))
+        if weights:
+            env["JNOX_NATIVE_WEIGHTS"] = ",".join(map(str, weights))
         if quantum is not None:
             env["JNOX_NATIVE_QUANTUM_TICKS"] = str(quantum)
         env.update(JNOX_BOARD="virt", JNOX_PROFILE="native", JNOX_APP=app,
