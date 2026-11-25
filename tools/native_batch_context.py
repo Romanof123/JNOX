@@ -152,6 +152,19 @@ def trace_matches(target, event, next_pc):
     return bool(re.search(pattern,raw))
 
 
+def clock_return_recheck(event):
+    # The vector calls step(..., 3, 0, 0, 0, frame, Keep) only when its
+    # sampled counter has reached the armed compare. No new EL0 lease closes.
+    return (event["kind"] == 3 and event["op"] == event["arg"] == event["result"] == 0
+            and event["src"] == event["dst"] == 0 and event["src_pc"] == 0x40029c
+            and event["transparent_count"] > 0 and event["transparent_ticks"] > 0
+            and event["segment"] == event["last_return"] == event["eoi"] == 0
+            and 0 < event["prior_compare"] == event["cval"] <= event["entry"]
+            and event["ctl"] & 3 == 1 and event["entry"] <= event["decision"] <= event["returned"]
+            and event["src_pstate"] & 31 == 0 and event["src_root"] >> 48 == 1
+            and all(event["src_"+k] == event["dst_"+k] for k in ("pc","sp","pstate","frame","root")))
+
+
 def timed_sjf_retention(target, app_path, events, release, first, terminal, result, measured=False):
     # This inference belongs to the pinned no-argument batch.elf. Its one setup
     # clock precedes the loop, then each sum/progress store precedes one clock.
@@ -164,7 +177,9 @@ def timed_sjf_retention(target, app_path, events, release, first, terminal, resu
                     0 <= pc-seg["p_vaddr"] <= seg["p_filesz"]-4 and
                     struct.unpack_from("<I",seg.data(),pc-seg["p_vaddr"])[0] == word
                     for seg in app.iter_segments()), "pinned timed-loop instruction mismatch")
-    require(release["dst"] == 0 and release["arg"] == 1 and release["result"] == 0 and
+    recheck = clock_return_recheck(release)
+    require(release["dst"] == 0 and (recheck or (release["kind"],release["op"],release["arg"]) == (2,6,1))
+            and release["result"] == 0 and
             release["src_pc"] == 0x40029c and release["releases"] == 6 and
             release["queued_slots"] == [1,2] and release["returned"] >= release["decision"] and
             all(release["src_"+k] == release["dst_"+k] for k in ("pc","sp","pstate","frame","root")),
@@ -172,7 +187,7 @@ def timed_sjf_retention(target, app_path, events, release, first, terminal, resu
     exit_order = [e["src"] for e in events if e["kind"] == 2 and e["op"] == 1]
     require(exit_order == [0,1,2], "equal queued completion order mismatch")
     result["queued_exit_order"] = exit_order
-    boundary = dict(cause="clock_gettime SVC 6", owner=0, retained=True, peer_queue=[1,2],
+    boundary = dict(cause="EL1 return recheck after clock SVC" if recheck else "clock_gettime SVC 6", owner=0, retained=True, peer_queue=[1,2],
                     pc=release["src_pc"], sp=release["src_sp"], pstate=release["src_pstate"],
                     root=release["src_root"], frame=release["src_frame"],
                     first_private=first, terminal_private=terminal, irq_delivery=False,
@@ -187,7 +202,11 @@ def timed_sjf_retention(target, app_path, events, release, first, terminal, resu
         result["gaps"].append("additional scheduling boundaries prevent attributing transparent calls")
         return
     prior = release["transparent_count"]
-    clocks = prior + 1 + a_exit["transparent_count"]
+    # A recheck follows the last already-counted transparent clock SVC. A
+    # direct clock decision adds the deciding SVC to the transparent count.
+    ordinal = prior if recheck else prior + 1
+    completed = ordinal - 1  # the first clock is the pre-loop setup call
+    clocks = ordinal + a_exit["transparent_count"]
     trace = (target/"exceptions.log").read_text(encoding="ascii").splitlines()
     prefix = "Exception return from AArch64 EL1 to AArch64 EL0 PC "
     start = next((n+1 for n,line in enumerate(trace) if line.startswith(prefix)), None)
@@ -201,10 +220,11 @@ def timed_sjf_retention(target, app_path, events, release, first, terminal, resu
             syscall[:3]+["...with ELR 0x400020", syscall[4], prefix+"0x400000"]):
         result["gaps"].append("external SVC/ERET sequence does not corroborate the clock-call inference")
         return
-    boundary.update(transparent_clocks_before=prior, release_clock_ordinal=prior+1,
-                    total_user_clock_returns=clocks, inferred_completed_blocks=prior,
-                    inferred_sum=prior*522240, prior_useful_work=prior>0)
-    if prior == 0:
+    boundary.update(transparent_calls_recorded=prior, transparent_clocks_before=ordinal-1,
+                    release_clock_ordinal=ordinal, separate_recheck_exception=False if recheck else None,
+                    total_user_clock_returns=clocks, inferred_completed_blocks=completed,
+                    inferred_sum=completed*522240, prior_useful_work=completed>0)
+    if completed == 0:
         result["gaps"].append("release occurred at the setup clock before useful publication")
 
 
@@ -235,7 +255,9 @@ def measured_sjf(target, rows, arrivals, events, progress_pa, result):
         active = event["src"] == 0
         irq = event["kind"] == 1 and event["op"] & 1023 == 30
         clock = event["kind"] == 2 and event["op"] == 6
-        entry_kind = "timer IRQ" if irq else "clock SVC" if clock else "other"
+        recheck = clock_return_recheck(event)
+        entry_kind = ("timer IRQ" if irq else "clock SVC" if clock else
+                      "EL1 return recheck after clock SVC" if recheck else "other")
         item = dict(decision=seq, cause=entry_kind, source=event["src"],target=event["dst"],
                     release=sample, next_publication=posts[0] if posts else None,
                     incumbent_retained=active and event["dst"] == 0,
@@ -256,9 +278,9 @@ def measured_sjf(target, rows, arrivals, events, progress_pa, result):
             result["gaps"].append(f"no subsequent A publication sampled for decision {seq}")
         if not active or event["dst"] != 0 or not sample["count"]:
             result["gaps"].append(f"running A with useful prior work was not retained at decision {seq}")
-        elif not (irq or clock):
+        elif not (irq or clock or recheck):
             result["gaps"].append(f"unqualified exception cause at decision {seq}")
-        elif not trace_matches(target,event,event["dst_pc"]):
+        elif not recheck and not trace_matches(target,event,event["dst_pc"]):
             result["gaps"].append(f"no matching exception/ERET for decision {seq}")
         if active and event["dst"] == 0:
             require(all(event["src_"+k] == event["dst_"+k] for k in ("pc","sp","pstate","frame","root")),
@@ -331,7 +353,7 @@ def observed(args):
                    "peers did not arrive in one decision"):
             return result
         e = arrivals[0]
-        if e["src"] == 0 and e["dst"] == 0 and e["kind"] == 2 and e["op"] == 6:
+        if e["src"] == e["dst"] == 0 and ((e["kind"],e["op"]) == (2,6) or clock_return_recheck(e)):
             timed_sjf_retention(target,args.products/args.case/"user.elf",events,e,first[0],terminal[0],
                                 result, measured=True)
             direct = result["measured_peer_admissions"]
