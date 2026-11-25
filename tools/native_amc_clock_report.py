@@ -166,9 +166,51 @@ class ClockEvidence:
     def control(self,life,products,intervals,exits):
         self.check(set(exits)=={(0,0),(1,0),(0,1)} and not any(e[0] in (2,4,5,7,9) for e in life),
                    "control completion, deadlines or generation identity")
-        switches = [(r[4],r[5],r[13],r[14],r[0]) for r in intervals if r[4]!=r[13]]
-        self.check((0,0,1,0,1) in switches and any(s[:4]==(1,0,0,0) for s in switches),
-                   "control low task did not span high task service")
+        low, high = (0, 0), (1, 0)
+        admissions = [e for e in life if e[0] == 1 and tuple(e[2:4]) == high]
+        starts = [i for i,r in enumerate(intervals)
+                  if tuple(r[4:6]) == low and tuple(r[13:15]) == high]
+        returns = [i for i,r in enumerate(intervals)
+                   if tuple(r[4:6]) == high and tuple(r[13:15]) == low]
+        if self.check(len(admissions) == len(starts) == len(returns) == 1 and
+                      0 < starts[0] < returns[0] < len(intervals)-1,
+                      "missing unique control admission, preemption or restoration"):
+            i, j = starts[0], returns[0]
+            prev, handoff, restore = intervals[i-1], intervals[i], intervals[j]
+            admission = admissions[0]
+            release = products[high]["release"]
+            high_grants = self.grants[high]
+            self.check(high_grants and admission[5] == release and
+                       max(release,handoff[2]) <= admission[1] <= high_grants[0][0],
+                       "high admission outside release/dispatch interval")
+            cause, op = handoff[:2]
+            if cause == 3:
+                valid = (op == 0 and handoff[3] == handoff[6] == 0 and
+                         prev[17] == handoff[9] == release <= handoff[2] and
+                         tuple(prev[13:15]) == low and prev[15:17] == handoff[10:12])
+            elif cause == 1:
+                valid = op & 1023 == 30 and handoff[9] == release <= handoff[2]
+            else:
+                valid = (cause == 2 and op == 6 and handoff[19] in (1,2) and
+                         handoff[20] == 0 and handoff[9] == release)
+            self.check(valid, "unsubstantiated control handoff cause")
+            before = sum(r[6] for r in intervals[:i+1] if tuple(r[4:6]) == low)
+            after = sum(r[6] for r in intervals[j+1:] if tuple(r[4:6]) == low)
+            middle = intervals[i+1:j+1]
+            self.check(before == handoff[7] > 0 and after > 0 and
+                       before + after == products[low]["service"] and
+                       all(tuple(r[4:6]) == high for r in middle) and
+                       sum(r[6] for r in middle) == products[high]["service"] > 0,
+                       "control owner service before, during or after preemption")
+            self.check(restore[:2] == (2,1) and restore[19] == high[0] and
+                       restore[2] == exits[high] and restore[15:17] == handoff[10:12] and
+                       restore[21] == handoff[12] == self.roots[low[0]] and
+                       any(R >= restore[2] and base == before and stop > R
+                           for R,stop,base,_ in self.grants[low]),
+                       "control exit did not restore charged original low frame")
+            self.report["control_handoff"] = dict(row=i, cause=cause, op=op, release=release,
+                                                  admitted=admission[1], restored_row=j,
+                                                  low_before=before, low_after=after)
         self.check(products.get((0,1),{}).get("finite_count")==8, "clean eight-reading generation")
 
     def finish(self,products,life):
