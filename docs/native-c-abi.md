@@ -263,3 +263,15 @@ python3 tools/build_native_el0.py --out ss --policy sporadic --server-slot-ms 50
 ~~~
 
 [SDK build / QEMU 실행](../examples/native-aperiodic/README.md)
+
+## 가중 앱이 단독 실행 중에도 퀀텀 유지
+
+단일 CPU virt에서 --weighted-continuous를 지정하면 실행 가능한 앱이 하나여도 퀀텀 타이머를 유지한다. 이 옵션을 생략하면 기존 가중 정책에서는 단독 실행이 계속된다. 각 ELF에 양의 가중치를 지정한다. 퀀텀의 단위는 타이머 틱이다.
+
+~~~sh
+python3 tools/build_native_el0.py --out share --policy weighted --weighted-continuous --weighted-notify closures:36 --quantum-ticks 625000 --elf monitor.elf --weight 1 --arg A --arg share --peer-elf monitor.elf --peer-weight 2 --peer-arg B --peer-arg share
+~~~
+
+선택 사항인 --weighted-notify closures:N은 타이머 IRQ로 끝난 전체 퀀텀 N개, wakes:N은 실제 차단 해제 N회를 센다. 통지를 설정한 앱은 `<jnox/weighted_notify.h>`의 `jnox_weighted_notification()`으로 읽기 전용 값을 확인할 수 있다. 값은 0에서 1로 한 번 바뀐다. 통지를 받은 뒤에도 각 앱은 스스로 종료할 때까지 계속 실행된다.
+
+[Archive extraction and QEMU commands / 원본 추출 및 실행](../examples/native-weighted/README.md#original-weighted-monitor--원래-가중치-모니터) · [#327](native-weighted-continuous.en-ko.md)
