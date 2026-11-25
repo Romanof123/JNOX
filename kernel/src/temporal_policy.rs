@@ -20,6 +20,7 @@ pub(crate) struct WindowDecision {
 pub(crate) struct CyclicExecutive<const N: usize> {
     frame_ticks: u64,
     windows: [Window; N],
+    count: usize,
 }
 
 impl<const N: usize> CyclicExecutive<N> {
@@ -30,31 +31,29 @@ impl<const N: usize> CyclicExecutive<N> {
         frame_ticks: u64,
         slots: [(Option<usize>, u64); N],
     ) -> Option<Self> {
-        if frame_ticks == 0 {
-            return None;
-        }
-        let mut windows = [Window {
-            partition: None,
-            end: 0,
-        }; N];
+        let table = Self::from_ticks(partition_count, &slots)?;
+        (table.frame_ticks == frame_ticks).then_some(table)
+    }
+
+    fn from_ticks(partition_count: usize, slots: &[(Option<usize>, u64)]) -> Option<Self> {
+        if slots.is_empty() || slots.len() > N { return None; }
+        let mut windows = [Window { partition: None, end: 0 }; N];
         let mut end = 0u64;
-        for (window, (partition, ticks)) in windows.iter_mut().zip(slots) {
+        for (window, &(partition, ticks)) in windows.iter_mut().zip(slots) {
             if ticks == 0 || partition.is_some_and(|id| id >= partition_count) {
                 return None;
             }
             end = end.checked_add(ticks)?;
             *window = Window { partition, end };
         }
-        (end == frame_ticks).then_some(Self {
-            frame_ticks,
-            windows,
-        })
+        Some(Self { frame_ticks: end, windows, count: slots.len() })
     }
 
     /// A blocked partition leaves its window idle. No other partition may
     /// borrow that window. Partition-local thread selection is up to the caller.
     pub(crate) fn dispatch(&self, tick: u64, ready: impl FnOnce(usize) -> bool) -> Option<usize> {
-        let (window, _) = self.window_at(tick)?;
+        let (slot, _) = self.window_at(tick)?;
+        let window = &self.windows[slot];
         window.partition.filter(|&id| ready(id))
     }
 
@@ -65,7 +64,8 @@ impl<const N: usize> CyclicExecutive<N> {
         tick: u64,
         ready: impl FnOnce(usize) -> bool,
     ) -> Option<WindowDecision> {
-        let (window, phase) = self.window_at(tick)?;
+        let (slot, phase) = self.window_at(tick)?;
+        let window = &self.windows[slot];
         let end_tick = tick.checked_add(window.end - phase)?;
         Some(WindowDecision {
             owner: window.partition,
@@ -74,10 +74,83 @@ impl<const N: usize> CyclicExecutive<N> {
         })
     }
 
-    fn window_at(&self, tick: u64) -> Option<(&Window, u64)> {
+    fn window_at(&self, tick: u64) -> Option<(usize, u64)> {
         let phase = tick % self.frame_ticks;
-        let window = self.windows.iter().find(|window| phase < window.end)?;
-        Some((window, phase))
+        let slot = self.windows[..self.count].iter().position(|window| phase < window.end)?;
+        Some((slot, phase))
+    }
+}
+
+/// Absolute counter view of the same half-open executive used by linked partitions.
+pub(crate) struct NativeCyclic {
+    epoch: u64,
+    table: CyclicExecutive<16>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct NativeWindow {
+    pub(crate) frame: u64,
+    pub(crate) slot: usize,
+    pub(crate) sequence: u64,
+    pub(crate) start: u64,
+    pub(crate) end: u64,
+    pub(crate) owner: Option<usize>,
+    pub(crate) runnable: Option<usize>,
+}
+
+impl NativeCyclic {
+    pub(crate) fn new(epoch: u64, hz: u64, slots: &[(Option<usize>, u64)]) -> Option<Self> {
+        if !(2..=16).contains(&slots.len()) || hz == 0 || hz % 1000 != 0 { return None; }
+        let mut converted = [(None, 0); 16];
+        let mut owners = [false; 2];
+        for (out, &(owner, ms)) in converted.iter_mut().zip(slots) {
+            if let Some(id) = owner { *owners.get_mut(id)? = true; }
+            let ticks = ms.checked_mul(hz / 1000)?;
+            // Signed physical timer comparison must distinguish a future end.
+            if ticks > i64::MAX as u64 { return None; }
+            *out = (owner, ticks);
+        }
+        if owners != [true, true] { return None; }
+        let table = CyclicExecutive::from_ticks(2, &converted[..slots.len()])?;
+        epoch.checked_add(table.frame_ticks)?;
+        Some(Self { epoch, table })
+    }
+
+    pub(crate) fn frame_ticks(&self) -> u64 { self.table.frame_ticks }
+
+    /// Apply all wakes through the selection sample, including any which
+    /// became due while the exception handler was servicing the caller.
+    pub(crate) fn select_at(&self, entry: u64, decision: u64, wakes: &mut [Option<u64>; 2],
+                            exited: u8) -> Result<(Option<NativeWindow>, u8, u8), ()> {
+        if decision < entry { return Err(()); }
+        let mut ready = 0;
+        let mut woke = 0;
+        for (id, wake) in wakes.iter_mut().enumerate() {
+            if wake.is_some_and(|at| at <= decision) {
+                *wake = None;
+                woke |= 1 << id;
+            }
+            if wake.is_none() && exited & (1 << id) == 0 { ready |= 1 << id; }
+        }
+        Ok((self.at(decision, ready)?, ready, woke))
+    }
+
+    /// None before epoch, Err when this active window's absolute end cannot fit.
+    pub(crate) fn at(&self, now: u64, ready: u8) -> Result<Option<NativeWindow>, ()> {
+        let Some(elapsed) = now.checked_sub(self.epoch) else { return Ok(None); };
+        let (slot, phase) = self.table.window_at(elapsed).ok_or(())?;
+        let frame = elapsed / self.frame_ticks();
+        let base = now - phase;
+        let offset = if slot == 0 { 0 } else { self.table.windows[slot - 1].end };
+        let window = &self.table.windows[slot];
+        let sequence = frame.checked_mul(self.table.count as u64)
+            .and_then(|first| first.checked_add(slot as u64)).ok_or(())?;
+        Ok(Some(NativeWindow {
+            frame, slot, sequence, start: base + offset,
+            end: base.checked_add(window.end).ok_or(())?,
+            owner: window.partition,
+            runnable: window.partition.filter(|&id| ready & (1 << id) != 0),
+        }))
     }
 }
 
@@ -598,5 +671,67 @@ mod native_reservation_tests {
         assert_eq!(p.open(u64::MAX), Err(CbsError::TimeOverflow));
         assert_eq!(p.owner(), None);
         assert_eq!(p.next_slot(), None);
+    }
+}
+
+#[cfg(test)]
+mod native_cyclic_tests {
+    use super::NativeCyclic;
+
+    #[test]
+    fn syscall_crossing_an_edge_selects_at_completion_and_applies_due_wakes() {
+        let entry = 109;
+        for decision in [110, 111] {
+            for middle in [Some(1), None] {
+                let slots = [(Some(0), 10), (middle, 5), (Some(1), 5)];
+                let table = NativeCyclic::new(100, 1000, &slots).unwrap();
+                let mut wakes = [None, Some(decision)];
+                assert_eq!(table.at(entry, 1).unwrap().unwrap().runnable, Some(0));
+                let (window, ready, woke) = table.select_at(entry, decision, &mut wakes, 0).unwrap();
+                let window = window.unwrap();
+                assert_eq!((window.runnable, window.start, window.end), (middle, 110, 115));
+                assert_eq!((ready, woke, wakes), (3, 2, [None, None]));
+            }
+        }
+    }
+
+    #[test]
+    fn duplicate_late_and_wrap_samples_keep_the_absolute_sequence() {
+        let c = NativeCyclic::new(40, 2000, &[(Some(1), 1), (Some(0), 2), (Some(1), 1)]).unwrap();
+        assert_eq!(c.frame_ticks(), 8);
+        assert_eq!(c.at(39, 3), Ok(None));
+        let last = c.at(46, 3).unwrap().unwrap();
+        let wrap = c.at(48, 3).unwrap().unwrap();
+        assert_eq!((last.owner, last.sequence, last.end), (Some(1), 2, 48));
+        assert_eq!((wrap.owner, wrap.sequence, wrap.frame, wrap.slot), (Some(1), 3, 1, 0));
+        assert_eq!(c.at(49, 3), Ok(Some(wrap)));
+        let late = c.at(74, 3).unwrap().unwrap();
+        assert_eq!((late.sequence, late.start, late.end), (13, 74, 78));
+    }
+
+    #[test]
+    fn wakes_only_restore_the_named_owner_in_the_remainder() {
+        let c = NativeCyclic::new(10, 1000, &[(Some(0), 5), (None, 2), (Some(1), 3)]).unwrap();
+        assert_eq!(c.at(10, 2).unwrap().unwrap().runnable, None);
+        let woke = c.at(13, 3).unwrap().unwrap();
+        assert_eq!((woke.runnable, woke.end), (Some(0), 15));
+        assert_eq!(c.at(15, 3).unwrap().unwrap().runnable, None);
+        assert_eq!(c.at(17, 1).unwrap().unwrap().runnable, None);
+        assert_eq!(c.at(17, 3).unwrap().unwrap().runnable, Some(1));
+    }
+
+    #[test]
+    fn invalid_tables_and_unrepresentable_later_boundaries_are_rejected() {
+        let pair = [(Some(0), 1), (Some(1), 1)];
+        for hz in [0, 999, 1500] { assert!(NativeCyclic::new(0, hz, &pair).is_none()); }
+        for slots in [&pair[..1], &[(Some(0), 1); 17][..], &[(Some(0), 1), (None, 1)],
+                      &[(Some(0), 1), (Some(2), 1)], &[(Some(0), 0), (Some(1), 1)],
+                      &[(Some(0), u64::MAX), (Some(1), 1)]] {
+            assert!(NativeCyclic::new(0, 2000, slots).is_none());
+        }
+        assert!(NativeCyclic::new(u64::MAX - 1, 1000, &pair).is_none());
+        let c = NativeCyclic::new(u64::MAX - 2, 1000, &pair).unwrap();
+        assert_eq!(c.at(u64::MAX - 1, 3).unwrap().unwrap().end, u64::MAX);
+        assert_eq!(c.at(u64::MAX, 3), Err(()));
     }
 }

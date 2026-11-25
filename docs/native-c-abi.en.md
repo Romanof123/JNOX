@@ -243,3 +243,13 @@ For FIFO, change the final image path to `pi-fifo/kernel8.img`. Direct loading b
 ~~~sh
 python3 tools/package_pi4.py --kernel pi-rr/kernel8.img --output pi-rr-boot
 ~~~
+
+## Assign repeating CPU windows to two applications
+
+On single-CPU AArch64 virt, a names the primary ELF and b the peer. This table repeats 100 ms for a, 50 ms for b and 50 ms of kernel idle. Supply 2–16 windows including both applications. If an owner blocks or exits, its remaining window stays idle.
+
+~~~sh
+python3 tools/build_native_el0.py --out table-p --policy partition --partition-windows a:100,b:50,idle:50 --elf energy.elf --peer-elf density.elf
+~~~
+
+[Build the energy and bit-density workers and boot the package on QEMU](../examples/native-cyclic/README.md)

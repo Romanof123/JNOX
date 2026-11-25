@@ -73,6 +73,29 @@ def allotments(value):
     return values
 
 
+def partition_table(parser, raw):
+    fields = raw.split(",")
+    if not 2 <= len(fields) <= 16:
+        parser.error("partition table requires 2..16 windows")
+    windows = []
+    frame = 0
+    for field in fields:
+        owner, separator, millis = field.partition(":")
+        if owner not in ("a", "b", "idle") or not separator or not (millis.isascii() and millis.isdecimal()):
+            parser.error("expected a:MS, b:MS or idle:MS")
+        digits = millis.lstrip("0")
+        if not digits or len(digits) > 20:
+            parser.error("window duration must be a positive u64")
+        duration = int(digits)
+        frame += duration
+        if frame >= 2**64:
+            parser.error("partition frame exceeds u64 milliseconds")
+        windows.append({"owner": owner, "duration_ms": duration})
+    if not {"a", "b"}.issubset(window["owner"] for window in windows):
+        parser.error("partition table requires both owners")
+    return windows, frame
+
+
 def native_schedule(parser, args):
     if len(args.peer_elf) > 2:
         parser.error("virt supports at most two --peer-elf arguments")
@@ -213,7 +236,8 @@ def main():
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
                         help="independently linked peer in slot order (up to two)")
-    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq"], action="append", default=[])
+    parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition"], action="append", default=[])
+    parser.add_argument("--partition-windows", action=SinglePath, metavar="OWNER:MS,...")
     parser.add_argument("--priority", type=int, action="append", default=[], help="primary priority")
     parser.add_argument("--peer-priority", type=int, action="append", default=[], help="in peer order")
     parser.add_argument("--weight", type=int, action="append", default=[], help="primary CPU service weight")
@@ -253,6 +277,12 @@ def main():
     if board == "pi4" and (policy not in ("fifo", "rr") or len(args.peer_elf) != 1
                            or not (args.source or args.elf) or args.threads):
         parser.error("pi4 requires a primary application and one peer under FIFO or RR")
+    if policy == "partition":
+        if len(args.peer_elf) != 1 or args.partition_windows is None:
+            parser.error("partition requires two applications and --partition-windows")
+        windows, frame_ms = partition_table(parser, args.partition_windows)
+    elif args.partition_windows is not None:
+        parser.error("--partition-windows requires --policy partition")
     vectors, encoded_arguments = encode_arguments(parser, args)
     service = args.deadline_service_elf
     cells = []
@@ -376,6 +406,10 @@ def main():
             if policy == "rr":
                 metadata.update(scheduling_scope="within_process", timing_unit="physical_counter_ticks")
             env["JNOX_NATIVE_THREADS"] = "2"
+        if policy == "partition":
+            env["JNOX_NATIVE_PARTITION_WINDOWS"] = args.partition_windows
+            metadata.update(partition_windows=windows, partition_frame_ms=frame_ms,
+                            partition_windows_input=args.partition_windows)
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy

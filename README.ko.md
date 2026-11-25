@@ -8,6 +8,8 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 AArch64 QEMU `virt`에서 네이티브 앱은 사용자 모드(EL0)에서 단조 시계의 경과 시간을 읽을 수 있습니다. C에서는 `clock_gettime(CLOCK_MONOTONIC, &ts)`를 호출하고 Rust에서는 안전한 `jnox_native::monotonic_time()`으로 성공 시 `Duration`을 받습니다. [응용 프로그램 시계 검증](docs/evidence/evd-112.md) 단조 시계의 절대 기한까지 기다리려면 C에서 `clock_nanosleep`, Rust에서 `jnox_native::sleep_until`을 호출합니다. [대기 예제와 실행 명령](docs/native-c-abi.md#단조-시계의-절대-기한까지-대기)
 
+두 앱과 커널 유휴에 밀리초 단위 CPU 창을 배정할 수 있습니다. [반복 시간표 예제](examples/native-cyclic/README.md)
+
 Pi 4 모델에서 네이티브 C·Rust 프로세스를 FIFO 또는 RR로 실행할 수 있습니다. [앱 빌드와 부팅](docs/native-c-abi.md#pi-4-모델에서-두-네이티브-앱-실행)
 
 작업 스레드에 공유 표본 버퍼를 넘기고 조인으로 결과를 회수할 수 있습니다. 저장소 루트에서 협력형 C 예제를 빌드합니다.
