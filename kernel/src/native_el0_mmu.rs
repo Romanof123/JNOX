@@ -1,4 +1,4 @@
-//! Private ordinary-process mappings on the single virt CPU.
+//! Private ordinary-process mappings on the single boot CPU.
 use crate::native_elf::{LoadPlan, Permission};
 use core::{arch::asm, borrow::Borrow, ptr};
 
@@ -54,7 +54,12 @@ pub(crate) unsafe fn reset_worker_memory() {
     }
 }
 
+#[cfg(not(jnox_pi4))]
 const LINK_START: usize = 0x4020_0000;
+#[cfg(jnox_pi4)]
+const LINK_START: usize = 0x0200_0000;
+#[cfg(jnox_pi4)]
+const GPIO: usize = 0xfe20_0000;
 const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
 // Leave another 4 MiB per slot for tables, stacks and the linked kernel.
@@ -101,7 +106,10 @@ static mut UART: Table = Table::EMPTY;
 static mut GIC: Table = Table::EMPTY;
 static mut PROCESS_COUNT: usize = 0;
 unsafe extern "C" {
+    #[cfg(not(jnox_pi4))]
     static _start: u8;
+    #[cfg(jnox_pi4)]
+    static __native_payload_start: u8;
     static __native_rw_start: u8;
     static __stack_top: u8;
 }
@@ -165,9 +173,23 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
     unsafe {
         let space = &mut *(&raw mut SPACES[pid]);
         link(&raw mut space.root, 0, 30, &raw mut space.low);
-        link(&raw mut space.root, LINK_START, 30, &raw mut HIGH);
-        link(&raw mut space.low, 0x0900_0000, 21, &raw mut UART);
-        link(&raw mut space.low, 0x0800_0000, 21, &raw mut GIC);
+        #[cfg(not(jnox_pi4))]
+        {
+            link(&raw mut space.root, LINK_START, 30, &raw mut HIGH);
+            link(&raw mut space.low, crate::UART0, 21, &raw mut UART);
+            link(&raw mut space.low, crate::context::GICD, 21, &raw mut GIC);
+        }
+        #[cfg(jnox_pi4)]
+        {
+            // The relocated kernel shares root[0] with this process's EL0
+            // mappings. Only its L3 tables are shared between private L2s.
+            let end = &raw const __stack_top as usize;
+            for va in (LINK_START..end).step_by(BLOCK) {
+                let kernel = (&raw mut KERNEL).cast::<Table>().add((va - LINK_START) / BLOCK);
+                link(&raw mut space.low, va, 21, kernel);
+            }
+            link(&raw mut space.root, GPIO, 30, &raw mut HIGH);
+        }
         let image = space.image_ram.0.as_mut_ptr();
         for s in plan.segments() {
             let begin = s.address as usize;
@@ -240,11 +262,18 @@ unsafe fn install_spaces<'a>(
     // MMU, D-cache, I-cache and big-endian EL0/EL1 must all be off.
     if el != 4 || masks & 0x3c0 != 0x3c0 || spsel != 1
         || ctl & (0x1005 | (3 << 24)) != 0 || unsafe { PROCESS_COUNT != 0 } {
-        return Err("native VM requires cold masked virt EL1h");
+        return Err("native VM requires cold masked EL1h");
     }
+    #[cfg(not(jnox_pi4))]
     let start = &raw const _start as usize;
+    #[cfg(jnox_pi4)]
+    let start = &raw const __native_payload_start as usize;
     let rw = &raw const __native_rw_start as usize;
     let end = &raw const __stack_top as usize;
+    #[cfg(jnox_pi4)]
+    if end > 0x0400_0000 || count != 2 {
+        return Err("Pi 4 native kernel aperture or process count");
+    }
     if start != LINK_START || !(start < rw && rw < end) || rw % PAGE != 0
         || end > start + HIGH_TABLES * BLOCK || !(start..rw).contains(&pc)
         || !(rw..=end).contains(&sp) {
@@ -258,14 +287,23 @@ unsafe fn install_spaces<'a>(
     unsafe {
         for va in (start..end).step_by(PAGE) {
             let table = (&raw mut KERNEL).cast::<Table>().add((va - start) / BLOCK);
+            #[cfg(not(jnox_pi4))]
             if va % BLOCK == 0 {
                 link(&raw mut HIGH, va, 21, table);
             }
             page(table, va, va, NORMAL | UXN | if va < rw { RO } else { PXN });
         }
-        page(&raw mut UART, 0x0900_0000, 0x0900_0000, DEVICE);
-        page(&raw mut GIC, 0x0800_0000, 0x0800_0000, DEVICE);
-        page(&raw mut GIC, 0x0801_0000, 0x0801_0000, DEVICE);
+        #[cfg(jnox_pi4)]
+        {
+            // Both peripheral groups live under root[3]. Only the three
+            // peripheral bases and the GPIO page receive EL1 Device mappings.
+            link(&raw mut HIGH, GPIO, 21, &raw mut UART);
+            link(&raw mut HIGH, crate::context::GICD, 21, &raw mut GIC);
+            page(&raw mut UART, GPIO, GPIO, DEVICE);
+        }
+        page(&raw mut UART, crate::UART0, crate::UART0, DEVICE);
+        page(&raw mut GIC, crate::context::GICD, crate::context::GICD, DEVICE);
+        page(&raw mut GIC, crate::context::GICC, crate::context::GICC, DEVICE);
         for pid in 0..count {
             populate(pid, plans[pid].borrow(), stack_tails[pid]);
         }
