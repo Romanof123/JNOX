@@ -14,7 +14,7 @@ Dashed boxes show planned components. The native Rust driver runs as an isolated
 
 ## Display, X11 and kernel logs
 
-On AArch64 QEMU virt, an optional Rust display service accepts input and updates the guest screen. A native C X11 client can show a window rendered by an external X server on that same screen. The interactive serial shell exposes recent kernel events through `dmesg`. [Guest screenshots and original measurements](docs/evidence/native-display-x11-shell.en-ko.md) · [Build the X11 example](examples/native-x11/README.md) · [Resident compositor and Xwayland](https://github.com/Romanof123/JNOX/issues/412)
+On AArch64 QEMU virt, an optional Rust display service accepts input and updates the guest screen. A native C X11 client can show a window rendered by an external X server on that same screen. The interactive serial shell exposes recent kernel events through `dmesg`. Two local Rust apps can also draw overlapping windows and receive input when focused. [Local windows and guest captures](docs/evidence/native-window-pair.en-ko.md) · [Guest screenshots and original measurements](docs/evidence/native-display-x11-shell.en-ko.md) · [Build the X11 example](examples/native-x11/README.md) · [Resident compositor and Xwayland](https://github.com/Romanof123/JNOX/issues/412)
 
 ## Native applications and IPC
 

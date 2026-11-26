@@ -39,3 +39,7 @@ probe client wayland-client.h 'void f(void) { (void)&wl_display_connect; }'
 probe server wayland-server.h 'void f(void) { (void)&wl_display_create; }'
 readelf -h "$out/unix.o" | awk '/Type:|Machine:/'
 ~~~
+
+## Subsequent guest verification / 이후 게스트 검증
+
+The four-process FIFO profile now runs a display owner, two local clients and the AF_UNIX broker on AArch64 virt. All four execute in separate address spaces. Both clients supplied their own content and reacted to focus-routed input. The shared-buffer, FD-transfer and Wayland/Xwayland rows in the audit still require implementation. / 이후 가상 검증에서 격리 프로세스 네 개로 두 앱의 화면과 포커스 입력을 확인했다. 표준 Wayland 공유 버퍼와 FD 전달은 후속 작업이다. [Measurements and screenshots / 실측과 화면](evidence/native-window-pair.en-ko.md)

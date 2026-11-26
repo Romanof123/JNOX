@@ -14,7 +14,7 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 ## 화면, X11 및 커널 로그
 
-AArch64 QEMU virt에서 선택형 Rust 화면 서비스가 입력을 받아 게스트 화면을 갱신한다. 네이티브 C X11 앱은 외부 X 서버가 그린 창을 같은 게스트 화면에 표시할 수 있다. 대화형 시리얼 셸에서는 `dmesg`로 최근 커널 이벤트를 읽는다. [실제 화면과 검증 원본](docs/evidence/native-display-x11-shell.en-ko.md) · [X11 예제 빌드](examples/native-x11/README.md) · [상주 합성기와 Xwayland](https://github.com/Romanof123/JNOX/issues/412)
+AArch64 QEMU virt에서 선택형 Rust 화면 서비스가 입력을 받아 게스트 화면을 갱신한다. 네이티브 C X11 앱은 외부 X 서버가 그린 창을 같은 게스트 화면에 표시할 수 있다. 대화형 시리얼 셸에서는 `dmesg`로 최근 커널 이벤트를 읽는다. 로컬 Rust 앱 두 개가 각자 만든 창을 겹쳐 표시하고 포커스된 앱으로 입력을 전달하는 구성도 검증했다. [로컬 창과 게스트 캡처](docs/evidence/native-window-pair.en-ko.md) · [실제 화면과 검증 원본](docs/evidence/native-display-x11-shell.en-ko.md) · [X11 예제 빌드](examples/native-x11/README.md) · [상주 합성기와 Xwayland](https://github.com/Romanof123/JNOX/issues/412)
 
 ## 네이티브 앱과 IPC
 

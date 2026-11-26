@@ -2338,3 +2338,16 @@ VER-020,has-partial-evidence,EVD-317
 IMP-314,tested-in,EVD-317
 IMP-315,tested-in,EVD-317
 IMP-317,tested-in,EVD-317
+CHG-318,affects,REQ-015
+CHG-318,affects,REQ-024
+REQ-015,partially-implemented-by,IMP-318
+REQ-024,partially-implemented-by,IMP-318
+DES-009,partially-implemented-by,IMP-318
+DES-013,partially-implemented-by,IMP-318
+CAP-018,partially-implemented-by,IMP-318
+CAP-021,partially-implemented-by,IMP-318
+IMP-318,partially-verified-by,VER-015
+IMP-318,partially-verified-by,VER-024
+VER-015,has-partial-evidence,EVD-318
+VER-024,has-partial-evidence,EVD-318
+IMP-318,tested-in,EVD-318
