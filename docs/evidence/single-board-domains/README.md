@@ -31,3 +31,5 @@ sh replay.sh
 ```
 
 원본 묶음에는 UART·PCAP·태스크 메모리 관측과 재생 도구가 들어 있다. 위 두 명령으로 원본 해시와 각 부팅의 판정을 다시 확인할 수 있다. [Trace edges](../../../trace/links.csv) · [Implementation and review #423](https://github.com/Romanof123/JNOX/pull/423)
+
+The subsequent same-board trial covers authorized JNOX-originated device calls and a 250 ms device-response timeout. 이후 같은 보드에서 승인된 JNOX 앱의 실제 장치 요청과 응답 기한 만료를 검증했다. [Gateway results / 게이트웨이 실측](gateway.en-ko.md)
