@@ -48,7 +48,9 @@ def inspect_elf(path, tools):
     for line in symbols.splitlines():
         fields = line.split(None, 7)
         if len(fields) == 8 and re.fullmatch(r"\d+:", fields[0]):
-            entries.append(dict(value=fields[1], size=int(fields[2]), type=fields[3],
+            # GNU readelf prints large symbol sizes in hexadecimal.
+            size = int(fields[2], 16) if fields[2].lower().startswith("0x") else int(fields[2])
+            entries.append(dict(value=fields[1], size=size, type=fields[3],
                                 bind=fields[4], visibility=fields[5], index=fields[6], name=fields[7]))
     return {
         "filename": path.name, "sha256": sha(path.read_bytes()), "size": path.stat().st_size,

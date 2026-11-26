@@ -9,6 +9,9 @@
 #include <linux/string.h>
 #include <linux/virtio.h>
 #include <jnox_tx_virtqueue.h>
+#ifdef JNOX_PACKET_RX_ABI
+#include <jnox_rx_virtqueue.h>
+#endif
 
 enum { QSIZE = 32, HEADER = 12, MIN_FRAME = 14, MAX_FRAME = 1514 };
 
@@ -257,6 +260,10 @@ bool virtqueue_notify(struct virtqueue *vq)
 
 void *virtqueue_get_buf(struct virtqueue *vq, unsigned int *len)
 {
+#ifdef JNOX_PACKET_RX_ABI
+    if (vq && vq == jnox_packet_active_vq(0))
+        return virtqueue_get_buf_ctx(vq, len, NULL);
+#endif
     unsigned long epoch = jnox_packet_token();
     if (!epoch || !vq || vq != jnox_packet_active_vq(1) || !len) return NULL;
     long id = svc(166, epoch, NULL, 0);
@@ -285,6 +292,9 @@ void *virtqueue_get_buf(struct virtqueue *vq, unsigned int *len)
  * canceled cookie becomes reclaimable, but is not counted as a used entry. */
 void jnox_tx_reset_complete(unsigned long epoch)
 {
+#ifdef JNOX_PACKET_RX_ABI
+    jnox_rx_reset_complete_v1(epoch);
+#endif
     for (unsigned int i = 0; i < QSIZE; ++i) {
         if (pending[i].cookie && pending[i].epoch == epoch) {
             pending[i].storage->outstanding = false;
