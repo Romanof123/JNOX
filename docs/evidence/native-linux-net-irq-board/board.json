@@ -1,0 +1,21 @@
+{
+  "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+  "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+  "machine": "virt,gic-version=2",
+  "node": "/virtio_mmio@a003e00",
+  "device_reg": [
+    0,
+    167788032,
+    0,
+    512
+  ],
+  "parent": "/intc@8000000",
+  "parent_compatible": "arm,cortex-a15-gic",
+  "interrupts": [
+    0,
+    47,
+    1
+  ],
+  "intid": 79,
+  "sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212"
+}

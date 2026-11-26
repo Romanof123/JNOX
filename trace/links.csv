@@ -2444,3 +2444,17 @@ IMP-329,partially-verified-by,VER-011
 VER-004,has-partial-evidence,EVD-329
 VER-011,has-partial-evidence,EVD-329
 IMP-329,tested-in,EVD-329
+CHG-330,affects,REQ-004
+CHG-330,affects,REQ-011
+CHG-330,affects,DES-002
+CHG-330,affects,VER-004
+CHG-330,affects,VER-011
+CHG-330,affects,EVD-330
+REQ-004,partially-implemented-by,IMP-330
+REQ-011,partially-implemented-by,IMP-330
+DES-002,partially-implemented-by,IMP-330
+IMP-330,partially-verified-by,VER-004
+IMP-330,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-330
+VER-011,has-partial-evidence,EVD-330
+IMP-330,tested-in,EVD-330
