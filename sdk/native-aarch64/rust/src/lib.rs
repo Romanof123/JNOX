@@ -156,3 +156,5 @@ pub mod local_socket;
 pub mod capabilities;
 #[cfg(all(feature = "pubsub", target_arch = "aarch64"))]
 pub mod pubsub;
+#[cfg(all(feature = "display", target_arch = "aarch64"))]
+pub mod display;
