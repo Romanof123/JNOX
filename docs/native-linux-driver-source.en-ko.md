@@ -6,7 +6,7 @@ Rebuild unchanged, hash-pinned upstream driver source with a bounded adapter as 
 
 IMP-325 runs the Linux PL031 driver on JNOX. EVD-325 covers RTC reads and writes, alarm delivery, resource reclaim, peer denial and source/object identity in two cold boots. [Measured results](evidence/native-linux-source-rtc/README.md)
 
-A later virtio_net port depends on kernel networking support and enforced DMA mappings for the device queues.
+CHG-326 takes the next step with the upstream `virtnet_validate` callback. It defines a native feature-validation milestone and the remaining packet, DMA, IRQ and service-restart criteria. [virtio-net change record](native-linux-source-net.en-ko.md)
 
 ## CHG-325 · Linux 드라이버 소스로 빌드하는 네이티브 서비스
 
@@ -14,4 +14,4 @@ A later virtio_net port depends on kernel networking support and enforced DMA ma
 
 IMP-325는 원본 PL031 드라이버를 JNOX에서 실행한다. EVD-325에 실제 시계 읽기·설정, 알람 IRQ, 자원 회수, 비인가 앱 접근 거부와 소스·ELF 식별값을 기록했다. [실측 결과](evidence/native-linux-source-rtc/README.md)
 
-이후 virtio_net 이관은 커널 네트워킹 지원과 장치 큐용 DMA 매핑 강제에 의존한다.
+다음 단계인 CHG-326은 업스트림 `virtnet_validate` 콜백의 네이티브 기능 검증과 이후 패킷·DMA·IRQ·서비스 재시작 인수 기준을 정의한다. [virtio-net 변경 기록](native-linux-source-net.en-ko.md)

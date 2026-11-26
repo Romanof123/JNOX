@@ -2388,3 +2388,17 @@ IMP-325,partially-verified-by,VER-011
 VER-004,has-partial-evidence,EVD-325
 VER-011,has-partial-evidence,EVD-325
 IMP-325,tested-in,EVD-325
+CHG-326,affects,REQ-004
+CHG-326,affects,REQ-011
+CHG-326,affects,DES-002
+CHG-326,affects,VER-004
+CHG-326,affects,VER-011
+CHG-326,affects,EVD-326
+REQ-004,partially-implemented-by,IMP-326
+REQ-011,partially-implemented-by,IMP-326
+DES-002,partially-implemented-by,IMP-326
+IMP-326,partially-verified-by,VER-004
+IMP-326,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-326
+VER-011,has-partial-evidence,EVD-326
+IMP-326,tested-in,EVD-326

@@ -32,7 +32,7 @@ The build adapter verifies the pinned upstream source hash, compiles the unchang
 
 The unprivileged service runs on the J-NOX Rust kernel without Linux or Bao. The kernel grants device memory, IRQ and DMA capabilities individually according to the service manifest, validates ownership and bounds, and controls revocation on restart. Native Rust drivers remain a separate supported path.
 
-The first proof targets a PL031 RTC read using assigned MMIO. IRQ delivery and DMA isolation require independent evidence. The later virtio_net port depends on kernel networking interfaces and enforceable DMA mappings for its queues. Historical Linux module and gateway experiments provide reference behavior. [CHG-325](native-linux-driver-source.en-ko.md)
+The PL031 RTC record covers assigned MMIO and alarm IRQ handling. For virtio-net, the trusted package gives one EL0 service access to kernel-mediated feature negotiation and configuration reads. The native ELF links the upstream `virtnet_validate` callback. Packet queues, DMA enforcement, device IRQs and service restart require separate exercise on the NIC. Historical Linux module and gateway experiments provide reference behavior. [PL031 record](native-linux-driver-source.en-ko.md) · [CHG-326](native-linux-source-net.en-ko.md)
 
 ## DES-003 Threads and real-time scheduling
 

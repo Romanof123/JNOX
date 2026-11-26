@@ -446,8 +446,11 @@ def main():
     add_kernel_profile(parser)
     parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
     parser.add_argument("--board", choices=["virt", "pi4"], action=SinglePath)
-    parser.add_argument("--linux-source-rtc", action="store_true",
-                        help="grant the virt PL031 and INTID 34 to driver slot 0 in a two-process native FIFO package")
+    source_device = parser.add_mutually_exclusive_group()
+    source_device.add_argument("--linux-source-rtc", dest="linux_source_driver", action="store_const", const="rtc",
+                               help="grant the virt PL031 and INTID 34 to driver slot 0 in a two-process native FIFO package")
+    source_device.add_argument("--linux-source-net", dest="linux_source_driver", action="store_const", const="net",
+                               help="grant the virtio-net MMIO transport to driver slot 0 in a two-process native FIFO package")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
@@ -543,15 +546,16 @@ def main():
     parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
-    if args.linux_source_rtc:
-        allowed = {"out", "board", "kernel_profile", "linux_source_rtc", "elf", "peer_elf",
+    if args.linux_source_driver:
+        option = f"--linux-source-{args.linux_source_driver}"
+        allowed = {"out", "board", "kernel_profile", "linux_source_driver", "elf", "peer_elf",
                    "policy", "priority", "peer_priority", "arg", "peer_arg"}
         conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
                      and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
         if args.board not in (None, "virt") or args.policy != ["fifo"] or not args.elf or len(args.peer_elf) != 1:
-            parser.error("--linux-source-rtc requires virt FIFO, one --elf and one --peer-elf")
+            parser.error(f"{option} requires virt FIFO, one --elf and one --peer-elf")
         if conflicts:
-            parser.error("options incompatible with --linux-source-rtc: " + ", ".join(conflicts))
+            parser.error(f"options incompatible with {option}: " + ", ".join(conflicts))
     if args.task_policy is not None:
         allowed = {"out", "board", "kernel_profile", "task_policy"}
         conflicts = [action.option_strings[0] for action in parser._actions
@@ -769,12 +773,16 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
-    if args.linux_source_rtc:
-        env["JNOX_NATIVE_LINUX_SOURCE_RTC"] = "1"
-        metadata["linux_source_rtc"] = {"driver_slot": 0, "unauthorized_slots": [1],
-                                        "device": "arm,pl031", "mmio_base": 0x09010000,
-                                        "mmio_bytes": 4096, "intid": 34,
-                                        "driver_source": "drivers/rtc/rtc-pl031.c"}
+    if args.linux_source_driver:
+        env[f"JNOX_NATIVE_LINUX_SOURCE_{args.linux_source_driver.upper()}"] = "1"
+        if args.linux_source_driver == "rtc":
+            device = {"device": "arm,pl031", "mmio_base": 0x09010000, "mmio_bytes": 4096,
+                      "intid": 34, "driver_source": "drivers/rtc/rtc-pl031.c"}
+        else:
+            device = {"device": "virtio-net", "mmio_base": 0x0a003e00, "mmio_bytes": 0x200,
+                      "driver_source": "drivers/net/virtio_net.c", "transport": "virtio-net-mmio-modern",
+                      "qemu_device": "virtio-net-device"}
+        metadata[f"linux_source_{args.linux_source_driver}"] = {"driver_slot": 0, "unauthorized_slots": [1], **device}
         metadata["package_argv"] = sys.argv[:]
     if args.pubsub_service:
         env["JNOX_NATIVE_PUBSUB_SERVICE"] = "3"

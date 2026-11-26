@@ -139,7 +139,11 @@ def build(args, profile_path, profile, data, work):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    profiles = {path.stem: path for path in (COMPAT / "profiles").glob("*.json")}
+    profiles = {
+        path.stem: path for path in (COMPAT / "profiles").glob("*.json")
+        if json.loads(path.read_text(encoding="utf-8")).get("builder", Path(__file__).name)
+        == Path(__file__).name
+    }
     parser.add_argument("--profile", choices=sorted(profiles), required=True)
     parser.add_argument("--source", required=True, type=Path, help="external upstream C file")
     parser.add_argument("--out", required=True, type=Path, help="new output directory")

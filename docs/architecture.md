@@ -32,7 +32,7 @@ flowchart TB
 
 비특권 서비스는 Linux 커널이나 Bao 없이 J-NOX Rust 커널에서 실행한다. 커널은 서비스 명세에 따라 장치 메모리·IRQ·DMA 권한을 개별 부여하고 소유권과 범위를 검사하며 재시작 시 회수를 담당한다. 네이티브 Rust 드라이버도 독립적으로 지원한다.
 
-첫 입증 대상은 할당된 MMIO로 PL031 RTC를 읽는 것이다. IRQ 전달과 DMA 격리는 별도 입증한다. 이후 virtio_net 이관에는 커널 네트워킹 인터페이스와 큐용 DMA 매핑의 강제가 선행되어야 한다. 기존 Linux 모듈과 게이트웨이 시험은 참조 동작을 제공한다. [CHG-325](native-linux-driver-source.en-ko.md)
+PL031 RTC 기록은 할당된 MMIO와 알람 IRQ 처리를 다룬다. virtio-net 구성에서는 신뢰하는 패키지가 EL0 서비스 한 개에 커널을 통한 기능 협상과 장치 설정 읽기를 허용한다. 네이티브 ELF에는 업스트림 `virtnet_validate` 콜백을 링크한다. 패킷 큐, DMA 범위 강제, 장치 IRQ와 서비스 재시작은 NIC에서 각각 시험해야 한다. 기존 Linux 모듈과 게이트웨이 시험은 참조 동작을 제공한다. [PL031 기록](native-linux-driver-source.en-ko.md) · [CHG-326](native-linux-source-net.en-ko.md)
 
 ## DES-003 스레드와 실시간 스케줄링
 

@@ -1,0 +1,28 @@
+{
+  "name": "virtio-net",
+  "builder": "build_linux_source_virtio_net.py",
+  "upstream": {
+    "project": "Linux stable",
+    "tag": "v6.18.65",
+    "commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "path": "drivers/net/virtio_net.c",
+    "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+    "size": 196513,
+    "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "git_blob_sha1": "ea83313caf36381151d21d894da8162729b7d261",
+    "spdx": "GPL-2.0-or-later"
+  },
+  "headers": {
+    "package": "linux-virt-dev-6.18.65-r0.apk",
+    "architecture": "aarch64",
+    "apk_sha256": "f15c6785109c803a7d6cc2724020b288c6ab8237dbfc5d78501ea485f2b5b4d7",
+    "generated_sha256": {
+      "include/generated/autoconf.h": "e5166f14d385e34ed75ae12f1db094d6dcb8df3a8caf5a8f049db465e55850ca",
+      "include/generated/utsrelease.h": "719e6eb4b32e527305ba4b897ba0164d8f8bddb7257f8210aaf4cb4376961bb2"
+    }
+  },
+  "callback": "virtnet_validate",
+  "inventory_entries": ["virtnet_probe", "virtnet_open", "start_xmit", "virtnet_poll", "virtnet_remove", "virtnet_validate"],
+  "adapter_source": "drivers/linux-compat/src/virtio_net_validation.c",
+  "service_source": "examples/linux-source-net/driver.c"
+}
