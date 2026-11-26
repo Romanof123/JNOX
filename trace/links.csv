@@ -2393,3 +2393,13 @@ DES-009,partially-implemented-by,IMP-323
 IMP-323,partially-verified-by,VER-015
 VER-015,has-partial-evidence,EVD-323
 IMP-323,tested-in,EVD-323
+CHG-324,affects,REQ-004
+CHG-324,affects,REQ-011
+REQ-004,partially-implemented-by,IMP-324
+REQ-011,partially-implemented-by,IMP-324
+DES-002,partially-implemented-by,IMP-324
+IMP-324,partially-verified-by,VER-004
+IMP-324,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-324
+VER-011,has-partial-evidence,EVD-324
+IMP-324,tested-in,EVD-324

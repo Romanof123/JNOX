@@ -3,11 +3,24 @@
 Build under Linux or WSL with Git, Python 3, GNU make, GCC for the build host, and GNU AArch64 cross tools. Run from the project root with a fresh build directory on a Linux filesystem.
 
 ```sh
-bash examples/single-board/bao/build.sh /mnt/d/codex/jnox422-pm/bao-v2 \
-    "$linux_out/linux.bin" "$native_out/jnox.elf" "$bao_out"
+work=$(mktemp -d)
+export CARGO_BUILD_JOBS=1
+python3 -B examples/single-board/linux/prepare.py --intake "$intake" --sample-network --out "$work/linux"
+sh sdk/native-aarch64/build-rust.sh examples/single-board/native/Cargo.toml "$work/heartbeat.elf"
+python3 -B tools/build_native_el0.py --board virt --bao-partition --elf "$work/heartbeat.elf" --out "$work/native"
+bash examples/single-board/bao/build.sh "$bao_source" "$work/linux/linux.bin" "$work/native/kernel.elf" "$work/bao"
+python3 -B tools/verify_single_board_boot.py --bao "$work/bao/bao.bin" --native "$work/native" \
+    --linux "$work/linux" --out "$work/first"
+python3 -B tools/verify_single_board_boot.py --replay --native "$work/native" \
+    --linux "$work/linux" --out "$work/first"
+```
+
+Set `intake` to the directory containing the [pinned Alpine packages](../../../docs/evidence/linux-virtio-net/INTAKE.md) and `bao_source` to a Git checkout containing the pinned Bao revision below. The automated run needs QEMU AArch64, the device-tree utilities and pyelftools. For an interactive serial boot of the same board, use
+
+```sh
 qemu-system-aarch64 -machine virt,virtualization=on,secure=off,gic-version=2 \
     -cpu cortex-a72 -smp 2 -m 512M -accel tcg -nodefaults -display none \
-    -monitor none -serial stdio -kernel "$bao_out/bao.bin" \
+    -monitor none -serial stdio -kernel "$work/bao/bao.bin" \
     -global virtio-mmio.force-legacy=false -netdev user,id=lan,restrict=on \
     -device virtio-net-device,netdev=lan,mac=52:54:00:12:34:56
 ```

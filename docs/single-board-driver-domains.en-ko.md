@@ -17,3 +17,7 @@ Linux RAM is placed at matching guest and machine addresses so the original NIC 
 **Remaining acceptance.** A bounded inter-domain transport must return the real NIC result to a JNOX caller. A Linux-only stop and cold restart must show JNOX fallback, continuing unrelated tasks, prior generation rejection and a fresh exchange on this topology. Target-board DMA confinement and product fault-response timing need separate evidence.
 
 검증 배치에서는 한 보드의 두 가상 CPU에 JNOX와 Linux를 하나씩 배치한다. JNOX의 EL0 태스크와 타이머가 진행하는 동안 Linux 원본 NIC로 실제 HTTP 왕복을 반복한다. 자원 표, 두 게스트 식별값, 패킷, 실행 시각과 장치 정보를 함께 보관한다. 다음 단계는 JNOX 앱에서 보내는 장치 메시지와 Linux 단독 재부팅이다. 실물 장치의 DMA 제한과 제품 시간 보장은 실측해야 한다.
+
+**Reset and endpoints / 리셋과 종단점.** Bao starts the two EL1 guests and owns the virtual-board lifecycle. A machine reset restarts both guests. For the first acceptance the external HTTP client talks directly to the Linux guest's eth0 service. JNOX samples its private heartbeat. The planned inter-domain RPC connects an authorized JNOX broker to a Linux userspace endpoint that owns the device operation. The one-board profile still needs its mailbox and Linux-only reset path. QEMU's CPU affinity is a deployment parameter. There is no requirement for a dedicated physical core on every product.
+
+첫 단계는 외부 시험기와 Linux NIC 사이의 통신, 그리고 JNOX 앱의 독립적인 진행을 확인한다. 게이트웨이의 양 끝은 권한을 받은 JNOX 브로커와 Linux 사용자 공간 장치 서비스다. 같은 보드에서 이 경로의 요청·응답과 Linux 단독 재기동을 검증할 예정이다. [Two cold boots and the failure control / 실측 결과](evidence/single-board-domains/README.md)
