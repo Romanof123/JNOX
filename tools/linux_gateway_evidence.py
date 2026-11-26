@@ -16,7 +16,7 @@ from qemu_capture import journal_location
 
 PROBES = (("jnox_gateway_result", 24), ("jnox_gateway_heartbeat", 244))
 SLOTS = ("user.elf", "native_peer.elf", "native_peer2.elf")
-PHASES = ("primary", "outage", "recovery", "final")
+PHASES = ("primary", "outage", "recovery", "linux_boot", "linux_ready", "final")
 MEM_START, MEM_END = 0x40000000, 0x48000000
 GUEST, HOST = (ipaddress.IPv4Address(ip).packed for ip in ("10.0.2.15", "10.0.2.2"))
 BASELINE = Path(__file__).absolute().parents[1] / "docs/evidence/linux-virtio-net/result.json"
@@ -96,7 +96,7 @@ def decode_probes(records, probes, reader=None):
         result.append(list(struct.unpack(f"<{size // 8}Q", vread(memory, root, va, size))))
     require(not by_slot[0].intersection(by_slot[1]) and set(records) == memory.used,
             "private receipt pages overlap or contain unconsumed memory")
-    return result
+    return result, [sorted(pages) for pages in by_slot]
 
 
 def capture_receipts(qmp_request, package_dir, capture_root, tag):
@@ -193,7 +193,10 @@ def wire_record(kind, generation, req_id, timeout, payload):
 
 
 def check_guest(root, m, probes):
-    snaps = [decode_probes(load(root / "native" / ("receipt-"+tag+".json")), probes) for tag in PHASES]
+    decoded = [decode_probes(load(root / "native" / ("receipt-"+tag+".json")), probes) for tag in PHASES]
+    snaps = [readings for readings, _pages in decoded]
+    require(all(pages == decoded[0][1] for _, pages in decoded),
+            "JNOX private receipt backing changed across Linux restart")
     app, beat = snaps[-1]
     require(app[0:2] == [1, 5] and app[19] == 0, "app did not finish and close")
     require(app[13:19] == [1, 0, 2, 1, 1, 0], "stale/invalid/accept/timeout/output/fallback receipts")
@@ -207,7 +210,7 @@ def check_guest(root, m, probes):
     require(limit - begin == 250_000_000 and fallback - begin <= 300_000_000, "late or premature fallback")
     require(first_end-first < 10_000_000_000 and restored-restart < 10_000_000_000,
             "accepted a device completion after its deadline")
-    require(beat[0] == 1 and 0 < beat[1] <= 240 and beat[2] == (1 << 64)-13 and beat[3] == 50_000_000,
+    require(beat[0] == 1 and beat[1] == 240 and beat[2] == (1 << 64)-13 and beat[3] == 50_000_000,
             "independent task, period or unauthorized broker disposition")
     ticks = beat[4:4+beat[1]]
     require(all(a < b for a, b in zip(ticks, ticks[1:])), "peer clock regressed")
@@ -216,9 +219,16 @@ def check_guest(root, m, probes):
     require(outage_ticks > 0 and restart_ticks > 0, "peer did not run inside outage and recovery windows")
     counts = [snapshot[1][1] for snapshot in snaps]
     require(counts == sorted(counts), "live independent task did not retain monotonic progress")
-    require([read[0][1] for read in snaps] == [1, 2, 3, 5] and
-            [read[0][17] for read in snaps[1:]] == [1, 0, 1],
+    require([read[0][1] for read in snaps] == [1, 2, 3, 3, 3, 5] and
+            [read[0][17] for read in snaps[1:]] == [1, 0, 0, 0, 1],
             "native app did not enter, hold and leave its software fallback state")
+    boot_count, ready_count = counts[3:5]
+    require(0 < boot_count < ready_count <= beat[1], "no heartbeat advance across observed Linux startup")
+    for tag, live in zip(PHASES[3:5], snaps[3:5]):
+        heartbeat = live[1]
+        count = heartbeat[1]
+        require(heartbeat[:1] == beat[:1] and heartbeat[2:4] == beat[2:4] and
+                heartbeat[4:4+count] == ticks[:count], f"{tag}: independent heartbeat history diverged")
     raw = (root/"native"/"uart.log").read_bytes().splitlines()
     for prefix, slot in zip(("", "PEER ", "PEER2 "), m["slots"]):
         require(f"NATIVE EL0 {prefix}ELF {slot['elf_sha256']}".encode() in raw, "native boot identity")
@@ -228,7 +238,8 @@ def check_guest(root, m, probes):
     return token, reply, {"deadline_ns": limit, "fallback_ns": fallback, "elapsed_to_fallback_ns": fallback-begin,
                           "lag_after_deadline_ns": fallback-limit, "peer_ticks_in_outage": outage_ticks,
                           "peer_ticks_during_recovery": restart_ticks, "stale_rejections": app[13],
-                          "peer_samples": len(ticks), "peer_counts_at_live_reads": counts}
+                          "peer_samples": len(ticks), "peer_counts_at_live_reads": dict(zip(PHASES, counts)),
+                          "peer_ticks_between_linux_startup_reads": ready_count-boot_count}
 
 
 def check_linux(root, generation, request, returned, operands):
@@ -295,13 +306,21 @@ def check_events(root, requests, replies, returned):
     take("offline", generation=1, id=2, linux_pid=linux1, linux_returncode=0)
     take("jnox_request", generation=2, id=1, hex=requests[2].hex())
     take("jnox_reply", generation=1, delivery="stale", hex=replies[0].hex())
+    def probe(tag):
+        start = take("linux_boot_probe", generation=2, tag=tag, edge="start")["t_ns"]
+        end = take("linux_boot_probe", generation=2, tag=tag, edge="end")["t_ns"]
+        return [start, end]
+    boot_probe = probe("linux_boot")
     ready = take("ready", generation=2, pid=linux2)
+    ready_probe = probe("linux_ready")
     operation(2, requests[2], replies[1])
     take("jnox_reply", generation=2, delivery="current", hex=replies[1].hex())
     take("linux_stopped", generation=2, pid=linux2, returncode=0)
     take("native_stopped", pid=native, returncode=0)
     require(next(it, None) is None, "unexpected additional device lifecycle or gateway traffic")
-    return ready["t_ns"] - stopped["t_ns"]
+    return {"host_ns_from_linux_exit_to_next_ready": ready["t_ns"] - stopped["t_ns"],
+            "host_boot_probe_ns": boot_probe, "host_ready_observed_ns": ready["t_ns"],
+            "host_ready_probe_ns": ready_probe}
 
 
 def verify(capture_root, *, baseline=BASELINE):
@@ -325,11 +344,11 @@ def verify(capture_root, *, baseline=BASELINE):
                 "busybox_sha256"):
         require(ops[key] == known[key], f"Linux operand changed from #416 baseline: {key}")
     fdts = [check_linux(root, gen, req, returned, ops) for gen, req in ((1, requests[0]), (2, requests[2]))]
-    downtime = check_events(root, requests, replies, returned)
+    lifecycle = check_events(root, requests, replies, returned)
     return {"source_commit": m["commit"], "native_kernel_sha256": m["kernel_elf_sha256"],
             "linux_image_sha256": ops["image_sha256"], "linux_module_sha256": ops["modules"]["virtio_net"]["ko_sha256"],
             "linux_guest_fdt_sha256": fdts, "request_token_hex": token.hex(),
-            "device_reply_hex": returned.hex(), "host_ns_from_linux_exit_to_next_ready": downtime,
+            "device_reply_hex": returned.hex(), **lifecycle,
             "native_observations": native}
 
 

@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import time
 
-from linux_gateway_evidence import capture_receipts, verify
+from linux_gateway_evidence import BASELINE, capture_receipts, verify
 from ordinary_amc_capture import sha
 from qemu_capture import request
 from verify_linux_virtio_net_baseline import MAC, require
@@ -173,7 +173,7 @@ class Guest:
 
 
 class Linux(Guest):
-    def __init__(self, stack, out, tmp, qemu, image, generation, deadline, event):
+    def __init__(self, stack, out, tmp, qemu, image, generation, deadline, event, native_probe=None):
         root = out / f"linux-{generation}"
         serial_path = tmp / f"linux-{generation}.serial"
         self.generation = generation
@@ -196,8 +196,12 @@ class Linux(Guest):
         require(port, "missing restricted device peer forwarding rule")
         self.port = int(port[1])
         self.cmd("cont")
+        if native_probe is not None:
+            native_probe("linux_boot")
         self.wait_line(b"GWREADY " + str(generation).encode())
         event("ready", generation=generation, pid=self.proc.pid)
+        if native_probe is not None:
+            native_probe("linux_ready")
 
     def wait_line(self, prefix):
         while True:
@@ -242,6 +246,8 @@ class Linux(Guest):
 
 
 def freeze(src, dest, linux, out):
+    require(BASELINE.is_file(), f"missing tracked Linux baseline (check sparse checkout): {BASELINE}")
+    baseline = json.loads(BASELINE.read_bytes())["operands"]
     manifest = json.loads((src / "manifest.json").read_bytes())
     dest.mkdir()
     for name in ("manifest.json", "kernel.elf", "build.log", *(row["elf"] for row in manifest["slots"])):
@@ -252,6 +258,8 @@ def freeze(src, dest, linux, out):
             all(sha(dest / row["elf"]) == row["elf_sha256"] for row in manifest["slots"]),
             "native package hash mismatch")
     operands = json.loads((linux / "operands.json").read_bytes())
+    require(operands["image_sha256"] == baseline["image_sha256"] and
+            operands["modules"] == baseline["modules"], "Linux image or modules differ from #416")
     require(sha(linux / "Image") == operands["image_sha256"] and
             sha(linux / "initrd.gz") == operands["initrd_sha256"], "Linux image hash mismatch")
     save(out / "linux-operands.json", operands)
@@ -298,7 +306,12 @@ def run(out, linux, qemu, deadline, event):
         recovered = read(2, 1, 10000, "recovery")
         require(recovered[8:] == initial[8:], "stale-control request differs outside generation")
         deliver(saved, "stale")
-        second = Linux(stack, out, tmp, qemu, linux, 2, deadline, event)
+        def startup_probe(tag):
+            event("linux_boot_probe", generation=2, tag=tag, edge="start")
+            capture_receipts(native.cmd, package, out, tag)
+            event("linux_boot_probe", generation=2, tag=tag, edge="end")
+
+        second = Linux(stack, out, tmp, qemu, linux, 2, deadline, event, native_probe=startup_probe)
         deliver(second.exchange(recovered), "current")
         second.stop()
         while True:
