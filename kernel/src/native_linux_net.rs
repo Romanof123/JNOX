@@ -153,3 +153,9 @@ pub(super) fn service(pid: usize, number: u64, arg: u64, value: u64) -> i64 {
         _ => -38,
     }
 }
+
+#[cfg(jnox_linux_net_packets)]
+pub(super) fn packet_service(pid: usize, number: u64, token: u64, address: u64, len: u64) -> i64 {
+    if pid != 0 { return -13; }
+    queues::packet_service(number, token, address, len)
+}

@@ -2416,3 +2416,11 @@ IMP-327,partially-verified-by,VER-011
 VER-004,has-partial-evidence,EVD-327
 VER-011,has-partial-evidence,EVD-327
 IMP-327,tested-in,EVD-327
+CHG-328,affects,REQ-004
+CHG-328,affects,REQ-011
+CHG-328,affects,DES-002
+CHG-328,affects,VER-004
+CHG-328,affects,VER-011
+REQ-004,partially-implemented-by,IMP-328
+REQ-011,partially-implemented-by,IMP-328
+DES-002,partially-implemented-by,IMP-328

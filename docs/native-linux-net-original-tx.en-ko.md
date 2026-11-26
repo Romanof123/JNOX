@@ -1,0 +1,21 @@
+# CHG-328 · Original Linux virtio-net transmit / Linux 원본 virtio-net 송신
+
+**REQ-004/011 · DES-002 · IMP-328 · VER-004/011.** This plan covers the first native packet transmission through Linux v6.18.65 `start_xmit`. EVD-327 established queue setup and verified reset with empty rings. CHG-328 requires executed upstream code, device completions and matching Ethernet bytes on an external link. Verification is pending. [Parent #426](https://github.com/Romanof123/JNOX/issues/426) · [TX issue #430](https://github.com/Romanof123/JNOX/issues/430) · [EVD-327](evidence/native-linux-net-queues/README.md)
+
+이번 변경은 J-NOX EL0에서 Linux v6.18.65의 원본 `start_xmit`를 실행해 실제 이더넷 프레임을 보내는 단계다. EVD-327에서는 빈 큐의 설정·반환·재점유를 검증했다. 이번 인수 기준은 콜백 실행, 장치 완료, 호스트에서 관측한 프레임 바이트를 같은 송신에 연결하는 것이다. 실측 검증은 아직 진행 전이다.
+
+### Transmit and buffer ownership / 송신과 버퍼 소유권
+
+1. Trace 80 entries to the linked Linux `start_xmit`, matching the section and relocations to the packet-context object built from the pinned upstream source. Alternate two linear `sk_buff` layouts. For 40 frames, sufficient headroom lets Linux push its 12-byte virtio header into one scatterlist entry. For the other 40, Linux supplies the header and frame in two entries. Check the assembled length and preserve the original header bytes.
+2. Keep each skb and its storage registered until the device returns the matching TX descriptor through the used ring. Reap the original tagged cookie through `virtqueue_get_buf`, consume the skb once, and only then reuse its backing. Eighty submissions exercise reuse of the 32-entry ring. Distinguish the upstream TX callback from J-NOX implementations of virtqueue operations and skb retirement. [TX harness](../drivers/linux-compat/packet/transmit.c)
+3. Accept packet calls only from slot 0 with its active token. EL1 owns both 32-entry rings and both banks of 32 bounded DMA buffers. It copies 14–1514 Ethernet bytes plus the 12-byte header after checking the EL0 range. Post RX storage before setting `DRIVER_OK`. Record TX submissions, actual queue notifications, used IDs and lengths, RX used entries, and RX buffer reposts. [EL1 packet path](../kernel/src/native_linux_net_packets.rs)
+
+고정한 Linux 소스에서 빌드한 오브젝트와 최종 ELF의 섹션·재배치를 대조하고, 원본 콜백 진입을 80회 추적한다. 선형 skb 앞에 여유 공간이 있는 40회에는 헤더와 프레임이 SG 항목 하나에 들어가며, 나머지 40회에는 별도 헤더와 프레임이 두 항목에 들어간다. 두 경우 모두 Linux가 작성한 헤더 바이트를 유지한다. 장치가 TX 완료 ID를 반환하면 원래 skb 쿠키를 확인해 한 번만 소비하고 메모리를 재사용한다. 32개 링 항목을 여러 차례 순환시키며 EL1의 복사 범위, 큐 알림, 완료 길이와 RX 버퍼 재등록을 확인한다. 유효 토큰을 가진 슬롯 0만 이 DMA 경로를 사용할 수 있다.
+
+### Host observations and retirement / 호스트 관측과 장치 반환
+
+- Use a Unix socket connected to QEMU's network backend for the host handshake. Send a fresh challenge containing a nonce, identify the guest's matching response, and advance each phase only after observing its expected frame. Compare direction, sequence, nonce and Ethernet bytes against an independently recorded QEMU PCAP. The transport-local virtio header ends at the NIC. Preserve the handshake transcript and phase-tagged guest observations for offline replay.
+- Capture the active phase before release. Require device status 15, real ring progress, and a transport interrupt-status read and acknowledgement when pending. Record separately the host-observed packet, native RX used entry and polled MMIO interrupt bits. After release require status zero, both queue-ready bits clear, and `-ESTALE` for the retired token. Slot 1 must progress independently and receive `-EACCES` on owner-only calls.
+- This stage exercises upstream TX and native RX. Execution of upstream `virtnet_poll`/NAPI, lifecycle entry through `virtnet_probe`, and CPU delivery of the NIC interrupt remain separate milestones. [Capture and replay implementation](../tools/verify_linux_source_net_packets.py) · [Packet-path design](native-linux-net-packet-design.en-ko.md)
+
+호스트는 QEMU 네트워크 백엔드에 연결한 Unix 소켓으로 새 nonce를 담은 프레임을 보낸다. 예상 응답을 실제로 관측한 뒤 다음 단계로 넘어가며, 방향·순번·nonce·이더넷 바이트를 QEMU가 별도로 기록한 PCAP과 대조한다. virtio 헤더는 NIC 내부 전송용이므로 호스트에서는 이더넷 프레임부터 비교한다. 반환 전에는 상태 15, 링 진행, MMIO 인터럽트 상태 읽기와 ACK를 기록하고, 반환 후에는 상태 0, 양쪽 큐 준비 비트 0, 이전 토큰의 `-ESTALE`을 확인한다. 슬롯 1의 독립 실행과 권한 거부도 확인한다. 이번 RX 처리는 J-NOX 네이티브 경로를 사용한다. 업스트림 `virtnet_poll`/NAPI 및 `virtnet_probe` 실행과 NIC 인터럽트의 CPU 전달은 후속 검증 범위다.
