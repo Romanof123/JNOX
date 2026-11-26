@@ -3,9 +3,9 @@
 #include <jnox/ipc.h>
 #include <time.h>
 #include <jnox/notify.h>
-#include <unistd.h>
 
-#define LINE(message) write(STDOUT_FILENO, message "\n", sizeof(message))
+
+volatile uint64_t dma_phase;
 enum { RX = 38, TX = 39, CLAIM = 76, RETIRE_WORD = 0x444d };
 static unsigned char frame[1514];
 static long raw(unsigned op, unsigned len)

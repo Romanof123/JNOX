@@ -15,8 +15,11 @@ int main(void)
         if (clock_gettime(CLOCK_MONOTONIC, &now)) return 104;
         dma_peer_ns = (uint64_t)now.tv_sec * 1000000000ULL + now.tv_nsec;
         ++dma_peer_ticks;
-        LINE("DMA PEER TICK");
-        if (dma_peer_finished && dma_peer_ticks >= dma_peer_finished + 5) return 0;
+        dma_phase = 1;
+        if (dma_peer_finished && dma_peer_ticks >= dma_peer_finished + 5) {
+            dma_phase = 2;
+            return 0;
+        }
         jnox_event_result done = jnox_event_take(1, 0);
         if (done.status == 0 && done.bits == 1) dma_peer_finished = dma_peer_ticks;
         else if (done.status != -11) return 105;

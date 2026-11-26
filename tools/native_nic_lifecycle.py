@@ -5,12 +5,14 @@ import json
 from pathlib import Path
 import re
 import secrets
+import shutil
 import socket
 import struct
 import subprocess
 import tempfile
 import time
 
+from native_nic_receipts import ELFS, decode, layout
 from qemu_capture import journal_location, request
 from replay_nic_epoch_frames import BROADCAST, HOST, PROTOCOL, check_exchange
 
@@ -55,11 +57,24 @@ def verify_pcap(out):
     require(matched == len(expected), "missing ordered exchange in QEMU Ethernet capture")
 
 
+def capture_hashes(out):
+    return {path.relative_to(out).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(out.rglob("*")) if path.is_file() and path.name != "sha256.json"}
+
+
 def replay(out):
+    require(capture_hashes(out) == json.loads((out / "sha256.json").read_text()), "capture file digests")
     meta = json.loads((out / "launch.json").read_text())
+    package_kernel = out / "package" / "kernel.elf"
+    require(meta["kernel_sha256"] == hashlib.sha256(package_kernel.read_bytes()).hexdigest(), "booted kernel digest")
+    require(tuple(meta["queues"]) == journal_location(package_kernel, "jnox_native_net_queues")
+            and tuple(meta["phase"]) == journal_location(package_kernel, "jnox_native_net_phase"),
+            "linked device symbols")
     base, size = meta["queues"]
     require(base % 4096 == 0 and size > 0 and size % 8192 == 0, "queue symbol geometry")
     device = json.loads((out / "queue-diagnostics.json").read_text())
+    probes = layout(out / "package")
+    receipts = {}
     nonces = []
     positions = []
     uart = (out / "uart").read_bytes()
@@ -99,20 +114,23 @@ def replay(out):
             require(len(outstanding) == pending and max(outstanding) < 8, f"{tag} available ring")
         else:
             require(not any(buf), f"{tag} scrub")
+        receipts[tag] = decode(probes, snap["private"])
         positions.append(snap["uart_offset"])
-    require(0 <= positions[0] <= positions[1] < positions[2] <= positions[3] <= len(uart), "UART offsets")
-    require(positions[3] <= positions[4] <= len(uart), "final UART offset")
-    require(b"DMA PEER TICK" in uart[positions[1]:positions[2]], "peer progress")
-    marker_pos = -1
-    for marker in (b"DMA PRIMARY READY", b"DMA PRIMARY RETIRE", b"DMA SPARE WAIT",
-                   b"DMA SPARE READY", b"DMA SPARE RETIRE"):
-        marker_pos = uart.find(marker, marker_pos + 1)
-        require(marker_pos >= 0, f"missing or out-of-order UART marker {marker!r}")
+    require(positions == sorted(positions) and 0 <= positions[0] <= positions[-1] <= len(uart), "UART offsets")
+    before, after = (receipts[tag][1] for tag in ("retired", "progress"))
+    require(before["dma_peer_ticks"] < after["dma_peer_ticks"] and before["dma_peer_ns"] < after["dma_peer_ns"],
+            "retired peer progress")
+    primary, peer, spare = receipts["final"]
+    require(primary["dma_phase"] == 2 and primary["dma_echo_count"] == 1, "primary receipts")
+    require(peer["dma_phase"] == 2 and 0 < peer["dma_peer_finished"] <= peer["dma_peer_ticks"] - 5,
+            "peer completion")
+    require(all(peer[key] == -13 for key in ("dma_peer_rx", "dma_peer_tx", "dma_peer_claim")), "peer rights")
+    require(spare["dma_phase"] == 3 and spare["dma_echo_count"] == 1 and spare["dma_spare_preclaim"] == -11
+            and spare["dma_spare_claim"] == 0 and spare["dma_spare_duplicate"] == -114, "spare receipts")
     exits = re.findall(rb"NATIVE EL0 EXIT PID (\d+) (-?\d+)\r?\n", uart)
     require(sorted(exits) == [(b"0", b"0"), (b"1", b"0"), (b"2", b"0")], "native exits")
     require(not re.search(rb"\b(?:fault|panic|exception)\b", uart, re.I), "guest fault marker")
-    print(f"Peer ticks: {uart.count(b'DMA PEER TICK')}, retired interval: "
-          f"{uart[positions[1]:positions[2]].count(b'DMA PEER TICK')}")
+    print("Retired peer ticks:", before["dma_peer_ticks"], "->", after["dma_peer_ticks"])
     for idx, tag in enumerate(("primary", "spare"), 1):
         nonces.append(check_exchange((out / (tag + ".challenge")).read_bytes(),
                                      (out / (tag + ".reply")).read_bytes(), idx))
@@ -125,6 +143,12 @@ def capture(args):
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     kernel = args.kernel.resolve()
+    pkg = out / "package"
+    pkg.mkdir()
+    for name in (*ELFS, "manifest.json", "kernel.elf"):
+        shutil.copyfile(kernel.parent / name, pkg / name)
+    kernel = pkg / "kernel.elf"
+    probes = layout(pkg)
     queues = journal_location(kernel, "jnox_native_net_queues")
     phase = journal_location(kernel, "jnox_native_net_phase")
     uart = out / "uart"
@@ -185,10 +209,16 @@ def capture(args):
                             if queue_path is not None:
                                 snap["device_queues"] = [request(stream, "x-query-virtio-queue-status",
                                     path=queue_path, queue=index) for index in range(2)]
+                            def fetch(pa, size):
+                                return word(request(stream, "human-monitor-command",
+                                    **{"command-line": f"xp /1gx {pa:#x}"})).to_bytes(size, "little")
+                            snap["private"] = {}
+                            values = decode(probes, snap["private"], fetch)
                             snap.update(mmio=mmio, uart_offset=uart.stat().st_size)
                             dump(tag + ".phase", *phase)
                             dump(tag + ".queues", *queues)
                             (out / (tag + ".json")).write_text(json.dumps(snap))
+                            return values
                         finally:
                             request(stream, "cont")
                     def send(tag, epoch, opcode):
@@ -202,7 +232,7 @@ def capture(args):
                         reply = read_exact(wire, size)
                         (out / (tag + ".reply")).write_bytes(reply)
                         check_exchange((out / (tag + ".challenge")).read_bytes(), reply, epoch)
-                    wait_for(lambda: uart.exists() and b"DMA PRIMARY READY" in uart.read_bytes())
+                    wait_for(lambda: word(xp(phase[0])) == 1)
                     matches = [addr for addr in range(0xa000000, 0xa004000, 0x200) if word(xp(addr + 8)) == 1]
                     require(len(matches) == 1, "expected one virtio NIC")
                     mmio = matches[0]
@@ -210,15 +240,18 @@ def capture(args):
                     snapshot("primary")
                     send("primary.retire", 1, 3)
                     wait_for(lambda: word(xp(phase[0])) == 3)
-                    snapshot("retired")
-                    offset = json.loads((out / "retired.json").read_text())["uart_offset"]
-                    wait_for(lambda: b"DMA PEER TICK" in uart.read_bytes()[offset:])
+                    before = snapshot("retired")[1]["dma_peer_ticks"]
+                    peer_probe = next(p for p in probes if p[1] == "dma_peer_ticks")
+                    from verify_native_uart_recovery import walk
+                    records = json.loads((out / "retired.json").read_text())["private"]
+                    peer_pa = walk(peer_probe[2], peer_probe[3], lambda pa, size: bytes.fromhex(records[str(pa)]))
+                    wait_for(lambda: word(xp(peer_pa)) > before)
                     snapshot("progress")
-                    wait_for(lambda: b"DMA SPARE READY" in uart.read_bytes())
+                    wait_for(lambda: word(xp(phase[0])) == 1)
                     exchange("spare", 2)
                     snapshot("spare")
                     send("spare.retire", 2, 3)
-                    wait_for(lambda: b"DMA SPARE RETIRE" in uart.read_bytes() and word(xp(phase[0])) == 3)
+                    wait_for(lambda: word(xp(phase[0])) == 3)
                     wait_for(lambda: len(re.findall(rb"NATIVE EL0 EXIT PID \d+ -?\d+\r?\n", uart.read_bytes())) >= 3)
                     snapshot("final")
         finally:
@@ -228,6 +261,7 @@ def capture(args):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
+    (out / "sha256.json").write_text(json.dumps(capture_hashes(out), indent=2))
     replay(out)
 
 
