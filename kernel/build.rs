@@ -712,22 +712,26 @@ fn main() {
             && all_package_features_enabled(),
             "pi4-stream-v1 requires a Pi 4 SMP migration application");
     }
-    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_rtc)");
-    if let Some(value) = selector("JNOX_NATIVE_LINUX_SOURCE_RTC") {
+    for (env_key, cfg) in [
+        ("JNOX_NATIVE_LINUX_SOURCE_RTC", "jnox_linux_source_rtc"),
+        ("JNOX_NATIVE_LINUX_SOURCE_NET", "jnox_linux_source_net"),
+    ] {
+        println!("cargo::rustc-check-cfg=cfg({cfg})");
+        let Some(value) = selector(env_key) else { continue };
         assert!(value == "1" && board == "virt" && profile.as_deref() == Some("native")
             && app.as_deref() == Some("process") && policy.as_deref() == Some("fifo")
             && priorities.is_some() && peer_image.is_some(),
-            "Linux source RTC requires two native virt FIFO processes");
+            "{env_key} requires two native virt FIFO processes");
         for (key, _) in env::vars_os() {
             let key = key.to_string_lossy();
-            assert!(!key.starts_with("JNOX_") || matches!(key.as_ref(),
-                "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP" | "JNOX_NATIVE_LINUX_SOURCE_RTC"
+            assert!(!key.starts_with("JNOX_") || key.as_ref() == env_key || matches!(key.as_ref(),
+                "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"
                 | "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256" | "JNOX_NATIVE_PEER_ELF"
                 | "JNOX_NATIVE_PEER_ELF_SHA256" | "JNOX_NATIVE_POLICY" | "JNOX_NATIVE_PRIORITIES"
                 | "JNOX_NATIVE_ARGV0_HEX" | "JNOX_NATIVE_ARGV1_HEX"),
-                "Linux source RTC conflicts with {key}");
+                "{env_key} conflicts with {key}");
         }
-        println!("cargo::rustc-cfg=jnox_linux_source_rtc");
+        println!("cargo::rustc-cfg={cfg}");
     }
     let pi4_native_fixed = board == "pi4" && profile.as_deref() == Some("native")
         && app.as_deref() == Some("process") && peer_image.is_some() && peer2_image.is_none()

@@ -318,6 +318,9 @@ mod uart_rx;
 #[cfg(jnox_linux_source_rtc)]
 #[path = "native_pl031.rs"]
 mod pl031;
+#[cfg(jnox_linux_source_net)]
+#[path = "native_linux_net.rs"]
+mod linux_net;
 #[cfg(jnox_native_uart_rx_standby)]
 #[path = "native_uart_standby.rs"]
 mod uart_standby;
@@ -473,6 +476,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     #[cfg(jnox_linux_source_rtc)]
     if matches!(action, Action::Exit) && before.pid == Some(0) {
         pl031::release_if_owned();
+    }
+    #[cfg(jnox_linux_source_net)]
+    if matches!(action, Action::Exit) && before.pid == Some(0) {
+        linux_net::release_on_exit();
     }
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
     #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
@@ -813,6 +820,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_linux_source_net)]
+        156..=160 => linux_net::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
         #[cfg(jnox_linux_source_rtc)]
         152..=155 => pl031::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
         #[cfg(jnox_native_display)]
