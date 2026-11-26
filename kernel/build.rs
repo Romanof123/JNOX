@@ -546,12 +546,17 @@ fn main() {
     let threads = selector("JNOX_NATIVE_THREADS");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_display)");
     let display_service = selector("JNOX_NATIVE_DISPLAY_SERVICE");
+    let display_broker = socket_service.as_deref() == Some("3");
+    if display_broker {
+        assert!(peer3_image.is_some() && display_service.as_deref() == Some("0") && topic_masks.is_none(),
+            "socket broker 3 requires four ordinary virt FIFO processes with display owner 0");
+    }
     if let Some(slot) = display_service.as_deref() {
+        let small_package = peer2_image.is_none() && (slot == "0" || (slot == "1" && peer_image.is_some()));
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process")
             && board == "virt" && policy.as_deref() == Some("fifo") && threads.is_none()
-            && peer2_image.is_none() && peer3_image.is_none()
-            && (slot == "0" || (slot == "1" && peer_image.is_some())),
-            "display service requires a present owner in a one- or two-process virt FIFO package");
+            && (small_package || display_broker),
+            "display service requires a present owner in a one- or two-process virt FIFO package, or display owner 0 with socket broker 3");
         println!("cargo::rustc-cfg=jnox_native_display");
         println!("cargo::rustc-env=JNOX_PACKAGED_DISPLAY_SLOT={slot}");
     }
@@ -1354,6 +1359,11 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(slots == 4 && argv[3].is_none(), "pubsub owns the fourth process arguments");
         extras[3] = format!("&[&{:?}, &{:?}]", publish.as_bytes(), subscribe.as_bytes());
     }
+    if socket_service == Some("3") {
+        let client_mask = format!("&[&{:?}]", b"7");
+        assert!(argv[3].is_none() || extras[3] == client_mask, "socket broker 3 requires client mask 7");
+        extras[3] = client_mask;
+    }
     let extra_slots = extras.join(", ");
     let thread_bases = thread_priorities.unwrap_or_default();
     let mut generated = format!(
@@ -1406,7 +1416,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         if raw.is_none() && !(capability_backend && cfg == "jnox_native_mailbox_ipc") {
             continue;
         }
-        let maximum = if cfg == "jnox_native_sync_ipc" && (socket_service.is_none() || topic_masks.is_some()) { 4 } else { 3 };
+        let maximum = if cfg == "jnox_native_sync_ipc" { 4 } else { 3 };
         assert!((2..=maximum).contains(&slots), "unsupported process count for IPC configuration");
         let mut routes = vec![0u8; slots];
         for pair in raw.into_iter().flat_map(|list| list.split(',')) {
@@ -1426,8 +1436,14 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
                     "0" => 0usize,
                     "1" => 1,
                     "2" => 2,
+                    "3" => 3,
                     _ => panic!("invalid socket service slot"),
                 };
+                if slot == 3 {
+                    assert_eq!(routes.as_slice(), &[8, 8, 8, 0], "display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3");
+                } else {
+                    assert!(slots < 4 || topic_masks.is_some(), "four native socket processes require display broker 3 or a separate pubsub service");
+                }
                 assert!(slots < 4 || routes[3] & (1 << slot) == 0, "socket service accepts identities 0..2");
                 assert!(slot < slots && routes.iter().any(|mask| *mask & (1u8 << slot) != 0),
                     "socket service requires a live slot with inbound synchronous IPC rights");

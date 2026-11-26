@@ -123,6 +123,38 @@ def pipe_fields(value):
     return tuple(unsigned_decimal(field) for field in value.split(":"))
 
 
+def native_service_slots(parser, args, policy, board):
+    if len(args.socket_service) > 1 or len(args.display_service) > 1:
+        parser.error("--socket-service and --display-service may each appear only once")
+    if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
+        parser.error("--net-service must appear once and match --socket-service")
+    slots = 1 + len(args.peer_elf)
+    if args.net_service and slots > 3:
+        parser.error("--net-service supports at most three native processes")
+    display = int(args.display_service[0]) if args.display_service else None
+    broker = int(args.socket_service[0]) if args.socket_service else None
+    if broker == 3:
+        if slots != 4 or display != 0 or args.pubsub_service:
+            parser.error("socket broker 3 requires four ordinary virt FIFO processes with display owner 0")
+        if sorted(args.ipc_route) != [(0, 3), (1, 3), (2, 3)]:
+            parser.error("display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3")
+        if args.peer3_arg and args.peer3_arg != ["7"]:
+            parser.error("socket broker 3 requires client mask 7")
+        args.peer3_arg = ["7"]
+    if display is not None and (board != "virt" or policy != "fifo" or args.threads
+                                or display >= slots or (slots > 2 and broker != 3)):
+        parser.error("--display-service requires a present owner in a one- or two-process virt FIFO package, or display owner 0 with socket broker 3")
+    clients = sorted(caller for caller, server in args.ipc_route if server == broker)
+    if broker is not None:
+        if slots > 3 and broker != 3 and not args.pubsub_service:
+            parser.error("four native socket processes require display broker 3 or a separate pubsub service")
+        if 3 in clients:
+            parser.error("socket service accepts identities 0..2")
+        if not clients:
+            parser.error("--socket-service requires an explicit --ipc-route into its slot")
+    return display, broker, clients
+
+
 def validate_pipes(parser, args, policy, board):
     if not args.pipes:
         if args.fifo_grant or args.pipe_link:
@@ -475,8 +507,8 @@ def main():
                         help="give one ordinary virt FIFO process ramfb scanout and PL011 byte input")
     parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="give the selected socket service the virtio network interface")
-    parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
-                        help="select a socket service with existing inbound synchronous IPC rights")
+    parser.add_argument("--socket-service", choices=("0", "1", "2", "3"), action="append", default=[], metavar="SLOT",
+                        help="select the socket broker; slot 3 serves display owner 0 and clients 1 and 2 on virt FIFO")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
                         help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
     parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
@@ -513,21 +545,6 @@ def main():
             parser.error("pubsub requires explicit IPC routes 0:3, 1:3 and 2:3")
         publish = topic_vector(parser, args.pubsub_publish)
         subscribe = topic_vector(parser, args.pubsub_subscribe)
-    if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
-        parser.error("--net-service must appear once and match --socket-service")
-    if args.net_service and len(args.peer_elf) > 2:
-        parser.error("--net-service supports at most three native processes")
-    if len(args.socket_service) > 1:
-        parser.error("--socket-service may appear only once")
-    if args.socket_service:
-        if len(args.peer_elf) > 2 and not args.pubsub_service:
-            parser.error("--socket-service supports at most three native processes")
-        service_slot = int(args.socket_service[0])
-        service_clients = sorted(caller for caller, server in args.ipc_route if server == service_slot)
-        if 3 in service_clients:
-            parser.error("socket service accepts identities 0..2")
-        if not service_clients:
-            parser.error("--socket-service requires an explicit --ipc-route into its slot")
     if len(args.loan_route) > 1:
         parser.error("--loan-route may appear only once")
     if args.waitset > 1:
@@ -557,13 +574,7 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
-    if args.display_service:
-        if len(args.display_service) != 1:
-            parser.error("--display-service may appear only once")
-        display_slot = int(args.display_service[0])
-        if (board != "virt" or policy != "fifo" or args.threads or len(args.peer_elf) > 1
-                or display_slot > len(args.peer_elf)):
-            parser.error("--display-service requires a present owner in a one- or two-process virt FIFO package")
+    display_slot, service_slot, service_clients = native_service_slots(parser, args, policy, board)
     validate_pipes(parser, args, policy, board)
     shell = None
     if args.exec_child or args.rom_file:
