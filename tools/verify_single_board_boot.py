@@ -134,6 +134,9 @@ def replay(out, native, linux):
     require(dtb == (linux / "guest.dtb").read_bytes(), "running FDT differs")
     stock = load(BASELINE)["operands"]
     uart = (out / "uart.log").read_text(errors="replace").splitlines()
+    report = parse_uart_irqs(uart)
+    check_irq_delivery(report, events)
+    require(load(out / "linux-irqs.json") == report, "saved interrupt witness differs from raw UART")
     samples = []
     for i, event in enumerate(events):
         nonce = event["nonce"]
@@ -191,11 +194,10 @@ def check_wire(out, names):
         require(pair in flows, f"missing exact bidirectional wire record for {name}")
 
 
-def uart_irq_report(out):
-    uart = out / "uart.log"
+def parse_uart_irqs(lines):
     blocks = []
     current = None
-    for line in uart.read_text(errors="replace").splitlines() if uart.exists() else ():
+    for line in lines:
         if line.startswith("LD IRQ BEGIN "):
             current = {"phase": line.removeprefix("LD IRQ BEGIN "), "complete": False, "rows": []}
             blocks.append(current)
@@ -212,7 +214,25 @@ def uart_irq_report(out):
     nic = [{"phase": block["phase"], "count": row["count"], "virq": row["virq"]}
            for block in blocks if block["complete"] for row in block["rows"]
            if row.get("hwirq") == 79 and re.search("virtio|eth0|a003e00", row["description"], re.I)]
-    save(out / "linux-irqs.json", {"blocks": blocks, "nic_irq79_samples": nic})
+    return {"blocks": blocks, "nic_irq79_samples": nic}
+
+
+def check_irq_delivery(report, events):
+    expected = ["ready", "/board.dtb", *("/echo/" + e["nonce"] for e in events)]
+    blocks = report["blocks"]
+    require([b["phase"] for b in blocks] == expected and all(b["complete"] for b in blocks),
+            "missing, reordered or incomplete Linux IRQ collection at an HTTP boundary")
+    samples = report["nic_irq79_samples"]
+    require([s["phase"] for s in samples] == expected and len({s["virq"] for s in samples}) == 1,
+            "missing or ambiguous bound NIC interrupt 79 observations")
+    require(all(a["count"] < b["count"] for a, b in zip(samples, samples[1:])),
+            "Linux interrupt 79 did not advance between external HTTP exchanges")
+
+
+def uart_irq_report(out):
+    uart = out / "uart.log"
+    lines = uart.read_text(errors="replace").splitlines() if uart.exists() else ()
+    save(out / "linux-irqs.json", parse_uart_irqs(lines))
 
 
 def inspect(qmp, out, stage):
@@ -314,6 +334,7 @@ def run(args):
             inspect(qmp, out, "end")
             qmp.call("quit")
             require(proc.wait(timeout=5) == 0, "QEMU exit")
+            uart_irq_report(out)
             replay(out, args.native, args.linux)
             save(out / "result.json", {"passed": True, "pid": proc.pid, "samples": len(samples),
                                        "first_http_start_ns": events[0]["begin_ns"],
@@ -334,7 +355,8 @@ def run(args):
                 proc.wait()
             guard.cancel()
             guard.join()
-            uart_irq_report(out)
+            if not (out / "linux-irqs.json").exists():
+                uart_irq_report(out)
 
 
 if __name__ == "__main__":

@@ -41,6 +41,9 @@ change(plat / "platform.mk", "GIC_VERSION:=GICV3", "GIC_VERSION:=GICV2")
 # PSCI CPU_ON takes affinity fields. Bao's full MPIDR also contains RES1 bit 31.
 change(Path("src/arch/armv8/armv8-a/cpu.c"),
        "psci_cpu_on(mpidr, load_addr, 0)", "psci_cpu_on(mpidr & MPIDR_AFF_MSK, load_addr, 0)")
+# On this secure=off GICv2 board Bao enables Group 0 on the distributor
+# and physical CPU interface. Assign SPIs to that group along with the PPIs.
+change(Path("src/arch/armv8/gic.c"), "gicd->IGROUPR[i] = ~0U;", "gicd->IGROUPR[i] = 0U;")
 PY
 config=configs/domains
 mkdir "$config"
