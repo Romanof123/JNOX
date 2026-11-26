@@ -306,6 +306,9 @@ mod spawn;
 #[cfg(jnox_native_net_service)]
 #[path = "native_virtio_net.rs"]
 mod virtio_net;
+#[cfg(jnox_native_net_service)]
+#[path = "native_net_owner.rs"]
+mod net_owner;
 #[cfg(jnox_native_display)]
 #[path = "native_ramfb.rs"]
 mod ramfb;
@@ -460,6 +463,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     let before = Before {
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
+    #[cfg(jnox_native_net_service)]
+    if matches!(action, Action::Exit) {
+        net_owner::exit(before.pid.unwrap_or_else(|| fail(9)));
+    }
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
     #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
     if matches!(action, Action::Exit) && before.pid == Some(DISPLAY_OWNER) {

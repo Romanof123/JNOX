@@ -4,6 +4,22 @@
 //! See Virtio 1.2 sections 2.7 (split queues), 4.2 (MMIO) and 5.1 (network).
 use core::{arch::asm, mem::offset_of, ptr};
 
+#[path = "native_virtio_reset.rs"]
+mod reset_protocol;
+
+use reset_protocol::{Start, ACTIVE, COLD, QUARANTINED, RETIRED, RETIRING};
+
+#[unsafe(no_mangle)]
+static mut jnox_native_net_phase: u32 = COLD;
+
+// Access under the same masked-IRQ serialization as DRIVER.
+fn phase() -> u32 {
+    unsafe { (&raw const jnox_native_net_phase).read_volatile() }
+}
+fn set_phase(value: u32) {
+    unsafe { (&raw mut jnox_native_net_phase).write_volatile(value) }
+}
+
 const MMIO_START: usize = 0x0a00_0000;
 const MMIO_END: usize = 0x0a00_4000;
 const MAC: [u8; 6] = [0x52, 0x54, 0, 0x12, 0x34, 0x56];
@@ -102,7 +118,7 @@ pub(crate) struct Stats {
     pub faults: u64,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 struct Cursor {
     available: u16,
     used: u16,
@@ -169,6 +185,15 @@ fn correct_mac(base: usize) -> bool {
     false
 }
 
+struct ResetMmio(usize);
+impl reset_protocol::ResetIo for ResetMmio {
+    fn request_reset(&mut self) { write(self.0, STATUS, 0); }
+    fn status(&mut self) -> u32 { read(self.0, STATUS) }
+    fn select(&mut self, q: u32) { write(self.0, QUEUE_SEL, q); }
+    fn ready(&mut self) -> u32 { read(self.0, QUEUE_READY) }
+    fn fence(&mut self) { barrier(); }
+}
+
 impl Driver {
     fn setup(&mut self) -> Result<(), i32> {
         let mut device = None;
@@ -182,10 +207,15 @@ impl Driver {
         let base = device.ok_or(-19)?;
         self.base = base;
         self.stats.base = base as u64;
-        write(base, STATUS, 0);
-        if !(0..1024).any(|_| read(base, STATUS) == 0) {
+        if reset_protocol::reset(&mut ResetMmio(base), || {}).is_err() {
+            set_phase(QUARANTINED);
             return Err(-5);
         }
+        self.configure()
+    }
+
+    fn configure(&mut self) -> Result<(), i32> {
+        let base = self.base;
         write(base, STATUS, 1);
         write(base, STATUS, ACK_DRIVER);
         // Advertise exactly MAC (bank 0 bit 5) and VERSION_1 (bank 1 bit 0).
@@ -318,7 +348,7 @@ impl Driver {
     }
 
     fn poll(&mut self) -> Result<(), i32> {
-        if self.failed {
+        if self.failed || phase() != ACTIVE {
             return Err(-5);
         }
         if self.base == 0 {
@@ -342,17 +372,62 @@ impl Driver {
 
 pub(crate) fn init() -> Result<(), i32> {
     serialized(|d| {
-        if d.failed {
+        reset_protocol::start(Start::Cold, phase(), d.failed, || {
+            let result = d.setup();
+            finish_setup(d, result)
+        })
+    })
+}
+
+fn finish_setup(d: &mut Driver, result: Result<(), i32>) -> Result<(), i32> {
+    if result.is_ok() {
+        set_phase(ACTIVE);
+    } else {
+        if phase() != QUARANTINED {
+            d.fault();
+        } else {
+            d.stats.faults = d.stats.faults.saturating_add(1);
+        }
+        set_phase(QUARANTINED);
+    }
+    result
+}
+
+pub(crate) fn retire() -> Result<(), i32> {
+    serialized(|d| {
+        if phase() != ACTIVE {
             return Err(-5);
         }
-        if d.base != 0 {
-            return Ok(());
-        }
-        let result = d.setup();
-        if result.is_err() {
+        set_phase(RETIRING);
+        // Snapshot completed TX without posting another buffer or doorbell.
+        if !d.failed && d.harvest(TX).is_err() {
             d.fault();
         }
-        result
+        let faulted = d.failed;
+        let result = reset_protocol::reset(&mut ResetMmio(d.base), || {
+            // Include descriptor/ring padding and the entire RX/TX payload pool.
+            unsafe { ptr::write_bytes(&raw mut jnox_native_net_queues, 0, 1); }
+            barrier();
+            d.cursors = [Cursor::default(); 2];
+            d.received = [UsedEntry::default(); SIZE];
+            d.head = 0;
+            d.count = 0;
+        });
+        if result.is_err() {
+            d.stats.faults = d.stats.faults.saturating_add(1);
+        }
+        let next = reset_protocol::retirement_phase(result, faulted);
+        set_phase(next);
+        if next == RETIRED { Ok(()) } else { Err(-5) }
+    })
+}
+
+pub(crate) fn restart() -> Result<(), i32> {
+    serialized(|d| {
+        reset_protocol::start(Start::Restart, phase(), d.failed, || {
+            let result = d.configure();
+            finish_setup(d, result)
+        })
     })
 }
 
@@ -407,7 +482,7 @@ pub(crate) fn tx(frame: &[u8]) -> Result<usize, i32> {
 pub(crate) fn stats() -> Stats {
     serialized(|d| {
         // Capture completions already posted since the last TX syscall.
-        if d.base != 0 && !d.failed {
+        if phase() == ACTIVE && !d.failed {
             let _ = d.poll();
         }
         d.stats

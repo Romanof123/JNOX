@@ -1,0 +1,116 @@
+{
+  "fifo": {
+    "peer": {
+      "tcp": "complete",
+      "udp": "complete",
+      "guest_exits": [
+        [
+          0,
+          75
+        ],
+        [
+          1,
+          76
+        ],
+        [
+          2,
+          0
+        ]
+      ]
+    },
+    "private_results": {
+      "inet_tcp_result": [
+        4,
+        9,
+        13,
+        3,
+        0,
+        12,
+        14,
+        0,
+        4,
+        -1,
+        104,
+        1
+      ],
+      "inet_udp_result": [
+        3,
+        3,
+        3,
+        3,
+        1,
+        4,
+        3,
+        0,
+        167772674,
+        43004,
+        9,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "kernel_sha256": "0cc63340f24870ca1a8cfca8b48a23240c676b228d79938d642ef132ecf79417",
+    "wire_sha256": "3330c21e6a98cab710eda5c6881822d4bea726b7c2337967862a74116b976faa",
+    "ram_sha256": "9ead5c6a431fb5591451e2a63950aa09be0ecb2e239635cc911400f42410f6a9"
+  },
+  "rr": {
+    "peer": {
+      "tcp": "complete",
+      "udp": "complete",
+      "guest_exits": [
+        [
+          0,
+          75
+        ],
+        [
+          1,
+          76
+        ],
+        [
+          2,
+          0
+        ]
+      ]
+    },
+    "private_results": {
+      "inet_tcp_result": [
+        4,
+        9,
+        13,
+        3,
+        0,
+        12,
+        14,
+        0,
+        4,
+        -1,
+        104,
+        1
+      ],
+      "inet_udp_result": [
+        3,
+        3,
+        3,
+        3,
+        1,
+        4,
+        3,
+        0,
+        167772674,
+        43004,
+        9,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "kernel_sha256": "ad8c17d75e56d6d54d54750bd9e83b45223716434fc09e6fe37cbac5f744aad9",
+    "wire_sha256": "f5ba242f67f46c8b192e2385bebf03f0088c3daa971d01d2dab1389d892dcd57",
+    "ram_sha256": "c858d08b29098ffb5a07c7c7515fb586a5a056370b32eca0493bd93c46039dc4"
+  }
+}

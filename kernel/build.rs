@@ -534,6 +534,23 @@ fn main() {
         "at most four native slots");
     let peer_image = selector("JNOX_NATIVE_PEER_ELF");
     let peer_hash = selector("JNOX_NATIVE_PEER_ELF_SHA256");
+    let net_standby = selector("JNOX_NATIVE_NET_STANDBY");
+    let spare = match net_standby.as_deref() {
+        None => None,
+        Some(slot) => {
+            let present = match slot {
+                "0" => true,
+                "1" => peer_image.is_some(),
+                "2" => peer2_image.is_some(),
+                _ => false,
+            };
+            assert!(net_service.is_some() && Some(slot) != net_service.as_deref() && present,
+                "network standby requires a distinct packaged slot and network service");
+            slot.parse::<usize>().ok()
+        }
+    };
+    std::fs::write(std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("native_net_standby.rs"),
+        format!("const STANDBY: Option<usize> = {spare:?};\n")).unwrap();
     assert_eq!(peer_image.is_some(), peer_hash.is_some(), "peer ELF requires its digest");
     assert_eq!(peer2_image.is_some(), peer2_hash.is_some(), "second peer requires its digest");
     assert!(peer2_image.is_none() || peer_image.is_some(), "missing first peer");

@@ -129,6 +129,10 @@ def native_service_slots(parser, args, policy, board):
     if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
         parser.error("--net-service must appear once and match --socket-service")
     slots = 1 + len(args.peer_elf)
+    net_standby = getattr(args, "net_standby", None)
+    if net_standby is not None and (not args.net_service or net_standby in args.net_service
+                                    or int(net_standby) >= slots):
+        parser.error("--net-standby requires a distinct packaged slot and --net-service")
     if args.net_service and slots > 3:
         parser.error("--net-service supports at most three native processes")
     display = int(args.display_service[0]) if args.display_service else None
@@ -521,6 +525,8 @@ def main():
                         help="keep slot 2 dormant for one handoff when UART owner 0 exits with status 86")
     parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="give the selected socket service the virtio network interface")
+    parser.add_argument("--net-standby", choices=("0", "1", "2"), action=SinglePath, metavar="SLOT",
+                        help="allow one packaged process to claim raw NIC access after owner retirement")
     parser.add_argument("--socket-service", choices=("0", "1", "2", "3"), action="append", default=[], metavar="SLOT",
                         help="select the socket broker; slot 3 serves display owner 0 and clients 1 and 2 on virt FIFO")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
@@ -796,6 +802,11 @@ def main():
         metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",
                                    "mac": "52:54:00:12:34:56",
                                    "syscalls": {"rx": 38, "tx": 39, "try_receive": 40}}
+    if args.net_standby is not None:
+        env["JNOX_NATIVE_NET_STANDBY"] = args.net_standby
+        metadata["net_service"].update(standby_slot=int(args.net_standby), max_handoffs=1)
+        metadata["net_service"]["syscalls"]["claim"] = 76
+        metadata["package_argv"] = sys.argv[:]
     if args.socket_service:
         env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
@@ -994,7 +1005,8 @@ def main():
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
-    if policy == "amc" or args.uart_rx_standby or (policy in ("fifo", "rr") and len(slots) == 4):
+    if (policy == "amc" or args.uart_rx_standby or args.net_standby is not None
+            or (policy in ("fifo", "rr") and len(slots) == 4)):
         for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
             slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
