@@ -2380,3 +2380,11 @@ IMP-323,tested-in,EVD-323
 CHG-325,affects,REQ-004
 CHG-325,affects,REQ-011
 CHG-325,affects,DES-002
+REQ-004,partially-implemented-by,IMP-325
+REQ-011,partially-implemented-by,IMP-325
+DES-002,partially-implemented-by,IMP-325
+IMP-325,partially-verified-by,VER-004
+IMP-325,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-325
+VER-011,has-partial-evidence,EVD-325
+IMP-325,tested-in,EVD-325
