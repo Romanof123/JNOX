@@ -1,0 +1,31 @@
+{
+  "name": "rtc-pl031",
+  "upstream": {
+    "project": "Linux",
+    "tag": "v6.18",
+    "path": "drivers/rtc/rtc-pl031.c",
+    "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/rtc/rtc-pl031.c?h=v6.18",
+    "size": 12342,
+    "sha256": "3178d83f57c426bccb1a96cdceb3298b34651cc04c58b53c07a5dfc69bc94f76",
+    "git_blob_sha1": "eab39dfa4e5fe5d046b32de9d08c8da9c47e4040",
+    "spdx": "GPL-2.0-or-later",
+    "module_license": "GPL"
+  },
+  "runtime_sources": [
+    "drivers/linux-compat/src/calendar.c",
+    "drivers/linux-compat/src/pl031.c"
+  ],
+  "service_source": "examples/linux-source-rtc/driver.c",
+  "allowed_driver_imports": [
+    "amba_release_regions", "amba_request_regions", "devm_device_init_wakeup",
+    "devm_ioremap", "devm_kmemdup", "devm_kzalloc", "devm_pm_set_wake_irq",
+    "devm_rtc_allocate_device", "devm_rtc_register_device", "free_irq",
+    "readl", "request_irq", "rtc_time64_to_tm", "rtc_tm_to_time64",
+    "rtc_update_irq", "rtc_year_days", "writel"
+  ],
+  "required_driver_functions": [
+    "jnox_linux_amba_driver", "pl031_probe", "pl031_remove", "pl031_interrupt",
+    "pl031_read_time", "pl031_set_time", "pl031_read_alarm", "pl031_set_alarm",
+    "pl031_alarm_irq_enable"
+  ]
+}

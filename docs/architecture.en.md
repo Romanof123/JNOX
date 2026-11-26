@@ -13,11 +13,11 @@ flowchart TB
   ELF[Prebuilt Linux user ELF] --> COMPAT[Optional Linux user-space ABI]
   COMPAT --> IPC
   IPC --> KERNEL[no_std Rust microkernel]
-  LINUX[Linux domain · existing drivers] <--> GATE[Shared queues and dedicated message gateway]
-  GATE <--> IPC
+  IMPORT[Imported source · native service] --> IPC
+  IMPORT --> CAPS[MMIO · IRQ · DMA]
   KERNEL --> BSP[Board port · timers · MMU/MPU · IRQ]
-  LINUX --> PART[Platform isolation · DMA and reset controls]
-  BSP --- PART
+  CAPS --> KERNEL
+  BSP --> HW[Device]
 ```
 
 ## DES-001 Microkernel
@@ -26,13 +26,13 @@ The privileged kernel manages address spaces, threads and scheduling, timers, ex
 
 The kernel uses `no_std` Rust. Safe Rust represents scheduler state, queues, and IPC state machines. Narrow modules contain `unsafe` operations for boot, context switching, MMIO, page tables, DMA, and FFI. Each block requires review of its preconditions and invariants for access rights, lifetimes, and synchronization. Control paths use static or bounded pools and return explicit errors. The configuration defines how to handle panics, stack exhaustion, and detected integrity faults. [Rust unsafe contracts](https://doc.rust-lang.org/book/ch20-01-unsafe-rust.html)
 
-## DES-002 Linux driver domain
+## DES-002 Native services built from Linux driver source
 
-Linux runs in an independent execution domain with compatible drivers. One candidate arrangement for heterogeneous cores places J-NOX on R52 and Linux on A76. On AArch64 or x86-64 platforms where the domains share a CPU family, the project will compare verifiable static partitioning and hypervisor options. Each board requires a record of who controls memory, devices, interrupts, DMA, boot, and reset.
+The build adapter verifies the pinned upstream source hash, compiles the unchanged driver against the supported Linux API subset, and links a native J-NOX ELF. Reject unsupported API or configuration dependencies at build time. Record the source revision and hash, adapter identity, configuration and ELF hash. Existing .ko binary compatibility is outside this contract.
 
-The driver runs against its original Linux module interface. Reuse depends on a compatible combination of Linux kernel, configuration, architecture, firmware, and device description. The first test will select a combination that can use the original module binary and verify its identity by hash. A separate Linux-side gateway and a J-NOX service connect to the existing device interface. This arrangement provides compatibility through Linux itself. [Linux internal driver API](https://docs.kernel.org/next/process/stable-api-nonsense.html)
+The unprivileged service runs on the J-NOX Rust kernel without Linux or Bao. The kernel grants device memory, IRQ and DMA capabilities individually according to the service manifest, validates ownership and bounds, and controls revocation on restart. Native Rust drivers remain a separate supported path.
 
-Control messages carry a version, type, length, sequence number, expiry time, and restart generation. Communication uses fixed-size shared memory and limits the number of notifications. Initial ports will use a copy-based path to simplify verification. RPMsg/OpenAMP is a candidate transport for asymmetric multiprocessing (AMP). The safety gateway validates messages and discards expired data. After Linux restarts, the system reclaims queues, handles, and DMA ownership from the previous generation before reconnecting. An IOMMU/SMMU or board firewall limits device DMA. Assignment alongside safety functions requires evidence that the limit holds for the device. [Linux RPMsg](https://docs.kernel.org/staging/rpmsg.html) · [IOMMU and device isolation](https://docs.kernel.org/driver-api/vfio.html)
+The first proof targets a PL031 RTC read using assigned MMIO. IRQ delivery and DMA isolation require independent evidence. The later virtio_net port depends on kernel networking interfaces and enforceable DMA mappings for its queues. Historical Linux module and gateway experiments provide reference behavior. [CHG-325](native-linux-driver-source.en-ko.md)
 
 ## DES-003 Threads and real-time scheduling
 
@@ -55,7 +55,7 @@ The common kernel has a separate port contract. Each port declares its capabilit
 
 The native SDK's planned profile defines its source interfaces, error conventions and target acceptance separately from the Linux executable ABI. [POSIX source profile 0.1](posix-profile.en.md)
 
-The native API centers on synchronous request/reply, bounded queues, notifications, and shared memory. User libraries provide the selected subset of `pthread`, a monotonic clock, and APIs in the `socket` and `poll` families. Networking runs in a user process or the Linux domain. Planned stages add `AF_UNIX`, TCP and UDP over IPv4 and IPv6, multiple clients, nonblocking I/O, and readiness notification. The API matrix identifies features outside the selected POSIX scope. Extended filesystem features, dynamic linking, TLS, and packages will be evaluated for the extended configuration.
+The native API centers on synchronous request/reply, bounded queues, notifications, and shared memory. User libraries provide the selected subset of `pthread`, a monotonic clock, and APIs in the `socket` and `poll` families. Networking runs in a native user service. Planned stages add `AF_UNIX`, TCP and UDP over IPv4 and IPv6, multiple clients, nonblocking I/O, and readiness notification. The API matrix identifies features outside the selected POSIX scope. Extended filesystem features, dynamic linking, TLS, and packages will be evaluated for the extended configuration.
 
 Native Rust is the default user application target of the J-NOX SDK. The kernel and user applications link as separate ELF files. The SDK provides versioned target and linker settings, user startup and exit code, `core`, and a safe user API crate. The first static AArch64 profile handles arguments, files and standard I/O without a heap. The syscall wrappers use the versioned J-NOX ABI. Qualify `alloc` with a user allocator and `std` with the OS support required by the standard library in separate tests.
 
@@ -81,11 +81,11 @@ Native J-NOX drivers run as isolated Rust services by default. The SDK supports 
 
 ## DES-010 Safety IPC channel
 
-The first channel carries the periodic virtual-output permit in `ADR-001`. The safety sender protects the message and the safety receiver checks it before using it for control. Native IPC and a Linux-domain gateway share this contract. A relay forwards the protected message unchanged. The channel configuration binds the sending and receiving capability handles, direction, data ID and message type. The receiver checks the ID in the message against this configuration. [Bench decision](safety-parameters.en.md)
+The first channel carries the periodic virtual-output permit in `ADR-001`. The safety sender protects the message and the safety receiver checks it before using it for control. Native IPC carries the same contract for a source-built driver service. A relay forwards the protected message unchanged. The channel configuration binds the sending and receiving capability handles, direction, data ID and message type. The receiver checks the ID in the message against this configuration. [Bench decision](safety-parameters.en.md)
 
 1. **Publication and transport.** The sender serializes the version, type, length, data ID, generation, sequence number, issue time and payload in a defined byte representation and computes an end-to-end CRC over all those bytes. Before implementation, the systems team fixes field widths, byte order, maximum length, CRC parameters and coverage, and reference test vectors. The channel uses a bounded, preallocated queue. When the queue is full, a new send returns a saturation result immediately and preserves the queued entries.
 2. **Acceptance and rejection.** The receiver first checks endpoint permissions and transport slot bounds. It copies the input once into a private buffer, bounded by both the assigned slot and the channel maximum. Using only that snapshot, it checks the declared length, CRC, version, type, ID, current generation, exact next sequence number, issue time and payload range. It commits receiver state only after all checks pass. A frame rejected for corruption, duplication, reordering, a sequence gap, the wrong generation, expiry or any other failed check leaves the last valid data, its issue time and the recovery count unchanged. When opening a new generation, the supervisor sets the initial sequence number at both endpoints. Renew the generation before sequence rollover and inhibit the channel if a generation identifier could be reused.
-3. **Timing and recovery.** The receiver monitors input loss on its own monotonic clock. On the bench, sender issue times are controlled inputs on the same virtual clock. A port across clock domains must establish timestamp provenance, synchronization uncertainty and a delay bound before accepting data as fresh. Bound the work per activation for examining slots, handling notifications and recording diagnostics so the expiry check still runs when the queue is empty, invalid traffic saturates it or Linux stops. Expiry takes precedence on the same tick. On disconnect or restart, invalidate queued frames and handles from the old generation. Apply the inhibition deadline and the conditions for rearming in a new generation from `ADR-001`.
+3. **Timing and recovery.** The receiver monitors input loss on its own monotonic clock. On the bench, sender issue times are controlled inputs on the same virtual clock. A port across clock domains must establish timestamp provenance, synchronization uncertainty and a delay bound before accepting data as fresh. Bound the work per activation for examining slots, handling notifications and recording diagnostics so the expiry check still runs when the queue is empty, invalid traffic saturates it or the driver service stops. Expiry takes precedence on the same tick. On disconnect or restart, invalidate queued frames and handles from the old generation. Apply the inhibition deadline and the conditions for rearming in a new generation from `ADR-001`.
 
 The CRC detects accidental corruption in transit. Where the threat analysis requires authentication, the design must justify keyed endpoint authentication and replay protection. Even an authorized source can send a plausible but incorrect value. Using that value in a safety decision requires evidence about the source or independent plausibility checks. The Functional Safety Team reviews the product-specific fault model, residual error risk and timing budget. [AUTOSAR E2E protocol reference](https://www.autosar.org/fileadmin/standards/R25-11/FO/AUTOSAR_FO_PRS_E2EProtocol.pdf)
 

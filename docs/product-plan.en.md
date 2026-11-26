@@ -4,7 +4,7 @@
 
 **Status**　Draft for review · 2026-11-23
 
-The first J-NOX product is an embedded operating system that gives control software predictable execution times and can use existing device drivers in a separate Linux domain. The first bench demonstration uses a periodic control task with virtual I/O. During normal operation the task receives and processes data from a Linux driver service. If the service stalls or the data arrives late or corrupted, J-NOX uses its own timer and authority to select the defined fallback output. System-level analysis will establish the actual use case and safe state for the first product.
+The first J-NOX product is an embedded operating system that gives control software predictable execution times and can run drivers rebuilt from unchanged Linux source as unprivileged native services. The first bench demonstration uses a periodic control task with virtual I/O. During normal operation the task receives and processes data from a Linux driver service. If the service stalls or the data arrives late or corrupted, J-NOX uses its own timer and authority to select the defined fallback output. System-level analysis will establish the actual use case and safe state for the first product.
 
 ## Product objectives
 
@@ -16,15 +16,15 @@ Allocate product capabilities by profile and track each acceptance criterion alo
 
 CHG-077 assigns the next service decisions to the product owner, systems, functional safety and verification teams. The headless AArch64 reference anchors the clock and file-service plans. A product can add windowing once the underlying services are available. [Platform checklist](platform-checklist.en.md) · [Product decisions](https://github.com/Romanof123/JNOX/issues/162)
 
-Safety tasks will be able to select a safety IPC channel for control data received from another task or through a Linux gateway. The first use case is a virtual output permit. When the last accepted permit expires, the receiver inhibits the output independently. [Safety IPC requirement](requirements.en.md)
+Safety tasks will be able to select a safety IPC channel for control data received from another task or from a driver service. The first use case is a virtual output permit. When the last accepted permit expires, the receiver inhibits the output independently. [Safety IPC requirement](requirements.en.md)
 
 In `ADR-001`, the functional safety team fixed the criteria for disabling a virtual output when a permit signal is lost on the first software bench. These criteria are design inputs for the first control task and its tests. For a product application, the functional safety and systems teams will derive the safe state and time limits from operating conditions and hazard analysis. [First bench decision](safety-parameters.en.md)
 
 | ID | Objective | Initial success criteria |
 | --- | --- | --- |
 | `OBJ-001` | Support ASIL D safety goals in a specified automotive system | An independent reviewer can examine the safety argument and verification evidence for the identified system, assumptions, board support package (BSP), toolchain, and build configuration. |
-| `OBJ-002` | Achieve high cyber resilience and maintain it throughout the product lifecycle | Each threat can be traced to its mitigation and verification. Tests verify the isolation boundaries and safety functions under an assumed compromise of the Linux domain. Signed boot, update, and recovery can be reproduced. |
-| `OBJ-003` | Reuse existing Linux drivers unchanged | J-NOX can use the service for one specified device with the original Linux driver source and module. Tests cover control behavior during driver failure and Linux restart. |
+| `OBJ-002` | Achieve high cyber resilience and maintain it throughout the product lifecycle | Each threat can be traced to its mitigation and verification. Tests verify the isolation boundaries and safety functions under an assumed compromise of a driver service. Signed boot, update, and recovery can be reproduced. |
+| `OBJ-003` | Reuse existing Linux drivers unchanged | J-NOX can use the service for one specified device with the unchanged Linux source rebuilt for native execution. Tests cover control behavior during driver failure and service restart. |
 | `OBJ-004` | Keep the trusted kernel small and support hard real-time operation, isolation and multithreading | Establish control-task time bounds for the worst-case configuration on a physical board. Reproduce the supported scheduling and thread behavior and verify the profile’s resource allocations. |
 | `OBJ-005` | Extend support across all Arm profiles and the x86 family | Maintain common kernel and service contracts. For each CPU and board combination, report the status of boot, functional, real-time, and safety verification. |
 | `OBJ-006` | Provide a service environment for Rust and C applications and existing Linux CLIs | Run native Rust and C applications built with the J-NOX SDK. In the extended configuration, directly execute listed, previously built Linux user binaries on the same CPU architecture without rebuilding them. Support concurrent sockets, diagnostic and automation scripts, and selected POSIX APIs. |
@@ -34,7 +34,7 @@ In `ADR-001`, the functional safety team fixed the criteria for disabling a virt
 ## Configurations and scope of support
 
 - **Safety configuration.** Pin the versions of safety tasks, kernel, required BSP, minimum I/O path, and any applicable isolation and monitoring components. Set task, memory, interrupt (IRQ), and CPU budgets in the system configuration. Scope the first candidate ASIL D application to one board and one use case.
-- **Extended configuration.** Select user services, a Linux driver domain, sockets, scripting, file services, and development tools under the same kernel contracts. Choose components for each board and use case.
+- **Extended configuration.** Select user services, source-built driver services, sockets, scripting, file services, and development tools under the same kernel contracts. Choose components for each board and use case.
 - **Device support.** Record when a port builds, boots in an emulator, passes functional tests on a physical board, and acquires product safety evidence. A change of board triggers a review of the evidence for timers, interrupts, DMA, resets, and memory interference.
 
 | Order | Port | Scope of experiments and support |
@@ -42,7 +42,7 @@ In `ADR-001`, the functional safety team fixed the criteria for disabling a virt
 | P1 | Arm AArch64 Cortex-A72/A76 on QEMU `virt` | Reference kernel behavior, MMU, EL0/EL1, preemption, and IPC. Identify the execution environment whenever emulator results are cited alongside physical-board timing data. |
 | P1 hardware | [Raspberry Pi 4 Model B, 1 GB](boards/pi4-p1.en.md) | BCM2711 development board candidate. Verify serial boot, timer/IRQ and SMP as separate cases. |
 | P2 | Arm Cortex-R52 on QEMU MPS3-AN536 and a candidate physical board | AArch32 port with MPU protection and periodic control. R-Car V4M is a candidate for running Linux on A76 and J-NOX on R52. First assess board availability and whether resource ownership can be enforced. |
-| P3 | x86-64 on QEMU, then physical hardware | Verify UEFI/ACPI, APIC, timers, SMP, and IOMMU behavior for supported devices. Evaluate options for isolating the Linux domain. |
+| P3 | x86-64 on QEMU, then physical hardware | Verify UEFI/ACPI, APIC, timers, SMP, and IOMMU behavior for supported devices. Evaluate isolation for native driver services. |
 | P4 | Arm AArch32, additional Cortex-R and Cortex-M cores, and IA-32 | Select representative cores and boards to extend the capability matrix. For boards with limited MPU resources or other protection constraints, specify feasible configurations and required external isolation. |
 
 The BSP contract accounts for differences between Arm A/R/M profiles and across x86 operating modes and devices. Physical boot, reset ownership, and the feasibility of DMA isolation on R-Car V4M require board-level verification. [Arm architecture](https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/Learn%20the%20Architecture/Introducing%20the%20Arm%20architecture.pdf) · [Intel system programming manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html) · [Renesas R-Car V4M](https://www.renesas.com/en/about/newsroom/renesas-leads-adas-innovation-power-efficient-4th-generation-r-car-automotive-socs)
@@ -57,7 +57,7 @@ CHG-300 fixes the current #21 release gate at seven families. The six approved f
 | --- | --- | --- |
 | M0 Planning | Product plan, safety and security concept, requirements, draft design, verification plan, and trace links | Review the relationships between documents. Record the first bench scenario and open decisions. |
 | M1 Kernel | First AArch64 build, task and thread lifecycles, fixed-priority preemption, timers, memory isolation, and IPC | Repeatable QEMU tests and negative tests pass against the same commit. |
-| M2 Drivers | A running Linux system with one reused driver, one native Rust driver, SDK, cross-domain protocol, and fault tests | Verify the contract for each driver path. The bench control task performs its specified action when Linux stalls. |
+| M2 Drivers | One native service rebuilt from Linux source, one native Rust driver, SDK, bounded IPC, and fault tests | Verify the contract for each driver path. The bench control task performs its specified action when the driver service stalls. |
 | M3 Porting and physical hardware | R52 board tests, x86-64 reference port, load and fault injection, and thread and SMP evidence | Measure timing, memory, DMA, and restart boundaries on the selected board. Record evidence separately for each CPU. |
 | M4 Services and operations | Native Rust and C SDK, Linux user-space ABI, POSIX APIs, concurrent sockets, scripting, secure update and recovery | Demonstrate native Rust application execution, a pipeline between native C programs, and direct execution of an existing Linux CLI separately. Verify API contracts and resource limits. Start with static AArch64 executables. Qualify x86-64 and dynamically linked Linux ELF through separate compatibility tests. Only selected dependencies enter the safety configuration approval scope. |
 | M5 Product safety evidence | Safety manual, residual risks, configuration baseline, and independent review package for the first product configuration | Confirm that the plan matches the actual conditions of use. Have the evidence supporting the ASIL D safety goals and cybersecurity assessed within that scope. |

@@ -1,0 +1,97 @@
+{
+  "first": {
+    "linux_source_sha256": "3178d83f57c426bccb1a96cdceb3298b34651cc04c58b53c07a5dfc69bc94f76",
+    "driver_object_sha256": "7015018c4c29b8fffc238f8b9d41ff2e3695e7356240613c773927cf72dfb04c",
+    "user_sha256": "b3cc6a7dfac0a6b8768226c983e65b1bb3c1a5deff42279861b95e719826ed32",
+    "kernel_sha256": "bb75b858a493c055b94af6d4da5f436a9af3fe3e6565e7a8187684eed58b02d1",
+    "package_sha256": "b47ce572deb1107c60328be4a7ac0372db581a48a010b267f6ea5db49e166966",
+    "import_sha256": "575ed9be77d70674d6821f5d9ceb6933d415a9fc754c8e0908f5665c1f11caa8",
+    "seed_read": 1704067200,
+    "set_readback": 1961711998,
+    "alarm_match": 1961712000,
+    "callback_flags": 160,
+    "rebound_time": 1961712000,
+    "peer_wakes": 8,
+    "trace_events": 676,
+    "uart_sha256": "4415f7d1ddd6d52b21f8bc73d9ada22111bea336db11d53d602faa5a88686fd8",
+    "trace_sha256": "f665e37ea066d77dbc6a713baf8dcadef8567c6f90cc28628470393a2b6a72c9"
+  },
+  "repeat": {
+    "linux_source_sha256": "3178d83f57c426bccb1a96cdceb3298b34651cc04c58b53c07a5dfc69bc94f76",
+    "driver_object_sha256": "7015018c4c29b8fffc238f8b9d41ff2e3695e7356240613c773927cf72dfb04c",
+    "user_sha256": "b3cc6a7dfac0a6b8768226c983e65b1bb3c1a5deff42279861b95e719826ed32",
+    "kernel_sha256": "bb75b858a493c055b94af6d4da5f436a9af3fe3e6565e7a8187684eed58b02d1",
+    "package_sha256": "b47ce572deb1107c60328be4a7ac0372db581a48a010b267f6ea5db49e166966",
+    "import_sha256": "575ed9be77d70674d6821f5d9ceb6933d415a9fc754c8e0908f5665c1f11caa8",
+    "seed_read": 1704067200,
+    "set_readback": 1961711998,
+    "alarm_match": 1961712000,
+    "callback_flags": 160,
+    "rebound_time": 1961712000,
+    "peer_wakes": 8,
+    "trace_events": 882,
+    "trace_schema": 2,
+    "gic_cpu": 0,
+    "gic_intid": 34,
+    "gic_intid34_acknowledgements": 2,
+    "uart_sha256": "ac78d571a3ea30dede46e289451c054df3957b232977a1fee47d348360b1b8f9",
+    "trace_sha256": "5ee21dc3a23efcd68e58d4fa71e8f61ea33bd1ca20abaf45af39c0e85a78d9fa"
+  },
+  "original": {
+    "project": "Linux",
+    "tag": "v6.18",
+    "path": "drivers/rtc/rtc-pl031.c",
+    "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/rtc/rtc-pl031.c?h=v6.18",
+    "size": 12342,
+    "sha256": "3178d83f57c426bccb1a96cdceb3298b34651cc04c58b53c07a5dfc69bc94f76",
+    "git_blob_sha1": "eab39dfa4e5fe5d046b32de9d08c8da9c47e4040",
+    "spdx": "GPL-2.0-or-later",
+    "module_license": "GPL"
+  },
+  "imports": [
+    "amba_release_regions",
+    "amba_request_regions",
+    "devm_device_init_wakeup",
+    "devm_ioremap",
+    "devm_kmemdup",
+    "devm_kzalloc",
+    "devm_pm_set_wake_irq",
+    "devm_rtc_allocate_device",
+    "devm_rtc_register_device",
+    "free_irq",
+    "readl",
+    "request_irq",
+    "rtc_time64_to_tm",
+    "rtc_tm_to_time64",
+    "rtc_update_irq",
+    "rtc_year_days",
+    "writel"
+  ],
+  "source_service": "b3cc6a7dfac0a6b8768226c983e65b1bb3c1a5deff42279861b95e719826ed32",
+  "grant": {
+    "driver_slot": 0,
+    "unauthorized_slots": [
+      1
+    ],
+    "device": "arm,pl031",
+    "mmio_base": 151060480,
+    "mmio_bytes": 4096,
+    "intid": 34,
+    "driver_source": "drivers/rtc/rtc-pl031.c"
+  },
+  "negative_controls": {
+    "first_mutations_rejected": 7,
+    "repeat_mutations_rejected": 8,
+    "changed_input_rejected": true,
+    "unknown_symbol_rejected": "unsupported_rtc_service",
+    "rebuild_identical": [
+      "rtc-pl031.o",
+      "service.elf"
+    ]
+  },
+  "archive": {
+    "name": "native-linux-source-rtc.tar.xz",
+    "bytes": 932552,
+    "sha256": "69dc2057eff26870c368f2281a4e4a47336aa06fb8f11bc95f632f10c50b9723"
+  }
+}

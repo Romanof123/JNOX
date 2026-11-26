@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xml:lang="en" viewBox="0 0 792 518" width="792" height="518" role="img" aria-labelledby="title desc">
   <title id="title">J-NOX system architecture</title>
-  <desc id="desc">Five layers from user applications through application interfaces, the privileged Rust microkernel, drivers and board support to hardware. Native Rust driver services and the Linux driver domain are isolated from the microkernel. Dashed component boxes mark planned paths.</desc>
+  <desc id="desc">Five layers from user applications through application interfaces, the privileged Rust microkernel, drivers and board support to hardware. Native Rust driver services and services rebuilt from Linux driver source are isolated from the microkernel. Dashed component boxes mark planned paths.</desc>
   <style>
     text { font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif; }
     .platform { font-size: 22px; font-weight: 700; fill: #153746; }
@@ -72,8 +72,8 @@
     </g>
     <g class="component">
       <rect x="275" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
-      <text class="name" x="396" y="380">Linux driver domain</text>
-      <text class="detail" x="396" y="395">Existing drivers via gateway</text>
+      <text class="name" x="396" y="380">Imported driver service</text>
+      <text class="detail" x="396" y="395">Pinned Linux source · native ELF</text>
     </g>
     <g class="component">
       <rect x="524" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
