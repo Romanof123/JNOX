@@ -12,6 +12,10 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 Dashed boxes show planned components. The native Rust driver runs as an isolated service. Existing Linux drivers run in their own Linux domain and communicate with J-NOX through a validated gateway. The native app and kernel path has been exercised on AArch64 QEMU. [Architecture and isolation](docs/architecture.en.md) · [Native IPC evidence](docs/evidence/native-sync-ipc-release.en-ko.md)
 
+## Display, X11 and kernel logs
+
+On AArch64 QEMU virt, an optional Rust display service accepts input and updates the guest screen. A native C X11 client can show a window rendered by an external X server on that same screen. The interactive serial shell exposes recent kernel events through `dmesg`. Two local Rust apps can also draw overlapping windows and receive input when focused. [Local windows and guest captures](docs/evidence/native-window-pair.en-ko.md) · [Guest screenshots and original measurements](docs/evidence/native-display-x11-shell.en-ko.md) · [Build the X11 example](examples/native-x11/README.md) · [Resident compositor and Xwayland](https://github.com/Romanof123/JNOX/issues/412)
+
 ## Native applications and IPC
 
 On AArch64 QEMU `virt`, a text policy assigns periods, priorities, deadlines and optional watchdogs to native C and Rust task entries. The example packages five apps and shows how to change monitoring while reusing the same ELFs. [Build and boot the task-policy example](examples/native-task-policy/README.md)

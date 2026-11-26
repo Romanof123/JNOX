@@ -1,5 +1,7 @@
+#include <errno.h>
 #include <jnox/process.h>
 #include <stdint.h>
+#include <time.h>
 #include <unistd.h>
 
 enum { command_bytes = 192, arguments = 8 };
@@ -38,13 +40,24 @@ static int parse(const char *command)
             in_word = 1;
         }
     }
-    return side && used[1] ? 0 : -1;
+    words[0][used[0]] = 0;
+    words[1][used[1]] = 0;
+    if (!used[0] || (side && !used[1]))
+        return -1;
+    return (int)side;
 }
 
-int main(int argc, char **argv)
+static int equal(const char *left, const char *right)
 {
-    if (argc != 2 || parse(argv[1]) != 0)
-        return 2;
+    while (*left && *left == *right) {
+        ++left;
+        ++right;
+    }
+    return *left == *right;
+}
+
+static int pipeline(void)
+{
     shell_result[0] = 1;
     int ends[2];
     if (pipe(ends) != 0)
@@ -71,4 +84,115 @@ int main(int argc, char **argv)
         shell_result[4] != first || shell_result[5] != second)
         return 4;
     return right_status;
+}
+
+static int output(int fd, const char *bytes, size_t count)
+{
+    while (count) {
+        ssize_t n = write(fd, bytes, count);
+        if (n <= 0)
+            return -1;
+        bytes += n;
+        count -= (size_t)n;
+    }
+    return 0;
+}
+
+static int run(const char *command)
+{
+    int sides = parse(command);
+    if (sides == 1)
+        return pipeline();
+    if (sides < 0 || words[0][1] || !equal(words[0][0], "dmesg"))
+        return 2;
+    char snapshot[JNOX_DMESG_BYTES];
+    int n = jnox_dmesg(snapshot, sizeof(snapshot));
+    if (n < 0) {
+        if (errno == EACCES) {
+            const char error[] = "dmesg: permission denied\n";
+            output(STDERR_FILENO, error, sizeof(error) - 1);
+        }
+        return 1;
+    }
+    return output(STDOUT_FILENO, snapshot, (size_t)n) == 0 ? 0 : 1;
+}
+
+static int next_byte(void)
+{
+    for (;;) {
+        int byte = jnox_shell_getchar();
+        if (byte >= 0 || errno != EAGAIN)
+            return byte;
+        struct timespec wake;
+        if (clock_gettime(CLOCK_MONOTONIC, &wake) < 0)
+            return -1;
+        wake.tv_nsec += 10000000;
+        if (wake.tv_nsec >= 1000000000) {
+            ++wake.tv_sec;
+            wake.tv_nsec -= 1000000000;
+        }
+        if (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &wake, 0))
+            return -1;
+    }
+}
+
+static int interactive(void)
+{
+    char line[command_bytes];
+    int after_cr = 0;
+    for (;;) {
+        unsigned used = 0;
+        int overlong = 0;
+        if (output(STDOUT_FILENO, "jnox$ ", 6) < 0)
+            return 1;
+        for (;;) {
+            int byte = next_byte();
+            if (byte < 0)
+                return 1;
+            if (after_cr && byte == '\n') {
+                after_cr = 0;
+                continue;
+            }
+            after_cr = byte == '\r';
+            if (after_cr || byte == '\n')
+                break;
+            if (overlong)
+                continue;
+            if (byte == 8 || byte == 127) {
+                if (used) {
+                    --used;
+                    output(STDOUT_FILENO, "\b \b", 3);
+                }
+            } else if ((byte >= 32 && byte < 127) || byte == '\t') {
+                if (used + 1 >= sizeof(line)) {
+                    overlong = 1;
+                    continue;
+                }
+                line[used++] = (char)byte;
+                output(STDOUT_FILENO, &line[used - 1], 1);
+            }
+        }
+        output(STDOUT_FILENO, "\n", 1);
+        if (overlong) {
+            output(STDERR_FILENO, "line too long\n", 14);
+            continue;
+        }
+        line[used] = 0;
+        if (equal(line, "exit"))
+            return 0;
+        if (used && run(line) != 0)
+            output(STDERR_FILENO, "command failed\n", 15);
+    }
+}
+
+int main(int argc, char **argv)
+{
+    if (argc == 2 && equal(argv[1], "-i"))
+        return interactive();
+    if (argc < 2)
+        return 2;
+    int status = 0;
+    for (int i = 1; i < argc; ++i)
+        status = run(argv[i]);
+    return status;
 }

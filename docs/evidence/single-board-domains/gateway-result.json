@@ -1,0 +1,196 @@
+{
+  "first": {
+    "qemu": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+    "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+    "monitor_sha256": "8cda402637dfb833726808c9f4c97db50cfb0f031bbba3f1ba016d642160ee55",
+    "pid": 502,
+    "wire_sha256": "a33317a686a26238daaf62e5242e76a2eef0d0a586d33d074687002008e7db3b",
+    "uart_sha256": "5cba555fb7a3c31357d09f09621941ad0e3a347903e5c1c283867aee2b4343ab",
+    "measurements": {
+      "outage_ns": 250145792,
+      "peer_ticks_in_outage": 13,
+      "peer_counts": [
+        82,
+        89,
+        104
+      ],
+      "device_replies": [
+        "07b2b62a4206b06a",
+        "7a43a9778d26bd17"
+      ],
+      "linux_module_sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f"
+    },
+    "request_token": "0000000000429c60",
+    "exit_status": 81,
+    "generation1_result": "07b2b62a4206b06a",
+    "generation2_result": "7a43a9778d26bd17",
+    "outage_start_ns": 1806259248,
+    "deadline_ns": 2056259248,
+    "fallback_ns": 2056405040,
+    "overshoot_ns": 145792,
+    "stale_replies": 0,
+    "fault_output": 0,
+    "final_output": 1,
+    "raw_svc_errno": [
+      -14,
+      -14
+    ],
+    "peer_denied_errno": [
+      -13,
+      -13
+    ],
+    "native_timer_irqs": [
+      397,
+      430,
+      500
+    ]
+  },
+  "repeat": {
+    "qemu": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+    "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+    "monitor_sha256": "8cda402637dfb833726808c9f4c97db50cfb0f031bbba3f1ba016d642160ee55",
+    "pid": 505,
+    "wire_sha256": "d9b513148ca2d7b411b4edf0d848f312f40746795977c0b54b5e3fa4aa48153c",
+    "uart_sha256": "55faca57e100eb324f4d818a2d6fea8b883bda4ea4470b13261cda52b3422881",
+    "measurements": {
+      "outage_ns": 250158624,
+      "peer_ticks_in_outage": 12,
+      "peer_counts": [
+        81,
+        88,
+        103
+      ],
+      "device_replies": [
+        "8d5bad463f3d3177",
+        "ba762ef335fb1214"
+      ],
+      "linux_module_sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f"
+    },
+    "request_token": "000000000047e860",
+    "exit_status": 81,
+    "generation1_result": "8d5bad463f3d3177",
+    "generation2_result": "ba762ef335fb1214",
+    "outage_start_ns": 1787190032,
+    "deadline_ns": 2037190032,
+    "fallback_ns": 2037348656,
+    "overshoot_ns": 158624,
+    "stale_replies": 0,
+    "fault_output": 0,
+    "final_output": 1,
+    "raw_svc_errno": [
+      -14,
+      -14
+    ],
+    "peer_denied_errno": [
+      -13,
+      -13
+    ],
+    "native_timer_irqs": [
+      390,
+      423,
+      494
+    ]
+  },
+  "native": {
+    "kernel_sha256": "58c745faaf7911d7bbf4801fcfc17ea1f97bab982747887800f54f7266197c7a",
+    "slots": [
+      {
+        "slot": 0,
+        "elf": "user.elf",
+        "elf_sha256": "a136eadc80dcd8f2d32b00c18c1207755b8cf93371be0b4906a46fe629105291",
+        "input": {
+          "kind": "elf",
+          "path": "/home/ywcho/jnox406-lab/422-gateway-admission/app.elf",
+          "sha256": "a136eadc80dcd8f2d32b00c18c1207755b8cf93371be0b4906a46fe629105291"
+        },
+        "argv": [
+          "/bin/app"
+        ],
+        "priority": 8
+      },
+      {
+        "slot": 1,
+        "elf": "native_peer.elf",
+        "elf_sha256": "1e857bee73185ef2d8a331b3f10a659ec5b7e51847d3f711a172ffc4f5b74657",
+        "input": {
+          "kind": "elf",
+          "path": "/home/ywcho/jnox406-lab/422-gateway-admission/peer.elf",
+          "sha256": "1e857bee73185ef2d8a331b3f10a659ec5b7e51847d3f711a172ffc4f5b74657"
+        },
+        "argv": [
+          "/bin/app"
+        ],
+        "priority": 8
+      }
+    ],
+    "authority": {
+      "mailbox_slot": 0,
+      "unauthorized_slots": [
+        1
+      ]
+    }
+  },
+  "linux": {
+    "packages": {
+      "linux-virt-6.18.65-r0.apk": "859ad147c29bf3c6d84a3ff84280aa5c94d890dc37ada31b072d099a8437f8e0",
+      "busybox-static-1.37.0-r30.apk": "44c9abdfb970f398fa72c8382fe2d8808eea16beaf82daf6ac708b92f1b8659e"
+    },
+    "release": "6.18.65-0-virt",
+    "image_sha256": "4eb5c87867473f20f5ce5084c23f3dff587c84327f3fbba0cfe3157133c20c29",
+    "vmlinuz_sha256": "72fd704e4a2e283a22c74c3b8be50eb065f7a7b54e931c8c3d476d6e9d3497b6",
+    "config_sha256": "72f421144719596a38b40adb2eec8ded2628827518438d23d5b3f0f97cee02ed",
+    "initrd_sha256": "8be0f5166c1c0c78492a0db539b9abba742af28a3057170bb4e834aaf956d6ec",
+    "busybox_sha256": "198f6f675a49ac734082e054b823d3e2e947180ca2f632852ae1c09e950fd676",
+    "modules": {
+      "failover": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/net/core/failover.ko.gz",
+        "compressed_sha256": "ae071a342b694423aca240cf6b056e9ac57dd153987af6946b1947eb21515616",
+        "ko_sha256": "33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8"
+      },
+      "net_failover": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/net/net_failover.ko.gz",
+        "compressed_sha256": "f9fa7090ce250b3dbccf25ecf9d9b270852e6c02c9d2807d6633ff1437325a45",
+        "ko_sha256": "3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4"
+      },
+      "virtio_mmio": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/virtio/virtio_mmio.ko.gz",
+        "compressed_sha256": "51085f5e8f2fa1bdca010ce13bfa564609803ca8ed6bda1d139bb0331636849d",
+        "ko_sha256": "ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1"
+      },
+      "virtio_net": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/net/virtio_net.ko.gz",
+        "compressed_sha256": "10213ed7309bc11e4a0b4dd7e03edea81e90429d1a2520c0133bb4bf9167a379",
+        "ko_sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f"
+      }
+    },
+    "gateway": {
+      "source_sha256": "86f0af35b423e7cd17098180ead3a6d891ea9a15fad36e3e590e3a0cce00262e",
+      "elf_sha256": "3b15e533ecb6d3354f5e9481cac2390a6a616a9d24cfc2d35f03a927a674084d",
+      "compiler": "aarch64-linux-gnu-gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+      "flags": [
+        "-std=c11",
+        "-Os",
+        "-static",
+        "-s",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wl,--build-id=none"
+      ]
+    }
+  },
+  "http_irq79": [
+    3,
+    7,
+    21,
+    32,
+    43,
+    55
+  ],
+  "control_app_failure": -101,
+  "archive": {
+    "name": "single-board-gateway-originals.tar.xz",
+    "bytes": 1015624,
+    "sha256": "14f54f418ffeedfdf33375bff6666f89012b92d54a97ef2fef307c59249e8f0e"
+  }
+}

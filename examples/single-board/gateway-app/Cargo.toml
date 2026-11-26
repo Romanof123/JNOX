@@ -1,0 +1,10 @@
+[package]
+name = "jnox-bao-gateway-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jnox-native = { path = "../../../sdk/native-aarch64/rust", features = ["bao-gateway"] }
+
+[profile.release]
+panic = "abort"

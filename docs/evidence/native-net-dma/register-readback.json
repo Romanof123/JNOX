@@ -1,0 +1,40 @@
+{
+  "model": "QEMU 6.2 AArch64 virt",
+  "base": "0xa003e00",
+  "kernel_sha256": "ec74817ac1b147c6705fc7a0480d2d80d528e87dd7cfc633847820ca36724a35",
+  "raw_trace_sha256": "2466b3ff3ed0e9b76e601525b9d3172569678bda3b008402880dcfa85a85145a",
+  "trace_bytes": 1077,
+  "wire_sha256": "dfcd0772e7dc13b9b8d1e4a4bb5ef7b20a37419044e661b1789914628501476e",
+  "transactions": [
+    {
+      "op": "write",
+      "offset": "0x70",
+      "value": 0
+    },
+    {
+      "op": "read",
+      "offset": "0x70",
+      "value": 0
+    },
+    {
+      "op": "write",
+      "offset": "0x30",
+      "value": 0
+    },
+    {
+      "op": "read",
+      "offset": "0x44",
+      "value": 0
+    },
+    {
+      "op": "write",
+      "offset": "0x30",
+      "value": 1
+    },
+    {
+      "op": "read",
+      "offset": "0x44",
+      "value": 0
+    }
+  ]
+}

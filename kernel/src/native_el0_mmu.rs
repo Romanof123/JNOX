@@ -146,8 +146,15 @@ impl Space {
 static mut SPACES: [Space; SPACE_CAPACITY] = [const { Space::EMPTY }; SPACE_CAPACITY];
 static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
+#[cfg(not(jnox_bao_partition))]
 static mut UART: Table = Table::EMPTY;
+#[cfg(jnox_native_display)]
+pub(crate) const FW_CFG: usize = 0x0902_0000;
 static mut GIC: Table = Table::EMPTY;
+#[cfg(jnox_bao_gateway)]
+pub(crate) const BAO_MAILBOX_IPA: usize = 0x0b00_0000;
+#[cfg(jnox_bao_gateway)]
+static mut BAO_MAILBOX: Table = Table::EMPTY;
 #[cfg(jnox_native_shell)]
 const SHELL_ROM_VA: usize = 0x0180_0000;
 #[cfg(jnox_native_shell)]
@@ -294,9 +301,12 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         #[cfg(not(jnox_pi4))]
         {
             link(&raw mut space.root, LINK_START, 30, &raw mut HIGH);
+            #[cfg(not(jnox_bao_partition))]
             link(&raw mut space.low, crate::UART0, 21, &raw mut UART);
             #[cfg(jnox_native_net_service)]
             link(&raw mut space.low, VIRTIO_MMIO_BASE, 21, &raw mut VIRTIO_MMIO);
+            #[cfg(jnox_bao_gateway)]
+            link(&raw mut space.low, BAO_MAILBOX_IPA, 21, &raw mut BAO_MAILBOX);
             link(&raw mut space.low, crate::context::GICD, 21, &raw mut GIC);
         }
         #[cfg(jnox_pi4)]
@@ -447,7 +457,13 @@ unsafe fn install_spaces<'a>(
             let addr = VIRTIO_MMIO_BASE + offset;
             page(&raw mut VIRTIO_MMIO, addr, addr, DEVICE);
         }
+        #[cfg(not(jnox_bao_partition))]
         page(&raw mut UART, crate::UART0, crate::UART0, DEVICE);
+        // QEMU virt fw_cfg shares UART0's 2 MiB region. Install only its EL1 page.
+        #[cfg(jnox_native_display)]
+        page(&raw mut UART, FW_CFG, FW_CFG, DEVICE);
+        #[cfg(jnox_bao_gateway)]
+        page(&raw mut BAO_MAILBOX, BAO_MAILBOX_IPA, BAO_MAILBOX_IPA, DEVICE);
         page(&raw mut GIC, crate::context::GICD, crate::context::GICD, DEVICE);
         page(&raw mut GIC, crate::context::GICC, crate::context::GICC, DEVICE);
         #[cfg(jnox_native_weighted_notify)]

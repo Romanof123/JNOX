@@ -1,0 +1,335 @@
+{
+  "quiet": {
+    "source_local": "d8a89e3adc7b0df3d1660147707ccbbc53235b26",
+    "kernel_sha256": "59353dae9221f08b877b8f15f4c8076232eb67c61312f10629f568135521ed09",
+    "queue_bytes": 32768,
+    "qmp_queue_diagnostics": {
+      "path": null,
+      "commands": []
+    },
+    "pcap_sha256": "2c985cef0dedbe1d990898031f4834c3c58ef2aecc76f1eb83e373517d811cad",
+    "captures_sha256": "0cc8ee77bc4e14319b9701634acfd99d6a6380203dd600ffc8442cb38ae9419e",
+    "announce_count": 0,
+    "wire_hex": {
+      "primary.challenge": "ffffffffffff02000000000188b54a4e444d0101a49fb7681fb29ee2626ae415c8569497000000000000000000000000000000000000000000000000",
+      "primary.reply": "02000000000152540012345688b54a4e444d0102a49fb7681fb29ee2626ae415c8569497000000000000000000000000000000000000000000000000",
+      "spare.challenge": "ffffffffffff02000000000188b54a4e444d0201d92e3c928c0ff3f35292f15ae561efb4000000000000000000000000000000000000000000000000",
+      "spare.reply": "02000000000152540012345688b54a4e444d0202d92e3c928c0ff3f35292f15ae561efb4000000000000000000000000000000000000000000000000"
+    },
+    "checkpoints": {
+      "primary": {
+        "status": 15,
+        "selected_ready": 1,
+        "phase": 1,
+        "pool_zero": false,
+        "pool_sha256": "d82d408e12c5325f20ab99a818fe21e06eb128aa23e3eaae5223cca053712a8a",
+        "rx_avail_idx": 9,
+        "rx_used_idx": 1,
+        "peer_ticks": 1,
+        "peer_guest_ns": 4632256
+      },
+      "retired": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 1,
+        "peer_guest_ns": 4632256
+      },
+      "progress": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 2,
+        "peer_guest_ns": 1005407776
+      },
+      "spare": {
+        "status": 15,
+        "selected_ready": 1,
+        "phase": 1,
+        "pool_zero": false,
+        "pool_sha256": "b1cfcca8ece90ea860925e5f3ed96a9963f61d0cac6bedcea9b434e91982de6a",
+        "rx_avail_idx": 9,
+        "rx_used_idx": 1,
+        "peer_ticks": 16,
+        "peer_guest_ns": 15009745440
+      },
+      "final": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 22,
+        "peer_guest_ns": 21016956256
+      }
+    },
+    "final_receipts": [
+      {
+        "dma_phase": 2,
+        "dma_echo_count": 1
+      },
+      {
+        "dma_phase": 2,
+        "dma_peer_ticks": 22,
+        "dma_peer_ns": 21016956256,
+        "dma_peer_finished": 17,
+        "dma_peer_rx": -13,
+        "dma_peer_tx": -13,
+        "dma_peer_claim": -13
+      },
+      {
+        "dma_phase": 3,
+        "dma_echo_count": 1,
+        "dma_spare_preclaim": -11,
+        "dma_spare_claim": 0,
+        "dma_spare_duplicate": -114
+      }
+    ],
+    "native_exits": [
+      [
+        "0",
+        "0"
+      ],
+      [
+        "1",
+        "0"
+      ],
+      [
+        "2",
+        "0"
+      ]
+    ]
+  },
+  "lan": {
+    "source_local": "d8a89e3adc7b0df3d1660147707ccbbc53235b26",
+    "kernel_sha256": "59353dae9221f08b877b8f15f4c8076232eb67c61312f10629f568135521ed09",
+    "queue_bytes": 32768,
+    "qmp_queue_diagnostics": {
+      "path": null,
+      "commands": []
+    },
+    "pcap_sha256": "a847d1d379b82a1f5f455197442de6b2026873c203cfbe75471e563fa54339f1",
+    "captures_sha256": "dff809fd6a2d364267fa5dd752a71fab0506e5aa39c317ac27a4370e7772c976",
+    "announce_count": 3,
+    "wire_hex": {
+      "primary.challenge": "ffffffffffff02000000000188b54a4e444d010131b8bab1c92b092e1f6fe4f34dc27ebf000000000000000000000000000000000000000000000000",
+      "primary.reply": "02000000000152540012345688b54a4e444d010231b8bab1c92b092e1f6fe4f34dc27ebf000000000000000000000000000000000000000000000000",
+      "spare.challenge": "ffffffffffff02000000000188b54a4e444d0201bc0d9a6f4a4ab6cf5c3c321d11c166e8000000000000000000000000000000000000000000000000",
+      "spare.reply": "02000000000152540012345688b54a4e444d0202bc0d9a6f4a4ab6cf5c3c321d11c166e8000000000000000000000000000000000000000000000000"
+    },
+    "checkpoints": {
+      "primary": {
+        "status": 15,
+        "selected_ready": 1,
+        "phase": 1,
+        "pool_zero": false,
+        "pool_sha256": "3733f0a1d81c09baadb447bc185b2b6684a49caeaa5f6b231cfb84a58defa53f",
+        "rx_avail_idx": 9,
+        "rx_used_idx": 1,
+        "peer_ticks": 1,
+        "peer_guest_ns": 6746544
+      },
+      "retired": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 1,
+        "peer_guest_ns": 6746544
+      },
+      "progress": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 2,
+        "peer_guest_ns": 1007970912
+      },
+      "spare": {
+        "status": 15,
+        "selected_ready": 1,
+        "phase": 1,
+        "pool_zero": false,
+        "pool_sha256": "0cd949ee386e5f362f7bf4eabe6260fb1362c1315728d9f20b60e3269fde4e04",
+        "rx_avail_idx": 9,
+        "rx_used_idx": 1,
+        "peer_ticks": 16,
+        "peer_guest_ns": 15016359680
+      },
+      "final": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 22,
+        "peer_guest_ns": 21024823488
+      }
+    },
+    "final_receipts": [
+      {
+        "dma_phase": 2,
+        "dma_echo_count": 1
+      },
+      {
+        "dma_phase": 2,
+        "dma_peer_ticks": 22,
+        "dma_peer_ns": 21024823488,
+        "dma_peer_finished": 17,
+        "dma_peer_rx": -13,
+        "dma_peer_tx": -13,
+        "dma_peer_claim": -13
+      },
+      {
+        "dma_phase": 3,
+        "dma_echo_count": 1,
+        "dma_spare_preclaim": -11,
+        "dma_spare_claim": 0,
+        "dma_spare_duplicate": -114
+      }
+    ],
+    "native_exits": [
+      [
+        "0",
+        "0"
+      ],
+      [
+        "1",
+        "0"
+      ],
+      [
+        "2",
+        "0"
+      ]
+    ]
+  },
+  "sdk": {
+    "source_local": "2e64cd029b54b95404e87fa84c5648be0adb943e",
+    "kernel_sha256": "ec74817ac1b147c6705fc7a0480d2d80d528e87dd7cfc633847820ca36724a35",
+    "queue_bytes": 32768,
+    "qmp_queue_diagnostics": {
+      "path": null,
+      "commands": []
+    },
+    "pcap_sha256": "708d0da3ad272b097a84bb6876f14663c865cb6ce3edea197b86a0ece2aed24a",
+    "captures_sha256": "906431cc7fcf19ea9503b6f9b30300f76c545841eb458e9bb905752c2f2b8864",
+    "announce_count": 3,
+    "wire_hex": {
+      "primary.challenge": "ffffffffffff02000000000188b54a4e444d0101a229b400d3677b0bf51ee5dc09d3e1b6000000000000000000000000000000000000000000000000",
+      "primary.reply": "02000000000152540012345688b54a4e444d0102a229b400d3677b0bf51ee5dc09d3e1b6000000000000000000000000000000000000000000000000",
+      "spare.challenge": "ffffffffffff02000000000188b54a4e444d0201f8b3939d957c797659f9a04fd31cc0af000000000000000000000000000000000000000000000000",
+      "spare.reply": "02000000000152540012345688b54a4e444d0202f8b3939d957c797659f9a04fd31cc0af000000000000000000000000000000000000000000000000"
+    },
+    "checkpoints": {
+      "primary": {
+        "status": 15,
+        "selected_ready": 1,
+        "phase": 1,
+        "pool_zero": false,
+        "pool_sha256": "38d2146adfdfa451e5f5579144182d828a5bd0864b82ab201e5a305484db461c",
+        "rx_avail_idx": 9,
+        "rx_used_idx": 1,
+        "peer_ticks": 1,
+        "peer_guest_ns": 4756560
+      },
+      "retired": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 1,
+        "peer_guest_ns": 4756560
+      },
+      "progress": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 2,
+        "peer_guest_ns": 1005473328
+      },
+      "spare": {
+        "status": 15,
+        "selected_ready": 1,
+        "phase": 1,
+        "pool_zero": false,
+        "pool_sha256": "2203def59235ad34749f1b7bee3bc486cac3470f8a079df81533112e214ec5c6",
+        "rx_avail_idx": 9,
+        "rx_used_idx": 1,
+        "peer_ticks": 16,
+        "peer_guest_ns": 15009378032
+      },
+      "final": {
+        "status": 0,
+        "selected_ready": 0,
+        "phase": 3,
+        "pool_zero": true,
+        "pool_sha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+        "rx_avail_idx": 0,
+        "rx_used_idx": 0,
+        "peer_ticks": 22,
+        "peer_guest_ns": 21016620704
+      }
+    },
+    "final_receipts": [
+      {
+        "dma_phase": 2,
+        "dma_echo_count": 1
+      },
+      {
+        "dma_phase": 2,
+        "dma_peer_ticks": 22,
+        "dma_peer_ns": 21016620704,
+        "dma_peer_finished": 17,
+        "dma_peer_rx": -13,
+        "dma_peer_tx": -13,
+        "dma_peer_claim": -13
+      },
+      {
+        "dma_phase": 3,
+        "dma_echo_count": 1,
+        "dma_spare_preclaim": -11,
+        "dma_spare_claim": 0,
+        "dma_spare_duplicate": -114
+      }
+    ],
+    "native_exits": [
+      [
+        "0",
+        "0"
+      ],
+      [
+        "1",
+        "0"
+      ],
+      [
+        "2",
+        "0"
+      ]
+    ]
+  }
+}

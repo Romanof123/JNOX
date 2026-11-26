@@ -8,6 +8,9 @@ use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
 use core::ptr;
 
+#[cfg(jnox_bao_gateway)]
+#[path = "native_bao_gateway.rs"]
+mod bao_gateway;
 #[cfg(jnox_native_weighted)]
 #[path = "native_weighted.rs"]
 mod weighted;
@@ -160,7 +163,10 @@ static mut CLOCK_DOMAIN: (u64, u64) = (0, 0);
 
 fn counter() -> u64 {
     let ticks: u64;
+    #[cfg(not(jnox_bao_partition))]
     unsafe { asm!("isb", "mrs {}, cntpct_el0", out(reg) ticks, options(nostack, preserves_flags)) };
+    #[cfg(jnox_bao_partition)]
+    unsafe { asm!("isb", "mrs {}, cntvct_el0", out(reg) ticks, options(nostack, preserves_flags)) };
     ticks
 }
 
@@ -226,10 +232,17 @@ fn update_timer(now: u64) -> bool {
 fn arm_compare(earliest: Option<u64>) {
     unsafe {
         if let Some(target) = earliest {
+            #[cfg(not(jnox_bao_partition))]
             asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}", "isb",
                  target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
+            #[cfg(jnox_bao_partition)]
+            asm!("msr cntv_cval_el0, {target}", "msr cntv_ctl_el0, {enable}", "isb",
+                 target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
         } else {
+            #[cfg(not(jnox_bao_partition))]
             asm!("msr cntp_ctl_el0, xzr", "isb", options(nostack, preserves_flags));
+            #[cfg(jnox_bao_partition)]
+            asm!("msr cntv_ctl_el0, xzr", "isb", options(nostack, preserves_flags));
         }
     }
 }
@@ -306,6 +319,18 @@ mod spawn;
 #[cfg(jnox_native_net_service)]
 #[path = "native_virtio_net.rs"]
 mod virtio_net;
+#[cfg(jnox_native_net_service)]
+#[path = "native_net_owner.rs"]
+mod net_owner;
+#[cfg(jnox_native_display)]
+#[path = "native_ramfb.rs"]
+mod ramfb;
+#[cfg(jnox_native_uart_rx_irq)]
+#[path = "native_uart_rx.rs"]
+mod uart_rx;
+#[cfg(jnox_native_uart_rx_standby)]
+#[path = "native_uart_standby.rs"]
+mod uart_standby;
 #[cfg(all(jnox_native_net_service, any(jnox_pi4, not(jnox_native_socket_service),
     not(jnox_native_sync_ipc), not(jnox_native_fixed))))]
 compile_error!("native net service requires virt fixed scheduling with socket broker IPC");
@@ -317,6 +342,40 @@ mod loans;
 fn policy() -> &'static mut Fixed {
     // Masked, non-nested CPU0 policy entry. Never retain this borrow across idle.
     unsafe { (*(&raw mut FIXED)).as_mut().unwrap_or_else(|| fail(9)) }
+}
+
+#[cfg(jnox_native_display)]
+const DISPLAY_OWNER: usize = (env!("JNOX_PACKAGED_DISPLAY_SLOT").as_bytes()[0] - b'0') as usize;
+
+#[cfg(jnox_native_display)]
+fn display_call(pid: usize, frame: &NativeFrame) -> i64 {
+    #[cfg(not(jnox_native_uart_rx_standby))]
+    if pid != DISPLAY_OWNER { return -1; }
+    #[cfg(jnox_native_uart_rx_standby)]
+    if let Err(err) = uart_standby::authorize(pid, frame.x[8]) { return err; }
+    match frame.x[8] {
+        #[cfg(not(jnox_native_uart_rx_standby))]
+        72 => ramfb::init().map_or_else(|err| err, |()| 0),
+        #[cfg(jnox_native_uart_rx_standby)]
+        72 => uart_standby::init().map_or_else(|err| err, |()| 0),
+        73 => {
+            let y = frame.x[0] as usize;
+            let address = frame.x[1] as usize;
+            if y >= 240 { return -22; }
+            let mut row = [0u32; 320];
+            // All u32 bit patterns are valid. Borrow the initialized local row as bytes
+            // only for this checked copy from the active process.
+            let bytes = unsafe {
+                core::slice::from_raw_parts_mut(row.as_mut_ptr().cast::<u8>(), size_of::<[u32; 320]>())
+            };
+            if address % 4 != 0 || !native_el0_mmu::copy_from_user(address, bytes) { return -14; }
+            ramfb::write_row(y, &row).map_or_else(|err| err, |()| 0)
+        }
+        74 => ramfb::poll_key().map_or_else(|err| err, i64::from),
+        #[cfg(jnox_native_uart_rx_irq)]
+        75 => uart_rx::statistic(frame.x[0]),
+        _ => unreachable!(),
+    }
 }
 
 fn activate(next: usize, frame: &mut NativeFrame) {
@@ -396,8 +455,10 @@ fn start_fixed() -> usize {
         _ => fail(9),
     };
     let now = counter();
-    #[cfg(not(jnox_native_shell))]
+    #[cfg(not(any(jnox_native_shell, jnox_native_uart_rx_standby)))]
     unsafe { FIXED = Fixed::new(&config, mode, now) };
+    #[cfg(jnox_native_uart_rx_standby)]
+    unsafe { FIXED = Fixed::new_uart_standby(&config, mode, now) };
     #[cfg(jnox_native_shell)]
     unsafe { FIXED = Fixed::new_shell(&config, mode, now) };
     let p = policy();
@@ -405,6 +466,8 @@ fn start_fixed() -> usize {
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
     arm_compare(compare);
     record(now, 0, 0, Before { pid: None, wake: None, expiry: None }, None, compare);
+    #[cfg(jnox_native_shell)]
+    spawn::klog::push(spawn::klog::Event::ShellReady, now);
     next
 }
 
@@ -413,7 +476,15 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     let before = Before {
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
+    #[cfg(jnox_native_net_service)]
+    if matches!(action, Action::Exit) {
+        net_owner::exit(before.pid.unwrap_or_else(|| fail(9)));
+    }
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
+    #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
+    if matches!(action, Action::Exit) && before.pid == Some(DISPLAY_OWNER) {
+        uart_rx::disable();
+    }
     #[cfg(jnox_native_pipe_ipc)]
     if matches!(action, Action::Exit) {
         pipes::exit(p.current().unwrap_or_else(|| fail(9)), p);
@@ -430,6 +501,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     if !ipc::handles(reason) { ipc::boundary(p, now, matches!(action, Action::Exit)); }
     if p.event(now, action) != Some(true) { fail(9) }
+    #[cfg(jnox_native_uart_rx_standby)]
+    if matches!(action, Action::Exit) {
+        uart_standby::retire(before.pid.unwrap_or_else(|| fail(9)), now, p);
+    }
     let next = p.current();
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
@@ -494,6 +569,11 @@ fn finish_fixed() -> ! {
     #[cfg(jnox_native_shell)]
     spawn::report();
     for (pid, status) in unsafe { EXIT_STATUS }.into_iter().enumerate() {
+        #[cfg(jnox_native_uart_rx_standby)]
+        if uart_standby::dismissed(pid) {
+            event(b"DISMISSED", pid, None);
+            continue;
+        }
         #[cfg(jnox_native_shell)]
         if pid != 0 && !spawn::started(pid) { continue; }
         if COUNT == 1 {
@@ -521,10 +601,25 @@ fn event(kind: &[u8], pid: usize, value: Option<i64>) {
     }
 }
 
+#[cfg(jnox_bao_partition)]
+#[unsafe(no_mangle)]
+static mut jnox_partition_timer_irqs: u64 = 0;
+#[cfg(jnox_bao_partition)]
+#[unsafe(no_mangle)]
+static mut jnox_partition_last_irq_ticks: u64 = 0;
+
 #[unsafe(no_mangle)]
 extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
+    #[cfg(jnox_bao_partition)]
+    if id == context::TIMER_IRQ {
+        unsafe {
+            let count = ptr::read_volatile(&raw const jnox_partition_timer_irqs);
+            ptr::write_volatile(&raw mut jnox_partition_last_irq_ticks, counter());
+            ptr::write_volatile(&raw mut jnox_partition_timer_irqs, count.wrapping_add(1));
+        }
+    }
     #[cfg(jnox_native_batch)]
     { return batch::irq(entry, frame, iar); }
     #[cfg(jnox_native_extension)]
@@ -548,6 +643,12 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
         return edf::recurring::interrupt(entry, frame, iar);
     }
     if id >= 1020 { return 0 }
+    #[cfg(jnox_native_uart_rx_irq)]
+    if id == uart_rx::IRQ {
+        // Resume the interrupted EL0 frame or the EL1 idle loop. The timer
+        // PPI owns scheduler wakeups, and the common tail EOIs the full IAR.
+        uart_rx::interrupt(frame.is_null());
+    }
     #[cfg(jnox_native_threads)]
     if id == context::TIMER_IRQ {
         let ready = threads::irq(entry, unsafe { frame.as_mut() });
@@ -713,7 +814,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         return;
     }
     #[cfg(jnox_native_shell)]
-    if matches!(f.x[8], 4 | 50 | 51) {
+    if matches!(f.x[8], 4 | 50 | 51 | 70 | 71) {
         let service = f.x[8];
         let action = spawn::service(unsafe { CURRENT }, f, policy());
         fixed_dispatch(now, action, service, f);
@@ -729,6 +830,12 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_bao_gateway)]
+        150 | 151 => bao_gateway::service(unsafe { CURRENT }, f.x[8], f.x[0] as usize, f.x[1]),
+        #[cfg(jnox_native_display)]
+        72..=74 => display_call(unsafe { CURRENT }, f),
+        #[cfg(jnox_native_uart_rx_irq)]
+        75 => display_call(unsafe { CURRENT }, f),
         6 => clock_gettime(f.x[0], f.x[1] as usize, now),
         7 => match sleep_until(f) {
             Ok(target) if cfg!(any(jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) && target.saturating_sub(now) > i64::MAX as u64 => -75,
@@ -878,6 +985,8 @@ pub(super) fn run() -> ! {
     }
     head(0, 1);
     head(1, 1);
+    #[cfg(jnox_native_shell)]
+    spawn::klog::push(spawn::klog::Event::NativeBoot, counter());
     head(3, jnox_native_el0_image.len() as u64);
     let images: [(&[u8], &str); COUNT] = [
         (&jnox_native_el0_image, env!("JNOX_PACKAGED_ELF_SHA256")),
@@ -907,7 +1016,11 @@ pub(super) fn run() -> ! {
     // The board-specific PPI setup owns the distributor and CPU interface.
     // On Pi it must preserve firmware configuration for unrelated interrupts.
     unsafe {
+        #[cfg(not(jnox_bao_partition))]
         asm!("msr daifset, #0xf", "msr cntp_ctl_el0, xzr", "msr cntv_ctl_el0, xzr",
+            "isb", options(nostack, preserves_flags));
+        #[cfg(jnox_bao_partition)]
+        asm!("msr daifset, #0xf", "msr cntv_ctl_el0, xzr",
             "isb", options(nostack, preserves_flags));
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         context::configure_timer_ppi();

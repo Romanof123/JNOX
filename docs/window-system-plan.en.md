@@ -2,7 +2,11 @@
 
 [한국어](window-system-plan.md)
 
-CHG-077 keeps the default AArch64 image headless. JNOX has measured scheduler and stack behavior on virt and a directed wake between two cores on the Pi 4 model. Those records contain no displayed frame, physical input event, or window-service recovery. Graphics remains a proposed user service. Its prerequisites are isolated processes, bounded IPC and shared memory, device ownership, and process restart. [Scheduler evidence](evidence/evd-041.en.md) · [Pi model evidence](evidence/evd-056.en.md)
+CHG-077 keeps the default AArch64 image headless. Earlier measurements cover scheduler and stack behavior on virt and a directed wake between two cores on the Pi 4 model. The planned window service requires isolated processes, bounded IPC and shared memory, device ownership, and process restart. [Scheduler evidence](evidence/evd-041.en.md) · [Pi model evidence](evidence/evd-056.en.md)
+
+On single-core QEMU virt, PL011 input changed a pattern captured from ramfb (#406). A native JNOX client opened JNOX X11 Mosaic on a private external Xvfb server and redrew it after a button press (#407). With local presentation enabled (#410), the guest read the window through X11 `GetImage` and displayed it on ramfb. QMP captures matched the reference window at its intended position before and after the click. The same client then passed a separate remote-only run. The report also records native shell diagnostics (#408). [Model observations and capture provenance](evidence/native-display-x11-shell.en-ko.md)
+
+The kernel owns device registers and framebuffer memory in this prototype. Direct user-mode device register access, IRQ and DMA ownership, restart and stale-request rejection remain open under the native driver plan. The physical panel/input pair, resident Wayland compositor with two native clients, and resident Xwayland with focus and restart still need the observations below. The unchanged Linux-driver path has its own device and lifecycle criteria. [Resident window system #412](https://github.com/Romanof123/JNOX/issues/412) · [Native Rust driver #5](https://github.com/Romanof123/JNOX/issues/5) · [Unchanged Linux driver #3](https://github.com/Romanof123/JNOX/issues/3)
 
 | Stage | Deliverable | Observation that closes the stage |
 |---|---|---|
@@ -16,3 +20,5 @@ Give only the display and input services device access. Grant clients revocable 
 Under sustained redraw and input load, compare the same control workload against the headless baseline. Record missed deadlines, worst observed response, display CPU and memory use, queue drops and input-to-visible-frame time. Freeze the board, workloads and acceptance limits before each run. A safety-relevant telltale needs its own failure behavior, independent monitoring and qualification on the selected display path.
 
 **Product decisions.** Select the first panel/input pair, required native and X11 applications, interaction targets, and resource limits. Port X.Org directly only if a named requirement depends on an extension, device interface or behavior that the Xwayland route cannot supply. An existing Linux executable also needs a compatible loader, ABI, system calls and libraries, or a separate Linux runtime. REQ-021 separately tracks direct execution of existing Linux binaries. After the initial static CLI, qualify the selected X11 binary, its interpreter and its exact library versions on that path. A Linux-domain demonstration supplies separate compatibility evidence. [Application requirements](requirements.en.md)
+
+[Target SDK probe results for the resident compositor](native-wayland-prerequisites.en-ko.md).

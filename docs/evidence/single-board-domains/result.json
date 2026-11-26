@@ -1,0 +1,221 @@
+{
+  "schema": 1,
+  "scope": "Concurrent native EL0 and Linux NIC service on one virtual board",
+  "runs": [
+    {
+      "result": {
+        "passed": true,
+        "pid": 1100,
+        "samples": 3,
+        "first_http_start_ns": 120383622175,
+        "last_http_end_ns": 121048205291
+      },
+      "cpu_indices": [
+        0,
+        1
+      ],
+      "qemu": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "bao_sha256": "ce12a68a3afe0e8b831a65e479edb4a70d74b04399f6aa4667c57cab7f396d85",
+      "running_dtb_sha256": "c88a9da5e4ab486b6ed823888a2d410a262bd34c9bc9f39a6811cd1cb5a5f3bd",
+      "wire_sha256": "e0dff9e3e07ef5c9c2496df5f62d5105c01c78dc031f49f82091003b05335707",
+      "irq79": [
+        {
+          "phase": "ready",
+          "count": 2,
+          "virq": 14
+        },
+        {
+          "phase": "/board.dtb",
+          "count": 8,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/57fe34910437358b04526f4781a1a98b8bfa64eae198810b6ec2a28e27c97edc",
+          "count": 22,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/154a09032435872ad17a71559c9f8542a69b82b5b15162dc63f124b689048c1b",
+          "count": 34,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/59d0c372b578b5a2c6eb965303e4c0d08f57f976777e3f84a3a1bdf937334bee",
+          "count": 46,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/2314d24b9fe64d9e9e979c7276251ec27fd910bed6d85129fc6b1928f15f0fc2",
+          "count": 57,
+          "virq": 14
+        }
+      ],
+      "el0_and_timer": [
+        {
+          "count": 16,
+          "task_ns": 1605241072,
+          "timer_irqs": 16,
+          "last_irq_ticks": 101000284
+        },
+        {
+          "count": 18,
+          "task_ns": 1805544544,
+          "timer_irqs": 18,
+          "last_irq_ticks": 113519655
+        },
+        {
+          "count": 20,
+          "task_ns": 2005891440,
+          "timer_irqs": 20,
+          "last_irq_ticks": 126041136
+        }
+      ]
+    },
+    {
+      "result": {
+        "passed": true,
+        "pid": 506,
+        "samples": 3,
+        "first_http_start_ns": 230184168083,
+        "last_http_end_ns": 230903013253
+      },
+      "cpu_indices": [
+        0,
+        1
+      ],
+      "qemu": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "bao_sha256": "ce12a68a3afe0e8b831a65e479edb4a70d74b04399f6aa4667c57cab7f396d85",
+      "running_dtb_sha256": "c88a9da5e4ab486b6ed823888a2d410a262bd34c9bc9f39a6811cd1cb5a5f3bd",
+      "wire_sha256": "caabd080c20cdc2b272d8cbb9659eb6982536fd32bab74be216d22c4e9c0076e",
+      "irq79": [
+        {
+          "phase": "ready",
+          "count": 2,
+          "virq": 14
+        },
+        {
+          "phase": "/board.dtb",
+          "count": 6,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/17e0d14b15be040083775cda75540f724c7ba2d20df443e07a58f1429fde1a00",
+          "count": 20,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/6ab86e0cc3a4e117fafd8fa23c986e6b00a92b1e5a0cc7855f4525de6f00d7ac",
+          "count": 32,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/d1528427e61586dfd036490d8800212fef70670f2c70ffa211213da406dea9a8",
+          "count": 44,
+          "virq": 14
+        },
+        {
+          "phase": "/echo/a28e46af27d44c89e48a9089f0c89eb6109aeffa2eca3d3cde8c4924559c6c98",
+          "count": 55,
+          "virq": 14
+        }
+      ],
+      "el0_and_timer": [
+        {
+          "count": 19,
+          "task_ns": 1906745136,
+          "timer_irqs": 19,
+          "last_irq_ticks": 119873578
+        },
+        {
+          "count": 20,
+          "task_ns": 2007060448,
+          "timer_irqs": 20,
+          "last_irq_ticks": 126143767
+        },
+        {
+          "count": 22,
+          "task_ns": 2207606560,
+          "timer_irqs": 22,
+          "last_irq_ticks": 138677048
+        }
+      ]
+    }
+  ],
+  "group_control": {
+    "http": {
+      "error": "TimeoutError('no complete HTTP response for dtb')",
+      "returncode": null
+    },
+    "irq79_lines": [
+      "14:          0 GIC-0  79 Edge      virtio0",
+      "14:          0 GIC-0  79 Edge      virtio0",
+      "14:          0 GIC-0  79 Edge      virtio0",
+      "14:          0 GIC-0  79 Edge      virtio0",
+      "14:          0 GIC-0  79 Edge      virtio0"
+    ]
+  },
+  "physical_trace": {
+    "422-passive": {
+      "device_log_sha256": "b0a5727052bca4b4c2b2d95562cbe94542265497b0377fb24a81956aeb37af9f",
+      "group_word": [
+        "memory_region_ops_write cpu 0 addr 0x8000088 value 0xffffffff size 4 name 'gic_dist'"
+      ],
+      "ack_writes": [],
+      "irq_ack_trace_79": 0,
+      "ack_write_count": 0
+    },
+    "422-group0": {
+      "device_log_sha256": "0eaf1574d898a0f943764e04afe4fbedee87aae3e0dd62a992b293e6fbde2e53",
+      "group_word": [
+        "memory_region_ops_write cpu 0 addr 0x8000088 value 0x0 size 4 name 'gic_dist'"
+      ],
+      "ack_writes": [
+        "memory_region_ops_write cpu 0 addr 0xa003e64 value 0x1 size 4 name 'virtio-mmio'"
+      ],
+      "irq_ack_trace_79": 130,
+      "ack_write_count": 65
+    }
+  },
+  "linux": {
+    "packages": {
+      "linux-virt-6.18.65-r0.apk": "859ad147c29bf3c6d84a3ff84280aa5c94d890dc37ada31b072d099a8437f8e0",
+      "busybox-static-1.37.0-r30.apk": "44c9abdfb970f398fa72c8382fe2d8808eea16beaf82daf6ac708b92f1b8659e"
+    },
+    "release": "6.18.65-0-virt",
+    "image_sha256": "4eb5c87867473f20f5ce5084c23f3dff587c84327f3fbba0cfe3157133c20c29",
+    "vmlinuz_sha256": "72fd704e4a2e283a22c74c3b8be50eb065f7a7b54e931c8c3d476d6e9d3497b6",
+    "config_sha256": "72f421144719596a38b40adb2eec8ded2628827518438d23d5b3f0f97cee02ed",
+    "initrd_sha256": "a398d8ae33579827c5b0e0cda630834d81c3fa61a70296cba00d0f9e5da89649",
+    "busybox_sha256": "198f6f675a49ac734082e054b823d3e2e947180ca2f632852ae1c09e950fd676",
+    "modules": {
+      "failover": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/net/core/failover.ko.gz",
+        "compressed_sha256": "ae071a342b694423aca240cf6b056e9ac57dd153987af6946b1947eb21515616",
+        "ko_sha256": "33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8"
+      },
+      "net_failover": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/net/net_failover.ko.gz",
+        "compressed_sha256": "f9fa7090ce250b3dbccf25ecf9d9b270852e6c02c9d2807d6633ff1437325a45",
+        "ko_sha256": "3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4"
+      },
+      "virtio_mmio": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/virtio/virtio_mmio.ko.gz",
+        "compressed_sha256": "51085f5e8f2fa1bdca010ce13bfa564609803ca8ed6bda1d139bb0331636849d",
+        "ko_sha256": "ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1"
+      },
+      "virtio_net": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/net/virtio_net.ko.gz",
+        "compressed_sha256": "10213ed7309bc11e4a0b4dd7e03edea81e90429d1a2520c0133bb4bf9167a379",
+        "ko_sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f"
+      }
+    }
+  },
+  "native_kernel_sha256": "11703a5ad29c11bc87e8267a29ca98e304b0887d473f1c9017ff4b63a975752f",
+  "archive": {
+    "name": "single-board-driver-domains.tar.xz",
+    "bytes": 946428,
+    "sha256": "372b2cad274df1f1e81a229eac7cd8674662f8acba66ad33680ea8fc97bac623"
+  }
+}

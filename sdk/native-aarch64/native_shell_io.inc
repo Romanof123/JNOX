@@ -89,3 +89,11 @@ int jnox_waitpid(int pid, int *status) {
     if (status) *status = (int)(long)r.value;
     return pid;
 }
+
+int jnox_dmesg(char *buffer, size_t length) {
+    return (int)service(70, (long)buffer, (long)length, 0);
+}
+
+int jnox_shell_getchar(void) {
+    return (int)service(71, 0, 0, 0);
+}

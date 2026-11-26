@@ -1,0 +1,10 @@
+[package]
+name = "partition-heartbeat"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jnox-native = { path = "../../../sdk/native-aarch64/rust" }
+
+[profile.release]
+panic = "abort"

@@ -47,7 +47,7 @@ enum State {
     Running,
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
     BlockedIpc,
-    #[cfg(jnox_native_shell)]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
     Dormant,
     Sleeping(u64),
     Exited,
@@ -81,6 +81,12 @@ impl Fixed {
         Self::initial(tasks, mode, now, 1)
     }
 
+    #[cfg(jnox_native_uart_rx_standby)]
+    pub(crate) fn new_uart_standby(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
+        if tasks.len() != 3 || !matches!(mode, Mode::Fifo) { return None; }
+        Self::initial(tasks, mode, now, 2)
+    }
+
     fn initial(tasks: &[Config], mode: Mode, now: u64, initially_ready: usize) -> Option<Self> {
         if tasks.len() > MAX_TASKS {
             return None;
@@ -109,7 +115,7 @@ impl Fixed {
             if id < initially_ready {
                 policy.tasks[id].state = State::Sleeping(relative_deadline(now, config.delay)?);
             }
-            #[cfg(jnox_native_shell)]
+            #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
             if id >= initially_ready { policy.tasks[id].state = State::Dormant; }
         }
         policy.wake_due();
@@ -118,18 +124,18 @@ impl Fixed {
         Some(policy)
     }
 
-    #[cfg(jnox_native_shell)]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
     pub(crate) fn dormant(&self, id: usize) -> bool {
         id < self.count && self.tasks[id].state == State::Dormant
     }
 
-    #[cfg(jnox_native_shell)]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
     pub(crate) fn launch(&mut self, id: usize) {
         assert!(self.dormant(id));
         self.join_tail(id);
     }
 
-    #[cfg(jnox_native_shell)]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
     pub(crate) fn dismiss(&mut self, id: usize) {
         assert!(self.dormant(id));
         self.tasks[id].state = State::Exited;

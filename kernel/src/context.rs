@@ -2,6 +2,9 @@
 use core::{arch::asm, ptr};
 
 pub(super) const STACK_BYTES: usize = 16 * 1024;
+#[cfg(jnox_bao_partition)]
+pub(super) const TIMER_IRQ: u32 = 27; // EL1 virtual timer PPI
+#[cfg(not(jnox_bao_partition))]
 pub(super) const TIMER_IRQ: u32 = 30; // Nonsecure EL1 physical timer PPI
 #[cfg(not(jnox_pi4))]
 pub(super) const GICD: usize = 0x0800_0000;
