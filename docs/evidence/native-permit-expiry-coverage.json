@@ -1,0 +1,783 @@
+{
+  "source": "frozen-403-native-first-boots",
+  "built_revision": "a69bc6948c1d57c6df89d395e9307de5e0c6d6dc",
+  "public_revision": "4ae1c136988b8cd811f472267bfad3b4eb27d2f3",
+  "tree": "a851e772eff77659b16d9a372de6d353be803757",
+  "packet_manifest_sha256": "509b5365288e9d75106657f084ab0204c5c75c4911753da4ac29db42d5ae8635",
+  "decoder_output_sha256": "9802c66bf711efa7ce786a2ed30a2b4604e86078914fd87d2c3d3d0384d3abca",
+  "counter_hz": 62500000,
+  "runs": [
+    {
+      "run": "001-default-fifo-arrival-before",
+      "receipt_sha256": "8d243b412324805919dad44015282bf5e255b5b6188e15ed1fb30251642f1faf",
+      "clock": "default",
+      "policy": "fifo",
+      "calendar": "arrival-before",
+      "D": 6302386,
+      "C": 6306885,
+      "check_minus_D": 4499,
+      "publication": "before",
+      "publication_bounds": [
+        6256891,
+        6257224
+      ],
+      "queue_at_D": "queued",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4820817,
+            4820828
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6308575,
+            6308580
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6308665,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6308575,
+        6308580
+      ],
+      "fall_minus_D": [
+        6189,
+        6194
+      ],
+      "fall_minus_C": [
+        1690,
+        1695
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "002-default-fifo-arrival-same",
+      "receipt_sha256": "1d214c1efa6ea512b736fdcd5854e4f22da436d119e11474c3860e0787c053ac",
+      "clock": "default",
+      "policy": "fifo",
+      "calendar": "arrival-same",
+      "D": 6196286,
+      "C": 6213633,
+      "check_minus_D": 17347,
+      "publication": "after",
+      "publication_bounds": [
+        6203352,
+        6203619
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4719214,
+            4719218
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6214779,
+            6214784
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6214861,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6214779,
+        6214784
+      ],
+      "fall_minus_D": [
+        18493,
+        18498
+      ],
+      "fall_minus_C": [
+        1146,
+        1151
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "003-default-fifo-arrival-after",
+      "receipt_sha256": "d071ac099e9ee7376570ffea73a815118547da839110f536dbb317d52af7b44e",
+      "clock": "default",
+      "policy": "fifo",
+      "calendar": "arrival-after",
+      "D": 6165732,
+      "C": 6170863,
+      "check_minus_D": 5131,
+      "publication": "after",
+      "publication_bounds": [
+        6233426,
+        6233727
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "empty",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4684674,
+            4684677
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6172052,
+            6172056
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": false,
+        "published_after_check": true,
+        "check_return_tick": 6172127,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6172052,
+        6172056
+      ],
+      "fall_minus_D": [
+        6320,
+        6324
+      ],
+      "fall_minus_C": [
+        1189,
+        1193
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "004-default-rr-arrival-before",
+      "receipt_sha256": "c2f8627bb24935652fd71c11f5d4ebfd67b842580044992c8ffefe9b3e47c324",
+      "clock": "default",
+      "policy": "rr",
+      "calendar": "arrival-before",
+      "D": 6249656,
+      "C": 6257026,
+      "check_minus_D": 7370,
+      "publication": "before",
+      "publication_bounds": [
+        6202783,
+        6203108
+      ],
+      "queue_at_D": "queued",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4774909,
+            4774912
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6258545,
+            6258551
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6258656,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6258545,
+        6258551
+      ],
+      "fall_minus_D": [
+        8889,
+        8895
+      ],
+      "fall_minus_C": [
+        1519,
+        1525
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "005-default-rr-arrival-same",
+      "receipt_sha256": "fadc4194bb3df824e309264e76f1c255ab642238eaf862eb3de22540e2eeb618",
+      "clock": "default",
+      "policy": "rr",
+      "calendar": "arrival-same",
+      "D": 6224333,
+      "C": 6241854,
+      "check_minus_D": 17521,
+      "publication": "after",
+      "publication_bounds": [
+        6231420,
+        6231763
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4747520,
+            4747526
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6243059,
+            6243064
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6243148,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6243059,
+        6243064
+      ],
+      "fall_minus_D": [
+        18726,
+        18731
+      ],
+      "fall_minus_C": [
+        1205,
+        1210
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "006-default-rr-arrival-after",
+      "receipt_sha256": "c3a0b86cccbed7fe2de32d127a225fac6b52fe3383bfb99afa91bf364366bffa",
+      "clock": "default",
+      "policy": "rr",
+      "calendar": "arrival-after",
+      "D": 6250660,
+      "C": 6256324,
+      "check_minus_D": 5664,
+      "publication": "after",
+      "publication_bounds": [
+        6318605,
+        6319051
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "empty",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4772947,
+            4772950
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6257792,
+            6257797
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": false,
+        "published_after_check": true,
+        "check_return_tick": 6257933,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6257792,
+        6257797
+      ],
+      "fall_minus_D": [
+        7132,
+        7137
+      ],
+      "fall_minus_C": [
+        1468,
+        1473
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "007-count0-fifo-arrival-before",
+      "receipt_sha256": "d21bcd7629c750aba85685722e12bd7f9328552179babcfbc203b59982f27b94",
+      "clock": "count0",
+      "policy": "fifo",
+      "calendar": "arrival-before",
+      "D": 6043655,
+      "C": 6043790,
+      "check_minus_D": 135,
+      "publication": "before",
+      "publication_bounds": [
+        5981971,
+        5982104
+      ],
+      "queue_at_D": "queued",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4544161,
+            4544161
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6043799,
+            6043800
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6043822,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6043799,
+        6043800
+      ],
+      "fall_minus_D": [
+        144,
+        145
+      ],
+      "fall_minus_C": [
+        9,
+        10
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "008-count0-fifo-arrival-same",
+      "receipt_sha256": "1b5c8351546156c06c7a8b7b7c1e5d334998de5c6aba2eeaeef190f65823bc6b",
+      "clock": "count0",
+      "policy": "fifo",
+      "calendar": "arrival-same",
+      "D": 6043648,
+      "C": 6044461,
+      "check_minus_D": 813,
+      "publication": "after",
+      "publication_bounds": [
+        6043934,
+        6044066
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4544154,
+            4544154
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6044470,
+            6044471
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6044493,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6044470,
+        6044471
+      ],
+      "fall_minus_D": [
+        822,
+        823
+      ],
+      "fall_minus_C": [
+        9,
+        10
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "009-count0-fifo-arrival-after",
+      "receipt_sha256": "9883cf39a8f7ccf70b8a7f74772d37448437cb40e193a046bd99fdfce775302a",
+      "clock": "count0",
+      "policy": "fifo",
+      "calendar": "arrival-after",
+      "D": 6043651,
+      "C": 6043791,
+      "check_minus_D": 140,
+      "publication": "after",
+      "publication_bounds": [
+        6106432,
+        6106565
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "empty",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4544157,
+            4544157
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6043800,
+            6043801
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": false,
+        "published_after_check": true,
+        "check_return_tick": 6043822,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6043800,
+        6043801
+      ],
+      "fall_minus_D": [
+        149,
+        150
+      ],
+      "fall_minus_C": [
+        9,
+        10
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "010-count0-rr-arrival-before",
+      "receipt_sha256": "5d33f5f17371bbd3c7addd5300e4a1cfcade38ce559139338f8f3868997a6c6e",
+      "clock": "count0",
+      "policy": "rr",
+      "calendar": "arrival-before",
+      "D": 6043671,
+      "C": 6043812,
+      "check_minus_D": 141,
+      "publication": "before",
+      "publication_bounds": [
+        5982011,
+        5982143
+      ],
+      "queue_at_D": "queued",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4544201,
+            4544201
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6043821,
+            6043822
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6043844,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6043821,
+        6043822
+      ],
+      "fall_minus_D": [
+        150,
+        151
+      ],
+      "fall_minus_C": [
+        9,
+        10
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "011-count0-rr-arrival-same",
+      "receipt_sha256": "9c94c99c1c33b2848d048a1ea9a098f15c1478c3fea7b01544a13e43e558f01e",
+      "clock": "count0",
+      "policy": "rr",
+      "calendar": "arrival-same",
+      "D": 6043664,
+      "C": 6044620,
+      "check_minus_D": 956,
+      "publication": "after",
+      "publication_bounds": [
+        6044069,
+        6044201
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "seq4",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4544194,
+            4544194
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6044629,
+            6044629
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": true,
+        "published_after_check": false,
+        "check_return_tick": 6044652,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6044629,
+        6044629
+      ],
+      "fall_minus_D": [
+        965,
+        965
+      ],
+      "fall_minus_C": [
+        9,
+        9
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    },
+    {
+      "run": "012-count0-rr-arrival-after",
+      "receipt_sha256": "7050dbc218563958954db9948958f3993f895c269c4e196938757f961e5e0e5b",
+      "clock": "count0",
+      "policy": "rr",
+      "calendar": "arrival-after",
+      "D": 6043667,
+      "C": 6043813,
+      "check_minus_D": 146,
+      "publication": "after",
+      "publication_bounds": [
+        6106455,
+        6106587
+      ],
+      "queue_at_D": "unpublished",
+      "queue_at_C": "empty",
+      "prior_output_high": true,
+      "output_transitions": [
+        {
+          "before": 0,
+          "after": 1,
+          "store_bounds": [
+            4544197,
+            4544197
+          ]
+        },
+        {
+          "before": 1,
+          "after": 0,
+          "store_bounds": [
+            6043822,
+            6043822
+          ]
+        }
+      ],
+      "loan_order": {
+        "published_before_check": false,
+        "published_after_check": true,
+        "check_return_tick": 6043844,
+        "received_after_check": true,
+        "fall_inside_check": true
+      },
+      "fall_store_bounds": [
+        6043822,
+        6043822
+      ],
+      "fall_minus_D": [
+        155,
+        155
+      ],
+      "fall_minus_C": [
+        9,
+        9
+      ],
+      "functional_expiry": "observed",
+      "exact_before": "not-observed",
+      "exact_after": "not-observed",
+      "exact_equality": "not-observed"
+    }
+  ],
+  "by_clock": {
+    "default": {
+      "before_after_at_D": "pending",
+      "exact_equality": "pending",
+      "by_policy": {
+        "fifo": {
+          "witnesses": {
+            "exact_before": [],
+            "exact_after": [],
+            "exact_equality": []
+          },
+          "before_after_at_D": "pending",
+          "exact_equality": "pending"
+        },
+        "rr": {
+          "witnesses": {
+            "exact_before": [],
+            "exact_after": [],
+            "exact_equality": []
+          },
+          "before_after_at_D": "pending",
+          "exact_equality": "pending"
+        }
+      },
+      "boots": 6,
+      "publication_counts": {
+        "before": 2,
+        "after": 4
+      },
+      "exact_check_count": 0,
+      "functional_expiries": 6
+    },
+    "count0": {
+      "before_after_at_D": "pending",
+      "exact_equality": "pending",
+      "by_policy": {
+        "fifo": {
+          "witnesses": {
+            "exact_before": [],
+            "exact_after": [],
+            "exact_equality": []
+          },
+          "before_after_at_D": "pending",
+          "exact_equality": "pending"
+        },
+        "rr": {
+          "witnesses": {
+            "exact_before": [],
+            "exact_after": [],
+            "exact_equality": []
+          },
+          "before_after_at_D": "pending",
+          "exact_equality": "pending"
+        }
+      },
+      "boots": 6,
+      "publication_counts": {
+        "before": 2,
+        "after": 4
+      },
+      "exact_check_count": 0,
+      "functional_expiries": 6
+    }
+  }
+}

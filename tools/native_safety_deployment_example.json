@@ -1,0 +1,15 @@
+{
+  "format": 1,
+  "platform": {"machine": "virt,gic-version=2", "cpu": "cortex-a72", "smp": 1, "accel": "tcg", "memory_mib": 128, "clock": "default", "counter_hz": 62500000},
+  "qemu": {"sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8", "version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)"},
+  "positions": {
+    "fifo-healthy": {
+      "policy": "fifo",
+      "commit": "fbbb5ceacaa39df47bac418ca9ef22390bc51b6b",
+      "manifest_sha256": "8413e0be34b6aa2a59fe14c7477e01de227597deed9b4c15ddad0ffae58c8274",
+      "kernel_sha256": "121c485cc97d2e5ce9a0481f4489f82dedf1ec8e2ef33874c7a4bf755968ebd7",
+      "slot_sha256": ["b22f96566f8b81ff84654f7186e9c0005cc1bcc3d3926737c2153897f77a0176", "12e354c422931cf08c49d664c72b6462047ebc34b3290744a3df27e10c5c9ffb", "c15d09949a70feff629e54304ce3225714ea3736239d5ff796e4b25b8a296a2b"],
+      "ram_bytes": 13451264
+    }
+  }
+}

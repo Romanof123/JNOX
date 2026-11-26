@@ -80,6 +80,27 @@ pub(crate) fn loan_map_writer(pid: usize, slot: usize) -> Result<(), &'static st
     map(pid, slot, true)
 }
 
+/// Immutable qualification input. The CRC differs by one bit from 0x0b759508.
+#[cfg(jnox_native_safety_downstream)]
+pub(crate) fn load_invalid_fixture(slot: usize) -> Result<(), i32> {
+    const FRAME: [u8; 44] = [
+        1, 1, 44, 0, 1, 0, 1, 1, // version, type, length, channel and data ID
+        1, 0, 0, 0, 0, 0, 0, 0, // generation
+        4, 0, 0, 0, 0, 0, 0, 0, // sequence
+        0, 0, 0, 0, 0, 0, 0, 0, // issue
+        20, 0, 0, 0, 1, 0, 0, 0, // validity, permit and reserved bytes
+        0x09, 0x95, 0x75, 0x0b,
+    ];
+    let count = unsafe { PROCESS_COUNT };
+    if count != 3 || (0..count).any(|pid| loan_pte(pid, slot) != Some(0)) {
+        return Err(-5);
+    }
+    // No process has an alias. Publish initialized bytes and a zero tail before mapping.
+    unsafe { ptr::copy_nonoverlapping(FRAME.as_ptr(), backing(slot), FRAME.len()); }
+    clear_tail(slot, FRAME.len());
+    Ok(())
+}
+
 pub(crate) fn loan_map_reader(pid: usize, slot: usize) -> Result<(), &'static str> {
     map(pid, slot, false)
 }
