@@ -12,6 +12,10 @@ J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 
 
 점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 기존 Linux 드라이버는 별도 Linux 영역에서 게이트웨이를 통해 J-NOX와 통신하도록 설계했습니다. 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
 
+## 화면, X11 및 커널 로그
+
+AArch64 QEMU virt에서 선택형 Rust 화면 서비스가 입력을 받아 게스트 화면을 갱신한다. 네이티브 C X11 앱은 외부 X 서버가 그린 창을 같은 게스트 화면에 표시할 수 있다. 대화형 시리얼 셸에서는 `dmesg`로 최근 커널 이벤트를 읽는다. [실제 화면과 검증 원본](docs/evidence/native-display-x11-shell.en-ko.md) · [X11 예제 빌드](examples/native-x11/README.md) · [상주 합성기와 Xwayland](https://github.com/Romanof123/JNOX/issues/412)
+
 ## 네이티브 앱과 IPC
 
 AArch64 QEMU `virt`에서는 텍스트 정책 파일로 네이티브 C·Rust 태스크의 주기, 우선순위, 마감과 선택적 감시 시간을 지정합니다. 예제에서는 앱 5개를 패키징하고 같은 ELF를 재사용해 감시 설정을 변경합니다. [태스크 정책 예제 빌드 및 부팅](examples/native-task-policy/README.md)
