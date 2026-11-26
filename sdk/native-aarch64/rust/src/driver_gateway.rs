@@ -175,8 +175,13 @@ impl Gateway {
         let record = request.encode();
         let mut expected = record;
         expected[3] = 2;
-        for byte in &mut expected[16..] {
-            *byte ^= 0xa5;
+        // The original UDP diagnostic peer implements a fixed XOR operation.
+        // The Bao endpoint returns eight external device bytes as its result.
+        #[cfg(feature = "local-socket")]
+        if matches!(self.transport, Transport::Udp { .. }) {
+            for byte in &mut expected[16..] {
+                *byte ^= 0xa5;
+            }
         }
 
         // Backpressure must not convert a bounded remote call into an unlimited send.
@@ -207,7 +212,8 @@ impl Gateway {
                     if !peer_matches
                         || size != RECORD_BYTES
                         || buf[..4] != expected[..4]
-                        || buf[8..RECORD_BYTES] != expected[8..]
+                        || buf[8..16] != expected[8..16]
+                        || !self.accepts_payload(&buf[16..RECORD_BYTES], &expected[16..])
                     {
                         receipt.invalid_replies = receipt.invalid_replies.saturating_add(1);
                     } else {
@@ -233,6 +239,15 @@ impl Gateway {
                 }
             }
             wait(now()?, deadline)?;
+        }
+    }
+
+    fn accepts_payload(&self, received: &[u8], expected: &[u8]) -> bool {
+        match self.transport {
+            #[cfg(feature = "local-socket")]
+            Transport::Udp { .. } => received == expected,
+            #[cfg(feature = "bao-gateway")]
+            Transport::Bao => received.len() == expected.len(),
         }
     }
 
