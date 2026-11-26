@@ -717,6 +717,12 @@ fn main() {
     let packet_queues = selector("JNOX_NATIVE_LINUX_PACKET_QUEUES");
     let rx_source = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX");
     let packet_io = selector("JNOX_NATIVE_LINUX_NET_PACKETS");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx_poll)");
+    if let Some(value) = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL") {
+        assert!(value == "1" && rx_source.as_deref() == Some("1"),
+            "native Linux-source RX polling requires the RX grant profile");
+        println!("cargo::rustc-cfg=jnox_linux_source_net_rx_poll");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx)");
     if let Some(value) = rx_source.as_deref() {
         assert!(value == "1" && packet_io.as_deref() == Some("1") && pipe_config.is_some()
@@ -752,7 +758,8 @@ fn main() {
                 || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET"
                     && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_PACKET_QUEUES" | "JNOX_NATIVE_LINUX_NET_PACKETS"))
                 || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && rx_source.is_some()
-                    && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RX" | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
+                    && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RX" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL"
+                        | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
                 || matches!(key.as_ref(),
                 "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"
                 | "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256" | "JNOX_NATIVE_PEER_ELF"

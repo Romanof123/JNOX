@@ -11,11 +11,15 @@ static int consume(void)
 {
     uint64_t session[2];
     if (pipe_receive(DATA_FD, session, sizeof(session)) || !session[0]) return 40;
-    R[10] = session[1];
+    R[10] = session[1] & ~RX_POLL_SESSION;
     R[3] = (uint64_t)native_call(170, session[0], 0, 0);
     R[4] = (uint64_t)native_call(171, session[0], (uintptr_t)ungranted_buffer, sizeof(ungranted_buffer));
     R[5] = (uint64_t)native_call(172, session[0], 0, 0);
     if (R[3] != (uint64_t)-13L || R[4] != (uint64_t)-13L || R[5] != (uint64_t)-13L) return 41;
+    if (session[1] & RX_POLL_SESSION) {
+        R[12] = (uint64_t)native_call(173, session[0], 2, 0);
+        if (R[12] != (uint64_t)-13L) return 48;
+    }
     unsigned char reply = 0xa3;
     R[1] = 3;
     if (pipe_send(REPLY_FD, &reply, 1)) return 42;

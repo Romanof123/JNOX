@@ -1,0 +1,320 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/* Single-owner FIFO admission for one Linux RX/TX queue pair. IRQ delivery
+ * is serialized with this worker. No other thread executes in these objects. */
+#include <jnox_virtnet_layout.h>
+#include <jnox_packet_context.h>
+#include <jnox_rx_napi.h>
+
+static struct send_queue sq;
+static struct receive_queue rq;
+static struct napi_config cfg;
+static struct net_device *owner;
+static bool sq_alloc, rq_alloc, locked, polling, queued, missed;
+static int current_budget;
+static raw_spinlock_t *held_spin;
+static struct task_struct *rcu_owner;
+static unsigned long long counts[8];
+void jnox_rx_napi_stats_v1(unsigned long long out[8])
+{
+    for (unsigned i = 0; i < ARRAY_SIZE(counts); ++i) out[i] = counts[i];
+}
+void jnox_rx_napi_event_v1(unsigned mode, unsigned value)
+{
+    if (mode == 1) ++counts[5];
+    if (mode == 2 && value == 1) ++counts[6];
+    if (mode == 3) ++counts[7];
+}
+volatile unsigned int jnox_rx_napi_fault;
+
+static __noreturn void bad(unsigned int reason)
+{
+    WRITE_ONCE(jnox_rx_napi_fault, reason);
+    __builtin_trap();
+}
+
+int jnox_rx_napi_prepare_v1(struct net_device *dev)
+{
+    if (!dev || owner) return -EBUSY;
+    owner = dev;
+    memset(&cfg, 0, sizeof(cfg));
+    dev->napi_config = &cfg;
+    INIT_LIST_HEAD(&dev->napi_list);
+    mutex_init(&dev->lock);
+    return 0;
+}
+
+void *jnox_rx_queue_calloc_v1(size_t count, size_t size, gfp_t flags)
+{
+    (void)flags;
+    if (!owner || count != 1) return NULL;
+    if (size == sizeof(sq) && !sq_alloc) {
+        memset(&sq, 0, sizeof(sq));
+        sq_alloc = true;
+        return &sq;
+    }
+    if (size == sizeof(rq) && !rq_alloc) {
+        memset(&rq, 0, sizeof(rq));
+        rq_alloc = true;
+        return &rq;
+    }
+    return NULL;
+}
+
+void kfree(const void *ptr)
+{
+    if (!ptr) return;
+    if (ptr == &sq && sq_alloc && !sq.napi.dev) sq_alloc = false;
+    else if (ptr == &rq && rq_alloc && !rq.napi.dev) rq_alloc = false;
+    else bad(1);
+}
+
+int jnox_rx_queue_large_sg_v1(struct scatterlist *sg, unsigned int count)
+{
+    return (rq_alloc && sg == rq.sg && count == ARRAY_SIZE(rq.sg)) ||
+           (sq_alloc && sg == sq.sg && count == ARRAY_SIZE(sq.sg));
+}
+
+void __mutex_init(struct mutex *m, const char *name, struct lock_class_key *key)
+{
+    (void)name;
+    (void)key;
+    if (!owner || (m != &owner->lock && (!rq_alloc || m != &rq.dim_lock))) bad(2);
+    memset(m, 0, sizeof(*m));
+    INIT_LIST_HEAD(&m->wait_list);
+}
+
+void mutex_lock(struct mutex *m)
+{
+    if (!owner || m != &owner->lock || locked) bad(3);
+    atomic_long_set(&m->owner, (long)jnox_packet_current_v1());
+    locked = true;
+}
+
+void mutex_unlock(struct mutex *m)
+{
+    if (!owner || m != &owner->lock || !locked) bad(4);
+    atomic_long_set(&m->owner, 0);
+    locked = false;
+}
+
+void timer_init_key(struct timer_list *t, void (*fn)(struct timer_list *), unsigned int flags,
+                    const char *name, struct lock_class_key *key)
+{
+    (void)name;
+    (void)key;
+    if (!owner || t != &((struct virtnet_info *)netdev_priv(owner))->refill.timer ||
+        fn != delayed_work_timer_fn || !(flags & TIMER_IRQSAFE)) bad(5);
+    memset(t, 0, sizeof(*t));
+    t->function = fn;
+    t->flags = flags;
+}
+
+void delayed_work_timer_fn(struct timer_list *timer)
+{
+    (void)timer;
+    /* Refill is synchronous in the admitted original polling branch. */
+    bad(6);
+}
+
+void netif_napi_add_weight_locked(struct net_device *dev, struct napi_struct *n,
+                                  int (*poll)(struct napi_struct *, int), int weight)
+{
+    bool is_rx = rq_alloc && n == &rq.napi;
+    bool is_tx = sq_alloc && n == &sq.napi;
+    if (!owner || dev != owner || !locked || (!is_rx && !is_tx) ||
+        !poll || n->dev || weight < 0 || weight > NAPI_POLL_WEIGHT) bad(7);
+    if (is_rx && (n->index != 0 || n->config != &cfg)) bad(8);
+    ++counts[is_rx ? 0 : 1];
+    n->dev = dev;
+    n->poll = poll;
+    n->weight = weight;
+    n->napi_id = is_rx ? 1 : 2;
+    if (is_rx) cfg.napi_id = n->napi_id;
+    INIT_LIST_HEAD(&n->poll_list);
+    /* Single-owner insertion without Linux's debug-list globals. */
+    n->dev_list.next = &dev->napi_list;
+    n->dev_list.prev = dev->napi_list.prev;
+    n->dev_list.prev->next = &n->dev_list;
+    dev->napi_list.prev = &n->dev_list;
+    n->state |= BIT(NAPI_STATE_DISABLED);
+}
+
+bool napi_schedule_prep(struct napi_struct *n)
+{
+    if (!owner || n != &rq.napi || !n->dev || (n->state & BIT(NAPI_STATE_DISABLED))) return false;
+    if (n->state & BIT(NAPI_STATE_SCHED)) {
+        missed = true;
+        n->state |= BIT(NAPI_STATE_MISSED);
+        return false;
+    }
+    n->state |= BIT(NAPI_STATE_SCHED);
+    return true;
+}
+
+void __napi_schedule(struct napi_struct *n)
+{
+    if (!owner || n != &rq.napi || !(n->state & BIT(NAPI_STATE_SCHED))) bad(9);
+    queued = true;
+}
+
+bool napi_complete_done(struct napi_struct *n, int done)
+{
+    if (!polling || n != &rq.napi || !(n->state & BIT(NAPI_STATE_SCHED)) ||
+        done < 0 || done >= current_budget) bad(10);
+    if (missed) {
+        missed = false;
+        n->state &= ~BIT(NAPI_STATE_MISSED);
+        queued = true;
+        return false;
+    }
+    ++counts[4];
+    n->state &= ~BIT(NAPI_STATE_SCHED);
+    queued = false;
+    return true;
+}
+
+int jnox_rx_napi_poll_v1(struct napi_struct *n, int budget)
+{
+    if (!owner || !rq_alloc || n != &rq.napi || n->dev != owner || !n->poll ||
+        budget <= 0 || budget > n->weight || polling) return -EINVAL;
+    n->state &= ~BIT(NAPI_STATE_DISABLED);
+    if (!queued && napi_schedule_prep(n)) __napi_schedule(n);
+    if (!queued) return -EAGAIN;
+    queued = false;
+    polling = true;
+    current_budget = budget;
+    ++counts[2];
+    int work = n->poll(n, budget);
+    polling = false;
+    if (work < 0 || work > budget) return -EPROTO;
+    if (work == budget) {
+        ++counts[3];
+        if (!(n->state & BIT(NAPI_STATE_SCHED))) return -EPROTO;
+        queued = true;
+    }
+    return work;
+}
+
+static void remove_napi(struct napi_struct *n)
+{
+    if (!n->dev) return;
+    n->dev_list.next->prev = n->dev_list.prev;
+    n->dev_list.prev->next = n->dev_list.next;
+    INIT_LIST_HEAD(&n->dev_list);
+    n->state = BIT(NAPI_STATE_DISABLED);
+    n->dev = NULL;
+    n->poll = NULL;
+}
+
+int jnox_rx_napi_release_v1(struct net_device *dev)
+{
+    if (!dev || dev != owner || polling || locked || held_spin || rcu_owner) return -EBUSY;
+    remove_napi(&rq.napi);
+    remove_napi(&sq.napi);
+    if (rq_alloc) kfree(&rq);
+    if (sq_alloc) kfree(&sq);
+    struct virtnet_info *vi = netdev_priv(dev);
+    vi->rq = NULL;
+    vi->sq = NULL;
+    dev->napi_config = NULL;
+    queued = missed = false;
+    owner = NULL;
+    return 0;
+}
+
+/* Only this FIFO task operates on the admitted TX queue and associated
+ * netdev. The atomic state still provides acquire/release ordering. A
+ * recursive blocking lock cannot progress on this worker. */
+static bool known_spin(raw_spinlock_t *lock)
+{
+    return owner && owner->_tx && lock == &owner->_tx[0]._xmit_lock.rlock;
+}
+
+int _raw_spin_trylock(raw_spinlock_t *lock)
+{
+    if (!known_spin(lock)) bad(11);
+    int unlocked = 0;
+    if (!__atomic_compare_exchange_n(&lock->raw_lock.val.counter, &unlocked, 1,
+                                     false, __ATOMIC_ACQUIRE, __ATOMIC_RELAXED))
+        return 0;
+    if (held_spin) bad(12);
+    held_spin = lock;
+    return 1;
+}
+
+void _raw_spin_lock(raw_spinlock_t *lock)
+{
+    if (!_raw_spin_trylock(lock)) bad(13);
+}
+
+void _raw_spin_unlock(raw_spinlock_t *lock)
+{
+    if (!known_spin(lock) || lock != held_spin || READ_ONCE(lock->raw_lock.val.counter) != 1)
+        bad(14);
+    held_spin = NULL;
+    __atomic_store_n(&lock->raw_lock.val.counter, 0, __ATOMIC_RELEASE);
+}
+
+/* Readers execute in the single registered worker. Unregister/reclamation
+ * refuses to run while any nested read-side critical section is active. */
+void __rcu_read_lock(void)
+{
+    struct task_struct *t = jnox_packet_current_v1();
+    if (!owner || !t || (rcu_owner && rcu_owner != t) ||
+        t->rcu_read_lock_nesting < 0 || t->rcu_read_lock_nesting == INT_MAX)
+        bad(15);
+    rcu_owner = t;
+    WRITE_ONCE(t->rcu_read_lock_nesting, t->rcu_read_lock_nesting + 1);
+    barrier();
+}
+
+void __rcu_read_unlock(void)
+{
+    struct task_struct *t = jnox_packet_current_v1();
+    if (!t || t != rcu_owner || t->rcu_read_lock_nesting <= 0) bad(16);
+    barrier();
+    WRITE_ONCE(t->rcu_read_lock_nesting, t->rcu_read_lock_nesting - 1);
+    if (!t->rcu_read_lock_nesting) rcu_owner = NULL;
+}
+
+bool __list_del_entry_valid_or_report(struct list_head *entry)
+{
+    if (!entry || !entry->next || !entry->prev || entry->next == LIST_POISON1 ||
+        entry->prev == LIST_POISON2 || entry->next->prev != entry || entry->prev->next != entry)
+        bad(17);
+    return true;
+}
+
+void napi_disable(struct napi_struct *n)
+{
+    if (!owner || (n != &rq.napi && n != &sq.napi) || n->dev != owner ||
+        (n->state & BIT(NAPI_STATE_DISABLED)) || (n == &rq.napi && polling)) bad(18);
+    n->state |= BIT(NAPI_STATE_DISABLED);
+    n->state &= ~(BIT(NAPI_STATE_SCHED) | BIT(NAPI_STATE_MISSED));
+    if (n == &rq.napi) queued = missed = false;
+}
+
+void napi_enable(struct napi_struct *n)
+{
+    if (!owner || n != &rq.napi || n->dev != owner || !(n->state & BIT(NAPI_STATE_DISABLED)))
+        bad(19);
+    n->state &= ~BIT(NAPI_STATE_DISABLED);
+}
+
+/* Linux exposes workqueue_struct as opaque. This native endpoint admits
+ * synchronous poll-time refill only. Any request for deferred refill is a
+ * recorded service failure, never a successful queue submission. */
+struct workqueue_struct { unsigned int rejected; };
+static struct workqueue_struct refill_queue;
+struct workqueue_struct *system_percpu_wq = &refill_queue;
+
+bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+                           struct delayed_work *work, unsigned long delay)
+{
+    (void)delay;
+    if (!owner || wq != system_percpu_wq ||
+        work != &((struct virtnet_info *)netdev_priv(owner))->refill ||
+        (cpu != WORK_CPU_UNBOUND && cpu != 0)) bad(20);
+    ++refill_queue.rejected;
+    bad(21);
+}

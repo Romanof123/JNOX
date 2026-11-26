@@ -66,6 +66,8 @@ pub(super) fn retired() {
         #[cfg(jnox_linux_source_net_rx)]
         { RX_GRANTS = [EMPTY_GRANT; SIZE]; }
         CURSORS = [Cursor::default(); 2];
+        #[cfg(jnox_linux_source_net_rx_poll)]
+        (&raw mut (*ring(RX)).available[0]).write_volatile(0);
         ptr::write_bytes(&raw mut jnox_linux_net_packet_buffers, 0, 1);
     }
     fence();
@@ -193,6 +195,7 @@ fn grant_rx(token: u64, address: usize, len: usize) -> i64 {
     let Some(id) = grants.iter().position(|grant| grant.token == 0) else { return -11; };
     grants[id] = RxGrant { token, address, len };
     post(unsafe { &mut *(&raw mut CURSORS[RX]) }, RX, id, len);
+    #[cfg(not(jnox_linux_source_net_rx_poll))]
     if live { write(NOTIFY, RX as u32); }
     id as i64
 }
@@ -211,6 +214,41 @@ fn reap_rx(token: u64) -> Result<i64, i64> {
     pop(rx, id);
     unsafe { RX_GRANTS[id] = EMPTY_GRANT; }
     Ok(((len as i64) << 16) | id as i64)
+}
+
+#[cfg(jnox_linux_source_net_rx_poll)]
+fn rx_callbacks(mode: u64, arg: u64) -> i64 {
+    let ring = ring(RX);
+    let cursor = unsafe { &*(&raw const CURSORS[RX]) };
+    match (mode, arg) {
+        (0 | 1, 0) => {
+            // With EVENT_IDX absent, NO_INTERRUPT is the sole defined bit.
+            // The split ring is coherent, Normal non-cacheable DMA memory.
+            let flags = unsafe { &raw mut (*ring).available[0] };
+            let desired = u16::from(mode == 0);
+            unsafe { flags.write_volatile(desired) };
+            fence();
+            if unsafe { flags.read_volatile() } != desired { return abort_setup(); }
+            if mode == 0 { return 0; }
+            // Harvest can advance used before EL0 dequeues the held entries.
+            // Expose the index of the last completion delivered to EL0.
+            i64::from(cursor.used.wrapping_sub(cursor.count as u16))
+        }
+        (2, snapshot) if snapshot <= u64::from(u16::MAX) => {
+            // Publish callback enable before rechecking the actual used ring,
+            // including a completion that raced the preceding enable_prepare.
+            fence();
+            let head = unsafe { (&raw const (*ring).used_header[1]).read_volatile() };
+            fence();
+            i64::from(cursor.count != 0 || head != snapshot as u16)
+        }
+        (3, 0) => {
+            fence();
+            write(NOTIFY, RX as u32);
+            0
+        }
+        _ => -22,
+    }
 }
 
 fn tx_callbacks(mode: u64, reserved: u64) -> i64 {
@@ -255,6 +293,8 @@ pub(in crate::native_el0::linux_net) fn packet_service(number: u64, token: u64, 
         #[cfg(not(jnox_linux_source_net_rx))]
         167 => completion(unsafe { &mut *(&raw mut CURSORS[RX]) }, RX, address as usize, len as usize),
         169 => return tx_callbacks(address, len),
+        #[cfg(jnox_linux_source_net_rx_poll)]
+        173 => return rx_callbacks(address, len),
         168 => {
             let pending = read(INTERRUPT_STATUS) & 3;
             if pending != 0 { write(INTERRUPT_ACK, pending); }

@@ -22,6 +22,36 @@ volatile uint64_t jnox_rx_owner_controls[4];
 #define MTU (1U << 3)
 static unsigned char ethernet[1514];
 
+#ifdef JNOX_NATIVE_RX_POLL_FIXTURE
+#include "../../drivers/linux-compat/packet/include/jnox_rx_skb.h"
+extern void jnox_original_rx_poll_stats_v1(unsigned long long out[8]);
+extern void jnox_rx_napi_stats_v1(unsigned long long out[8]);
+
+unsigned long long jnox_rx_poll_receipt[8];
+unsigned long long jnox_rx_skb_receipt[8];
+unsigned long long jnox_rx_napi_receipt[8];
+
+/* Publish a consistent set while this worker owns the token. No other
+ * process can dispatch the callback or dequeue an skb between these reads. */
+static int snapshot_poll(unsigned int expected_frames)
+{
+    const unsigned long long *poll = jnox_rx_poll_receipt;
+    const unsigned long long *skb = jnox_rx_skb_receipt;
+    const unsigned long long *napi = jnox_rx_napi_receipt;
+    jnox_original_rx_poll_stats_v1(jnox_rx_poll_receipt);
+    jnox_rx_skb_stats_v1(jnox_rx_skb_receipt);
+    jnox_rx_napi_stats_v1(jnox_rx_napi_receipt);
+    if (!poll[0] || poll[1] != 8 || poll[3] != expected_frames || poll[5] != expected_frames ||
+        napi[0] != 1 || napi[1] != 1 || napi[2] != poll[2] || napi[3] != poll[4])
+        return 35;
+    for (unsigned i = 0; i < 6; ++i) {
+        if (skb[i] != expected_frames) return 36;
+    }
+    if (skb[6] || skb[7] || (expected_frames && !poll[7])) return 37;
+    return 0;
+}
+#endif
+
 static int configure(void)
 {
     long low = native_call(157, 0, 0, 0), high = native_call(157, 1, 0, 0);
@@ -112,9 +142,16 @@ static int interrupt_status(void)
 static int deliver(void)
 {
     uint64_t session[2] = {R[3], R[5]};
+#ifdef JNOX_NATIVE_RX_POLL_FIXTURE
+    session[1] |= RX_POLL_SESSION;
+#endif
     unsigned char reply = 0;
     if (pipe_send(DATA_FD, session, sizeof(session)) ||
         pipe_receive(REPLY_FD, &reply, 1) || reply != 0xa3) return 26;
+#ifdef JNOX_NATIVE_RX_POLL_FIXTURE
+    int check = snapshot_poll(0);
+    if (check) return check;
+#endif
     R[1] = 3;
     (void)write(STDOUT_FILENO, "NET RX READY\n", sizeof("NET RX READY\n") - 1);
     for (unsigned seq = 0; seq < FRAME_COUNT; ++seq) {
@@ -134,6 +171,10 @@ static int deliver(void)
     }
     if (pipe_receive(REPLY_FD, &reply, 1) || reply != 0xa6) return 30;
     R[14] = reply;
+#ifdef JNOX_NATIVE_RX_POLL_FIXTURE
+    check = snapshot_poll(FRAME_COUNT);
+    if (check) return check;
+#endif
     R[1] = 6;
     (void)write(STDOUT_FILENO, "NET RX WAIT ACK\n", sizeof("NET RX WAIT ACK\n") - 1);
     int n = get_frame();
@@ -141,7 +182,11 @@ static int deliver(void)
     R[27] = (unsigned)n;
     if (pipe_send(DATA_FD, ethernet, (unsigned)n) ||
         pipe_receive(REPLY_FD, &reply, 1) || reply != 0xa7) return 32;
+#ifdef JNOX_NATIVE_RX_POLL_FIXTURE
+    return snapshot_poll(FRAME_COUNT + 1);
+#else
     return 0;
+#endif
 }
 
 int main(void)

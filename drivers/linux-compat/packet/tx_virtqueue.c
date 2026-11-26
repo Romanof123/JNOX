@@ -9,6 +9,9 @@
 #include <linux/string.h>
 #include <linux/virtio.h>
 #include <jnox_tx_virtqueue.h>
+#ifdef JNOX_PACKET_RX_POLL_ABI
+#include <jnox_rx_napi.h>
+#endif
 #ifdef JNOX_PACKET_RX_ABI
 #include <jnox_rx_virtqueue.h>
 #endif
@@ -100,6 +103,13 @@ void sg_init_table(struct scatterlist *sg, unsigned int count)
 {
     table = NULL;
     nents = 0;
+#ifdef JNOX_PACKET_RX_POLL_ABI
+    if (jnox_rx_queue_large_sg_v1(sg, count)) {
+        memset(sg, 0, count * sizeof(*sg));
+        sg_init_marker(sg, count);
+        return;
+    }
+#endif
     if (!sg || count == 0 || count > 2) return;
     memset(sg, 0, count * sizeof(*sg));
     sg_init_marker(sg, count);
@@ -231,6 +241,12 @@ static long tx_callbacks(struct virtqueue *vq, unsigned int mode)
 
 void virtqueue_disable_cb(struct virtqueue *vq)
 {
+#ifdef JNOX_PACKET_RX_POLL_ABI
+    if (vq && vq == jnox_packet_active_vq(0)) {
+        jnox_rx_disable_cb_v1(vq);
+        return;
+    }
+#endif
     tx_callbacks(vq, 0);
 }
 
@@ -241,11 +257,19 @@ bool virtqueue_enable_cb_delayed(struct virtqueue *vq)
 
 bool virtqueue_kick_prepare(struct virtqueue *vq)
 {
+#ifdef JNOX_PACKET_RX_POLL_ABI
+    if (vq && vq == jnox_packet_active_vq(0))
+        return jnox_rx_kick_prepare_v1(vq);
+#endif
     return vq && vq == jnox_packet_active_vq(1) && need_notify && notify_epoch == jnox_packet_token();
 }
 
 bool virtqueue_notify(struct virtqueue *vq)
 {
+#ifdef JNOX_PACKET_RX_POLL_ABI
+    if (vq && vq == jnox_packet_active_vq(0))
+        return jnox_rx_notify_v1(vq);
+#endif
     if (!vq || vq != jnox_packet_active_vq(1) || !jnox_packet_token()) return false;
     long rc = svc(165, jnox_packet_token(), NULL, 0);
     if (rc) {
