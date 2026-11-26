@@ -22,10 +22,27 @@ def main():
     parser.add_argument("--intake", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--dtc", default="dtc")
+    parser.add_argument("--sample-network", action="store_true",
+                        help="sample passive Linux IRQ and NIC counters on UART during diagnosis")
     args = parser.parse_args()
     out = args.out.absolute()
     out.mkdir(exist_ok=True, parents=True)
-    operands = baseline.prepare(args.intake, out)
+    irq_rows = """$bb grep -E 'virtio|eth0|uart|pl011|a003e00|arch_timer' /proc/interrupts || :"""
+    initial_irq = 'echo "LD IRQ BEGIN ready"\n' + irq_rows + '\necho "LD IRQ END ready"\n'
+    init = baseline.INIT.replace('echo "LD READY"', initial_irq + 'echo "LD READY"', 1)
+    if args.sample_network:
+        sampler = (HERE / "sample-network.sh").read_text()
+        init = init.replace('echo "LD READY"', sampler + '\necho "LD READY"')
+    # Record the kernel IRQ counters at each of the existing HTTP requests.
+    # Reading procfs leaves the device and its read-to-clear registers untouched.
+    serve = baseline.SERVE.replace('case "$target" in', r'''{
+    printf 'LD IRQ BEGIN %s\n' "$target"
+    @IRQ_ROWS@
+    printf 'LD IRQ END %s\n' "$target"
+} >/dev/console
+case "$target" in'''.replace("@IRQ_ROWS@", irq_rows), 1)
+    operands = baseline.prepare(args.intake, out, init_script=init, service_files={"serve": serve.encode()})
+    (out / "serve.sh").write_text(serve)
     kernel = (out / "Image").read_bytes()
     text_offset, image_size = struct.unpack_from("<QQ", kernel, 8)
     kernel_offset = ALIGN + text_offset

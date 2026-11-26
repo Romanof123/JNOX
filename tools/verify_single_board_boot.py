@@ -191,6 +191,30 @@ def check_wire(out, names):
         require(pair in flows, f"missing exact bidirectional wire record for {name}")
 
 
+def uart_irq_report(out):
+    uart = out / "uart.log"
+    blocks = []
+    current = None
+    for line in uart.read_text(errors="replace").splitlines() if uart.exists() else ():
+        if line.startswith("LD IRQ BEGIN "):
+            current = {"phase": line.removeprefix("LD IRQ BEGIN "), "complete": False, "rows": []}
+            blocks.append(current)
+        elif current and line == "LD IRQ END " + current["phase"]:
+            current["complete"] = True
+            current = None
+        elif current:
+            row = {"text": line}
+            match = re.match(r"^\s*(\d+):\s+(\d+)\s+(GIC\S*)\s+(\d+)\s+(.*)$", line)
+            if match:
+                row.update(virq=int(match[1]), count=int(match[2]), controller=match[3],
+                           hwirq=int(match[4]), description=match[5])
+            current["rows"].append(row)
+    nic = [{"phase": block["phase"], "count": row["count"], "virq": row["virq"]}
+           for block in blocks if block["complete"] for row in block["rows"]
+           if row.get("hwirq") == 79 and re.search("virtio|eth0|a003e00", row["description"], re.I)]
+    save(out / "linux-irqs.json", {"blocks": blocks, "nic_irq79_samples": nic})
+
+
 def inspect(qmp, out, stage):
     cpus = qmp.call("query-cpus-fast")
     save(out / f"cpus-{stage}.json", cpus)
@@ -214,6 +238,10 @@ def run(args):
             "user,id=lan,restrict=on,ipv6=off,hostfwd=tcp:127.0.0.1:0-10.0.2.15:8080",
             "-device", f"virtio-net-device,netdev=lan,mac={MAC}",
             "-object", f"filter-dump,id=wire,netdev=lan,file={out/'wire.pcap'}"]
+    if args.trace_events:
+        events = args.trace_events.read_text()
+        (out / "trace-events.txt").write_text(events)
+        argv.extend(["-trace", f"events={out/'trace-events.txt'},file={out/'device.trace'}"])
     version = subprocess.check_output([qemu, "--version"], text=True).splitlines()[0]
     launch = {"argv": argv, "qemu_version": version, "bao_sha256": sha(args.bao.read_bytes()),
               "qemu_sha256": sha(Path(qemu).read_bytes())}
@@ -306,6 +334,7 @@ def run(args):
                 proc.wait()
             guard.cancel()
             guard.join()
+            uart_irq_report(out)
 
 
 if __name__ == "__main__":
@@ -316,6 +345,7 @@ if __name__ == "__main__":
     parser.add_argument("--replay", action="store_true", help="check retained observations without launching QEMU")
     parser.add_argument("--loader-args", type=Path, help="JSON argv replacing the default -kernel bao.bin")
     parser.add_argument("--qemu", default="qemu-system-aarch64")
+    parser.add_argument("--trace-events", type=Path, help="list of built-in QEMU device trace events")
     parser.add_argument("--timeout", type=float, default=90)
     args = parser.parse_args()
     if args.replay:
