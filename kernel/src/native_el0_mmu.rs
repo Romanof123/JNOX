@@ -147,6 +147,8 @@ static mut SPACES: [Space; SPACE_CAPACITY] = [const { Space::EMPTY }; SPACE_CAPA
 static mut HIGH: Table = Table::EMPTY;
 static mut KERNEL: [Table; HIGH_TABLES] = [const { Table::EMPTY }; HIGH_TABLES];
 static mut UART: Table = Table::EMPTY;
+#[cfg(jnox_native_display)]
+pub(crate) const FW_CFG: usize = 0x0902_0000;
 static mut GIC: Table = Table::EMPTY;
 #[cfg(jnox_native_shell)]
 const SHELL_ROM_VA: usize = 0x0180_0000;
@@ -448,6 +450,9 @@ unsafe fn install_spaces<'a>(
             page(&raw mut VIRTIO_MMIO, addr, addr, DEVICE);
         }
         page(&raw mut UART, crate::UART0, crate::UART0, DEVICE);
+        // QEMU virt fw_cfg shares UART0's 2 MiB region. Install only its EL1 page.
+        #[cfg(jnox_native_display)]
+        page(&raw mut UART, FW_CFG, FW_CFG, DEVICE);
         page(&raw mut GIC, crate::context::GICD, crate::context::GICD, DEVICE);
         page(&raw mut GIC, crate::context::GICC, crate::context::GICC, DEVICE);
         #[cfg(jnox_native_weighted_notify)]

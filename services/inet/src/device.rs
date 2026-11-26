@@ -1,11 +1,11 @@
 //! Single-frame userspace device. An EAGAIN transmit retains the frame until the next poll.
-use core::arch::asm;
+use jnox_native::raw_ethernet;
 use smoltcp::{
     phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken},
     time::Instant,
 };
 
-pub const MTU: usize = 1514;
+pub const MTU: usize = raw_ethernet::MAX_FRAME;
 
 pub struct Frames {
     rx: [u8; MTU],
@@ -49,8 +49,8 @@ impl Tx {
         if self.len == 0 || self.error {
             return;
         }
-        let n = frame(39, self.bytes.as_ptr() as usize, self.len);
-        if n == self.len as i64 {
+        let result = raw_ethernet::transmit(&self.bytes[..self.len]);
+        if result.is_ok() {
             // Count actual device acceptance, including a zero-length datagram.
             // This lets close drain committed outbound UDP records before reuse.
             let b = &self.bytes[..self.len];
@@ -62,20 +62,10 @@ impl Tx {
                 }
             }
             self.len = 0;
-        } else if n != -11 {
+        } else if result != Err(-11) {
             self.error = true;
         }
     }
-}
-fn frame(op: u64, address: usize, len: usize) -> i64 {
-    let mut status = address as i64;
-    unsafe {
-        // The dispatcher clears x1 on return. The caller can still need the
-        // original length to distinguish a complete frame from a short write.
-        asm!("svc #0x4a01", in("x8") op, inout("x0") status,
-             inlateout("x1") len => _, options(nostack));
-    }
-    status
 }
 pub struct In<'a>(&'a [u8]);
 impl RxToken for In<'_> {
@@ -106,11 +96,9 @@ impl Device for Frames {
         if self.error || self.tx.error || self.has_pending() {
             return None;
         }
-        match frame(38, self.rx.as_mut_ptr() as usize, MTU) {
-            -11 => None,
-            n if (14..=MTU as i64).contains(&n) => {
-                Some((In(&self.rx[..n as usize]), Out(&mut self.tx)))
-            }
+        match raw_ethernet::receive(&mut self.rx) {
+            Err(-11) => None,
+            Ok(frame) => Some((In(frame), Out(&mut self.tx))),
             _ => {
                 self.error = true;
                 None

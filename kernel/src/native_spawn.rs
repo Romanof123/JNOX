@@ -1,5 +1,8 @@
 //! One-shot private process launches by shell slot zero. Single masked CPU;
 //! no user slice survives a syscall and no child is eligible until commit.
+#[path = "native_shell_klog.rs"]
+pub(super) mod klog;
+
 use super::{
     Action, COUNT, EMPTY_FRAME, FRAMES, Fixed, NATIVE_EXEC_NAMES, NativeFrame, STACK_BOTTOM,
     STACK_TOP, counter, fail, native_el0_mmu as mmu, native_stack, pipes,
@@ -164,6 +167,7 @@ fn launch(f: &NativeFrame, fixed: &mut Fixed) -> Result<usize, i32> {
         };
     }
     fixed.launch(child);
+    klog::push(klog::Event::Spawn(child), unsafe { CHILD[child].spawned });
     Ok(child)
 }
 
@@ -223,6 +227,7 @@ pub(super) fn exit(pid: usize, status: i32, fixed: &mut Fixed) {
         }
         CHILD[pid].exited = counter();
         CHILD[pid].status = status;
+        klog::push(klog::Event::Exit(pid, status), CHILD[pid].exited);
         let waiting = WAIT;
         if waiting == Some(pid) {
             WAIT = None;
@@ -271,6 +276,10 @@ pub(super) fn service(pid: usize, f: &mut NativeFrame, fixed: &mut Fixed) -> Act
             console(pid, arg as usize, f.x[1] as usize, f.x[2] as usize).map(|n| (n, Action::Poll))
         }
         _ if pid != 0 => Err(-13),
+        70 => klog::snapshot(arg as usize, f.x[1] as usize).map(|n| (n, Action::Poll)),
+        71 => crate::uart_try_read()
+            .map(|byte| (usize::from(byte), Action::Poll))
+            .map_err(|errno| errno as i32),
         50 => launch(f, fixed).map(|id| (id, Action::Poll)),
         51 => {
             f.x[1] = 0;

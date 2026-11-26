@@ -123,6 +123,52 @@ def pipe_fields(value):
     return tuple(unsigned_decimal(field) for field in value.split(":"))
 
 
+def native_service_slots(parser, args, policy, board):
+    if len(args.socket_service) > 1 or len(args.display_service) > 1:
+        parser.error("--socket-service and --display-service may each appear only once")
+    if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
+        parser.error("--net-service must appear once and match --socket-service")
+    slots = 1 + len(args.peer_elf)
+    net_standby = getattr(args, "net_standby", None)
+    if net_standby is not None and (not args.net_service or net_standby in args.net_service
+                                    or int(net_standby) >= slots):
+        parser.error("--net-standby requires a distinct packaged slot and --net-service")
+    if args.net_service and slots > 3:
+        parser.error("--net-service supports at most three native processes")
+    display = int(args.display_service[0]) if args.display_service else None
+    broker = int(args.socket_service[0]) if args.socket_service else None
+    standby = args.uart_rx_standby
+    if standby is not None:
+        if standby != "2" or slots != 3 or display != 0 or args.uart_rx_irq != 1:
+            parser.error("--uart-rx-standby 2 requires three processes, --display-service 0 and --uart-rx-irq")
+        if any((args.ipc_route, args.mailbox_route, args.notify_route, args.cap_grant, args.cap_route,
+                args.loan_route, args.pipes, args.waitset, args.socket_service, args.pubsub_service)):
+            parser.error("--uart-rx-standby excludes IPC routes, endpoints and services")
+    if broker == 3:
+        if slots != 4 or display != 0 or args.pubsub_service:
+            parser.error("socket broker 3 requires four ordinary virt FIFO processes with display owner 0")
+        if sorted(args.ipc_route) != [(0, 3), (1, 3), (2, 3)]:
+            parser.error("display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3")
+        if args.peer3_arg and args.peer3_arg != ["7"]:
+            parser.error("socket broker 3 requires client mask 7")
+        args.peer3_arg = ["7"]
+    if display is not None and (board != "virt" or policy != "fifo" or args.threads
+                                or display >= slots or (slots > 2 and broker != 3 and standby is None)):
+        parser.error("--display-service requires an ordinary virt FIFO owner in one or two slots, or owner 0 with UART standby 2 or socket broker 3")
+    if args.uart_rx_irq:
+        if args.uart_rx_irq != 1 or display is None or args.exec_child or args.rom_file:
+            parser.error("--uart-rx-irq must appear once and requires an ordinary --display-service package")
+    clients = sorted(caller for caller, server in args.ipc_route if server == broker)
+    if broker is not None:
+        if slots > 3 and broker != 3 and not args.pubsub_service:
+            parser.error("four native socket processes require display broker 3 or a separate pubsub service")
+        if 3 in clients:
+            parser.error("socket service accepts identities 0..2")
+        if not clients:
+            parser.error("--socket-service requires an explicit --ipc-route into its slot")
+    return display, broker, clients
+
+
 def validate_pipes(parser, args, policy, board):
     if not args.pipes:
         if args.fifo_grant or args.pipe_link:
@@ -471,10 +517,18 @@ def main():
                         metavar="OWNER:READERMASK:WRITERMASK")
     parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
                         metavar="WRITER:WFD:READER:RFD")
+    parser.add_argument("--display-service", choices=("0", "1"), action="append", default=[], metavar="SLOT",
+                        help="give one ordinary virt FIFO process ramfb scanout and PL011 byte input")
+    parser.add_argument("--uart-rx-irq", action="count", default=0,
+                        help="receive PL011 input via GICv2 INTID 33 for the selected display owner")
+    parser.add_argument("--uart-rx-standby", choices=("2",), action=SinglePath, metavar="SLOT",
+                        help="keep slot 2 dormant for one handoff when UART owner 0 exits with status 86")
     parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="give the selected socket service the virtio network interface")
-    parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
-                        help="select a socket service with existing inbound synchronous IPC rights")
+    parser.add_argument("--net-standby", choices=("0", "1", "2"), action=SinglePath, metavar="SLOT",
+                        help="allow one packaged process to claim raw NIC access after owner retirement")
+    parser.add_argument("--socket-service", choices=("0", "1", "2", "3"), action="append", default=[], metavar="SLOT",
+                        help="select the socket broker; slot 3 serves display owner 0 and clients 1 and 2 on virt FIFO")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
                         help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
     parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
@@ -511,21 +565,6 @@ def main():
             parser.error("pubsub requires explicit IPC routes 0:3, 1:3 and 2:3")
         publish = topic_vector(parser, args.pubsub_publish)
         subscribe = topic_vector(parser, args.pubsub_subscribe)
-    if args.net_service and (len(args.net_service) != 1 or args.net_service != args.socket_service):
-        parser.error("--net-service must appear once and match --socket-service")
-    if args.net_service and len(args.peer_elf) > 2:
-        parser.error("--net-service supports at most three native processes")
-    if len(args.socket_service) > 1:
-        parser.error("--socket-service may appear only once")
-    if args.socket_service:
-        if len(args.peer_elf) > 2 and not args.pubsub_service:
-            parser.error("--socket-service supports at most three native processes")
-        service_slot = int(args.socket_service[0])
-        service_clients = sorted(caller for caller, server in args.ipc_route if server == service_slot)
-        if 3 in service_clients:
-            parser.error("socket service accepts identities 0..2")
-        if not service_clients:
-            parser.error("--socket-service requires an explicit --ipc-route into its slot")
     if len(args.loan_route) > 1:
         parser.error("--loan-route may appear only once")
     if args.waitset > 1:
@@ -555,6 +594,7 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
+    display_slot, service_slot, service_clients = native_service_slots(parser, args, policy, board)
     validate_pipes(parser, args, policy, board)
     shell = None
     if args.exec_child or args.rom_file:
@@ -742,11 +782,31 @@ def main():
                         fifo_grants=[dict(owner=o, reader_mask=r, writer_mask=w) for o, r, w in fifo_grants],
                         pipe_links=[dict(writer=w, writer_fd=a, reader=r, reader_fd=b) for w, a, r, b in args.pipe_link],
                         package_argv=sys.argv[:])
+    if args.display_service:
+        env["JNOX_NATIVE_DISPLAY_SERVICE"] = str(display_slot)
+        metadata["display_service"] = {
+            "slot": display_slot, "display": "ramfb", "input": "pl011",
+            "width": 320, "height": 240, "stride": 1280, "format": "XRGB8888",
+            "syscalls": {"init": 72, "write_row": 73, "poll_key": 74},
+        }
+        if args.uart_rx_irq:
+            env["JNOX_NATIVE_UART_RX_IRQ"] = "1"
+            metadata["uart_rx_irq"] = {"device": "pl011", "controller": "gicv2", "intid": 33,
+                                       "capacity": 16, "stats_syscall": 75}
+            if args.uart_rx_standby is not None:
+                env["JNOX_NATIVE_UART_RX_STANDBY"] = args.uart_rx_standby
+                metadata["uart_rx_standby"] = {"owner_slot": 0, "continuing_peer_slot": 1,
+                                               "standby_slot": 2, "failure_exit": 86, "max_handoffs": 1}
     if args.net_service:
         env["JNOX_NATIVE_NET_SERVICE"] = str(service_slot)
         metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",
                                    "mac": "52:54:00:12:34:56",
                                    "syscalls": {"rx": 38, "tx": 39, "try_receive": 40}}
+    if args.net_standby is not None:
+        env["JNOX_NATIVE_NET_STANDBY"] = args.net_standby
+        metadata["net_service"].update(standby_slot=int(args.net_standby), max_handoffs=1)
+        metadata["net_service"]["syscalls"]["claim"] = 76
+        metadata["package_argv"] = sys.argv[:]
     if args.socket_service:
         env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
@@ -945,7 +1005,8 @@ def main():
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
-    if policy == "amc" or (policy in ("fifo", "rr") and len(slots) == 4):
+    if (policy == "amc" or args.uart_rx_standby or args.net_standby is not None
+            or (policy in ("fifo", "rr") and len(slots) == 4)):
         for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
             slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
