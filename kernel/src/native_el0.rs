@@ -433,6 +433,8 @@ fn start_fixed() -> usize {
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
     arm_compare(compare);
     record(now, 0, 0, Before { pid: None, wake: None, expiry: None }, None, compare);
+    #[cfg(jnox_native_shell)]
+    spawn::klog::push(spawn::klog::Event::ShellReady, now);
     next
 }
 
@@ -741,7 +743,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         return;
     }
     #[cfg(jnox_native_shell)]
-    if matches!(f.x[8], 4 | 50 | 51) {
+    if matches!(f.x[8], 4 | 50 | 51 | 70 | 71) {
         let service = f.x[8];
         let action = spawn::service(unsafe { CURRENT }, f, policy());
         fixed_dispatch(now, action, service, f);
@@ -908,6 +910,8 @@ pub(super) fn run() -> ! {
     }
     head(0, 1);
     head(1, 1);
+    #[cfg(jnox_native_shell)]
+    spawn::klog::push(spawn::klog::Event::NativeBoot, counter());
     head(3, jnox_native_el0_image.len() as u64);
     let images: [(&[u8], &str); COUNT] = [
         (&jnox_native_el0_image, env!("JNOX_PACKAGED_ELF_SHA256")),
