@@ -1,0 +1,12 @@
+[package]
+name = "native-permit-queue-contract"
+version = "0.1.0"
+edition = "2024"
+build = "src/configure.rs"
+
+[dependencies]
+jnox-native = { path = "../../sdk/native-aarch64/rust" }
+jnox-safety-channel = { path = "../../sdk/native-safety-channel" }
+
+[profile.release]
+panic = "abort"

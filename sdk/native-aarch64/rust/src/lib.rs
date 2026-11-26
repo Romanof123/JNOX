@@ -146,6 +146,8 @@ pub mod waitset;
 #[cfg(all(feature = "loan", target_arch = "aarch64"))]
 pub mod loan;
 
+#[cfg(all(feature = "safety-channel", target_arch = "aarch64"))]
+pub mod safety_channel;
 #[cfg(all(feature = "pipes", target_arch = "aarch64"))]
 pub mod pipes;
 
@@ -158,3 +160,6 @@ pub mod capabilities;
 pub mod pubsub;
 #[cfg(all(feature = "display", target_arch = "aarch64"))]
 pub mod display;
+
+#[cfg(target_arch = "aarch64")]
+pub mod permit_trace;

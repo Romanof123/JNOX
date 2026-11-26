@@ -139,6 +139,15 @@ impl Fixed {
         self.owner
     }
 
+    #[cfg(jnox_native_safety_qualification)]
+    pub(crate) fn permit_runnable_mask(&self) -> u64 {
+        let mut mask = 0;
+        for (id, task) in self.tasks[..self.count].iter().enumerate() {
+            if matches!(task.state, State::Ready | State::Running) { mask |= 1 << id; }
+        }
+        mask
+    }
+
     pub fn finished(&self) -> bool {
         self.tasks[..self.count]
             .iter()

@@ -1,0 +1,14 @@
+[package]
+name = "jnox-permit-codec"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+jnox-safety-channel = { path = ".." }
+
+[profile.release]
+panic = "abort"

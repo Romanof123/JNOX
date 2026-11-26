@@ -1,0 +1,14 @@
+# Reviewed native permit deployment / 네이티브 배포 검증
+Checker 69327400f22bf3f65b019d8422132a727630ca4f. Both FIFO and RR remain refused. The 24 built-in original outputs were byte-identical to the first review. All 24 corrected positions produced measured FAIL with the independently frozen profile. All 1,920 segment records and raw scheduler dispatch choices were cross-checked against the two sets of UART journals. All captured session file hashes, ordered role ELFs, RAM and packaged kernel identities agreed. No new guest was booted.
+
+The corrected healthy job 0 A target-to-block interval was 130187–130275 ticks on FIFO and 92845–92971 on RR. RR live now had a bounded job 0 A interval of 135636–135712. The 62,500-tick inclusive ceiling was exceeded in all three. These observations concern whole-segment completion; independent numerical worst-case bounds remain missing.
+
+The release record supplied independently by PM pinned the corrected archive at 5aef9adee569dfe1ea1b259f491157ec636eef82710c0b8b560b2a1291349bf8. The 24 archive members were matched to that receipt and compared with the clean source and retained build outputs for commit 7c5b0c2d20f1404f433cc0bf972d790f6a3faa45. The memory extent was independently taken from linked _start and __stack_top. The resulting reviewed-profile.json is pinned at 2f465e4e38a1522b6ff6e98bb29073483abb410bacd2958d917ed47e48d8d351. This is verification of retained software artifacts and recorded launch arguments; it provides no independent physical measurement or remote attestation.
+
+All five frozen unit tests passed. The inherited suite correctly rejected 25 malformed captures; the optional ordered peer copies retained 40 rows. Twelve external-profile/default controls correctly yielded zero rows, including missing pin/file/position, changed policy, unknown packages, swapped slot identities and an altered platform. The shipped healthy example correctly yielded the original measured failure. An input profile and digest supplied by the same unreviewed source cannot independently authorize a deployment.
+
+두 정책의 원본·수정본 총 48개 위치, 1,920개 구간과 원본 스케줄 행을 검산했다. 수정본 24개 모두 1 ms 기준을 초과했다. 배포 프로필은 PM이 전달한 독립 릴리스 해시와 원래 빌드의 ELF·커널·메모리 범위로 검증했다. 변형 입력 37개에서는 시간 구간이 생성되지 않았다. 부팅 추가 실행이나 물리 플랫폼 검증은 수행하지 않았다.
+
+Prior verification packets (SHA-256): 7cafd13 caae53761b568c72e2e18d6608f13d9413703f2ca8cf9717874d15ef76471250; 78d3376 919167326c3f247a41491757ac61e8b2ad7527d6dc46b0dbfadb76d48713885c; 57b7f31 f376adc58b3c37ff6d031d19fa4cfbe1679f7224b5f27b285f6a6c87ad7ee760. The packet contains profile freeze, scripts, unit results, 48 normal entrypoint JSON outputs, controls, raw-source digests and both independent cross-checks.
+
+[Raw captures and offline replay](native-safety-reviewed-deployment.tar.gz) (SHA-256 `1b46e76e93f1e0f63438312ab2ec65841d7d2c63965a5b8d1f9911959f55d0b0`).

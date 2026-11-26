@@ -75,13 +75,15 @@ impl Ring {
         self.tail.store(tail.wrapping_add(1), Ordering::Release);
     }
 
+    #[inline]
     fn front(&self) -> Option<(u64, u64)> {
         let head = self.head.load(Ordering::Relaxed);
         // Observe the producer's payload/descriptor publication before use.
         let tail = self.tail.load(Ordering::Acquire);
-        if Self::used(head, tail) == 0 {
+        if head == tail {
             return None;
         }
+        Self::used(head, tail);
         Some((
             head,
             self.cells[(head % CAP as u64) as usize].load(Ordering::Relaxed),
@@ -134,6 +136,23 @@ impl LoanIpc {
     }
     pub fn occupancy(&self) -> usize {
         Ring::used(self.head(), self.tail())
+    }
+    /// The masked opening CHECK serializes these reads with publish and receive.
+    /// Preserve the ring's published handle even if its page metadata disagrees.
+    #[cfg(any(test, jnox_native_safety_arrival_observation))]
+    pub fn opening_queue(&self) -> (u64, u64, u64) {
+        let head = self.head();
+        let occupancy = self.tail().wrapping_sub(head);
+        if occupancy == 0 {
+            return (0, 0, 0);
+        }
+        // The acquire load of tail observes the producer's release publication.
+        let handle = self.ring.cells[(head % CAP as u64) as usize].load(Ordering::Relaxed);
+        let length = match self.pages.get(Self::slot(handle)) {
+            Some(Page::Queued(grant)) if grant.handle == handle => grant.len as u64,
+            _ => u64::MAX,
+        };
+        (occupancy, handle, length)
     }
     pub fn high_water(&self) -> usize {
         self.peak
@@ -215,10 +234,30 @@ impl LoanIpc {
         Ok(())
     }
 
+    /// Publish the virtual bench's read-only 44-byte fixture. No EL0 writer owns it.
+    /// The callback must finish initializing a free page before its handle becomes visible.
+    #[cfg(jnox_native_safety_downstream)]
+    pub fn enqueue_invalid_fixture(&mut self, fill: impl FnOnce(usize) -> Result<(), i32>) -> Result<u64, i32> {
+        if !self.writer_live || !self.reader_live { return Err(-32); }
+        let (tail, occupancy) = self.ring.enqueue_position()?;
+        let slot = self.pages.iter().position(|page| matches!(page, Page::Free)).ok_or(-11)?;
+        if self.generation == MAX_GENERATION { return Err(-75); }
+        let generation = self.generation + 1;
+        let handle = (generation << 2) | slot as u64;
+        fill(slot)?;
+        self.generation = generation;
+        self.pages[slot] = Page::Queued(Grant { slot, handle, len: 44 });
+        self.ring.publish(tail, handle);
+        self.peak = self.peak.max(occupancy);
+        Ok(handle)
+    }
+
+    // The host phase probe times this call, including refusals on an empty ring.
+    #[inline(never)]
     pub fn receive(
         &mut self,
         pid: usize,
-        mut hook: impl FnMut(MapOp) -> Result<(), i32>,
+        hook: impl FnMut(MapOp) -> Result<(), i32>,
     ) -> Result<Grant, i32> {
         if pid != self.consumer {
             return Err(-13);
@@ -226,10 +265,21 @@ impl LoanIpc {
         if !self.reader_live {
             return Err(-32);
         }
-        let (head, handle) = self
-            .ring
-            .front()
-            .ok_or(if self.writer_live { -11 } else { -32 })?;
+        let Some((head, handle)) = self.ring.front() else {
+            return Err(if self.writer_live { -11 } else { -32 });
+        };
+        self.receive_queued(pid, head, handle, hook)
+    }
+
+    // Only a committed descriptor needs the mapping hook and its stack frame.
+    #[inline(never)]
+    fn receive_queued(
+        &mut self,
+        pid: usize,
+        head: u64,
+        handle: u64,
+        mut hook: impl FnMut(MapOp) -> Result<(), i32>,
+    ) -> Result<Grant, i32> {
         let slot = Self::slot(handle);
         let Page::Queued(g) = self.pages[slot] else {
             unreachable!("ring must name a queued loan")
@@ -263,6 +313,22 @@ impl LoanIpc {
         }
         hook(MapOp::Revoke { pid, slot })?;
         self.pages[slot] = Page::Free;
+        Ok(())
+    }
+
+    #[cfg(jnox_native_safety_channel)]
+    pub fn invalidate(&mut self, mut hook: impl FnMut(MapOp) -> Result<(), i32>) -> Result<(), i32> {
+        for (slot, page) in self.pages.iter_mut().enumerate() {
+            let pid = match page {
+                Page::Writer(_) => Some(self.producer),
+                Page::Reader(_) => Some(self.consumer),
+                _ => None,
+            };
+            if let Some(pid) = pid { hook(MapOp::Revoke { pid, slot })?; }
+            *page = Page::Free;
+        }
+        while let Some((head, _)) = self.ring.front() { self.ring.consume(head); }
+        // Keep the generation counter: stale handles never become valid again.
         Ok(())
     }
 
@@ -312,6 +378,44 @@ mod tests {
     }
 
     #[test]
+    fn opening_queue_reads_the_published_front_without_consuming_it() {
+        let mut channel = LoanIpc::new(0, 1);
+        let a = channel.acquire(0, ok).unwrap();
+        let b = channel.acquire(0, ok).unwrap();
+        assert_eq!(channel.opening_queue(), (0, 0, 0));
+        // Publish in reverse slot order. A page scan would select the wrong grant.
+        channel.publish(0, b.handle, 0, ok).unwrap();
+        channel.publish(0, a.handle, 44, ok).unwrap();
+        assert_eq!(channel.opening_queue(), (2, b.handle, 0));
+        assert_eq!(channel.opening_queue(), (2, b.handle, 0));
+        assert_eq!(channel.receive(1, ok).unwrap().handle, b.handle);
+        assert_eq!(channel.opening_queue(), (1, a.handle, 44));
+        assert_eq!(channel.receive(1, ok).unwrap().handle, a.handle);
+        assert_eq!(channel.opening_queue(), (0, 0, 0));
+    }
+
+    #[cfg(jnox_native_safety_downstream)]
+    #[test]
+    fn downstream_fixture_publishes_only_after_initialization_and_respects_capacity() {
+        let mut channel = LoanIpc::new(0, 1);
+        assert_eq!(channel.enqueue_invalid_fixture(|_| Err(-5)), Err(-5));
+        assert_eq!((channel.generation, channel.occupancy()), (0, 0));
+        let first = channel.enqueue_invalid_fixture(|_| Ok(())).unwrap();
+        let second = channel.enqueue_invalid_fixture(|_| Ok(())).unwrap();
+        assert_eq!(channel.enqueue_invalid_fixture(|_| panic!("full ring")), Err(-11));
+        assert_eq!((channel.generation, channel.tail()), (2, 2));
+        for handle in [first, second] {
+            let grant = channel.receive(1, ok).unwrap();
+            assert_eq!((grant.handle, grant.len), (handle, 44));
+            channel.release(1, handle, ok).unwrap();
+        }
+        channel.generation = MAX_GENERATION;
+        assert_eq!(channel.enqueue_invalid_fixture(|_| panic!("generation exhausted")), Err(-75));
+        channel.exit(1, ok).unwrap();
+        assert_eq!(channel.enqueue_invalid_fixture(|_| panic!("endpoint exited")), Err(-32));
+    }
+
+    #[test]
     fn full_and_oversize_keep_writer_then_publish_in_order_across_wrap() {
         let mut c = LoanIpc::new(0, 1);
         c.ring.head.store(u64::MAX - 1, Ordering::Relaxed);
@@ -336,7 +440,11 @@ mod tests {
         }
         assert_eq!((c.head(), c.tail(), c.occupancy()), (u64::MAX - 1, 0, 2));
         assert_eq!(c.publish(0, d.handle, 4097, unexpected), Err(-90));
+        let counters = (c.head(), c.tail(), c.high_water(), c.generation);
+        let pages = [a.slot, b.slot, d.slot].map(|slot| c.page(slot));
         assert_eq!(c.publish(0, d.handle, 3, unexpected), Err(-11));
+        assert_eq!((c.head(), c.tail(), c.high_water(), c.generation), counters);
+        assert_eq!([a.slot, b.slot, d.slot].map(|slot| c.page(slot)), pages);
         assert_eq!(c.page(d.slot).unwrap().state, 1);
         assert_eq!(c.receive(1, ok).unwrap().handle, a.handle);
         c.publish(0, d.handle, 3, ok).unwrap();
@@ -401,6 +509,38 @@ mod tests {
         assert_eq!(c.receive(1, unexpected), Err(-32));
         c.release(1, a.handle, ok).unwrap();
         c.release(1, b.handle, ok).unwrap();
+    }
+
+    #[cfg(jnox_native_safety_channel)]
+    #[test]
+    fn invalidation_revokes_live_views_and_preserves_handle_generation() {
+        let mut c = LoanIpc::new(0, 1);
+        let reader = c.acquire(0, ok).unwrap();
+        let queued = c.acquire(0, ok).unwrap();
+        let writer = c.acquire(0, ok).unwrap();
+        c.publish(0, reader.handle, 44, ok).unwrap();
+        c.publish(0, queued.handle, 44, ok).unwrap();
+        assert_eq!(c.receive(1, ok).unwrap().handle, reader.handle);
+
+        let mut revoked = [None; PAGES];
+        c.invalidate(|op| {
+            let MapOp::Revoke { pid, slot } = op else { panic!("unexpected map operation") };
+            assert!(revoked[slot].replace(pid).is_none());
+            Ok(())
+        }).unwrap();
+        assert_eq!(revoked[reader.slot], Some(1));
+        assert_eq!(revoked[queued.slot], None);
+        assert_eq!(revoked[writer.slot], Some(0));
+        assert_eq!((c.occupancy(), c.high_water()), (0, 2));
+        assert!((0..PAGES).all(|slot| c.page(slot).unwrap().state == 0));
+        c.invalidate(unexpected).unwrap();
+        assert_eq!(c.receive(1, unexpected), Err(-11));
+
+        let fresh = c.acquire(0, ok).unwrap();
+        assert_eq!(fresh.slot, reader.slot);
+        assert_eq!(fresh.handle >> 2, (writer.handle >> 2) + 1);
+        assert_eq!(c.release(1, reader.handle, unexpected), Err(-116));
+        assert_eq!(c.publish(0, writer.handle, 44, unexpected), Err(-116));
     }
 
     #[test]

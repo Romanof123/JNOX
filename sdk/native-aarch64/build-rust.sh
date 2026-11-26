@@ -1,6 +1,7 @@
 #!/bin/sh
 # Build a Cargo package containing one no_std native application binary.
 set -eu
+cargo_features=
 local_socket=0
 pubsub=0
 pipe_define=
@@ -8,6 +9,9 @@ shell_define=
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --native-shell) shell_define=-DJNOX_SDK_NATIVE_SHELL; pipe_define=-DJNOX_SDK_PIPES ;;
+        --features)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || { echo 'missing Cargo features' >&2; exit 2; }
+            cargo_features=$2; shift ;;
         --pipes) pipe_define=-DJNOX_SDK_PIPES ;;
         --local-socket) local_socket=1 ;;
         --pubsub) pubsub=1 ;;
@@ -16,7 +20,7 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 if [ "$#" -ne 2 ]; then
-    echo "usage: $0 [--pipes|--native-shell] [--local-socket] [--pubsub] Cargo.toml OUTPUT.elf" >&2
+    echo "usage: $0 [--features LIST] [--pipes|--native-shell] [--local-socket] [--pubsub] Cargo.toml OUTPUT.elf" >&2
     exit 2
 fi
 sdk=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -44,7 +48,7 @@ if [ "$pubsub" = 1 ]; then
         -c "$sdk/pubsub.c" -o "$tmp/pubsub.o"
     set -- "$@" -C link-arg="$tmp/pubsub.o"
 fi
-cargo rustc --manifest-path "$manifest" --release --target aarch64-unknown-none-softfloat \
+cargo rustc --features "$cargo_features" --manifest-path "$manifest" --release --target aarch64-unknown-none-softfloat \
     --message-format=json-render-diagnostics -- -C panic=abort -C relocation-model=static \
     -C link-arg="$tmp/start.o" -C link-arg="$tmp/io.o" -C link-arg=-T"$sdk/app.ld" \
     -C link-arg=-z -C link-arg=max-page-size=4096 -C link-arg=--build-id=none "$@" > "$tmp/artifacts"

@@ -119,6 +119,18 @@ def unsigned_decimal(value):
     return int(value)
 
 
+def boundary_lead_ticks(parser, value, role):
+    if not (1 <= len(value) <= 5 and value.isascii() and value.isdecimal() and int(value) <= 12500):
+        parser.error(f"{role} lead must be 1 to 5 ASCII decimal digits in the range 0..12500 ticks")
+    return int(value)
+
+
+def boundary_nop_count(parser, value):
+    if not (1 <= len(value) <= 2 and value.isascii() and value.isdecimal() and int(value) <= 15):
+        parser.error("controller NOP count must be 1 to 2 ASCII decimal digits in the range 0..15")
+    return int(value)
+
+
 def pipe_fields(value):
     return tuple(unsigned_decimal(field) for field in value.split(":"))
 
@@ -477,6 +489,18 @@ def main():
                         help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="select a socket service with existing inbound synchronous IPC rights")
+    parser.add_argument("--safety-boundary", action="count", default=0,
+                        help="record single-check phase, completion, collision, rearm or arrival observations for the virtual safety bench")
+    parser.add_argument("--safety-downstream-injector", action="count", default=0,
+                        help="include the fixed invalid-frame source in a closed-gate virtual qualification run")
+    parser.add_argument("--safety-watchdog", action="count", default=0,
+                        help="enable the kernel watchdog for the ordinary or qualification protected three-role profile")
+    parser.add_argument("--safety-interference", action="count", default=0,
+                        help="arm a finite independent CNTV IRQ stream during safety qualification")
+    parser.add_argument("--safety-qualification", action="count", default=0,
+                        help="enable the protected channel absolute-phase qualification ABI")
+    parser.add_argument("--safety-channel", action="count", default=0,
+                        help="select the three-process protected virtual permit bench")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
                         help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
     parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
@@ -564,6 +588,51 @@ def main():
         if (board != "virt" or policy != "fifo" or args.threads or len(args.peer_elf) > 1
                 or display_slot > len(args.peer_elf)):
             parser.error("--display-service requires a present owner in a one- or two-process virt FIFO package")
+    if args.safety_channel and (args.safety_channel != 1 or board != "virt" or policy not in ("fifo", "rr")
+                                or args.threads or len(args.peer_elf) != 2 or args.loan_route != [(0, 1)]):
+        parser.error("--safety-channel requires exactly three virt FIFO/RR processes and --loan-route 0:1")
+    if args.safety_boundary:
+        if args.safety_boundary != 1 or not args.safety_channel or args.safety_qualification or args.safety_interference:
+            parser.error("--safety-boundary requires the single-check --safety-channel profile")
+        rearm_boundary = args.arg in (["rearm-15"], ["rearm-20"])
+        phase_boundary = args.arg in (["phase-decision"], ["phase-complete"])
+        arrival_boundary = args.arg in (["arrival-before"], ["arrival-same"], ["arrival-after"])
+        if (not (rearm_boundary or phase_boundary or arrival_boundary or args.arg in (["phase"], ["collision"]))
+                or args.peer_arg[:1] != args.arg or args.peer2_arg[:1] != args.arg
+                or (not phase_boundary and args.peer_arg != args.arg)):
+            parser.error("--safety-boundary requires one matching boundary selector for all three slots")
+        rearm_lead = 0
+        if args.peer2_arg != args.arg:
+            if not rearm_boundary or len(args.peer2_arg) != 2:
+                parser.error("only a rearm boundary permits one optional supervisor lead in ticks")
+            rearm_lead = boundary_lead_ticks(parser, args.peer2_arg[1], "supervisor")
+        if phase_boundary:
+            phase_complete = args.arg == ["phase-complete"]
+            if len(args.peer_arg) not in (1, 3) and not (phase_complete and len(args.peer_arg) == 5):
+                parser.error("phase-decision and phase-complete accept two controller leads together. "
+                             "Only phase-complete can append a pair of NOP counts")
+            leads = args.peer_arg[1:3]
+            controller_leads = [boundary_lead_ticks(parser, v, "controller") for v in leads] if leads else [0, 0]
+            if phase_complete:
+                counts = args.peer_arg[3:]
+                controller_nops = [boundary_nop_count(parser, v) for v in counts] if counts else [0, 0]
+    if args.safety_downstream_injector:
+        if args.safety_downstream_injector != 1 or args.safety_qualification != 1:
+            parser.error("--safety-downstream-injector requires --safety-qualification and may appear once")
+        if (args.arg not in (["gate-invalid"], ["gate-saturation"]) or args.peer2_arg != args.arg
+                or args.peer_arg not in (args.arg, args.arg + ["fused-phase"])):
+            parser.error("downstream qualification requires the same closed-gate case for all three roles")
+    if args.safety_watchdog and (args.safety_watchdog != 1 or not args.safety_channel or args.safety_boundary):
+        parser.error("--safety-watchdog requires --safety-channel, excludes --safety-boundary and may appear once")
+    if args.safety_interference and (args.safety_interference != 1 or args.safety_qualification != 1):
+        parser.error("--safety-interference requires --safety-qualification and may appear once")
+    if args.safety_qualification:
+        if args.safety_qualification != 1 or not args.safety_channel:
+            parser.error("--safety-qualification requires --safety-channel and may appear once")
+    if args.safety_qualification or args.safety_watchdog:
+        sender, controller, supervisor = priorities
+        if not controller > sender > supervisor:
+            parser.error("qualification or watchdog priorities must order controller > sender > supervisor")
     validate_pipes(parser, args, policy, board)
     shell = None
     if args.exec_child or args.rom_file:
@@ -766,6 +835,54 @@ def main():
     if args.socket_service:
         env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
+    if args.safety_channel:
+        env["JNOX_NATIVE_SAFETY_CHANNEL"] = "1"
+        metadata["safety_channel"] = {
+            "producer": 0, "controller": 1, "supervisor": 2, "channel": 1, "data_id": 0x0101,
+            "frame_bytes": 44, "input_period_ms": 10, "control_period_ms": 5,
+            "control_deadline_ms": 5, "max_check_interval_ms": 5, "validity_ms": 20,
+            "detection_limit_ms": 25, "inhibit_limit_ms": 5, "response_limit_ms": 30,
+            "output": "virtual_ENABLE", "syscalls": {"supervise": 59, "control": 60, "info": 61},
+        }
+    if args.safety_boundary:
+        env["JNOX_NATIVE_SAFETY_BOUNDARY"] = "1"
+        metadata["safety_boundary"] = {"scenario": args.arg[0], "decision_event": 12}
+        if rearm_boundary:
+            metadata["safety_boundary"].update(rearm_eligibility_event=15, supervisor_lead_ticks=rearm_lead)
+        if arrival_boundary:
+            metadata["safety_boundary"].update(opening_queue_event=17, opening_queue_schema=1)
+        if phase_boundary:
+            metadata["safety_boundary"].update(phase_completion_event=16, controller_lead_ticks=controller_leads)
+            if phase_complete:
+                metadata["safety_boundary"]["controller_nop_counts"] = controller_nops
+        metadata["package_argv"] = sys.argv[:]
+    if args.safety_downstream_injector:
+        env["JNOX_NATIVE_SAFETY_DOWNSTREAM"] = "1"
+        metadata["safety_downstream_injector"] = {
+            "scenario": args.arg[0], "issuer_slot": 2, "command": 5, "event": 14,
+            "maximum_attempts_per_generation": 64, "fixture_bytes": 44,
+        }
+    if args.safety_watchdog:
+        env["JNOX_NATIVE_SAFETY_WATCHDOG"] = "1"
+        metadata["safety_watchdog"] = {
+            "sender_slot": 0, "controller_slot": 1, "supervisor_slot": 2,
+            "status_flags": {"primed": 16, "watchdog_fault": 32},
+            "clock": "kernel_physical_counter_ticks",
+            "mode": "qualification" if args.safety_qualification else "ordinary",
+            "max_completion_gap_ms": 5,
+            "completion_syscalls": [60, 63] if args.safety_qualification else [60],
+        }
+    if args.safety_interference:
+        env["JNOX_NATIVE_SAFETY_INTERFERENCE"] = "1"
+        metadata["safety_interference"] = {"intid": 27, "maximum_irqs": 32, "first_ms": 1,
+                                           "subsequent_ms": 5, "timer": "CNTV"}
+    if args.safety_qualification:
+        env["JNOX_NATIVE_SAFETY_QUALIFICATION"] = "1"
+        metadata["safety_qualification"] = {
+            "syscall": 62, "sender_slot": 0, "controller_slot": 1, "supervisor_slot": 2,
+            "controller_period_us": 5000, "controller_phase_offsets_us": [0, 2500],
+            "sender_period_us": 10000,
+        }
     if args.cap_grant or args.cap_route:
         cap_routes = sorted(args.cap_route)
         for key, rows in (("JNOX_NATIVE_CAP_GRANTS", args.cap_grant), ("JNOX_NATIVE_CAP_ROUTES", cap_routes)):

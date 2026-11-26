@@ -52,26 +52,91 @@ fn apply(op: MapOp) -> Result<(), i32> {
     Ok(())
 }
 
+#[cfg(jnox_native_safety_channel)]
+pub(super) fn invalidate() {
+    unsafe { (&mut *(&raw mut CHANNEL)).invalidate(apply) }.unwrap_or_else(|_| fail(9));
+}
+
+#[cfg(jnox_native_safety_downstream)]
+pub(super) fn inject_invalid_fixture() -> Result<u64, i32> {
+    unsafe { (&mut *(&raw mut CHANNEL)).enqueue_invalid_fixture(mmu::load_invalid_fixture) }
+}
+
+#[cfg(jnox_native_safety_downstream)]
+pub(super) fn occupancy() -> usize {
+    unsafe { (&*(&raw const CHANNEL)).occupancy() }
+}
+
+#[cfg(jnox_native_safety_arrival_observation)]
+pub(super) fn opening_queue() -> (u64, u64, u64) {
+    unsafe { (&*(&raw const CHANNEL)).opening_queue() }
+}
+
+// Keep the service boundary visible to the host phase probe.
+#[inline(never)]
 pub(super) fn service(pid: usize, f: &mut NativeFrame) {
     let channel = unsafe { &mut *(&raw mut CHANNEL) };
     let op = f.x[8];
-    let result = match op {
-        33 | 35 => {
-            let grant = if op == 33 { channel.acquire(pid, apply) } else { channel.receive(pid, apply) };
+    #[cfg(jnox_native_safety_channel)]
+    if let Err(errno) = super::safety::before_loan(pid, op) {
+        f.x[..4].fill(0);
+        f.x[0] = i64::from(errno) as u64;
+        return;
+    }
+    #[cfg(jnox_native_safety_channel)]
+    let handle = f.x[0];
+    let result = if op == 35 {
+        match channel.receive(pid, apply) {
+            Ok(g) => {
+                f.x[1] = g.handle;
+                f.x[2] = mmu::loan_va(g.slot) as u64;
+                f.x[3] = g.len as u64;
+                Ok(())
+            }
+            Err(errno) => {
+                f.x[1..4].fill(0);
+                Err(errno)
+            }
+        }
+    } else {
+        service_other(channel, pid, op, f)
+    };
+    #[cfg(jnox_native_safety_channel)]
+    super::safety::after_loan(pid, op, handle, f, result, channel.occupancy());
+    f.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
+}
+
+// Keep publish snapshot storage and the other operations off the receive path.
+#[inline(never)]
+fn service_other(channel: &mut LoanIpc, pid: usize, op: u64, f: &mut NativeFrame) -> Result<(), i32> {
+    match op {
+        33 => {
+            let grant = channel.acquire(pid, apply);
             f.x[1] = 0;
             f.x[2] = 0;
-            if op == 35 { f.x[3] = 0; }
             grant.map(|g| {
                 f.x[1] = g.handle;
                 f.x[2] = mmu::loan_va(g.slot) as u64;
-                if op == 35 { f.x[3] = g.len as u64; }
             })
         }
-        34 => channel.publish(pid, f.x[0], f.x[1], apply),
+        34 => {
+            #[cfg(jnox_native_safety_channel)]
+            let snapshot = {
+                let slot = (f.x[0] & 3) as usize;
+                let mut fields = [0; 24];
+                (f.x[1] == 44 && channel.page(slot).is_some_and(|p| p.state == 1 && p.handle == f.x[0])
+                    && mmu::copy_from_user(mmu::loan_va(slot) + 8, &mut fields)).then_some(fields)
+            };
+            #[cfg(jnox_native_safety_channel)]
+            let before = super::counter();
+            let status = channel.publish(pid, f.x[0], f.x[1], apply);
+            #[cfg(jnox_native_safety_channel)]
+            super::safety::published(f.x[0], snapshot, before, super::counter(), status.err().unwrap_or(0));
+            status
+        }
         36 => channel.release(pid, f.x[0], apply),
         _ => unreachable!(),
-    };
-    f.x[0] = i64::from(result.err().unwrap_or(0)) as u64;
+    }
 }
 
 pub(super) fn exit(pid: usize) {

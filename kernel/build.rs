@@ -555,6 +555,48 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_native_display");
         println!("cargo::rustc-env=JNOX_PACKAGED_DISPLAY_SLOT={slot}");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_channel)");
+    let safety_channel = selector("JNOX_NATIVE_SAFETY_CHANNEL");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_qualification)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_interference)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_watchdog)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_downstream)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_boundary)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_phase_observation)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_safety_arrival_observation)");
+    let boundary = selector("JNOX_NATIVE_SAFETY_BOUNDARY");
+    let qualification = selector("JNOX_NATIVE_SAFETY_QUALIFICATION");
+    let downstream = selector("JNOX_NATIVE_SAFETY_DOWNSTREAM");
+    if let Some(value) = &downstream {
+        assert!(value == "1" && qualification.as_deref() == Some("1"),
+            "downstream injection requires the protected virtual qualification profile");
+    }
+    if let Some(value) = selector("JNOX_NATIVE_SAFETY_WATCHDOG") {
+        assert!(value == "1" && safety_channel.as_deref() == Some("1") && boundary.is_none(),
+            "safety watchdog requires the protected channel and excludes boundary fixtures");
+        println!("cargo::rustc-cfg=jnox_native_safety_watchdog");
+    }
+    if let Some(value) = selector("JNOX_NATIVE_SAFETY_INTERFERENCE") {
+        assert!(value == "1" && qualification.as_deref() == Some("1"),
+            "safety interference requires the qualification profile");
+        println!("cargo::rustc-cfg=jnox_native_safety_interference");
+    }
+    if let Some(value) = &boundary {
+        assert!(value == "1" && safety_channel.as_deref() == Some("1") && qualification.is_none(),
+            "boundary observations require the single-check protected channel");
+    }
+    if let Some(value) = qualification {
+        assert!(value == "1" && safety_channel.as_deref() == Some("1"),
+            "safety qualification requires the protected channel");
+    }
+    if let Some(value) = safety_channel {
+        assert!(value == "1" && profile.as_deref() == Some("native") && app.as_deref() == Some("process")
+            && board == "virt" && threads.is_none() && matches!(policy.as_deref(), Some("fifo" | "rr"))
+            && peer_image.is_some() && peer2_image.is_some() && peer3_image.is_none()
+            && loan_route.as_deref() == Some("0:1"),
+            "safety channel requires three ordinary virt FIFO/RR processes with loan route 0:1");
+        println!("cargo::rustc-cfg=jnox_native_safety_channel");
+    }
     assert!(peer3_image.is_none() || threads.is_none(), "third peer requires ordinary processes");
     if capabilities || ipc_routes.is_some() || mailbox_routes.is_some() || notify_routes.is_some() || loan_route.is_some() {
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process")
@@ -644,6 +686,50 @@ fn main() {
         assert!(cap > 0, "deadline switch cap must be positive");
     }
     let native_argv = [0, 1, 2, 3].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    if downstream.is_some() {
+        let [sender, controller, supervisor, extra] = core::array::from_fn(|slot|
+            native_extra_args(slot, native_argv[slot].as_deref()));
+        let named = sender.len() == 1 && matches!(sender[0].as_slice(), b"gate-invalid" | b"gate-saturation");
+        let controller_matches = controller == sender || (controller.len() == 2
+            && controller.first() == sender.first() && controller[1] == b"fused-phase");
+        assert!(named && supervisor == sender && controller_matches && extra.is_empty(),
+            "downstream fixture requires matching gate-invalid or gate-saturation scenarios");
+        println!("cargo::rustc-cfg=jnox_native_safety_downstream");
+    }
+    if boundary.is_some() {
+        let [sender, controller, supervisor, extra] = core::array::from_fn(|slot|
+            native_extra_args(slot, native_argv[slot].as_deref()));
+        assert!(sender.len() == 1 && controller.first() == sender.first() && supervisor.first() == sender.first()
+            && extra.is_empty(), "boundary observations require matching selectors for three slots");
+        let rearm = matches!(sender[0].as_slice(), b"rearm-15" | b"rearm-20");
+        let phase = matches!(sender[0].as_slice(), b"phase-decision" | b"phase-complete");
+        let arrival = matches!(sender[0].as_slice(), b"arrival-before" | b"arrival-same" | b"arrival-after");
+        assert!(phase || controller == sender, "boundary observations require matching selectors for three slots");
+        assert!(rearm || phase || arrival || matches!(sender[0].as_slice(), b"phase" | b"collision"),
+            "unknown boundary observation selector");
+        if supervisor.len() != 1 {
+            assert!(rearm && supervisor.len() == 2, "only rearm accepts one supervisor lead");
+            validate_boundary_lead(&supervisor[1], "supervisor");
+        }
+        if phase && controller.len() != 1 {
+            let with_counts = sender[0].as_slice() == b"phase-complete" && controller.len() == 5;
+            assert!(controller.len() == 3 || with_counts,
+                "phase-decision and phase-complete accept two controller leads together. Only phase-complete can append a pair of NOP counts");
+            for lead in &controller[1..3] { validate_boundary_lead(lead, "controller"); }
+            for count in &controller[3..] {
+                assert!(boundary_decimal_in_range(count, 2, 15),
+                    "controller NOP count must be 1 to 2 ASCII decimal digits in the range 0..15");
+            }
+        }
+        if phase {
+            println!("cargo::rustc-cfg=jnox_native_safety_phase_observation");
+        }
+        if arrival {
+            // The three encoded role argument vectors have all passed the checks above.
+            println!("cargo::rustc-cfg=jnox_native_safety_arrival_observation");
+        }
+        println!("cargo::rustc-cfg=jnox_native_safety_boundary");
+    }
     assert!(amc.is_none() || native_argv.iter().all(Option::is_none), "declare AMC arguments in its manifest");
     for (slot, args) in native_argv.iter().enumerate() {
         if args.is_some() {
@@ -957,9 +1043,19 @@ fn multilevel_duration(field: &str) -> u64 {
     value
 }
 
+fn validate_boundary_lead(lead: &[u8], role: &str) {
+    assert!(boundary_decimal_in_range(lead, 5, 12_500),
+        "{role} lead must be 1 to 5 ASCII decimal digits in the range 0..12500 ticks");
+}
+
+fn boundary_decimal_in_range(value: &[u8], digits: usize, maximum: u32) -> bool {
+    (1..=digits).contains(&value.len()) && value.iter().all(u8::is_ascii_digit)
+        && value.iter().fold(0u32, |n, digit| n * 10 + u32::from(*digit - b'0')) <= maximum
+}
+
 // Hex wire: u8 count, then (u16 little-endian byte length, UTF-8 payload) per extra.
-fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
-    let Some(encoded) = encoded else { return "&[]".to_owned() };
+fn native_extra_args(slot: usize, encoded: Option<&str>) -> Vec<Vec<u8>> {
+    let Some(encoded) = encoded else { return Vec::new() };
     const MAX_COUNT: usize = 15;
     const MAX_BYTES: usize = 1024;
     // Two length bytes per item, one of which replaces its budgeted NUL.
@@ -973,7 +1069,7 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
     assert!(count <= MAX_COUNT, "slot {slot}: at most {MAX_COUNT} extra arguments");
     let mut rest = &raw[1..];
     let mut used = 0;
-    let mut literals = Vec::with_capacity(count);
+    let mut args = Vec::with_capacity(count);
     for _ in 0..count {
         assert!(rest.len() >= 2, "slot {slot}: missing argument length");
         let size = usize::from(u16::from_le_bytes([rest[0], rest[1]]));
@@ -985,9 +1081,15 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
         assert!(used <= MAX_BYTES, "slot {slot}: arguments exceed {MAX_BYTES} bytes including NULs");
         assert!(!value.contains(&0), "slot {slot}: argument contains NUL");
         assert!(std::str::from_utf8(value).is_ok(), "slot {slot}: invalid UTF-8");
-        literals.push(format!("&{value:?}"));
+        args.push(value.to_vec());
     }
     assert!(rest.is_empty(), "slot {slot}: trailing argument bytes");
+    args
+}
+
+fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
+    let args = native_extra_args(slot, encoded);
+    let literals: Vec<_> = args.iter().map(|value| format!("&{value:?}")).collect();
     format!("&[{}]", literals.join(", "))
 }
 
@@ -1315,6 +1417,15 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
             let list: Vec<u8> = priorities.expect("fixed scheduling requires priorities").split(',')
                 .map(|value| value.parse().expect("priority must be 0..255")).collect();
             assert_eq!(list.len(), slots, "supply one priority per slot");
+            let qualification = std::env::var_os("JNOX_NATIVE_SAFETY_QUALIFICATION").is_some();
+            if qualification || std::env::var_os("JNOX_NATIVE_SAFETY_WATCHDOG").is_some() {
+                assert!(matches!(list.as_slice(), [sender, controller, supervisor]
+                    if controller > sender && sender > supervisor),
+                    "qualification or watchdog priorities must order controller > sender > supervisor");
+            }
+            if qualification {
+                println!("cargo::rustc-cfg=jnox_native_safety_qualification");
+            }
             println!("cargo::rustc-cfg=jnox_native_fixed");
             list
         }
