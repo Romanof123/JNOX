@@ -451,6 +451,8 @@ def main():
                                help="grant the virt PL031 and INTID 34 to driver slot 0 in a two-process native FIFO package")
     source_device.add_argument("--linux-source-net", dest="linux_source_driver", action="store_const", const="net",
                                help="grant the virtio-net MMIO transport to driver slot 0 in a two-process native FIFO package")
+    source_device.add_argument("--linux-source-net-queues", dest="linux_source_driver", action="store_const", const="net-queues",
+                               help="allow driver slot 0 to set up and query a virtio-net RX/TX queue pair in the native FIFO package")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
@@ -774,15 +776,23 @@ def main():
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
     if args.linux_source_driver:
-        env[f"JNOX_NATIVE_LINUX_SOURCE_{args.linux_source_driver.upper()}"] = "1"
-        if args.linux_source_driver == "rtc":
+        driver_kind = "rtc" if args.linux_source_driver == "rtc" else "net"
+        env[f"JNOX_NATIVE_LINUX_SOURCE_{driver_kind.upper()}"] = "1"
+        if driver_kind == "rtc":
             device = {"device": "arm,pl031", "mmio_base": 0x09010000, "mmio_bytes": 4096,
                       "intid": 34, "driver_source": "drivers/rtc/rtc-pl031.c"}
         else:
             device = {"device": "virtio-net", "mmio_base": 0x0a003e00, "mmio_bytes": 0x200,
                       "driver_source": "drivers/net/virtio_net.c", "transport": "virtio-net-mmio-modern",
                       "qemu_device": "virtio-net-device"}
-        metadata[f"linux_source_{args.linux_source_driver}"] = {"driver_slot": 0, "unauthorized_slots": [1], **device}
+        metadata[f"linux_source_{driver_kind}"] = {"driver_slot": 0, "unauthorized_slots": [1], **device}
+        if args.linux_source_driver == "net-queues":
+            env["JNOX_NATIVE_LINUX_PACKET_QUEUES"] = "1"
+            metadata["linux_packet_queues"] = {
+                "queue_size": 32, "indices": {"rx": 0, "tx": 1},
+                "status_after_setup": "FEATURES_OK", "buffers_required_for_driver_ok": True,
+                "driver_source": device["driver_source"], "syscalls": {"setup": 161, "query": 162},
+            }
         metadata["package_argv"] = sys.argv[:]
     if args.pubsub_service:
         env["JNOX_NATIVE_PUBSUB_SERVICE"] = "3"

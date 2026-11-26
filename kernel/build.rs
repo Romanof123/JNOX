@@ -712,19 +712,29 @@ fn main() {
             && all_package_features_enabled(),
             "pi4-stream-v1 requires a Pi 4 SMP migration application");
     }
-    for (env_key, cfg) in [
-        ("JNOX_NATIVE_LINUX_SOURCE_RTC", "jnox_linux_source_rtc"),
-        ("JNOX_NATIVE_LINUX_SOURCE_NET", "jnox_linux_source_net"),
+    let source_rtc = selector("JNOX_NATIVE_LINUX_SOURCE_RTC");
+    let source_net = selector("JNOX_NATIVE_LINUX_SOURCE_NET");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_packet_queues)");
+    if let Some(value) = selector("JNOX_NATIVE_LINUX_PACKET_QUEUES") {
+        assert!(value == "1" && source_net.as_deref() == Some("1") && source_rtc.is_none(),
+            "native packet queues require the Linux source net driver profile");
+        println!("cargo::rustc-cfg=jnox_linux_packet_queues");
+    }
+    for (env_key, cfg, selection) in [
+        ("JNOX_NATIVE_LINUX_SOURCE_RTC", "jnox_linux_source_rtc", source_rtc),
+        ("JNOX_NATIVE_LINUX_SOURCE_NET", "jnox_linux_source_net", source_net),
     ] {
         println!("cargo::rustc-check-cfg=cfg({cfg})");
-        let Some(value) = selector(env_key) else { continue };
+        let Some(value) = selection else { continue };
         assert!(value == "1" && board == "virt" && profile.as_deref() == Some("native")
             && app.as_deref() == Some("process") && policy.as_deref() == Some("fifo")
             && priorities.is_some() && peer_image.is_some(),
             "{env_key} requires two native virt FIFO processes");
         for (key, _) in env::vars_os() {
             let key = key.to_string_lossy();
-            assert!(!key.starts_with("JNOX_") || key.as_ref() == env_key || matches!(key.as_ref(),
+            assert!(!key.starts_with("JNOX_") || key.as_ref() == env_key
+                || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && key == "JNOX_NATIVE_LINUX_PACKET_QUEUES")
+                || matches!(key.as_ref(),
                 "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"
                 | "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256" | "JNOX_NATIVE_PEER_ELF"
                 | "JNOX_NATIVE_PEER_ELF_SHA256" | "JNOX_NATIVE_POLICY" | "JNOX_NATIVE_PRIORITIES"

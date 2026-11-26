@@ -822,6 +822,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         1 => 0,
         #[cfg(jnox_linux_source_net)]
         156..=160 => linux_net::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
+        #[cfg(jnox_linux_packet_queues)]
+        161..=162 => linux_net::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
         #[cfg(jnox_linux_source_rtc)]
         152..=155 => pl031::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
         #[cfg(jnox_native_display)]

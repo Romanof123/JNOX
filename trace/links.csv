@@ -2402,3 +2402,12 @@ IMP-326,partially-verified-by,VER-011
 VER-004,has-partial-evidence,EVD-326
 VER-011,has-partial-evidence,EVD-326
 IMP-326,tested-in,EVD-326
+CHG-327,affects,REQ-004
+CHG-327,affects,REQ-011
+CHG-327,affects,DES-002
+CHG-327,affects,VER-004
+CHG-327,affects,VER-011
+CHG-327,affects,EVD-327
+REQ-004,partially-implemented-by,IMP-327
+REQ-011,partially-implemented-by,IMP-327
+DES-002,partially-implemented-by,IMP-327
