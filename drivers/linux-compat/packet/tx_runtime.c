@@ -107,6 +107,7 @@ bool jnox_packet_tx_take_wake_v1(struct netdev_queue *q)
     return true;
 }
 
+#ifndef JNOX_PACKET_RX_POLL_ABI
 bool napi_schedule_prep(struct napi_struct *n)
 {
     if (n && (napi_disable_pending(n) || test_bit(NAPI_STATE_DISABLED, &n->state)))
@@ -118,6 +119,8 @@ void __napi_schedule(struct napi_struct *n)
 {
     fault(JNOX_TX_NAPI);
 }
+
+#endif
 
 void skb_clone_tx_timestamp(struct sk_buff *skb)
 {

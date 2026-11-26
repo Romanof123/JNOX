@@ -457,6 +457,8 @@ def main():
                                help="grant driver slot 0 native packet I/O on the virtio-net RX/TX queue pair")
     source_device.add_argument("--linux-source-net-rx", dest="linux_source_driver", action="store_const", const="net-rx",
                                help="grant slot 0 virtio-net receive buffers and connect it to the slot 1 consumer")
+    source_device.add_argument("--linux-source-net-rx-poll", dest="linux_source_driver", action="store_const",
+                               const="net-rx-poll", help="grant slot 0 RX callback control for upstream NAPI polling")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
@@ -562,7 +564,7 @@ def main():
             parser.error(f"{option} requires virt FIFO, one --elf and one --peer-elf")
         if conflicts:
             parser.error(f"options incompatible with {option}: " + ", ".join(conflicts))
-        if args.linux_source_driver == "net-rx":
+        if args.linux_source_driver in ("net-rx", "net-rx-poll"):
             args.pipes = 1
             args.pipe_link = [(0, 3, 1, 3), (1, 4, 0, 4)]
     if args.task_policy is not None:
@@ -793,14 +795,14 @@ def main():
                       "driver_source": "drivers/net/virtio_net.c", "transport": "virtio-net-mmio-modern",
                       "qemu_device": "virtio-net-device"}
         metadata[f"linux_source_{driver_kind}"] = {"driver_slot": 0, "unauthorized_slots": [1], **device}
-        if args.linux_source_driver in ("net-queues", "net-packets", "net-rx"):
+        if args.linux_source_driver in ("net-queues", "net-packets", "net-rx", "net-rx-poll"):
             env["JNOX_NATIVE_LINUX_PACKET_QUEUES"] = "1"
             metadata["linux_packet_queues"] = {
                 "queue_size": 32, "indices": {"rx": 0, "tx": 1},
                 "status_after_setup": "FEATURES_OK", "buffers_required_for_driver_ok": True,
                 "driver_source": device["driver_source"], "syscalls": {"setup": 161, "query": 162},
             }
-        if args.linux_source_driver in ("net-packets", "net-rx"):
+        if args.linux_source_driver in ("net-packets", "net-rx", "net-rx-poll"):
             env["JNOX_NATIVE_LINUX_NET_PACKETS"] = "1"
             metadata["linux_net_packets"] = {
                 "driver_slot": 0, "unauthorized_slots": [1], "virtio_net_header_bytes": 12,
@@ -808,7 +810,7 @@ def main():
                 "syscalls": {"start": 163, "tx_submit": 164, "tx_kick": 165, "tx_reap": 166,
                              "rx_receive": 167, "irq_ack": 168, "tx_callbacks": 169},
             }
-        if args.linux_source_driver == "net-rx":
+        if args.linux_source_driver in ("net-rx", "net-rx-poll"):
             env["JNOX_NATIVE_LINUX_SOURCE_NET_RX"] = "1"
             packet_calls = metadata["linux_net_packets"]["syscalls"]
             del packet_calls["start"], packet_calls["rx_receive"]
@@ -817,6 +819,13 @@ def main():
                 "driver_source": device["driver_source"], "queue_size": 32, "grant_bytes": 1530,
                 "virtio_net_header_bytes": 12, "frame_count": 80, "frame_ethertype": 0x88b5,
                 "syscalls": {"start": 170, "post": 171, "reap": 172},
+            }
+        if args.linux_source_driver == "net-rx-poll":
+            env["JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL"] = "1"
+            metadata["linux_source_net_rx_poll"] = {
+                "driver_slot": 0, "syscalls": {"rx_callbacks": 173},
+                "modes": {"disable": 0, "enable_prepare": 1, "poll": 2, "refill_kick": 3},
+                "initial_kick": "driver_ok", "live_refill_kick": "explicit",
             }
         metadata["package_argv"] = sys.argv[:]
     if args.pubsub_service:

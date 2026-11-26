@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 
 from import_linux_driver import ROOT, SDK, inspect_elf, pinned_source, run, sha
-from linux_driver_relocations import inventory
+from linux_driver_relocations import ObjectGraph, inventory
 from prepare_linux_virtio_net_headers import verify_header_tree
 
 PROFILE = ROOT / "drivers/linux-compat/profiles/virtio-net.json"
@@ -51,6 +51,44 @@ def dependencies(depfile, work):
     return sorted({(work / name).resolve() for name in shlex.split(text.split(": ", 1)[1])})
 
 
+def select_poll_faults(source, variant, work):
+    # A NOTYPE undefined ELF symbol alone is insufficient evidence of a
+    # function. Verify actual direct branch relocation and opcode at each site.
+    obj = ObjectGraph(variant)
+    imports = {}
+    for section, rels in obj.relocations.items():
+        sh = obj.sections[section]
+        if not sh[2] & 4:  # SHF_EXECINSTR
+            continue
+        for off, kind, (name, symbol_type, idx, _, _), addend in rels:
+            if idx or symbol_type not in (0, 2) or addend or kind not in (282, 283):
+                continue
+            word = int.from_bytes(obj.data[sh[4] + off:sh[4] + off + 4], "little")
+            if word >> 26 != {282: 0b000101, 283: 0b100101}[kind]:
+                continue
+            imports.setdefault(name, []).append({"section": obj.names[section], "offset": off,
+                "relocation": "R_AARCH64_CALL26" if kind == 283 else "R_AARCH64_JUMP26"})
+    rows = []
+    ids, names = set(), set()
+    for line in source.read_text().splitlines():
+        if not line.startswith("rx_unsupported "):
+            continue
+        match = re.fullmatch(r"rx_unsupported (\d+), (\w+), (\w+)", line)
+        if not match:
+            raise ValueError(f"invalid RX admission table row: {line}")
+        number, name, reason = int(match[1]), match[2], match[3]
+        if number in ids or name in names or not 0 < number <= 65535:
+            raise ValueError(f"duplicate or invalid RX fault ID/name: {line}")
+        ids.add(number)
+        names.add(name)
+        rows.append({"id": number, "symbol": name, "reason": reason,
+                     "original_branch_sites": imports.get(name, [])})
+    selection = work / "jnox_rx_fault_select.inc"
+    selection.write_text("".join(f".set jnox_enable_{r['id']}, 1\n" for r in rows if r["original_branch_sites"]))
+    return {"version": 1, "fault_symbol": "jnox_rx_poll_fault_id", "exit_status": 121,
+            "source_sha256": sha(source.read_bytes()), "imports": rows}
+
+
 def build(args, work, profile, data):
     names = ["cc", "objcopy", "objdump", "readelf", "nm"] + ([] if args.object_only or args.packet_object_only else ["clang", "ld"])
     tools = {name: shutil.which(getattr(args, name)) for name in names}
@@ -72,7 +110,8 @@ def build(args, work, profile, data):
     upstream = work / "virtio_net.c"
     upstream.write_bytes(data)
     kernel = kernel_flags(headers, tools["cc"], work)
-    data_service = args.packet_service or args.rx_service
+    receive_service = args.rx_service or args.rx_poll_service
+    data_service = args.packet_service or receive_service
     queue_mode = args.queue_service or data_service
     packet_mode = args.packet_object_only or queue_mode
     diagnostics = {}
@@ -116,8 +155,10 @@ def build(args, work, profile, data):
         if data_service:
             packet_kernel = ["-DJNOX_PACKET_SERVICE=1", "-DJNOX_PACKET_TX_ABI=1", *packet_kernel]
         original_flags = packet_kernel
-        if args.rx_service:
+        if receive_service:
             packet_kernel = ["-DJNOX_PACKET_RX_ABI=1", *packet_kernel]
+            if args.rx_poll_service:
+                packet_kernel = ["-DJNOX_PACKET_RX_POLL_ABI=1", *packet_kernel]
             # The driver normally inlines its private receive helpers. Preserve
             # separate definitions in the original TU; gc-sections discards
             # unreferenced functions at link time.
@@ -132,8 +173,10 @@ def build(args, work, profile, data):
         reports = {}
         for obj in (original, variant):
             roots = list(entries)
-            if args.rx_service and obj == variant:
+            if receive_service and obj == variant:
                 roots.extend(("add_recvbuf_small", "virtnet_rq_get_buf"))
+                if args.rx_poll_service:
+                    roots.append("virtnet_alloc_queues")
             graph = inventory(obj, tools["objdump"], roots)
             reports[obj.name] = {
                 "elf": inspect_elf(obj, tools), "relocations": graph,
@@ -166,8 +209,10 @@ def build(args, work, profile, data):
     if not args.packet_object_only:
         callback_input = variant if queue_mode else original
         callbacks = [callback] + (["start_xmit"] if args.packet_service else [])
-        if args.rx_service:
+        if receive_service:
             callbacks.extend(("add_recvbuf_small", "virtnet_rq_get_buf"))
+            if args.rx_poll_service:
+                callbacks.extend(("virtnet_alloc_queues", "virtnet_poll"))
         invoke(tools["objcopy"], *["--globalize-symbol=" + name for name in callbacks],
                callback_input.name, derivative.name)
         full = inspect_elf(callback_input, tools)
@@ -211,8 +256,8 @@ def build(args, work, profile, data):
         if queue_mode:
             result.update(control_report)
             result["mode"] = "packet-service" if args.packet_service else "queue-service"
-            if args.rx_service:
-                result["mode"] = "rx-service"
+            if receive_service:
+                result["mode"] = "rx-poll-service" if args.rx_poll_service else "rx-service"
             result["callback_input"] = variant.name
             result["queue_service_scope"] = "Source validation and native bus queue setup only; Linux TX, RX and lifecycle entry points remain unadmitted."
         else:
@@ -232,17 +277,21 @@ def build(args, work, profile, data):
             if data_service:
                 from linux_driver_tx_layout import private_layout
                 app = ROOT / "examples/linux-source-net-packets/driver.c"
-                if args.rx_service:
+                if receive_service:
                     app = ROOT / "examples/linux-source-net-rx/driver.c"
                 generated_header = work / "jnox_virtnet_layout.h"
-                generated_header.write_text(private_layout(data.decode("utf-8"), receive=args.rx_service), encoding="utf-8")
+                generated_header.write_text(private_layout(data.decode("utf-8"), receive=receive_service), encoding="utf-8")
                 result["layout_view"] = {"file": generated_header.name, "sha256": sha(generated_header.read_bytes()),
                     "generator_sha256": sha((ROOT / "tools/linux_driver_tx_layout.py").read_bytes())}
                 result["callbacks"] = checked_callbacks
                 result["queue_service_scope"] = "Original validation and TX callback plus native transport. Full Linux lifecycle and RX poll remain unadmitted."
-                if args.rx_service:
+                if receive_service:
                     result["queue_service_scope"] = "Original RX small-buffer provisioning and used-buffer retrieval. Full Linux RX poll and lifecycle remain unadmitted."
-                    adapters = ("receive", "rx_pages", "rx_virtqueue", "tx_virtqueue", "tx_runtime")
+                    receive_adapters = ("rx_poll", "rx_napi", "rx_skb") if args.rx_poll_service else ("receive",)
+                    adapters = (*receive_adapters, "rx_pages", "rx_virtqueue", "tx_virtqueue", "tx_runtime")
+                    if args.rx_poll_service:
+                        result["queue_service_scope"] = "Upstream queue allocation and RX poll with the bounded native packet adapters; guest execution requires separate evidence."
+                        result["retention_only"] = ["virtnet_rq_get_buf"]
                 else:
                     adapters = ("transmit", "tx_virtqueue", "tx_runtime")
                 for name in adapters:
@@ -258,10 +307,19 @@ def build(args, work, profile, data):
                 extra_objects.append("memcpy.o")
             for source, output in [(app, "driver.o"), (SDK / "start.S", "start.o"),
                                    (SDK / "io.c", "io.o")]:
-                compile_tu(tools["clang"], native, source, output)
+                app_flags = [*native, "-DJNOX_NATIVE_RX_POLL_FIXTURE=1"] if args.rx_poll_service and source == app else native
+                compile_tu(tools["clang"], app_flags, source, output)
             linkscript = SDK / "app.ld"
             files[linkscript.relative_to(ROOT).as_posix()] = sha(linkscript.read_bytes())
-            invoke(tools["ld"], "-m", "aarch64elf", "-static", "--no-undefined", "--gc-sections",
+            if args.rx_poll_service:
+                guard = ROOT / "drivers/linux-compat/packet/rx_poll_unsupported.S"
+                result["poll_fault_table"] = select_poll_faults(guard, variant, work)
+                compile_tu(tools["clang"], [*native, "-I", work], guard, "rx_poll_unsupported.o")
+                extra_objects.append("rx_poll_unsupported.o")
+            # Inlining inside the original poll may eliminate the reference to
+            # this standalone helper. Retention does not establish execution.
+            retain = ["--error-limit=0", "--undefined=virtnet_rq_get_buf", "--undefined=jnox_rx_poll_fault_id"] if args.rx_poll_service else []
+            invoke(tools["ld"], *retain, "-m", "aarch64elf", "-static", "--no-undefined", "--gc-sections",
                    "--build-id=none", "-z", "max-page-size=4096", "-T", linkscript, "-Map=service.map",
                    "start.o", "io.o", "driver.o", "adapter.o", *extra_objects, derivative.name, "-o", "service.elf")
             service = inspect_elf(work / "service.elf", tools)
@@ -277,9 +335,11 @@ def build(args, work, profile, data):
                 for symbol in ("jnox_queue_find_vqs", "jnox_net_setup_queues"):
                     if not defined(service, symbol, "GLOBAL"):
                         raise ValueError(f"missing queue-service implementation: {symbol}")
-                forbidden = ["virtnet_open", "virtnet_poll"]
+                forbidden = ["virtnet_open"]
+                if not args.rx_poll_service:
+                    forbidden.append("virtnet_poll")
                 if data_service:
-                    if args.rx_service:
+                    if receive_service:
                         forbidden.append("start_xmit")
                     link_map = (work / "service.map").read_text()
                     for name in callbacks:
@@ -293,6 +353,13 @@ def build(args, work, profile, data):
                 for symbol in forbidden:
                     if any(s["name"] == symbol for s in service["symbols"]):
                         raise ValueError(f"unadmitted packet entry point in queue service: {symbol}")
+            if args.rx_poll_service:
+                for row in result["poll_fault_table"]["imports"]:
+                    name = row["symbol"]
+                    supplier = f"rx_poll_unsupported.o:(.text.{name})"
+                    row["linked_handler"] = any(line.strip().endswith(supplier) for line in link_map.splitlines())
+                    if row["linked_handler"] and (not row["original_branch_sites"] or not defined(service, name, "GLOBAL")):
+                        raise ValueError(f"unsupported RX handler lacks original callsite: {name}")
             result["service"] = service
             result["link_map_sha256"] = sha((work / "service.map").read_bytes())
     config = (headers / "include/generated/autoconf.h").read_text()
@@ -319,6 +386,8 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--object-only", action="store_true")
+    mode.add_argument("--rx-poll-service", action="store_true",
+                      help="link original virtio-net queue allocation and RX poll for native service")
     mode.add_argument("--rx-service", action="store_true",
                       help="link upstream small-buffer RX provisioning and completion with native transport")
     mode.add_argument("--packet-service", action="store_true",

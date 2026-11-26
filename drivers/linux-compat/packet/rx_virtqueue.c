@@ -29,6 +29,9 @@ struct rx_slot {
 static struct rx_map maps[MAP_COUNT];
 static struct rx_slot slots[QUEUE_SIZE];
 static unsigned long running;
+#ifdef JNOX_PACKET_RX_POLL_ABI
+static bool need_rx_notify;
+#endif
 static unsigned long long stats[8];
 
 static long call_rx(unsigned long op, unsigned long epoch, const void *ptr, unsigned long len)
@@ -152,6 +155,9 @@ int virtqueue_add_inbuf_premapped(struct virtqueue *vq, struct scatterlist *sg, 
     }
     slots[id] = (struct rx_slot){.token = epoch, .cookie = cookie, .context = ctx,
                                   .window = window, .handle = addr, .length = len, .map = m};
+#ifdef JNOX_PACKET_RX_POLL_ABI
+    if (running == epoch) need_rx_notify = true;
+#endif
     ++m->posted;
     --vq->num_free;
     ++stats[0];
@@ -223,7 +229,12 @@ void jnox_rx_reset_complete_v1(unsigned long retired_token)
     }
     for (unsigned i = 0; i < MAP_COUNT; ++i)
         if (maps[i].token == retired_token) maps[i] = (struct rx_map){};
-    if (running == retired_token) running = 0;
+    if (running == retired_token) {
+        running = 0;
+#ifdef JNOX_PACKET_RX_POLL_ABI
+        need_rx_notify = false;
+#endif
+    }
 }
 
 unsigned long jnox_rx_posted_address_v1(unsigned int id)
@@ -237,3 +248,60 @@ void jnox_rx_vq_stats(unsigned long long out[8])
 {
     for (unsigned i = 0; i < 8; ++i) out[i] = stats[i];
 }
+
+#ifdef JNOX_PACKET_RX_POLL_ABI
+#include <jnox_rx_napi.h>
+static long rx_event(struct virtqueue *vq, unsigned long mode, unsigned arg)
+{
+    if (!active(vq) || running != jnox_packet_token()) {
+        fault(-ENODEV);
+        call_rx(1, 98, NULL, 0);
+        __builtin_unreachable();
+    }
+    long rc = call_rx(173, running, (void *)mode, arg);
+    if (rc < 0 || (mode == 1 ? rc > 65535 : mode == 2 ? rc > 1 : rc != 0)) {
+        fault(rc < 0 ? rc : -EPROTO);
+        call_rx(1, 98, NULL, 0);
+        __builtin_unreachable();
+    }
+    jnox_rx_napi_event_v1(mode, rc);
+    return rc;
+}
+
+void jnox_rx_disable_cb_v1(struct virtqueue *vq)
+{
+    rx_event(vq, 0, 0);
+}
+
+unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq)
+{
+    return rx_event(vq, 1, 0);
+}
+
+bool virtqueue_poll(struct virtqueue *vq, unsigned snapshot)
+{
+    return rx_event(vq, 2, snapshot) != 0;
+}
+
+bool jnox_rx_kick_prepare_v1(struct virtqueue *vq)
+{
+    return active(vq) && running == jnox_packet_token() && need_rx_notify;
+}
+
+bool jnox_rx_notify_v1(struct virtqueue *vq)
+{
+    if (!jnox_rx_kick_prepare_v1(vq)) return false;
+    rx_event(vq, 3, 0);
+    need_rx_notify = false;
+    return true;
+}
+
+unsigned int virtqueue_get_vring_size(const struct virtqueue *vq)
+{
+    if (!active(vq)) {
+        fault(-ENODEV);
+        return 0;
+    }
+    return QUEUE_SIZE;
+}
+#endif
