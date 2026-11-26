@@ -24,11 +24,28 @@ static long transport(unsigned long number, unsigned long arg, unsigned long ind
     return (long)x0;
 }
 
+#ifdef JNOX_PACKET_TX_ABI
+extern void jnox_tx_reset_complete(unsigned long released_token);
+struct virtqueue *jnox_packet_active_vq(unsigned int index)
+{
+    return token && index < 2 ? &queues[index].vq : NULL;
+}
+unsigned long jnox_packet_token(void)
+{
+    return token;
+}
+#endif
+
 void jnox_net_forget_queues(void);
 
 static int abandon_pair(int cause)
 {
     long release = transport(156, 0, 0);
+#ifdef JNOX_PACKET_TX_ABI
+    /* A failed reset quarantines the old buffers. Never report those skbs as
+     * reclaimable merely because this userspace queue object was invalidated. */
+    if (release < 0) token = 0;
+#endif
     jnox_net_forget_queues();
     return release < 0 ? release : cause;
 }
@@ -77,6 +94,9 @@ noinline int jnox_queue_find_vqs(struct virtio_device *vdev, unsigned int count,
 
 void jnox_net_forget_queues(void)
 {
+#ifdef JNOX_PACKET_TX_ABI
+    if (token) jnox_tx_reset_complete(token);
+#endif
     struct virtio_device *vdev = jnox_net_validated_device();
     if (vdev) INIT_LIST_HEAD(&vdev->vqs);
     for (unsigned i = 0; i < 2; ++i) {

@@ -9,6 +9,9 @@
 extern int virtnet_validate(struct virtio_device *vdev);
 
 static struct virtio_device device;
+#ifdef JNOX_PACKET_CONTEXT_ABI
+static bool validation_ok;
+#endif
 static struct {
     bool active;
     long error;
@@ -45,6 +48,16 @@ void virtio_check_driver_offered_feature(const struct virtio_device *vdev,
 {
     /* All the device features inspected by the pinned callback are entries
      * in upstream VIRTNET_FEATURES. Transport bits bypass this Linux hook. */
+#ifdef JNOX_PACKET_TX_ABI
+    if (!run.active) {
+        /* The pinned transmit callback checks this declared driver feature.
+         * virtio_has_feature still tests the actual negotiated bitmap. */
+        if (validation_ok && vdev == &device && bit == VIRTIO_NET_F_GUEST_HDRLEN)
+            return;
+        native_call(1, 92, 0);
+        __builtin_unreachable();
+    }
+#endif
     if (vdev != &device || !run.active) {
         reject(-ENODEV);
         return;
@@ -114,7 +127,6 @@ static void read_config(struct virtio_device *vdev, unsigned offset, void *buf, 
 #ifdef JNOX_PACKET_CONTEXT_ABI
 extern int jnox_queue_find_vqs(struct virtio_device *, unsigned int, struct virtqueue *[],
                                struct virtqueue_info [], struct irq_affinity *);
-static bool validation_ok;
 struct virtio_device *jnox_net_validated_device(void)
 {
     return validation_ok ? &device : NULL;

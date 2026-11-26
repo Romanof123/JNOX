@@ -72,7 +72,8 @@ def build(args, work, profile, data):
     upstream = work / "virtio_net.c"
     upstream.write_bytes(data)
     kernel = kernel_flags(headers, tools["cc"], work)
-    packet_mode = args.packet_object_only or args.queue_service
+    queue_mode = args.queue_service or args.packet_service
+    packet_mode = args.packet_object_only or queue_mode
     diagnostics = {}
     packet_inputs = {}
 
@@ -111,6 +112,8 @@ def build(args, work, profile, data):
             raise ValueError("missing packet compatibility include tree")
         variant = work / "virtio_net.packet.o"
         packet_kernel = ["-I", overlay, "-DJNOX_PACKET_CONTEXT_ABI=1", *kernel]
+        if args.packet_service:
+            packet_kernel = ["-DJNOX_PACKET_SERVICE=1", "-DJNOX_PACKET_TX_ABI=1", *packet_kernel]
         compile_tu(tools["cc"], packet_kernel, upstream.name, variant.name)
         upstream.unlink()
         entries = profile["inventory_entries"]
@@ -146,65 +149,87 @@ def build(args, work, profile, data):
         upstream.unlink()
     callback = profile["callback"]
     if not args.packet_object_only:
-        callback_input = variant if args.queue_service else original
-        section = ".text." + callback
-        invoke(tools["objcopy"], "--globalize-symbol=" + callback, callback_input.name, derivative.name)
+        callback_input = variant if queue_mode else original
+        callbacks = [callback] + (["start_xmit"] if args.packet_service else [])
+        invoke(tools["objcopy"], *["--globalize-symbol=" + name for name in callbacks],
+               callback_input.name, derivative.name)
         full = inspect_elf(callback_input, tools)
         exported = inspect_elf(derivative, tools)
-        local = defined(full, callback, "LOCAL")
-        public = defined(exported, callback, "GLOBAL")
-        if len(local) != 1 or len(public) != 1 or local[0]["size"] != public[0]["size"]:
-            raise ValueError("expected a single local callback promoted to a global function")
-        payloads = []
-        for file, report, sym in [(callback_input, full, local[0]), (derivative, exported, public[0])]:
-            if not re.search(r"Machine:\s+AArch64", report["header"]):
-                raise ValueError("driver object is not AArch64")
-            if not re.search(r"\[\s*" + sym["index"] + r"\]\s+" + re.escape(section) + r"\s+PROGBITS\b",
-                             report["sections"]):
-                raise ValueError("callback lacks its own executable input section")
-            # Provide disposable output to objcopy; dumping a section must never rewrite its input.
-            invoke(tools["objcopy"], "--dump-section", section + "=callback.tmp", file.name, "dump.tmp.o")
-            payloads.append((work / "callback.tmp").read_bytes())
-            (work / "dump.tmp.o").unlink()
-            (work / "callback.tmp").unlink()
-        if payloads[0] != payloads[1] or not payloads[0] or full["undefined"] != exported["undefined"]:
-            raise ValueError("callback instructions or whole-object imports changed during promotion")
-        if int(local[0]["value"], 16) != 0 or len(payloads[0]) != local[0]["size"]:
-            raise ValueError("callback symbol does not span its complete function section")
+        checked_callbacks = {}
+        for name in callbacks:
+            section = ".text." + name
+            local = defined(full, name, "LOCAL")
+            public = defined(exported, name, "GLOBAL")
+            if len(local) != 1 or len(public) != 1 or local[0]["size"] != public[0]["size"]:
+                raise ValueError("expected a single local callback promoted to a global function")
+            payloads = []
+            for file, report, sym in [(callback_input, full, local[0]), (derivative, exported, public[0])]:
+                if not re.search(r"Machine:\s+AArch64", report["header"]):
+                    raise ValueError("driver object is not AArch64")
+                if not re.search(r"\[\s*" + sym["index"] + r"\]\s+" + re.escape(section) + r"\s+PROGBITS\b",
+                                 report["sections"]):
+                    raise ValueError("callback lacks its own executable input section")
+                # Provide disposable output to objcopy; dumping a section must never rewrite its input.
+                invoke(tools["objcopy"], "--dump-section", section + "=callback.tmp", file.name, "dump.tmp.o")
+                payloads.append((work / "callback.tmp").read_bytes())
+                (work / "dump.tmp.o").unlink()
+                (work / "callback.tmp").unlink()
+            if payloads[0] != payloads[1] or not payloads[0] or full["undefined"] != exported["undefined"]:
+                raise ValueError("callback instructions or whole-object imports changed during promotion")
+            if int(local[0]["value"], 16) != 0 or len(payloads[0]) != local[0]["size"]:
+                raise ValueError("callback symbol does not span its complete function section")
+            checked_callbacks[name] = {"name": name, "section": section, "size": len(payloads[0]),
+                                       "original_section_sha256": sha(payloads[0]),
+                                       "promoted_section_sha256": sha(payloads[1])}
         control_report = {
             "schema": 1, "profile": profile["name"], "mode": "object-only" if args.object_only else "service",
             "upstream": profile["upstream"], "header_profile": profile["headers"],
             "source": {"path": str(args.source.resolve()), "size": len(data), "sha256": sha(data)},
             "header_root": str(headers), "header_tree_sha256": header_tree_sha256,
             "driver_object": full, "callback_object": exported,
-            "lifecycle_relocations": (reports[variant.name]["relocations"] if args.queue_service else
+            "lifecycle_relocations": (reports[variant.name]["relocations"] if queue_mode else
                                       inventory(original, tools["objdump"], profile["inventory_entries"])),
-            "callback": {"name": callback, "section": section, "size": len(payloads[0]),
-                         "original_section_sha256": sha(payloads[0]), "promoted_section_sha256": sha(payloads[1])},
+            "callback": checked_callbacks[callback],
         }
-        if args.queue_service:
+        if queue_mode:
             result.update(control_report)
-            result["mode"] = "queue-service"
+            result["mode"] = "packet-service" if args.packet_service else "queue-service"
             result["callback_input"] = variant.name
             result["queue_service_scope"] = "Source validation and native bus queue setup only; Linux TX, RX and lifecycle entry points remain unadmitted."
         else:
             result = control_report
         if not args.object_only:
             adapter = ROOT / profile["adapter_source"]
-            runtime_kernel = packet_kernel + ["-DJNOX_QUEUE_SERVICE=1"] if args.queue_service else kernel
+            runtime_kernel = packet_kernel + ["-DJNOX_QUEUE_SERVICE=1"] if queue_mode else kernel
             compile_tu(tools["cc"], runtime_kernel, adapter, "adapter.o")
             extra_objects = []
             app = ROOT / profile["service_source"]
-            if args.queue_service:
+            if queue_mode:
                 app = ROOT / "examples/linux-source-net-queues/driver.c"
                 for source, output in [("drivers/linux-compat/src/virtio_net_queues.c", "queues.o"),
                                        ("drivers/linux-compat/packet/context.c", "context.o")]:
                     compile_tu(tools["cc"], runtime_kernel, ROOT / source, output)
                     extra_objects.append(output)
+            if args.packet_service:
+                from linux_driver_tx_layout import private_layout
+                app = ROOT / "examples/linux-source-net-packets/driver.c"
+                generated_header = work / "jnox_virtnet_layout.h"
+                generated_header.write_text(private_layout(data.decode("utf-8")), encoding="utf-8")
+                result["layout_view"] = {"file": generated_header.name, "sha256": sha(generated_header.read_bytes()),
+                    "generator_sha256": sha((ROOT / "tools/linux_driver_tx_layout.py").read_bytes())}
+                result["callbacks"] = checked_callbacks
+                result["queue_service_scope"] = "Original validation and TX callback plus native transport. Full Linux lifecycle and RX poll remain unadmitted."
+                for name in ("transmit", "tx_virtqueue", "tx_runtime"):
+                    source = ROOT / ("drivers/linux-compat/packet/" + name + ".c")
+                    compile_tu(tools["cc"], [*runtime_kernel, "-I", work], source, name + ".o")
+                    extra_objects.append(name + ".o")
             native = ["--target=aarch64-none-elf", *COMMON, "-I", SDK / "include"]
-            if args.queue_service:
+            if queue_mode:
                 compile_tu(tools["clang"], [*native, "-fno-builtin"], SDK / "memset.c", "memset.o")
                 extra_objects.append("memset.o")
+            if args.packet_service:
+                compile_tu(tools["clang"], [*native, "-fno-builtin"], SDK / "memcpy.c", "memcpy.o")
+                extra_objects.append("memcpy.o")
             for source, output in [(app, "driver.o"), (SDK / "start.S", "start.o"),
                                    (SDK / "io.c", "io.o")]:
                 compile_tu(tools["clang"], native, source, output)
@@ -222,11 +247,22 @@ def build(args, work, profile, data):
             for symbol in ("virtnet_probe", "virtnet_remove", "init_module", "cleanup_module"):
                 if any(s["name"] == symbol for s in service["symbols"]):
                     raise ValueError(f"unexpected Linux lifecycle root in the service: {symbol}")
-            if args.queue_service:
+            if queue_mode:
                 for symbol in ("jnox_queue_find_vqs", "jnox_net_setup_queues"):
                     if not defined(service, symbol, "GLOBAL"):
                         raise ValueError(f"missing queue-service implementation: {symbol}")
-                for symbol in ("virtnet_open", "start_xmit", "virtnet_poll"):
+                forbidden = ["virtnet_open", "virtnet_poll"]
+                if args.packet_service:
+                    link_map = (work / "service.map").read_text()
+                    for name in callbacks:
+                        if len([s for s in service["symbols"] if s["name"] == name]) != 1 or not defined(service, name, "GLOBAL"):
+                            raise ValueError(f"expected one original linked callback: {name}")
+                        supplier = derivative.name + ":(.text." + name + ")"
+                        if sum(line.strip().endswith(supplier) for line in link_map.splitlines()) != 1:
+                            raise ValueError(f"unexpected callback link-map provenance: {name}")
+                else:
+                    forbidden.append("start_xmit")
+                for symbol in forbidden:
                     if any(s["name"] == symbol for s in service["symbols"]):
                         raise ValueError(f"unadmitted packet entry point in queue service: {symbol}")
             result["service"] = service
@@ -255,6 +291,8 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--object-only", action="store_true")
+    mode.add_argument("--packet-service", action="store_true",
+                      help="link upstream validation and TX callbacks with the native packet transport")
     mode.add_argument("--queue-service", action="store_true",
                       help="link upstream validation and native queue setup with the packet context")
     mode.add_argument("--packet-object-only", action="store_true",

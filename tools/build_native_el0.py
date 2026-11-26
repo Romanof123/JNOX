@@ -453,6 +453,8 @@ def main():
                                help="grant the virtio-net MMIO transport to driver slot 0 in a two-process native FIFO package")
     source_device.add_argument("--linux-source-net-queues", dest="linux_source_driver", action="store_const", const="net-queues",
                                help="allow driver slot 0 to set up and query a virtio-net RX/TX queue pair in the native FIFO package")
+    source_device.add_argument("--linux-source-net-packets", dest="linux_source_driver", action="store_const", const="net-packets",
+                               help="grant driver slot 0 native packet I/O on the virtio-net RX/TX queue pair")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
@@ -786,12 +788,20 @@ def main():
                       "driver_source": "drivers/net/virtio_net.c", "transport": "virtio-net-mmio-modern",
                       "qemu_device": "virtio-net-device"}
         metadata[f"linux_source_{driver_kind}"] = {"driver_slot": 0, "unauthorized_slots": [1], **device}
-        if args.linux_source_driver == "net-queues":
+        if args.linux_source_driver in ("net-queues", "net-packets"):
             env["JNOX_NATIVE_LINUX_PACKET_QUEUES"] = "1"
             metadata["linux_packet_queues"] = {
                 "queue_size": 32, "indices": {"rx": 0, "tx": 1},
                 "status_after_setup": "FEATURES_OK", "buffers_required_for_driver_ok": True,
                 "driver_source": device["driver_source"], "syscalls": {"setup": 161, "query": 162},
+            }
+        if args.linux_source_driver == "net-packets":
+            env["JNOX_NATIVE_LINUX_NET_PACKETS"] = "1"
+            metadata["linux_net_packets"] = {
+                "driver_slot": 0, "unauthorized_slots": [1], "virtio_net_header_bytes": 12,
+                "min_ethernet_bytes": 14, "max_ethernet_bytes": 1514, "status_after_start": 15,
+                "syscalls": {"start": 163, "tx_submit": 164, "tx_kick": 165, "tx_reap": 166,
+                             "rx_receive": 167, "irq_ack": 168, "tx_callbacks": 169},
             }
         metadata["package_argv"] = sys.argv[:]
     if args.pubsub_service:

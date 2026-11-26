@@ -7,6 +7,13 @@ use core::{mem::{offset_of, size_of}, ptr};
 #[path = "native_virtio_reset.rs"]
 mod reset_protocol;
 
+#[cfg(jnox_linux_net_packets)]
+#[path = "native_linux_net_packets.rs"]
+mod packets;
+
+#[cfg(jnox_linux_net_packets)]
+pub(super) use packets::packet_service;
+
 const SIZE: usize = 32;
 const SELECT: usize = 0x30;
 const MAX: usize = 0x34;
@@ -60,6 +67,8 @@ pub(super) fn reset() -> bool {
         unsafe { QUARANTINED = true; }
         return false;
     }
+    #[cfg(jnox_linux_net_packets)]
+    packets::retired();
     true
 }
 
@@ -120,7 +129,10 @@ pub(super) fn inspect(token: u64, index: u64) -> i64 {
     write(SELECT, index as u32);
     let ready = read(READY);
     let max = read(MAX);
-    if ready != 1 || !valid_max(max) || read(STATUS) != (ACK_DRIVER | FEATURES_OK) {
+    let expected = ACK_DRIVER | FEATURES_OK;
+    #[cfg(jnox_linux_net_packets)]
+    let expected = if packets::running(token) { expected | 4 } else { expected };
+    if ready != 1 || !valid_max(max) || read(STATUS) != expected {
         return abort_setup();
     }
     (i64::from(max) << 32) | ((SIZE as i64) << 16) | i64::from(ready)

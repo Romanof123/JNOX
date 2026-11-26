@@ -1,0 +1,68 @@
+{
+  "measured_commit": "07b209362c0b521f64942f6b22a7fadf333516a7",
+  "upstream": {
+    "project": "Linux stable",
+    "tag": "v6.18.65",
+    "commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "path": "drivers/net/virtio_net.c",
+    "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+    "size": 196513,
+    "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "git_blob_sha1": "ea83313caf36381151d21d894da8162729b7d261",
+    "spdx": "GPL-2.0-or-later"
+  },
+  "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+  "cases": {
+    "capture-a": {
+      "observed": {
+        "start_xmit_entries": 80,
+        "one_sg_tx": 40,
+        "two_sg_tx": 40,
+        "rx_native_frames": 2,
+        "tx_hardware_used": 80,
+        "tx_ring_wraps": 2,
+        "original_virtnet_poll_linked": false,
+        "tx_ethernet_bytes": 5912,
+        "notifications": [
+          3,
+          80
+        ],
+        "observed_and_acknowledged_irq_bits": 1
+      },
+      "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "nic_mac": "52:54:00:19:30:41",
+      "nic_mtu": 1410,
+      "nonce_hex": "ccd7f106c7e67f27",
+      "pcap_sha256": "1e00e87f930debf9c01b56c42b91a8e5fbf6823b23aac17d0bcf9a8bad820d78",
+      "kernel_sha256": "691ea6b5c97264f718f885e1076c30cdf5f3532435b9a9de66810db5da7da17c"
+    },
+    "capture-b": {
+      "observed": {
+        "start_xmit_entries": 80,
+        "one_sg_tx": 40,
+        "two_sg_tx": 40,
+        "rx_native_frames": 2,
+        "tx_hardware_used": 80,
+        "tx_ring_wraps": 2,
+        "original_virtnet_poll_linked": false,
+        "tx_ethernet_bytes": 5912,
+        "notifications": [
+          3,
+          80
+        ],
+        "observed_and_acknowledged_irq_bits": 1
+      },
+      "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "nic_mac": "52:54:00:19:30:42",
+      "nic_mtu": 1386,
+      "nonce_hex": "70f13cfe1a1c5c62",
+      "pcap_sha256": "ec0f9774de46f073128d8455906368f0bae9f9a0ce47db653a8d09c3fc4ed615",
+      "kernel_sha256": "691ea6b5c97264f718f885e1076c30cdf5f3532435b9a9de66810db5da7da17c"
+    }
+  },
+  "independent": {
+    "read_wire.py": "8b2b1a6d26661d3a436710af25770667300db7136be5871751ad7ef8af16d555",
+    "result.json": "a3a5d2d2a9056a7d5a2d650ac7a4482c7bf9000accdc653e0f6016b0a5b3177c",
+    "report.md": "33b518b50982f6c6bc7761cd5b699ad3c81b97eb81c7f02e521f6eb6ed932d4a"
+  }
+}
