@@ -72,3 +72,5 @@ A separate AArch64 component regression exercises the kernel safety and loan ser
 The six AArch64 component boots accepted at D−1 and inhibited before dequeue at D and D+1. In the twelve new three-process boots, four valid frames were queued at D and eight were present at the actual expiry CHECK. All twelve CHECKs ran late, by 135–17,521 counter ticks. The 204 direct queue readings matched replay. [Measured results, raw captures and replay](evidence/native-permit-queue-expiry.en-ko.md)
 
 구성요소 6회는 한 틱 전 수락, 정각·한 틱 후 인출 전 차단을 확인했다. 세 프로세스 12회 중 만료 정각에 큐에 대기한 경우는 4회, 실제 검사에서 관측된 경우는 8회였다. 12회 모두 실제 검사는 정각보다 늦었다. 직접 읽은 큐 기록 204건이 독립 복원과 일치했다. [실측·원본·재현 절차](evidence/native-permit-queue-expiry.en-ko.md)
+
+The native expiry evidence checker reproduces the per-boot bounds from D and from the actual CHECK to observed output inhibition. All four clock and policy combinations retain pending exact-D criteria. / 실제 만료와 CHECK에서 출력 차단까지의 구간을 부팅별로 재현한다. 두 시계·두 정책 모두 정각 조건은 미검증이다. [Results, criteria and replay / 결과·판정 기준·재현](evidence/native-permit-expiry-coverage.en-ko.md)
