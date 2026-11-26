@@ -25,6 +25,14 @@ sh sdk/native-aarch64/build-rust.sh services/inet/Cargo.toml "$tmp/inet.elf"
 /usr/bin/python3 examples/native-x11/verify.py "$tmp/x11.elf" "$tmp/inet.elf" x11-run
 ```
 
+To check local presentation as well, run the same ELFs with the scanout verifier.
+
+```sh
+/usr/bin/python3 examples/native-x11/verify.py --local-scanout "$tmp/x11.elf" "$tmp/inet.elf" x11-scanout-run
+```
+
+This mode gives slot 0 the native display service, adds the client argument `scanout` after the cookie and attaches QEMU's ramfb device. After each redraw, the guest sends five X11 `GetImage` requests for consecutive 240 × 32 strips of its window. It checks each reply's sequence, depth, visual and length, converts the returned ZPixmap rows to XRGB8888 and writes them to the local 320 × 240 framebuffer at (40, 40). Each margin is 40 pixels wide. The external X server still draws the window and dispatches button input. The verifier compares both local frames against the independently read server pixels.
+
 For a separately managed X server, set `port` to its private TCP endpoint and provision the same per-run `cookie` in its Xauthority before starting the guest. Package the two ELFs as follows.
 
 ```sh
@@ -43,3 +51,5 @@ The two client arguments are a decimal TCP port (1024–65535) and the 32 hex di
 JNOX 슬롯 0에서 실행하는 `client.c`는 슬롯 1의 IPv4 서비스로 외부 X 서버에 접속한다. 클라이언트가 창 생성·매핑·그리기를 요청하고, 서버가 해당 창을 표시하고 입력 이벤트를 전달한다. 위 명령으로 독립 실행 ELF 두 개와 부팅 패키지를 만들 수 있다. 매 실행마다 새 16바이트 쿠키를 생성하여 패키지와 격리된 서버의 Xauthority에 같은 값을 설정한다. 쿠키가 들어 있는 패키지, 매니페스트, 원본 캡처는 비공개로 관리한다.
 
 `JNOX X11 Mosaic` 창 안에서 왼쪽 버튼을 누르면 오른쪽 아래 사각형이 산호색에서 파란색으로 바뀐다. 다시 누르면 창이 닫힌다. 위 표의 좌표는 창 왼쪽 위를 원점으로 삼는다. 두 번째 입력에 따른 `DestroyNotify`를 수신한 뒤 게스트 클라이언트와 IPv4 서비스가 각각 종료 코드 0을 반환한다. 이 예제에서 X 서버는 게스트 외부에서 실행한다.
+
+`--local-scanout` 검증에서는 게스트가 외부 X 서버에서 `GetImage` 응답으로 창의 픽셀을 읽고 RGB로 변환한다. 게스트는 320 × 240 QEMU 프레임버퍼의 (40, 40)부터 한 줄씩 써서 창을 표시한다. 검증기는 첫 클릭 전후 두 화면을 각각 서버에서 읽은 픽셀과 비교한다.
