@@ -37,7 +37,7 @@ ZBOOT = "boot/vmlinuz-virt"
 PREFIX = "lib/modules/" + RELEASE + "/"
 MAC = "52:54:00:12:34:56"
 
-INIT = """#!/bin/sh
+INIT_PREFIX = """#!/bin/sh
 set -eu
 bb=/bin/busybox
 $bb mount -t devtmpfs devtmpfs /dev
@@ -60,7 +60,9 @@ transport=$($bb readlink -f /sys/class/net/eth0/device/../driver)
 echo "LD DEVICE $driver $module $transport $($bb cat /sys/class/net/eth0/address)"
 fdt=$($bb sha256sum /sys/firmware/fdt)
 echo "LD FDT ${fdt%% *}"
-echo "LD READY"
+"""
+
+INIT = INIT_PREFIX + """echo "LD READY"
 while :; do
     $bb nc -l -p 8080 -e /serve || exit 9
 done
@@ -138,7 +140,7 @@ def initrd(files):
     return gzip.compress(bytes(buf), mtime=0)
 
 
-def prepare(intake, out):
+def prepare(intake, out, *, init_script=INIT, service_files=None):
     apk = extract(intake / KERNEL, [CONFIG, ZBOOT, PREFIX + "modules.dep", *(PREFIX + n for n in MODULES)])
     busybox = extract(intake / BUSYBOX, ["bin/busybox.static"])["bin/busybox.static"]
     require(busybox[:4] == b"\x7fELF" and busybox[18:20] == b"\xb7\0", "unexpected BusyBox architecture")
@@ -152,7 +154,10 @@ def prepare(intake, out):
     require(image[56:60] == b"ARM\x64", "expected raw Linux arm64 Image")
     (out / "Image").write_bytes(image)
 
-    files = {"bin/busybox": busybox, "init": INIT.encode(), "serve": SERVE.encode()}
+    if service_files is None:
+        service_files = {"serve": SERVE.encode()}
+        (out / "serve.sh").write_text(SERVE)
+    files = {"bin/busybox": busybox, "init": init_script.encode(), **service_files}
     operands = {}
     deps = dict(line.split(":", 1) for line in apk[PREFIX + "modules.dep"].decode().splitlines())
     available = set()
@@ -168,8 +173,7 @@ def prepare(intake, out):
                           "ko_sha256": sha(raw)}
     ramdisk = initrd(files)
     (out / "initrd.gz").write_bytes(ramdisk)
-    (out / "init.sh").write_text(INIT)
-    (out / "serve.sh").write_text(SERVE)
+    (out / "init.sh").write_text(init_script)
     return {"packages": PIN, "release": RELEASE, "image_sha256": sha(image),
             "vmlinuz_sha256": sha(zboot), "config_sha256": sha(config), "initrd_sha256": sha(ramdisk),
             "busybox_sha256": sha(busybox), "modules": operands}

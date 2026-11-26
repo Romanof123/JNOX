@@ -2300,3 +2300,13 @@ DES-002,partially-implemented-by,IMP-321
 IMP-321,partially-verified-by,VER-004
 VER-004,has-partial-evidence,EVD-321
 IMP-321,tested-in,EVD-321
+CHG-322,affects,REQ-004
+CHG-322,affects,REQ-011
+REQ-004,partially-implemented-by,IMP-322
+REQ-011,partially-implemented-by,IMP-322
+DES-002,partially-implemented-by,IMP-322
+IMP-322,partially-verified-by,VER-004
+IMP-322,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-322
+VER-011,has-partial-evidence,EVD-322
+IMP-322,tested-in,EVD-322
