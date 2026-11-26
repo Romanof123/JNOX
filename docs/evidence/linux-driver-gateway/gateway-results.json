@@ -1,0 +1,73 @@
+{
+  "first_post_boot_error": "Initial post-boot replay lacked the tracked #416 result.json in the sparse verification checkout.",
+  "first_after_restoring_tracked_baseline": {
+    "source_commit": "3c8d188d99678498b8f7d4a758e7d8852dc26332",
+    "native_kernel_sha256": "1ec71860ebd36e54c75320cb5baf7a175380d46267ad8fdf2572f24bf806b506",
+    "linux_image_sha256": "4eb5c87867473f20f5ce5084c23f3dff587c84327f3fbba0cfe3157133c20c29",
+    "linux_module_sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f",
+    "linux_guest_fdt_sha256": [
+      "bdf52397c2b8abd885989721d7e9604b235bbf8dbb14b31f81273b69a2849882",
+      "f6bce4414018dcf0b4fedcb928d763357c1676273909fcd7cad31ce03249fce9"
+    ],
+    "request_token_hex": "0000000001413620",
+    "device_reply_hex": "a5a5a5a5a4e49385",
+    "host_ns_from_linux_exit_to_next_ready": 1600855410,
+    "native_observations": {
+      "deadline_ns": 605079504,
+      "fallback_ns": 605265952,
+      "elapsed_to_fallback_ns": 250186448,
+      "lag_after_deadline_ns": 186448,
+      "peer_ticks_in_outage": 5,
+      "peer_ticks_during_recovery": 27,
+      "stale_rejections": 1,
+      "peer_samples": 240,
+      "peer_counts_at_live_reads": [
+        6,
+        8,
+        13,
+        240
+      ]
+    }
+  },
+  "repeat": {
+    "source_commit": "3c8d188d99678498b8f7d4a758e7d8852dc26332",
+    "native_kernel_sha256": "1ec71860ebd36e54c75320cb5baf7a175380d46267ad8fdf2572f24bf806b506",
+    "linux_image_sha256": "4eb5c87867473f20f5ce5084c23f3dff587c84327f3fbba0cfe3157133c20c29",
+    "linux_module_sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f",
+    "linux_guest_fdt_sha256": [
+      "9a06e467198ce3805be483236d99facfc3884e117296a5ebd8b3cea1d7ffec00",
+      "c7353144c53cb69825522eda2faf80a063f53ef9903602c918f64873d158fa00"
+    ],
+    "request_token_hex": "0000000001354c00",
+    "device_reply_hex": "a5a5a5a5a490e9a5",
+    "host_ns_from_linux_exit_to_next_ready": 2048715203,
+    "host_boot_probe_ns": [
+      11965404265,
+      11973735787
+    ],
+    "host_ready_observed_ns": 13521438534,
+    "host_ready_probe_ns": [
+      13521496502,
+      13530677721
+    ],
+    "native_observations": {
+      "deadline_ns": 569320144,
+      "fallback_ns": 571257392,
+      "elapsed_to_fallback_ns": 251937248,
+      "lag_after_deadline_ns": 1937248,
+      "peer_ticks_in_outage": 5,
+      "peer_ticks_during_recovery": 35,
+      "stale_rejections": 1,
+      "peer_samples": 240,
+      "peer_counts_at_live_reads": {
+        "primary": 5,
+        "outage": 7,
+        "recovery": 12,
+        "linux_boot": 16,
+        "linux_ready": 47,
+        "final": 240
+      },
+      "peer_ticks_between_linux_startup_reads": 31
+    }
+  }
+}

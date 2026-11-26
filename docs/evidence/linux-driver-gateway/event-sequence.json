@@ -1,0 +1,160 @@
+[
+  {
+    "event": "ready",
+    "t_ns": 11121329971,
+    "generation": 1,
+    "pid": 500
+  },
+  {
+    "event": "jnox_request",
+    "t_ns": 11215237160,
+    "generation": 1,
+    "id": 1,
+    "hex": "4a4701010000000100000001000027100000000001354c00"
+  },
+  {
+    "event": "serial_request",
+    "t_ns": 11423700034,
+    "generation": 1,
+    "hex": "4a4701010000000100000001000027100000000001354c00"
+  },
+  {
+    "event": "nic_device_request",
+    "t_ns": 11454098161,
+    "generation": 1,
+    "hex": "4a4701010000000100000001000027100000000001354c00"
+  },
+  {
+    "event": "nic_device_reply",
+    "t_ns": 11454235057,
+    "generation": 1,
+    "hex": "a5a5a5a5a490e9a5"
+  },
+  {
+    "event": "serial_reply",
+    "t_ns": 11464356622,
+    "generation": 1,
+    "hex": "4a470102000000010000000100002710a5a5a5a5a490e9a5"
+  },
+  {
+    "event": "linux_stopped",
+    "t_ns": 11472723331,
+    "generation": 1,
+    "pid": 500,
+    "returncode": 0
+  },
+  {
+    "event": "jnox_reply",
+    "t_ns": 11472862080,
+    "generation": 1,
+    "hex": "4a470102000000010000000100002710a5a5a5a5a490e9a5",
+    "delivery": "current"
+  },
+  {
+    "event": "jnox_request",
+    "t_ns": 11510237047,
+    "generation": 1,
+    "id": 2,
+    "hex": "4a4701010000000100000002000000fa0000000001354c00"
+  },
+  {
+    "event": "offline",
+    "t_ns": 11519000288,
+    "generation": 1,
+    "id": 2,
+    "linux_pid": 500,
+    "linux_returncode": 0
+  },
+  {
+    "event": "jnox_request",
+    "t_ns": 11762989609,
+    "generation": 2,
+    "id": 1,
+    "hex": "4a4701010000000200000001000027100000000001354c00"
+  },
+  {
+    "event": "jnox_reply",
+    "t_ns": 11771928888,
+    "generation": 1,
+    "hex": "4a470102000000010000000100002710a5a5a5a5a490e9a5",
+    "delivery": "stale"
+  },
+  {
+    "event": "linux_boot_probe",
+    "t_ns": 11965404265,
+    "generation": 2,
+    "tag": "linux_boot",
+    "edge": "start"
+  },
+  {
+    "event": "linux_boot_probe",
+    "t_ns": 11973735787,
+    "generation": 2,
+    "tag": "linux_boot",
+    "edge": "end"
+  },
+  {
+    "event": "ready",
+    "t_ns": 13521438534,
+    "generation": 2,
+    "pid": 522
+  },
+  {
+    "event": "linux_boot_probe",
+    "t_ns": 13521496502,
+    "generation": 2,
+    "tag": "linux_ready",
+    "edge": "start"
+  },
+  {
+    "event": "linux_boot_probe",
+    "t_ns": 13530677721,
+    "generation": 2,
+    "tag": "linux_ready",
+    "edge": "end"
+  },
+  {
+    "event": "serial_request",
+    "t_ns": 13530730169,
+    "generation": 2,
+    "hex": "4a4701010000000200000001000027100000000001354c00"
+  },
+  {
+    "event": "nic_device_request",
+    "t_ns": 13552765665,
+    "generation": 2,
+    "hex": "4a4701010000000200000001000027100000000001354c00"
+  },
+  {
+    "event": "nic_device_reply",
+    "t_ns": 13552867475,
+    "generation": 2,
+    "hex": "a5a5a5a5a490e9a5"
+  },
+  {
+    "event": "serial_reply",
+    "t_ns": 13559127812,
+    "generation": 2,
+    "hex": "4a470102000000020000000100002710a5a5a5a5a490e9a5"
+  },
+  {
+    "event": "jnox_reply",
+    "t_ns": 13559202020,
+    "generation": 2,
+    "hex": "4a470102000000020000000100002710a5a5a5a5a490e9a5",
+    "delivery": "current"
+  },
+  {
+    "event": "linux_stopped",
+    "t_ns": 13567209796,
+    "generation": 2,
+    "pid": 522,
+    "returncode": 0
+  },
+  {
+    "event": "native_stopped",
+    "t_ns": 23175612253,
+    "pid": 506,
+    "returncode": 0
+  }
+]

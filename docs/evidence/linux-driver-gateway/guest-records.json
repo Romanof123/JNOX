@@ -1,0 +1,50 @@
+{
+  "linux-1": {
+    "uart_evidence": [
+      "LD BOOT aarch64 6.18.65-0-virt",
+      "LD LOADED failover 33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8",
+      "LD LOADED net_failover 3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4",
+      "LD LOADED virtio_mmio ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1",
+      "LD LOADED virtio_net 3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f",
+      "LD DEVICE /sys/bus/virtio/drivers/virtio_net /sys/module/virtio_net /sys/bus/platform/drivers/virtio-mmio 52:54:00:12:34:56",
+      "LD FDT 9a06e467198ce3805be483236d99facfc3884e117296a5ebd8b3cea1d7ffec00",
+      "GWREADY 1",
+      "GWACCEPT 4a4701010000000100000001000027100000000001354c00",
+      "GWREP 4a470102000000010000000100002710a5a5a5a5a490e9a5"
+    ],
+    "uart_sha256": "b6d3250ca3a3901dd8a8df6bb2d5e0a4b13cddbdc16dfe52c86e1a5270b8afd0",
+    "isolated_packet_capture_sha256": "5862b9393ec8b2cbda463f27db8e824816e074fad65fdfa3f17b1c2030c3cb66",
+    "packet_capture_bytes": 916
+  },
+  "linux-2": {
+    "uart_evidence": [
+      "LD BOOT aarch64 6.18.65-0-virt",
+      "LD LOADED failover 33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8",
+      "LD LOADED net_failover 3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4",
+      "LD LOADED virtio_mmio ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1",
+      "LD LOADED virtio_net 3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f",
+      "LD DEVICE /sys/bus/virtio/drivers/virtio_net /sys/module/virtio_net /sys/bus/platform/drivers/virtio-mmio 52:54:00:12:34:56",
+      "LD FDT c7353144c53cb69825522eda2faf80a063f53ef9903602c918f64873d158fa00",
+      "GWREADY 2",
+      "GWACCEPT 4a4701010000000200000001000027100000000001354c00",
+      "GWREP 4a470102000000020000000100002710a5a5a5a5a490e9a5"
+    ],
+    "uart_sha256": "3b1cd8ac7444cbd37060b3de67c0f55e8df582724a3821219f6378f7ed79ed72",
+    "isolated_packet_capture_sha256": "f8e7dd38faf2009cb371c2a5c38000112a6dcf7e1b1f7cb6428e61d7241c7c82",
+    "packet_capture_bytes": 916
+  },
+  "native": {
+    "uart_evidence": [
+      "NATIVE EL0 ELF 6de7dff8d162bf5f2657f1b3356e249b48f06a7f9042bb0eff7c059fd97a8de3",
+      "NATIVE EL0 PEER ELF 9fda3a90db2c2bd866bbaa8da5920725c7457020937070ff27ed679b1ac8f920",
+      "NATIVE EL0 PEER2 ELF e87f3fdac21c6594fdc3f49090697448c4cc8d9cf45f015936294e412f12fbbf",
+      "NATIVE FIXED DROPPED 9955",
+      "NATIVE EL0 EXIT PID 0 81",
+      "NATIVE EL0 EXIT PID 1 82",
+      "NATIVE EL0 EXIT PID 2 0"
+    ],
+    "uart_sha256": "5e46f5a4a5ed429d062306e2568f582bd1db38c3c1a9db151f6a289ee909dd60",
+    "isolated_packet_capture_sha256": "e76c561f250e000bd6b6d5a0ed7e3c4f16d062214ca38060dc7e5c622daf780c",
+    "packet_capture_bytes": 632
+  }
+}

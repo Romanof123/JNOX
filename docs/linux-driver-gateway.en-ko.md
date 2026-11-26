@@ -15,3 +15,5 @@ The record is 24 bytes. Bytes 0–1 are `JG`, byte 2 is version 1, and byte 3 is
 3. Resubmit the original payload and request ID with a new generation. Present the actual first-generation reply while the new request is outstanding and before admitting a current reply. Independently observe stale rejection, the fresh return from a newly booted Linux and continued peer progress. Keep the topology, original captures and measured limits with the verdict.
 
 JNOX 앱은 승인된 브로커를 통해 24바이트 요청을 보낸다. 시험 어댑터는 요청을 Linux 시리얼 엔드포인트에 옮긴다. Linux는 원본 모듈이 소유한 NIC로 데이터를 실제 송신하고, 외부 피어가 돌려준 8바이트를 JNOX에 전달한다. Linux 중단 시 게스트 단조 시계로 기한과 대체 출력을 확인하고 별도 앱의 진행을 관측한다. 요청 기한은 250 ms이며 이 가상 시험에서는 대체 출력 관측까지 300 ms를 허용하고 실제 초과 시간을 기록한다. 재부팅 후 이전 세대의 실제 응답을 다시 전달해 폐기되는지 확인한다. 같은 SoC에서의 메모리·DMA 격리, IRQ 소유권, 제품 시간 보장과 기능안전 승인은 별도 검증 대상이다.
+
+The two-run result includes the observed deadline overshoot and the Linux-only regression. 두 차례의 기한 초과 실측과 원본 Linux 기준 재시험을 기록했다. [EVD-322](evidence/linux-driver-gateway/README.md)
