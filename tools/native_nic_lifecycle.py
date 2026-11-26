@@ -71,9 +71,38 @@ def capture_hashes(out):
             for path in sorted(out.rglob("*")) if path.is_file() and path.name != "sha256.json"}
 
 
-def replay(out):
+def reset_registers(path, base):
+    # QEMU 6.2 logs full bus addresses for the guest CPU's MMIO operations.
+    events = []
+    for op, address, value in re.findall(
+            r"memory_region_ops_(read|write) cpu 0 [^\n]*? addr (0x[0-9a-fA-F]+) "
+            r"value (0x[0-9a-fA-F]+) size 4 name 'virtio-mmio'", path.read_text()):
+        offset = int(address, 16) - base
+        if offset in (0x70, 0x30, 0x44):
+            events.append((op, offset, int(value, 16)))
+    request_reset = ("write", 0x70, 0)
+    require(events.count(request_reset) == 1, "device reset request count")
+    reset = events[events.index(request_reset):]
+    pos = 1
+    while pos < len(reset) and reset[pos][:2] == ("read", 0x70) and reset[pos][2] != 0:
+        pos += 1
+    require(pos <= 1024 and reset[pos:] == [
+        ("read", 0x70, 0), ("write", 0x30, 0), ("read", 0x44, 0),
+        ("write", 0x30, 1), ("read", 0x44, 0)
+    ], "device reset acknowledgement and disabled RX/TX queue order")
+    return reset
+
+
+def replay(out, *, require_mmio=False, require_lan=False):
     require(capture_hashes(out) == json.loads((out / "sha256.json").read_text()), "capture file digests")
     meta = json.loads((out / "launch.json").read_text())
+    traced = "-D" in meta["argv"]
+    require(traced == (out / "qemu-mmio.log").exists(), "missing or unexpected device trace")
+    require(not require_mmio or traced, "device register trace required")
+    require(not require_lan or meta.get("lan_announcements"), "LAN announcements required")
+    if traced:
+        mmio = json.loads((out / "retired.json").read_bytes())["mmio"]
+        print("Reset transactions:", reset_registers(out / "qemu-mmio.log", mmio))
     package_kernel = out / "package" / "kernel.elf"
     require(meta["kernel_sha256"] == hashlib.sha256(package_kernel.read_bytes()).hexdigest(), "booted kernel digest")
     require(tuple(meta["queues"]) == journal_location(package_kernel, "jnox_native_net_queues")
@@ -195,6 +224,8 @@ def capture(args):
                 "-global", "virtio-mmio.force-legacy=false",
                 "-device", "virtio-net-device,netdev=lan,mac=52:54:00:12:34:56",
                 "-object", f"filter-dump,id=wire,netdev=lan,file={out/'wire.pcap'}"]
+        if args.mmio_trace:
+            argv.extend(["-D", str(out / "qemu-mmio.log")])
         (out / "launch.json").write_text(json.dumps(dict(argv=argv, queues=queues, phase=phase,
             kernel_sha256=hashlib.sha256(kernel.read_bytes()).hexdigest(), lan_announcements=args.lan_announcements), indent=2))
         proc = subprocess.Popen(argv, stdout=log, stderr=log, stdin=subprocess.DEVNULL)
@@ -259,8 +290,15 @@ def capture(args):
                     mmio = matches[0]
                     exchange("primary", 1)
                     snapshot("primary")
+                    # Limit emulator logging to the actual primary reset window.
+                    def trace_mmio(enabled):
+                        if args.mmio_trace:
+                            for event_name in ("memory_region_ops_read", "memory_region_ops_write"):
+                                request(stream, "trace-event-set-state", name=event_name, enable=enabled)
+                    trace_mmio(True)
                     send("primary.retire", 1, 3)
                     wait_for(lambda: word(xp(phase[0])) == 3)
+                    trace_mmio(False)
                     before = snapshot("retired")[1]["dma_peer_ticks"]
                     if args.lan_announcements:
                         traffic = []
@@ -290,13 +328,14 @@ def capture(args):
                 proc.kill()
                 proc.wait()
     (out / "sha256.json").write_text(json.dumps(capture_hashes(out), indent=2))
-    replay(out)
+    replay(out, require_mmio=args.mmio_trace, require_lan=args.lan_announcements)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out", type=Path)
     parser.add_argument("--kernel", type=Path, help="native AArch64 ELF with symbols; omit for offline replay")
+    parser.add_argument("--mmio-trace", action="store_true", help="retain QEMU memory-region events over the primary reset")
     parser.add_argument("--lan-announcements", action="store_true",
                         help="send three ordinary ARP announcements on the isolated link during handoff")
     parser.add_argument("--qemu", default="qemu-system-aarch64")
@@ -305,4 +344,4 @@ if __name__ == "__main__":
     if args.kernel:
         capture(args)
     else:
-        replay(args.out)
+        replay(args.out, require_mmio=args.mmio_trace, require_lan=args.lan_announcements)
