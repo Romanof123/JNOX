@@ -1,0 +1,11 @@
+# Native Rust PL011 receive interrupts / Rust PL011 수신 인터럽트
+
+CHG-319 · REQ-015/016 · DES-009 · IMP-319 · VER-015/016 · EVD-319. [Driver lifecycle #5](https://github.com/Romanof123/JNOX/issues/5) · [Implementation and acceptance #414](https://github.com/Romanof123/JNOX/issues/414)
+
+On single-core AArch64 QEMU virt, a package that selects FIFO and a display owner may request `--uart-rx-irq`. Enable PL011 receive interrupts after the owner successfully initializes the display. EL1 owns UART0, the GICv2 distributor and CPU interface, and a 16-byte software FIFO. Route SPI 1 (INTID 33) to CPU0, acknowledge and end the interrupt with its full GIC token, and drain at most 16 words per entry. Keep the oldest unread bytes at capacity, count additional bytes as drops and count UART error words separately. Keep the system timer live. Mask the interrupt and clear the software queue on normal owner exit. Physical IRQ timing, DMA and failure recovery require their own evidence. [QEMU virt machine at v6.2.0](https://github.com/qemu/qemu/blob/v6.2.0/hw/arm/virt.c) · [QEMU PL011 model](https://github.com/qemu/qemu/blob/v6.2.0/hw/char/pl011.c)
+
+The existing owner-only read returns the next byte or `-EAGAIN`. New SVC 75 reads one of seven counters or properties. The selected owner reads interrupt entries, valid bytes, software drops, discarded UART error words, queue depth, capacity and interrupts received during EL1 idle. Unknown metrics return `-EINVAL`, nonowners receive `-EPERM`, and images without the IRQ option return `-ENOSYS` for this SVC.
+
+Drive actual PL011 input from outside the guest while the owner sleeps. Verify exact byte order, retained data and drop counts at saturation, positive hardware interrupt and idle counts, timer progress and a denied peer. Run the same ELF in the default polled configuration and a headless image. Preserve UART, transmitted bytes, observations, package identities and the independent verdict. This milestone measures functionality on the stated model.
+
+AArch64 가상 보드의 FIFO 이미지에서 화면 소유자만 선택형 수신 인터럽트를 쓴다. 초기화 성공 뒤 UART 수신 인터럽트를 CPU0으로 보내고, EL1은 회당 최대 16워드를 읽어 16바이트 큐에 보관한다. 가득 차면 기존 데이터를 보존하고 초과분을 센다. 정상 종료 시 인터럽트를 차단하고 큐를 비운다. 검증자는 외부 시리얼 입력으로 순서·유실 수·권한·타이머 진행을 확인하고 폴링 및 헤드리스 이미지도 시험한다. 실보드 시간 보장·DMA·드라이버 재시작은 후속 검증 대상이다.
