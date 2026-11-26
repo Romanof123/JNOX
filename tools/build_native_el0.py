@@ -471,6 +471,8 @@ def main():
                         metavar="OWNER:READERMASK:WRITERMASK")
     parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
                         metavar="WRITER:WFD:READER:RFD")
+    parser.add_argument("--display-service", choices=("0", "1"), action="append", default=[], metavar="SLOT",
+                        help="give one ordinary virt FIFO process ramfb scanout and PL011 byte input")
     parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
@@ -555,6 +557,13 @@ def main():
         except (ValueError, argparse.ArgumentTypeError) as exc:
             parser.error(str(exc))
     board = args.board or "virt"
+    if args.display_service:
+        if len(args.display_service) != 1:
+            parser.error("--display-service may appear only once")
+        display_slot = int(args.display_service[0])
+        if (board != "virt" or policy != "fifo" or args.threads or len(args.peer_elf) > 1
+                or display_slot > len(args.peer_elf)):
+            parser.error("--display-service requires a present owner in a one- or two-process virt FIFO package")
     validate_pipes(parser, args, policy, board)
     shell = None
     if args.exec_child or args.rom_file:
@@ -742,6 +751,13 @@ def main():
                         fifo_grants=[dict(owner=o, reader_mask=r, writer_mask=w) for o, r, w in fifo_grants],
                         pipe_links=[dict(writer=w, writer_fd=a, reader=r, reader_fd=b) for w, a, r, b in args.pipe_link],
                         package_argv=sys.argv[:])
+    if args.display_service:
+        env["JNOX_NATIVE_DISPLAY_SERVICE"] = str(display_slot)
+        metadata["display_service"] = {
+            "slot": display_slot, "display": "ramfb", "input": "pl011",
+            "width": 320, "height": 240, "stride": 1280, "format": "XRGB8888",
+            "syscalls": {"init": 72, "write_row": 73, "poll_key": 74},
+        }
     if args.net_service:
         env["JNOX_NATIVE_NET_SERVICE"] = str(service_slot)
         metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",

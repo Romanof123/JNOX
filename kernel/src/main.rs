@@ -399,7 +399,24 @@ fn uart_init() {
         ptr::write_volatile((UART0 + 0x24) as *mut u32, integer); // IBRD: 115200 baud
         ptr::write_volatile((UART0 + 0x28) as *mut u32, fraction); // FBRD
         ptr::write_volatile((UART0 + 0x2c) as *mut u32, 3 << 5); // LCR_H: 8N1
-        ptr::write_volatile((UART0 + 0x30) as *mut u32, (1 << 8) | 1); // TXE, UARTEN
+        let rx = if cfg!(any(jnox_native_display, jnox_native_shell)) { 1 << 9 } else { 0 };
+        ptr::write_volatile((UART0 + 0x30) as *mut u32, rx | (1 << 8) | 1); // RXE, TXE, UARTEN
+    }
+}
+
+/// Read at most one PL011 byte with CPU0 interrupts masked.
+#[cfg(any(jnox_native_display, jnox_native_shell))]
+pub(crate) fn uart_try_read() -> Result<u8, i64> {
+    unsafe {
+        if ((UART0 + 0x18) as *const u32).read_volatile() & (1 << 4) != 0 {
+            return Err(-11); // EAGAIN: RX FIFO empty
+        }
+        let data = (UART0 as *const u32).read_volatile();
+        if data & 0xf00 != 0 {
+            ((UART0 + 4) as *mut u32).write_volatile(0); // PL011 error clear
+            return Err(-5); // EIO
+        }
+        Ok(data as u8)
     }
 }
 

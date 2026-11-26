@@ -306,6 +306,9 @@ mod spawn;
 #[cfg(jnox_native_net_service)]
 #[path = "native_virtio_net.rs"]
 mod virtio_net;
+#[cfg(jnox_native_display)]
+#[path = "native_ramfb.rs"]
+mod ramfb;
 #[cfg(all(jnox_native_net_service, any(jnox_pi4, not(jnox_native_socket_service),
     not(jnox_native_sync_ipc), not(jnox_native_fixed))))]
 compile_error!("native net service requires virt fixed scheduling with socket broker IPC");
@@ -317,6 +320,31 @@ mod loans;
 fn policy() -> &'static mut Fixed {
     // Masked, non-nested CPU0 policy entry. Never retain this borrow across idle.
     unsafe { (*(&raw mut FIXED)).as_mut().unwrap_or_else(|| fail(9)) }
+}
+
+#[cfg(jnox_native_display)]
+fn display_call(pid: usize, frame: &NativeFrame) -> i64 {
+    // The build script accepts only the single-character slot numbers 0 and 1.
+    const OWNER: usize = (env!("JNOX_PACKAGED_DISPLAY_SLOT").as_bytes()[0] - b'0') as usize;
+    if pid != OWNER { return -1; }
+    match frame.x[8] {
+        72 => ramfb::init().map_or_else(|err| err, |()| 0),
+        73 => {
+            let y = frame.x[0] as usize;
+            let address = frame.x[1] as usize;
+            if y >= 240 { return -22; }
+            let mut row = [0u32; 320];
+            // All u32 bit patterns are valid. Borrow the initialized local row as bytes
+            // only for this checked copy from the active process.
+            let bytes = unsafe {
+                core::slice::from_raw_parts_mut(row.as_mut_ptr().cast::<u8>(), size_of::<[u32; 320]>())
+            };
+            if address % 4 != 0 || !native_el0_mmu::copy_from_user(address, bytes) { return -14; }
+            ramfb::write_row(y, &row).map_or_else(|err| err, |()| 0)
+        }
+        74 => ramfb::poll_key().map_or_else(|err| err, i64::from),
+        _ => unreachable!(),
+    }
 }
 
 fn activate(next: usize, frame: &mut NativeFrame) {
@@ -729,6 +757,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_native_display)]
+        72..=74 => display_call(unsafe { CURRENT }, f),
         6 => clock_gettime(f.x[0], f.x[1] as usize, now),
         7 => match sleep_until(f) {
             Ok(target) if cfg!(any(jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) && target.saturating_sub(now) > i64::MAX as u64 => -75,

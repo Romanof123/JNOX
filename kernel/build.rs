@@ -544,6 +544,17 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_threads)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_rr)");
     let threads = selector("JNOX_NATIVE_THREADS");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_display)");
+    let display_service = selector("JNOX_NATIVE_DISPLAY_SERVICE");
+    if let Some(slot) = display_service.as_deref() {
+        assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process")
+            && board == "virt" && policy.as_deref() == Some("fifo") && threads.is_none()
+            && peer2_image.is_none() && peer3_image.is_none()
+            && (slot == "0" || (slot == "1" && peer_image.is_some())),
+            "display service requires a present owner in a one- or two-process virt FIFO package");
+        println!("cargo::rustc-cfg=jnox_native_display");
+        println!("cargo::rustc-env=JNOX_PACKAGED_DISPLAY_SLOT={slot}");
+    }
     assert!(peer3_image.is_none() || threads.is_none(), "third peer requires ordinary processes");
     if capabilities || ipc_routes.is_some() || mailbox_routes.is_some() || notify_routes.is_some() || loan_route.is_some() {
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process")
