@@ -1,4 +1,4 @@
-//! QEMU virt RAMFB scanout and polled PL011 input. Calls are serialized at
+//! QEMU virt RAMFB scanout and PL011 input. Calls are serialized at
 //! masked EL1 on CPU0. Kernel BSS is identity mapped, Normal non-cacheable.
 use crate::native_el0_mmu::FW_CFG;
 use core::{arch::asm, mem::size_of, ptr};
@@ -137,6 +137,10 @@ pub(crate) fn init() -> Result<(), i64> {
         return result;
     }
     let result = configure();
+    #[cfg(jnox_native_uart_rx_irq)]
+    if result.is_ok() {
+        super::uart_rx::enable();
+    }
     unsafe { INIT_RESULT = Some(result) };
     result
 }
@@ -156,5 +160,8 @@ pub(crate) fn write_row(y: usize, row: &[u32; WIDTH]) -> Result<(), i64> {
 
 pub(crate) fn poll_key() -> Result<u8, i64> {
     unsafe { INIT_RESULT.unwrap_or(Err(ENODEV))?; }
-    crate::uart_try_read()
+    #[cfg(jnox_native_uart_rx_irq)]
+    { super::uart_rx::pop() }
+    #[cfg(not(jnox_native_uart_rx_irq))]
+    { crate::uart_try_read() }
 }

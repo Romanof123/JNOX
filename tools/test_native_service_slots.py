@@ -11,18 +11,30 @@ class Parser(argparse.ArgumentParser):
 
 
 def select(slots, *, display=None, socket=None, net=None, pubsub=None, routes=(),
-           mask=None, board="virt", policy="fifo", threads=()):
+           mask=None, board="virt", policy="fifo", threads=(), irq=0, children=(), rom=()):
     def option(slot):
         return [] if slot is None else [str(slot)]
 
     args = argparse.Namespace(peer_elf=list(range(1, slots)), display_service=option(display),
                               socket_service=option(socket), net_service=option(net),
                               pubsub_service=option(pubsub), ipc_route=list(routes),
-                              peer3_arg=option(mask), threads=threads)
+                              peer3_arg=option(mask), threads=threads, uart_rx_irq=irq,
+                              exec_child=children, rom_file=rom)
     return native_service_slots(Parser(), args, policy, board), args.peer3_arg
 
 
 class NativeServiceSlotTests(unittest.TestCase):
+    def test_uart_rx_irq_display_owner(self):
+        for slots, owner in ((1, 0), (2, 0), (2, 1)):
+            self.assertEqual(select(slots, display=owner, irq=1)[0], (owner, None, []))
+        routes = [(0, 3), (1, 3), (2, 3)]
+        self.assertEqual(select(4, display=0, socket=3, routes=routes, irq=1)[0], (0, 3, [0, 1, 2]))
+        base = dict(slots=2, display=0, irq=1)
+        for change in (dict(display=None), dict(board="pi4"), dict(policy="rr"), dict(irq=2),
+                       dict(children=["1:child"]), dict(rom=["file=a"]), dict(threads=["2"])):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                select(**(base | change))
+
     def test_four_process_local_display(self):
         routes = [(2, 3), (0, 3), (1, 3)]
         for mask in (None, 7):

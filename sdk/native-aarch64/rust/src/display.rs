@@ -28,3 +28,24 @@ pub fn write_row(y: usize, pixels: &[u32; WIDTH]) -> Result<(), i64> {
 pub fn poll_key() -> Result<u8, i64> {
     call(74, 0, 0).map(|byte| byte as u8)
 }
+
+/// PL011 receive state since this guest boot. Each call samples one counter.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(usize)]
+pub enum RxMetric {
+    IrqEntries = 0,
+    /// Valid bytes read from the hardware, including bytes lost to a full ring.
+    Bytes = 1,
+    Drops = 2,
+    /// UART data words discarded because the device reported an error.
+    ErrorWords = 3,
+    Depth = 4,
+    Capacity = 5,
+    /// Subset of IRQ entries taken while the kernel was idle.
+    IdleIrqEntries = 6,
+}
+
+/// Query the selected display owner's IRQ receive driver. Polled profiles return -ENOSYS.
+pub fn rx_stat(metric: RxMetric) -> Result<usize, i64> {
+    call(75, metric as usize, 0)
+}

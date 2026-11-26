@@ -31,4 +31,20 @@ static inline long jnox_display_poll_key(void)
 {
     return jnox_display_call(74, 0, 0);
 }
+
+enum jnox_rx_metric {
+    JNOX_RX_IRQ_ENTRIES = 0,
+    JNOX_RX_BYTES = 1,       /* valid hardware bytes, including software ring drops */
+    JNOX_RX_DROPS = 2,
+    JNOX_RX_ERROR_WORDS = 3, /* hardware receive errors */
+    JNOX_RX_DEPTH = 4,
+    JNOX_RX_CAPACITY = 5,
+    JNOX_RX_IDLE_IRQ_ENTRIES = 6
+};
+
+/* Sample one metric since boot. IRQ profile owner only; polled profiles return -ENOSYS. */
+static inline long jnox_display_rx_stat(enum jnox_rx_metric metric)
+{
+    return jnox_display_call(75, (unsigned)metric, 0);
+}
 #endif

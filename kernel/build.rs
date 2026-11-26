@@ -586,6 +586,13 @@ fn main() {
     let children = selector("JNOX_NATIVE_EXEC_CHILDREN");
     let rom = selector("JNOX_NATIVE_ROM_IMAGE");
     let rom_hash = selector("JNOX_NATIVE_ROM_SHA256");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_uart_rx_irq)");
+    if let Some(mode) = selector("JNOX_NATIVE_UART_RX_IRQ") {
+        assert!(mode == "1" && display_service.is_some() && children.is_none()
+            && rom.is_none() && rom_hash.is_none(),
+            "JNOX_NATIVE_UART_RX_IRQ=1 requires an ordinary virt FIFO display service");
+        println!("cargo::rustc-cfg=jnox_native_uart_rx_irq");
+    }
     let pipe_config = match (children, rom, rom_hash) {
         (None, None, None) => pipe_config,
         (Some(children), Some(file), Some(hash)) => {
