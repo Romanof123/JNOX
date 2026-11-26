@@ -2361,3 +2361,13 @@ IMP-319,partially-verified-by,VER-016
 VER-015,has-partial-evidence,EVD-319
 VER-016,has-partial-evidence,EVD-319
 IMP-319,tested-in,EVD-319
+CHG-320,affects,REQ-015
+CHG-320,affects,REQ-016
+REQ-015,partially-implemented-by,IMP-320
+REQ-016,partially-implemented-by,IMP-320
+DES-009,partially-implemented-by,IMP-320
+IMP-320,partially-verified-by,VER-015
+IMP-320,partially-verified-by,VER-016
+VER-015,has-partial-evidence,EVD-320
+VER-016,has-partial-evidence,EVD-320
+IMP-320,tested-in,EVD-320
