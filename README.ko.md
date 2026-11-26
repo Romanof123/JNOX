@@ -4,13 +4,13 @@
 
 J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Rust로 개발하는 실시간 운영체제입니다. 예측 가능한 실행 시간과 격리, 멀티스레딩, 응용 프로그램과 장치 드라이버 지원을 우선합니다.
 
-J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 중심에는 작은 신뢰 커널과 격리된 서비스가 있습니다. 네이티브 Rust 드라이버와 Linux 드라이버 소스로 빌드한 비특권 네이티브 서비스을 지원하는 것이 목표입니다.
+J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 중심에는 작은 신뢰 커널과 격리된 서비스가 있습니다. 네이티브 Rust 드라이버와 Linux 드라이버 소스로 빌드한 비특권 네이티브 서비스를 지원하는 것이 목표입니다.
 
 ## 시스템 아키텍처
 
 ![사용자 앱, Rust 마이크로커널, 격리된 드라이버, 보드 지원, 하드웨어 순서로 쌓은 J-NOX 계층도](docs/diagrams/system-architecture.ko.svg)
 
-점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 기존 Linux 드라이버 소스는 수정 없이 비특권 J-NOX 서비스로 재빌드하도록 설계했습니다. Rust 커널이 지정 장치에 대한 권한을 부여하며 첫 대상은 PL031입니다. 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
+점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 첫 이관 프로파일은 Linux PL031 시계 드라이버 원본을 비특권 J-NOX 서비스로 빌드합니다. J-NOX만 부팅한 시험에서 시각 읽기·설정, 알람 처리와 장치 재바인딩을 확인했습니다. Rust 커널이 호출자의 장치 접근 권한을 검사합니다. [원본 드라이버와 검증 기록](docs/evidence/native-linux-source-rtc/README.md). 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
 
 ## 화면, X11 및 커널 로그
 

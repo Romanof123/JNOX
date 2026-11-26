@@ -10,7 +10,7 @@ The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture k
 
 ![J-NOX layers, from user apps to the Rust microkernel, isolated drivers, board support and hardware](docs/diagrams/system-architecture.en.svg)
 
-Dashed boxes show planned components. The native Rust driver runs as an isolated service. The planned adapter compiles unchanged Linux driver source for an unprivileged J-NOX service. The Rust kernel grants access to the assigned device. PL031 is the first target. The native app and kernel path has been exercised on AArch64 QEMU. [Architecture and isolation](docs/architecture.en.md) · [Native IPC evidence](docs/evidence/native-sync-ipc-release.en-ko.md)
+Dashed boxes show planned components. The native Rust driver runs as an isolated service. The first source-import profile compiles the unchanged Linux PL031 RTC driver into an unprivileged J-NOX service. On standalone J-NOX, it read and set the emulated clock, handled an alarm and rebound the device. The Rust kernel checks device access for each caller. [Original driver and run records](docs/evidence/native-linux-source-rtc/README.md). The native app and kernel path has been exercised on AArch64 QEMU. [Architecture and isolation](docs/architecture.en.md) · [Native IPC evidence](docs/evidence/native-sync-ipc-release.en-ko.md)
 
 ## Display, X11 and kernel logs
 
