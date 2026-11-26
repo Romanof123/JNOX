@@ -447,7 +447,9 @@ def main():
     parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
     parser.add_argument("--board", choices=["virt", "pi4"], action=SinglePath)
     parser.add_argument("--bao-partition", action="store_true",
-                        help="single native ELF on Bao virt, virtual timer and RAM console")
+                        help="Bao virt partition with a virtual timer and RAM console")
+    parser.add_argument("--bao-gateway", action="store_true",
+                        help="two ordinary Bao virt FIFO processes with mailbox access granted to slot 0")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
@@ -543,11 +545,19 @@ def main():
     parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if args.bao_gateway and not args.bao_partition:
+        parser.error("--bao-gateway requires --bao-partition")
     if args.bao_partition:
         allowed = {"out", "board", "kernel_profile", "elf", "bao_partition"}
+        if args.bao_gateway:
+            allowed.update({"bao_gateway", "policy", "priority", "peer_priority", "peer_elf", "arg", "peer_arg"})
+            if args.board != "virt" or args.policy != ["fifo"] or not args.elf or len(args.peer_elf) != 1:
+                parser.error("--bao-gateway requires --board virt --policy fifo, one --elf and one --peer-elf")
         conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
                      and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
-        if conflicts or not args.elf or args.board == "pi4":
+        if conflicts:
+            parser.error("options incompatible with the selected Bao profile: " + ", ".join(conflicts))
+        if not args.elf or args.board == "pi4":
             parser.error("--bao-partition requires one virt --elf and excludes scheduling and device options")
     if args.task_policy is not None:
         allowed = {"out", "board", "kernel_profile", "task_policy"}
@@ -769,6 +779,10 @@ def main():
     if args.bao_partition:
         env["JNOX_BAO_PARTITION"] = "1"
         metadata["virtual_board"] = "bao-partition"
+    if args.bao_gateway:
+        env["JNOX_BAO_GATEWAY"] = "1"
+        metadata["bao_gateway"] = {"mailbox_slot": 0, "unauthorized_slots": [1]}
+        metadata["package_argv"] = sys.argv[:]
     if args.pubsub_service:
         env["JNOX_NATIVE_PUBSUB_SERVICE"] = "3"
         env["JNOX_NATIVE_PUBSUB_PUBLISH"] = publish

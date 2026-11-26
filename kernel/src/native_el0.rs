@@ -8,6 +8,9 @@ use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
 use core::ptr;
 
+#[cfg(jnox_bao_gateway)]
+#[path = "native_bao_gateway.rs"]
+mod bao_gateway;
 #[cfg(jnox_native_weighted)]
 #[path = "native_weighted.rs"]
 mod weighted;
@@ -827,6 +830,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_bao_gateway)]
+        150 | 151 => bao_gateway::service(unsafe { CURRENT }, f.x[8], f.x[0] as usize, f.x[1]),
         #[cfg(jnox_native_display)]
         72..=74 => display_call(unsafe { CURRENT }, f),
         #[cfg(jnox_native_uart_rx_irq)]

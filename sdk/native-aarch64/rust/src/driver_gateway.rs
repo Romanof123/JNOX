@@ -1,9 +1,11 @@
 //! Fixed-size diagnostic exchange with an assigned Linux device gateway.
-//! Each socket has a single caller, one outstanding request and a configured peer.
-//! The package grants the caller its route to the local IPv4 broker. That broker
-//! and the native monotonic clock must remain operational during a Linux outage.
-use crate::{local_socket as s, monotonic_time, sleep_until, ClockError};
-use core::{mem::ManuallyDrop, time::Duration};
+//! Each gateway has a single caller and one outstanding request.
+//! The package grants a route to its IPv4 broker or a Bao shared-memory copy
+//! channel. Timeout and reply admission use the native monotonic clock.
+#[cfg(feature = "local-socket")]
+use crate::local_socket as s;
+use crate::{monotonic_time, sleep_until, ClockError};
+use core::time::Duration;
 
 const RECORD_BYTES: usize = 24;
 const MAX_TIMEOUT_MS: u32 = 10_000;
@@ -63,27 +65,90 @@ fn wait(now: Duration, deadline: Duration) -> Result<(), i32> {
     Ok(())
 }
 
+/// One kernel-mediated, fixed-size copy per call. The package grants the slot.
+#[cfg(feature = "bao-gateway")]
+pub mod bao {
+    use core::arch::asm;
+
+    fn copy(op: u64, address: usize) -> Result<(), i32> {
+        let status: i64;
+        // Both buffers are borrowed for this synchronous kernel copy.
+        unsafe {
+            asm!("svc #0x4a01", in("x8") op, inlateout("x0") address => status,
+                 inlateout("x1") super::RECORD_BYTES => _, options(nostack));
+        }
+        match status {
+            0 => Ok(()),
+            n if n < 0 => Err(i32::try_from(n).unwrap_or(-5)),
+            _ => Err(-5),
+        }
+    }
+
+    pub fn send(record: &[u8; 24]) -> Result<(), i32> {
+        copy(150, record.as_ptr() as usize)
+    }
+
+    pub fn receive(record: &mut [u8; 24]) -> Result<(), i32> {
+        copy(151, record.as_mut_ptr() as usize)
+    }
+}
+
+enum Transport {
+    #[cfg(feature = "local-socket")]
+    Udp { fd: i32, peer: s::Ipv4Endpoint },
+    #[cfg(feature = "bao-gateway")]
+    Bao,
+}
+
 pub struct Gateway {
-    fd: i32,
-    peer: s::Ipv4Endpoint,
+    transport: Transport,
     last_request: Option<(u32, u32)>,
 }
 
 impl Gateway {
+    #[cfg(feature = "local-socket")]
     pub fn bind(broker: u64, local: s::Ipv4Endpoint, peer: s::Ipv4Endpoint) -> Result<Self, i32> {
         s::set_broker(broker)?;
         let fd = s::socket4(s::SOCK_DGRAM, true)?;
         let gateway = Self {
-            fd,
-            peer,
+            transport: Transport::Udp { fd, peer },
             last_request: None,
         };
         s::bind4(fd, local)?;
         Ok(gateway)
     }
 
+    /// Use the address-free Bao copy channel selected by the native package.
+    #[cfg(feature = "bao-gateway")]
+    pub fn bao() -> Self {
+        Self { transport: Transport::Bao, last_request: None }
+    }
+
+    fn send(&self, record: &[u8; RECORD_BYTES]) -> Result<usize, i32> {
+        match self.transport {
+            #[cfg(feature = "local-socket")]
+            Transport::Udp { fd, peer } => s::send_to4(fd, record, s::MSG_DONTWAIT, peer),
+            #[cfg(feature = "bao-gateway")]
+            Transport::Bao => bao::send(record).map(|()| RECORD_BYTES),
+        }
+    }
+
+    fn receive(&self, buf: &mut [u8; 32]) -> Result<(usize, bool), i32> {
+        match self.transport {
+            #[cfg(feature = "local-socket")]
+            Transport::Udp { fd, peer } => s::recv_from4(fd, buf, s::MSG_DONTWAIT)
+                .map(|(size, sender)| (size, sender == Some(peer))),
+            #[cfg(feature = "bao-gateway")]
+            Transport::Bao => {
+                let record: &mut [u8; RECORD_BYTES] = (&mut buf[..RECORD_BYTES]).try_into().unwrap();
+                bao::receive(record)?;
+                Ok((RECORD_BYTES, true))
+            }
+        }
+    }
+
     /// A new generation starts after Linux restarts. Never reuse a (generation,
-    /// id) pair on this socket, even if the earlier exchange timed out.
+    /// id) pair on this gateway, even if the earlier exchange timed out.
     pub fn exchange(&mut self, request: Request) -> Result<Receipt, i32> {
         let key = (request.generation, request.id);
         if request.generation == 0
@@ -116,7 +181,7 @@ impl Gateway {
 
         // Backpressure must not convert a bounded remote call into an unlimited send.
         while now()? < deadline {
-            match s::send_to4(self.fd, &record, s::MSG_DONTWAIT, self.peer) {
+            match self.send(&record) {
                 Ok(RECORD_BYTES) => break,
                 Ok(_) => return Err(-5),
                 Err(-11) => wait(now()?, deadline)?,
@@ -131,15 +196,15 @@ impl Gateway {
             // The broker admits datagrams up to 32 bytes. Read the full datagram
             // so an oversized record with a valid 24-byte prefix cannot match.
             let mut buf = [0; 32];
-            match s::recv_from4(self.fd, &mut buf, s::MSG_DONTWAIT) {
+            match self.receive(&mut buf) {
                 Err(-11) => (),
                 Err(code) => return Err(code),
-                Ok((size, peer)) => {
+                Ok((size, peer_matches)) => {
                     receipt.finished = now()?;
                     if receipt.finished >= deadline {
                         return Ok(receipt);
                     }
-                    if peer != Some(self.peer)
+                    if !peer_matches
                         || size != RECORD_BYTES
                         || buf[..4] != expected[..4]
                         || buf[8..RECORD_BYTES] != expected[8..]
@@ -172,12 +237,22 @@ impl Gateway {
     }
 
     pub fn close(self) -> Result<(), i32> {
-        s::close(ManuallyDrop::new(self).fd)
+        match core::mem::ManuallyDrop::new(self).transport {
+            #[cfg(feature = "local-socket")]
+            Transport::Udp { fd, .. } => s::close(fd),
+            #[cfg(feature = "bao-gateway")]
+            Transport::Bao => Ok(()),
+        }
     }
 }
 
 impl Drop for Gateway {
     fn drop(&mut self) {
-        let _ = s::close(self.fd);
+        match self.transport {
+            #[cfg(feature = "local-socket")]
+            Transport::Udp { fd, .. } => { let _ = s::close(fd); }
+            #[cfg(feature = "bao-gateway")]
+            Transport::Bao => {}
+        }
     }
 }

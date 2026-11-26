@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
+gateway=0
+if [[ ${1:-} == --gateway ]]; then
+    gateway=1
+    shift
+fi
 if [[ $# != 4 ]]; then
-    echo "usage: bash build.sh BAO_SOURCE LINUX_BIN JNOX_ELF EMPTY_BUILD_DIR" >&2
+    echo "usage: bash build.sh [--gateway] BAO_SOURCE LINUX_BIN JNOX_ELF EMPTY_BUILD_DIR" >&2
     exit 2
 fi
 export LC_ALL=C
@@ -47,7 +52,12 @@ change(Path("src/arch/armv8/gic.c"), "gicd->IGROUPR[i] = ~0U;", "gicd->IGROUPR[i
 PY
 config=configs/domains
 mkdir "$config"
-cp "$here/config.c" "$config/config.c"
+if (( gateway )); then
+    # Both Bao's host config generator and its target compiler read this file.
+    { echo '#define JNOX_GATEWAY 1'; cat "$here/config.c"; } > "$config/config.c"
+else
+    cp "$here/config.c" "$config/config.c"
+fi
 cp "$linux" "$config/linux.bin"
 entry=$("${cross}readelf" -h "$jnox" | awk '/Entry point address:/ {print $4}')
 [[ "$entry" = 0x40200000 ]] || { echo "unexpected JNOX ELF entry $entry" >&2; exit 1; }
@@ -57,3 +67,9 @@ linked=bin/qemu-aarch64-virt/domains
 python3 "$here/verify_layout.py" "$linked" | tee "$out/layout.txt"
 cp "$linked"/bao.{bin,elf} "$out/"
 (cd "$out" && sha256sum bao.bin bao.elf src/configs/domains/{linux,jnox}.bin > SHA256SUMS)
+if (( gateway )); then
+    (cd "$out" && sha256sum src/configs/domains/config.c >> SHA256SUMS)
+    printf '%s\n' 'profile=gateway JNOX_GATEWAY=1' \
+        'shmem_id=0 machine_pa=0x5e000000 linux_ipa=0x0b000000 jnox_ipa=0x0b000000 size=0x1000 interrupts=0' \
+        >> "$out/layout.txt"
+fi

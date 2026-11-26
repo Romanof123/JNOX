@@ -151,7 +151,7 @@ pub mod pipes;
 
 #[cfg(all(feature = "local-socket", target_arch = "aarch64"))]
 pub mod local_socket;
-#[cfg(all(feature = "local-socket", target_arch = "aarch64"))]
+#[cfg(all(any(feature = "local-socket", feature = "bao-gateway"), target_arch = "aarch64"))]
 pub mod driver_gateway;
 
 #[cfg(all(feature = "capabilities", target_arch = "aarch64"))]

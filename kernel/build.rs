@@ -713,13 +713,32 @@ fn main() {
             "pi4-stream-v1 requires a Pi 4 SMP migration application");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_bao_partition)");
-    if let Some(value) = selector("JNOX_BAO_PARTITION") {
+    println!("cargo::rustc-check-cfg=cfg(jnox_bao_gateway)");
+    let bao_partition = selector("JNOX_BAO_PARTITION");
+    let bao_gateway = selector("JNOX_BAO_GATEWAY");
+    if let Some(value) = bao_gateway.as_deref() {
+        assert!(value == "1" && bao_partition.as_deref() == Some("1"),
+            "JNOX_BAO_GATEWAY=1 requires JNOX_BAO_PARTITION=1");
+    }
+    if let Some(value) = bao_partition {
         assert!(value == "1" && board == "virt" && profile.as_deref() == Some("native")
-            && app.as_deref() == Some("process") && policy.is_none()
-            && env::vars_os().all(|(key, _)| {
-                let k = key.to_string_lossy();
-                !k.starts_with("JNOX_NATIVE_") || matches!(k.as_ref(), "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256")
-            }), "Bao requires a single ordinary native virt ELF");
+            && app.as_deref() == Some("process"), "Bao requires ordinary native virt applications");
+        if bao_gateway.is_some() {
+            assert!(policy.as_deref() == Some("fifo") && priorities.is_some() && peer_image.is_some(),
+                "Bao gateway requires two ordinary FIFO processes");
+            println!("cargo::rustc-cfg=jnox_bao_gateway");
+        } else {
+            assert!(policy.is_none(), "Bao heartbeat requires a single ordinary native virt ELF");
+        }
+        for (key, _) in env::vars_os() {
+            let key = key.to_string_lossy();
+            assert!(!key.starts_with("JNOX_NATIVE_")
+                || matches!(key.as_ref(), "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256")
+                || (bao_gateway.is_some() && matches!(key.as_ref(), "JNOX_NATIVE_PEER_ELF"
+                    | "JNOX_NATIVE_PEER_ELF_SHA256" | "JNOX_NATIVE_POLICY" | "JNOX_NATIVE_PRIORITIES"
+                    | "JNOX_NATIVE_ARGV0_HEX" | "JNOX_NATIVE_ARGV1_HEX")),
+                "selected Bao profile conflicts with {key}");
+        }
         println!("cargo::rustc-cfg=jnox_bao_partition");
     }
     let pi4_native_fixed = board == "pi4" && profile.as_deref() == Some("native")

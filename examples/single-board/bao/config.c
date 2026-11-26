@@ -3,7 +3,20 @@
 VM_IMAGE(linux_guest, "configs/domains/linux.bin")
 VM_IMAGE(jnox_guest, "configs/domains/jnox.bin")
 
+#ifdef JNOX_GATEWAY
+/* Both guests map the same page and poll it. Bao reads these IPC descriptors. */
+static struct ipc gateway_ipcs[] = {
+    {.base = 0x0b000000, .size = 0x1000, .shmem_id = 0, .interrupt_num = 0},
+};
+#endif
+
 struct config config = {
+#ifdef JNOX_GATEWAY
+    .shmemlist_size = 1,
+    .shmemlist = (struct shmem[]) {
+        {.size = 0x1000, .place_phys = true, .phys = 0x5e000000},
+    },
+#endif
     .vmlist_size = 2,
     .vmlist = (struct vm_config[]) {
         {
@@ -12,6 +25,10 @@ struct config config = {
             .cpu_affinity = 1,
             .platform = {
                 .cpu_num = 1,
+#ifdef JNOX_GATEWAY
+                .ipc_num = 1,
+                .ipcs = gateway_ipcs,
+#endif
                 .region_num = 1,
                 .regions = (struct vm_mem_region[]) {
                     {.base = 0x50000000, .size = 0x0c000000, .place_phys = true, .phys = 0x50000000},
@@ -34,6 +51,10 @@ struct config config = {
             .cpu_affinity = 2,
             .platform = {
                 .cpu_num = 1,
+#ifdef JNOX_GATEWAY
+                .ipc_num = 1,
+                .ipcs = gateway_ipcs,
+#endif
                 .region_num = 1,
                 .regions = (struct vm_mem_region[]) {
                     {.base = 0x40000000, .size = 0x08000000, .place_phys = true, .phys = 0x48000000},
