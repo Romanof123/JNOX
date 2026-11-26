@@ -1,8 +1,9 @@
 """Host controls for native display, socket and network package selection."""
 import argparse
 import unittest
+from unittest.mock import patch
 
-from build_native_el0 import native_service_slots
+from build_native_el0 import main, native_service_slots
 
 
 class Parser(argparse.ArgumentParser):
@@ -28,6 +29,23 @@ def select(slots, *, display=None, socket=None, net=None, pubsub=None, routes=()
 
 
 class NativeServiceSlotTests(unittest.TestCase):
+    def test_net_standby(self):
+        base = dict(slots=3, socket=0, net=0, routes=[(1, 0)])
+        expected = (None, 0, [1])
+        self.assertEqual(select(**base)[0], expected)
+        self.assertEqual(select(**base, net_standby=None)[0], expected)
+        self.assertEqual(select(**base, net_standby="2")[0], expected)
+        for change in (dict(slots=2), dict(net_standby="0"), dict(net=None),
+                       dict(socket=None), dict(socket=1), dict(slots=4)):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                select(**(base | dict(net_standby="2") | change))
+
+    def test_net_standby_duplicate_cli_option(self):
+        argv = ["build_native_el0.py", "--net-standby", "1", "--net-standby", "2"]
+        with patch("sys.argv", argv), patch("argparse.ArgumentParser.error", Parser.error):
+            with self.assertRaisesRegex(ValueError, "--net-standby may appear only once"):
+                main()
+
     def test_uart_rx_standby(self):
         base = dict(slots=3, display=0, standby="2", irq=1)
         self.assertEqual(select(**base)[0], (0, None, []))

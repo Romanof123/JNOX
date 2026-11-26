@@ -75,7 +75,7 @@ pub(super) fn handles(service: u64) -> bool {
         || (cfg!(jnox_native_capability_ipc) && matches!(service, 53..=58))
         || (cfg!(jnox_native_socket_service) && service == 37)
         || (cfg!(jnox_native_pubsub_service) && service == 52)
-        || (cfg!(jnox_native_net_service) && matches!(service, 38..=40))
+        || (cfg!(jnox_native_net_service) && matches!(service, 38..=40 | 76))
         || (cfg!(jnox_native_mailbox_ipc) && matches!(service, 24..=25))
         || (cfg!(jnox_native_notify_ipc) && matches!(service, 26..=29))
         || (cfg!(jnox_native_waitset) && matches!(service, 30..=32))
@@ -215,6 +215,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
             38 | 39 => net_frame(id, op, frame.x[0] as usize, frame.x[1] as usize)
                 .map(|n| transferred = n as u64),
             #[cfg(jnox_native_net_service)]
+            76 => super::net_owner::claim(id),
+            #[cfg(jnox_native_net_service)]
             40 if id == super::NATIVE_SOCKET_SERVICE => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_try_receive(id, now) },
             #[cfg(jnox_native_net_service)]
             40 => Err(-13),
@@ -304,7 +306,7 @@ pub(super) fn report_notifications(phase: u64) {
 fn net_frame(pid: usize, op: u64, address: usize, length: usize) -> Result<usize, i32> {
     use super::{native_el0_mmu as mmu, virtio_net};
     const MAX_FRAME: usize = 1514;
-    if pid != super::NATIVE_SOCKET_SERVICE { return Err(-13); }
+    if !super::net_owner::owns(pid) { return Err(-13); }
     if mmu::active() != Some(pid) { fail(9); }
     let mut data = [0u8; MAX_FRAME];
     if op == 38 {
