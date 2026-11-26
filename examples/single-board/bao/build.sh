@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ $# != 4 ]]; then
+    echo "usage: bash build.sh BAO_SOURCE LINUX_BIN JNOX_ELF EMPTY_BUILD_DIR" >&2
+    exit 2
+fi
+export LC_ALL=C
+here=$(cd "$(dirname "$0")" && pwd)
+src=$(realpath "$1")
+linux=$(realpath "$2")
+jnox=$(realpath "$3")
+mkdir -p "$4"
+out=$(realpath "$4")
+if [[ -n $(ls -A "$out") || "$out" =~ [[:space:]] ]]; then
+    echo "Bao's build requires an empty output directory with a whitespace-free path" >&2
+    exit 2
+fi
+pin=0af4a1ab558ad60c9658af4f43756c4536dd3141
+cross=${CROSS_COMPILE:-aarch64-linux-gnu-}
+git clone --local --no-hardlinks --no-checkout "$src" "$out/src"
+git -C "$out/src" checkout --quiet --detach "$pin"
+cd "$out/src"
+test "$(git rev-parse HEAD)" = "$pin"
+plat=src/platform/qemu-aarch64-virt
+python3 - "$plat" <<'PY'
+from pathlib import Path
+import sys
+
+def change(path, old, new):
+    text = path.read_text()
+    if text.count(old) != 1:
+        raise ValueError(f"unexpected pinned source in {path}: {old}")
+    path.write_text(text.replace(old, new))
+
+plat = Path(sys.argv[1])
+change(plat / "virt_desc.c", ".cpu_num = 4,", ".cpu_num = 2,")
+change(plat / "virt_desc.c", ".size = 0x100000000,", ".size = 0x20000000,")
+change(plat / "platform.mk", "CPU:=cortex-a53", "CPU:=cortex-a72")
+change(plat / "platform.mk", "GIC_VERSION:=GICV3", "GIC_VERSION:=GICV2")
+
+PY
+config=configs/domains
+mkdir "$config"
+cp "$here/config.c" "$config/config.c"
+cp "$linux" "$config/linux.bin"
+entry=$("${cross}readelf" -h "$jnox" | awk '/Entry point address:/ {print $4}')
+[[ "$entry" = 0x40200000 ]] || { echo "unexpected JNOX ELF entry $entry" >&2; exit 1; }
+"${cross}objcopy" -O binary "$jnox" "$config/jnox.bin"
+make -j1 PLATFORM=qemu-aarch64-virt CONFIG=domains CROSS_COMPILE="$cross"
+linked=bin/qemu-aarch64-virt/domains
+python3 "$here/verify_layout.py" "$linked" | tee "$out/layout.txt"
+cp "$linked"/bao.{bin,elf} "$out/"
+(cd "$out" && sha256sum bao.bin bao.elf src/configs/domains/{linux,jnox}.bin > SHA256SUMS)
