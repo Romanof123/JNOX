@@ -37,14 +37,23 @@ def read_exact(sock, count):
     return bytes(data)
 
 
-def verify_pcap(out):
+def lan_announcement(number):
+    # Three ordinary ARP announcements from the isolated link peer.
+    address = bytes((192, 0, 2, number))
+    body = struct.pack("!HHBBH6s4s6s4s", 1, 0x0800, 6, 4, 1,
+                       HOST, address, bytes(6), address)
+    return (BROADCAST + HOST + b"\x08\x06" + body).ljust(60, b"\0")
+
+
+def verify_pcap(out, announcements):
     data = (out / "wire.pcap").read_bytes()
     byte_order = {b"\xd4\xc3\xb2\xa1": "<", b"\xa1\xb2\xc3\xd4": ">"}.get(data[:4])
     require(byte_order is not None and len(data) >= 24, "invalid pcap")
     require(struct.unpack_from(byte_order + "I", data, 20)[0] == 1, "expected Ethernet pcap")
     cursor = 24
-    expected = [(out / name).read_bytes() for name in
-                ("primary.challenge", "primary.reply", "primary.retire", "spare.challenge", "spare.reply")]
+    expected = [(out / name).read_bytes() for name in ("primary.challenge", "primary.reply", "primary.retire")]
+    expected.extend(announcements)
+    expected.extend((out / name).read_bytes() for name in ("spare.challenge", "spare.reply", "spare.retire"))
     matched = 0
     while cursor < len(data):
         require(cursor + 16 <= len(data), "truncated pcap record")
@@ -135,7 +144,19 @@ def replay(out):
         nonces.append(check_exchange((out / (tag + ".challenge")).read_bytes(),
                                      (out / (tag + ".reply")).read_bytes(), idx))
     require(nonces[0] != nonces[1], "replayed challenge")
-    verify_pcap(out)
+    announcements = []
+    if meta.get("lan_announcements", False):
+        before = json.loads((out / "retired.json").read_bytes())["stopped_ns"]
+        after = json.loads((out / "progress.json").read_bytes())["stopped_ns"]
+        rows = json.loads((out / "lan.json").read_bytes())
+        require([r["number"] for r in rows] == [10, 11, 12], "missing LAN announcements")
+        for row in rows:
+            frame = bytes.fromhex(row["frame"])
+            require(frame == lan_announcement(row["number"]), "ARP announcement content")
+            require(before < row["sent_ns"] < after, "ARP send outside retirement observations")
+            before = row["sent_ns"]
+            announcements.append(frame)
+    verify_pcap(out, announcements)
     print("Verified NIC phase, selected queue readiness, RX descriptors, scrub, peer progress and two wire replies.")
 
 
@@ -175,7 +196,7 @@ def capture(args):
                 "-device", "virtio-net-device,netdev=lan,mac=52:54:00:12:34:56",
                 "-object", f"filter-dump,id=wire,netdev=lan,file={out/'wire.pcap'}"]
         (out / "launch.json").write_text(json.dumps(dict(argv=argv, queues=queues, phase=phase,
-            kernel_sha256=hashlib.sha256(kernel.read_bytes()).hexdigest()), indent=2))
+            kernel_sha256=hashlib.sha256(kernel.read_bytes()).hexdigest(), lan_announcements=args.lan_announcements), indent=2))
         proc = subprocess.Popen(argv, stdout=log, stderr=log, stdin=subprocess.DEVNULL)
         try:
             wire, _ = listener.accept()
@@ -214,7 +235,7 @@ def capture(args):
                                     **{"command-line": f"xp /1gx {pa:#x}"})).to_bytes(size, "little")
                             snap["private"] = {}
                             values = decode(probes, snap["private"], fetch)
-                            snap.update(mmio=mmio, uart_offset=uart.stat().st_size)
+                            snap.update(mmio=mmio, uart_offset=uart.stat().st_size, stopped_ns=time.monotonic_ns())
                             dump(tag + ".phase", *phase)
                             dump(tag + ".queues", *queues)
                             (out / (tag + ".json")).write_text(json.dumps(snap))
@@ -241,6 +262,13 @@ def capture(args):
                     send("primary.retire", 1, 3)
                     wait_for(lambda: word(xp(phase[0])) == 3)
                     before = snapshot("retired")[1]["dma_peer_ticks"]
+                    if args.lan_announcements:
+                        traffic = []
+                        for number in (10, 11, 12):
+                            frame = lan_announcement(number)
+                            wire.sendall(struct.pack(">I", len(frame)) + frame)
+                            traffic.append(dict(number=number, frame=frame.hex(), sent_ns=time.monotonic_ns()))
+                        (out / "lan.json").write_text(json.dumps(traffic, indent=2))
                     peer_probe = next(p for p in probes if p[1] == "dma_peer_ticks")
                     from verify_native_uart_recovery import walk
                     records = json.loads((out / "retired.json").read_text())["private"]
@@ -269,6 +297,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out", type=Path)
     parser.add_argument("--kernel", type=Path, help="native AArch64 ELF with symbols; omit for offline replay")
+    parser.add_argument("--lan-announcements", action="store_true",
+                        help="send three ordinary ARP announcements on the isolated link during handoff")
     parser.add_argument("--qemu", default="qemu-system-aarch64")
     parser.add_argument("--timeout", type=float, default=45)
     args = parser.parse_args()
