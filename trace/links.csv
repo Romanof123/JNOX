@@ -2411,3 +2411,8 @@ CHG-327,affects,EVD-327
 REQ-004,partially-implemented-by,IMP-327
 REQ-011,partially-implemented-by,IMP-327
 DES-002,partially-implemented-by,IMP-327
+IMP-327,partially-verified-by,VER-004
+IMP-327,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-327
+VER-011,has-partial-evidence,EVD-327
+IMP-327,tested-in,EVD-327

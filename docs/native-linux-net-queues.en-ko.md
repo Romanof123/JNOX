@@ -1,6 +1,6 @@
 # CHG-327 · Native virtio-net queue-pair setup / 네이티브 virtio-net 큐 쌍 설정
 
-**REQ-004/011 · DES-002 · IMP-327 · VER-004/011.** EVD-327 is reserved for a guest capture and its replay. The object comparison below is a completed host measurement. [Queue-pair issue #428](https://github.com/Romanof123/JNOX/issues/428) · [Packet-path design](native-linux-net-packet-design.en-ko.md) · [Earlier feature-validation evidence](evidence/native-linux-source-net/README.md)
+**REQ-004/011 · DES-002 · IMP-327 · VER-004/011.** EVD-327 records two cold boots and offline replay of queue setup, reset and reacquisition. The object comparison below is a separate host measurement. [Queue-pair issue #428](https://github.com/Romanof123/JNOX/issues/428) · [EVD-327](evidence/native-linux-net-queues/README.md) · [Packet-path design](native-linux-net-packet-design.en-ko.md)
 
 ### Object comparison / 오브젝트 비교
 
@@ -21,9 +21,9 @@ The same unchanged Linux v6.18.65 `drivers/net/virtio_net.c` was compiled twice 
 
 1. Trace the upstream `virtnet_validate` entry twice, once per device claim. Trace four entries to the J-NOX bus adapter `jnox_queue_find_vqs` through the Linux `virtio_find_vqs` helper, including rejection of an invalid count and a missing callback. Original Linux probe, open, TX, NAPI poll and remove are outside this service's linked entries. The RX/TX completion counters must stay zero.
 2. In each claim, verify QEMU's queue maximum and the programmed descriptor, available and used-ring addresses for RX index 0 and TX index 1. Require 32 entries and `QueueReady=1` for each. Device status must remain 11 (`ACKNOWLEDGE | DRIVER | FEATURES_OK`), with zero posted buffers. Verify the 8 KiB ring pool belongs to EL1 and slot 1 is denied queue setup and inspection.
-3. Release, reclaim and repeat in the same live owner. Before ring memory reuse, require device status zero and both queue-ready bits clear. Require a positive second token greater than the first and `-ESTALE` for the first token after release and after reclaim. Capture and replay the device trace, execution PCs and stopped memory before attaching EVD-327. [EL1 queue implementation](../kernel/src/native_linux_net_queues.rs) · [Replay criteria](../tools/verify_linux_source_net_queues.py)
+3. Release, reclaim and repeat in the same live owner. Before ring memory reuse, require device status zero and both queue-ready bits clear. Require a positive second token greater than the first and `-ESTALE` for the first token after release and after reclaim. [EL1 queue implementation](../kernel/src/native_linux_net_queues.rs) · [Replay criteria](../tools/verify_linux_source_net_queues.py)
 
-게스트에서는 점유 세대마다 업스트림 `virtnet_validate`가 한 번씩 실행되는지 확인한다. Linux `virtio_find_vqs`가 호출하는 J-NOX 버스 어댑터는 유효한 설정 두 번과 잘못된 큐 개수·누락된 콜백을 합쳐 네 번 진입해야 한다. 원본 probe·open·TX·NAPI poll·remove 실행과 패킷 송수신은 후속 범위다. RX 0과 TX 1이 각각 32개 항목으로 준비됐는지 MMIO에서 확인하고, 등록된 버퍼와 완료 횟수는 0, 장치 상태는 11이어야 한다. 슬롯 1의 큐 접근 거부를 확인한다. 같은 소유자가 반환 후 다시 점유할 때 장치 상태와 양쪽 준비 비트의 초기화, 토큰 증가, 반환 후와 재점유 후 이전 토큰의 `-ESTALE`을 확인한다. EVD-327은 게스트 기록을 재생한 뒤 연결한다.
+두 번의 콜드 부팅과 재생에서 점유 세대마다 업스트림 `virtnet_validate`가 한 번씩 실행됐다. Linux `virtio_find_vqs`가 호출한 J-NOX 버스 어댑터에는 부팅마다 네 번 진입했다. 두 세대 모두 RX 0과 TX 1의 장치 상한은 1,024개였고, 각각 32개 항목으로 설정됐다. 등록된 버퍼와 완료 횟수는 0, 장치 상태는 11이었다. 슬롯 1의 큐 접근은 거부됐다. 같은 소유자가 장치를 반환한 뒤 상태와 양쪽 준비 비트가 0으로 돌아갔고, 재점유 후 토큰은 1에서 2로 증가했다. 이전 토큰은 반환 후와 재점유 후 모두 `-ESTALE`이었다. 원본 probe·open·TX·NAPI poll·remove 실행 및 패킷 송수신은 후속 범위다. [실측·재생 기록](evidence/native-linux-net-queues/README.md)
 
 ### Build / 빌드
 
