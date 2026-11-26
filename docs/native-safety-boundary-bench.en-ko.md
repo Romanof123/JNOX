@@ -68,3 +68,7 @@ REQ-019/024 · IMP-311 · VER-019/024 · EVD-311 · [#403](https://github.com/Ro
 A separate AArch64 component regression exercises the kernel safety and loan service sources with fixed CHECK operands D−1, D and D+1. It establishes the enabled generation through the ordinary operations, publishes a fresh next grant, then checks, receives, releases and submits the frame. At D−1 a fresh prior may be replaced. At D and D+1 expiry must first latch, inhibit the output and preserve the earlier accepted identity. This regression runs with isolated clock and page-map fixtures. The three-process acceptance in #401 requires a real protected counter operand at D.
 
 기존 세 프로세스 시험에서는 같은 CHECK 판정에 사용한 실제 카운터 값, 큐 점유 수, 선두 핸들과 길이를 연결한다. 게시·수신·반환과 대조해 만료 정각과 실제 검사 시점의 큐 상태를 각각 기록한다. 별도 AArch64 구성요소 시험은 커널 서비스 소스를 그대로 사용해 한 틱 전·정각·한 틱 후의 판정과 출력 차단을 확인한다. 구성요소에 공급한 시간값과 세 프로세스에서 읽은 물리 카운터는 별도로 기록한다.
+
+The six AArch64 component boots accepted at D−1 and inhibited before dequeue at D and D+1. In the twelve new three-process boots, four valid frames were queued at D and eight were present at the actual expiry CHECK. All twelve CHECKs ran late, by 135–17,521 counter ticks. The 204 direct queue readings matched replay. [Measured results, raw captures and replay](evidence/native-permit-queue-expiry.en-ko.md)
+
+구성요소 6회는 한 틱 전 수락, 정각·한 틱 후 인출 전 차단을 확인했다. 세 프로세스 12회 중 만료 정각에 큐에 대기한 경우는 4회, 실제 검사에서 관측된 경우는 8회였다. 12회 모두 실제 검사는 정각보다 늦었다. 직접 읽은 큐 기록 204건이 독립 복원과 일치했다. [실측·원본·재현 절차](evidence/native-permit-queue-expiry.en-ko.md)
