@@ -1,0 +1,68 @@
+{
+  "passed": true,
+  "operands": {
+    "packages": {
+      "linux-virt-6.18.65-r0.apk": "859ad147c29bf3c6d84a3ff84280aa5c94d890dc37ada31b072d099a8437f8e0",
+      "busybox-static-1.37.0-r30.apk": "44c9abdfb970f398fa72c8382fe2d8808eea16beaf82daf6ac708b92f1b8659e"
+    },
+    "release": "6.18.65-0-virt",
+    "image_sha256": "4eb5c87867473f20f5ce5084c23f3dff587c84327f3fbba0cfe3157133c20c29",
+    "vmlinuz_sha256": "72fd704e4a2e283a22c74c3b8be50eb065f7a7b54e931c8c3d476d6e9d3497b6",
+    "config_sha256": "72f421144719596a38b40adb2eec8ded2628827518438d23d5b3f0f97cee02ed",
+    "initrd_sha256": "327d531deb9019488a0f0bccd8fb6bea5976bfca16eb820a06014d5056e82dea",
+    "busybox_sha256": "198f6f675a49ac734082e054b823d3e2e947180ca2f632852ae1c09e950fd676",
+    "modules": {
+      "failover": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/net/core/failover.ko.gz",
+        "compressed_sha256": "ae071a342b694423aca240cf6b056e9ac57dd153987af6946b1947eb21515616",
+        "ko_sha256": "33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8"
+      },
+      "net_failover": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/net/net_failover.ko.gz",
+        "compressed_sha256": "f9fa7090ce250b3dbccf25ecf9d9b270852e6c02c9d2807d6633ff1437325a45",
+        "ko_sha256": "3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4"
+      },
+      "virtio_mmio": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/virtio/virtio_mmio.ko.gz",
+        "compressed_sha256": "51085f5e8f2fa1bdca010ce13bfa564609803ca8ed6bda1d139bb0331636849d",
+        "ko_sha256": "ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1"
+      },
+      "virtio_net": {
+        "archive_path": "lib/modules/6.18.65-0-virt/kernel/drivers/net/virtio_net.ko.gz",
+        "compressed_sha256": "10213ed7309bc11e4a0b4dd7e03edea81e90429d1a2520c0133bb4bf9167a379",
+        "ko_sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f"
+      }
+    }
+  },
+  "observed": {
+    "nonce": "52fc7944bc842ad2d0d58866591290c5004f016fd58e72f1598f7a2accccc579",
+    "dtb_sha256": "732d2a8232fa6ebd8ff05eaa1757e84f9065a85c1c04c62ef2be8523abaedfd3",
+    "host_port": 44633,
+    "guest_observations": [
+      "LD BOOT aarch64 6.18.65-0-virt",
+      "LD FDT 732d2a8232fa6ebd8ff05eaa1757e84f9065a85c1c04c62ef2be8523abaedfd3",
+      "LD RECEIVED 52fc7944bc842ad2d0d58866591290c5004f016fd58e72f1598f7a2accccc579",
+      "LD DEVICE /sys/bus/virtio/drivers/virtio_net /sys/module/virtio_net /sys/bus/platform/drivers/virtio-mmio 52:54:00:12:34:56",
+      "LD LOADED failover 33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8",
+      "LD LOADED net_failover 3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4",
+      "LD LOADED virtio_mmio ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1",
+      "LD LOADED virtio_net 3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f"
+    ]
+  },
+  "files": {
+    "Image": "4eb5c87867473f20f5ce5084c23f3dff587c84327f3fbba0cfe3157133c20c29",
+    "challenge.request": "26a6fa7479bade58ba3f1087da97cf2f50faf846fec6e320dc2e63c608f52296",
+    "challenge.response": "423ec2d21d082a54adfe811fe4026f99f461493a72e59108778e43cdde3dfd5e",
+    "config": "72f421144719596a38b40adb2eec8ded2628827518438d23d5b3f0f97cee02ed",
+    "dtb.request": "4aad31a9cadde59abc7fc02b9a8e4982b9877fc10390a67c2b725e3c024542a4",
+    "dtb.response": "8020974baef79a78d2407936e9e52d0db3c73aad183a5a5b86a2d35276f1258f",
+    "init.sh": "6e74a5a90d34dd8c5c142295708ce38b0e1decb54cc9a77715f0a2d450831639",
+    "initrd.gz": "327d531deb9019488a0f0bccd8fb6bea5976bfca16eb820a06014d5056e82dea",
+    "launch.json": "e960a91e938e4b3b4d476e83f2042535d6c171157d19c773fc1a6beccc03e0a9",
+    "qemu.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "running.dtb": "732d2a8232fa6ebd8ff05eaa1757e84f9065a85c1c04c62ef2be8523abaedfd3",
+    "serve.sh": "750ba2a97ccef799fb6a3f5fbadde54c3168137b1fd37a43a57a05dba574cbc3",
+    "uart.log": "13e843fe3e968eefb78b368f7bb4759d2ef5c7cac5bc8381a9f4fcfa1088d294",
+    "usernet.txt": "0bd46757cf1f6b25efdcdee625b15998c67122e3f1a002036e979dd2f9d9f824"
+  }
+}

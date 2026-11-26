@@ -1,0 +1,82 @@
+{
+  "0001-powerpc-boot-wrapper-Add-z-notext-flag-for-ppc64le.patch": {
+    "sha256": "5a69e7352716b95d15d37dac1682629b9f7f8b375bad12b4eae267bf928de067",
+    "size": 812,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/0001-powerpc-boot-wrapper-Add-z-notext-flag-for-ppc64le.patch"
+  },
+  "0001-x86-CPU-AMD-avoid-printing-reset-reasons-on-Xen-domU.patch": {
+    "sha256": "ca3a6ead247a6168fd4db8eea803715dca6f6a2451cc36356b6b2c223301fdd9",
+    "size": 1362,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/0001-x86-CPU-AMD-avoid-printing-reset-reasons-on-Xen-domU.patch"
+  },
+  "0002-x86-Compress-vmlinux-with-zstd-19-instead-of-22.patch": {
+    "sha256": "2b1433795c145ef1979d53806db17ce46d6c87df297c67db41c2ffad21374d12",
+    "size": 1088,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/0002-x86-Compress-vmlinux-with-zstd-19-instead-of-22.patch"
+  },
+  "0003-kexec-add-kexec_load_disabled-boot-option.patch": {
+    "sha256": "919d4e8fcb4f12a22f5224c9f012b9fcb544766830aadf19a2e15044adb3fb7b",
+    "size": 1712,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/0003-kexec-add-kexec_load_disabled-boot-option.patch"
+  },
+  "0004-objtool-respect-AWK-setting.patch": {
+    "sha256": "2b5228aff141f02d67a3ed4c8e5c0cb9ca2c0aebf939badb472dd3a8fdb8fa3a",
+    "size": 766,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/0004-objtool-respect-AWK-setting.patch"
+  },
+  "0005-powerpc-config-defang-gcc-check-for-stack-protector-.patch": {
+    "sha256": "37ee66d4894f1daf6086d5bf546b0f8640f8719895eeb647147f54a86f69deab",
+    "size": 1399,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/0005-powerpc-config-defang-gcc-check-for-stack-protector-.patch"
+  },
+  "APKBUILD": {
+    "sha256": "352b4db588964c9109b8d1626bc18c7eab797d7eb4893ef464aa68dad850b7fa",
+    "size": 13901,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/APKBUILD"
+  },
+  "APKINDEX.tar.gz": {
+    "sha256": "25b2eb2d9f85cfd5c94d71d8898bbd608744445e301673823c53364f4002f8f9",
+    "size": 524423,
+    "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/APKINDEX.tar.gz"
+  },
+  "alpine-devel@lists.alpinelinux.org-616ae350.rsa.pub": {
+    "sha256": "d11f6b21c61b4274e182eb888883a8ba8acdbf820dcc7a6d82a7d9fc2fd2836d",
+    "size": 800,
+    "url": "https://alpinelinux.org/keys/alpine-devel@lists.alpinelinux.org-616ae350.rsa.pub"
+  },
+  "busybox-static-1.37.0-r30.apk": {
+    "sha256": "44c9abdfb970f398fa72c8382fe2d8808eea16beaf82daf6ac708b92f1b8659e",
+    "size": 658740,
+    "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/busybox-static-1.37.0-r30.apk"
+  },
+  "config-virt.aarch64": {
+    "sha256": "4d14c9e46353bdb8a9be0de89039832aebb209493c745faf8691d22b7934037a",
+    "size": 26615,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/virt.aarch64.config"
+  },
+  "linux-virt-6.18.65-r0.apk": {
+    "sha256": "859ad147c29bf3c6d84a3ff84280aa5c94d890dc37ada31b072d099a8437f8e0",
+    "size": 39425992,
+    "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/linux-virt-6.18.65-r0.apk"
+  },
+  "patch-6.18.65.patch.xz": {
+    "sha256": "9c2a6f4c72e2b7f47fc3c8618e20fb3f602bafa308dcffd8f2ddc0c37390c8ed",
+    "size": 6243504,
+    "url": "https://cdn.kernel.org/pub/linux/kernel/v6.x/patch-6.18.65.xz"
+  },
+  "sophgo-fixes.patch": {
+    "sha256": "e462aecb428768a9c688055db1aa53e336e13fe113602c70a56706f5eb7302dc",
+    "size": 15448,
+    "url": "https://raw.githubusercontent.com/alpinelinux/aports/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/sophgo-fixes.patch"
+  },
+  "virtio_net.c": {
+    "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "size": 196513,
+    "url": "https://raw.githubusercontent.com/gregkh/linux/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c"
+  },
+  "virtio_net.v6.18.c": {
+    "sha256": "f9233d54fc982f093a2c5e1afa1e81070be1007442e5e7d4c441f5e4b2743b7c",
+    "size": 194766,
+    "url": "https://raw.githubusercontent.com/gregkh/linux/7d0a66e4bb9081d75c82ec4957c50034cb0ea449/drivers/net/virtio_net.c"
+  }
+}
