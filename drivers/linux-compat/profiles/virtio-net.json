@@ -22,6 +22,7 @@
     }
   },
   "callback": "virtnet_validate",
+  "inventory_entries": ["virtnet_probe", "virtnet_open", "start_xmit", "virtnet_poll", "virtnet_remove", "virtnet_validate"],
   "adapter_source": "drivers/linux-compat/src/virtio_net_validation.c",
   "service_source": "examples/linux-source-net/driver.c"
 }

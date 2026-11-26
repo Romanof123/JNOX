@@ -2,14 +2,18 @@
 """Compile Linux's complete pinned virtio_net.c and link its validate callback for JNOX."""
 import argparse
 import json
+import os
 import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 from import_linux_driver import ROOT, SDK, inspect_elf, pinned_source, run, sha
+from linux_driver_relocations import inventory
+from prepare_linux_virtio_net_headers import verify_header_tree
 
 PROFILE = ROOT / "drivers/linux-compat/profiles/virtio-net.json"
 COMMON = ["-O2", "-std=gnu11", "-ffreestanding", "-nostdinc", "-ffunction-sections",
@@ -48,7 +52,7 @@ def dependencies(depfile, work):
 
 
 def build(args, work, profile, data):
-    names = ["cc", "objcopy", "readelf", "nm"] + ([] if args.object_only else ["clang", "ld"])
+    names = ["cc", "objcopy", "objdump", "readelf", "nm"] + ([] if args.object_only else ["clang", "ld"])
     tools = {name: shutil.which(getattr(args, name)) for name in names}
     for name, path in tools.items():
         if path is None:
@@ -60,6 +64,7 @@ def build(args, work, profile, data):
         return run(argv, work)
 
     headers = args.headers.resolve()
+    header_tree_sha256 = verify_header_tree(headers)
     for path, expected in profile["headers"]["generated_sha256"].items():
         if sha((headers / path).read_bytes()) != expected:
             raise ValueError(f"header package/configuration mismatch: {path}")
@@ -67,10 +72,18 @@ def build(args, work, profile, data):
     upstream = work / "virtio_net.c"
     upstream.write_bytes(data)
     kernel = kernel_flags(headers, tools["cc"], work)
+    diagnostics = {}
 
     def compile_tu(cc, flags, source, output):
         dep = work / (output + ".d")
-        invoke(cc, *flags, "-MD", "-MF", dep.name, "-c", source, "-o", output)
+        command = list(map(str, [cc, *flags, "-MD", "-MF", dep.name, "-c", source, "-o", output]))
+        commands.append(command)
+        compiled = subprocess.run(command, cwd=work, stderr=subprocess.PIPE, text=True,
+                                  env={**os.environ, "LC_ALL": "C"})
+        sys.stderr.write(compiled.stderr)
+        compiled.check_returncode()
+        diagnostics[output] = sorted({line.split("warning:", 1)[1].strip()
+                                      for line in compiled.stderr.splitlines() if "warning:" in line})
         for path in dependencies(dep, work):
             if path == upstream:
                 key = profile["upstream"]["path"]
@@ -116,16 +129,16 @@ def build(args, work, profile, data):
         "schema": 1, "profile": profile["name"], "mode": "object-only" if args.object_only else "service",
         "upstream": profile["upstream"], "header_profile": profile["headers"],
         "source": {"path": str(args.source.resolve()), "size": len(data), "sha256": sha(data)},
-        "header_root": str(headers), "driver_object": full, "callback_object": exported,
+        "header_root": str(headers), "header_tree_sha256": header_tree_sha256,
+        "driver_object": full, "callback_object": exported,
+        "lifecycle_relocations": inventory(original, tools["objdump"], profile["inventory_entries"]),
         "callback": {"name": callback, "section": section, "size": len(payloads[0]),
                      "original_section_sha256": sha(payloads[0]), "promoted_section_sha256": sha(payloads[1])},
     }
     if not args.object_only:
         adapter = ROOT / profile["adapter_source"]
-        compile_tu(tools["cc"], [*kernel, "-I", ROOT / "drivers/linux-compat/include"],
-                   adapter, "adapter.o")
-        native = ["--target=aarch64-none-elf", *COMMON, "-I", SDK / "include",
-                  "-I", ROOT / "drivers/linux-compat/include"]
+        compile_tu(tools["cc"], kernel, adapter, "adapter.o")
+        native = ["--target=aarch64-none-elf", *COMMON, "-I", SDK / "include"]
         for source, output in [(ROOT / profile["service_source"], "driver.o"), (SDK / "start.S", "start.o"),
                                (SDK / "io.c", "io.o")]:
             compile_tu(tools["clang"], native, source, output)
@@ -145,6 +158,18 @@ def build(args, work, profile, data):
                 raise ValueError(f"unexpected Linux lifecycle root in the service: {symbol}")
         result["service"] = service
         result["link_map_sha256"] = sha((work / "service.map").read_bytes())
+    config = (headers / "include/generated/autoconf.h").read_text()
+    header_compiler = re.search(r'^#define CONFIG_CC_VERSION_TEXT "(.*)"$', config, re.M)
+    caps = subprocess.check_output([tools["cc"], "-E", "-P", "-x", "c", "-"], cwd=work,
+                                   input="__has_attribute(counted_by)\n", text=True).strip()
+    result["compiler_compatibility"] = {
+        "executable": tools["cc"], "gcc_full_version": run([tools["cc"], "-dumpfullversion"], work).strip(),
+        "header_config_compiler": header_compiler[1] if header_compiler else None,
+        "has_attribute_counted_by": int(caps) != 0,
+        "warnings_by_translation_unit": diagnostics,
+        "counted_by_limitation": "This build does not establish runtime bounds checking. "
+                                 "An unsupported or ignored counted_by attribute supplies no compiler enforcement.",
+    }
     result.update(commands=commands, input_sha256=files, profile_sha256=sha(PROFILE.read_bytes()),
                   tools={name: {"path": path, "version": run([path, "--version"], work).splitlines()[0]}
                          for name, path in tools.items()})
@@ -157,6 +182,7 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--object-only", action="store_true")
     for name, default in [("cc", "aarch64-linux-gnu-gcc"), ("objcopy", "aarch64-linux-gnu-objcopy"),
+                          ("objdump", "aarch64-linux-gnu-objdump"),
                           ("clang", "clang"), ("ld", "ld.lld"), ("readelf", "readelf"), ("nm", "nm")]:
         parser.add_argument("--" + name, default=default)
     args = parser.parse_args()
