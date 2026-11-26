@@ -72,7 +72,8 @@ def build(args, work, profile, data):
     upstream = work / "virtio_net.c"
     upstream.write_bytes(data)
     kernel = kernel_flags(headers, tools["cc"], work)
-    queue_mode = args.queue_service or args.packet_service
+    data_service = args.packet_service or args.rx_service
+    queue_mode = args.queue_service or data_service
     packet_mode = args.packet_object_only or queue_mode
     diagnostics = {}
     packet_inputs = {}
@@ -112,14 +113,28 @@ def build(args, work, profile, data):
             raise ValueError("missing packet compatibility include tree")
         variant = work / "virtio_net.packet.o"
         packet_kernel = ["-I", overlay, "-DJNOX_PACKET_CONTEXT_ABI=1", *kernel]
-        if args.packet_service:
+        if data_service:
             packet_kernel = ["-DJNOX_PACKET_SERVICE=1", "-DJNOX_PACKET_TX_ABI=1", *packet_kernel]
-        compile_tu(tools["cc"], packet_kernel, upstream.name, variant.name)
+        original_flags = packet_kernel
+        if args.rx_service:
+            packet_kernel = ["-DJNOX_PACKET_RX_ABI=1", *packet_kernel]
+            # The driver normally inlines its private receive helpers. Preserve
+            # separate definitions in the original TU; gc-sections discards
+            # unreferenced functions at link time.
+            from linux_driver_tx_layout import upstream_prelude
+            rx_prefix = work / "jnox_rx_original_prefix.h"
+            rx_prefix.write_text(upstream_prelude(data.decode("utf-8"))
+                                 + "\n#include <jnox_rx_page_api.h>\n", encoding="utf-8")
+            original_flags = [*packet_kernel, "-fkeep-static-functions", "-include", rx_prefix]
+        compile_tu(tools["cc"], original_flags, upstream.name, variant.name)
         upstream.unlink()
         entries = profile["inventory_entries"]
         reports = {}
         for obj in (original, variant):
-            graph = inventory(obj, tools["objdump"], entries)
+            roots = list(entries)
+            if args.rx_service and obj == variant:
+                roots.extend(("add_recvbuf_small", "virtnet_rq_get_buf"))
+            graph = inventory(obj, tools["objdump"], roots)
             reports[obj.name] = {
                 "elf": inspect_elf(obj, tools), "relocations": graph,
                 "direct_system_instructions": inspect_closures(obj, tools["objdump"], graph),
@@ -151,6 +166,8 @@ def build(args, work, profile, data):
     if not args.packet_object_only:
         callback_input = variant if queue_mode else original
         callbacks = [callback] + (["start_xmit"] if args.packet_service else [])
+        if args.rx_service:
+            callbacks.extend(("add_recvbuf_small", "virtnet_rq_get_buf"))
         invoke(tools["objcopy"], *["--globalize-symbol=" + name for name in callbacks],
                callback_input.name, derivative.name)
         full = inspect_elf(callback_input, tools)
@@ -194,6 +211,8 @@ def build(args, work, profile, data):
         if queue_mode:
             result.update(control_report)
             result["mode"] = "packet-service" if args.packet_service else "queue-service"
+            if args.rx_service:
+                result["mode"] = "rx-service"
             result["callback_input"] = variant.name
             result["queue_service_scope"] = "Source validation and native bus queue setup only; Linux TX, RX and lifecycle entry points remain unadmitted."
         else:
@@ -210,16 +229,23 @@ def build(args, work, profile, data):
                                        ("drivers/linux-compat/packet/context.c", "context.o")]:
                     compile_tu(tools["cc"], runtime_kernel, ROOT / source, output)
                     extra_objects.append(output)
-            if args.packet_service:
+            if data_service:
                 from linux_driver_tx_layout import private_layout
                 app = ROOT / "examples/linux-source-net-packets/driver.c"
+                if args.rx_service:
+                    app = ROOT / "examples/linux-source-net-rx/driver.c"
                 generated_header = work / "jnox_virtnet_layout.h"
-                generated_header.write_text(private_layout(data.decode("utf-8")), encoding="utf-8")
+                generated_header.write_text(private_layout(data.decode("utf-8"), receive=args.rx_service), encoding="utf-8")
                 result["layout_view"] = {"file": generated_header.name, "sha256": sha(generated_header.read_bytes()),
                     "generator_sha256": sha((ROOT / "tools/linux_driver_tx_layout.py").read_bytes())}
                 result["callbacks"] = checked_callbacks
                 result["queue_service_scope"] = "Original validation and TX callback plus native transport. Full Linux lifecycle and RX poll remain unadmitted."
-                for name in ("transmit", "tx_virtqueue", "tx_runtime"):
+                if args.rx_service:
+                    result["queue_service_scope"] = "Original RX small-buffer provisioning and used-buffer retrieval. Full Linux RX poll and lifecycle remain unadmitted."
+                    adapters = ("receive", "rx_pages", "rx_virtqueue", "tx_virtqueue", "tx_runtime")
+                else:
+                    adapters = ("transmit", "tx_virtqueue", "tx_runtime")
+                for name in adapters:
                     source = ROOT / ("drivers/linux-compat/packet/" + name + ".c")
                     compile_tu(tools["cc"], [*runtime_kernel, "-I", work], source, name + ".o")
                     extra_objects.append(name + ".o")
@@ -227,7 +253,7 @@ def build(args, work, profile, data):
             if queue_mode:
                 compile_tu(tools["clang"], [*native, "-fno-builtin"], SDK / "memset.c", "memset.o")
                 extra_objects.append("memset.o")
-            if args.packet_service:
+            if data_service:
                 compile_tu(tools["clang"], [*native, "-fno-builtin"], SDK / "memcpy.c", "memcpy.o")
                 extra_objects.append("memcpy.o")
             for source, output in [(app, "driver.o"), (SDK / "start.S", "start.o"),
@@ -252,7 +278,9 @@ def build(args, work, profile, data):
                     if not defined(service, symbol, "GLOBAL"):
                         raise ValueError(f"missing queue-service implementation: {symbol}")
                 forbidden = ["virtnet_open", "virtnet_poll"]
-                if args.packet_service:
+                if data_service:
+                    if args.rx_service:
+                        forbidden.append("start_xmit")
                     link_map = (work / "service.map").read_text()
                     for name in callbacks:
                         if len([s for s in service["symbols"] if s["name"] == name]) != 1 or not defined(service, name, "GLOBAL"):
@@ -291,6 +319,8 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--object-only", action="store_true")
+    mode.add_argument("--rx-service", action="store_true",
+                      help="link upstream small-buffer RX provisioning and completion with native transport")
     mode.add_argument("--packet-service", action="store_true",
                       help="link upstream validation and TX callbacks with the native packet transport")
     mode.add_argument("--queue-service", action="store_true",

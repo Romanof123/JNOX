@@ -715,8 +715,17 @@ fn main() {
     let source_rtc = selector("JNOX_NATIVE_LINUX_SOURCE_RTC");
     let source_net = selector("JNOX_NATIVE_LINUX_SOURCE_NET");
     let packet_queues = selector("JNOX_NATIVE_LINUX_PACKET_QUEUES");
+    let rx_source = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX");
+    let packet_io = selector("JNOX_NATIVE_LINUX_NET_PACKETS");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx)");
+    if let Some(value) = rx_source.as_deref() {
+        assert!(value == "1" && packet_io.as_deref() == Some("1") && pipe_config.is_some()
+            && fifo_grants.is_none() && pipe_links.as_deref() == Some("0:3:1:3,1:4:0:4"),
+            "native Linux-source RX requires packet I/O and only the fixed consumer and reply pipes");
+        println!("cargo::rustc-cfg=jnox_linux_source_net_rx");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_net_packets)");
-    if let Some(value) = selector("JNOX_NATIVE_LINUX_NET_PACKETS") {
+    if let Some(value) = packet_io {
         assert!(value == "1" && packet_queues.as_deref() == Some("1"),
             "native packet I/O requires the Linux source net queue profile");
         println!("cargo::rustc-cfg=jnox_linux_net_packets");
@@ -742,6 +751,8 @@ fn main() {
             assert!(!key.starts_with("JNOX_") || key.as_ref() == env_key
                 || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET"
                     && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_PACKET_QUEUES" | "JNOX_NATIVE_LINUX_NET_PACKETS"))
+                || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && rx_source.is_some()
+                    && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RX" | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
                 || matches!(key.as_ref(),
                 "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"
                 | "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256" | "JNOX_NATIVE_PEER_ELF"

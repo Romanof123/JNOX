@@ -10,13 +10,19 @@ const TX: usize = 1;
 const HEADER: usize = 12;
 const MIN: usize = HEADER + 14;
 const CAPACITY: usize = HEADER + 1514;
+// Linux add_recvbuf_small posts hdr_len + GOOD_PACKET_LEN; the latter
+// includes four bytes of VLAN headroom. Both buffer layouts stride 1536.
+#[cfg(jnox_linux_source_net_rx)]
+const RX_CAPACITY: usize = HEADER + 1518;
+#[cfg(not(jnox_linux_source_net_rx))]
+const RX_CAPACITY: usize = CAPACITY;
 const NOTIFY: usize = 0x50;
 const INTERRUPT_STATUS: usize = 0x60;
 const INTERRUPT_ACK: usize = 0x64;
 const LIVE: u32 = ACK_DRIVER | FEATURES_OK | 4;
 
 #[repr(C, align(16))]
-struct Buffer([u8; CAPACITY]);
+struct Buffer([u8; RX_CAPACITY]);
 
 #[unsafe(no_mangle)]
 static mut jnox_linux_net_packet_buffers: [[Buffer; SIZE]; 2] = unsafe { core::mem::zeroed() };
@@ -38,12 +44,27 @@ struct Cursor {
 static mut CURSORS: [Cursor; 2] = unsafe { core::mem::zeroed() };
 static mut RUNNING_TOKEN: u64 = 0;
 
+#[cfg(jnox_linux_source_net_rx)]
+#[derive(Clone, Copy)]
+struct RxGrant {
+    token: u64,
+    address: usize,
+    len: usize,
+}
+
+#[cfg(jnox_linux_source_net_rx)]
+const EMPTY_GRANT: RxGrant = RxGrant { token: 0, address: 0, len: 0 };
+#[cfg(jnox_linux_source_net_rx)]
+static mut RX_GRANTS: [RxGrant; SIZE] = [EMPTY_GRANT; SIZE];
+
 pub(super) fn running(token: u64) -> bool { token != 0 && token == unsafe { RUNNING_TOKEN } }
 
 pub(super) fn retired() {
     // Only called once the transport confirmed Status=0 and both queues idle.
     unsafe {
         RUNNING_TOKEN = 0;
+        #[cfg(jnox_linux_source_net_rx)]
+        { RX_GRANTS = [EMPTY_GRANT; SIZE]; }
         CURSORS = [Cursor::default(); 2];
         ptr::write_bytes(&raw mut jnox_linux_net_packet_buffers, 0, 1);
     }
@@ -86,7 +107,7 @@ fn harvest(cursor: &mut Cursor, q: usize) -> Result<(), i64> {
         let id = unsafe { (&raw const (*ring).used[slot][0]).read_volatile() as usize };
         let len = unsafe { (&raw const (*ring).used[slot][1]).read_volatile() as usize };
         if id >= SIZE || cursor.device_owned & (1u32 << id) == 0
-            || (q == TX && len != 0) || (q == RX && !(MIN..=CAPACITY).contains(&len)) {
+            || (q == TX && len != 0) || (q == RX && !(MIN..=RX_CAPACITY).contains(&len)) {
             return Err(-5);
         }
         cursor.device_owned &= !(1u32 << id);
@@ -111,8 +132,13 @@ fn start(token: u64) -> i64 {
         write(super::SELECT, q as u32);
         if read(super::READY) != 1 { return abort_setup(); }
     }
-    let rx = unsafe { &mut *(&raw mut CURSORS[RX]) };
-    for id in 0..SIZE { post(rx, RX, id, CAPACITY); }
+    #[cfg(jnox_linux_source_net_rx)]
+    if unsafe { CURSORS[RX].device_owned } != u32::MAX { return -11; }
+    #[cfg(not(jnox_linux_source_net_rx))]
+    {
+        let rx = unsafe { &mut *(&raw mut CURSORS[RX]) };
+        for id in 0..SIZE { post(rx, RX, id, CAPACITY); }
+    }
     write(STATUS, LIVE);
     if read(STATUS) != LIVE { return abort_setup(); }
     unsafe { RUNNING_TOKEN = token };
@@ -151,6 +177,42 @@ fn completion(cursor: &mut Cursor, q: usize, address: usize, cap: usize) -> Resu
     Ok(len as i64)
 }
 
+#[cfg(jnox_linux_source_net_rx)]
+fn grant_rx(token: u64, address: usize, len: usize) -> i64 {
+    if len != RX_CAPACITY { return -90; }
+    let Some(end) = address.checked_add(len) else { return -14; };
+    if !crate::native_el0_mmu::user_range(address, len, true) { return -14; }
+    let live = running(token);
+    let expected = if live { LIVE } else { ACK_DRIVER | FEATURES_OK };
+    if read(STATUS) != expected { return abort_setup(); }
+    let grants = unsafe { &mut *(&raw mut RX_GRANTS) };
+    for grant in grants.iter().filter(|grant| grant.token != 0) {
+        // Both exclusive ends passed checked_add before entering this table.
+        if address < grant.address + grant.len && grant.address < end { return -16; }
+    }
+    let Some(id) = grants.iter().position(|grant| grant.token == 0) else { return -11; };
+    grants[id] = RxGrant { token, address, len };
+    post(unsafe { &mut *(&raw mut CURSORS[RX]) }, RX, id, len);
+    if live { write(NOTIFY, RX as u32); }
+    id as i64
+}
+
+#[cfg(jnox_linux_source_net_rx)]
+fn reap_rx(token: u64) -> Result<i64, i64> {
+    let rx = unsafe { &mut *(&raw mut CURSORS[RX]) };
+    harvest(rx, RX)?;
+    if rx.count == 0 { return Ok(-11); }
+    let Completion { id, len } = rx.completions[rx.head];
+    let grant = unsafe { RX_GRANTS[id] };
+    if grant.token != token || len > grant.len { return Err(-5); }
+    let bytes = unsafe { slice::from_raw_parts(buffer(RX, id), len) };
+    // Retain this exact completion and grant until the entire copy succeeds.
+    if !copy_to_user(grant.address, bytes) { return Ok(-14); }
+    pop(rx, id);
+    unsafe { RX_GRANTS[id] = EMPTY_GRANT; }
+    Ok(((len as i64) << 16) | id as i64)
+}
+
 fn tx_callbacks(mode: u64, reserved: u64) -> i64 {
     if reserved != 0 || mode > 1 { return -22; }
     const NO_INTERRUPT: u16 = 1;
@@ -172,6 +234,15 @@ fn tx_callbacks(mode: u64, reserved: u64) -> i64 {
 
 pub(in crate::native_el0::linux_net) fn packet_service(number: u64, token: u64, address: u64, len: u64) -> i64 {
     if token == 0 || token != unsafe { ACTIVE_TOKEN as u64 } { return -116; }
+    #[cfg(jnox_linux_source_net_rx)]
+    match number {
+        163 | 167 => return -95,
+        170 | 172 if address != 0 || len != 0 => return -22,
+        170 => return start(token),
+        171 => return grant_rx(token, address as usize, len as usize),
+        _ => {}
+    }
+    #[cfg(not(jnox_linux_source_net_rx))]
     if number == 163 { return start(token); }
     if !running(token) { return -19; }
     if read(STATUS) != LIVE { return abort_setup(); }
@@ -179,6 +250,9 @@ pub(in crate::native_el0::linux_net) fn packet_service(number: u64, token: u64, 
         164 => return submit(unsafe { &mut *(&raw mut CURSORS[TX]) }, address as usize, len as usize),
         165 => { write(NOTIFY, TX as u32); return 0; }
         166 => completion(unsafe { &mut *(&raw mut CURSORS[TX]) }, TX, 0, 0),
+        #[cfg(jnox_linux_source_net_rx)]
+        172 => reap_rx(token),
+        #[cfg(not(jnox_linux_source_net_rx))]
         167 => completion(unsafe { &mut *(&raw mut CURSORS[RX]) }, RX, address as usize, len as usize),
         169 => return tx_callbacks(address, len),
         168 => {
