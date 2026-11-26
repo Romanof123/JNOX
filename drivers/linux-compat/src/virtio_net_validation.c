@@ -111,7 +111,22 @@ static void read_config(struct virtio_device *vdev, unsigned offset, void *buf, 
     *out = cpu_to_le16((u16)value);
 }
 
+#ifdef JNOX_PACKET_CONTEXT_ABI
+extern int jnox_queue_find_vqs(struct virtio_device *, unsigned int, struct virtqueue *[],
+                               struct virtqueue_info [], struct irq_affinity *);
+static bool validation_ok;
+struct virtio_device *jnox_net_validated_device(void)
+{
+    return validation_ok ? &device : NULL;
+}
+void jnox_net_forget_validation(void)
+{
+    validation_ok = false;
+}
+static const struct virtio_config_ops config = { .get = read_config, .find_vqs = jnox_queue_find_vqs };
+#else
 static const struct virtio_config_ops config = { .get = read_config };
+#endif
 static const struct virtio_config_ops missing_get;
 
 long jnox_net_validate(unsigned long long *features, unsigned mode, unsigned *mtu,
@@ -136,5 +151,8 @@ long jnox_net_validate(unsigned long long *features, unsigned mode, unsigned *mt
     *reads = run.reads;
     *diagnostics = run.diagnostics;
     run.active = false;
+#ifdef JNOX_PACKET_CONTEXT_ABI
+    validation_ok = !mode && !run.error && !status;
+#endif
     return run.error ? run.error : status;
 }

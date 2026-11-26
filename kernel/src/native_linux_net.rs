@@ -2,6 +2,10 @@
 //! All entries run with interrupts masked on the native scheduler's sole CPU.
 use core::{arch::asm, ptr};
 
+#[cfg(jnox_linux_packet_queues)]
+#[path = "native_linux_net_queues.rs"]
+mod queues;
+
 const BASE: usize = 0x0a00_3e00;
 const FEATURES: usize = 0x10;
 const FEATURES_SEL: usize = 0x14;
@@ -17,7 +21,13 @@ const ACK_DRIVER: u32 = 3;
 const FEATURES_OK: u32 = 8;
 
 #[derive(Copy, Clone, PartialEq)]
-enum Phase { Free, Claimed, Attempted }
+enum Phase {
+    Free,
+    Claimed,
+    Attempted,
+    #[cfg(jnox_linux_packet_queues)]
+    Negotiated,
+}
 
 static mut PHASE: Phase = Phase::Free;
 
@@ -34,12 +44,18 @@ fn write(reg: usize, value: u32) {
     fence();
 }
 
+#[cfg(jnox_linux_packet_queues)]
+fn reset() -> bool { queues::reset() }
+
+#[cfg(not(jnox_linux_packet_queues))]
 fn reset() -> bool {
     write(STATUS, 0);
     (0..1024).any(|_| read(STATUS) == 0)
 }
 
 fn claim() -> i64 {
+    #[cfg(jnox_linux_packet_queues)]
+    if queues::quarantined() { return -5; }
     if unsafe { PHASE } != Phase::Free { return -16; }
     if read(0) != 0x7472_6976 || read(4) != 2 || read(8) != 1 { return -19; }
     if !reset() { return -110; }
@@ -108,11 +124,16 @@ fn commit(low: u64, high: u64) -> i64 {
         write(DRIVER_FEATURES, word);
     }
     write(STATUS, ACK_DRIVER | FEATURES_OK);
-    if read(STATUS) == (ACK_DRIVER | FEATURES_OK) { 0 } else { -5 }
+    if read(STATUS) != (ACK_DRIVER | FEATURES_OK) { return -5; }
+    #[cfg(jnox_linux_packet_queues)]
+    unsafe { PHASE = Phase::Negotiated };
+    0
 }
 
 pub(super) fn service(pid: usize, number: u64, arg: u64, value: u64) -> i64 {
     if pid != 0 { return -13; }
+    #[cfg(jnox_linux_packet_queues)]
+    if number == 162 { return queues::inspect(arg, value); }
     if number == 156 {
         if arg == 1 { return claim(); }
         if arg != 0 { return -22; }
@@ -123,6 +144,10 @@ pub(super) fn service(pid: usize, number: u64, arg: u64, value: u64) -> i64 {
         157 if arg <= 1 => i64::from(offered(arg as u32)),
         158 => config(arg, value),
         159 => commit(arg, value),
+        #[cfg(jnox_linux_packet_queues)]
+        161 if arg == 0 && value == 0 => queues::setup(),
+        #[cfg(jnox_linux_packet_queues)]
+        161 => -22,
         160 if arg == 0 => i64::from(read(STATUS)),
         157 | 160 => -22,
         _ => -38,
