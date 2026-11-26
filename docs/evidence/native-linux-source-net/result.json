@@ -1,0 +1,627 @@
+{
+  "issue": 426,
+  "pr": 427,
+  "scope": "AArch64 QEMU native Linux-source virtio-net feature validation",
+  "upstream": {
+    "commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "git_blob_sha1": "ea83313caf36381151d21d894da8162729b7d261",
+    "path": "drivers/net/virtio_net.c",
+    "project": "Linux stable",
+    "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "size": 196513,
+    "spdx": "GPL-2.0-or-later",
+    "tag": "v6.18.65",
+    "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c"
+  },
+  "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+  "callback": {
+    "linked_sha256": "64e6f3243f6e5f4576068762f263e9a111a64a88623acd492e6769c87bfba5f1",
+    "name": "virtnet_validate",
+    "original_section_sha256": "6e30e36aa74d7c177b2b5b0b74ea7fed306952058e305ae0e55994b1921658cd",
+    "promoted_section_sha256": "6e30e36aa74d7c177b2b5b0b74ea7fed306952058e305ae0e55994b1921658cd",
+    "section": ".text.virtnet_validate",
+    "size": 712
+  },
+  "build": {
+    "native/kernel.elf": "9aa631c6ae9f336e35546ee6cb14f7872c35a5927560ab82d0b8b1649bc1c5f7",
+    "native/user.elf": "3c3ab215f2d7d1a9782ba0fbe8bc36754cea1a80e6c23b50a2501939570b2dd1",
+    "native/native_peer.elf": "e53c1119b7aa60798c58d0226173d7ad9af2c681815bb9ca2c39d78532103bb7",
+    "imported/virtio_net.original.o": "5767a14f1d391e2419240bde3a0dab3c39457b894a35f2de581edce177c4862b",
+    "imported/virtio_net.callback.o": "d4d73f3d536e707680db2afec6da54ffc698999b9f2dbe034518fba9e923e1d7"
+  },
+  "invalid_inputs": {
+    "changed_apk": "linux-virt-dev APK SHA-256 mismatch",
+    "changed_consumed_header": "build header tree mismatch: 9403 files, sha256 a7025e8dc65afcde0b7f17a0ff2aeac3be848caff4899bc69316586d1f0e746e",
+    "changed_source": "source length, SHA-256 or Git blob ID differs from the selected profile"
+  },
+  "whole_object_undefined": 217,
+  "lifecycle": {
+    "virtnet_probe": {
+      "imports_from_direct_functions": 74,
+      "transitive_imports": 198,
+      "indirect_sites": 18
+    },
+    "virtnet_open": {
+      "imports_from_direct_functions": 33,
+      "transitive_imports": 33,
+      "indirect_sites": 0
+    },
+    "start_xmit": {
+      "imports_from_direct_functions": 29,
+      "transitive_imports": 29,
+      "indirect_sites": 1
+    },
+    "virtnet_poll": {
+      "imports_from_direct_functions": 78,
+      "transitive_imports": 78,
+      "indirect_sites": 1
+    },
+    "virtnet_remove": {
+      "imports_from_direct_functions": 28,
+      "transitive_imports": 28,
+      "indirect_sites": 3
+    },
+    "virtnet_validate": {
+      "imports_from_direct_functions": 4,
+      "transitive_imports": 4,
+      "indirect_sites": 1
+    }
+  },
+  "observations": {
+    "capture-c": {
+      "callback_entries": 3,
+      "callback_entry_va": "0x4009b0",
+      "callback_filter": "0x4009b0+0x2c8",
+      "callback_rc": [
+        0,
+        -22,
+        -22
+      ],
+      "callback_section_sha256": "6e30e36aa74d7c177b2b5b0b74ea7fed306952058e305ae0e55994b1921658cd",
+      "callback_stopped_before": 0,
+      "driver_sha256": "3c3ab215f2d7d1a9782ba0fbe8bc36754cea1a80e6c23b50a2501939570b2dd1",
+      "import_sha256": "582d51e2460047eba233632c7b66be20c0511773527c3b9f049f7376d90ff0a1",
+      "kernel_sha256": "9aa631c6ae9f336e35546ee6cb14f7872c35a5927560ab82d0b8b1649bc1c5f7",
+      "mac": "52:54:00:19:26:41",
+      "mmio_accesses": 79,
+      "mtu": 1410,
+      "negotiated": 4294967336,
+      "offered_banks": [
+        817856556,
+        1
+      ],
+      "package_sha256": "b4be63129d2f33a21826c4bb04818c6ec3dfd23093f9cf8bb677c2879c7938bd",
+      "peer_wakes": 6,
+      "raw_feature_reads": [
+        5112823852,
+        1,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        1
+      ],
+      "source_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+      "whole_object_sha256": "5767a14f1d391e2419240bde3a0dab3c39457b894a35f2de581edce177c4862b"
+    },
+    "capture-d": {
+      "callback_entries": 3,
+      "callback_entry_va": "0x4009b0",
+      "callback_filter": "0x4009b0+0x2c8",
+      "callback_rc": [
+        0,
+        -22,
+        -22
+      ],
+      "callback_section_sha256": "6e30e36aa74d7c177b2b5b0b74ea7fed306952058e305ae0e55994b1921658cd",
+      "callback_stopped_before": 1,
+      "driver_sha256": "3c3ab215f2d7d1a9782ba0fbe8bc36754cea1a80e6c23b50a2501939570b2dd1",
+      "import_sha256": "582d51e2460047eba233632c7b66be20c0511773527c3b9f049f7376d90ff0a1",
+      "kernel_sha256": "9aa631c6ae9f336e35546ee6cb14f7872c35a5927560ab82d0b8b1649bc1c5f7",
+      "mac": "52:54:00:19:26:42",
+      "mmio_accesses": 79,
+      "mtu": 1386,
+      "negotiated": 4294967336,
+      "offered_banks": [
+        817856556,
+        1
+      ],
+      "package_sha256": "b4be63129d2f33a21826c4bb04818c6ec3dfd23093f9cf8bb677c2879c7938bd",
+      "peer_wakes": 6,
+      "raw_feature_reads": [
+        5112823852,
+        1,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        5112823852,
+        1
+      ],
+      "source_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+      "whole_object_sha256": "5767a14f1d391e2419240bde3a0dab3c39457b894a35f2de581edce177c4862b"
+    }
+  },
+  "rejected_mutations": {
+    "capture-c": [
+      "peer exit",
+      "peer authority",
+      "physical MTU",
+      "missing model write",
+      "callback execution entry",
+      "fourth execution without stop"
+    ],
+    "capture-d": [
+      "peer exit",
+      "peer authority",
+      "physical MTU",
+      "missing model write",
+      "callback execution entry",
+      "missing stop-before",
+      "wrong stop-before identity"
+    ]
+  },
+  "independent": {
+    "service_sha256": "3c3ab215f2d7d1a9782ba0fbe8bc36754cea1a80e6c23b50a2501939570b2dd1",
+    "static_call": "0x400928 -> 0x4009b0",
+    "captures": [
+      {
+        "capture": "capture-c",
+        "mac": "52:54:00:19:26:41",
+        "mtu": 1410,
+        "config_reads": [
+          [
+            "read",
+            256,
+            1,
+            82
+          ],
+          [
+            "read",
+            257,
+            1,
+            84
+          ],
+          [
+            "read",
+            258,
+            1,
+            0
+          ],
+          [
+            "read",
+            259,
+            1,
+            25
+          ],
+          [
+            "read",
+            260,
+            1,
+            38
+          ],
+          [
+            "read",
+            261,
+            1,
+            65
+          ],
+          [
+            "read",
+            266,
+            2,
+            1410
+          ],
+          [
+            "read",
+            266,
+            2,
+            1410
+          ]
+        ],
+        "raw_qemu_offer": [
+          5112823852,
+          1,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          1
+        ],
+        "guest_offer": [
+          817856556,
+          1
+        ],
+        "selected": [
+          40,
+          1
+        ],
+        "cpu": {
+          "executions": 3,
+          "translation_line": 631,
+          "aborted_dispatch_lines": [],
+          "exec_lines": [
+            639,
+            797,
+            821
+          ],
+          "entry_words": [
+            [
+              4196784,
+              "a9bd7bfd"
+            ],
+            [
+              4196788,
+              "910003fd"
+            ],
+            [
+              4196792,
+              "f9000bf3"
+            ],
+            [
+              4196796,
+              "aa0003f3"
+            ],
+            [
+              4196800,
+              "f9418c01"
+            ],
+            [
+              4196804,
+              "f9400021"
+            ],
+            [
+              4196808,
+              "b4001341"
+            ]
+          ],
+          "sha256": "5bf3b3162569a70b14e35690aa3e87eed357c30b522dadaa5b58a9e34e55443e"
+        },
+        "receipt_pa": [
+          1076064264,
+          1080344592
+        ],
+        "owner_epoch": [
+          {
+            "line": 6,
+            "tick": 2591748,
+            "pid": 0,
+            "number": 156,
+            "return_pc": "0x400110"
+          },
+          {
+            "line": 10,
+            "tick": 2740289,
+            "pid": 1,
+            "number": 156,
+            "return_pc": "0x400b7c"
+          },
+          {
+            "line": 11,
+            "tick": 2746297,
+            "pid": 1,
+            "number": 157,
+            "return_pc": "0x400b90"
+          },
+          {
+            "line": 12,
+            "tick": 2750285,
+            "pid": 1,
+            "number": 158,
+            "return_pc": "0x400ba4"
+          },
+          {
+            "line": 13,
+            "tick": 2754228,
+            "pid": 1,
+            "number": 159,
+            "return_pc": "0x400bb8"
+          },
+          {
+            "line": 14,
+            "tick": 2757700,
+            "pid": 1,
+            "number": 160,
+            "return_pc": "0x400bcc"
+          },
+          {
+            "line": 36,
+            "tick": 5326256,
+            "pid": 0,
+            "number": 156,
+            "return_pc": "0x400594"
+          }
+        ],
+        "uart_sha256": "cd80de39681c1bf9026a8f22d8004c0f6ca2f95a725e2e69fb73e8fc53138a10",
+        "status_writes": [
+          0,
+          1,
+          3,
+          11,
+          0,
+          0,
+          1,
+          3,
+          0
+        ],
+        "peer_156_to_160": [
+          -13,
+          -13,
+          -13,
+          -13,
+          -13
+        ],
+        "driver_15_to_30": [
+          -22,
+          0,
+          1,
+          -22,
+          0,
+          1,
+          -22,
+          3,
+          0,
+          11,
+          0,
+          -19,
+          0,
+          3,
+          0,
+          -19
+        ],
+        "raw_sha256": {
+          "mmio.trace": "44f1111d83350c2d5b8e2ec73b6a3aae92a78eeef8c2bed22847bfdb40733960",
+          "ram.json": "27af12016bad871e72d7196fb1421e36a01662e6f41af2450b84f939138a2ac7",
+          "launch.json": "421eb21b84582754b89ca0bbba6cbe948dff4f19ae73fabdac10e82ab339fc47"
+        }
+      },
+      {
+        "capture": "capture-d",
+        "mac": "52:54:00:19:26:42",
+        "mtu": 1386,
+        "config_reads": [
+          [
+            "read",
+            256,
+            1,
+            82
+          ],
+          [
+            "read",
+            257,
+            1,
+            84
+          ],
+          [
+            "read",
+            258,
+            1,
+            0
+          ],
+          [
+            "read",
+            259,
+            1,
+            25
+          ],
+          [
+            "read",
+            260,
+            1,
+            38
+          ],
+          [
+            "read",
+            261,
+            1,
+            66
+          ],
+          [
+            "read",
+            266,
+            2,
+            1386
+          ],
+          [
+            "read",
+            266,
+            2,
+            1386
+          ]
+        ],
+        "raw_qemu_offer": [
+          5112823852,
+          1,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          5112823852,
+          1
+        ],
+        "guest_offer": [
+          817856556,
+          1
+        ],
+        "selected": [
+          40,
+          1
+        ],
+        "cpu": {
+          "executions": 3,
+          "translation_line": 631,
+          "aborted_dispatch_lines": [
+            639
+          ],
+          "exec_lines": [
+            643,
+            802,
+            826
+          ],
+          "entry_words": [
+            [
+              4196784,
+              "a9bd7bfd"
+            ],
+            [
+              4196788,
+              "910003fd"
+            ],
+            [
+              4196792,
+              "f9000bf3"
+            ],
+            [
+              4196796,
+              "aa0003f3"
+            ],
+            [
+              4196800,
+              "f9418c01"
+            ],
+            [
+              4196804,
+              "f9400021"
+            ],
+            [
+              4196808,
+              "b4001341"
+            ]
+          ],
+          "sha256": "84d6242dab15c2f7770d7cb7dc7c5a2622baa10b23feadb853e4ec654f8d4aad"
+        },
+        "receipt_pa": [
+          1076064264,
+          1080344592
+        ],
+        "owner_epoch": [
+          {
+            "line": 6,
+            "tick": 2392326,
+            "pid": 0,
+            "number": 156,
+            "return_pc": "0x400110"
+          },
+          {
+            "line": 10,
+            "tick": 2504235,
+            "pid": 1,
+            "number": 156,
+            "return_pc": "0x400b7c"
+          },
+          {
+            "line": 11,
+            "tick": 2509806,
+            "pid": 1,
+            "number": 157,
+            "return_pc": "0x400b90"
+          },
+          {
+            "line": 12,
+            "tick": 2513867,
+            "pid": 1,
+            "number": 158,
+            "return_pc": "0x400ba4"
+          },
+          {
+            "line": 13,
+            "tick": 2518684,
+            "pid": 1,
+            "number": 159,
+            "return_pc": "0x400bb8"
+          },
+          {
+            "line": 14,
+            "tick": 2523098,
+            "pid": 1,
+            "number": 160,
+            "return_pc": "0x400bcc"
+          },
+          {
+            "line": 39,
+            "tick": 5158264,
+            "pid": 0,
+            "number": 156,
+            "return_pc": "0x400594"
+          }
+        ],
+        "uart_sha256": "0a77940c7d1c242dad9530149ec949f64a5048e1bf3618497632ca42facfe7b8",
+        "status_writes": [
+          0,
+          1,
+          3,
+          11,
+          0,
+          0,
+          1,
+          3,
+          0
+        ],
+        "peer_156_to_160": [
+          -13,
+          -13,
+          -13,
+          -13,
+          -13
+        ],
+        "driver_15_to_30": [
+          -22,
+          0,
+          1,
+          -22,
+          0,
+          1,
+          -22,
+          3,
+          0,
+          11,
+          0,
+          -19,
+          0,
+          3,
+          0,
+          -19
+        ],
+        "raw_sha256": {
+          "mmio.trace": "fd91f2f6a12cf3f0749f48f0b8fc3c2b7e91ce7a40c91101a21f6f846448c3fe",
+          "ram.json": "20c4a3d033d99430c71399e4c4d8523ad5e0e1d33305e7ef3afc311803f7c8a5",
+          "launch.json": "66c4d60cb94775715339bf6f2faf1c08d7755c8cb5b95daab5135219a071e7cc"
+        }
+      }
+    ],
+    "scope": "RAM receipts, page walks, MMIO and per-slot SVC return PCs. CPU callback evidence only where cpu is populated."
+  },
+  "public_replay": {
+    "file": "qemu-replay.tar.xz",
+    "size": 606612,
+    "sha256": "edb5ed0fd6db23123009f7b369ba64a7f0a8a167e84fc101ccc7f2a09f87c0be"
+  },
+  "full_rebuild_archive": {
+    "file": "native-linux-source-virtio-net-control.tar.xz",
+    "size": 23061400,
+    "sha256": "eb377d3ee93833bf694b50d04300c47b556beedd20be397e5d31b16b94706e12"
+  },
+  "limits": [
+    "Original probe/open TX/RX, NAPI/IRQ, real packet round-trip and DMA revoke/restart remain open.",
+    "Physical target and product qualification remain open.",
+    "GCC 11.4 ignores counted_by in the supplied headers."
+  ]
+}
