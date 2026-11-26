@@ -1,21 +1,14 @@
 #ifndef DMA_FIXTURE_H
 #define DMA_FIXTURE_H
 #include <jnox/ipc.h>
-#include <time.h>
 #include <jnox/notify.h>
-
+#include <jnox/raw_ethernet.h>
+#include <time.h>
 
 volatile uint64_t dma_phase;
-enum { RX = 38, TX = 39, CLAIM = 76, RETIRE_WORD = 0x444d };
-static unsigned char frame[1514];
-static long raw(unsigned op, unsigned len)
-{
-    return jnox_ipc_trap(op, (uint64_t)frame, len, 0).status;
-}
-static long claim(void)
-{
-    return jnox_ipc_trap(CLAIM, 0, 0, 0).status;
-}
+enum { RETIRE_WORD = 0x444d };
+static unsigned char frame[JNOX_ETHERNET_MAX_FRAME];
+
 static int pause_ms(long ms)
 {
     struct timespec wake;

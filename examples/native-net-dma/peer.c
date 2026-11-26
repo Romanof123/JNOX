@@ -6,9 +6,9 @@ volatile long dma_peer_rx, dma_peer_tx, dma_peer_claim;
 int main(void)
 {
     for (;;) {
-        dma_peer_rx = raw(RX, sizeof(frame));
-        dma_peer_tx = raw(TX, 60);
-        dma_peer_claim = claim();
+        dma_peer_rx = jnox_ethernet_receive(frame);
+        dma_peer_tx = jnox_ethernet_transmit(frame, 60);
+        dma_peer_claim = jnox_ethernet_claim();
         if (dma_peer_rx != -13 || dma_peer_tx != -13 || dma_peer_claim != -13)
             return 101;
         struct timespec now;

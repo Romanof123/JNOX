@@ -7,7 +7,7 @@ static int exchange(unsigned epoch)
     static const unsigned char host[6] = {2,0,0,0,0,1};
     static const unsigned char guest[6] = {0x52,0x54,0,0x12,0x34,0x56};
     for (;;) {
-        long n = raw(RX, sizeof(frame));
+        long n = jnox_ethernet_receive(frame);
         if (n == -11) {
             if (pause_ms(5)) return 91;
             continue;
@@ -27,7 +27,7 @@ static int exchange(unsigned epoch)
         }
         frame[19] = 2;
         do {
-            n = raw(TX, 60);
+            n = jnox_ethernet_transmit(frame, 60);
             if (n == -11 && pause_ms(5)) return 93;
         } while (n == -11);
         if (n != 60) return 94;

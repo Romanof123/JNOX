@@ -158,3 +158,6 @@ pub mod capabilities;
 pub mod pubsub;
 #[cfg(all(feature = "display", target_arch = "aarch64"))]
 pub mod display;
+
+#[cfg(all(feature = "raw-ethernet", target_arch = "aarch64"))]
+pub mod raw_ethernet;
