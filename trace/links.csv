@@ -2294,3 +2294,9 @@ DES-014,partially-implemented-by,IMP-313
 IMP-313,partially-verified-by,VER-025
 VER-025,has-partial-evidence,EVD-313
 IMP-313,tested-in,EVD-313
+CHG-321,affects,REQ-004
+REQ-004,partially-implemented-by,IMP-321
+DES-002,partially-implemented-by,IMP-321
+IMP-321,partially-verified-by,VER-004
+VER-004,has-partial-evidence,EVD-321
+IMP-321,tested-in,EVD-321

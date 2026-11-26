@@ -1,0 +1,170 @@
+{
+  "artifacts": {
+    "artifacts/Image": {
+      "sha256": "4eb5c87867473f20f5ce5084c23f3dff587c84327f3fbba0cfe3157133c20c29",
+      "size": 36306944,
+      "source": "vmlinuz-virt:EFI zboot gzip payload at 51288, length 10365941"
+    },
+    "artifacts/busybox.static": {
+      "sha256": "198f6f675a49ac734082e054b823d3e2e947180ca2f632852ae1c09e950fd676",
+      "size": 1116408,
+      "source": "busybox-static-1.37.0-r30.apk:bin/busybox.static"
+    },
+    "artifacts/config-6.18.65-0-virt": {
+      "sha256": "72f421144719596a38b40adb2eec8ded2628827518438d23d5b3f0f97cee02ed",
+      "size": 161531,
+      "source": "linux-virt-6.18.65-r0.apk:boot/config-6.18.65-0-virt"
+    },
+    "artifacts/failover.ko": {
+      "sha256": "33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8",
+      "size": 18775,
+      "source": "failover.ko.gz (lossless gzip decompression)"
+    },
+    "artifacts/failover.ko.gz": {
+      "sha256": "ae071a342b694423aca240cf6b056e9ac57dd153987af6946b1947eb21515616",
+      "size": 5783,
+      "source": "linux-virt-6.18.65-r0.apk:lib/modules/6.18.65-0-virt/kernel/net/core/failover.ko.gz"
+    },
+    "artifacts/modules.dep": {
+      "sha256": "432180cf6634adc63ead8f6942ff6a032667fdcb11bf1204349fc663b036469c",
+      "size": 86717,
+      "source": "linux-virt-6.18.65-r0.apk:lib/modules/6.18.65-0-virt/modules.dep"
+    },
+    "artifacts/net_failover.ko": {
+      "sha256": "3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4",
+      "size": 29975,
+      "source": "net_failover.ko.gz (lossless gzip decompression)"
+    },
+    "artifacts/net_failover.ko.gz": {
+      "sha256": "f9fa7090ce250b3dbccf25ecf9d9b270852e6c02c9d2807d6633ff1437325a45",
+      "size": 8650,
+      "source": "linux-virt-6.18.65-r0.apk:lib/modules/6.18.65-0-virt/kernel/drivers/net/net_failover.ko.gz"
+    },
+    "artifacts/virtio_mmio.ko": {
+      "sha256": "ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1",
+      "size": 27407,
+      "source": "virtio_mmio.ko.gz (lossless gzip decompression)"
+    },
+    "artifacts/virtio_mmio.ko.gz": {
+      "sha256": "51085f5e8f2fa1bdca010ce13bfa564609803ca8ed6bda1d139bb0331636849d",
+      "size": 8183,
+      "source": "linux-virt-6.18.65-r0.apk:lib/modules/6.18.65-0-virt/kernel/drivers/virtio/virtio_mmio.ko.gz"
+    },
+    "artifacts/virtio_net.ko": {
+      "sha256": "3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f",
+      "size": 170407,
+      "source": "virtio_net.ko.gz (lossless gzip decompression)"
+    },
+    "artifacts/virtio_net.ko.gz": {
+      "sha256": "10213ed7309bc11e4a0b4dd7e03edea81e90429d1a2520c0133bb4bf9167a379",
+      "size": 57224,
+      "source": "linux-virt-6.18.65-r0.apk:lib/modules/6.18.65-0-virt/kernel/drivers/net/virtio_net.ko.gz"
+    },
+    "artifacts/vmlinuz-virt": {
+      "sha256": "72fd704e4a2e283a22c74c3b8be50eb065f7a7b54e931c8c3d476d6e9d3497b6",
+      "size": 10424832,
+      "source": "linux-virt-6.18.65-r0.apk:boot/vmlinuz-virt"
+    }
+  },
+  "config": {
+    "CONFIG_ARM_GIC": "y",
+    "CONFIG_BLK_DEV_INITRD": "y",
+    "CONFIG_DEVTMPFS": "y",
+    "CONFIG_FAILOVER": "m",
+    "CONFIG_INET": "y",
+    "CONFIG_MODULE_COMPRESS_GZIP": "y",
+    "CONFIG_NET_FAILOVER": "m",
+    "CONFIG_NET_NS": "y",
+    "CONFIG_RD_GZIP": "y",
+    "CONFIG_SERIAL_AMBA_PL011": "y",
+    "CONFIG_SERIAL_AMBA_PL011_CONSOLE": "y",
+    "CONFIG_VIRTIO": "y",
+    "CONFIG_VIRTIO_MMIO": "m",
+    "CONFIG_VIRTIO_NET": "m"
+  },
+  "driver_source": {
+    "aports_commit": "eb378b0757f36fcd639876eacb9315ef2cb9c075",
+    "checked_patches_sha256": {
+      "0001-powerpc-boot-wrapper-Add-z-notext-flag-for-ppc64le.patch": "5a69e7352716b95d15d37dac1682629b9f7f8b375bad12b4eae267bf928de067",
+      "0001-x86-CPU-AMD-avoid-printing-reset-reasons-on-Xen-domU.patch": "ca3a6ead247a6168fd4db8eea803715dca6f6a2451cc36356b6b2c223301fdd9",
+      "0002-x86-Compress-vmlinux-with-zstd-19-instead-of-22.patch": "2b1433795c145ef1979d53806db17ce46d6c87df297c67db41c2ffad21374d12",
+      "0003-kexec-add-kexec_load_disabled-boot-option.patch": "919d4e8fcb4f12a22f5224c9f012b9fcb544766830aadf19a2e15044adb3fb7b",
+      "0004-objtool-respect-AWK-setting.patch": "2b5228aff141f02d67a3ed4c8e5c0cb9ca2c0aebf939badb472dd3a8fdb8fa3a",
+      "0005-powerpc-config-defang-gcc-check-for-stack-protector-.patch": "37ee66d4894f1daf6086d5bf546b0f8640f8719895eeb647147f54a86f69deab",
+      "patch-6.18.65.patch.xz": "9c2a6f4c72e2b7f47fc3c8618e20fb3f602bafa308dcffd8f2ddc0c37390c8ed",
+      "sophgo-fixes.patch": "e462aecb428768a9c688055db1aa53e336e13fe113602c70a56706f5eb7302dc"
+    },
+    "file_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "kernel_stable_commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "recipe_sha256": "352b4db588964c9109b8d1626bc18c7eab797d7eb4893ef464aa68dad850b7fa",
+    "recipe_url": "https://gitlab.alpinelinux.org/alpine/aports/-/blob/eb378b0757f36fcd639876eacb9315ef2cb9c075/main/linux-lts/APKBUILD",
+    "source_path": "drivers/net/virtio_net.c",
+    "tag": "v6.18.65",
+    "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c"
+  },
+  "modules": {
+    "failover": {
+      "depends": "",
+      "firmware": "",
+      "license": "GPL v2",
+      "name": "failover",
+      "transitive_modules_dep": [],
+      "vermagic": "6.18.65-0-virt SMP preempt mod_unload modversions aarch64"
+    },
+    "net_failover": {
+      "depends": "failover",
+      "firmware": "",
+      "license": "GPL v2",
+      "name": "net_failover",
+      "transitive_modules_dep": [
+        "kernel/net/core/failover.ko.gz"
+      ],
+      "vermagic": "6.18.65-0-virt SMP preempt mod_unload modversions aarch64"
+    },
+    "virtio_mmio": {
+      "depends": "",
+      "firmware": "",
+      "license": "GPL",
+      "name": "virtio_mmio",
+      "transitive_modules_dep": [],
+      "vermagic": "6.18.65-0-virt SMP preempt mod_unload modversions aarch64"
+    },
+    "virtio_net": {
+      "depends": "net_failover",
+      "firmware": "",
+      "license": "GPL",
+      "name": "virtio_net",
+      "transitive_modules_dep": [
+        "kernel/drivers/net/net_failover.ko.gz",
+        "kernel/net/core/failover.ko.gz"
+      ],
+      "vermagic": "6.18.65-0-virt SMP preempt mod_unload modversions aarch64"
+    }
+  },
+  "packages": {
+    "busybox-static-1.37.0-r30.apk": {
+      "aports_commit": "1e823a60eb85606954b3a5af5f8e5bbd1ea680cf",
+      "datahash": "36e8c4869c1ccf232888b291a18bd679295025b9eaaa683506b63b0b4220d875",
+      "sha256": "44c9abdfb970f398fa72c8382fe2d8808eea16beaf82daf6ac708b92f1b8659e",
+      "size": 658740,
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/busybox-static-1.37.0-r30.apk"
+    },
+    "linux-virt-6.18.65-r0.apk": {
+      "aports_commit": "eb378b0757f36fcd639876eacb9315ef2cb9c075",
+      "datahash": "963b8b85673f14363afff6c3eb91413b10a0a75cbb744db57dd49df8d42f1e9c",
+      "sha256": "859ad147c29bf3c6d84a3ff84280aa5c94d890dc37ada31b072d099a8437f8e0",
+      "size": 39425992,
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/linux-virt-6.18.65-r0.apk"
+    }
+  },
+  "profile": "aarch64-qemu-virt-linux-candidate",
+  "release": "6.18.65-0-virt",
+  "scope": "Archive, config, ELF and source intake; guest execution, integration, device tree, fallback and restart require separate observations.",
+  "trust": {
+    "format": "APK v2 RSA/SHA1 control signatures and SHA256 datahash",
+    "index_sha256": "25b2eb2d9f85cfd5c94d71d8898bbd608744445e301673823c53364f4002f8f9",
+    "index_url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/APKINDEX.tar.gz",
+    "key_sha256": "d11f6b21c61b4274e182eb888883a8ba8acdbf820dcc7a6d82a7d9fc2fd2836d",
+    "key_url": "https://alpinelinux.org/keys/alpine-devel@lists.alpinelinux.org-616ae350.rsa.pub"
+  }
+}

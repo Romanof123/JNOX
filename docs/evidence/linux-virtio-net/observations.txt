@@ -1,0 +1,20 @@
+UART (LD lines in order; line endings normalized)
+LD BOOT aarch64 6.18.65-0-virt
+LD LOADED failover 33cc872d8ab149a2ec944f37f8efd875989c4d66fea765d2c481f9b29a025ab8
+LD LOADED net_failover 3f1bd72a77341d113fec23a27d7e269e078a87f761eb77cc750ace49c703aaf4
+LD LOADED virtio_mmio ffb17f3010247709b368becd34ad0376db96d76cf9adfa25317f6022b41025e1
+LD LOADED virtio_net 3873c32ab124c0a83e7a7f04c27fde93b230c45236bb9fc0b9125abee19dca4f
+LD DEVICE /sys/bus/virtio/drivers/virtio_net /sys/module/virtio_net /sys/bus/platform/drivers/virtio-mmio 52:54:00:12:34:56
+LD FDT 732d2a8232fa6ebd8ff05eaa1757e84f9065a85c1c04c62ef2be8523abaedfd3
+LD READY
+LD RECEIVED 52fc7944bc842ad2d0d58866591290c5004f016fd58e72f1598f7a2accccc579
+
+challenge.request
+SHA-256 26a6fa7479bade58ba3f1087da97cf2f50faf846fec6e320dc2e63c608f52296
+Exact wire bytes (Python bytes literal)
+b'GET /echo/52fc7944bc842ad2d0d58866591290c5004f016fd58e72f1598f7a2accccc579 HTTP/1.0\r\n\r\n'
+
+challenge.response
+SHA-256 423ec2d21d082a54adfe811fe4026f99f461493a72e59108778e43cdde3dfd5e
+Exact wire bytes (Python bytes literal)
+b'HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 65\r\nConnection: close\r\n\r\n52fc7944bc842ad2d0d58866591290c5004f016fd58e72f1598f7a2accccc579\n'

@@ -1,0 +1,9 @@
+# Carrying over the original Linux network driver / Linux 네트워크 드라이버 원본 이관
+
+CHG-321 · REQ-004 · DES-002 · IMP-321 · VER-004. First establish the original Linux-only device behavior for [#416](https://github.com/Romanof123/JNOX/issues/416) under [#3](https://github.com/Romanof123/JNOX/issues/3). A JNOX client will use a bounded device gateway to a Linux service that retains ownership of its original driver. Start with copied requests and replies, specified sizes, deadlines and a generation identifier to reject obsolete responses after reset. Memory, IRQ, DMA and restart ownership must be defined on each actual deployment. CPU placement can be shared with enforced budgets or dedicated, subject to measurements.
+
+Use the Alpine v3.23 AArch64 `linux-virt-6.18.65-r0.apk`, its matching config and intact `virtio_net.ko` on QEMU virtio-net over virtio-mmio. Record the original source revision and package hashes, dependencies and a live device tree. Compare a host-issued challenge and the returned payload, confirm the loaded driver binding in the guest, and preserve serial and network observations. Subsequent integration must repeat the same device test using the identical module and demonstrate controlled behavior across Linux failure and recovery.
+
+JNOX 앱의 장치 요청은 권한·크기·기한을 검사하는 게이트웨이를 통해 Linux 서비스로 보낸다. Linux는 호환 커널·설정에서 원본 모듈을 로드하고 장치를 소유한다. 초기 통신은 복사 방식으로 구성하며 재시작 뒤 이전 응답을 거르도록 세대 번호를 둔다. 같은 물리 코어를 시간 분할하거나 코어를 분리하는 배치는 제품별로 선택하고 검증한다. 먼저 고정된 Alpine 커널과 네트워크 모듈을 Linux 단독 게스트에서 구동해 양방향 데이터와 실제 장치 연결을 확인한다. 이후 동일 바이너리를 사용한 JNOX 연동, 장애 시 기한과 재연결을 각각 검증한다.
+
+[Device observations, measurements and reproduction / Linux baseline results](evidence/linux-virtio-net/README.md)
