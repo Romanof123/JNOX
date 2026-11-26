@@ -994,7 +994,7 @@ def main():
         metadata.update(package_pi4_image(out, kernel_elf, env), package_argv=sys.argv[:])
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
-    if policy == "amc" or (policy in ("fifo", "rr") and len(slots) == 4):
+    if policy == "amc" or args.uart_rx_standby or (policy in ("fifo", "rr") and len(slots) == 4):
         for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
             slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")

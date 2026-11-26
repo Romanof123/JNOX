@@ -182,9 +182,11 @@ def boot(root, pkg, roots, va, mode, qemu, timeout):
                 wait_sample("revoked", lambda s: sample_matches("revoked", s, mode)
                             and s["probes"][1][1] > samples["primary"]["probes"][1][1])
                 required = exit_list(mode)
-                while tick() != required:
-                    if observed_exits(raw):
-                        require(observed_exits(raw) == required[:len(observed_exits(raw))], "wrong guest exits")
+                while True:
+                    seen = tick()
+                    require(seen == required[:len(seen)], "wrong guest exits")
+                    if seen == required and (mode == "failure" or b"NATIVE EL0 DISMISSED PID 2\n" in raw):
+                        break
                     time.sleep(0.01)
                 request(pipe, "stop")
                 receive(ser, uart, raw)
