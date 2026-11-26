@@ -1,0 +1,17 @@
+# Bounded Linux driver gateway / Linux 드라이버 게이트웨이
+
+CHG-322 · REQ-004/011 · DES-002 · IMP-322 · VER-004/011. [System integration #417](https://github.com/Romanof123/JNOX/issues/417) follows the [original Linux reference #416](evidence/linux-virtio-net/README.md). Retain the original Alpine AArch64 kernel, configuration and four kernel modules from the reference.
+
+In the virtual integration, a JNOX process sends a fixed request through its ordinary Rust network broker on a private Ethernet segment. A test adapter copies the request into the Linux guest's serial endpoint. Separate from that inter-domain link, Linux must transmit the request on the NIC bound to the original `virtio_net` module. An external TCP peer must see those bytes and return an eight-byte value through the same NIC. The Linux endpoint returns that value to JNOX. Record the device packet stream, module identity, UART frames, guest counters and the state observed by the independent application. This virtual adapter allows separate inspection of transport and device behavior.
+
+## Wire and authority / 인터페이스와 권한
+
+The record is 24 bytes. Bytes 0–1 are `JG`, byte 2 is version 1, and byte 3 is 1 for the fixed device exchange or 2 for its reply. Bytes 4–7 carry a nonzero generation, 8–11 the request identifier, 12–15 the relative timeout in milliseconds, and 16–23 the data. Integers are big-endian. The JNOX caller owns its absolute monotonic deadline. The Linux endpoint enforces a local bound on the device operation. The first profile runs one authorized caller with one outstanding request. Only the selected broker owns the JNOX NIC. The peer application keeps a separate private address space without a broker route. Validate exact record length and endpoint, operation, identifiers, generation and time before accepting any response. The software fallback disables the sample output when the caller's deadline elapses.
+
+## Acceptance / 검증 조건
+
+1. Boot Linux and JNOX in sequence. Confirm the Linux NIC driver binding and original module hash in each Linux boot. Show both directions of traffic on the device NIC independently of the serial path. Check the payload returned to the JNOX ELF.
+2. Terminate the first Linux guest after its device exchange. Deliver the completed first reply after confirming termination, then observe a second request while Linux is offline. Measure the JNOX deadline, timeout and fallback on the JNOX monotonic clock. For this virtual fixture, use a 250 ms request deadline and observe timeout and fallback within 300 ms of the guest start time. Report the measured overshoot separately. Require a peer tick inside the 250 ms interval and further progress during Linux restart. The 50 ms observation allowance applies only to this diagnostic run.
+3. Resubmit the original payload and request ID with a new generation. Present the actual first-generation reply while the new request is outstanding and before admitting a current reply. Independently observe stale rejection, the fresh return from a newly booted Linux and continued peer progress. Keep the topology, original captures and measured limits with the verdict.
+
+JNOX 앱은 승인된 브로커를 통해 24바이트 요청을 보낸다. 시험 어댑터는 요청을 Linux 시리얼 엔드포인트에 옮긴다. Linux는 원본 모듈이 소유한 NIC로 데이터를 실제 송신하고, 외부 피어가 돌려준 8바이트를 JNOX에 전달한다. Linux 중단 시 게스트 단조 시계로 기한과 대체 출력을 확인하고 별도 앱의 진행을 관측한다. 요청 기한은 250 ms이며 이 가상 시험에서는 대체 출력 관측까지 300 ms를 허용하고 실제 초과 시간을 기록한다. 재부팅 후 이전 세대의 실제 응답을 다시 전달해 폐기되는지 확인한다. 같은 SoC에서의 메모리·DMA 격리, IRQ 소유권, 제품 시간 보장과 기능안전 승인은 별도 검증 대상이다.
