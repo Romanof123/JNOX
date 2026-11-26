@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: MIT
+/dts-v1/;
+
+/ {
+    compatible = "linux,dummy-virt";
+    #address-cells = <2>;
+    #size-cells = <2>;
+    interrupt-parent = <&gic>;
+
+    chosen {
+        stdout-path = "/pl011@9000000";
+        bootargs = "console=ttyAMA0,115200 earlycon=pl011,mmio32,0x09000000 rdinit=/init nokaslr";
+        linux,initrd-start = <0 @INITRD_START@>;
+        linux,initrd-end = <0 @INITRD_END@>;
+    };
+
+    memory@50000000 {
+        device_type = "memory";
+        reg = <0 0x50000000 0 0x0c000000>;
+    };
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        cpu@0 {
+            device_type = "cpu";
+            compatible = "arm,armv8";
+            reg = <0>;
+            enable-method = "psci";
+        };
+    };
+
+    psci {
+        compatible = "arm,psci-0.2";
+        method = "hvc";
+    };
+
+    gic: interrupt-controller@8000000 {
+        compatible = "arm,cortex-a15-gic";
+        reg = <0 0x08000000 0 0x1000>, <0 0x08010000 0 0x2000>;
+        #interrupt-cells = <3>;
+        #address-cells = <0>;
+        interrupt-controller;
+    };
+
+    timer {
+        compatible = "arm,armv8-timer";
+        // Secure physical, nonsecure physical, virtual and hypervisor timers.
+        interrupts = <1 13 0x104>, <1 14 0x104>, <1 11 0x104>, <1 10 0x104>;
+        always-on;
+    };
+
+    clk: apb-clock {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <24000000>;
+        clock-output-names = "clk24mhz";
+    };
+
+    pl011@9000000 {
+        compatible = "arm,pl011", "arm,primecell";
+        reg = <0 0x09000000 0 0x1000>;
+        interrupts = <0 1 4>;
+        clocks = <&clk>, <&clk>;
+        clock-names = "uartclk", "apb_pclk";
+    };
+
+    virtio_mmio@a003e00 {
+        compatible = "virtio,mmio";
+        reg = <0 0x0a003e00 0 0x200>;
+        interrupts = <0 47 1>;
+        dma-coherent;
+    };
+};

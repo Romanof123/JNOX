@@ -160,7 +160,10 @@ static mut CLOCK_DOMAIN: (u64, u64) = (0, 0);
 
 fn counter() -> u64 {
     let ticks: u64;
+    #[cfg(not(jnox_bao_partition))]
     unsafe { asm!("isb", "mrs {}, cntpct_el0", out(reg) ticks, options(nostack, preserves_flags)) };
+    #[cfg(jnox_bao_partition)]
+    unsafe { asm!("isb", "mrs {}, cntvct_el0", out(reg) ticks, options(nostack, preserves_flags)) };
     ticks
 }
 
@@ -226,10 +229,17 @@ fn update_timer(now: u64) -> bool {
 fn arm_compare(earliest: Option<u64>) {
     unsafe {
         if let Some(target) = earliest {
+            #[cfg(not(jnox_bao_partition))]
             asm!("msr cntp_cval_el0, {target}", "msr cntp_ctl_el0, {enable}", "isb",
                  target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
+            #[cfg(jnox_bao_partition)]
+            asm!("msr cntv_cval_el0, {target}", "msr cntv_ctl_el0, {enable}", "isb",
+                 target = in(reg) target, enable = in(reg) 1u64, options(nostack, preserves_flags));
         } else {
+            #[cfg(not(jnox_bao_partition))]
             asm!("msr cntp_ctl_el0, xzr", "isb", options(nostack, preserves_flags));
+            #[cfg(jnox_bao_partition)]
+            asm!("msr cntv_ctl_el0, xzr", "isb", options(nostack, preserves_flags));
         }
     }
 }
@@ -588,10 +598,25 @@ fn event(kind: &[u8], pid: usize, value: Option<i64>) {
     }
 }
 
+#[cfg(jnox_bao_partition)]
+#[unsafe(no_mangle)]
+static mut jnox_partition_timer_irqs: u64 = 0;
+#[cfg(jnox_bao_partition)]
+#[unsafe(no_mangle)]
+static mut jnox_partition_last_irq_ticks: u64 = 0;
+
 #[unsafe(no_mangle)]
 extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let iar = context::gic_read(context::GICC + 0x0c);
     let id = iar & 0x3ff;
+    #[cfg(jnox_bao_partition)]
+    if id == context::TIMER_IRQ {
+        unsafe {
+            let count = ptr::read_volatile(&raw const jnox_partition_timer_irqs);
+            ptr::write_volatile(&raw mut jnox_partition_last_irq_ticks, counter());
+            ptr::write_volatile(&raw mut jnox_partition_timer_irqs, count.wrapping_add(1));
+        }
+    }
     #[cfg(jnox_native_batch)]
     { return batch::irq(entry, frame, iar); }
     #[cfg(jnox_native_extension)]
@@ -986,7 +1011,11 @@ pub(super) fn run() -> ! {
     // The board-specific PPI setup owns the distributor and CPU interface.
     // On Pi it must preserve firmware configuration for unrelated interrupts.
     unsafe {
+        #[cfg(not(jnox_bao_partition))]
         asm!("msr daifset, #0xf", "msr cntp_ctl_el0, xzr", "msr cntv_ctl_el0, xzr",
+            "isb", options(nostack, preserves_flags));
+        #[cfg(jnox_bao_partition)]
+        asm!("msr daifset, #0xf", "msr cntv_ctl_el0, xzr",
             "isb", options(nostack, preserves_flags));
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         context::configure_timer_ppi();

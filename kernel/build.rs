@@ -712,6 +712,16 @@ fn main() {
             && all_package_features_enabled(),
             "pi4-stream-v1 requires a Pi 4 SMP migration application");
     }
+    println!("cargo::rustc-check-cfg=cfg(jnox_bao_partition)");
+    if let Some(value) = selector("JNOX_BAO_PARTITION") {
+        assert!(value == "1" && board == "virt" && profile.as_deref() == Some("native")
+            && app.as_deref() == Some("process") && policy.is_none()
+            && env::vars_os().all(|(key, _)| {
+                let k = key.to_string_lossy();
+                !k.starts_with("JNOX_NATIVE_") || matches!(k.as_ref(), "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256")
+            }), "Bao requires a single ordinary native virt ELF");
+        println!("cargo::rustc-cfg=jnox_bao_partition");
+    }
     let pi4_native_fixed = board == "pi4" && profile.as_deref() == Some("native")
         && app.as_deref() == Some("process") && peer_image.is_some() && peer2_image.is_none()
         && matches!(policy.as_deref(), Some("fifo" | "rr"));

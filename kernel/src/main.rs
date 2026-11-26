@@ -249,7 +249,9 @@ extern "C" fn kernel_main() -> ! {
     uart_init();
     #[cfg(jnox_pi4)]
     uart_write(b"JNOX PI4 BOOT\nJNOX PI4 READY\n");
-    #[cfg(not(jnox_pi4))]
+    #[cfg(jnox_bao_partition)]
+    uart_write(b"JNOX BAO PARTITION BOOT\n");
+    #[cfg(not(any(jnox_pi4, jnox_bao_partition)))]
     uart_write(b"JNOX M1 BOOT\nJNOX M1 READY\n");
     #[cfg(jnox_native_el0)]
     native_el0::run();
@@ -354,7 +356,7 @@ fn run_bench() -> ! {
 }
 
 // The fixed QEMU virt bench maps PL011 UART0 here. Its input clock is 24 MHz.
-#[cfg(not(jnox_pi4))]
+#[cfg(not(any(jnox_pi4, jnox_bao_partition)))]
 const UART0: usize = 0x0900_0000;
 #[cfg(jnox_pi4)]
 const UART0: usize = 0xfe20_1000;
@@ -374,6 +376,10 @@ fn pi4_uart_pins() {
     }
 }
 
+#[cfg(jnox_bao_partition)]
+fn uart_init() {}
+
+#[cfg(not(jnox_bao_partition))]
 fn uart_init() {
     #[cfg(jnox_pi4)]
     {
@@ -420,6 +426,28 @@ pub(crate) fn uart_try_read() -> Result<u8, i64> {
     }
 }
 
+#[cfg(jnox_bao_partition)]
+#[unsafe(no_mangle)]
+static mut jnox_partition_boot_log: [u8; 4096] = [0; 4096];
+#[cfg(jnox_bao_partition)]
+#[unsafe(no_mangle)]
+static mut jnox_partition_boot_len: u64 = 0;
+
+#[cfg(jnox_bao_partition)]
+fn uart_write(bytes: &[u8]) {
+    // Single vCPU, masked EL1 writers. Saturate so early boot evidence survives.
+    unsafe {
+        let pos = ptr::read_volatile(&raw const jnox_partition_boot_len) as usize;
+        let len = bytes.len().min(4096 - pos);
+        let dst = (&raw mut jnox_partition_boot_log).cast::<u8>().add(pos);
+        for (offset, &byte) in bytes[..len].iter().enumerate() {
+            ptr::write_volatile(dst.add(offset), byte);
+        }
+        ptr::write_volatile(&raw mut jnox_partition_boot_len, (pos + len) as u64);
+    }
+}
+
+#[cfg(not(jnox_bao_partition))]
 fn uart_write(bytes: &[u8]) {
     const TX_FIFO_FULL: u32 = 1 << 5;
     for &byte in bytes {

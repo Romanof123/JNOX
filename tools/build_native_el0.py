@@ -446,6 +446,8 @@ def main():
     add_kernel_profile(parser)
     parser.add_argument("--out", required=True, type=Path, action=SinglePath, help="new package directory")
     parser.add_argument("--board", choices=["virt", "pi4"], action=SinglePath)
+    parser.add_argument("--bao-partition", action="store_true",
+                        help="single native ELF on Bao virt, virtual timer and RAM console")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
@@ -541,6 +543,12 @@ def main():
     parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if args.bao_partition:
+        allowed = {"out", "board", "kernel_profile", "elf", "bao_partition"}
+        conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
+                     and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
+        if conflicts or not args.elf or args.board == "pi4":
+            parser.error("--bao-partition requires one virt --elf and excludes scheduling and device options")
     if args.task_policy is not None:
         allowed = {"out", "board", "kernel_profile", "task_policy"}
         conflicts = [action.option_strings[0] for action in parser._actions
@@ -758,6 +766,9 @@ def main():
         "cargo": output(["cargo", "--version"], ROOT / "kernel", env),
         "sdk_command": user_command, "kernel_command": kernel_command,
     }
+    if args.bao_partition:
+        env["JNOX_BAO_PARTITION"] = "1"
+        metadata["virtual_board"] = "bao-partition"
     if args.pubsub_service:
         env["JNOX_NATIVE_PUBSUB_SERVICE"] = "3"
         env["JNOX_NATIVE_PUBSUB_PUBLISH"] = publish
