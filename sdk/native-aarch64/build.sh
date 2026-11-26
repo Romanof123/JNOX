@@ -35,7 +35,8 @@ if [ "$permit_codec" = 1 ]; then
     target=aarch64-unknown-none-softfloat
     cargo build --manifest-path "$sdk/../native-safety-channel/c-api/Cargo.toml" \
         --frozen --release --target "$target" --target-dir "$tmp"
-    set -- "$@" "$tmp/$target/release/libjnox_permit_codec.a" -Wl,--gc-sections
+    # Keep the native errno fallback so even a stack-only C app has the ABI-required RW segment.
+    set -- "$@" "$tmp/$target/release/libjnox_permit_codec.a" -Wl,--gc-sections,--undefined=__jnox_errno_location
 fi
 if [ -n "$shell_define" ]; then set -- "$shell_define" "$@"; fi
 if [ -n "$pipe_define" ]; then set -- "$pipe_define" "$@"; fi
