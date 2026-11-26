@@ -133,6 +133,13 @@ def native_service_slots(parser, args, policy, board):
         parser.error("--net-service supports at most three native processes")
     display = int(args.display_service[0]) if args.display_service else None
     broker = int(args.socket_service[0]) if args.socket_service else None
+    standby = args.uart_rx_standby
+    if standby is not None:
+        if standby != "2" or slots != 3 or display != 0 or args.uart_rx_irq != 1:
+            parser.error("--uart-rx-standby 2 requires three processes, --display-service 0 and --uart-rx-irq")
+        if any((args.ipc_route, args.mailbox_route, args.notify_route, args.cap_grant, args.cap_route,
+                args.loan_route, args.pipes, args.waitset, args.socket_service, args.pubsub_service)):
+            parser.error("--uart-rx-standby excludes IPC routes, endpoints and services")
     if broker == 3:
         if slots != 4 or display != 0 or args.pubsub_service:
             parser.error("socket broker 3 requires four ordinary virt FIFO processes with display owner 0")
@@ -142,8 +149,8 @@ def native_service_slots(parser, args, policy, board):
             parser.error("socket broker 3 requires client mask 7")
         args.peer3_arg = ["7"]
     if display is not None and (board != "virt" or policy != "fifo" or args.threads
-                                or display >= slots or (slots > 2 and broker != 3)):
-        parser.error("--display-service requires a present owner in a one- or two-process virt FIFO package, or display owner 0 with socket broker 3")
+                                or display >= slots or (slots > 2 and broker != 3 and standby is None)):
+        parser.error("--display-service requires an ordinary virt FIFO owner in one or two slots, or owner 0 with UART standby 2 or socket broker 3")
     if args.uart_rx_irq:
         if args.uart_rx_irq != 1 or display is None or args.exec_child or args.rom_file:
             parser.error("--uart-rx-irq must appear once and requires an ordinary --display-service package")
@@ -510,6 +517,8 @@ def main():
                         help="give one ordinary virt FIFO process ramfb scanout and PL011 byte input")
     parser.add_argument("--uart-rx-irq", action="count", default=0,
                         help="receive PL011 input via GICv2 INTID 33 for the selected display owner")
+    parser.add_argument("--uart-rx-standby", choices=("2",), action=SinglePath, metavar="SLOT",
+                        help="keep slot 2 dormant for one handoff when UART owner 0 exits with status 86")
     parser.add_argument("--net-service", choices=("0", "1", "2"), action="append", default=[], metavar="SLOT",
                         help="give the selected socket service the virtio network interface")
     parser.add_argument("--socket-service", choices=("0", "1", "2", "3"), action="append", default=[], metavar="SLOT",
@@ -778,6 +787,10 @@ def main():
             env["JNOX_NATIVE_UART_RX_IRQ"] = "1"
             metadata["uart_rx_irq"] = {"device": "pl011", "controller": "gicv2", "intid": 33,
                                        "capacity": 16, "stats_syscall": 75}
+            if args.uart_rx_standby is not None:
+                env["JNOX_NATIVE_UART_RX_STANDBY"] = args.uart_rx_standby
+                metadata["uart_rx_standby"] = {"owner_slot": 0, "continuing_peer_slot": 1,
+                                               "standby_slot": 2, "failure_exit": 86, "max_handoffs": 1}
     if args.net_service:
         env["JNOX_NATIVE_NET_SERVICE"] = str(service_slot)
         metadata["net_service"] = {"slot": service_slot, "transport": "virtio-net-mmio-modern",

@@ -312,6 +312,9 @@ mod ramfb;
 #[cfg(jnox_native_uart_rx_irq)]
 #[path = "native_uart_rx.rs"]
 mod uart_rx;
+#[cfg(jnox_native_uart_rx_standby)]
+#[path = "native_uart_standby.rs"]
+mod uart_standby;
 #[cfg(all(jnox_native_net_service, any(jnox_pi4, not(jnox_native_socket_service),
     not(jnox_native_sync_ipc), not(jnox_native_fixed))))]
 compile_error!("native net service requires virt fixed scheduling with socket broker IPC");
@@ -330,9 +333,15 @@ const DISPLAY_OWNER: usize = (env!("JNOX_PACKAGED_DISPLAY_SLOT").as_bytes()[0] -
 
 #[cfg(jnox_native_display)]
 fn display_call(pid: usize, frame: &NativeFrame) -> i64 {
+    #[cfg(not(jnox_native_uart_rx_standby))]
     if pid != DISPLAY_OWNER { return -1; }
+    #[cfg(jnox_native_uart_rx_standby)]
+    if let Err(err) = uart_standby::authorize(pid, frame.x[8]) { return err; }
     match frame.x[8] {
+        #[cfg(not(jnox_native_uart_rx_standby))]
         72 => ramfb::init().map_or_else(|err| err, |()| 0),
+        #[cfg(jnox_native_uart_rx_standby)]
+        72 => uart_standby::init().map_or_else(|err| err, |()| 0),
         73 => {
             let y = frame.x[0] as usize;
             let address = frame.x[1] as usize;
@@ -430,8 +439,10 @@ fn start_fixed() -> usize {
         _ => fail(9),
     };
     let now = counter();
-    #[cfg(not(jnox_native_shell))]
+    #[cfg(not(any(jnox_native_shell, jnox_native_uart_rx_standby)))]
     unsafe { FIXED = Fixed::new(&config, mode, now) };
+    #[cfg(jnox_native_uart_rx_standby)]
+    unsafe { FIXED = Fixed::new_uart_standby(&config, mode, now) };
     #[cfg(jnox_native_shell)]
     unsafe { FIXED = Fixed::new_shell(&config, mode, now) };
     let p = policy();
@@ -450,7 +461,7 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
-    #[cfg(jnox_native_uart_rx_irq)]
+    #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
     if matches!(action, Action::Exit) && before.pid == Some(DISPLAY_OWNER) {
         uart_rx::disable();
     }
@@ -470,6 +481,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     if !ipc::handles(reason) { ipc::boundary(p, now, matches!(action, Action::Exit)); }
     if p.event(now, action) != Some(true) { fail(9) }
+    #[cfg(jnox_native_uart_rx_standby)]
+    if matches!(action, Action::Exit) {
+        uart_standby::retire(before.pid.unwrap_or_else(|| fail(9)), now, p);
+    }
     let next = p.current();
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
@@ -534,6 +549,11 @@ fn finish_fixed() -> ! {
     #[cfg(jnox_native_shell)]
     spawn::report();
     for (pid, status) in unsafe { EXIT_STATUS }.into_iter().enumerate() {
+        #[cfg(jnox_native_uart_rx_standby)]
+        if uart_standby::dismissed(pid) {
+            event(b"DISMISSED", pid, None);
+            continue;
+        }
         #[cfg(jnox_native_shell)]
         if pid != 0 && !spawn::started(pid) { continue; }
         if COUNT == 1 {

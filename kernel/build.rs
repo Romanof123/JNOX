@@ -546,6 +546,18 @@ fn main() {
     let threads = selector("JNOX_NATIVE_THREADS");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_display)");
     let display_service = selector("JNOX_NATIVE_DISPLAY_SERVICE");
+    let uart_rx_irq = selector("JNOX_NATIVE_UART_RX_IRQ");
+    let uart_standby = selector("JNOX_NATIVE_UART_RX_STANDBY");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_uart_rx_standby)");
+    if let Some(slot) = uart_standby.as_deref() {
+        assert!(slot == "2" && uart_rx_irq.as_deref() == Some("1") && display_service.as_deref() == Some("0")
+            && peer2_image.is_some() && peer3_image.is_none(),
+            "UART standby 2 requires IRQ mode, owner 0 and exactly three processes");
+        assert!(ipc_routes.is_none() && mailbox_routes.is_none() && notify_routes.is_none()
+            && !capabilities && loan_route.is_none() && socket_service.is_none() && topic_masks.is_none(),
+            "UART standby excludes IPC routes, endpoints and services");
+        println!("cargo::rustc-cfg=jnox_native_uart_rx_standby");
+    }
     let display_broker = socket_service.as_deref() == Some("3");
     if display_broker {
         assert!(peer3_image.is_some() && display_service.as_deref() == Some("0") && topic_masks.is_none(),
@@ -555,8 +567,8 @@ fn main() {
         let small_package = peer2_image.is_none() && (slot == "0" || (slot == "1" && peer_image.is_some()));
         assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process")
             && board == "virt" && policy.as_deref() == Some("fifo") && threads.is_none()
-            && (small_package || display_broker),
-            "display service requires a present owner in a one- or two-process virt FIFO package, or display owner 0 with socket broker 3");
+            && (small_package || display_broker || uart_standby.is_some()),
+            "display service requires an ordinary virt FIFO owner in one or two slots, or owner 0 with UART standby 2 or socket broker 3");
         println!("cargo::rustc-cfg=jnox_native_display");
         println!("cargo::rustc-env=JNOX_PACKAGED_DISPLAY_SLOT={slot}");
     }
@@ -569,6 +581,7 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_pipe_ipc)");
     let pipes = selector("JNOX_NATIVE_PIPES");
+    assert!(uart_standby.is_none() || pipes.is_none(), "UART standby excludes pipe descriptors");
     let fifo_grants = selector("JNOX_NATIVE_FIFO_GRANTS");
     let pipe_links = selector("JNOX_NATIVE_PIPE_LINKS");
     let pipe_config = if let Some(value) = pipes {
@@ -587,7 +600,7 @@ fn main() {
     let rom = selector("JNOX_NATIVE_ROM_IMAGE");
     let rom_hash = selector("JNOX_NATIVE_ROM_SHA256");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_uart_rx_irq)");
-    if let Some(mode) = selector("JNOX_NATIVE_UART_RX_IRQ") {
+    if let Some(mode) = uart_rx_irq {
         assert!(mode == "1" && display_service.is_some() && children.is_none()
             && rom.is_none() && rom_hash.is_none(),
             "JNOX_NATIVE_UART_RX_IRQ=1 requires an ordinary virt FIFO display service");

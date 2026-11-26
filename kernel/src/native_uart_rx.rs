@@ -25,10 +25,11 @@ struct Receiver {
     idle_interrupts: u32,
 }
 
-static mut RECEIVER: Receiver = Receiver {
+const EMPTY: Receiver = Receiver {
     bytes: [0; CAPACITY], head: 0, len: 0, interrupts: 0,
     received: 0, drops: 0, errors: 0, idle_interrupts: 0,
 };
+static mut RECEIVER: Receiver = EMPTY;
 
 fn barrier() {
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) }
@@ -62,11 +63,36 @@ pub(super) fn disable() {
     gic_write(GICD + 0x180 + GIC_WORD, LINE);
     gic_write(GICD + 0x280 + GIC_WORD, LINE);
     barrier();
-    // The static package has no replacement display owner.
     let state = unsafe { &mut *(&raw mut RECEIVER) };
     state.head = 0;
     state.len = 0;
     state.bytes.fill(0);
+}
+
+/// Drain at most one PL011 FIFO's worth. The caller keeps the GIC line and
+/// peripheral interrupt mask off. A continuing stream can exhaust the bound.
+#[cfg(jnox_native_uart_rx_standby)]
+pub(super) fn discard_pending() -> bool {
+    for _ in 0..DRAIN_LIMIT {
+        if uart_try_read() == Err(-11) { break; }
+    }
+    unsafe {
+        // ECR clears receiver errors. Reading DR clears RX when the FIFO
+        // empties. Avoid clearing RXIC on a new arrival after the last read.
+        ptr::write_volatile((UART0 + 4) as *mut u32, 0);
+        ptr::write_volatile(UART_ICR as *mut u32, RX_TIMEOUT);
+    }
+    barrier();
+    gic_write(GICD + 0x280 + GIC_WORD, LINE);
+    barrier();
+    unsafe { ptr::read_volatile((UART0 + 0x18) as *const u32) & (1 << 4) != 0 }
+}
+
+#[cfg(jnox_native_uart_rx_standby)]
+pub(super) fn revoke() -> bool {
+    disable();
+    unsafe { RECEIVER = EMPTY };
+    discard_pending()
 }
 
 pub(super) fn interrupt(idle: bool) {

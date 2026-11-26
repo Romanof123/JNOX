@@ -137,7 +137,7 @@ pub(crate) fn init() -> Result<(), i64> {
         return result;
     }
     let result = configure();
-    #[cfg(jnox_native_uart_rx_irq)]
+    #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
     if result.is_ok() {
         super::uart_rx::enable();
     }

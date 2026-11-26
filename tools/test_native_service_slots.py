@@ -11,7 +11,8 @@ class Parser(argparse.ArgumentParser):
 
 
 def select(slots, *, display=None, socket=None, net=None, pubsub=None, routes=(),
-           mask=None, board="virt", policy="fifo", threads=(), irq=0, children=(), rom=()):
+           mask=None, board="virt", policy="fifo", threads=(), irq=0, children=(), rom=(),
+           standby=None, **ipc):
     def option(slot):
         return [] if slot is None else [str(slot)]
 
@@ -19,11 +20,28 @@ def select(slots, *, display=None, socket=None, net=None, pubsub=None, routes=()
                               socket_service=option(socket), net_service=option(net),
                               pubsub_service=option(pubsub), ipc_route=list(routes),
                               peer3_arg=option(mask), threads=threads, uart_rx_irq=irq,
-                              exec_child=children, rom_file=rom)
+                              exec_child=children, rom_file=rom, uart_rx_standby=standby,
+                              mailbox_route=[], notify_route=[], loan_route=[], cap_grant=[],
+                              cap_route=[], pipes=0, waitset=0)
+    vars(args).update(ipc)
     return native_service_slots(Parser(), args, policy, board), args.peer3_arg
 
 
 class NativeServiceSlotTests(unittest.TestCase):
+    def test_uart_rx_standby(self):
+        base = dict(slots=3, display=0, standby="2", irq=1)
+        self.assertEqual(select(**base)[0], (0, None, []))
+        for change in (dict(slots=2), dict(slots=4), dict(display=None), dict(display=1),
+                       dict(standby=None), dict(standby="1"), dict(irq=0), dict(irq=2),
+                       dict(board="pi4"), dict(policy="rr"), dict(threads=["2"]),
+                       dict(children=["1:child"]), dict(rom=["file=a"]), dict(socket=2),
+                       dict(pubsub=3), dict(net=2), dict(pipes=1), dict(waitset=1),
+                       dict(routes=[(0, 2)]), dict(loan_route=[(0, 2)]),
+                       dict(mailbox_route=[(0, 2)]), dict(notify_route=[(0, 2)]),
+                       dict(cap_route=[(0, 2)]), dict(cap_grant=[(0, 2, 1)])):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                select(**(base | change))
+
     def test_uart_rx_irq_display_owner(self):
         for slots, owner in ((1, 0), (2, 0), (2, 1)):
             self.assertEqual(select(slots, display=owner, irq=1)[0], (owner, None, []))
