@@ -4,13 +4,13 @@
 
 J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Rust로 개발하는 실시간 운영체제입니다. 예측 가능한 실행 시간과 격리, 멀티스레딩, 응용 프로그램과 장치 드라이버 지원을 우선합니다.
 
-J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 중심에는 작은 신뢰 커널과 격리된 서비스가 있습니다. 네이티브 Rust 드라이버와 Linux 드라이버용 별도 호환 영역을 지원하는 것이 목표입니다.
+J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 중심에는 작은 신뢰 커널과 격리된 서비스가 있습니다. 네이티브 Rust 드라이버와 Linux 드라이버 소스로 빌드한 비특권 네이티브 서비스을 지원하는 것이 목표입니다.
 
 ## 시스템 아키텍처
 
 ![사용자 앱, Rust 마이크로커널, 격리된 드라이버, 보드 지원, 하드웨어 순서로 쌓은 J-NOX 계층도](docs/diagrams/system-architecture.ko.svg)
 
-점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 기존 Linux 드라이버는 별도 Linux 영역에서 게이트웨이를 통해 J-NOX와 통신하도록 설계했습니다. 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
+점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 기존 Linux 드라이버 소스는 수정 없이 비특권 J-NOX 서비스로 재빌드하도록 설계했습니다. Rust 커널이 지정 장치에 대한 권한을 부여하며 첫 대상은 PL031입니다. 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
 
 ## 화면, X11 및 커널 로그
 
@@ -114,7 +114,7 @@ AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO�
 | [안전·보안 개념](docs/safety-security-concept.md) | 위험·위협 후보, 가정, 안전 경계와 초기 분석 계획 |
 | [기능안전팀의 첫 벤치 결정](docs/safety-parameters.md) | 가상 출력의 안전 상태와 시간 예산, 제품 값 확정에 필요한 근거 |
 | [시스템 요구사항](docs/requirements.md) | 추적 ID가 붙은 요구사항과 합격 기준 |
-| [시스템 아키텍처](docs/architecture.md) | 커널, Linux 드라이버 도메인, 스케줄링, 포팅, 서비스 설계 |
+| [시스템 아키텍처](docs/architecture.md) | 커널, 소스 이관 드라이버 서비스, 스케줄링, 포팅, 서비스 설계 |
 | [커널 아키텍처 선택](arch/README.ko.md) | AArch64 백엔드와 빌드 인터페이스 |
 | [애플리케이션 추적 계약](docs/application-tracing.md) | 사건과 요청 타임라인, 수집 한계 및 단계별 검증 제안 |
 | [M1 Rust 커널 첫 부팅](docs/m1-boot.md) | AArch64 QEMU에서 부팅할 최소 커널의 범위와 UART 합격 조건 |

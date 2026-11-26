@@ -139,13 +139,14 @@ def build(args, profile_path, profile, data, work):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", choices=["rtc-pl031"], required=True)
+    profiles = {path.stem: path for path in (COMPAT / "profiles").glob("*.json")}
+    parser.add_argument("--profile", choices=sorted(profiles), required=True)
     parser.add_argument("--source", required=True, type=Path, help="external upstream C file")
     parser.add_argument("--out", required=True, type=Path, help="new output directory")
     for key, default in [("clang", "clang"), ("ld", "ld.lld"), ("readelf", "readelf"), ("nm", "nm")]:
         parser.add_argument("--" + key, default=default)
     args = parser.parse_args()
-    profile_path = COMPAT / "profiles" / (args.profile + ".json")
+    profile_path = profiles[args.profile]
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     data = pinned_source(args.source, profile["upstream"])
     out = args.out.resolve()
