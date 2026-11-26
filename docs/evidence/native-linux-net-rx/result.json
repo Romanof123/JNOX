@@ -1,0 +1,64 @@
+{
+  "measured_commit": "a373514e1ab2cb960fdfa2780940baf30adb1a70",
+  "upstream": {
+    "project": "Linux stable",
+    "tag": "v6.18.65",
+    "commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "path": "drivers/net/virtio_net.c",
+    "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+    "size": 196513,
+    "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "git_blob_sha1": "ea83313caf36381151d21d894da8162729b7d261",
+    "spdx": "GPL-2.0-or-later"
+  },
+  "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+  "rx_verifier_sha256": "be194d13d2417822cbb7a7de9e7981a24c64cee95ea18fd36cdc84a1ec394917",
+  "independent_reader": "read_rx.py",
+  "cases": {
+    "capture-a": {
+      "observed": {
+        "original_add_recvbuf_small_entries": 113,
+        "original_virtnet_rq_get_buf_entries": 104,
+        "rx_frames": 80,
+        "ethernet_bytes": 5912,
+        "hw_used_including_ack": 81,
+        "rx_notifications": 82,
+        "polled_interrupt_bits": 1,
+        "peer_private_frames": 80,
+        "original_virtnet_poll_linked": false,
+        "original_gro_execution_verified": false
+      },
+      "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "nic_mac": "52:54:00:19:32:41",
+      "nic_mtu": 1410,
+      "nonce_hex": "b055370a716f4b80",
+      "pcap_sha256": "fad93cb0cc0e2307e3be5486fe72b488c78b44242e7cd10fb03c6d8dde4101c6",
+      "kernel_sha256": "9668355b92f3a69a4d7064e5698ef4bd576b7dcaba7212c5b774ec7ce7f1f315"
+    },
+    "capture-b": {
+      "observed": {
+        "original_add_recvbuf_small_entries": 113,
+        "original_virtnet_rq_get_buf_entries": 102,
+        "rx_frames": 80,
+        "ethernet_bytes": 5912,
+        "hw_used_including_ack": 81,
+        "rx_notifications": 82,
+        "polled_interrupt_bits": 1,
+        "peer_private_frames": 80,
+        "original_virtnet_poll_linked": false,
+        "original_gro_execution_verified": false
+      },
+      "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "nic_mac": "52:54:00:19:32:42",
+      "nic_mtu": 1386,
+      "nonce_hex": "b772559d3c44ecc6",
+      "pcap_sha256": "a6fd7e2584d64009c73101c9ae849a67f9da7ec582f9f1bbe177eb88c07846d5",
+      "kernel_sha256": "9668355b92f3a69a4d7064e5698ef4bd576b7dcaba7212c5b774ec7ce7f1f315"
+    }
+  },
+  "independent": {
+    "read_rx.py": "44f6dd3eb373cb06025354b857a88986254f6f524ea224cf4b284c27ae48848c",
+    "result.json": "e95c2766ac667d5a77fa7b5020f136ca148ccfd0ebc4d356f5e8d142ad675375",
+    "report.md": "5152e70d2de7278fc93972df4a013a010310bf1c89356dbe08b6e0015a318694"
+  }
+}

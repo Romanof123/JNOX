@@ -2438,3 +2438,9 @@ CHG-329,affects,VER-011
 REQ-004,partially-implemented-by,IMP-329
 REQ-011,partially-implemented-by,IMP-329
 DES-002,partially-implemented-by,IMP-329
+CHG-329,affects,EVD-329
+IMP-329,partially-verified-by,VER-004
+IMP-329,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-329
+VER-011,has-partial-evidence,EVD-329
+IMP-329,tested-in,EVD-329
