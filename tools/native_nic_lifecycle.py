@@ -60,8 +60,9 @@ def verify_pcap(out, announcements):
         size, wire_size = struct.unpack_from(byte_order + "II", data, cursor + 8)
         cursor += 16
         require(size == wire_size and cursor + size <= len(data), "truncated Ethernet packet")
-        if matched < len(expected) and data[cursor:cursor + size] == expected[matched]:
-            matched += 1
+        require(matched < len(expected) and data[cursor:cursor + size] == expected[matched],
+                "unexpected Ethernet frame on isolated link")
+        matched += 1
         cursor += size
     require(matched == len(expected), "missing ordered exchange in QEMU Ethernet capture")
 

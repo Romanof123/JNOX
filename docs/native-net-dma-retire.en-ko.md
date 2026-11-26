@@ -12,3 +12,5 @@
 커널은 서비스 종료 시 송수신 권한을 먼저 회수한다. 장치 리셋 상태와 두 큐 정지를 확인한 후에만 이전 DMA 저장 영역을 비우고 재사용한다. 확인에 실패하면 버퍼를 격리하고 이후 요청을 거절한다. 패키지에서 지정한 예비 프로세스 한 개만 다음 세대의 송수신 권한을 요청할 수 있다. 기존 소켓 브로커 및 IPC 권한은 패키지 설정을 따른다.
 
 가상 NIC에서 이전·새 소유자의 실제 프레임, 정지 중 큐 데이터와 동료 프로세스 진행을 관측한다. 응답 지연·누락 시험은 같은 리셋 절차를 사용하는 호스트 레지스터 모형에서 별도로 수행한다. 실제 보드의 IOMMU, 캐시 일관성, DMA 범위와 최악 정지 시간은 제품별 검증 항목이다. [Native driver integration / 상위 이슈](https://github.com/Romanof123/JNOX/issues/5)
+
+[EVD-323 results and source / 실측·시험 원본](evidence/native-net-dma/README.md) · [SDK usage / SDK 사용 예](../sdk/native-aarch64/raw-ethernet.md)

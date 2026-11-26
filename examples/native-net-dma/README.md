@@ -16,3 +16,22 @@ Both owners exchange 60-byte Ethernet frames. The host uses source MAC 02:00:00:
 Each ELF exports a private unsigned 64-bit dma_phase initialized to zero. For the primary, 1 means ready for challenges and 2 means retirement requested. For the spare, 1 marks the start of its wait after replying to IPC, 2 means it claimed the NIC and observed -114 on a duplicate claim, and 3 means retirement requested. Inspect device state for completed retirement. For the peer, 1 means its heartbeat started and 2 means its five post-notification ticks finished. Each guest exits with status zero on success.
 
 Read the private ELF symbols dma_echo_count and dma_ignored separately for each owner. The spare records dma_spare_preclaim, dma_spare_claim and dma_spare_duplicate. The peer records dma_peer_rx, dma_peer_tx and dma_peer_claim as signed 64-bit results, dma_peer_ticks as a count, dma_peer_ns as the latest monotonic timestamp in nanoseconds and dma_peer_finished as the tick at completion notification.
+
+## Build, boot and replay / 빌드·부팅·원본 재생
+
+From a Linux checkout with the repository's AArch64 build tools, QEMU and GNU AArch64 binutils, build the three ELFs above. The package fixes process identities, broker permissions, the retirement handshake and the completion event.
+
+```sh
+python3 -B tools/build_native_el0.py --board virt --policy fifo \
+    --elf dma-primary.elf --priority 4 --peer-elf dma-peer.elf --peer-priority 5 \
+    --peer-elf dma-spare.elf --peer-priority 6 --ipc-route 1:0 --ipc-route 0:2 \
+    --notify-route 2:1 --socket-service 0 --net-service 0 --net-standby 2 --out dma-package
+python3 -B tools/native_nic_lifecycle.py dma-capture --kernel dma-package/kernel.elf \
+    --lan-announcements --mmio-trace
+python3 -B tools/native_nic_lifecycle.py dma-capture --lan-announcements --mmio-trace
+rustc --test kernel/src/native_virtio_reset_test.rs -o /tmp/jnox-dma-reset-tests
+/tmp/jnox-dma-reset-tests
+python3 -B tools/test_native_service_slots.py
+```
+
+프레임 API는 Rust와 C 양쪽에서 사용할 수 있다. 시험은 실제 패킷, 게스트별 비공개 변수와 QEMU 장치의 레지스터 읽기·쓰기 기록을 대조한다. `--lan-announcements`는 소유자가 없는 동안 시험 링크에 ARP 세 건을 보낸다. `--mmio-trace`는 첫 장치 리셋 구간의 레지스터 기록을 요구한다. [SDK API](../../sdk/native-aarch64/raw-ethernet.md) · [결과 및 검증 범위](../../docs/evidence/native-net-dma/README.md)

@@ -15,8 +15,8 @@ def check_exchange(request, response, epoch):
         raise ValueError(f"epoch {epoch}: invalid challenge header")
     if response[:20] != HOST + GUEST + PROTOCOL + bytes([epoch, 2]):
         raise ValueError(f"epoch {epoch}: invalid reply header")
-    if request[20:36] != response[20:36]:
-        raise ValueError(f"epoch {epoch}: reply nonce differs")
+    if request[20:] != response[20:]:
+        raise ValueError(f"epoch {epoch}: reply payload differs")
     return request[20:36]
 
 
