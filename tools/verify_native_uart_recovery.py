@@ -27,6 +27,9 @@ MODES = ("failure", "normal")
 USER_ELFS = ("user.elf", "native_peer.elf", "native_peer2.elf")
 FILES = (*USER_ELFS, "kernel.elf", "manifest.json", "build.log")
 ASID_MASK = 0x0000fffffffff000
+UART_FR = 0x09000018  # Read-only status. Inspecting RXFE leaves the pending byte in DR.
+RXFE = 1 << 4
+DEVICE_STALE = b"\xd3"
 IMSC = 0x09000038
 GIC_ENABLE = 0x08000104  # Distributor ISENABLER1, INTID 33 = bit 1
 STALE = b"old!"
@@ -158,7 +161,8 @@ def boot(root, pkg, roots, va, mode, qemu, timeout):
                         tick()
                         values = [struct.unpack("<II", mem(pa, 8)) for pa in addresses]
                         gic, uart_mask = (int.from_bytes(mem(addr, 4), "little") for addr in (GIC_ENABLE, IMSC))
-                        state = {"probes": values, "gic_enable1": gic, "uart_imsc": uart_mask}
+                        state = {"probes": values, "gic_enable1": gic, "uart_imsc": uart_mask,
+                                 "uart_fr": int.from_bytes(mem(UART_FR, 4), "little")}
                         if predicate(state):
                             samples[name] = state
                             return
@@ -174,6 +178,8 @@ def boot(root, pkg, roots, va, mode, qemu, timeout):
                 send(b"+")
                 if mode == "failure":
                     wait_sample("transfer", lambda s: sample_matches("transfer", s, mode))
+                    send(DEVICE_STALE)
+                    wait_sample("device_stale", lambda s: sample_matches("device_stale", s, mode))
                     frame(3)
                     wait_sample("replacement", lambda s: sample_matches("replacement", s, mode))
                     send(nonce)
@@ -218,10 +224,11 @@ def sample_matches(name, state, mode):
     spare = 22 if mode == "failure" else 0
     if name == "primary":
         return stage(a) == 1 and stage(p) == 10 and 0 < peer_tick < 50 and stage(b) == 0 and enabled
-    if name == "transfer":
-        return stage(a) == 2 and stage(b) == 20 and stage(p) == 10 and masked
+    if name in ("transfer", "device_stale"):
+        return (stage(a) == 2 and stage(b) == 20 and stage(p) == 10 and masked
+                and bool(state["uart_fr"] & RXFE) == (name == "transfer"))
     if name == "replacement":
-        return stage(a) == 2 and stage(b) == 21 and stage(p) == 10 and enabled
+        return stage(a) == 2 and stage(b) == 21 and stage(p) == 10 and enabled and bool(state["uart_fr"] & RXFE)
     if name == "revoked":
         return stage(a) == 2 and stage(b) == spare and stage(p) == 10 and masked
     if name == "final":
@@ -233,8 +240,8 @@ def inspect(root, m, roots, va, mode):
     require(len(set(read_addresses(read_json(root/"mappings.json"), roots, va))) == 3, "probe mappings")
     sent = (root/"input.bin").read_bytes()
     require(sent[:6] == prefix(mode) + b"+", "unexpected primary serial input")
-    nonce = sent[6:-1]
-    require((len(nonce) == 8 and nonce[0] == 0xe7 and sent[-1:] == b"q") if mode == "failure"
+    nonce = sent[7:-1]
+    require((sent[6:7] == DEVICE_STALE and len(nonce) == 8 and nonce[0] == 0xe7 and sent[-1:] == b"q") if mode == "failure"
             else len(sent) == 6, "unexpected replacement serial input")
     frames = {1: [], 2: [sent[0], 4, 5]}
     if mode == "failure":
@@ -250,16 +257,17 @@ def inspect(root, m, roots, va, mode):
     dismissal = b"NATIVE EL0 DISMISSED PID 2" in raw.splitlines()
     require(dismissal == (mode == "normal"), "standby dismissal mismatch")
     states = read_json(root/"samples.json")
-    sequence = ["primary", "transfer", "replacement", "revoked", "final"] if mode == "failure" else [
+    sequence = ["primary", "transfer", "device_stale", "replacement", "revoked", "final"] if mode == "failure" else [
         "primary", "revoked", "final"]
     require(list(states) == sequence and all(sample_matches(name, states[name], mode) for name in sequence),
             "incorrect device or private process state")
     ticks = [states[name]["probes"][1][1] for name in sequence]
     require(ticks == sorted(ticks) and ticks[0] < ticks[-2] < ticks[-1], "peer failed to progress across revocation")
     if mode == "failure":
-        require(ticks[1] < ticks[2], "peer did not run during replacement startup")
+        require(ticks[2] < ticks[3], "peer did not run during replacement startup")
     return {"exits": exit_list(mode), "peer_ticks": ticks, "standby_dismissed": dismissal,
-            "fresh_nonce_hex": nonce.hex(), "private_probe_addresses": read_addresses(
+            "fresh_nonce_hex": nonce.hex(), "masked_hardware_stale_hex": sent[6:7].hex() if mode == "failure" else "",
+            "private_probe_addresses": read_addresses(
                 read_json(root/"mappings.json"), roots, va)}
 
 
