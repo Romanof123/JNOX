@@ -2424,3 +2424,9 @@ CHG-328,affects,VER-011
 REQ-004,partially-implemented-by,IMP-328
 REQ-011,partially-implemented-by,IMP-328
 DES-002,partially-implemented-by,IMP-328
+CHG-328,affects,EVD-328
+IMP-328,partially-verified-by,VER-004
+IMP-328,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-328
+VER-011,has-partial-evidence,EVD-328
+IMP-328,tested-in,EVD-328

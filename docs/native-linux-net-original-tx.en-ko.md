@@ -1,8 +1,8 @@
 # CHG-328 · Original Linux virtio-net transmit / Linux 원본 virtio-net 송신
 
-**REQ-004/011 · DES-002 · IMP-328 · VER-004/011.** This plan covers the first native packet transmission through Linux v6.18.65 `start_xmit`. EVD-327 established queue setup and verified reset with empty rings. CHG-328 requires executed upstream code, device completions and matching Ethernet bytes on an external link. Verification is pending. [Parent #426](https://github.com/Romanof123/JNOX/issues/426) · [TX issue #430](https://github.com/Romanof123/JNOX/issues/430) · [EVD-327](evidence/native-linux-net-queues/README.md)
+**REQ-004/011 · DES-002 · IMP-328 · VER-004/011.** In each of two QEMU captures, the original Linux v6.18.65 `start_xmit` executed 80 times in J-NOX EL0. The device returned 80 TX completions. The host socket and PCAP recorded all 5,912 transmitted Ethernet bytes in order. EVD-327 established queue setup and reset with empty rings. EVD-328 records the packet exchange and identifies the observer for each result. An independent offline reader confirmed the wire bytes, execution count and ring-index progression in both captures. [Parent #426](https://github.com/Romanof123/JNOX/issues/426) · [TX issue #430](https://github.com/Romanof123/JNOX/issues/430) · [EVD-327](evidence/native-linux-net-queues/README.md) · [EVD-328](evidence/native-linux-net-original-tx/README.md)
 
-이번 변경은 J-NOX EL0에서 Linux v6.18.65의 원본 `start_xmit`를 실행해 실제 이더넷 프레임을 보내는 단계다. EVD-327에서는 빈 큐의 설정·반환·재점유를 검증했다. 이번 인수 기준은 콜백 실행, 장치 완료, 호스트에서 관측한 프레임 바이트를 같은 송신에 연결하는 것이다. 실측 검증은 아직 진행 전이다.
+서로 다른 MAC·MTU·nonce를 사용한 두 QEMU 캡처 각각에서 원본 Linux `start_xmit`가 J-NOX EL0에서 80회 실행됐다. 장치는 TX 완료 80건을 반환했고, 호스트 소켓과 PCAP에서 같은 순서로 송신된 이더넷 데이터 5,912바이트를 확인했다. EVD-327의 빈 큐 설정·반환 검증에 이어 EVD-328에는 실제 패킷 교환과 관측 지점을 기록했다. 독립 판독으로 양쪽 캡처의 프레임 바이트, 함수 실행 횟수, 링 인덱스 진행을 재확인했다.
 
 ### Transmit and buffer ownership / 송신과 버퍼 소유권
 
