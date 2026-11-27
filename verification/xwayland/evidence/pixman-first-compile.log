@@ -1,0 +1,81 @@
+/mnt/d/codex/jnox448-xwayland/dep-inputs/pixman_0.44.0.orig.tar.gz: OK
+The Meson build system
+Version: 0.61.2
+Source dir: /mnt/d/codex/jnox448-xwayland/pixman-01/pixman-0.44.0
+Build dir: /mnt/d/codex/jnox448-xwayland/pixman-01/build
+Build type: cross build
+Project name: pixman
+Project version: 0.44.0
+C compiler for the host machine: clang --target=aarch64-none-elf (clang 14.0.0-1ubuntu1 "Ubuntu clang version 14.0.0-1ubuntu1.1")
+C linker for the host machine: clang --target=aarch64-none-elf ld.lld 14.0.0
+C compiler for the build machine: cc (gcc 11.4.0 "cc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0")
+C linker for the build machine: cc ld.bfd 2.38
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: aarch64
+Host machine cpu: aarch64
+Target machine cpu family: aarch64
+Target machine cpu: aarch64
+Compiler for C supports arguments -Wdeclaration-after-statement: YES 
+Compiler for C supports arguments -fno-strict-aliasing: YES 
+Compiler for C supports arguments -fvisibility=hidden: YES 
+Compiler for C supports arguments -Wundef: YES 
+Compiler for C supports arguments -ftrapping-math: YES 
+Compiler for C supports arguments -Wunused-local-typedefs: YES 
+Checking if "test for ASM .func directive" compiles: NO 
+Checking if "test for ASM .syntax unified directive" compiles: NO 
+Checking if "test for ASM leading underscore" : links: NO 
+Dependency openmp skipped: feature openmp disabled
+Found pkg-config: /usr/bin/pkg-config (0.29.2)
+WARNING: Found CMake '/bin/false' but couldn't run it
+Found CMake: NO
+Run-time dependency gtk+-3.0 found: NO (tried pkgconfig and cmake)
+Run-time dependency glib-2.0 found: NO (tried pkgconfig and cmake)
+Library m found: NO
+Run-time dependency threads found: YES
+Has header "pthread.h" : YES 
+Checking for function "sigaction" : NO 
+Checking for function "alarm" : NO 
+Checking for function "mprotect" : NO 
+Checking for function "getpagesize" : NO 
+Checking for function "mmap" : NO 
+Checking for function "getisax" : NO 
+Checking for function "gettimeofday" : NO 
+Checking for function "posix_memalign" : NO 
+Checking for function "feenableexcept" with dependency -lm: NO 
+Header <fenv.h> has symbol "FE_DIVBYZERO" : NO 
+Check usable header "sys/mman.h" : YES 
+Check usable header "fenv.h" : NO 
+Check usable header "unistd.h" : YES 
+Checking if "__attribute__((constructor))" : links: YES 
+Checking if "__attribute__((destructor))" : links: YES 
+Checking if "Has float128 support" : links: NO 
+Checking for function "clz" : YES 
+Checking if "Support for GCC vector extensions" : links: YES 
+Checking for size of "long" : -1
+Configuring pixman-config.h using configuration
+Configuring pixman-version.h using configuration
+Build targets in project: 1
+
+pixman 0.44.0
+
+  User defined options
+    Cross files    : /mnt/d/codex/jnox448-xwayland/configure-04/jnox.ini
+    auto_features  : disabled
+    default_library: static
+    libdir         : lib
+    prefix         : /mnt/d/codex/jnox448-xwayland/deps-03/target
+    wrap_mode      : nofallback
+
+Found ninja-1.10.1 at /usr/bin/ninja
+ninja: Entering directory `/mnt/d/codex/jnox448-xwayland/pixman-01/build'
+[1/33] Compiling C object pixman/libpixman-1.a.p/pixman.c.o
+FAILED: pixman/libpixman-1.a.p/pixman.c.o 
+clang --target=aarch64-none-elf -Ipixman/libpixman-1.a.p -Ipixman -I../pixman-0.44.0/pixman -I/mnt/d/codex/jnox448-xwayland/port-xtrans-01/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/deps-03/target/include -fcolor-diagnostics -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -std=gnu99 -O2 -g -Wdeclaration-after-statement -fno-strict-aliasing -fvisibility=hidden -Wundef -ftrapping-math -Wno-unused-local-typedefs -DHAVE_CONFIG_H -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -fPIC -pthread -MD -MQ pixman/libpixman-1.a.p/pixman.c.o -MF pixman/libpixman-1.a.p/pixman.c.o.d -o pixman/libpixman-1.a.p/pixman.c.o -c ../pixman-0.44.0/pixman/pixman.c
+warning: overriding currently unsupported use of floating point exceptions on this target [-Wunsupported-floating-point-opt]
+In file included from ../pixman-0.44.0/pixman/pixman.c:29:
+../pixman-0.44.0/pixman/pixman-private.h:27:10: fatal error: 'assert.h' file not found
+#include <assert.h>
+         ^~~~~~~~~~
+1 warning and 1 error generated.
+ninja: build stopped: subcommand failed.

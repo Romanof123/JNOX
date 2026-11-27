@@ -5,3 +5,8 @@
 +if host_machine.system() != 'jnox'
 +    x11_dep = dependency('x11')
 +endif
+--- a/include/meson.build
++++ b/include/meson.build
+@@ -194,1 +194,1 @@
+-conf_data.set('TCPCONN', '1')
++conf_data.set('TCPCONN', host_machine.system() != 'jnox' or get_option('listen_tcp') ? '1' : false)

@@ -1,0 +1,79 @@
+The Meson build system
+Version: 0.61.2
+Source dir: /mnt/d/codex/jnox448-xwayland/deps-03/xwayland-24.1.6
+Build dir: /mnt/d/codex/jnox448-xwayland/configure-04/meson
+Build type: cross build
+Project name: xwayland
+Project version: 24.1.6
+C compiler for the host machine: clang --target=aarch64-none-elf (clang 14.0.0-1ubuntu1 "Ubuntu clang version 14.0.0-1ubuntu1.1")
+C linker for the host machine: clang --target=aarch64-none-elf ld.lld 14.0.0
+C compiler for the build machine: cc (gcc 11.4.0 "cc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0")
+C linker for the build machine: cc ld.bfd 2.38
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: aarch64
+Host machine cpu: aarch64
+Target machine cpu family: aarch64
+Target machine cpu: aarch64
+Compiler for C supports arguments -Wall: YES 
+Compiler for C supports arguments -Wpointer-arith: YES 
+Compiler for C supports arguments -Wmissing-declarations: YES 
+Compiler for C supports arguments -Wformat=2: YES 
+Compiler for C supports arguments -Wstrict-prototypes: YES 
+Compiler for C supports arguments -Wmissing-prototypes: YES 
+Compiler for C supports arguments -Wnested-externs: YES 
+Compiler for C supports arguments -Wbad-function-cast: YES 
+Compiler for C supports arguments -Wold-style-definition: YES 
+Compiler for C supports arguments -Wunused: YES 
+Compiler for C supports arguments -Wuninitialized: YES 
+Compiler for C supports arguments -Wshadow: YES 
+Compiler for C supports arguments -Wmissing-noreturn: YES 
+Compiler for C supports arguments -Wmissing-format-attribute: YES 
+Compiler for C supports arguments -Wredundant-decls: YES 
+Compiler for C supports arguments -Werror=implicit: YES 
+Compiler for C supports arguments -Werror=nonnull: YES 
+Compiler for C supports arguments -Werror=init-self: YES 
+Compiler for C supports arguments -Werror=main: YES 
+Compiler for C supports arguments -Werror=missing-braces: YES 
+Compiler for C supports arguments -Werror=sequence-point: YES 
+Compiler for C supports arguments -Werror=return-type: YES 
+Compiler for C supports arguments -Werror=trigraphs: YES 
+Compiler for C supports arguments -Werror=array-bounds: YES 
+Compiler for C supports arguments -Werror=write-strings: YES 
+Compiler for C supports arguments -Werror=address: YES 
+Compiler for C supports arguments -Werror=int-to-pointer-cast: YES 
+Compiler for C supports arguments -Werror=pointer-to-int-cast: YES 
+deps-03/xwayland-24.1.6/meson.build:61: WARNING: Consider using the built-in warning_level option instead of using "-Wall".
+Found pkg-config: /usr/bin/pkg-config (0.29.2)
+Run-time dependency xproto found: YES 7.0.33
+Run-time dependency randrproto found: YES 1.6.0
+Run-time dependency renderproto found: YES 0.11.1
+Run-time dependency xextproto found: YES 7.3.0
+Run-time dependency inputproto found: YES 2.3.99.2
+Run-time dependency kbproto found: YES 1.0.7
+Run-time dependency fontsproto found: YES 2.1.3
+Run-time dependency fixesproto found: YES 6.1
+Run-time dependency damageproto found: YES 1.2.1
+Run-time dependency xcmiscproto found: YES 1.2.2
+Run-time dependency bigreqsproto found: YES 1.1.2
+Run-time dependency presentproto found: YES 1.4
+Run-time dependency xtrans found: YES 1.4.0
+Run-time dependency videoproto found: YES 2.3.3
+Run-time dependency compositeproto found: YES 0.4.2
+Run-time dependency recordproto found: YES 1.14.2
+Run-time dependency scrnsaverproto found: YES 1.2.3
+Run-time dependency resourceproto found: YES 1.2.0
+Run-time dependency dri3proto found: YES 1.4
+Run-time dependency xineramaproto found: YES 1.2.1
+Run-time dependency xf86bigfontproto found: YES 1.2.0
+Run-time dependency xf86vidmodeproto found: YES 2.3.1
+WARNING: Found CMake '/bin/false' but couldn't run it
+Found CMake: NO
+Run-time dependency xshmfence found: NO (tried pkgconfig and cmake)
+Run-time dependency xwaylandproto found: YES 1.0
+Run-time dependency dpmsproto found: YES 1.2
+Run-time dependency pixman-1 found: NO (tried pkgconfig)
+
+deps-03/xwayland-24.1.6/meson.build:101:0: ERROR: Dependency "pixman-1" not found, tried pkgconfig
+
+A full log can be found at /mnt/d/codex/jnox448-xwayland/configure-04/meson/meson-logs/meson-log.txt
