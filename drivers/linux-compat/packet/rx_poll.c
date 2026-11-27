@@ -59,6 +59,8 @@ static int schedule_rx(void)
     register long result asm("x0") = bound_epoch;
     register unsigned long sequence asm("x1") = irq_receipt[5];
     register unsigned long reserved asm("x2") = 0;
+    /* SVC174 wakes on queue-0 used progress. A shared virtio IRQ caused
+     * solely by queue 1 must be handled by EL1 without publishing an RX event. */
     ++irq_receipt[4];
     asm volatile("svc #0x4a01" : "+r"(result), "+r"(sequence), "+r"(reserved)
                  : "r"(op) : "memory", "cc");
