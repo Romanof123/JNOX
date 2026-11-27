@@ -1,0 +1,13 @@
+{
+  "wire": "ValueError: reply 31",
+  "held-cookie": "ValueError: held/retired cookie history",
+  "generation": "ValueError: generation / ordinal / SPI / status / used head / claim",
+  "used-head": "ValueError: generation / ordinal / SPI / status / used head / claim",
+  "used-id": "ValueError: unique serial TX owner descriptor",
+  "duplicate": "ValueError: generation / ordinal / SPI / status / used head / claim",
+  "callback-pointer": "ValueError: registered callback and claimed used head",
+  "wake": "ValueError: one contiguous wake per claimed head",
+  "deferred-free": "ValueError: deferred cookie release after duplicate claim check",
+  "opcode": "ValueError: executed image instruction",
+  "irq-ack": "ValueError: Virtio interrupt ACK"
+}

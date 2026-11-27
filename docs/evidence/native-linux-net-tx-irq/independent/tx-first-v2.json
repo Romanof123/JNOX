@@ -1,0 +1,336 @@
+{
+  "boot": "tx-first-v2",
+  "profile": "tx-irq",
+  "nonce": "654dc4033cb33d7a",
+  "mac": "52:54:00:44:10:01",
+  "mtu": 1410,
+  "packet_counts": {
+    "request": 80,
+    "reply": 80,
+    "ack": 1,
+    "reply_bytes": 5912
+  },
+  "identity": {
+    "product": "93678bff45406c688d26102b76945cdbc98c321d",
+    "linux": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "linux_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "kernel": "fd97fdb41ba64252bbd49cb50d2adddc401a94589f1a346e8519d53850b21098",
+    "service": "0b67b1328b7bad7ba57011ddda9acff7966089cd52ab9d67c4964757e385e7d1",
+    "packet_object": "655914bcdfa0f1629e529e61341d03967c397895f976eeca5b7a1397981381ac"
+  },
+  "stages": {
+    "ready": {
+      "ring": [
+        32,
+        0,
+        0,
+        0
+      ],
+      "cookie": {
+        "submitted": 0,
+        "notified": 0,
+        "retired": 0,
+        "outstanding": 0,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 0
+      },
+      "generation": 1
+    },
+    "held": {
+      "ring": [
+        32,
+        1,
+        1,
+        0
+      ],
+      "cookie": {
+        "submitted": 1,
+        "notified": 0,
+        "retired": 0,
+        "outstanding": 1,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 1
+      },
+      "generation": 1
+    },
+    "overlap": {
+      "ring": [
+        32,
+        2,
+        1,
+        0
+      ],
+      "cookie": {
+        "submitted": 1,
+        "notified": 0,
+        "retired": 0,
+        "outstanding": 1,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 1
+      },
+      "generation": 1
+    },
+    "completed": {
+      "ring": [
+        32,
+        3,
+        3,
+        3
+      ],
+      "cookie": {
+        "submitted": 3,
+        "notified": 3,
+        "retired": 3,
+        "state": 0
+      },
+      "generation": 1
+    },
+    "ack": {
+      "ring": [
+        112,
+        80,
+        80,
+        80
+      ],
+      "cookie": {
+        "submitted": 80,
+        "notified": 80,
+        "retired": 80,
+        "outstanding": 0,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 2
+      },
+      "generation": 1
+    },
+    "final": {
+      "ring": [
+        112,
+        81,
+        80,
+        80
+      ],
+      "cookie": {
+        "submitted": 80,
+        "notified": 80,
+        "retired": 80,
+        "outstanding": 0,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 2
+      },
+      "generation": 1
+    }
+  },
+  "receipt_stages": {
+    "ready": {
+      "claimed": 0,
+      "wake_delta": 0,
+      "retired": 0,
+      "peer_claim": -13,
+      "simultaneously_pending_rx_sequences": [],
+      "last_used_head": 0,
+      "descriptor_ids": []
+    },
+    "held": {
+      "claimed": 0,
+      "wake_delta": 0,
+      "retired": 0,
+      "peer_claim": -13,
+      "simultaneously_pending_rx_sequences": [],
+      "last_used_head": 0,
+      "descriptor_ids": []
+    },
+    "overlap": {
+      "claimed": 0,
+      "wake_delta": 0,
+      "retired": 0,
+      "peer_claim": -13,
+      "simultaneously_pending_rx_sequences": [],
+      "last_used_head": 0,
+      "descriptor_ids": []
+    },
+    "completed": {
+      "claimed": 3,
+      "wake_delta": 3,
+      "retired": 3,
+      "peer_claim": -13,
+      "simultaneously_pending_rx_sequences": [],
+      "last_used_head": 3,
+      "descriptor_ids": [
+        0
+      ]
+    },
+    "ack": {
+      "claimed": 80,
+      "wake_delta": 80,
+      "retired": 80,
+      "peer_claim": -13,
+      "simultaneously_pending_rx_sequences": [
+        4,
+        5,
+        9,
+        12,
+        15,
+        23,
+        24,
+        25,
+        26,
+        28,
+        29,
+        30,
+        35,
+        36,
+        38,
+        39,
+        42,
+        45,
+        46,
+        47,
+        50,
+        56,
+        59,
+        60,
+        64,
+        65,
+        66,
+        67,
+        69,
+        73,
+        75,
+        76,
+        77,
+        78
+      ],
+      "last_used_head": 80,
+      "descriptor_ids": [
+        0
+      ]
+    },
+    "final": {
+      "claimed": 80,
+      "wake_delta": 80,
+      "retired": 80,
+      "peer_claim": -13,
+      "simultaneously_pending_rx_sequences": [
+        4,
+        5,
+        9,
+        12,
+        15,
+        23,
+        24,
+        25,
+        26,
+        28,
+        29,
+        30,
+        35,
+        36,
+        38,
+        39,
+        42,
+        45,
+        46,
+        47,
+        50,
+        56,
+        59,
+        60,
+        64,
+        65,
+        66,
+        67,
+        69,
+        73,
+        75,
+        76,
+        77,
+        78
+      ],
+      "last_used_head": 80,
+      "descriptor_ids": [
+        0
+      ]
+    }
+  },
+  "trace": {
+    "spi79_transactions": 127,
+    "reassertions_before_eoi": 17,
+    "tx_kicks": 80,
+    "rx_kicks": 17,
+    "kernel_status_writes": [
+      0,
+      1,
+      3,
+      11,
+      15,
+      0
+    ],
+    "mac_mmio": "52:54:00:44:10:01",
+    "mtu_mmio": 1410,
+    "completed_irq_transactions_between_kick_and_callback": {
+      "1": 38,
+      "2": 42
+    },
+    "pc_counts": {
+      "virtnet_probe": 1,
+      "virtnet_open": 1,
+      "skb_recv_done": 81,
+      "virtnet_poll": 82,
+      "start_xmit": 80,
+      "virtnet_close": 1,
+      "virtnet_remove": 1,
+      "skb_xmit_done": 80,
+      "wake_branch": 80
+    },
+    "callback": "0x40b160",
+    "entry_word": "0xa9bd7bfd",
+    "tail_branch": "0x40b1ec",
+    "tail_word": "0x17fff471",
+    "tail_target": "0x4083b0",
+    "overlap_capture_byte": 157847,
+    "first_tx_kick_byte": 160467,
+    "polling_callback_filter": "enabled"
+  },
+  "physical_used_sequences": [
+    0,
+    1,
+    2,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79
+  ]
+}

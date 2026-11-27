@@ -2552,3 +2552,9 @@ REQ-004,partially-implemented-by,IMP-342
 REQ-011,partially-implemented-by,IMP-342
 REQ-015,partially-implemented-by,IMP-342
 REQ-016,partially-implemented-by,IMP-342
+CHG-342,affects,EVD-342
+IMP-342,tested-in,EVD-342
+VER-004,has-partial-evidence,EVD-342
+VER-011,has-partial-evidence,EVD-342
+VER-015,has-partial-evidence,EVD-342
+VER-016,has-partial-evidence,EVD-342

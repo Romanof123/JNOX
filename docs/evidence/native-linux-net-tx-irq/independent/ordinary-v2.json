@@ -1,0 +1,200 @@
+{
+  "boot": "ordinary-v2",
+  "profile": "polling",
+  "nonce": "53ef04101dc325bd",
+  "mac": "52:54:00:44:10:01",
+  "mtu": 1410,
+  "packet_counts": {
+    "request": 80,
+    "reply": 80,
+    "ack": 1,
+    "reply_bytes": 5912
+  },
+  "identity": {
+    "product": "93678bff45406c688d26102b76945cdbc98c321d",
+    "linux": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "linux_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "kernel": "16bcd0958b246653fc01ac526aaf82def3f0dd94649e5e1ea3cbec5cd974ffa2",
+    "service": "0b67b1328b7bad7ba57011ddda9acff7966089cd52ab9d67c4964757e385e7d1",
+    "packet_object": "655914bcdfa0f1629e529e61341d03967c397895f976eeca5b7a1397981381ac"
+  },
+  "stages": {
+    "ready": {
+      "ring": [
+        32,
+        0,
+        0,
+        0
+      ],
+      "cookie": {
+        "submitted": 0,
+        "notified": 0,
+        "retired": 0,
+        "outstanding": 0,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 0
+      },
+      "generation": 1
+    },
+    "held": {
+      "ring": [
+        32,
+        1,
+        1,
+        0
+      ],
+      "cookie": {
+        "submitted": 1,
+        "notified": 0,
+        "retired": 0,
+        "outstanding": 1,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 1
+      },
+      "generation": 1
+    },
+    "overlap": {
+      "ring": [
+        32,
+        2,
+        1,
+        0
+      ],
+      "cookie": {
+        "submitted": 1,
+        "notified": 0,
+        "retired": 0,
+        "outstanding": 1,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 1
+      },
+      "generation": 1
+    },
+    "completed": {
+      "ring": [
+        32,
+        3,
+        3,
+        3
+      ],
+      "cookie": {
+        "submitted": 3,
+        "notified": 3,
+        "retired": 3,
+        "state": 0
+      },
+      "generation": 1
+    },
+    "ack": {
+      "ring": [
+        112,
+        80,
+        80,
+        80
+      ],
+      "cookie": {
+        "submitted": 80,
+        "notified": 80,
+        "retired": 80,
+        "outstanding": 0,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 2
+      },
+      "generation": 1
+    },
+    "final": {
+      "ring": [
+        112,
+        81,
+        80,
+        80
+      ],
+      "cookie": {
+        "submitted": 80,
+        "notified": 80,
+        "retired": 80,
+        "outstanding": 0,
+        "stable_skb": "0x4517c8",
+        "last_descriptor": 0,
+        "last_sg_count": 2
+      },
+      "generation": 1
+    }
+  },
+  "receipt_stages": {},
+  "trace": {
+    "spi79_transactions": 81,
+    "reassertions_before_eoi": 0,
+    "tx_kicks": 80,
+    "rx_kicks": 17,
+    "kernel_status_writes": [
+      0,
+      1,
+      3,
+      11,
+      15,
+      0
+    ],
+    "mac_mmio": "52:54:00:44:10:01",
+    "mtu_mmio": 1410,
+    "completed_irq_transactions_between_kick_and_callback": {},
+    "pc_counts": {
+      "virtnet_probe": 1,
+      "virtnet_open": 1,
+      "skb_recv_done": 81,
+      "virtnet_poll": 82,
+      "start_xmit": 80,
+      "virtnet_close": 1,
+      "virtnet_remove": 1
+    },
+    "callback": "0x40b160",
+    "entry_word": null,
+    "tail_branch": "0x40b1ec",
+    "tail_word": null,
+    "tail_target": "0x4083b0",
+    "overlap_capture_byte": 157553,
+    "first_tx_kick_byte": 160173,
+    "polling_callback_filter": "absent"
+  },
+  "physical_used_sequences": [
+    0,
+    1,
+    2,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79
+  ]
+}
