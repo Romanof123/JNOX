@@ -29,9 +29,10 @@ with tempfile.TemporaryDirectory() as temp:
             "-D__wrap_fcntl=jnox_transport_fcntl"])
     compile("native.o", here / "native.c", ["-I", native])
     compile("public.o", here / "public.c", ["-I", here, "-isystem", prefix / "include"])
+    compile("pause.o", here / "sync-pause.c", ["-isystem", prefix / "include", "-iquote", native])
     compile("sync.o", here / "sync.c", ["-isystem", prefix / "include", "-iquote", native, "-mno-outline-atomics"])
     subprocess.run([args.ar, "rcs", out / "libjnox-wayland-os.a", out / "socket.o",
-                    out / "native.o", out / "public.o", out / "sync.o"], check=True)
+                    out / "native.o", out / "public.o", out / "sync.o", out / "pause.o"], check=True)
     for name in ("sys/socket.h", "sys/un.h", "sys/uio.h", "poll.h"):
         target = overlay / name
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -56,3 +56,7 @@ closes its live descriptors and prompts retries. Infinite-deadline SDK calls
 use the same protocol. The earlier 32 captures describe the earlier binary.
 
 RECV_RIGHTS BEGIN flags bit 2 requests MSG_CMSG_CLOEXEC. INSTALL carries this flag in bit 8 of its broker-local count word. EL1 validates the live COMMIT and receiver slot, installs the right and its descriptor-local flag together, and completes the reply. Plain receives and truncated control buffers do not install a descriptor.
+
+Socket operations 17 (local name) and 18 (peer name) take the caller’s socket slot with zero argument, path and payload. The broker looks up that slot in the authenticated caller’s four-entry table. COMMIT returns zero and stages up to 31 pathname bytes in the existing META path and READ response. An unnamed endpoint has a zero-byte path. Queries leave data queues, EOF and transferred rights intact. Each accepted endpoint carries its listener’s name. A disconnected association retains the peer’s final name before its internal object slot is reused. A newly created unconnected socket returns ENOTCONN for a peer query.
+
+동작 17과 18은 호출자의 소켓 슬롯으로 각각 자기 주소와 상대 주소를 조회한다. 기존 META/READ 규약으로 최대 31바이트 경로를 전달한다. 익명 종단의 경로 길이는 0이며, 해제된 상대의 내부 슬롯이 재사용되어도 기존 연결은 마지막 상대 이름을 유지한다.

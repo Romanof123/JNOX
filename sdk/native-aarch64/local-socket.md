@@ -13,6 +13,8 @@ A pathname contains 1 to 31 bytes and uses sockaddr_un in C or a byte slice in R
 
 Each BEGIN frame names the operation, broker descriptor, argument and exact byte counts. Six-byte little-endian CHUNK frames carry path then data. COMMIT returns the operation result, with META and READ retrieving a receive's payload and source pathname. A per-process gate prevents interleaved frame sequences, including the receive readback. A concurrent call gets EBUSY. A failed chunk is followed by ABORT. No pointer is sent to the broker. C returns -1 with positive errno on failure; Rust returns the negative error in Result.
 
+Use `getsockname` or `getpeername` on an existing AF_UNIX descriptor, including a descriptor returned by `accept(fd, NULL, NULL)`. An unnamed address contains just the family. A named address adds the pathname and terminating NUL. Both calls copy at most the supplied capacity and report the full byte length on success, including with zero capacity. A short copy can end before the pathname terminator. The SDK requires non-null address and length pointers. The Picolibc transport overlay exports the same functions with public errno translation. [Guest caller and XCB dependency](../../verification/native-socket-names/README.md)
+
 ## Shared backing FDs on AF_UNIX streams
 
 For a native virt FIFO or RR package, select `--shared-fd` with the AF_UNIX socket broker. The client needs a directed route to the broker. The C declarations are in `<jnox/shm.h>` and `<sys/socket.h>`. Rust uses the existing `jnox_native::local_socket` module and the same C message implementation.
