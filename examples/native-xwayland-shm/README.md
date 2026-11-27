@@ -54,3 +54,25 @@ bash examples/native-xwayland-shm/run_dup_gate.sh \
 The build extracts the upstream function pointer, unmodified set_cloexec_or_close and wl_os_dupfd_cloexec bodies from src/wayland-os.c, and the exact minimum-zero expression from src/connection.c. It links these into both the native C SDK frame producer and a separate Picolibc caller. This exercises the exact descriptor-duplication path; running the complete libwayland closure/dispatch and Xwayland server remains a separate gate. A short-lived reservation makes the original read-only FD 98 and the outgoing duplicate 97, allowing the independent historical physical-memory/PCAP-free framebuffer oracle to keep its existing FD reuse expectations. The package runs two cold boots and the independent before/after/cancellation/authority checks and per-field mutations before the Picolibc process. Its raw terminal exit must be 74. Neither a compilation nor guest run was performed while preparing this gate.
 
 직렬 게이트는 배포 전 발견된 197번 충돌을 피한 188번 구현으로 실행한다. 원본 Wayland 복제 함수와 하한 0 호출식을 추출하여 SDK와 Picolibc 호출자에 각각 링크한다. 기존 검사기의 슬롯 배치를 유지하고, 두 번의 콜드 부트와 픽셀·권한·변조 판정 및 별도 Picolibc 프로세스의 종료 코드 74를 요구한다.
+
+## Picolibc seal caller
+
+From the checked-out repository root, set `runtime` to the verified graphics runtime directory and `out` to a fresh absolute path. Under the serial build/guest gate run:
+
+```sh
+mkdir "$out"
+export CARGO_BUILD_JOBS=1 CARGO_NET_OFFLINE=true CARGO_TARGET_DIR="$out/target"
+sh sdk/native-aarch64/build-rust.sh services/socket/Cargo.toml "$out/broker.elf"
+python3 examples/native-xwayland-shm/graphics_dup_gate.py "$runtime" "$out" "$(command -v qemu-system-aarch64)" --seals
+```
+
+The two-role guest uses the installed Picolibc graphics header and public `fcntl()`. Caller exit 75 requires a zero-length anonymous backing, a shrink seal set and queried, successful growth to 4096 bytes, rejected shrink with EPERM, lockout of further seals, and EBADF after close. Exit codes 101–108 identify individual failures in seal_caller.c. Resizing and seal state come from the existing kernel operations 190–192. The overlay retains Picolibc's existing descriptor commands, including F_DUPFD_CLOEXEC = 14.
+
+직렬 게이트에서만 실행한다. 공개 Picolibc 헤더로 컴파일한 호출자의 종료값 75는 축소 봉인 후 확장 성공, 축소 거부와 EPERM, 종료한 서술자의 EBADF까지 확인했음을 뜻한다.
+
+On integrated revision `c2885c7`, the native AArch64 Picolibc caller
+completed this sequence and exited 75 in the two-process guest. The tested
+graphics adapter SHA-256 was
+`a8fb5288dea8457a4888cf354ec840dcc241b251be3c511b2892c320e29847d1`.
+통합 리비전 `c2885c7`의 두 프로세스 게스트에서 전체 조건을 통과하고
+호출자가 기대값 75로 종료했다.

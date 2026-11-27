@@ -43,6 +43,7 @@ static inline struct cmsghdr *CMSG_NXTHDR(const struct msghdr *m, const struct c
     return (struct cmsghdr *)(at + step);
 }
 #define PF_LOCAL AF_UNIX
+#define AF_UNSPEC 0
 #define AF_UNIX 1
 #define AF_INET 2
 #define AF_LOCAL AF_UNIX

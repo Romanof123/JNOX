@@ -10,7 +10,10 @@ import sys
 import time
 from pathlib import Path
 
-runtime, out, qemu = map(Path,sys.argv[1:])
+runtime, out, qemu = map(Path,sys.argv[1:4])
+mode = sys.argv[4:]
+if mode not in ([], ["--seals"]):
+    raise SystemExit("usage: graphics_dup_gate.py RUNTIME OUT QEMU [--seals]")
 repo = Path.cwd()
 sdk = repo/"sdk/native-aarch64"
 os_port = sdk/"graphics/os"
@@ -26,10 +29,16 @@ cross.read(runtime/"jnox.ini")
 cc = ast.literal_eval(cross["binaries"]["c"])
 flags = ast.literal_eval(cross["built-in options"]["c_args"])
 ld = ast.literal_eval(cross["built-in options"]["c_link_args"])
-source = out/"picolibc-caller.c"
-source.write_text('#define _POSIX_C_SOURCE 200809L\n#include "upstream-dup.inc"\n'
-                  '#define JNOX_FRAME_DUP upstream_outgoing_fd\n'
-                  f'#include "{os_port}/dup_caller.c"\n')
+if mode:
+    source = os_port/"seal_caller.c"
+    flags = ["-I" + str(prefix/"include/jnox-wayland"), *flags]
+    expected = 75
+else:
+    source = out/"picolibc-caller.c"
+    source.write_text('#define _POSIX_C_SOURCE 200809L\n#include "upstream-dup.inc"\n'
+                      '#define JNOX_FRAME_DUP upstream_outgoing_fd\n'
+                      f'#include "{os_port}/dup_caller.c"\n')
+    expected = 74
 subprocess.run([*cc,*flags,"-iquote",sdk/"include","-c",source,"-o",out/"picolibc-caller.o"],check=True)
 elf = out/"picolibc-caller.elf"
 subprocess.run([*cc,out/"picolibc-caller.o",prefix/"lib/libjnox-wayland-os.a",*ld,
@@ -52,9 +61,9 @@ with (out/"picolibc-stderr").open("xb") as err:
             match = re.search(rb"(?m)^NATIVE EL0 EXIT PID 0 (-?\d+)\r?\n",data)
             if match:
                 status = int(match[1])
-                if status != 74:
+                if status != expected:
                     raise ValueError(f"public Picolibc caller exited {status}")
-                print("Public Picolibc fcntl caller exited 74.",flush=True)
+                print(f"Public Picolibc fcntl caller exited {status}.",flush=True)
                 break
             if proc.poll() is not None:
                 raise ValueError(f"QEMU exited {proc.returncode}")

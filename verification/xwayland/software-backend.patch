@@ -1,0 +1,481 @@
+--- a/include/meson.build
++++ b/include/meson.build
+@@ -315,7 +315,11 @@
+ 
+ build_xwayland_glamor = build_glamor and gbm_dep.found()
+ 
++# DRM lease forwarding can run independently of glamor and DRI3.
++build_xwayland_drm_lease = get_option('drm') or build_xwayland_glamor or build_dri3
++
+ xwayland_data = configuration_data()
++xwayland_data.set('XWL_HAS_DRM_LEASE', build_xwayland_drm_lease ? '1' : false)
+ xwayland_data.set('XWL_HAS_GLAMOR', build_xwayland_glamor ? '1' : false)
+ xwayland_data.set('XWL_HAS_LIBDECOR', have_libdecor ? '1' : false)
+ xwayland_data.set('XWL_HAS_XWAYLAND_EXTENSION', xwaylandproto_dep.found() ? '1' : false)
+--- a/include/xwayland-config.h.meson.in
++++ b/include/xwayland-config.h.meson.in
+@@ -3,6 +3,9 @@
+ #pragma once
+ 
+ #include <dix-config.h>
++
++/* Build the Wayland DRM lease backend */
++#mesondefine XWL_HAS_DRM_LEASE
+ 
+ /* Build glamor support for Xwayland */
+ #mesondefine XWL_HAS_GLAMOR
+--- a/hw/xwayland/meson.build
++++ b/hw/xwayland/meson.build
+@@ -4,8 +4,6 @@
+     'xwayland-input.h',
+     'xwayland-cursor.c',
+     'xwayland-cursor.h',
+-    'xwayland-drm-lease.h',
+-    'xwayland-drm-lease.c',
+     'xwayland-glamor.h',
+     'xwayland-pixmap.c',
+     'xwayland-pixmap.h',
+@@ -73,30 +71,30 @@
+ srcs += client_header.process(tablet_xml)
+ srcs += client_header.process(kbgrab_xml)
+ srcs += client_header.process(xdg_output_xml)
+-srcs += client_header.process(dmabuf_xml)
+ srcs += client_header.process(viewporter_xml)
+ srcs += client_header.process(xdg_shell_xml)
+-srcs += client_header.process(drm_lease_xml)
+ srcs += client_header.process(shortcuts_inhibit_xml)
+ srcs += client_header.process(xwayland_shell_xml)
+ srcs += client_header.process(tearing_xml)
+ srcs += client_header.process(fractional_scale_xml)
+-srcs += client_header.process(syncobj_xml)
+ srcs += code.process(relative_xml)
+ srcs += code.process(pointer_xml)
+ srcs += code.process(gestures_xml)
+ srcs += code.process(tablet_xml)
+ srcs += code.process(kbgrab_xml)
+ srcs += code.process(xdg_output_xml)
+-srcs += code.process(dmabuf_xml)
+ srcs += code.process(viewporter_xml)
+ srcs += code.process(xdg_shell_xml)
+-srcs += code.process(drm_lease_xml)
+ srcs += code.process(shortcuts_inhibit_xml)
+ srcs += code.process(xwayland_shell_xml)
+ srcs += code.process(tearing_xml)
+ srcs += code.process(fractional_scale_xml)
+-srcs += code.process(syncobj_xml)
++
++if build_xwayland_drm_lease
++    srcs += ['xwayland-drm-lease.c', 'xwayland-drm-lease.h']
++    srcs += client_header.process(drm_lease_xml)
++    srcs += code.process(drm_lease_xml)
++endif
+ 
+ if build_ei
+     xwayland_dep += libei_dep
+@@ -121,6 +119,10 @@
+         srcs += 'xwayland-glamor-xv.c'
+     endif
+ 
++    srcs += client_header.process(dmabuf_xml)
++    srcs += code.process(dmabuf_xml)
++    srcs += client_header.process(syncobj_xml)
++    srcs += code.process(syncobj_xml)
+     srcs += client_header.process('drm.xml')
+     srcs += code.process('drm.xml')
+     xwayland_dep += gbm_dep
+@@ -132,7 +134,7 @@
+     wayland_inc += glx_inc
+ endif
+ 
+-if libdrm_dep.found()
++if build_xwayland_drm_lease and libdrm_dep.found()
+     xwayland_dep += libdrm_dep
+ endif
+ 
+--- a/hw/xwayland/xwayland-glamor.h
++++ b/hw/xwayland/xwayland-glamor.h
+@@ -31,11 +31,8 @@
+ #include <sys/types.h>
+ 
+ #include <wayland-client.h>
+-#include <xf86drm.h>
+ 
+ #include "xwayland-types.h"
+-#include "xwayland-glamor-gbm.h"
+-#include "dri3.h"
+ 
+ typedef enum _xwl_glamor_mode_flags{
+     XWL_GLAMOR_NONE = 0,
+@@ -45,6 +42,8 @@
+ } xwl_glamor_mode_flags;
+ 
+ #ifdef XWL_HAS_GLAMOR
++#include "xwayland-glamor-gbm.h"
++#include "dri3.h"
+ 
+ Bool xwl_glamor_init(struct xwl_screen *xwl_screen);
+ 
+--- a/hw/xwayland/xwayland-window.h
++++ b/hw/xwayland/xwayland-window.h
+@@ -38,10 +38,11 @@
+ #include <propertyst.h>
+ #include <validate.h>
+ #include <wayland-util.h>
+-#include <xf86drm.h>
+ 
+ #include "xwayland-types.h"
++#ifdef XWL_HAS_GLAMOR
+ #include "xwayland-dmabuf.h"
++#endif
+ 
+ struct xwl_wl_surface {
+     OsTimerPtr wl_surface_destroy_timer;
+@@ -99,13 +100,17 @@
+     struct libdecor_frame *libdecor_frame;
+ #endif
+     struct xwayland_surface_v1 *xwayland_surface;
++#ifdef XWL_HAS_GLAMOR
+     struct xwl_dmabuf_feedback feedback;
+     /* If TRUE, the window buffer format supports scanout with implicit modifier */
+     Bool has_implicit_scanout_support;
++#endif
+     struct wp_tearing_control_v1 *tearing_control;
+     struct wp_fractional_scale_v1 *fractional_scale;
+     int fractional_scale_numerator;
++#ifdef XWL_HAS_GLAMOR
+     struct wp_linux_drm_syncobj_surface_v1 *surface_sync;
++#endif
+ };
+ 
+ struct xwl_window *xwl_window_get(WindowPtr window);
+--- a/hw/xwayland/xwayland-screen.h
++++ b/hw/xwayland/xwayland-screen.h
+@@ -37,8 +37,12 @@
+ #include "xwayland-window.h"
+ #include "xwayland-output.h"
+ #include "xwayland-glamor.h"
++#ifdef XWL_HAS_DRM_LEASE
+ #include "xwayland-drm-lease.h"
++#endif
++#ifdef XWL_HAS_GLAMOR
+ #include "xwayland-dmabuf.h"
++#endif
+ 
+ #ifdef XWL_HAS_LIBDECOR
+ #include <libdecor.h>
+@@ -108,18 +112,24 @@
+     struct zwp_xwayland_keyboard_grab_manager_v1 *wp_grab;
+     struct zwp_keyboard_shortcuts_inhibit_manager_v1 *shortcuts_inhibit_manager;
+     struct zwp_keyboard_shortcuts_inhibitor_v1 *shortcuts_inhibit;
++#ifdef XWL_HAS_GLAMOR
+     struct zwp_linux_dmabuf_v1 *dmabuf;
+     int dmabuf_protocol_version;
+     struct xwl_dmabuf_feedback default_feedback;
++#endif
+     struct zxdg_output_manager_v1 *xdg_output_manager;
+     struct wp_viewporter *viewporter;
+     struct xwayland_shell_v1 *xwayland_shell;
+     struct wp_tearing_control_manager_v1 *tearing_control_manager;
+     struct wp_fractional_scale_manager_v1 *fractional_scale_manager;
++#ifdef XWL_HAS_GLAMOR
+     struct wp_linux_drm_syncobj_manager_v1 *explicit_sync;
++#endif
++#ifdef XWL_HAS_DRM_LEASE
+     struct xorg_list drm_lease_devices;
+     struct xorg_list queued_drm_lease_devices;
+     struct xorg_list drm_leases;
++#endif
+     struct xwl_output *fixed_output;
+     struct xorg_list pending_wl_surface_destroy;
+     uint64_t surface_association_serial;
+--- a/hw/xwayland/xwayland-window.c
++++ b/hw/xwayland/xwayland-window.c
+@@ -47,15 +47,14 @@
+ #include "xwayland-window.h"
+ #include "xwayland-window-buffers.h"
+ #include "xwayland-shm.h"
+-#include "xwayland-dmabuf.h"
+-
+-#include "linux-dmabuf-unstable-v1-client-protocol.h"
+ #include "tearing-control-v1-client-protocol.h"
+ #include "viewporter-client-protocol.h"
+ #include "xdg-shell-client-protocol.h"
+ #include "xwayland-shell-v1-client-protocol.h"
+ #include "fractional-scale-v1-client-protocol.h"
++#ifdef XWL_HAS_GLAMOR
+ #include "linux-drm-syncobj-v1-client-protocol.h"
++#endif
+ 
+ #define DELAYED_WL_SURFACE_DESTROY 1000 /* ms */
+ 
+@@ -1694,8 +1693,10 @@
+     if (xwl_window->fractional_scale)
+         wp_fractional_scale_v1_destroy(xwl_window->fractional_scale);
+ 
++#ifdef XWL_HAS_GLAMOR
+     if (xwl_window->surface_sync)
+         wp_linux_drm_syncobj_surface_v1_destroy(xwl_window->surface_sync);
++#endif
+ 
+     release_wl_surface_for_window(xwl_window);
+     xorg_list_del(&xwl_window->link_damage);
+--- a/hw/xwayland/xwayland-window-buffers.c
++++ b/hw/xwayland/xwayland-window-buffers.c
+@@ -31,18 +31,12 @@
+ #include "xwayland-window.h"
+ #include "xwayland-pixmap.h"
+ #include "xwayland-screen.h"
++#include "xwayland-window-buffers.h"
++#ifdef XWL_HAS_GLAMOR
++#include "glamor.h"
+ #include "xwayland-glamor-gbm.h"
+-#include "xwayland-window-buffers.h"
+-#ifdef XWL_HAS_GLAMOR
+-#include "glamor.h"
++#include "linux-drm-syncobj-v1-client-protocol.h"
+ #endif
+-#include "dri3.h"
+-
+-#include <poll.h>
+-#ifdef DRI3
+-#include <sys/eventfd.h>
+-#endif
+-#include "linux-drm-syncobj-v1-client-protocol.h"
+ 
+ #define BUFFER_TIMEOUT 1 * 1000 /* ms */
+ 
+@@ -461,10 +455,12 @@
+                                          xwl_window_buffer_release_callback,
+                                          xwl_window_buffer);
+ 
++#ifdef XWL_HAS_GLAMOR
+         if (xwl_window->surface_sync) {
+             wp_linux_drm_syncobj_surface_v1_destroy(xwl_window->surface_sync);
+             xwl_window->surface_sync = NULL;
+         }
++#endif
+     }
+ 
+     xorg_list_append(&xwl_window_buffer->link_buffer,
+--- a/hw/xwayland/xwayland-present.c
++++ b/hw/xwayland/xwayland-present.c
+@@ -43,7 +43,9 @@
+ #include "xwayland-pixmap.h"
+ 
+ #include "tearing-control-v1-client-protocol.h"
++#ifdef XWL_HAS_GLAMOR
+ #include "linux-drm-syncobj-v1-client-protocol.h"
++#endif
+ 
+ #define XWL_PRESENT_CAPS PresentCapabilityAsync | PresentCapabilityAsyncMayTear
+ 
+@@ -395,9 +397,9 @@
+ xwl_present_flip_notify_vblank(present_vblank_ptr vblank, uint64_t ust, uint64_t crtc_msc)
+ {
+     WindowPtr                   window = vblank->window;
+-#ifdef DRI3
++#if defined(XWL_HAS_GLAMOR) && defined(DRI3)
+     struct xwl_screen *xwl_screen = xwl_screen_get(window->drawable.pScreen);
+-#endif /* DRI3 */
++#endif
+     struct xwl_present_window *xwl_present_window = xwl_present_window_priv(window);
+     uint8_t mode = PresentCompleteModeFlip;
+ 
+@@ -415,10 +417,10 @@
+             xwl_present_event_from_vblank(xwl_present_window->flip_active);
+ 
+         if (!event->pixmap
+-#ifdef DRI3
++#if defined(XWL_HAS_GLAMOR) && defined(DRI3)
+             /* If this flip used explicit sync, we won't get a release event */
+             || (xwl_screen->explicit_sync && vblank->release_syncobj)
+-#endif /* DRI3 */
++#endif
+             ) {
+             xwl_present_free_event(event);
+         } else
+@@ -695,6 +697,7 @@
+ #endif
+ }
+ 
++#ifdef XWL_HAS_GLAMOR
+ static void
+ xwl_present_maybe_set_reason(struct xwl_window *xwl_window, PresentFlipReason *reason)
+ {
+@@ -715,6 +718,7 @@
+         *reason = PRESENT_FLIP_REASON_BUFFER_FORMAT;
+     }
+ }
++#endif
+ 
+ static int
+ xwl_present_flush_fenced(WindowPtr window)
+@@ -748,7 +752,9 @@
+     if (!xwl_window)
+         return FALSE;
+ 
++#ifdef XWL_HAS_GLAMOR
+     xwl_present_maybe_set_reason(xwl_window, reason);
++#endif
+ 
+     if (!crtc)
+         return FALSE;
+@@ -907,10 +913,12 @@
+     if (implicit_sync) {
+         xwl_pixmap_set_buffer_release_cb(pixmap, xwl_present_buffer_release, event);
+ 
++#ifdef XWL_HAS_GLAMOR
+         if (xwl_window->surface_sync) {
+             wp_linux_drm_syncobj_surface_v1_destroy(xwl_window->surface_sync);
+             xwl_window->surface_sync = NULL;
+         }
++#endif
+     }
+ 
+     /* We can flip directly to the main surface (full screen window without clips) */
+--- a/hw/xwayland/xwayland-output.h
++++ b/hw/xwayland/xwayland-output.h
+@@ -34,7 +34,9 @@
+ #include <randrstr.h>
+ 
+ #include "xwayland-types.h"
++#ifdef XWL_HAS_DRM_LEASE
+ #include "xwayland-drm-lease.h"
++#endif
+ 
+ #define ALL_ROTATIONS (RR_Rotate_0   | \
+                        RR_Rotate_90  | \
+@@ -63,11 +65,13 @@
+     Bool wl_output_done;
+     Bool xdg_output_done;
+ 
++#ifdef XWL_HAS_DRM_LEASE
+     /* only for lease-able DRM connectors */
+     struct wp_drm_lease_connector_v1 *lease_connector;
+     struct xwl_drm_lease *lease;
+     struct xwl_drm_lease_device *lease_device;
+     Bool withdrawn_connector;
++#endif
+ };
+ 
+ /* Per client per output emulated randr/vidmode resolution info. */
+--- a/hw/xwayland/xwayland-output.c
++++ b/hw/xwayland/xwayland-output.c
+@@ -975,8 +975,10 @@
+ void
+ xwl_output_destroy(struct xwl_output *xwl_output)
+ {
++#ifdef XWL_HAS_DRM_LEASE
+     if (xwl_output->lease_connector)
+         wp_drm_lease_connector_v1_destroy(xwl_output->lease_connector);
++#endif
+     if (xwl_output->transform)
+         free(xwl_output->transform);
+     if (xwl_output->xdg_output)
+@@ -1162,9 +1164,11 @@
+     rp->rrModeDestroy = xwl_randr_mode_destroy;
+ #endif
+ 
++#ifdef XWL_HAS_DRM_LEASE
+     rp->rrRequestLease = xwl_randr_request_lease;
+     rp->rrGetLease = xwl_randr_get_lease;
+     rp->rrTerminateLease = xwl_randr_terminate_lease;
++#endif
+ 
+     return TRUE;
+ }
+--- a/hw/xwayland/xwayland-screen.c
++++ b/hw/xwayland/xwayland-screen.c
+@@ -208,6 +208,7 @@
+ 
+ #undef readOnlyPropertyAccessMask
+ 
++#ifdef XWL_HAS_DRM_LEASE
+ static void
+ xwl_root_window_finalized_callback(CallbackListPtr *pcbl,
+                                    void *closure,
+@@ -225,6 +226,7 @@
+     }
+     DeleteCallback(&RootWindowFinalizeCallback, xwl_root_window_finalized_callback, screen);
+ }
++#endif
+ 
+ Bool
+ xwl_close_screen(ScreenPtr screen)
+@@ -252,11 +254,13 @@
+ 
+     xwl_screen_release_tablet_manager(xwl_screen);
+ 
++#ifdef XWL_HAS_DRM_LEASE
+     struct xwl_drm_lease_device *device_data, *next;
+     xorg_list_for_each_entry_safe(device_data, next,
+                                   &xwl_screen->drm_lease_devices, link)
+         xwl_screen_destroy_drm_lease_device(xwl_screen,
+                                             device_data->drm_lease_device);
++#endif
+ 
+     xorg_list_for_each_entry_safe(xwl_wl_surface, xwl_wl_surface_next,
+                                   &xwl_screen->pending_wl_surface_destroy, link)
+@@ -514,6 +518,7 @@
+             wl_registry_bind(registry, id, &zxdg_output_manager_v1_interface, version);
+         xwl_screen_init_xdg_output(xwl_screen);
+     }
++#ifdef XWL_HAS_DRM_LEASE
+     else if (strcmp(interface, wp_drm_lease_device_v1_interface.name) == 0) {
+         if (xwl_screen->screen->root == NULL) {
+             struct xwl_queued_drm_lease_device *queued = malloc(sizeof(struct xwl_queued_drm_lease_device));
+@@ -523,6 +528,7 @@
+             xwl_screen_add_drm_lease_device(xwl_screen, id);
+         }
+     }
++#endif
+     else if (strcmp(interface, wp_viewporter_interface.name) == 0) {
+         xwl_screen->viewporter = wl_registry_bind(registry, id, &wp_viewporter_interface, 1);
+     }
+@@ -551,7 +557,6 @@
+ {
+     struct xwl_screen *xwl_screen = data;
+     struct xwl_output *xwl_output, *tmp_xwl_output;
+-    struct xwl_drm_lease_device *lease_device, *tmp_lease_device;
+ 
+     xorg_list_for_each_entry_safe(xwl_output, tmp_xwl_output,
+                                   &xwl_screen->output_list, link) {
+@@ -561,6 +566,8 @@
+         }
+     }
+ 
++#ifdef XWL_HAS_DRM_LEASE
++    struct xwl_drm_lease_device *lease_device, *tmp_lease_device;
+     xorg_list_for_each_entry_safe(lease_device, tmp_lease_device,
+                                   &xwl_screen->drm_lease_devices, link) {
+         if (lease_device->id == name) {
+@@ -568,6 +575,7 @@
+             break;
+         }
+     }
++#endif
+ }
+ 
+ static const struct wl_registry_listener registry_listener = {
+@@ -1002,9 +1010,11 @@
+     xorg_list_init(&xwl_screen->seat_list);
+     xorg_list_init(&xwl_screen->damage_window_list);
+     xorg_list_init(&xwl_screen->window_list);
++#ifdef XWL_HAS_DRM_LEASE
+     xorg_list_init(&xwl_screen->drm_lease_devices);
+     xorg_list_init(&xwl_screen->queued_drm_lease_devices);
+     xorg_list_init(&xwl_screen->drm_leases);
++#endif
+     xorg_list_init(&xwl_screen->pending_wl_surface_destroy);
+     xwl_screen->depth = 24;
+     xwl_screen->global_surface_scale = 1;
+@@ -1164,7 +1174,9 @@
+         return FALSE;
+ 
+     AddCallback(&PropertyStateCallback, xwl_property_callback, pScreen);
++#ifdef XWL_HAS_DRM_LEASE
+     AddCallback(&RootWindowFinalizeCallback, xwl_root_window_finalized_callback, pScreen);
++#endif
+     XaceRegisterCallback(XACE_PROPERTY_ACCESS, xwl_access_property_callback, pScreen);
+ 
+     xwl_screen_setup_custom_vector(xwl_screen);
