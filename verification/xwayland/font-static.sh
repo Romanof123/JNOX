@@ -28,7 +28,12 @@ for pkg in xproto fontsproto xtrans; do
     pkg-config --variable=pcfiledir "$pkg"
 done > protocol-inputs.txt
 sha256sum "$TARGET_CC" > compiler-wrapper.sha256
-build=$(sh libXfont2-2.0.7/config.guess)
+guess=$(find libXfont2-2.0.7 -name config.guess -type f)
+test -f "$guess"
+build=$(sh "$guess")
+"$CC" -c "$here/font-fd.c" -o font-fd.o
+"$AR" rcs "$prefix/lib/libjnox-font-fd.a" font-fd.o
+export LIBS="-ljnox-font-fd"
 host=aarch64-none-elf
 (cd zlib-1.3.1 && CHOST="$host" ./configure --static --prefix="$prefix" &&
     make -j1 libz.a && make -j1 install)
@@ -37,16 +42,16 @@ host=aarch64-none-elf
     --disable-shared --enable-static && make -j1 install)
 (cd libXfont2-2.0.7 && ./configure --build="$build" --host="$host" --prefix="$prefix" \
     --disable-shared --enable-static --enable-builtins --enable-pcfformat --disable-freetype \
-    --disable-fc --disable-bdfformat --disable-snfformat --without-bzip2 && make -j1 install)
+    --disable-fc --disable-bdfformat --disable-snfformat --without-bzip2 && make -j1 install-libLTLIBRARIES install-libXfontincludeHEADERS install-pkgconfigDATA)
 for archive in libz.a libfontenc.a libXfont2.a; do
     readelf -hW "$prefix/lib/$archive" > "$archive.readelf"
     awk '/Machine:/ {n++; if ($NF != "AArch64") exit 1} END {if (!n) exit 1}' "$archive.readelf"
 done
 pkg-config --static --libs xfont2 > static-link-flags.txt
 # Static linkage permits the probe to exercise the archive's internal built-in FPE reader.
-"$CC" -static -I"$prefix/include" -IlibXfont2-2.0.7/include \
+"$CC" -DJNOX_FONT_UART -static -I"$prefix/include" -IlibXfont2-2.0.7/include \
     -IlibXfont2-2.0.7/src/builtins "$here/font-builtins-probe.c" \
-    -L"$prefix/lib" $(pkg-config --static --libs xfont2) -o font-builtins-probe.elf
+    -L"$prefix/lib" $(pkg-config --static --libs xfont2) -ljnox-font-fd -o font-builtins-probe.elf
 readelf -hW -lW -dW font-builtins-probe.elf > font-builtins-probe.readelf
 grep -q 'Machine:.*AArch64' font-builtins-probe.readelf
 if grep -Eq ' INTERP |\(NEEDED\)' font-builtins-probe.readelf; then exit 1; fi

@@ -55,5 +55,16 @@ int main(void)
         jnox_font_probe_rows[i] = bits[4*i];
         if (bits[4*i] != expected[i]) return 7;
     }
+#ifdef JNOX_FONT_UART
+    extern int jnox_graphics_emit(const char *, size_t);
+    static const char hex[] = "0123456789abcdef";
+    char report[] = "FONT ROWS 00000000000000000000000000\n";
+    for (unsigned i = 0; i < 13; ++i) {
+        unsigned value = jnox_font_probe_rows[i];
+        report[10 + 2*i] = hex[value >> 4];
+        report[11 + 2*i] = hex[value & 15];
+    }
+    if (jnox_graphics_emit(report, sizeof(report)-1)) return 8;
+#endif
     return 0;
 }

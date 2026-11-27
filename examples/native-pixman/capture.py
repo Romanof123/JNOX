@@ -8,12 +8,14 @@ p.add_argument("kernel", type=Path)
 p.add_argument("log", type=Path)
 p.add_argument("count", type=int)
 p.add_argument("--console-grant", action="store_true")
+p.add_argument("--symbol", action="append", help="capture execution in each named ELF symbol")
 a = p.parse_args()
 argv = ["qemu-system-aarch64","-machine","virt,gic-version=2","-cpu","cortex-a72",
         "-smp","1","-m","128M","-nic","none","-display","none","-monitor","none","-serial","stdio",
         "-kernel",str(a.kernel)]
 nm = subprocess.check_output(["llvm-nm","-S",str(a.kernel.parent/"user.elf")],text=True)
 want = {"main"} if a.console_grant else {"pixman_constructor", "pixman_image_composite32", "graphics_fp_yield", "abort"}
+if a.symbol: want = set(a.symbol)
 ranges = {}
 for row in nm.splitlines():
     cols=row.split()

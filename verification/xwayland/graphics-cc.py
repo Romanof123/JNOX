@@ -22,6 +22,7 @@ if config["host_machine"]["system"] != "'jnox'" or "--target=aarch64-none-elf" n
 args = sys.argv[1:]
 inspection = len(args) == 1 and args[0] in ("--version", "-v", "-dumpmachine", "-dumpversion", "-print-search-dirs")
 if not inspection and not any(x in args for x in ("-c", "-S", "-E", "-M", "-MM")):
+    args += ["-L" + str(runtime / "target/lib")]
     args += ast.literal_eval(config["built-in options"]["c_link_args"])
 os.execvp(cc[0], [*cc, *flags, *args])
 
