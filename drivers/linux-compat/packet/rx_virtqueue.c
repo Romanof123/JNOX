@@ -8,6 +8,10 @@
 #include <linux/errno.h>
 #include <linux/scatterlist.h>
 #include <linux/virtio.h>
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+#include <uapi/linux/virtio_config.h>
+#include "lifecycle_platform.h"
+#endif
 #include <jnox_tx_virtqueue.h>
 #include <jnox_rx_virtqueue.h>
 #include <jnox_rx_page_api.h>
@@ -180,6 +184,49 @@ long jnox_rx_start_v1(void)
     return 0;
 }
 
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+static unsigned long retired_epoch;
+
+int jnox_rx_lifecycle_ready_v1(void)
+{
+    struct virtqueue *vq = jnox_packet_active_vq(0);
+    unsigned long epoch = jnox_packet_token();
+    if (!active(vq) || running || retired_epoch || stats[2] ||
+        vq->num_free != QUEUE_SIZE) return -EINVAL;
+    long rc = call_rx(177, epoch, NULL, 0);
+    if (rc) return rc;
+    running = epoch;
+    ++stats[6];
+    return 0;
+}
+
+void jnox_rx_lifecycle_retire_v1(unsigned long epoch)
+{
+    if (!epoch || epoch != jnox_packet_token() || retired_epoch)
+        __builtin_trap();
+    retired_epoch = epoch;
+}
+
+void *virtqueue_detach_unused_buf(struct virtqueue *vq)
+{
+    if (!retired_epoch || retired_epoch != jnox_packet_token()) __builtin_trap();
+    if (vq == jnox_packet_active_vq(1) && vq->num_free == QUEUE_SIZE) return NULL;
+    if (!active(vq)) __builtin_trap();
+    for (unsigned i = 0; i < QUEUE_SIZE; ++i) {
+        struct rx_slot *slot = &slots[i];
+        if (!slot->token) continue;
+        if (slot->token != retired_epoch || !slot->map || !slot->map->posted ||
+            !stats[2] || vq->num_free >= QUEUE_SIZE) __builtin_trap();
+        void *cookie = slot->cookie;
+        --slot->map->posted;
+        *slot = (struct rx_slot){};
+        ++vq->num_free;
+        --stats[2];
+        return cookie;
+    }
+    return NULL;
+}
+#endif
 void *virtqueue_get_buf_ctx(struct virtqueue *vq, unsigned *len, void **ctx)
 {
     unsigned long epoch = jnox_packet_token();
@@ -222,6 +269,12 @@ void jnox_rx_reset_complete_v1(unsigned long retired_token)
 {
     /* The queue owner calls here only after a confirmed transport reset. */
     if (!retired_token) return;
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    if (stats[2] || jnox_lifecycle_page_refs_v1()) __builtin_trap();
+    for (unsigned i = 0; i < MAP_COUNT; ++i)
+        if (maps[i].token == retired_token) __builtin_trap();
+    retired_epoch = 0;
+#endif
     for (unsigned i = 0; i < QUEUE_SIZE; ++i) {
         if (slots[i].token != retired_token) continue;
         slots[i] = (struct rx_slot){};
@@ -416,5 +469,28 @@ unsigned int virtqueue_get_vring_size(const struct virtqueue *vq)
         return 0;
     }
     return QUEUE_SIZE;
+}
+#endif
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+static bool lifecycle_queue(const struct virtqueue *vq)
+{
+    return vq && (vq == jnox_packet_active_vq(0) || vq == jnox_packet_active_vq(1)) &&
+           jnox_packet_token() && !retired_epoch;
+}
+bool virtqueue_is_broken(const struct virtqueue *vq)
+{
+    if (!lifecycle_queue(vq)) return true;
+    long status = call_rx(160, 0, NULL, 0);
+    return status < 0 || (status & (VIRTIO_CONFIG_S_FAILED | VIRTIO_CONFIG_S_NEEDS_RESET));
+}
+struct device *virtqueue_dma_dev(struct virtqueue *vq)
+{
+    if (!lifecycle_queue(vq) || !vq->vdev) return NULL;
+    return &vq->vdev->dev;
+}
+bool virtqueue_kick(struct virtqueue *vq)
+{
+    if (virtqueue_is_broken(vq)) return false;
+    return !virtqueue_kick_prepare(vq) || virtqueue_notify(vq);
 }
 #endif

@@ -959,6 +959,10 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         163..=169 => linux_net::packet_service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1], f.x[2]),
         #[cfg(jnox_linux_source_net_rx)]
         170..=172 => linux_net::packet_service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1], f.x[2]),
+        #[cfg(jnox_linux_source_net_lifecycle)]
+        177 => linux_net::packet_service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1], f.x[2]),
+        #[cfg(jnox_linux_source_net_lifecycle)]
+        178 => linux_net::identity(unsafe { CURRENT }, f.x[0], f.x[1], f.x[2]),
         #[cfg(jnox_linux_source_net_rx_poll)]
         173 => linux_net::packet_service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1], f.x[2]),
         #[cfg(jnox_linux_source_net_rx_irq)]

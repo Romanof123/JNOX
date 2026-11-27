@@ -70,6 +70,15 @@ fn reset() -> bool {
     (0..1024).any(|_| read(STATUS) == 0)
 }
 
+#[cfg(jnox_linux_source_net_lifecycle)]
+pub(super) fn identity(pid: usize, selector: u64, arg: u64, reserved: u64) -> i64 {
+    if !permitted(pid) { return -13; }
+    if arg != 0 || reserved != 0 { return -22; }
+    let reg = match selector { 0 => 8, 1 => 12, _ => return -22 };
+    if read(0) != 0x7472_6976 || read(4) != 2 { return -19; }
+    i64::from(read(reg))
+}
+
 fn claim() -> i64 {
     #[cfg(jnox_linux_packet_queues)]
     if queues::quarantined() { return -5; }

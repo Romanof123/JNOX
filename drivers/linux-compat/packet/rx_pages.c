@@ -99,3 +99,13 @@ bool jnox_rx_page_refill_v1(unsigned int size, struct page_frag *frag, gfp_t gfp
     }
     return false;
 }
+
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+unsigned int jnox_lifecycle_page_refs_v1(void)
+{
+    unsigned int total = 0;
+    for (unsigned i = 0; i < RX_PAGES; ++i)
+        total += atomic_read(&metadata[i]._refcount);
+    return total;
+}
+#endif

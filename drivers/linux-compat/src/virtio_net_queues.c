@@ -40,7 +40,13 @@ void jnox_net_forget_queues(void);
 
 static int abandon_pair(int cause)
 {
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    extern void jnox_lifecycle_reset_v1(struct virtio_device *);
+    jnox_lifecycle_reset_v1(jnox_net_validated_device());
+    long release = 0;
+#else
     long release = transport(156, 0, 0);
+#endif
 #ifdef JNOX_PACKET_TX_ABI
     /* A failed reset quarantines the old buffers. Never report those skbs as
      * reclaimable merely because this userspace queue object was invalidated. */
