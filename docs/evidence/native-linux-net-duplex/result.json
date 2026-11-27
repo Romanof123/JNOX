@@ -1,0 +1,411 @@
+{
+  "checksummed_members": 1397,
+  "builds": {
+    "8ba4bd5b0d97eefdba9c96e197f834674f8b7f5e535cf5722149e18acfcbad89": {
+      "source_commit": "cb2ec7625818c3cfcbfb6d70aad2f5915a2a93fb",
+      "linux_commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+      "linux_tu_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+      "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+      "compiler_input_count": 974,
+      "roles": [
+        {
+          "role": "driver",
+          "slot": 0,
+          "sha256": "a412c29c56fc149e21a9d0d4971efd13409c60af6c320f2da99fbcc3a9da113e",
+          "source": "examples/linux-source-net-duplex/driver.c",
+          "linked_ttbr0_el1": "0x1000040279000",
+          "map_sha256": "79461232d914b79fcb2c71041e4dc6d02d1ef45d792893dddbf01e54ac1aca33"
+        },
+        {
+          "role": "peer",
+          "slot": 1,
+          "sha256": "494b7d040f2e16203b2c1e92815c6754507ba32e275349b21bcf39f231071906",
+          "source": "examples/linux-source-net-duplex/peer.c",
+          "linked_ttbr0_el1": "0x200004068e000",
+          "map_sha256": "e5177def874d801dceb405c730f76fbfaf1c01b37e26668253aa6334ebe56006"
+        }
+      ],
+      "import_sha256": "c359ca8cea4be2bd7b384eca309b52c1298b955615f0e7ad64665a6bb9d2da2d",
+      "kernel_sha256": "39eeb0298c956a98ededee506fa6dea5ec2410fe2dc0762dfcdc0ef2ba271aeb",
+      "objects": {
+        "virtio_net.original.o": "5767a14f1d391e2419240bde3a0dab3c39457b894a35f2de581edce177c4862b",
+        "virtio_net.packet.o": "655914bcdfa0f1629e529e61341d03967c397895f976eeca5b7a1397981381ac",
+        "virtio_net.callback.o": "2a260a1a011aaeb552734a37bcecf12074f84cb08e12af855003e042fc0a3a78"
+      }
+    }
+  },
+  "captures": {
+    "cold-01": {
+      "build_commit": "cb2ec7625818c3cfcbfb6d70aad2f5915a2a93fb",
+      "observer_commit": "cb2ec7625818c3cfcbfb6d70aad2f5915a2a93fb",
+      "nonce": "9956e4308f9c7358",
+      "mac": "52:54:00:44:10:01",
+      "mtu": 1410,
+      "qemu_sha256_at_capture": null,
+      "pinned_board_qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "capture_stdout_sha256": "e13873c268e4540ddffa058ea7072bc478af4882504557d194972c830d36c846",
+      "ingress_sha256": "e66fa8ee586f43de02ae6af063f96e908e6a5dfc4991eada4679b679e322396b",
+      "egress_sha256": "9312d97b54c9da5184d46970390ab52594536bf48f20f09b732c7f9aa05cdd6b",
+      "pcap_sha256": "035199fc460c6d2e7a2be6a0dec5b9760c13df44f9513cf58dfccaecf4ea9265",
+      "checkpoints": {
+        "ready": {
+          "trace_bytes": 144409,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            0,
+            0,
+            0
+          ]
+        },
+        "held": {
+          "trace_bytes": 154932,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            1,
+            1,
+            0
+          ]
+        },
+        "overlap": {
+          "trace_bytes": 157552,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            2,
+            1,
+            0
+          ]
+        },
+        "completed": {
+          "trace_bytes": 167038,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            3,
+            3,
+            3
+          ]
+        },
+        "ack": {
+          "trace_bytes": 569652,
+          "independent_rx_avail_used_tx_avail_used": [
+            112,
+            80,
+            80,
+            80
+          ]
+        },
+        "final": {
+          "trace_bytes": 4375326,
+          "independent_rx_avail_used_tx_avail_used": [
+            112,
+            81,
+            80,
+            80
+          ]
+        }
+      },
+      "final_peer_memory": {
+        "jnox_duplex_peer_requests": {
+          "virtual_address": "0x402088",
+          "size": 7280,
+          "sha256": "1330308f4d15f550cef14d6f1de307cdf92f0bb4116cb55f462379fe154e6704"
+        },
+        "jnox_duplex_peer_replies": {
+          "virtual_address": "0x403cf8",
+          "size": 7280,
+          "sha256": "95885aeb06ef8265b2de6ec656ae85b7395a29fba0dbd3a126b7231a044fce7d"
+        },
+        "jnox_duplex_peer_ack": {
+          "virtual_address": "0x405968",
+          "size": 60,
+          "sha256": "a1d341b7c6999930c49f2243466be38f62fd3d80e7694ea96f77501012d371bc"
+        }
+      },
+      "observer": {
+        "token": 1,
+        "reply_frames": 80,
+        "incoming_frames": 81,
+        "queue_notifications": [
+          17,
+          80
+        ],
+        "original_entries": {
+          "virtnet_probe": 1,
+          "virtnet_open": 1,
+          "skb_recv_done": 81,
+          "virtnet_poll": 82,
+          "start_xmit": 80,
+          "virtnet_close": 1,
+          "virtnet_remove": 1
+        },
+        "rejected": {
+          "pcap": "ordered NIC ingress and egress",
+          "used": "RX posted and used versus TX published and consumed at overlap",
+          "peer": "separate peer private byte history",
+          "grant": "posted RX grant owner or capacity"
+        }
+      },
+      "independent": {
+        "nonce": "9956e4308f9c7358",
+        "stages": {
+          "ready": [
+            32,
+            0,
+            0,
+            0
+          ],
+          "held": [
+            32,
+            1,
+            1,
+            0
+          ],
+          "overlap": [
+            32,
+            2,
+            1,
+            0
+          ],
+          "completed": [
+            32,
+            3,
+            3,
+            3
+          ],
+          "ack": [
+            112,
+            80,
+            80,
+            80
+          ],
+          "final": [
+            112,
+            81,
+            80,
+            80
+          ]
+        },
+        "entries": {
+          "virtnet_probe": 1,
+          "virtnet_open": 1,
+          "skb_recv_done": 81,
+          "virtnet_poll": 82,
+          "start_xmit": 80,
+          "virtnet_close": 1,
+          "virtnet_remove": 1
+        }
+      },
+      "observer_argv": [
+        "python3",
+        "-B",
+        "observers/cb2ec7625818c3cfcbfb6d70aad2f5915a2a93fb/tools/verify_linux_source_net_duplex.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "builds/8ba4bd5b0d97eefdba9c96e197f834674f8b7f5e535cf5722149e18acfcbad89/native",
+        "--driver-manifest",
+        "builds/8ba4bd5b0d97eefdba9c96e197f834674f8b7f5e535cf5722149e18acfcbad89/imported/import.json",
+        "--out",
+        "captures/cold-01",
+        "--mac",
+        "52:54:00:44:10:01",
+        "--mtu",
+        "1410"
+      ],
+      "independent_argv": [
+        "python3",
+        "-B",
+        "qa/replay.py",
+        "builds/8ba4bd5b0d97eefdba9c96e197f834674f8b7f5e535cf5722149e18acfcbad89",
+        "captures/cold-01",
+        "source/linux/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c"
+      ]
+    },
+    "cold-02": {
+      "build_commit": "cb2ec7625818c3cfcbfb6d70aad2f5915a2a93fb",
+      "observer_commit": "cb2ec7625818c3cfcbfb6d70aad2f5915a2a93fb",
+      "nonce": "2c08a61016186cce",
+      "mac": "52:54:00:44:10:52",
+      "mtu": 1490,
+      "qemu_sha256_at_capture": null,
+      "pinned_board_qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "capture_stdout_sha256": "e13873c268e4540ddffa058ea7072bc478af4882504557d194972c830d36c846",
+      "ingress_sha256": "6f433f7fb9ada4a8d9df1b0467c9bdb159a93ba97b3ba8c01db0b7e4aa14454b",
+      "egress_sha256": "bc43d136da2e188b386dbe8cf70b4a3a8f18937a4dbc1c66ab3de9d91b1a0d34",
+      "pcap_sha256": "15e68a746766beca4d8029d0cc8f40a8384a77bed66bc95c0dc14f9722411733",
+      "checkpoints": {
+        "ready": {
+          "trace_bytes": 144411,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            0,
+            0,
+            0
+          ]
+        },
+        "held": {
+          "trace_bytes": 154934,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            1,
+            1,
+            0
+          ]
+        },
+        "overlap": {
+          "trace_bytes": 157554,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            2,
+            1,
+            0
+          ]
+        },
+        "completed": {
+          "trace_bytes": 167040,
+          "independent_rx_avail_used_tx_avail_used": [
+            32,
+            3,
+            3,
+            3
+          ]
+        },
+        "ack": {
+          "trace_bytes": 569654,
+          "independent_rx_avail_used_tx_avail_used": [
+            112,
+            80,
+            80,
+            80
+          ]
+        },
+        "final": {
+          "trace_bytes": 4397581,
+          "independent_rx_avail_used_tx_avail_used": [
+            112,
+            81,
+            80,
+            80
+          ]
+        }
+      },
+      "final_peer_memory": {
+        "jnox_duplex_peer_requests": {
+          "virtual_address": "0x402088",
+          "size": 7280,
+          "sha256": "57a816a81cef6c25b23723799b48509ca822489ef3e8e1da47bff5b007457ca5"
+        },
+        "jnox_duplex_peer_replies": {
+          "virtual_address": "0x403cf8",
+          "size": 7280,
+          "sha256": "0b15b77c65f7c43e162571875e7beb1bcee65d8ec693cd4575eba76f54480906"
+        },
+        "jnox_duplex_peer_ack": {
+          "virtual_address": "0x405968",
+          "size": 60,
+          "sha256": "289a9f2c0fd511c736d78dcda99e6b8933b0ade11b64e6144e610f5c6f7beae0"
+        }
+      },
+      "observer": {
+        "token": 1,
+        "reply_frames": 80,
+        "incoming_frames": 81,
+        "queue_notifications": [
+          17,
+          80
+        ],
+        "original_entries": {
+          "virtnet_probe": 1,
+          "virtnet_open": 1,
+          "skb_recv_done": 81,
+          "virtnet_poll": 82,
+          "start_xmit": 80,
+          "virtnet_close": 1,
+          "virtnet_remove": 1
+        },
+        "rejected": {
+          "pcap": "ordered NIC ingress and egress",
+          "used": "RX posted and used versus TX published and consumed at overlap",
+          "peer": "separate peer private byte history",
+          "grant": "posted RX grant owner or capacity"
+        }
+      },
+      "independent": {
+        "nonce": "2c08a61016186cce",
+        "stages": {
+          "ready": [
+            32,
+            0,
+            0,
+            0
+          ],
+          "held": [
+            32,
+            1,
+            1,
+            0
+          ],
+          "overlap": [
+            32,
+            2,
+            1,
+            0
+          ],
+          "completed": [
+            32,
+            3,
+            3,
+            3
+          ],
+          "ack": [
+            112,
+            80,
+            80,
+            80
+          ],
+          "final": [
+            112,
+            81,
+            80,
+            80
+          ]
+        },
+        "entries": {
+          "virtnet_probe": 1,
+          "virtnet_open": 1,
+          "skb_recv_done": 81,
+          "virtnet_poll": 82,
+          "start_xmit": 80,
+          "virtnet_close": 1,
+          "virtnet_remove": 1
+        }
+      },
+      "observer_argv": [
+        "python3",
+        "-B",
+        "observers/cb2ec7625818c3cfcbfb6d70aad2f5915a2a93fb/tools/verify_linux_source_net_duplex.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "builds/8ba4bd5b0d97eefdba9c96e197f834674f8b7f5e535cf5722149e18acfcbad89/native",
+        "--driver-manifest",
+        "builds/8ba4bd5b0d97eefdba9c96e197f834674f8b7f5e535cf5722149e18acfcbad89/imported/import.json",
+        "--out",
+        "captures/cold-02",
+        "--mac",
+        "52:54:00:44:10:52",
+        "--mtu",
+        "1490"
+      ],
+      "independent_argv": [
+        "python3",
+        "-B",
+        "qa/replay.py",
+        "builds/8ba4bd5b0d97eefdba9c96e197f834674f8b7f5e535cf5722149e18acfcbad89",
+        "captures/cold-02",
+        "source/linux/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c"
+      ]
+    }
+  }
+}

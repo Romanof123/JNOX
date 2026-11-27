@@ -52,7 +52,7 @@ def data(elf,s):
     return section.data()[offset:offset+s["st_size"]]
 
 
-def layout(pkg,imp):
+def layout(pkg,imp,*,journal_names=(DRIVER,PEER),adapters=ADAPTER):
     manifest=load(pkg/"manifest.json")
     m=load(imp)
     require(m["mode"]=="lifecycle-service" and m["callback_input"]=="virtio_net.packet.o" and
@@ -80,10 +80,10 @@ def layout(pkg,imp):
         param=symbol(elf,"napi_tx")
         require(data(elf,param)==b"\x01" and data(original,symbol(original,"napi_tx"))==b"\x01",
                 "original TX NAPI module parameter default")
-        for name in (*ORIGINAL,*ADAPTER):
+        for name in (*ORIGINAL,*adapters):
             sym,body=routine(elf,name)
-            objname=ADAPTER.get(name,"virtio_net.packet.o")
-            supplier=ADAPTER.get(name,"virtio_net.callback.o")
+            objname=adapters.get(name,"virtio_net.packet.o")
+            supplier=adapters.get(name,"virtio_net.callback.o")
             with (imp.parent/objname).open("rb") as h:
                 obj=ELFFile(h)
                 ref,raw=routine(obj,name)
@@ -124,7 +124,7 @@ def layout(pkg,imp):
     roots=linked_roots(kernel,2)
     ring,buf=dma_layout(pkg)
     journals=[{n:journal_location(pkg/manifest["slots"][slot]["elf"],n) for n in names}
-              for slot,names in enumerate((DRIVER,PEER))]
+              for slot,names in enumerate(journal_names)]
     faults={}
     for n in ("jnox_rx_napi_fault","jnox_rx_poll_fault_id","jnox_lifecycle_fault","jnox_lifecycle_fault_id",
               "jnox_lifecycle_bus_fault","jnox_lifecycle_platform_fault","jnox_lifecycle_netdev_fault"):
