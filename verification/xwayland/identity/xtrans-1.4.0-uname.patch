@@ -1,0 +1,13 @@
+--- a/X11/Xtrans/Xtrans.c
++++ b/X11/Xtrans/Xtrans.c
+@@ -1341,4 +1341,9 @@
+-    uname (&name);
++    if (maxlen <= 0)
++        return -1;
++    if (uname (&name) < 0) {
++        buf[0] = 0;
++        return -1;
++    }
+     len = strlen (name.nodename);
+     if (len >= maxlen) len = maxlen - 1;
+     strncpy (buf, name.nodename, len);

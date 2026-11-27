@@ -1037,6 +1037,23 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_native_fixed)]
+        198 => {
+            const WIDTH: usize = 65;
+            let node = option_env!("JNOX_NATIVE_NODENAME");
+            let fields = ["JNOX", node.unwrap_or(""), env!("CARGO_PKG_VERSION"),
+                          concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION")), "aarch64"];
+            let mut record = [0u8; 5 * WIDTH];
+            if node.is_some() {
+                for (slot, field) in record.chunks_exact_mut(WIDTH).zip(fields) {
+                    slot[..field.len()].copy_from_slice(field.as_bytes());
+                }
+            }
+            if f.x[1] != record.len() as u64 { -22 }
+            else if !native_el0_mmu::copy_to_user(f.x[0] as usize, &record) { -14 }
+            else if node.is_none() { -61 }
+            else { 0 }
+        }
         #[cfg(jnox_native_console_write)]
         4 => {
             let caller = unsafe { CURRENT } as u8;

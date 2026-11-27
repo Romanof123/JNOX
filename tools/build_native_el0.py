@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -542,6 +543,7 @@ def main():
                         help="reserve child executable slot 1 or 2 in a native shell package")
     parser.add_argument("--rom-file", action="append", default=[], metavar="NAME=FILE",
                         help="embed a host file under an immutable guest basename")
+    parser.add_argument("--nodename", help="one explicit ASCII node label for all native FIFO/RR processes")
     parser.add_argument("--console-write", action="append", type=int, choices=range(4), default=[],
                         help="grant this process slot bounded SVC 4 console output on fd 1 and 2")
     parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
@@ -650,6 +652,9 @@ def main():
     board = args.board or "virt"
     display_slot, service_slot, service_clients = native_service_slots(parser, args, policy, board)
     validate_pipes(parser, args, policy, board)
+    if args.nodename is not None and (policy not in ("fifo", "rr") or args.threads or not args.elf or
+            not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", args.nodename)):
+        parser.error("--nodename requires native FIFO/RR and one 1..63 byte alphanumeric or hyphen label")
     if args.console_write and (policy not in ("fifo", "rr") or not args.elf or
             len(set(args.console_write)) != len(args.console_write) or
             max(args.console_write) > len(args.peer_elf)):
@@ -1139,6 +1144,9 @@ def main():
             env["JNOX_NATIVE_WEIGHTS"] = ",".join(map(str, weights))
         if quantum is not None:
             env["JNOX_NATIVE_QUANTUM_TICKS"] = str(quantum)
+        if args.nodename is not None:
+            metadata["nodename"] = args.nodename
+            env["JNOX_NATIVE_NODENAME"] = args.nodename
         env.update(encoded_arguments)
         env.update(JNOX_BOARD=board, JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,

@@ -1,0 +1,126 @@
+{
+  "issue": 464,
+  "guest_source": "c1ca87508d72499a1e3b4fd4700465e79765168c",
+  "guest_elf_sha256": "2fd05b611e6cf3ed96d37dee714670a35d3b41ba1fb4be8fc525b75046bb5d6a",
+  "boots": [
+    {
+      "case": "guest-a",
+      "package_nodename": "guest-a",
+      "tracked_changes": "",
+      "kernel_sha256": "76d54d67a4a19edd9d52810a952c3c47db5a5ee05c19901748bdda251bb6cc7c",
+      "statuses": [
+        [
+          "0",
+          "0"
+        ],
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "entry_pc_and_size": {
+        "_XimXTransGetHostname": [
+          4195168,
+          252
+        ],
+        "gethostname": [
+          4195608,
+          260
+        ],
+        "uname": [
+          4195476,
+          132
+        ]
+      },
+      "trace_sha256": "5a81e52358ddf77241932811c770c44483a9799d4068d65eab774874dd0ae1cd",
+      "uart_sha256": "64e9b994867178287411b73ee7a7c95d6c0d09c4bf1e0737e76397be6f371286"
+    },
+    {
+      "case": "guest-b",
+      "package_nodename": "guest-b",
+      "tracked_changes": "",
+      "kernel_sha256": "4e9d13356554709f7d2601e3a6019667077394395aeba83457b8583a00b32e5f",
+      "statuses": [
+        [
+          "0",
+          "0"
+        ],
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "entry_pc_and_size": {
+        "_XimXTransGetHostname": [
+          4195168,
+          252
+        ],
+        "gethostname": [
+          4195608,
+          260
+        ],
+        "uname": [
+          4195476,
+          132
+        ]
+      },
+      "trace_sha256": "06fe350418b9cdf663bf0a103acaa5f3451420544a0a103097f191d6e8250c1e",
+      "uart_sha256": "bd2aa52da15cde487ad429fc928112290f3098451a8f78f655ecf50ee1b281ca"
+    },
+    {
+      "case": "absent",
+      "package_nodename": null,
+      "tracked_changes": "",
+      "kernel_sha256": "733ce42e46944617b0651e182c74781ae50effa962ff113c6d41d672ac0f8b72",
+      "statuses": [
+        [
+          "0",
+          "0"
+        ],
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "entry_pc_and_size": {
+        "_XimXTransGetHostname": [
+          4195168,
+          252
+        ],
+        "gethostname": [
+          4195608,
+          260
+        ],
+        "uname": [
+          4195476,
+          132
+        ]
+      },
+      "trace_sha256": "c08acae151186b0dd86911ca792ce8190067e240077154a7b5101289729e32a4",
+      "uart_sha256": "4bfbb564070092c53bfa652f05dda45d6f230534cfb9cce39e9d2fa308e0a73c"
+    }
+  ],
+  "compiler_stages": [
+    {
+      "log": "test02.log",
+      "sha256": "f9dbb054c11369450f8aaea6f992c063acc1b48cd95ec97a2bcdb1d872407799",
+      "diagnostics": [
+        "<lab>/448-font-xkb-06/prefix/share/pkgconfig/../../include/X11/Xos_r.h:386:11: fatal error: 'netdb.h' file not found"
+      ]
+    },
+    {
+      "log": "unix01.log",
+      "sha256": "1676c78600fd1608a544bfa348114490c5b8566780b5c73ab17546f1599570ef",
+      "diagnostics": [
+        "<lab>/448-font-xkb-06/prefix/share/pkgconfig/../../include/X11/Xos_r.h:386:11: fatal error: 'netdb.h' file not found"
+      ]
+    },
+    {
+      "log": "unix02.log",
+      "sha256": "70f5a97047c8db94efaa942564c2eeb664ebac9e91b06ae20012a34c13ccfbaf",
+      "diagnostics": [
+        "<lab>/464-node-2686/unix02/include/X11/Xtrans/Xtranssock.c:110:10: fatal error: 'sys/ioctl.h' file not found"
+      ]
+    }
+  ]
+}
