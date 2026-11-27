@@ -2,6 +2,8 @@
 #define JNOX_UNISTD_H
 #include <stddef.h>
 typedef __PTRDIFF_TYPE__ ssize_t;
+typedef long off_t;
+int ftruncate(int fd, off_t length);
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2

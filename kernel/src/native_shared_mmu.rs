@@ -45,6 +45,12 @@ pub(crate) fn clear(object: usize, size: usize) {
     unsafe { ptr::write_bytes(backing(object), 0, size.next_multiple_of(PAGE)) };
 }
 
+// Bytes beyond the logical EOF in a previously writable last page may
+// contain user data. Zero the entire newly exposed page tail on growth.
+pub(crate) fn zero_growth(object: usize, old: usize, new: usize) {
+    unsafe { ptr::write_bytes(backing(object).add(old), 0, new.next_multiple_of(PAGE) - old) };
+}
+
 pub(crate) fn referenced(object: usize) -> bool {
     unsafe { (&*(&raw const jnox_native_shared_maps)).iter().flatten().any(|m| m.size != 0 && m.object == object) }
 }
@@ -85,13 +91,14 @@ pub(crate) fn map(pid: usize, object: usize, size: usize, writable: bool) -> Res
     Ok(BASE + slot * STRIDE)
 }
 
-pub(crate) fn unmap(pid: usize, address: usize) -> Result<(), i32> {
+pub(crate) fn unmap(pid: usize, address: usize, length: Option<usize>) -> Result<(), i32> {
     if !irq_masked() || space_id(pid).is_none() { return Err(-5); }
     let offset = address.checked_sub(BASE).ok_or(-22)?;
     if offset >= BLOCK || offset % STRIDE != 0 { return Err(-22); }
     let slot = offset / STRIDE;
     let mapping = unsafe { jnox_native_shared_maps[pid][slot] };
     if mapping.size == 0 { return Err(-22); }
+    if length.is_some_and(|n| n != mapping.size) { return Err(-95); }
     update(pid, slot, mapping, false);
     unsafe { jnox_native_shared_maps[pid][slot] = Mapping::EMPTY };
     Ok(())

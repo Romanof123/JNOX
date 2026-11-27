@@ -7,6 +7,7 @@ pub const SOCK_DGRAM: i32 = 2;
 pub const SOCK_SEQPACKET: i32 = 5;
 pub const MSG_TRUNC: i32 = 0x20;
 pub const MSG_DONTWAIT: i32 = 0x40;
+pub const MSG_CMSG_CLOEXEC: i32 = 0x4000_0000;
 pub const MSG_CTRUNC: i32 = 0x08;
 pub const SHUT_RD: i32 = 0;
 pub const SHUT_WR: i32 = 1;

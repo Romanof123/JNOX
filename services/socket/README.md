@@ -54,3 +54,5 @@ token and its bounded request. A subsequent authenticated call from that
 client cancels its old pending slot; an authenticated death clears its staging,
 closes its live descriptors and prompts retries. Infinite-deadline SDK calls
 use the same protocol. The earlier 32 captures describe the earlier binary.
+
+RECV_RIGHTS BEGIN flags bit 2 requests MSG_CMSG_CLOEXEC. INSTALL carries this flag in bit 8 of its broker-local count word. EL1 validates the live COMMIT and receiver slot, installs the right and its descriptor-local flag together, and completes the reply. Plain receives and truncated control buffers do not install a descriptor.

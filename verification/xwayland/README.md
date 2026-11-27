@@ -41,3 +41,11 @@ The SDK size and extrema assertions compiled. Linking with the native startup ob
 The first local attempt stopped at a wrong Meson executable path. The second stopped at a trailing CR on the last shell command. Their original transcripts remain in the intake cache as configure-01.log and configure-02.log. The final run used absolute tool paths and LF checkout. See evidence/target-configure.txt and evidence/sdk-probe.readelf.
 
 SDK 정수형 크기 및 최솟값·최댓값의 정적 검사를 통과했고 AArch64 ET_EXEC 링크에 성공했다. 원본 Xwayland 구성은 meson.build 71행의 JNOX용 x11 의존성에서 정지했다. Xwayland 바이너리 빌드와 게스트 실행은 수행하지 않았다.
+
+## Native SDK work for the upstream server
+
+- The software pixmap path can select `memfd_create`, set a shrink seal before sizing, request a whole-file shared mapping and close the descriptor while that mapping stays alive. The native SDK and kernel implement those operations with a 307,200-byte backing limit. The receive path installs `FD_CLOEXEC` atomically when requested through `MSG_CMSG_CLOEXEC`. Two planned guest configurations exercise the flag-clear and flag-set cases. [Shared-file contract and guest probe](../../examples/native-xwayland-shm/README.md)
+- Local Wayland and X11 sockets need a blocking readiness mechanism. The AF_UNIX broker observes pending connections, buffer space, queued bytes, peer exit and invalid descriptors. The native poll probe waits on two endpoints and records a real timeout and wakeup. The public poll scope covers these local socket slots. [Poll contract and guest probe](../../examples/native-fd-poll/README.md)
+- The patched server build uses genuine X.Org protocol headers and targets JNOX libraries. The source of the patch, pinned header package and portable pixman build are tracked with their own procedure. [Target dependencies](dependencies.md)
+
+게스트 SDK에 익명 공유 파일, 축소 봉인, 매핑 수명과 소켓 준비 상태 대기를 구현했다. 두 종류의 FD 수신 옵션과 실제 소켓 대기를 시험하도록 프로브를 추가했다. 이 단계의 코드 병합만으로 게스트 시험이나 Xwayland 서버 기동을 승인하지 않는다.

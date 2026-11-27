@@ -2573,3 +2573,6 @@ CHG-340,affects,DES-009
 CHG-340,affects,DES-013
 CHG-340,affects,VER-015
 CHG-340,affects,VER-024
+REQ-015,partially-implemented-by,IMP-340
+REQ-024,partially-implemented-by,IMP-340
+DES-013,partially-implemented-by,IMP-340

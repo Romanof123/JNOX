@@ -46,7 +46,7 @@ static long rpc(uint64_t request) {
 }
 
 struct transaction {
-    unsigned op, slot, arg, nonblock, accept_right;
+    unsigned op, slot, arg, nonblock, accept_right, cloexec;
     const unsigned char *path, *data;
     unsigned pathlen, datalen;
 };
@@ -56,7 +56,7 @@ static long commit(const struct transaction *t) {
     uint64_t begin = (0x11ULL << 56) | ((uint64_t)t->op << 48)
         | ((uint64_t)t->slot << 40) | ((uint64_t)t->arg << 32)
         | ((uint64_t)t->pathlen << 24) | ((uint64_t)t->datalen << 16)
-        | ((uint64_t)t->nonblock << 8) | ((uint64_t)t->accept_right << 9);
+        | ((uint64_t)t->nonblock << 8) | ((uint64_t)t->accept_right << 9) | ((uint64_t)t->cloexec << 10);
     long r = rpc(begin);
     if (r != 0) return r < 0 ? r : -EIO;
     unsigned total = t->pathlen + t->datalen;
@@ -277,3 +277,5 @@ ssize_t __wrap_write(int fd, const void *buf, size_t n) {
     if (backing_range(fd)) return backing_io(fd);
     return socket_range(fd) ? send(fd, buf, n, 0) : __real_write(fd, buf, n);
 }
+
+#include "socket_poll.inc"

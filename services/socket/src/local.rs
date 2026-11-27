@@ -164,6 +164,39 @@ impl Local {
             .flatten()
             .ok_or(-9)
     }
+    /// Report the state of the same queues and links used by accept/send/recv.
+    pub fn poll_slot(&self, owner: usize, fd: u8, interest: u8) -> u8 {
+        const IN: u8 = 1;
+        const OUT: u8 = 4;
+        const ERR: u8 = 8;
+        const HUP: u8 = 16;
+        let Ok(id) = self.id(owner, fd) else { return 32 };
+        let s = &self.objects[id];
+        if s.backlog.is_some() {
+            return if s.npending > 0 { interest & IN } else { 0 };
+        }
+        let mut ready = 0;
+        if !s.read_open || s.nbytes > 0 || s.nrecords > 0 { ready |= IN; }
+        match s.peer {
+            Link::Closed => {
+                ready |= HUP;
+                ready |= if s.kind == DGRAM { ERR } else { IN };
+            }
+            Link::Peer(n) => {
+                let peer = &self.objects[n];
+                if s.kind != DGRAM && !peer.write_open { ready |= IN; }
+                if !peer.read_open || !s.write_open { ready |= ERR; }
+                if s.kind != DGRAM && !peer.write_open && !peer.read_open { ready |= HUP; }
+                let allowed = s.kind != DGRAM || matches!(peer.peer, Link::Unconnected)
+                    || peer.peer == Link::Peer(id);
+                let capacity = if s.kind == STREAM { peer.nbytes < peer.bytes.len() }
+                               else { peer.nrecords < peer.records.len() };
+                if allowed && capacity && s.write_open && peer.read_open { ready |= OUT; }
+            }
+            Link::Unconnected => {}
+        }
+        ready & (interest | ERR | HUP)
+    }
     fn free_fd(&self, owner: usize) -> Result<usize, i32> {
         self.fds
             .get(owner)

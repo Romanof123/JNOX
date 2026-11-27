@@ -1038,7 +1038,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let result = match f.x[8] {
         1 => 0,
         #[cfg(jnox_native_shared_fd)]
-        op @ (180..=183 | 187..=188) => shared_fd::direct(unsafe { CURRENT }, op, f.x[0] as usize,
+        op @ (180..=183 | 187..=196) => shared_fd::direct(unsafe { CURRENT }, op, f.x[0] as usize,
             f.x[1] as usize).map_or_else(i64::from, |value| value as i64),
         #[cfg(jnox_linux_source_net)]
         156..=160 => linux_net::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
