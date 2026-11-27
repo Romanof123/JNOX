@@ -49,3 +49,5 @@ SDK 정수형 크기 및 최솟값·최댓값의 정적 검사를 통과했고 A
 - The patched server build uses genuine X.Org protocol headers and targets JNOX libraries. The source of the patch, pinned header package and portable pixman build are tracked with their own procedure. [Target dependencies](dependencies.md)
 
 게스트 SDK에 익명 공유 파일, 축소 봉인, 매핑 수명과 소켓 준비 상태 대기를 구현했다. 두 종류의 FD 수신 옵션과 실제 소켓 대기를 시험하도록 프로브를 추가했다. 이 단계의 코드 병합만으로 게스트 시험이나 Xwayland 서버 기동을 승인하지 않는다.
+
+The capture team then ran the poll, fixed backing and sealed-file profiles on seven AArch64 guest boots. The independent readback campaign and the graphics C runtime are separate from these captures. [Measured socket and shared-file results](evidence/substrate/README.md)

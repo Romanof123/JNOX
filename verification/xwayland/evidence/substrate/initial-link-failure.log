@@ -1,0 +1,18 @@
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.008s
+
+OK
+   Compiling jnox-native v0.1.0 (/home/ywcho/jnox406-lab/src/sdk/native-aarch64/rust)
+   Compiling jnox-local-socket v0.1.0 (/home/ywcho/jnox406-lab/src/services/socket)
+    Finished `release` profile [optimized] target(s) in 0.88s
+ld.lld: error: undefined symbol: fcntl
+>>> referenced by local_socket.c
+>>>               /tmp/local_socket-aaae9a.o:(__wrap_fcntl)
+>>> referenced by local_socket.c
+>>>               /tmp/local_socket-aaae9a.o:(__wrap_fcntl)
+>>> referenced by local_socket.c
+>>>               /tmp/local_socket-aaae9a.o:(__wrap_fcntl)
+>>> did you mean: __wrap_fcntl
+>>> defined in: /tmp/local_socket-aaae9a.o
+clang: error: ld.lld command failed with exit code 1 (use -v to see invocation)

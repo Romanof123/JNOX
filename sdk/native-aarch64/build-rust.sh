@@ -35,7 +35,7 @@ if [ "$local_socket" = 1 ]; then
         -mgeneral-regs-only -mno-outline-atomics -I"$sdk/include" \
         -c "$sdk/local_socket.c" -o "$tmp/local_socket.o"
     set -- -C link-arg="$tmp/local_socket.o" -C link-arg=--wrap=read \
-        -C link-arg=--wrap=write -C link-arg=--wrap=close
+        -C link-arg=--wrap=write -C link-arg=--wrap=close -C link-arg=--wrap=fcntl
 fi
 if [ "$pubsub" = 1 ]; then
     clang --target=aarch64-none-elf -std=c11 -O2 -ffreestanding -nostdinc \

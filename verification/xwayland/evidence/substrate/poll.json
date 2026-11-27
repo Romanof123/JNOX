@@ -1,0 +1,30 @@
+{
+  "exits": [
+    [
+      0,
+      71
+    ],
+    [
+      1,
+      72
+    ],
+    [
+      2,
+      0
+    ]
+  ],
+  "start_ns": 7570832,
+  "end_ns": 28058800,
+  "timeout_ns": 20487968,
+  "byte": 120,
+  "completed_roles": 3,
+  "scheduler_events_recorded": 128,
+  "selected_by_pid": {
+    "0": 27,
+    "1": 18,
+    "2": 82
+  },
+  "scheduler_events_dropped": 22,
+  "trace_start_tick": 665732,
+  "trace_end_tick": 2388394
+}

@@ -70,7 +70,7 @@ int munmap(void *address, size_t length) {
     return (int)backing_call(194, (long)address, (long)length);
 }
 
-extern int __real_fcntl(int, int, ...) __attribute__((weak));
+extern int __real_fcntl(int, int, ...);
 int __wrap_fcntl(int fd, int cmd, ...) {
     int arg = 0;
     if (cmd == F_ADD_SEALS || cmd == F_SETFL || cmd == F_SETFD) {
@@ -80,7 +80,7 @@ int __wrap_fcntl(int fd, int cmd, ...) {
         __builtin_va_end(ap);
     }
     if (!backing_range(fd)) {
-        return __real_fcntl ? __real_fcntl(fd, cmd, arg) : error(ENOTSUP);
+        return __real_fcntl(fd, cmd, arg);
     }
     if (cmd == F_ADD_SEALS) return jnox_shm_add_seals(fd, (unsigned)arg);
     if (cmd == F_GET_SEALS) return jnox_shm_get_seals(fd);
