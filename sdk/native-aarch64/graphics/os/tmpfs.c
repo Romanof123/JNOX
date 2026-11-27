@@ -139,7 +139,7 @@ int chmod(const char *path, mode_t mode)
 }
 static int descriptor_op(unsigned op, int fd, uint32_t arg)
 {
-    if (!jnox_tmp_fd(fd)) return complete(fd < 0 || fd >= 104 ? -9 : -95);
+    if (!jnox_tmp_fd(fd)) return jnox_graphics_unsupported_fd(fd);
     return complete(exchange(op, fd, 0, arg, NULL, 0, NULL, 0));
 }
 int fchmod(int fd, mode_t mode)
@@ -207,7 +207,7 @@ static long metadata(int op, int fd, const char *path, struct stat *result)
 }
 int fstat(int fd, struct stat *s)
 {
-    if (!jnox_tmp_fd(fd)) return complete(fd < 0 || fd >= 104 ? -9 : -95);
+    if (!jnox_tmp_fd(fd)) return jnox_graphics_unsupported_fd(fd);
     return complete(metadata(FSTAT, fd, NULL, s));
 }
 int stat(const char *path, struct stat *s) { return complete(metadata(STAT, 0, path, s)); }

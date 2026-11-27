@@ -8,4 +8,5 @@ long jnox_tmp_seek(int fd, long offset, int whence);
 int jnox_tmp_close(int fd);
 int jnox_tmp_fcntl(int fd, int command, int argument);
 int jnox_tmp_dup2(int fd, int target);
+int jnox_graphics_unsupported_fd(int fd);
 #endif

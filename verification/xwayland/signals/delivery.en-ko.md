@@ -1,5 +1,7 @@
 # Selected AArch64 process signal delivery / 프로세스 신호 전달
 
+[Xwayland fault handling and shared-memory build profile / Xwayland 장애 처리와 공유 메모리 빌드 프로필](busfault.en-ko.md)
+
 CHG-340 · REQ-015/024 · DES-009/013 · VER-015/024. This profile targets single-core FIFO/RR native shell packages and the graphics package with shared descriptors. Picolibc `sigaction` supports HUP, INT, PIPE, TERM and USR1. Xwayland's `OsSignal` installs an empty or single-signal action mask and zero flags for these five signals. Its optional synchronous crash reporters use a separate facility outside this profile. [Server link and interfaces #471](https://github.com/Romanof123/JNOX/issues/471)
 
 The kernel starts each slot with default dispositions. Queries and replacements operate on the calling process only. It copies the new action once, validates all options and code pointers, writes any requested previous value, then commits the replacement. Unsupported masks or flags return `ENOTSUP`. SIGKILL and SIGSTOP cannot be caught or ignored. Each registered handler and the Picolibc return stub must be aligned within a file-backed executable segment of the caller's ELF. The ABI function checks cover the 24-byte AArch64 Picolibc structure.

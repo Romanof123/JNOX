@@ -3,16 +3,38 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #define CHECK(e, code) do { if (!(e)) return code; } while (0)
 static int create(const char *p) { return open(p, O_CREAT | O_EXCL | O_RDWR, 0600); }
 
+static int check_metadata_error(int fd, int expected)
+{
+    struct stat st = { .st_ino = 42 };
+    errno = 0;
+    if (fstat(fd, &st) != -1 || errno != expected || st.st_ino != 42) return 0;
+    errno = 0;
+    if (fchmod(fd, 0600) != -1 || errno != expected) return 0;
+    errno = 0;
+    return fsync(fd) == -1 && errno == expected;
+}
+
 int main(int argc, char **argv)
 {
     struct stat st, held;
     char c;
+    CHECK(check_metadata_error(80, EBADF) && check_metadata_error(-1, EBADF) &&
+          check_metadata_error(104, EBADF) && check_metadata_error(STDIN_FILENO, EBADF), 137);
+    CHECK(jnox_socket_broker(1) == 0, 138);
+    int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    CHECK(sock >= 0 && check_metadata_error(sock, ENOTSUP), 139);
+    CHECK(close(sock) == 0 && check_metadata_error(sock, EBADF), 140);
+    int backing = memfd_create("metadata", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    CHECK(backing >= 0 && check_metadata_error(backing, ENOTSUP), 141);
+    CHECK(close(backing) == 0 && check_metadata_error(backing, EBADF), 142);
     if (argc > 1 && strcmp(argv[1], "ro") == 0) {
         CHECK(mkdir("/tmp/denied", 0700) == -1 && errno == EACCES, 101);
         CHECK(chmod("/tmp", 0777) == -1 && errno == EACCES, 102);

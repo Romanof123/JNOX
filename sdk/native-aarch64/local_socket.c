@@ -316,6 +316,18 @@ static int graphics_stream_present(int fd) {
     char probe = 0;
     return jnox_ipc_trap(JNOX_CALL_WRITE, fd, (uintptr_t)&probe, 0).status == 0;
 }
+/* Used when a metadata operation is only implemented by the named file service. */
+int jnox_graphics_unsupported_fd(int fd) {
+    if (socket_range(fd) || backing_range(fd)) {
+        if (__wrap_fcntl(fd, F_GETFD) < 0) {
+            /* With no shared-file service or route the caller owns no backing FDs. */
+            if (backing_range(fd) && (errno == ENOSYS || errno == EACCES)) return error(EBADF);
+            return -1;
+        }
+        return error(ENOTSUP);
+    }
+    return error(graphics_stream_present(fd) ? ENOTSUP : EBADF);
+}
 int dup2(int source, int target) {
     const int limit = JNOX_SHM_FD_BASE + JNOX_SHM_FD_COUNT;
     if (source < 0 || source >= limit || target < 0 || target >= limit) return error(EBADF);

@@ -274,6 +274,7 @@ def main():
         # dependency in production, applying only the native socket selection.
         run("patch", "-p1", "-i", HERE / "server-unix.patch", cwd=server)
         run("patch", "-p1", "-i", HERE / "server-local-access.patch", cwd=server)
+        run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-busfault.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "software-backend.patch", cwd=server)
     else:
         run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
