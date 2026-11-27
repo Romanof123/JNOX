@@ -707,6 +707,14 @@ fn main() {
     }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_console_write)");
+    if let Some(writers) = selector("JNOX_NATIVE_CONSOLE_WRITERS") {
+        assert!(native_image.is_some() && !writers.is_empty() && writers.len() <= 4 &&
+                writers.bytes().all(|b| (b'0'..=b'3').contains(&b)),
+                "native console requires explicit process slots 0 through 3");
+        println!("cargo::rustc-cfg=jnox_native_console_write");
+        println!("cargo::rustc-env=JNOX_NATIVE_CONSOLE_WRITERS={writers}");
+    }
     if profile.as_deref() != Some("native") {
         assert!(native_image.is_none() && native_hash.is_none(),
             "native ELF packaging variables require JNOX_PROFILE=native");

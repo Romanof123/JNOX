@@ -72,11 +72,11 @@ def main():
         os.environ.pop(name, None)
     os.environ.update(LC_ALL="C", SOURCE_DATE_EPOCH="1745997199",
                       PKG_CONFIG_LIBDIR=str(prefix / "lib/pkgconfig"))
-    cc = ["clang", "--target=aarch64-none-elf", "-nostdlib", "-fuse-ld=lld"]
+    cc = ["clang", "--target=aarch64-none-elf", "-nostdlib"]
     common = ["-mcpu=cortex-a72", "-mno-outline-atomics", "-ffreestanding",
               "-fno-stack-protector", "-fno-pie", "-fno-pic", "-fno-unwind-tables",
               "-fno-asynchronous-unwind-tables", "-ffunction-sections", "-fdata-sections"]
-    cross_file(work / "pico.ini", cc, common, ["-nostdlib", "-static"], "none")
+    cross_file(work / "pico.ini", cc, common, ["-nostdlib", "-static", "-fuse-ld=lld"], "none")
     base = ["--prefix", prefix, "--libdir", "lib", "--wrap-mode=nofallback", "--buildtype=minsize"]
     run(meson, "setup", work / "pico-build", source, "--cross-file", work / "pico.ini", *base,
         "-Dmultilib=false", "-Dtests=false", "-Dthread-local-storage=false", "-Dsingle-thread=true",
@@ -89,15 +89,17 @@ def main():
     for f in sorted(source.glob("COPYING*")):
         shutil.copy2(f, licenses / f.name)
     shutil.copy2(pixsource / "COPYING", licenses / "COPYING.pixman")
-    resource = Path(run("clang", "-print-resource-dir", capture=True).strip()) / "include"
-    flags = [*common, "-nostdinc", "-isystem", str(prefix / "include"), "-isystem", str(resource),
+    # Keep Clang's target builtin headers (including float.h), while excluding
+    # every platform libc search directory. Meson strips explicit default
+    # resource paths from its compiler arguments.
+    flags = [*common, "-nostdlibinc", "-isystem", str(prefix / "include"),
              "-DPIXMAN_NO_TLS", "-iquote", str(SDK / "include")]
     for obj, file in (("start.o", PORT/"start.S"), ("runtime.o", PORT/"runtime.c"),
                       ("fp.o", PROBE/"fp.S")):
         run(*cc, *flags, "-Os", "-c", file, "-o", work / obj)
-    ld = ["-static", "-Wl,--gc-sections,-z,max-page-size=4096,--build-id=none",
+    ld = ["-static", "-fuse-ld=lld", "-Wl,--gc-sections,-z,max-page-size=4096,--build-id=none",
           "-Wl,-T," + str(PORT/"app.ld"), str(work/"start.o"), str(work/"runtime.o"),
-          "-L" + str(prefix/"lib"), "-Wl,--start-group", "-lc", "-lm", "-Wl,--end-group"]
+          str(prefix/"lib/libc.a"), str(prefix/"lib/libm.a")]
     cross_file(work / "jnox.ini", cc, flags, ld, "jnox")
     run(meson, "setup", work/"pix-build", pixsource, "--cross-file", work/"jnox.ini", *base,
         "-Dauto_features=disabled", "-Dtls=disabled", "-Dtests=disabled", "-Ddemos=disabled")

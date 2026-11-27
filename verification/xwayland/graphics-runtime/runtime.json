@@ -1,0 +1,16 @@
+{
+  "picolibc_sha256": "d1fc2a20f217472f8d9da084a519a25678e8d91852a41c7f3f1840d3508f7163",
+  "pixman_sha256": "89a4c1e1e45e0b23dffe708202cb2eaffde0fe3727d7692b2e1739fec78a7dac",
+  "signer": "C383B778255613DFDB409D91DB221A6900000011",
+  "clang": "Ubuntu clang version 14.0.0-1ubuntu1.1",
+  "meson": "0.61.2",
+  "artifacts": {
+    "target/lib/libc.a": "69a392754b6f19eb5687738c761430855721ca2c9059128a2a7714b93691c9eb",
+    "target/lib/libm.a": "0da55615fe7d1cd4e69ab2d0a097a400e06044cd7a17626b701d7c0988c0b4e1",
+    "target/lib/libpixman-1.a": "405294db8b88253bd9869753e90539c58a2d431d08b45e19203b5e2a2454764e",
+    "probe.elf": "9f9b89dda8a807616d864effd19ec6031f955bfe92b8a54339084ac9dc7bf25f",
+    "probe.map": "10ae89ac8ded4c4f08f64016bb6424f0c04ea554be740ffc66c5f1893ffceba2",
+    "pico.ini": "c95765bc75a36f329b0af1d43265bf2978eb98ca4b8bb6a58df3cf4363556b2c",
+    "jnox.ini": "4e268ed2b540830326b3f57e692800a4269b1e2b5bc228abb3e90e44a71fb57b"
+  }
+}

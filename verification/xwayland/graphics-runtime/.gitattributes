@@ -1,0 +1,3 @@
+*-uart.log -text
+*-uart.trace -text whitespace=-trailing-space
+*-uart.symbols.json -text

@@ -542,6 +542,8 @@ def main():
                         help="reserve child executable slot 1 or 2 in a native shell package")
     parser.add_argument("--rom-file", action="append", default=[], metavar="NAME=FILE",
                         help="embed a host file under an immutable guest basename")
+    parser.add_argument("--console-write", action="append", type=int, choices=range(4), default=[],
+                        help="grant this process slot bounded SVC 4 console output on fd 1 and 2")
     parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
     parser.add_argument("--fifo-grant", type=pipe_fields, action="append", default=[],
                         metavar="OWNER:READERMASK:WRITERMASK")
@@ -648,6 +650,10 @@ def main():
     board = args.board or "virt"
     display_slot, service_slot, service_clients = native_service_slots(parser, args, policy, board)
     validate_pipes(parser, args, policy, board)
+    if args.console_write and (policy not in ("fifo", "rr") or not args.elf or
+            len(set(args.console_write)) != len(args.console_write) or
+            max(args.console_write) > len(args.peer_elf)):
+        parser.error("--console-write requires distinct, packaged native FIFO/RR process slots")
     shell = None
     if args.exec_child or args.rom_file:
         if not args.pipes or len(args.peer_elf) != 2:
@@ -897,6 +903,9 @@ def main():
         env.update(JNOX_NATIVE_EXEC_CHILDREN=f"1:{names[1]},2:{names[2]}",
                    JNOX_NATIVE_ROM_IMAGE=str(rom), JNOX_NATIVE_ROM_SHA256=digest)
         metadata.update(exec_names=names, rom_image=rom.name, rom_sha256=digest, rom_files=files)
+    if args.console_write:
+        metadata["console_write_slots"] = sorted(args.console_write)
+        env["JNOX_NATIVE_CONSOLE_WRITERS"] = "".join(map(str, sorted(args.console_write)))
     if args.pipes:
         env["JNOX_NATIVE_PIPES"] = "1"
         fifo_grants = sorted(args.fifo_grant)

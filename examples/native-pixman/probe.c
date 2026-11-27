@@ -9,6 +9,10 @@
 
 volatile uint64_t jnox_pixman_report[20];
 static volatile double math_input = 2.0;
+/* Picolibc supplies an inline AArch64 sqrt in its public header. Also
+ * exercise the archive entry through an actual target function pointer. */
+extern double linked_sqrt(double) __asm__("sqrt");
+static double (*volatile math_sqrt)(double) = linked_sqrt;
 extern int jnox_graphics_emit(const char *s, size_t size);
 extern int graphics_fp_yield(uint64_t pattern);
 
@@ -43,7 +47,7 @@ int main(int argc, char **argv)
     char end[] = "JNOX PIXMAN FP END p\n";
     end[sizeof(end)-3] = role;
     if (jnox_graphics_emit(end, sizeof(end)-1)) return 113;
-    double root = sqrt(math_input);
+    double root = math_sqrt(math_input);
     if (!(root > 1.41421 && root < 1.41422 && floor(root) == 1.0)) return 105;
     errno = 0;
     volatile size_t oversize = 1024u * 1024u;

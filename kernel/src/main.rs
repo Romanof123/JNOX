@@ -17,6 +17,8 @@ mod task_policy_image;
 mod task_policy_scheduler;
 #[cfg(jnox_native_el0)]
 mod native_el0_mmu;
+#[cfg(any(jnox_task_policy, jnox_native_console_write))]
+mod native_console;
 
 
 #[cfg(jnox_bench = "aperiodic")]

@@ -1037,6 +1037,14 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_native_console_write)]
+        4 => {
+            let caller = unsafe { CURRENT } as u8;
+            if env!("JNOX_NATIVE_CONSOLE_WRITERS").as_bytes().contains(&(b'0' + caller)) {
+                crate::native_console::write(f.x[0], f.x[1] as usize, f.x[2] as usize)
+            } else { -13 }
+        }
+
         #[cfg(jnox_native_shared_fd)]
         op @ (180..=183 | 187..=196) => shared_fd::direct(unsafe { CURRENT }, op, f.x[0] as usize,
             f.x[1] as usize).map_or_else(i64::from, |value| value as i64),
