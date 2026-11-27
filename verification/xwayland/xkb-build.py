@@ -120,6 +120,17 @@ def main():
     if args.build_executable:
         os_prefix = args.os_prefix.resolve()
         os_archive = os_prefix / "lib/libjnox-wayland-os.a"
+        sdk = HERE.parents[1] / "sdk/native-aarch64"
+        for name, src in (("start.o", "start.S"), ("runtime.o", "runtime.c")):
+            # The full server uses this revision's startup ABI, including envp.
+            # Archived graphics libraries predate the packaged environment.
+            matches = [i for i, arg in enumerate(ld) if Path(arg).name == name]
+            if len(matches) != 1:
+                raise ValueError("expected one graphics startup input: " + name)
+            obj = out / name
+            run(*cc, "-iquote", sdk / "include", *flags, "-Os", "-c",
+                sdk / "graphics" / src, "-o", obj)
+            ld[matches[0]] = str(obj)
         xcvt = args.xcvt_prefix.resolve()
         check_archive(os_archive)
         check_archive(xcvt / "lib/libxcvt.a")
@@ -275,6 +286,7 @@ def main():
         # dependency in production, applying only the native socket selection.
         run("patch", "-p1", "-i", HERE / "server-unix.patch", cwd=server)
         run("patch", "-p1", "-i", HERE / "server-local-access.patch", cwd=server)
+        run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-broker.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-busfault.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "software-backend.patch", cwd=server)
     else:

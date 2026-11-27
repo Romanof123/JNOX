@@ -318,6 +318,8 @@ fn count_rx_irq(index: usize) {
 static mut STATES: [TaskState; COUNT] = [TaskState::Absent; COUNT];
 static mut READY: ReadyQueue<COUNT> = ReadyQueue::new();
 static mut CURRENT: usize = 0;
+#[cfg(jnox_native_display_five_active)]
+static mut FIRST_SYSCALL: [bool; COUNT] = [false; COUNT];
 static mut IDLE: context::Stack = context::Stack([0; context::STACK_BYTES]);
 
 fn enqueue(pid: usize) {
@@ -414,6 +416,10 @@ fn dispatch(frame: &mut NativeFrame) {
 // layer owns address spaces, architectural contexts and application statuses.
 static mut FIXED: Option<Fixed> = None;
 static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
+
+#[cfg(jnox_native_display_five_active)]
+#[path = "native_display_fault.rs"]
+mod display_fault;
 
 #[cfg(jnox_native_fixed)]
 #[path = "native_process_groups.rs"]
@@ -760,6 +766,8 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_display_five_active)]
+    display_fault::report();
     #[cfg(jnox_native_capability_ipc)]
     ipc::caps::report(1);
     #[cfg(jnox_native_pipe_ipc)]
@@ -1043,11 +1051,24 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     if terminate_asserting_process(f, vector, vbar, ttbr, far) { return; }
     #[cfg(jnox_native_proportional)]
     proportional::validate_sync(vector, f, vbar, ttbr, far, entry);
-    if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64
-        || f.current_el != 4 || f.spsr & 0x1f != 0 || f.esr >> 26 != 0x15
+    let from_el0 = vector == 0x400 && vbar == (&raw const native_el0_vectors).addr() as u64
+        && f.current_el == 4 && f.spsr & 0x1f == 0;
+    if !from_el0 || f.esr >> 26 != 0x15
         || f.esr & 0xffff != 0x4a01 || !native_el0_mmu::user_return_pc(f.elr as usize)
         || !(STACK_BOTTOM as u64..=STACK_TOP as u64).contains(&f.sp_el0) || f.sp_el0 % 16 != 0
     {
+        #[cfg(jnox_native_display_five_active)]
+        if from_el0 {
+            let pid = unsafe { CURRENT };
+            event(b"TRAP", pid, Some(((f.esr >> 26) & 63) as i64));
+            if native_el0_mmu::user_return_pc(f.elr as usize) {
+                event(b"TRAP_PC", pid, Some(f.elr as i64));
+            }
+            if display_fault::attributable(f.esr) {
+                display_fault::retire(f, ttbr);
+                return;
+            }
+        }
         #[cfg(jnox_native_edf)]
         if NATIVE_DEADLINE_SERVICE_MASK != 0 { edf::recurring::fault(entry, f); }
         #[cfg(all(jnox_linux_source_net_rx_irq, not(jnox_linux_source_net_restart)))]
@@ -1055,6 +1076,14 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         #[cfg(jnox_linux_source_net_restart)]
         { linux_net::restart_exit(unsafe { CURRENT }, -1); }
         fail(2);
+    }
+    #[cfg(jnox_native_display_five_active)]
+    unsafe {
+        // Single-vCPU profile; EL1 masks interrupts while handling this frame.
+        if !FIRST_SYSCALL[CURRENT] {
+            FIRST_SYSCALL[CURRENT] = true;
+            event(b"ENTERED", CURRENT, None);
+        }
     }
     #[cfg(jnox_native_edf)]
     if NATIVE_DEADLINE_SERVICE_MASK != 0 {
@@ -1071,6 +1100,12 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     let exit = f.x[8] == 1;
     if exit && f.x[0] as i32 as i64 as u64 != f.x[0] {
+        #[cfg(jnox_native_display_five_active)]
+        {
+            display_fault::retire(f, ttbr);
+            return;
+        }
+        #[cfg(not(jnox_native_display_five_active))]
         fail(3);
     }
     #[cfg(jnox_native_batch)]
@@ -1329,6 +1364,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             let status = f.x[0] as i32;
             head(9, f.x[0]);
             unsafe { EXIT_STATUS[pid] = status };
+            #[cfg(jnox_native_display_five_active)]
+            event(b"RETIRED", pid, Some(i64::from(status)));
             Action::Exit
         } else if let Some(target) = deadline {
             Action::Sleep(target - now)
@@ -1432,13 +1469,19 @@ pub(super) fn run() -> ! {
         uart_write(digest.as_bytes());
         uart_write(b"\n");
     }
-    let plans = images.map(|(image, _)| validated_image(image));
+    let plans: [LoadPlan<'_>; COUNT] = core::array::from_fn(|pid| {
+        #[cfg(jnox_native_display_five_active)]
+        event(b"VALIDATE", pid, None);
+        validated_image(images[pid].0)
+    });
     let buffers = unsafe { &mut *(&raw mut STARTUP_TAILS) };
     #[cfg(jnox_native_threads)]
     let stack_bottom = native_el0_mmu::thread_stack(0).unwrap_or_else(|| fail(20)).0;
     #[cfg(not(jnox_native_threads))]
     let stack_bottom = STACK_BOTTOM;
     let layouts: [native_stack::Layout; COUNT] = core::array::from_fn(|pid| {
+        #[cfg(jnox_native_display_five_active)]
+        event(b"STACK", pid, None);
         native_stack::build_env(NATIVE_ARGV_EXTRAS[pid], NATIVE_ENV[pid], !cfg!(jnox_native_process),
             stack_bottom, STACK_TOP, &mut buffers[pid]).unwrap_or_else(|| fail(19))
     });
