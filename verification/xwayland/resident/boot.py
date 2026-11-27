@@ -42,12 +42,8 @@ def motion(qmp, x, y):
                                              for axis, value in axes])
 
 
-def click(qmp):
-    # The point is inside Mosaic and clear of the Tiles surface at (112,80).
-    motion(qmp, 70, 75)
-    for down in (True, False):
-        request(qmp, "input-send-event", events=[{"type": "btn", "data": {"button": "left", "down": down}}])
-    motion(qmp, 2, 2)
+def button(qmp, down):
+    request(qmp, "input-send-event", events=[{"type": "btn", "data": {"button": "left", "down": down}}])
 
 
 def sample_stopped_pc(address, code_ranges):
@@ -176,9 +172,33 @@ def observe(kernel, private, mode, timeout, receipt, identity, code_ranges, outp
                                         proc.stdin.flush()
                                         switch = now + 5
                                 time.sleep(.1)
-                            click(qmp)
+                            motion(qmp, 70, 75)
+                            button(qmp, True)
+                            if not changed:
+                                # Mosaic draws on ButtonPress. Hold position and button until its
+                                # changed lower rows are on scanout, clear of the 64x64 cursor.
+                                # This synchronizes release only. The next stage still requires
+                                # two exact full crops with the pointer outside the window.
+                                receipt["stage"] = "waiting for first ButtonPress redraw"
+                                tail = GEOMETRY[2] * 3 * 64
+                                blue_tail = expected_scene(True)[-tail:]
+                                assert blue_tail != expected[-tail:]
+                                while True:
+                                    if 4 in tick():
+                                        raise ValueError("Mosaic exited before its first button redraw")
+                                    request(qmp, "screendump", filename=str(frame), device="screen", head=0)
+                                    pressed = crop(frame.read_bytes())
+                                    if pressed and pressed[-tail:] == blue_tail:
+                                        break
+                                    time.sleep(.1)
+                                button(qmp, False)
+                                motion(qmp, 2, 2)
                         receipt["stage"] = "waiting for Mosaic DestroyNotify and exit"
                         while 4 not in tick():
+                            time.sleep(.1)
+                        button(qmp, False)
+                        receipt["stage"] = "waiting for Xwayland last-client termination"
+                        while 1 not in tick():
                             time.sleep(.1)
                         receipt["stage"] = "closing the native session"
                         proc.stdin.write(b"q")

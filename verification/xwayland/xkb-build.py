@@ -290,6 +290,7 @@ def main():
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-busfault.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-memory.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "software-backend.patch", cwd=server)
+        run("patch", "--fuzz=0", "-p1", "-i", HERE / "rootful-teardown.patch", cwd=server)
     else:
         run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
     selected_options = []

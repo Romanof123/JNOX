@@ -1,0 +1,20 @@
+--- a/hw/xwayland/xwayland-window.c
++++ b/hw/xwayland/xwayland-window.c
+@@ -1646,6 +1646,17 @@
+ static void
+ release_wl_surface_for_window(struct xwl_window *xwl_window)
+ {
++#ifdef JNOX_NATIVE_ACCESS
++    /* The rootful xdg role objects must retire before their wl_surface. */
++    if (xwl_window->xdg_toplevel) {
++        xdg_toplevel_destroy(xwl_window->xdg_toplevel);
++        xwl_window->xdg_toplevel = NULL;
++    }
++    if (xwl_window->xdg_surface) {
++        xdg_surface_destroy(xwl_window->xdg_surface);
++        xwl_window->xdg_surface = NULL;
++    }
++#endif
+     if (xwl_window->xwayland_surface)
+         release_wl_surface_for_window_shell(xwl_window);
+     else

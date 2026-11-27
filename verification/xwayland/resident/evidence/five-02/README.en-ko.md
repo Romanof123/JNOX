@@ -8,7 +8,11 @@ The original Xwayland server presented Mosaic through the native Wayland composi
 
 Each image contains the observed 240 × 160 crop at (48, 56) in the 320 × 240 guest framebuffer. All 38,400 pixels matched the expected scene over two observations at least 200 ms apart. A separate cold boot of the same packaged kernel supplied a wrong client credential. Mosaic decoded the server's rejection and exited 114. Xwayland exited 0 in that boot. [Wrong-credential receipt](wrong.json)
 
+A repeat with the same kernel reached dispatch and matched all 38,400 coral pixels again. Its first-click observation timed out waiting for blue, with no process exit recorded. The repeat also rejected the wrong credential with the same Mosaic and server exits. The first run demonstrates a real input transition. Reliable input and graceful shutdown remain open. A subsequent source change, integration `75d5e37`, orders Wayland role destruction and synchronizes button release with the observed blue frame. These receipts precede that change. [Repeat matching](repeat-matching.json) · [Repeat rejection](repeat-wrong.json)
+
 동일한 AArch64 커널로 두 번 부팅했다. 잘못된 인증 자료를 제공한 부팅에서는 실제 서버가 연결을 거부해 Mosaic가 114, Xwayland가 0으로 종료했다. 정상 인증 부팅에서는 최초 산호색과 첫 가상 태블릿 클릭 후 파란색을 각각 38,400픽셀 전체에서 확인했다. 두 번째 클릭 뒤 Mosaic가 창 파괴 이벤트를 받고 0으로 종료했으나 Xwayland의 종료값은 1이었다. 따라서 전체 세션의 정상 종료 검증은 실패했다. 공개 소스에서의 독립 재현, 서버 재시작, 실보드 검증은 별도 항목이다.
+
+재시도에서도 잘못된 인증 거부와 같은 산호색 화면을 확인했다. 정상 인증 재시도는 첫 클릭 후 파란 화면을 기다리다 시간 초과했고, 그때까지 기록된 프로세스 종료는 없었다. 후속 수정은 Wayland 역할 파괴 순서와 버튼을 떼는 시점을 조정한다. 이 측정은 수정 전 결과다.
 
 ### Build and image provenance / 빌드와 이미지 출처
 

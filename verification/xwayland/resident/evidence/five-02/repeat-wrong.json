@@ -1,0 +1,44 @@
+{
+  "kernel_sha256": "8901c89e5fc29f8dc00ce3ec97d65112ea5b9b3e8b43d89a47ed321e37a12ad2",
+  "case": "wrong",
+  "stage": "complete",
+  "exits": {
+    "4": 114,
+    "1": 0
+  },
+  "frames": [],
+  "completed": true,
+  "diagnostic": {
+    "images_announced": [
+      "compositor",
+      "xwayland",
+      "tiles",
+      "broker",
+      "mosaic"
+    ],
+    "validating": [
+      "compositor",
+      "xwayland",
+      "tiles",
+      "broker",
+      "mosaic"
+    ],
+    "constructing_stack": [
+      "compositor",
+      "xwayland",
+      "tiles",
+      "broker",
+      "mosaic"
+    ],
+    "first_syscall": [
+      "compositor",
+      "broker",
+      "xwayland",
+      "mosaic",
+      "tiles"
+    ],
+    "last_server_phase": "dispatch",
+    "mosaic_status": "authorization-denied"
+  },
+  "terminal_exits": {}
+}
