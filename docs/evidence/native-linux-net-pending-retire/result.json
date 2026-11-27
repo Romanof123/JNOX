@@ -1,0 +1,250 @@
+{
+  "archive_sha256": "ec59a2af31ed639168d6d32c8edb138d3da15e5321d9a9084b4c4a318f5ef79d",
+  "captures": {
+    "pending-a": {
+      "independent": {
+        "ack_bytes": 60,
+        "capture": "pending-a",
+        "fresh_frames": 80,
+        "frozen_private_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+        "irq79_with_used_buffer_status": [
+          2,
+          10
+        ],
+        "kernel_sha256": "b044f3a99e22a462462a1e7c0ab72404d39390290869c4ff48c817ff39ae0fc7",
+        "machine_log_sha256": "3c7a9c6347ecbbf153af7448f8f4f07a4824317aa30215ab0bbc13a4efbbe285",
+        "nonces": "2fc10acf7302523ee28e9b59d47fcee8",
+        "old_gic_pending_at_retire": 1,
+        "old_virtio_interrupt_status_at_retire": 1,
+        "outstanding": 3,
+        "recorded_gate_writes": [
+          1080693000,
+          1080693008
+        ],
+        "role_sha256": [
+          "7e379bd575b50014ae4a5c5d2cfee2465b60eb1cd006379f2eea8b24d18da530",
+          "dc45db9f1796adfd50a21723c23595a70aaf8e945dcb14f9896bc78b19eada47",
+          "e639c05e74dbc6acb14437d99792d7d79cdc5d97ed2eb7a86d6c328c7b0f745f"
+        ],
+        "roots": [
+          "0x1000040285000",
+          "0x200004069a000",
+          "0x3000040aaf000"
+        ],
+        "software_pends_irq79": 0,
+        "third_frame_sha256": "7a04ff88e64c1b1ad2b1a02c8d9c8289b026401cbf9048588721b70f118a2d7b",
+        "third_used_id": 2,
+        "tokens": [
+          1,
+          2
+        ],
+        "trace_lines": {
+          "ack": 4867,
+          "clear": 4871,
+          "mask": 4865,
+          "nic_high": 4853,
+          "pending": 4856,
+          "pin_high": 4854,
+          "pin_low": 4869,
+          "reset": 4872
+        },
+        "unreaped": 1,
+        "used_heads": [
+          2,
+          3
+        ],
+        "wire_sha256": "a12315139e6185cdf434ae35fd09e2652016246d1abc4776248b6d6911c88ebf"
+      },
+      "mutations": [
+        "erased old GIC pending bit",
+        "altered third protected DMA bytes",
+        "injected third frame before WAIT",
+        "same-root spare",
+        "authorized stale grant",
+        "reused nonce",
+        "pending DMA bytes",
+        "removed only masked wired assertion",
+        "missing TX QueueReady reset readbacks",
+        "old nonce in replacement delivery",
+        "gate outside authorized word"
+      ],
+      "result": {
+        "epochs": [
+          1,
+          2
+        ],
+        "executions": {
+          "0/gro_receive_skb": 1,
+          "0/skb_recv_done": 1,
+          "0/virtnet_find_vqs": 1,
+          "0/virtnet_poll": 1,
+          "2/gro_receive_skb": 81,
+          "2/skb_recv_done": 10,
+          "2/virtnet_find_vqs": 1,
+          "2/virtnet_poll": 20
+        },
+        "frozen_old_span_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+        "ingress_packets": 84,
+        "masked_pending_retirement": {
+          "ack_line": 4866,
+          "counter_frequency": 62500000,
+          "gic_assert_line": 4853,
+          "gic_clear_line": 4868,
+          "mask_line": 4864,
+          "masked_ticks": 208372,
+          "old_used": [
+            2,
+            3
+          ],
+          "pending_clear_write_line": 4870,
+          "pending_read_line": 4855,
+          "third_frame_sha256": "7a04ff88e64c1b1ad2b1a02c8d9c8289b026401cbf9048588721b70f118a2d7b",
+          "third_used_id": 2,
+          "third_used_len": 74,
+          "transport_assert_line": 4852,
+          "transport_clear_line": 4867
+        },
+        "outstanding_id": 3,
+        "roots": [
+          281476053094400,
+          562951034085376,
+          844426015076352
+        ],
+        "scheduler": [
+          6162859,
+          86,
+          1,
+          135634312,
+          0,
+          1,
+          10
+        ],
+        "unreaped_id": 1
+      }
+    },
+    "pending-b": {
+      "independent": {
+        "ack_bytes": 60,
+        "capture": "pending-b",
+        "fresh_frames": 80,
+        "frozen_private_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+        "irq79_with_used_buffer_status": [
+          2,
+          10
+        ],
+        "kernel_sha256": "b044f3a99e22a462462a1e7c0ab72404d39390290869c4ff48c817ff39ae0fc7",
+        "machine_log_sha256": "83c333de3c77d581a4a149327b752da6bb5347a3337bfcdc7b72f53d8b8c9233",
+        "nonces": "5cda0c2a23faff7db3cc396057d3add7",
+        "old_gic_pending_at_retire": 1,
+        "old_virtio_interrupt_status_at_retire": 1,
+        "outstanding": 3,
+        "recorded_gate_writes": [
+          1080693000,
+          1080693008
+        ],
+        "role_sha256": [
+          "7e379bd575b50014ae4a5c5d2cfee2465b60eb1cd006379f2eea8b24d18da530",
+          "dc45db9f1796adfd50a21723c23595a70aaf8e945dcb14f9896bc78b19eada47",
+          "e639c05e74dbc6acb14437d99792d7d79cdc5d97ed2eb7a86d6c328c7b0f745f"
+        ],
+        "roots": [
+          "0x1000040285000",
+          "0x200004069a000",
+          "0x3000040aaf000"
+        ],
+        "software_pends_irq79": 0,
+        "third_frame_sha256": "6d82462f88fa41132119b748420e8f51525da94099c954f577557ab130b40075",
+        "third_used_id": 2,
+        "tokens": [
+          1,
+          2
+        ],
+        "trace_lines": {
+          "ack": 4867,
+          "clear": 4871,
+          "mask": 4865,
+          "nic_high": 4853,
+          "pending": 4856,
+          "pin_high": 4854,
+          "pin_low": 4869,
+          "reset": 4872
+        },
+        "unreaped": 1,
+        "used_heads": [
+          2,
+          3
+        ],
+        "wire_sha256": "9086672c4bb151546156d215e3b964d47750985e47952685161594c239f29d50"
+      },
+      "mutations": [
+        "erased old GIC pending bit",
+        "altered third protected DMA bytes",
+        "injected third frame before WAIT",
+        "same-root spare",
+        "authorized stale grant",
+        "reused nonce",
+        "pending DMA bytes",
+        "removed only masked wired assertion",
+        "missing TX QueueReady reset readbacks",
+        "old nonce in replacement delivery",
+        "gate outside authorized word"
+      ],
+      "result": {
+        "epochs": [
+          1,
+          2
+        ],
+        "executions": {
+          "0/gro_receive_skb": 1,
+          "0/skb_recv_done": 1,
+          "0/virtnet_find_vqs": 1,
+          "0/virtnet_poll": 1,
+          "2/gro_receive_skb": 81,
+          "2/skb_recv_done": 10,
+          "2/virtnet_find_vqs": 1,
+          "2/virtnet_poll": 20
+        },
+        "frozen_old_span_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+        "ingress_packets": 84,
+        "masked_pending_retirement": {
+          "ack_line": 4866,
+          "counter_frequency": 62500000,
+          "gic_assert_line": 4853,
+          "gic_clear_line": 4868,
+          "mask_line": 4864,
+          "masked_ticks": 197656,
+          "old_used": [
+            2,
+            3
+          ],
+          "pending_clear_write_line": 4870,
+          "pending_read_line": 4855,
+          "third_frame_sha256": "6d82462f88fa41132119b748420e8f51525da94099c954f577557ab130b40075",
+          "third_used_id": 2,
+          "third_used_len": 74,
+          "transport_assert_line": 4852,
+          "transport_clear_line": 4867
+        },
+        "outstanding_id": 3,
+        "roots": [
+          281476053094400,
+          562951034085376,
+          844426015076352
+        ],
+        "scheduler": [
+          5576470,
+          86,
+          1,
+          134797871,
+          0,
+          1,
+          10
+        ],
+        "unreaped_id": 1
+      }
+    }
+  },
+  "checksummed_members": 626,
+  "kernel_commit": "ced8ac58987943d4d2a2b202383ca14f4c8d7c25",
+  "parent_archive_sha256": "c780039bcda1abc3d2e4b086457edc71daed2193bcadb525309a35beb575caaa"
+}

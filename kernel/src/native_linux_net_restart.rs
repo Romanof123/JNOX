@@ -2,6 +2,10 @@
 //! CPU0 runs all calls, termination and IRQ callbacks with DAIF.I masked.
 use super::{claim, irq, queues, read, release, write, Phase, PHASE, STATUS};
 
+#[cfg(jnox_linux_source_net_restart_pending_test)]
+#[path = "native_linux_net_pending_retire.rs"]
+mod pending_test;
+
 static mut ELIGIBLE: Option<usize> = Some(0);
 static mut CLAIMED: [bool; 2] = [false; 2];
 
@@ -63,8 +67,13 @@ pub(in crate::native_el0) fn restart_exit(pid: usize, status: i32) -> bool {
     put(pid, 2, 1);
     put(pid, 3, status as i64 as u64);
     if unsafe { PHASE } == Phase::Free { return false; }
+    #[cfg(jnox_linux_source_net_restart_pending_test)]
+    let fixture_ok = pid != 0 || status != 86 || pending_test::observe();
     let (active, rc) = retire(pid);
-    if pid == 0 && status == 86 && active && rc == 0 {
+    let handoff = pid == 0 && status == 86 && active && rc == 0;
+    #[cfg(jnox_linux_source_net_restart_pending_test)]
+    let handoff = handoff && fixture_ok;
+    if handoff {
         put(pid, 41, 1);
         unsafe { ELIGIBLE = Some(2); }
         return true;

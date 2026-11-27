@@ -390,3 +390,24 @@ pub(super) fn retirement_snapshot() -> [u64; 20] {
     row[19] = unsafe { RUNNING_TOKEN };
     row
 }
+
+/// Observe a returned RX buffer without popping the used entry, copying to the
+/// grantee, modifying a descriptor, or acknowledging the hardware interrupt.
+#[cfg(jnox_linux_source_net_restart_pending_test)]
+pub(super) fn observe_pending_frame(token: u64, slot: u16, out: &mut [u8; RX_CAPACITY]) -> Option<[u64; 4]> {
+    let r = ring(RX);
+    let entry = usize::from(slot) % SIZE;
+    fence();
+    let id = unsafe { (&raw const (*r).used[entry][0]).read_volatile() as usize };
+    let len = unsafe { (&raw const (*r).used[entry][1]).read_volatile() as usize };
+    if id >= SIZE || !(MIN..=RX_CAPACITY).contains(&len) { return None; }
+    let grant = unsafe { RX_GRANTS[id] };
+    let addr = unsafe { (&raw const (*r).desc[id][0]).read_volatile() };
+    if token == 0 || grant.token != token || grant.len < len || addr != buffer(RX, id).addr() as u64 {
+        return None;
+    }
+    for (i, byte) in out[..len].iter_mut().enumerate() {
+        *byte = unsafe { buffer(RX, id).add(i).read_volatile() };
+    }
+    Some([id as u64, len as u64, grant.address as u64, addr])
+}

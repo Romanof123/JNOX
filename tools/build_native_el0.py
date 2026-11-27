@@ -461,6 +461,8 @@ def main():
                                const="net-rx-poll", help="grant slot 0 RX callback control for upstream NAPI polling")
     parser.add_argument("--linux-source-net-rx-irq-rearm-test", action="store_true",
                         help="enable the test-only synthetic rearm event for the RX IRQ package")
+    parser.add_argument("--linux-source-net-restart-pending-test", action="store_true",
+                        help="enable the EL1 pending-retirement test barrier in a restart package")
     source_device.add_argument("--linux-source-net-restart", dest="linux_source_driver", action="store_const",
                                const="net-restart", help="package a primary IRQ driver, survivor and dormant spare")
     source_device.add_argument("--linux-source-net-rx-irq", dest="linux_source_driver", action="store_const",
@@ -560,11 +562,13 @@ def main():
     parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if args.linux_source_net_restart_pending_test and args.linux_source_driver != "net-restart":
+        parser.error("--linux-source-net-restart-pending-test requires --linux-source-net-restart")
     if args.linux_source_net_rx_irq_rearm_test and args.linux_source_driver != "net-rx-irq":
         parser.error("--linux-source-net-rx-irq-rearm-test requires --linux-source-net-rx-irq")
     if args.linux_source_driver:
         option = f"--linux-source-{args.linux_source_driver}"
-        allowed = {"out", "board", "kernel_profile", "linux_source_driver", "linux_source_net_rx_irq_rearm_test", "elf", "peer_elf",
+        allowed = {"out", "board", "kernel_profile", "linux_source_driver", "linux_source_net_rx_irq_rearm_test", "linux_source_net_restart_pending_test", "elf", "peer_elf",
                    "policy", "priority", "peer_priority", "arg", "peer_arg"}
         conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
                      and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
@@ -850,6 +854,8 @@ def main():
             }
         if args.linux_source_driver == "net-restart":
             env["JNOX_NATIVE_LINUX_SOURCE_NET_RESTART"] = "1"
+            if args.linux_source_net_restart_pending_test:
+                env["JNOX_NATIVE_LINUX_SOURCE_NET_RESTART_PENDING_TEST"] = "1"
             metadata["linux_source_net_restart"] = {"primary_slot": 0, "survivor_slot": 1,
                 "dormant_spare_slot": 2, "intid": 79, "max_replacements": 1}
         metadata["package_argv"] = sys.argv[:]
@@ -981,6 +987,12 @@ def main():
             if slot == 2 and service:
                 var = "JNOX_NATIVE_DEADLINE_SERVICE_ELF"
             env[var], env[var + "_SHA256"] = str(peer_elf), peer_digest
+        if args.linux_source_net_restart_pending_test:
+            metadata["linux_source_net_restart"]["pending_retirement_test"] = {
+                "scope": "EL1 only",
+                "slot_elf_sha256": {role: slot["elf_sha256"] for role, slot in
+                                    zip(("primary", "survivor", "spare"), slots)},
+            }
         periodic = args.periodic + args.peer_periodic
         reservations = args.reservation + args.peer_reservation
         classes = args.primary_class + args.peer_class

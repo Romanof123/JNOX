@@ -723,6 +723,12 @@ fn main() {
     let rx_irq = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ");
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_restart)");
     let restart = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RESTART");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_restart_pending_test)");
+    if let Some(test) = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RESTART_PENDING_TEST") {
+        assert!(test == "1" && restart.as_deref() == Some("1"),
+            "pending-retirement test requires the native Linux-source net restart profile");
+        println!("cargo::rustc-cfg=jnox_linux_source_net_restart_pending_test");
+    }
     if let Some(value) = restart.as_deref() {
         assert!(value == "1" && rx_irq.as_deref() == Some("1")
             && peer_image.is_some() && peer2_image.is_some() && peer3_image.is_none(),
@@ -785,7 +791,8 @@ fn main() {
                         | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST"
                         | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
                 || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && restart.is_some()
-                    && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RESTART" | "JNOX_NATIVE_PEER2_ELF"
+                    && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RESTART" | "JNOX_NATIVE_LINUX_SOURCE_NET_RESTART_PENDING_TEST"
+                        | "JNOX_NATIVE_PEER2_ELF"
                         | "JNOX_NATIVE_PEER2_ELF_SHA256" | "JNOX_NATIVE_ARGV2_HEX"))
                 || matches!(key.as_ref(),
                 "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"

@@ -159,3 +159,8 @@ pub(super) fn inspect(token: u64, index: u64) -> i64 {
     }
     (i64::from(max) << 32) | ((SIZE as i64) << 16) | i64::from(ready)
 }
+
+#[cfg(jnox_linux_source_net_restart_pending_test)]
+pub(super) fn observe_pending_frame(token: u64, slot: u16, out: &mut [u8; 1530]) -> Option<[u64; 4]> {
+    packets::observe_pending_frame(token, slot, out)
+}

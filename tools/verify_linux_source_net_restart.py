@@ -37,6 +37,8 @@ K=("jnox_linux_net_restart_journal","jnox_linux_net_restart_scheduler","jnox_lin
    "jnox_linux_net_restart_roles","jnox_native_startup_slots","jnox_linux_net_restart_grants")
 FUNCS=("virtnet_find_vqs","skb_recv_done","virtnet_poll","gro_receive_skb")
 TRACE=irq.TRACE
+PENDING="jnox_linux_net_pending_retire"
+PAYLOAD="jnox_linux_net_pending_retire_bytes"
 
 
 def words(b):
@@ -48,9 +50,22 @@ def layout(pkg,imp):
     intake=load(imp)
     require(intake["mode"]=="rx-restart-service" and intake["source"]["sha256"]==intake["upstream"]["sha256"]==rx.PIN,
             "original Linux TU identity")
-    require(manifest["linux_source_net_restart"]==dict(primary_slot=0,survivor_slot=1,dormant_spare_slot=2,
+    restart=manifest["linux_source_net_restart"].copy()
+    fixture=restart.pop("pending_retirement_test",None)
+    directed=fixture is not None
+    if directed:
+        require(fixture==dict(scope="EL1 only",slot_elf_sha256={
+                role:manifest["slots"][i]["elf_sha256"] for i,role in enumerate(("primary","survivor","spare"))}),
+                "directed profile changed EL0 identity")
+    require(restart==dict(primary_slot=0,survivor_slot=1,dormant_spare_slot=2,
             intid=79,max_replacements=1) and len(manifest["slots"])==3 and manifest["policy"]=="fifo","replacement topology")
     kernel=pkg/"kernel.elf"
+    protected=list(K)
+    for name,extent in ((PENDING,24*8),(PAYLOAD,1530)):
+        span=journal_location(kernel,name,optional=True)
+        require(bool(span)==directed and (not span or span[1]==extent),"directed kernel symbol/manifest mismatch")
+        if directed:
+            protected.append(name)
     kernel_bytes=kernel.read_bytes()
     require(sha(kernel)==manifest["kernel_elf_sha256"],"kernel ELF digest")
     artifacts={}
@@ -96,7 +111,7 @@ def layout(pkg,imp):
     for record in manifest["slots"]:
         with (pkg/record["elf"]).open("rb") as f:
             entries.append(ELFFile(f)["e_entry"])
-    return dict(roots=roots,entries=entries,user=syms,kernel={n:journal_location(kernel,n) for n in K},
+    return dict(roots=roots,entries=entries,user=syms,directed=directed,kernel={n:journal_location(kernel,n) for n in protected},
                 ring=ring,buffers=buffers,routines=callbacks,elf=role_ids,objects=artifacts,
                 kernel_sha256=sha(kernel),manifest_sha256=sha(pkg/"manifest.json"),import_sha256=sha(imp))
 
@@ -119,7 +134,7 @@ def snapshot(mem,L,watch=None):
         for p in range(base//4096,(base+size-1)//4096+1):
             for root in L["roots"]:
                 permissions(mem,root,p*4096,"kernel rw")
-    kernel={n:words(area(mem,pa,size)) for n,(pa,size) in L["kernel"].items()}
+    kernel={n:(area(mem,pa,size) if n==PAYLOAD else words(area(mem,pa,size))) for n,(pa,size) in L["kernel"].items()}
     roles=kernel[K[3]]
     require(len(roles)==21,"observed role journal extent")
     for slot,root in enumerate(L["roots"]):
@@ -235,7 +250,7 @@ def capture(pkg,imp,out,binary,mac,mtu,timeout):
             q=Pipe()
             watchdog=threading.Timer(timeout+10,proc.kill)
             watchdog.start()
-            save(out/"launch.json",dict(schema=1,argv=cmd,kernel=str(pkg/"kernel.elf"),out=str(out),fd=fd,mac=mac,mtu=mtu,
+            save(out/"launch.json",dict(schema=(2 if L["directed"] else 1),argv=cmd,kernel=str(pkg/"kernel.elf"),out=str(out),fd=fd,mac=mac,mtu=mtu,
                                         pid=proc.pid,qemu_sha256=sha(Path(binary)),roles=L["elf"],import_sha256=sha(imp)))
             def read(pa,size):
                 request(q,"pmemsave",val=pa,size=size,filename=str(out/"probe.bin"))
@@ -264,6 +279,8 @@ def capture(pkg,imp,out,binary,mac,mtu,timeout):
                 dest=out/stage
                 dest.mkdir()
                 capture_halt(q,dest)
+                if L["directed"]:
+                    save(dest/"ingress.json",dict(stream_bytes=(out/"host.bin").stat().st_size))
                 mem=RAM({},read)
                 try:
                     return snapshot(mem,L,watch)
@@ -284,12 +301,30 @@ def capture(pkg,imp,out,binary,mac,mtu,timeout):
                     until(lambda:field(1,P[0],1)==2)
                     send(initial[1])
                     until(lambda:int.from_bytes(read(L["ring"]+586,2),"little")==2 and field(1,P[0],9)>0)
+                    if L["directed"]:
+                        until(lambda:metric(18)==2 and metric(0)==metric(14) and metric(0)>=2)
                     pre=stop("preexit",None)
                     gdb.settimeout(max(.001,deadline-time.monotonic()))
                     gdb.connect(str(out/"gate.sock"))
                     with gdb.makefile("rwb",buffering=0) as channel:
                         authorize_gate(channel,read,"preexit",pre,out)
                         request(q,"cont")
+                        if L["directed"]:
+                            probe=L["kernel"][PENDING][0]
+                            def waiting(want):
+                                phase=int.from_bytes(read(probe,8),"little")
+                                require(phase in (0,1,2),"protected retirement fixture timed out or rejected preconditions")
+                                return phase==want
+                            until(lambda:waiting(1))
+                            before=stop("exit-wait",pre["watch"])
+                            require(before["kernel"][PENDING][0]==1,"missed masked exit gate")
+                            request(q,"cont")
+                            send(initial[2])
+                            until(lambda:waiting(2))
+                            observed=stop("irq-pending",pre["watch"])
+                            require(observed["kernel"][PENDING][0]==2 and
+                                    observed["kernel"][PENDING][18]==0,"missed live masked pending checkpoint")
+                            request(q,"cont")
                         until(lambda:field(1,P[0],1)==3 and field(1,P[0],10)>0)
                         mid=stop("middle",pre["watch"])
                         authorize_gate(channel,read,"middle",mid,out)
@@ -374,7 +409,7 @@ def mmio(lines,L):
 def replay(pkg,imp,out):
     L=layout(pkg,imp)
     launch=load(out/"launch.json")
-    require(launch["schema"]==1 and launch["roles"]==L["elf"] and launch["import_sha256"]==sha(imp) and
+    require(launch["schema"]==(2 if L["directed"] else 1) and launch["roles"]==L["elf"] and launch["import_sha256"]==sha(imp) and
             launch["argv"]==command(launch["argv"][0],Path(launch["out"]),Path(launch["kernel"]),launch["fd"],
                                     launch["mac"],launch["mtu"],L) and (out/"net.events").read_text()==TRACE,
             "launch or trace profile")
@@ -382,7 +417,8 @@ def replay(pkg,imp,out):
     old,new=nonce[:8],nonce[8:]
     require(len(nonce)==16 and old!=new and any(old) and any(new),"reused host nonce")
     mac=bytes.fromhex(launch["mac"].replace(":",""))
-    primary=rx.frames(mac,old)[:2]
+    directed=L["directed"]
+    primary=rx.frames(mac,old)[:3 if directed else 2]
     fresh=rx.frames(mac,new)
     ack=challenge(mac,new,True)
     expected=[*primary,*fresh,ack]
@@ -392,7 +428,8 @@ def replay(pkg,imp,out):
             "NIC PCAP ingress differs")
     shots={}
     watch=None
-    for name in STAGES:
+    stages=(STAGES[:1]+("exit-wait","irq-pending")+STAGES[1:]) if directed else STAGES
+    for name in stages:
         dest=out/name
         q=load(dest/"qmp.json")
         h=load(dest/"halted.json")
@@ -400,6 +437,10 @@ def replay(pkg,imp,out):
                 and h["status"]=="paused" and not h["running"],"QMP checkpoint")
         mem=RAM(load(dest/"ram.json"))
         s=snapshot(mem,L,watch)
+        if directed:
+            records={"preexit":2,"exit-wait":2,"irq-pending":3,"middle":3,"spare":3,"active":83,"final":84}[name]
+            require(load(dest/"ingress.json")==dict(stream_bytes=sum(4+len(f) for f in expected[:records])),
+                    "directed injection outside gate")
         watch=s["watch"]
         require(mem.used==set(mem.records),"unaccounted physical read")
         shots[name]=s
@@ -415,7 +456,8 @@ def replay(pkg,imp,out):
     oldtoken=words(pre["users"][0][D[0]])[3]
     token=words(spare["users"][2][D[0]])[3]
     require(0<oldtoken<token,"queue generation reuse")
-    for name,s in shots.items():
+    for name in STAGES:
+        s=shots[name]
         u=s["users"]
         d,p,r=words(u[0][D[0]]),words(u[1][P[0]]),words(u[2][D[0]])
         require(s["gatepa"]==pre["gatepa"] and s["old"]==pre["old"],"old driver's private RX destination changed")
@@ -458,8 +500,8 @@ def replay(pkg,imp,out):
             28<=retired[6]-81<=32,"terminal pre-reset hardware head and harvested/delivered cursors")
     row=mid["kernel"][K[0]][:48]
     other=row[18]
-    require(row[:6]==[1,0,1,86,oldtoken,15] and row[7:10]==[2,1,1] and row[12:17]==[1,used_id,used_len,watch,1530]
-            and row[24]==2 and row[25]==oldtoken and row[17]==L["buffers"]+used_id*STRIDE and other!=used_id and other<32 and row[21]==oldtoken and
+    require(row[:6]==[1,0,1,86,oldtoken,15] and row[7:10]==[len(primary),1,1] and row[12:17]==[len(primary)-1,used_id,used_len,watch,1530]
+            and row[24]==len(primary) and row[25]==oldtoken and row[17]==L["buffers"]+used_id*STRIDE and other!=used_id and other<32 and row[21]==oldtoken and
             row[22]&(1<<other) and row[23]&(1<<other) and row[23]&(1<<used_id),"retired grant or pending ownership")
     require(struct.unpack_from("<QIHH",ring,16*other)==(L["buffers"]+other*STRIDE,1530,2,0) and
             grants[3*other:3*other+3]==[oldtoken,row[20],1530],"distinct outstanding writable grant")
@@ -480,7 +522,10 @@ def replay(pkg,imp,out):
     lines=path.read_bytes().splitlines()
     status=mmio(lines,L)
     epochs=irq.delivery_epochs(lines)
-    irq.wire_delivery(lines,epochs,False)
+    if directed:
+        pending=pending_evidence(shots,L,lines,epochs,status,primary,oldtoken,token)
+    else:
+        irq.wire_delivery(lines,epochs,False)
     require(all(any(status[a][0]<e["iar"]<status[b][0] and e["status"]&1 for e in epochs) for a,b in ((4,5),(10,11))),
             "missing epoch-specific CPU IRQ")
     for pc in set(L["entries"]):
@@ -499,8 +544,105 @@ def replay(pkg,imp,out):
     uart=(out/"uart.log").read_bytes()
     require(set(re.findall(rb"(?m)^NATIVE EL0 EXIT PID (\d+) (-?\d+)\r?$",uart))=={(b"0",b"86"),(b"1",b"0"),(b"2",b"0")} and
             b"NATIVE EL0 FAULT" not in uart,"incorrect native exits")
-    return dict(roots=L["roots"],epochs=[oldtoken,token],ingress_packets=len(packets),unreaped_id=used_id,outstanding_id=other,
+    result=dict(roots=L["roots"],epochs=[oldtoken,token],ingress_packets=len(packets),unreaped_id=used_id,outstanding_id=other,
                 frozen_old_span_sha256=hashlib.sha256(pre["old"]).hexdigest(),scheduler=scheduler,executions=executions)
+    if directed:
+        result["masked_pending_retirement"]=pending
+    return result
+
+
+def pending_evidence(shots,L,lines,epochs,status,frames,oldtoken,token):
+    pre,wait,pending,mid,spare,end=(shots[n] for n in ("preexit","exit-wait","irq-pending","middle","spare","final"))
+    first,seen,done=[s["kernel"][PENDING] for s in (wait,pending,mid)]
+    require(not any(pre["kernel"][PENDING]) and first[0]==1 and first[1]==oldtoken and first[2]&0x80 and
+            first[3]>0 and first[4]>0 and first[5]==first[4]+5*first[3] and first[6:13]==[0,2,0,0,0,0,0],
+            "protected pre-injection mask, deadline or baseline")
+    require(seen[:1]==[2] and seen[1:6]==first[1:6] and first[4]<=seen[6]<first[5] and
+            seen[7:13]==[2,3,0,0,1,1] and seen[17]==seen[6]+2*seen[3] and seen[18]==0 and
+            done[:18]==seen[:18] and done[18]>=seen[17] and end["kernel"][PENDING]==done,
+            "protected pending observation or hold")
+    for s,head in ((wait,2),(pending,3)):
+        require(struct.unpack_from("<H",s["rings"],586)[0]==head and
+                words(s["users"][1][P[1]])==[GATES[0],0] and s["old"]==pre["old"] and
+                s["users"][1][P[2]]==frames[0] and not any(s["users"][1][P[3]]) and
+                not any(s["kernel"][K[3]][14:]) and s["kernel"][K[2]][19]==oldtoken,
+                "masked old device, dormant spare or survivor bytes")
+    idx,length=struct.unpack_from("<II",pending["rings"],588+8*2)
+    require(idx<32 and idx!=struct.unpack_from("<I",pending["rings"],596)[0] and length==12+len(frames[2]),
+            "third old completion ID or length")
+    g=pending["kernel"][K[5]][3*idx:3*idx+3]
+    addr=L["buffers"]+idx*STRIDE
+    data=pending["buffers"][idx*STRIDE:idx*STRIDE+length]
+    retained=pending["kernel"][PAYLOAD]
+    require(g==[oldtoken,seen[15],1530] and seen[13:17]==[idx,length,g[1],addr] and
+            struct.unpack_from("<QIHH",pending["rings"],16*idx)==(addr,1530,2,0) and
+            not any(wait["kernel"][PAYLOAD]) and retained[:length]==data and data[12:]==frames[2] and
+            not any(retained[length:]) and end["kernel"][PAYLOAD]==retained,"third old direct DMA and protected bytes")
+    require(wait["kernel"][K[2]]==pending["kernel"][K[2]] and wait["kernel"][K[1]]==pending["kernel"][K[1]] and
+            mid["kernel"][K[0]][26:31]==[oldtoken,0,1,1,1] and mid["kernel"][K[0]][32:37]==[0]*5 and
+            mid["kernel"][K[2]][23:25]==[1,1] and spare["kernel"][K[2]][19]==token and
+            spare["kernel"][K[2]][21:23]==[0,1] and spare["kernel"][K[2]][7]==0 and spare["kernel"][K[1]][6]==0,
+            "old pending IRQ consumed or woke replacement")
+    # Isolate the last old edge: it is the only unacknowledged physical IRQ before
+    # the primary reset. Retain positions in the original log for every delivered IRQ.
+    gap_start=max(e["eoi"] for e in epochs if e["eoi"]<status[5][0])+1
+    gap_end=status[5][0]
+    transport=[]
+    pins=[]
+    regs=[]
+    without_gap=lines.copy()
+    for i in range(gap_start,gap_end):
+        line=lines[i]
+        m=re.search(rb"\bvirtio_mmio_setting_irq virtio_mmio setting IRQ ([01])$",line)
+        if m:
+            transport.append((i,int(m[1])))
+            without_gap[i]=b""
+        m=re.search(rb"\bgic_set_irq irq 79 level ([01]) cpumask (0x[0-9a-f]+) target (0x[0-9a-f]+)$",line)
+        if m:
+            require(int(m[2],16)&1 and int(m[3],16)&1,"masked IRQ pin CPU routing")
+            pins.append((i,int(m[1])))
+            without_gap[i]=b""
+        m=re.search(rb"memory_region_ops_(read|write) cpu 0 mr \S+ addr (0x[0-9a-f]+) value (0x[0-9a-f]+) size 4",line)
+        if m:
+            regs.append((i,m[1],int(m[2],16),int(m[3],16)))
+    require([v for _,v in transport]==[1,0] and [v for _,v in pins]==[1,0],
+            "masked IRQ missing transport or wired edge")
+    rise,fall=(i for i,_ in transport)
+    high,low=(i for i,_ in pins)
+    require(rise<high<fall<low,"masked IRQ wire order")
+    marks=[]
+    def mark(op,address,value,start,finish,bit=False):
+        matches=[i for i,operation,addr,v in regs if start<i<finish and operation==op and addr==address and
+                 (bool(v&value) if bit else v==value)]
+        require(matches,"masked IRQ missing physical drain or pending readback")
+        marks.append(matches[0])
+        return matches[0]
+    # QEMU logs the memory write and its device callback in backend-specific order;
+    # all must lie within the same bounded mask-to-reset interval.
+    mark(b"read",0x08000208,0,gap_start-1,rise)
+    mark(b"read",NIC+0x60,0,gap_start-1,rise)
+    before=mark(b"read",0x08000208,1<<15,high,fall,True)
+    mark(b"read",NIC+0x60,1,before,fall)
+    mask=mark(b"write",0x08000188,1<<15,high,fall)
+    mark(b"read",NIC+0x60,1,mask,fall)
+    ack=mark(b"write",NIC+0x64,1,mask,gap_end)
+    clear=mark(b"write",0x08000288,1<<15,max(low,ack),gap_end)
+    require(not any(op==b"write" and addr==0x08000208 and v&(1<<15) for _,op,addr,v in regs),
+            "software-pended interrupt in arrival window")
+    cleared=set()
+    for line in lines[gap_end:status[6][0]]:
+        m=re.search(rb"memory_region_ops_read cpu 0 mr \S+ addr (0x[0-9a-f]+) value (0x[0-9a-f]+) size 4",line)
+        if m:
+            address,value=int(m[1],16),int(m[2],16)
+            register_mask={0x08000208:1<<15,0x08000108:1<<15,NIC+0x60:3}.get(address)
+            if register_mask and not value&register_mask:
+                cleared.add(address)
+    require(cleared=={0x08000208,0x08000108,NIC+0x60},"post-reset raw GIC enable/pending or NIC status")
+    irq.wire_delivery(without_gap,epochs,False)
+    return dict(old_used=[2,3],third_used_id=idx,third_used_len=length,third_frame_sha256=hashlib.sha256(data[12:]).hexdigest(),
+                masked_ticks=seen[6]-first[4],counter_frequency=seen[3],pending_read_line=before,
+                transport_assert_line=rise,gic_assert_line=high,mask_line=mask,ack_line=ack,
+                transport_clear_line=fall,gic_clear_line=low,pending_clear_write_line=clear)
 
 
 def controls(pkg,imp,out):
@@ -543,6 +685,13 @@ def controls(pkg,imp,out):
                 off-=n
                 addr+=n
             reject(label,path,json.dumps(records).encode(),reason)
+        if L["directed"]:
+            ram_word("irq-pending",PENDING,None,11,0,"erased old GIC pending bit","protected pending observation")
+            ram_word("irq-pending",PAYLOAD,None,3,0,"altered third protected DMA bytes","third old direct DMA")
+            path=work/"exit-wait"/"ingress.json"
+            witness=load(path)
+            witness["stream_bytes"]+=1
+            reject("injected third frame before WAIT",path,json.dumps(witness).encode(),"directed injection outside gate")
         ram_word("final",K[3],None,16,L["roots"][0],"same-root spare","same-root")
         ram_word("final",D[0],2,13,0,"authorized stale grant","stale grant")
         path=work/"nonce.bin"
@@ -565,6 +714,14 @@ def controls(pkg,imp,out):
         path=work/"machine.log"
         lines=path.read_bytes().splitlines(keepends=True)
         status=mmio(lines,L)
+        if L["directed"]:
+            epochs=irq.delivery_epochs(lines)
+            start=max(e["eoi"] for e in epochs if e["eoi"]<status[5][0])+1
+            transitions=[i for i in range(start,status[5][0]) if b"gic_set_irq irq 79 level 1 " in lines[i]]
+            require(len(transitions)==1,"masked IRQ edge for corruption")
+            i=transitions[0]
+            reject("removed only masked wired assertion",path,b"".join(lines[:i]+lines[i+1:]),
+                   "masked IRQ missing transport or wired edge")
         lo,hi=status[5][0],status[6][0]
         drop=set()
         selected=None

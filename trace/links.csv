@@ -2486,3 +2486,17 @@ IMP-332,partially-verified-by,VER-011
 VER-004,has-partial-evidence,EVD-332
 VER-011,has-partial-evidence,EVD-332
 IMP-332,tested-in,EVD-332
+CHG-333,affects,REQ-004
+CHG-333,affects,REQ-011
+CHG-333,affects,DES-002
+CHG-333,affects,VER-004
+CHG-333,affects,VER-011
+CHG-333,affects,EVD-333
+REQ-004,partially-implemented-by,IMP-333
+REQ-011,partially-implemented-by,IMP-333
+DES-002,partially-implemented-by,IMP-333
+IMP-333,partially-verified-by,VER-004
+IMP-333,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-333
+VER-011,has-partial-evidence,EVD-333
+IMP-333,tested-in,EVD-333
