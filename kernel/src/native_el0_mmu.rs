@@ -84,7 +84,7 @@ const LINK_START: usize = 0x0200_0000;
 const GPIO: usize = 0xfe20_0000;
 #[cfg(not(jnox_task_policy))]
 const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize
-    + cfg!(jnox_native_peer3) as usize;
+    + cfg!(jnox_native_peer3) as usize + cfg!(jnox_native_display_standby) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
 // Leave another 4 MiB per slot for tables, stacks and the linked kernel.
 #[cfg(not(jnox_task_policy))]

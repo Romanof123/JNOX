@@ -78,7 +78,7 @@ fn anonymous(name: &'static [u8]) -> io::Result<File> {
     Ok(unsafe { File::from_raw_fd(fd) })
 }
 
-pub fn listen() -> Result<i32, i32> {
+pub fn listen(_spare: bool) -> Result<i32, i32> {
     let path = std::env::args_os().nth(1).ok_or(-22)?;
     let fb = match std::env::var_os("JNOX_WAYLAND_FRAMEBUFFER") {
         Some(path) => OpenOptions::new().write(true).create_new(true).mode(0o600).open(path),

@@ -2,15 +2,41 @@ use core::time::Duration;
 use jnox_native::{display, local_socket as sock, monotonic_time, sleep_until};
 pub use sock::ShmMapping as Mapping;
 
-pub fn listen() -> Result<i32, i32> {
+pub fn listen(spare: bool) -> Result<i32, i32> {
     sock::set_broker(3)?;
     display::init().map_err(|e| e as i32)?;
-    let fd = sock::socket(sock::SOCK_STREAM, true)?;
-    if let Err(e) = sock::bind(fd, b"/wayland-0").and_then(|_| sock::listen(fd, 2)) {
-        close(fd);
-        return Err(e);
+    let clock_errno = |e| match e {
+        jnox_native::ClockError::Errno(code) => -code,
+        jnox_native::ClockError::InvalidTimespec => -22,
+    };
+    let deadline = if spare {
+        Some(monotonic_time().map_err(clock_errno)? + Duration::from_secs(2))
+    } else {
+        None
+    };
+    loop {
+        let fd = sock::socket(sock::SOCK_STREAM, true)?;
+        match sock::bind(fd, b"/wayland-0") {
+            Ok(()) => {
+                if let Err(e) = sock::listen(fd, 2) {
+                    close(fd);
+                    return Err(e);
+                }
+                return Ok(fd);
+            }
+            Err(e) => {
+                close(fd);
+                let Some(end) = deadline.filter(|_| e == -98) else {
+                    return Err(e);
+                };
+                let now = monotonic_time().map_err(clock_errno)?;
+                if now >= end {
+                    return Err(e);
+                }
+                sleep_until(end.min(now + Duration::from_millis(10))).map_err(clock_errno)?;
+            }
+        }
     }
-    Ok(fd)
 }
 pub fn accept(fd: i32) -> Result<i32, i32> {
     sock::accept(fd)

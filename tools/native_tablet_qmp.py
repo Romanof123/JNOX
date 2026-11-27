@@ -15,6 +15,8 @@ def main():
     parser.add_argument("socket", type=Path)
     parser.add_argument("kernel", type=Path, help="exact guest ELF with symbols")
     parser.add_argument("output", type=Path)
+    parser.add_argument("--epoch", choices=("primary-held", "spare-click"),
+                        help="for the restart profile, split the held press and fresh click across two invocations")
     parser.add_argument("--points", type=int, nargs=4, default=(40, 54, 230, 146),
                         metavar=("X1", "Y1", "X2", "Y2"))
     args = parser.parse_args()
@@ -49,19 +51,29 @@ def main():
             boot = state("before-state.bin")
             if boot[1] == 0 or boot[2] != 1:
                 raise ValueError("guest compositor has not acquired the tablet")
+            if args.epoch and boot[1] != (1 if args.epoch == "primary-held" else 3):
+                raise ValueError("running tablet owner does not match requested recovery epoch")
             capture("transport", "transport.bin")
             capture("queues", "before-queues.bin")
             sequence = boot[9]
             with (out / "qmp-input.jsonl").open("x") as log:
                 stage = 0
+                if args.epoch:
+                    points = points[:1]
                 for x, y in points:
                     # QEMU input core accepts absolute coordinates from 0 to
                     # 32767. Round up so integer guest scaling reaches the point.
                     axes = [(x * 32767 + 318) // 319, (y * 32767 + 238) // 239]
                     motion = [{"type": "abs", "data": {"axis": axis, "value": value}}
                               for axis, value in zip(("x", "y"), axes)]
-                    for packet in [motion, *[[{"type": "btn", "data": {"down": down, "button": "left"}}]
-                                              for down in (True, False)]]:
+                    down = [{"type": "btn", "data": {"down": True, "button": "left"}}]
+                    up = [{"type": "btn", "data": {"down": False, "button": "left"}}]
+                    packets = [motion, down, up]
+                    if args.epoch == "primary-held":
+                        packets = [motion, down]
+                    elif args.epoch == "spare-click":
+                        packets = [up, motion, down, up]
+                    for packet in packets:
                         stage += 1
                         command = {"events": packet}
                         log.write(json.dumps(command) + "\n")

@@ -235,8 +235,8 @@ fn service(
     progressed
 }
 
-fn run() -> Result<(), i32> {
-    let listener = platform::listen()?;
+fn run(_restart_role: u8) -> Result<(), i32> {
+    let listener = platform::listen(_restart_role == 2)?;
     let (clients, images) = unsafe { (&mut *(&raw mut CLIENTS), &mut *(&raw mut IMAGES)) };
     let mut scene = Scene::new();
     let mut pointer = pointer::Pointer::new();
@@ -274,6 +274,10 @@ fn run() -> Result<(), i32> {
         if let Some(byte) = platform::input() {
             progressed = true;
             match byte {
+                #[cfg(all(target_os = "none", feature = "restart-probe"))]
+                b'!' if _restart_role != 0 && scene.front.is_some() => {
+                    unsafe { core::arch::asm!("brk #0x449", options(noreturn)) }
+                }
                 b'n' => {
                     if let Some(i) = scene.front {
                         if Scene::visible(&clients[1 - i]) {
@@ -391,11 +395,23 @@ fn panic(_: &core::panic::PanicInfo<'_>) -> ! {
 #[cfg(target_os = "none")]
 #[no_mangle]
 pub extern "C" fn main(_argc: i32, _argv: *const *const u8) -> i32 {
-    run().err().unwrap_or(0)
+    #[cfg(feature = "restart-probe")]
+    let role = {
+        if _argc != 2 || _argv.is_null() { return 98; }
+        let arg = unsafe { *_argv.add(1) };
+        if arg.is_null() { return 98; }
+        let matches = |name: &[u8]| name.iter().enumerate().all(|(i, b)| unsafe { *arg.add(i) == *b });
+        if matches(b"restart-primary\0") { 1 }
+        else if matches(b"restart-spare\0") { 2 }
+        else { return 98; }
+    };
+    #[cfg(not(feature = "restart-probe"))]
+    let role = 0;
+    run(role).err().unwrap_or(0)
 }
 #[cfg(not(target_os = "none"))]
 fn main() {
-    if let Err(e) = run() {
+    if let Err(e) = run(0) {
         eprintln!("Wayland compositor failed ({e})");
         std::process::exit(1);
     }
