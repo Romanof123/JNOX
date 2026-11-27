@@ -39,6 +39,7 @@ with tempfile.TemporaryDirectory() as temp:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(native / name, target)
     shutil.copyfile(here / "sys/utsname.h", overlay / "sys/utsname.h")
+    shutil.copyfile(here / "fcntl.h", overlay / "fcntl.h")
     shutil.copyfile(here / "time.h", overlay / "time.h")
     shutil.copyfile(here / "pthread.h", overlay / "pthread.h")
     shutil.copyfile(out / "libjnox-wayland-os.a", prefix / "lib/libjnox-wayland-os.a")

@@ -55,6 +55,14 @@ int fcntl(int fd, int cmd, ...)
         return jnox_transport_fcntl(fd, cmd == F_DUPFD ? 0 : 1030, minimum);
     }
     if (cmd == F_GETFD) return jnox_transport_fcntl(fd, 1);
+    if (cmd == F_GET_SEALS) return jnox_transport_fcntl(fd, F_GET_SEALS);
+    if (cmd == F_ADD_SEALS) {
+        va_list ap;
+        va_start(ap, cmd);
+        int seals = va_arg(ap, int);
+        va_end(ap);
+        return jnox_transport_fcntl(fd, F_ADD_SEALS, seals);
+    }
     if (cmd == F_SETFD) {
         va_list ap;
         va_start(ap, cmd);

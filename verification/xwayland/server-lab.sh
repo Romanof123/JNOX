@@ -35,7 +35,7 @@ mkdir -p "$os/lib"
 cp -R "$rt/target/include" "$os/include"
 ln -s "$rt/target/lib/libc.a" "$os/lib/libc.a"
 python3 "$out/src/sdk/native-aarch64/graphics/os/install.py" --prefix "$os"
-pin 4fc1e8f2da5e47cfb0df55329f33b384ac18fc8dfd7c579582e7c5a3fbfbcec5 "$os/lib/libjnox-wayland-os.a"
+pin a8fb5288dea8457a4888cf354ec840dcc241b251be3c511b2892c320e29847d1 "$os/lib/libjnox-wayland-os.a"
 sh "$driver/xcvt/build.sh" "$inputs/libxcvt-0.1.3.tar.xz" "$out/xcvt" "$out/xcvt-prefix"
 python3 "$driver/xkb-build.py" --build-executable --cache "$inputs" \
   --out "$out/server" --runtime "$rt" --runtime-profile-sha256 "${JNOX_WAYLAND_PROFILE_SHA256:-00266859edb773b5fcad350d35d3e3b7f58621599014b666cc8e8ed308081643}" \
