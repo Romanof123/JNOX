@@ -185,6 +185,15 @@ static mut jnox_linux_net_assertions: [DriverAssertion; COUNT] = [DriverAssertio
     far: 0, sp_el0: 0, link_register: 0,
 }; COUNT];
 
+#[cfg(jnox_linux_source_net_rx_irq)]
+const ASSERTION_EVENT: u64 = 0x100;
+
+// One terminal scheduling decision per slot, retained independently of the
+// bounded ordinary scheduler log. Written only after device and IPC teardown.
+#[cfg(jnox_linux_source_net_rx_irq)]
+#[unsafe(no_mangle)]
+static mut jnox_linux_net_assert_exit: [[u64; 6]; COUNT] = [[0; 6]; COUNT];
+
 fn head(index: usize, value: u64) {
     // One CPU. Boot and the EL1 vectors are masked and never nested.
     unsafe { ptr::write_volatile((&raw mut jnox_native_el0_journal.header).cast::<u64>().add(index), value) };
@@ -607,6 +616,17 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     let compare = compare.into_iter().chain(ipc::next_compare()).min();
     arm_compare(compare);
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    if reason == ASSERTION_EVENT {
+        let pid = before.pid.unwrap_or_else(|| fail(9));
+        let trap_pc = frame.unwrap_or_else(|| fail(9)).elr;
+        unsafe {
+            ptr::write_volatile(&raw mut jnox_linux_net_assert_exit[pid], [
+                now, reason, pid as u64, next.map_or(NO_PID, |id| id as u64),
+                i64::from(EXIT_STATUS[pid]) as u64, trap_pc,
+            ]);
+        }
+    }
     record(now, reason, argument, before, frame, compare);
     next
 }
@@ -867,11 +887,10 @@ extern "C" fn native_el0_unexpected() -> ! {
 // An A64 BRK raised by a scheduled EL0 process has its own exception class.
 // No syscall operands, frame pointers or user memory are trusted as identity.
 #[cfg(jnox_linux_source_net_rx_irq)]
-fn terminate_asserting_process(f: &mut NativeFrame, entry: u64, vector: u64, vbar: u64,
+fn terminate_asserting_process(f: &mut NativeFrame, vector: u64, vbar: u64,
                               ttbr: u64, far: u64) -> bool {
     const EC_BRK64: u64 = 0x3c;
     const ASSERTION_EXIT: i32 = -5;
-    const ASSERTION_EVENT: u64 = 0x100;
     if f.esr >> 26 != EC_BRK64 || f.esr & (1 << 25) == 0 {
         return false;
     }
@@ -882,11 +901,14 @@ fn terminate_asserting_process(f: &mut NativeFrame, entry: u64, vector: u64, vba
     {
         return false;
     }
+    // This FIFO vector preserves the interrupted x2. Read the hardware
+    // counter in EL1 just as the ordinary fixed-priority syscall path does.
+    let now = counter();
     unsafe {
         let slot = &raw mut jnox_linux_net_assertions[pid];
         if ptr::read_volatile(&raw const (*slot).esr) != 0 { fail(9); }
         ptr::write_volatile(slot, DriverAssertion {
-            tick: entry, pid: pid as u64, ttbr, vector, esr: f.esr, elr: f.elr,
+            tick: now, pid: pid as u64, ttbr, vector, esr: f.esr, elr: f.elr,
             spsr: f.spsr, far, sp_el0: f.sp_el0, link_register: f.x[30],
         });
         asm!("dmb ishst", options(nostack, preserves_flags));
@@ -894,7 +916,7 @@ fn terminate_asserting_process(f: &mut NativeFrame, entry: u64, vector: u64, vba
     }
     // The ordinary Exit event retires owned IRQs, queues and pipe descriptors
     // once and restores a surviving frame. It cannot resume the dead task.
-    fixed_dispatch(entry, Action::Exit, ASSERTION_EVENT, f);
+    fixed_dispatch(now, Action::Exit, ASSERTION_EVENT, f);
     true
 }
 
@@ -911,7 +933,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     let count = unsafe { ptr::read_volatile(&raw const jnox_native_el0_journal.header[8]) as usize };
     #[cfg(jnox_linux_source_net_rx_irq)]
-    if terminate_asserting_process(f, entry, vector, vbar, ttbr, far) { return; }
+    if terminate_asserting_process(f, vector, vbar, ttbr, far) { return; }
     #[cfg(jnox_native_proportional)]
     proportional::validate_sync(vector, f, vbar, ttbr, far, entry);
     if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64

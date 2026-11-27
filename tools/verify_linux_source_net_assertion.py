@@ -27,7 +27,10 @@ BRK = bytes.fromhex("008820d4")
 
 
 def layout(pkg, imp):
-    L = life.layout(pkg, imp, journal_names=(DRIVER, PEER))
+    # This image terminates by BRK. Its administrative down wrapper has no
+    # callers, while the original ndo_stop still lives in the checked table.
+    adapters = {name: obj for name, obj in life.ADAPTER.items() if name != "jnox_lifecycle_net_down_v1"}
+    L = life.layout(pkg, imp, journal_names=(DRIVER, PEER), adapters=adapters)
     require(load(imp)["lifecycle_assert_test"]["immediate"] == 0x440, "assertion-only fixture")
     driver = pkg/"user.elf"
     with driver.open("rb") as f:
@@ -49,8 +52,10 @@ def layout(pkg, imp):
         require(tuple(n for _,n in group.values()) == sizes, "fixture receipt size")
     kernel = pkg/"kernel.elf"
     L["assertions"] = journal_location(kernel,"jnox_linux_net_assertions")
+    L["decision"] = journal_location(kernel,"jnox_linux_net_assert_exit")
     L["grants"] = journal_location(kernel,"jnox_linux_net_lifecycle_grants")
-    require(L["assertions"][1] == 160 and L["grants"][1] == 768, "protected journal ABI")
+    require(L["assertions"][1] == 160 and L["decision"][1] == 96 and
+            L["grants"][1] == 768, "protected journal ABI")
     return L
 
 
@@ -65,7 +70,7 @@ def snapshot(mem, L):
                 physical[slot].add(int(permissions(mem,root,page<<12,"user rw"),16)&PA_MASK)
             values[name] = vread(mem,root,va,n)
         groups.append(values)
-    ranges = (L["assertions"],L["grants"],L["kernel_irq"],(L["ring"],8192),(L["buffers"],64*STRIDE))
+    ranges = (L["assertions"],L["decision"],L["grants"],L["kernel_irq"],(L["ring"],8192),(L["buffers"],64*STRIDE))
     protected = {page<<12 for a,n in ranges for page in range(a>>12, ((a+n-1)>>12)+1)}
     for root in roots:
         for pa in protected:
@@ -106,7 +111,7 @@ def snapshot(mem, L):
         permissions(mem,roots[0],exceptions[9]-4,"user rx")
     return dict(driver=life.unpack(groups[0][DRIVER[0]]),slots=life.unpack(groups[0][DRIVER[1]]),
                 peer=life.unpack(groups[1][PEER[0]]),frame=groups[1][PEER[1]],
-                assertions=exceptions,grants=grants,physical=translations,
+                assertions=exceptions,decision=life.unpack(area(mem,*L["decision"])),grants=grants,physical=translations,
                 ring=area(mem,L["ring"],8192),buffers=area(mem,L["buffers"],64*STRIDE),
                 irq=life.unpack(area(mem,*L["kernel_irq"])))
 
@@ -134,19 +139,32 @@ def capture(pkg,imp,out,qemu,mac,mtu,timeout):
             q=Pipe()
             timer=threading.Timer(timeout+20,proc.kill)
             timer.start()
+            binary_hash=sha(Path(binary))
+            require(sha(Path(f"/proc/{proc.pid}/exe"))==binary_hash,"launched QEMU executable identity")
             save(out/"launch.json",dict(argv=argv,fd=fd,out=str(out),kernel=str(pkg/"kernel.elf"),
-                 qemu_sha256=sha(Path(binary)),kernel_sha256=L["kernel_sha256"],import_sha256=sha(imp),
+                 qemu_sha256=binary_hash,kernel_sha256=L["kernel_sha256"],import_sha256=sha(imp),
                  driver_sha256=L["driver_sha256"],mac=mac,mtu=mtu))
             def read(pa,n):
                 request(q,"pmemsave",val=pa,size=n,filename=str(out/"probe.bin"))
                 return (out/"probe.bin").read_bytes()
-            def wait_uart(marker):
+            def field(slot,index):
+                root=L["roots"][slot]
+                base=next(iter(L["journals"][slot].values()))[0]
+                mem=RAM({},read)
+                return int.from_bytes(vread(mem,root,base+8*index,8),"little") if mem.leaf(root,base) else 0
+            def wait(label,ready,terminal=False):
                 while True:
                     log=out/"uart.log"
                     raw=log.read_bytes() if log.exists() else b""
-                    if marker in raw:
+                    exits=re.findall(rb"(?m)^NATIVE EL0 EXIT PID (\d+) (-?\d+)\r?$",raw)
+                    if terminal:
+                        require(exits==[(b"0",b"-5"),(b"1",b"0")][:len(exits)],"unexpected signed exit")
+                    else:
+                        require(not exits,"early native exit before "+label)
+                    require(b"NATIVE EL0 FAIL" not in raw and b"NATIVE EL0 FAULT" not in raw,"guest failure before "+label)
+                    if (not terminal or len(exits)==2) and ready():
                         return
-                    require(time.monotonic()<deadline and proc.poll() is None,"deadline: "+marker.decode())
+                    require(time.monotonic()<deadline and proc.poll() is None,"deadline: "+label)
                     require(not (out/"machine.log").exists() or (out/"machine.log").stat().st_size<MAX_LOG,"trace limit")
                     time.sleep(.005)
             def freeze(stage):
@@ -161,23 +179,18 @@ def capture(pkg,imp,out,qemu,mac,mtu,timeout):
             try:
                 require("QMP" in json.loads(q.readline()),"QMP greeting")
                 request(q,"qmp_capabilities")
-                wait_uart(b"NET ASSERT FIRST READY")
-                # An established hardware waiter makes the first ingress an IRQ wake.
-                while life.unpack(read(*L["kernel_irq"]))[22]!=1:
-                    require(time.monotonic()<deadline,"driver did not block for IRQ")
-                    time.sleep(.003)
+                def ready_for_ingress():
+                    k=life.unpack(read(*L["kernel_irq"]))
+                    return k[22]==1 and k[19]!=0 and field(1,0)==k[19] and field(1,1)==int(mac.replace(":",""),16)
+                wait("active IRQ waiter and peer session",ready_for_ingress)
                 wire=len(frame).to_bytes(4,"big")+frame
                 host.sendall(wire)
                 (out/"host.bin").write_bytes(wire)
-                wait_uart(b"NET ASSERT ARMED")
-                peer_va,_=L["journals"][1][PEER[0]]
-                while int.from_bytes(vread(RAM({},read),L["roots"][1],peer_va+32,8),"little")!=1:
-                    require(time.monotonic()<deadline,"survivor did not enter EOF wait")
-                    time.sleep(.003)
+                wait("pretrap owner and peer receipt",lambda:field(0,7)==1 and field(1,4)==1)
                 pre=freeze("armed")
                 require(pre["driver"][7]==1 and not any(pre["assertions"]),"missed pre-BRK stop")
                 request(q,"cont")
-                wait_uart(b"NATIVE EL0 EXIT PID 1 0")
+                wait("signed terminal exits and peer completion",lambda:field(1,11)==100,terminal=True)
                 freeze("final")
                 request(q,"quit")
                 proc.wait(timeout=8)
@@ -211,7 +224,7 @@ def check_shots(L,pre,post,wire):
     require(pre["frame"]==wire+bytes(31) and post["frame"]==pre["frame"],"wire to survivor private RAM")
     require(pre["peer"][:5]==[token,int.from_bytes(wire[:6],"big"),nonce,n,1] and not any(pre["peer"][5:]),
             "peer before EOF")
-    require(not any(pre["assertions"]),"exception occurred before checkpoint")
+    require(not any(pre["assertions"]) and not any(pre["decision"]),"exception or terminal decision before checkpoint")
     ring=pre["ring"]
     avail,used=struct.unpack_from("<H",ring,514)[0],struct.unpack_from("<H",ring,586)[0]
     require(used==1 and 0<posted==avail-used<=32,"active ring progress")
@@ -231,24 +244,34 @@ def check_shots(L,pre,post,wire):
     a=post["assertions"]
     require(a[0]>0 and a[1:6]==[0,L["roots"][0],0x400,0xf2000440,L["trap"]] and
             a[6]&31==0 and a[8]%16==0 and a[8]!=0 and a[9]!=0 and not any(a[10:]),"EL1 BRK vector/ESR/ELR/root")
+    require(post["decision"]==[a[0],256,0,1,NEG-5,a[5]]+[0]*6,
+            "protected post-retirement FIFO decision at EL1 handling tick")
     require(post["driver"]==d and post["slots"]==pre["slots"] and not any(any(g) for g in post["grants"]) and
             not any(post["buffers"]) and pre["irq"][26]==0 and post["irq"][26]==1 and post["irq"][22]==0,
             "kernel exit teardown and dead driver state")
     p=post["peer"]
     require(p[:5]==pre["peer"][:5] and p[5]==0 and p[6]>0 and p[7]>=p[6]+100000000 and
             p[8:]==[NEG-13]*3+[100],"peer EOF, actual timer and authorization")
-    return dict(token=token,posted=posted,used_id=used_id,tick=a[0],elr=hex(a[5]),esr=hex(a[4]),
+    return dict(token=token,posted=posted,used_id=used_id,tick=a[0],el1_handler_tick=a[0],
+                protected_fifo_decision=post["decision"][:6],elr=hex(a[5]),esr=hex(a[4]),
                 driver_ttbr=hex(a[2]),peer_ttbr=hex(L["roots"][1]),peer_elapsed_ns=p[7]-p[6])
 
 
 def trace_evidence(L, lines):
     positions={}
-    for name in ("virtnet_validate","virtnet_probe","virtnet_open","skb_recv_done","virtnet_poll","fixture_brk"):
+    for name in ("virtnet_validate","virtnet_probe","virtnet_open","skb_recv_done","virtnet_poll","gro_receive_skb","fixture_brk"):
         fn=L["code"][name]
         _,hits=callback_attempts(lines,fn["entry"])
         require(bool(hits) and (name=="virtnet_poll" or len(hits)==1),"missing or repeated entry: "+name)
         life.rx.verify_execution(lines,fn,len(hits))
         positions[name]=hits[0]
+        if name=="virtnet_poll":
+            polls=hits
+    # Opening the original netdev schedules an empty poll. Attribute the
+    # delivered packet to the poll after its completion callback and before GRO.
+    delivered=[i for i in polls if positions["skb_recv_done"]<i<positions["gro_receive_skb"]]
+    require(len(delivered)==1,"missing unique packet-associated NAPI poll")
+    positions["virtnet_poll"]=delivered[0]
     require(list(positions.values())==sorted(positions.values()),"original callback / assertion order")
     reg=[]
     pattern=rb"memory_region_ops_(read|write) cpu 0 mr \S+ addr (0x[0-9a-f]+) value (0x[0-9a-f]+) size (\d+)"
@@ -279,18 +302,26 @@ def trace_evidence(L, lines):
 
 def check_uart(uart,post):
     exits=re.findall(rb"(?m)^NATIVE EL0 EXIT PID (\d+) (-?\d+)\r?$",uart)
-    require(exits==[(b"0",b"-5"),(b"1",b"0")] and b"NET ASSERT PEER PASS" in uart,
+    require(exits==[(b"0",b"-5"),(b"1",b"0")],
             "driver contained, surviving task finished")
     rows=[list(map(int,row.split())) for row in re.findall(rb"(?m)^NATIVE FIXED EVENT ([\d ]+)\r?$",uart)]
     a=post["assertions"]
     faults=[i for i,r in enumerate(rows) if r[1]==256]
-    require(len(faults)==1 and b"NATIVE FIXED DROPPED 0" in uart,"complete fixed event record")
-    i=faults[0]
-    require(rows[i][0]==a[0] and rows[i][3]==0 and rows[i][5:7]==[a[5],a[8]] and
-            not any(row[1]==3 and row[3]==0 for row in rows) and
-            not any(row[3]==0 or row[4]==0 for row in rows[i+1:]) and
-            any(row[3]==1 and row[1]==2 for row in rows[i+1:]) and
-            any(row[3]==1 and row[1]==3 for row in rows[i+1:]),"noncooperative terminal event and survivor sleep/exit")
+    drops=re.findall(rb"(?m)^NATIVE FIXED DROPPED (\d+)\r?$",uart)
+    require(len(drops)==1 and rows and len(faults)<=1 and
+            not any(r[1]==3 and r[3]==0 for r in rows),"fixed journal header or cooperative owner exit")
+    dropped=int(drops[0])
+    require(faults or (dropped and rows[-1][0]<a[0]),"assertion event missing inside retained scheduler coverage")
+    later=[r for r in rows if r[0]>a[0]]
+    if faults:
+        r=rows[faults[0]]
+        require(r[0]==a[0] and r[3]==0 and r[5:7]==[a[5],a[8]],"fixed assertion boundary")
+    require(not any(r[3]==0 or r[4]==0 for r in later),"owner ran again after terminal BRK")
+    sleep=any(r[3]==1 and r[1]==2 for r in later)
+    finished=any(r[3]==1 and r[1]==3 for r in later)
+    require(dropped or (sleep and finished),"surviving task terminal schedule")
+    return dict(rows_retained=len(rows),rows_dropped=dropped,reason_256_observed=bool(faults),
+                post_fault_peer_sleep_observed=sleep,post_fault_peer_exit_observed=finished)
 
 
 def replay(pkg,imp,out,mutations=False):
@@ -320,7 +351,7 @@ def replay(pkg,imp,out,mutations=False):
     pre,post=shots
     result=check_shots(L,pre,post,wire)
     uart=(out/"uart.log").read_bytes()
-    check_uart(uart,post)
+    result["scheduler"]=check_uart(uart,post)
     log=out/"machine.log"
     require(log.stat().st_size<=MAX_LOG,"trace size")
     lines=log.read_bytes().splitlines()
@@ -339,6 +370,11 @@ def replay(pkg,imp,out,mutations=False):
             bad=copy.deepcopy(post)
             bad["assertions"][index]^=delta
             reject(label,lambda:check_shots(L,pre,bad,wire))
+        for label,index in (("terminal decision at wrong tick",0),("ordinary scheduler reason",1),
+                            ("wrong surviving PID",3),("false peer decision",7)):
+            bad=copy.deepcopy(post)
+            bad["decision"][index]^=1
+            reject(label,lambda:check_shots(L,pre,bad,wire))
         bad=copy.deepcopy(pre)
         slot=next(i for i,g in enumerate(bad["grants"]) if g[0])
         bad["grants"][slot]=(0,0,0)
@@ -346,7 +382,7 @@ def replay(pkg,imp,out,mutations=False):
         bad=copy.deepcopy(post)
         bad["peer"][7]=bad["peer"][6]
         reject("no survivor timer progress",lambda:check_shots(L,pre,bad,wire))
-        reject("cooperative exit",lambda:check_uart(re.sub(rb"(NATIVE FIXED EVENT \d+) 256 ",rb"\1 3 ",uart),post))
+        reject("cooperative exit",lambda:check_uart(uart+b"\nNATIVE FIXED EVENT 1 3 0 0 1 0 0\n",post))
         reset=result["trace_entry_lines"]["fixture_brk"]
         last_ready=next(i for i in reversed(range(reset,len(lines))) if
                         re.search(rb"memory_region_ops_read .*addr 0x0*a003e44 value 0x0 size 4",lines[i]))
