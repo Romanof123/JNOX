@@ -5,7 +5,7 @@
 //! reports unannounced ring work and leaves the caller's sequence unchanged.
 //! An empty, enabled RX queue suspends the owner until a qualifying SPI 79.
 //! SVC 175 takes (queue token, metric index, 0) and returns the hardware
-//! counter. Both calls check slot 0 before validating the live generation.
+//! counter. Both calls check the authorized driver before validating the live generation.
 //! A non-owner gets -13, an expired token -116, and invalid arguments -22.
 //! The directed rearm test adds SVC 176 (token, 0, 0) to pend the GIC line
 //! once before RX activity, independently of the NIC's interrupt status.
@@ -209,6 +209,18 @@ static mut FRAMES: [NativeFrame; COUNT] = [EMPTY_FRAME; COUNT];
 #[cfg(jnox_linux_source_net_rx_irq)]
 #[unsafe(no_mangle)]
 static mut jnox_linux_net_irq_scheduler: [u64; 5] = [0; 5];
+
+// Boot-long EL1 receipt: primary exit tick/status, spare disposition
+// (1 launched, 2 dismissed), spare exit tick/status, IRQ wakes for slots 0/2.
+#[cfg(jnox_linux_source_net_restart)]
+#[unsafe(no_mangle)]
+static mut jnox_linux_net_restart_scheduler: [u64; 7] = [0; 7];
+
+// Per PID: first actual EL0 SVC (tick, return PC, TTBR0, SVC number)
+// and exit SVC (tick, return PC, TTBR0). A dormant slot has an empty row.
+#[cfg(jnox_linux_source_net_restart)]
+#[unsafe(no_mangle)]
+static mut jnox_linux_net_restart_roles: [[u64; 7]; COUNT] = [[0; 7]; COUNT];
 
 #[cfg(jnox_linux_source_net_rx_irq)]
 fn count_rx_irq(index: usize) {
@@ -469,10 +481,10 @@ fn start_fixed() -> usize {
         _ => fail(9),
     };
     let now = counter();
-    #[cfg(not(any(jnox_native_shell, jnox_native_uart_rx_standby)))]
+    #[cfg(not(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart)))]
     unsafe { FIXED = Fixed::new(&config, mode, now) };
-    #[cfg(jnox_native_uart_rx_standby)]
-    unsafe { FIXED = Fixed::new_uart_standby(&config, mode, now) };
+    #[cfg(any(jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    unsafe { FIXED = Fixed::new_with_standby(&config, mode, now) };
     #[cfg(jnox_native_shell)]
     unsafe { FIXED = Fixed::new_shell(&config, mode, now) };
     let p = policy();
@@ -498,10 +510,15 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     if matches!(action, Action::Exit) && before.pid == Some(0) {
         pl031::release_if_owned();
     }
-    #[cfg(jnox_linux_source_net)]
+    #[cfg(all(jnox_linux_source_net, not(jnox_linux_source_net_restart)))]
     if matches!(action, Action::Exit) && before.pid == Some(0) {
         linux_net::release_on_exit();
     }
+    #[cfg(jnox_linux_source_net_restart)]
+    let launch_spare = if matches!(action, Action::Exit) {
+        let pid = before.pid.unwrap_or_else(|| fail(9));
+        linux_net::restart_exit(pid, unsafe { EXIT_STATUS[pid] })
+    } else { false };
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
     #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
     if matches!(action, Action::Exit) && before.pid == Some(DISPLAY_OWNER) {
@@ -523,6 +540,37 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     if !ipc::handles(reason) { ipc::boundary(p, now, matches!(action, Action::Exit)); }
     if p.event(now, action) != Some(true) { fail(9) }
+    #[cfg(jnox_linux_source_net_restart)]
+    if matches!(action, Action::Exit) {
+        const SPARE: usize = 2;
+        let receipt = unsafe { &mut *(&raw mut jnox_linux_net_restart_scheduler) };
+        match before.pid {
+            Some(0) => {
+                if !p.dormant(SPARE) { fail(9); }
+                receipt[0] = now;
+                receipt[1] = i64::from(unsafe { EXIT_STATUS[0] }) as u64;
+                if launch_spare {
+                    p.launch(SPARE);
+                    receipt[2] = 1;
+                } else {
+                    // The dormant task inherited live boot pipe descriptors.
+                    // Closing them permits the survivor to observe EOF/EPIPE.
+                    pipes::exit(SPARE, p);
+                    p.dismiss(SPARE);
+                    unsafe { EXIT_STATUS[SPARE] = -125 };
+                    receipt[2] = 2;
+                }
+                // The newly ready spare or a peer awakened by closure may
+                // outrank the task selected at the original exit boundary.
+                if p.event(now, Action::Poll) != Some(true) { fail(9); }
+            }
+            Some(SPARE) => {
+                receipt[3] = now;
+                receipt[4] = i64::from(unsafe { EXIT_STATUS[SPARE] }) as u64;
+            }
+            _ => {}
+        }
+    }
     #[cfg(jnox_linux_source_net_rx_irq)]
     if matches!(action, Action::BlockIrq) { count_rx_irq(0); }
     #[cfg(jnox_native_uart_rx_standby)]
@@ -595,6 +643,11 @@ fn finish_fixed() -> ! {
     #[cfg(jnox_native_shell)]
     spawn::report();
     for (pid, status) in unsafe { EXIT_STATUS }.into_iter().enumerate() {
+        #[cfg(jnox_linux_source_net_restart)]
+        if pid == 2 && unsafe { jnox_linux_net_restart_scheduler[2] } == 2 {
+            event(b"DISMISSED", pid, None);
+            continue;
+        }
         #[cfg(jnox_native_uart_rx_standby)]
         if uart_standby::dismissed(pid) {
             event(b"DISMISSED", pid, None);
@@ -709,8 +762,18 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
             if let Some(sequence) = linux_net::irq::interrupt(iar, frame.is_null()) {
                 // The hardware latch consumes the wait once. The owner was
                 // descheduled with its return PC already past SVC 174.
-                next_owner = fixed_event(counter(), Action::WakeIrq(0), u64::from(id), unsafe { frame.as_ref() });
-                unsafe { FRAMES[0].x[0] = sequence };
+                #[cfg(jnox_linux_source_net_restart)]
+                let owner = linux_net::restart_owner().unwrap_or_else(|| fail(9));
+                #[cfg(not(jnox_linux_source_net_restart))]
+                let owner = 0;
+                next_owner = fixed_event(counter(), Action::WakeIrq(owner), u64::from(id), unsafe { frame.as_ref() });
+                unsafe { FRAMES[owner].x[0] = sequence };
+                #[cfg(jnox_linux_source_net_restart)]
+                {
+                    let index = match owner { 0 => 5, 2 => 6, _ => fail(9) };
+                    let word = unsafe { &raw mut jnox_linux_net_restart_scheduler[index] };
+                    unsafe { word.write_volatile(word.read_volatile().saturating_add(1)) };
+                }
                 count_rx_irq(1);
                 if frame.is_null() { count_rx_irq(2); }
             }
@@ -797,8 +860,10 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     {
         #[cfg(jnox_native_edf)]
         if NATIVE_DEADLINE_SERVICE_MASK != 0 { edf::recurring::fault(entry, f); }
-        #[cfg(jnox_linux_source_net_rx_irq)]
+        #[cfg(all(jnox_linux_source_net_rx_irq, not(jnox_linux_source_net_restart)))]
         if unsafe { CURRENT } == 0 { linux_net::release_on_exit(); }
+        #[cfg(jnox_linux_source_net_restart)]
+        { linux_net::restart_exit(unsafe { CURRENT }, -1); }
         fail(2);
     }
     #[cfg(jnox_native_edf)]
@@ -829,6 +894,12 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     // Unsupported services do not dereference a user pointer, acquire
     // descriptors, emit output or claim to have completed a transfer.
     let now = if cfg!(any(jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) { entry } else { counter() };
+    #[cfg(jnox_linux_source_net_restart)]
+    {
+        let row = unsafe { &mut *(&raw mut jnox_linux_net_restart_roles[CURRENT]) };
+        if row[2] == 0 { row[..4].copy_from_slice(&[now, f.elr, ttbr, f.x[8]]); }
+        if exit { row[4..].copy_from_slice(&[now, f.elr, ttbr]); }
+    }
     #[cfg(jnox_native_cbs)]
     cbs::witness(now, f, f.x[8]);
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]

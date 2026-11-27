@@ -461,6 +461,10 @@ def main():
                                const="net-rx-poll", help="grant slot 0 RX callback control for upstream NAPI polling")
     parser.add_argument("--linux-source-net-rx-irq-rearm-test", action="store_true",
                         help="enable the test-only synthetic rearm event for the RX IRQ package")
+    parser.add_argument("--linux-source-net-restart-pending-test", action="store_true",
+                        help="enable the EL1 pending-retirement test barrier in a restart package")
+    source_device.add_argument("--linux-source-net-restart", dest="linux_source_driver", action="store_const",
+                               const="net-restart", help="package a primary IRQ driver, survivor and dormant spare")
     source_device.add_argument("--linux-source-net-rx-irq", dest="linux_source_driver", action="store_const",
                                const="net-rx-irq", help="grant slot 0 the virtio-net receive IRQ on virt")
     group = parser.add_mutually_exclusive_group()
@@ -558,21 +562,26 @@ def main():
     parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if args.linux_source_net_restart_pending_test and args.linux_source_driver != "net-restart":
+        parser.error("--linux-source-net-restart-pending-test requires --linux-source-net-restart")
     if args.linux_source_net_rx_irq_rearm_test and args.linux_source_driver != "net-rx-irq":
         parser.error("--linux-source-net-rx-irq-rearm-test requires --linux-source-net-rx-irq")
     if args.linux_source_driver:
         option = f"--linux-source-{args.linux_source_driver}"
-        allowed = {"out", "board", "kernel_profile", "linux_source_driver", "linux_source_net_rx_irq_rearm_test", "elf", "peer_elf",
+        allowed = {"out", "board", "kernel_profile", "linux_source_driver", "linux_source_net_rx_irq_rearm_test", "linux_source_net_restart_pending_test", "elf", "peer_elf",
                    "policy", "priority", "peer_priority", "arg", "peer_arg"}
         conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
                      and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
-        if args.board not in (None, "virt") or args.policy != ["fifo"] or not args.elf or len(args.peer_elf) != 1:
-            parser.error(f"{option} requires virt FIFO, one --elf and one --peer-elf")
+        peers = 2 if args.linux_source_driver == "net-restart" else 1
+        if args.board not in (None, "virt") or args.policy != ["fifo"] or not args.elf or len(args.peer_elf) != peers:
+            parser.error(f"{option} requires virt FIFO, one --elf and {peers} --peer-elf argument(s)")
         if conflicts:
             parser.error(f"options incompatible with {option}: " + ", ".join(conflicts))
-        if args.linux_source_driver in ("net-rx", "net-rx-poll", "net-rx-irq"):
+        if args.linux_source_driver in ("net-rx", "net-rx-poll", "net-rx-irq", "net-restart"):
             args.pipes = 1
             args.pipe_link = [(0, 3, 1, 3), (1, 4, 0, 4)]
+            if args.linux_source_driver == "net-restart":
+                args.pipe_link.extend([(2, 3, 1, 5), (1, 6, 2, 4)])
     if args.task_policy is not None:
         allowed = {"out", "board", "kernel_profile", "task_policy"}
         conflicts = [action.option_strings[0] for action in parser._actions
@@ -801,14 +810,14 @@ def main():
                       "driver_source": "drivers/net/virtio_net.c", "transport": "virtio-net-mmio-modern",
                       "qemu_device": "virtio-net-device"}
         metadata[f"linux_source_{driver_kind}"] = {"driver_slot": 0, "unauthorized_slots": [1], **device}
-        if args.linux_source_driver in ("net-queues", "net-packets", "net-rx", "net-rx-poll", "net-rx-irq"):
+        if args.linux_source_driver in ("net-queues", "net-packets", "net-rx", "net-rx-poll", "net-rx-irq", "net-restart"):
             env["JNOX_NATIVE_LINUX_PACKET_QUEUES"] = "1"
             metadata["linux_packet_queues"] = {
                 "queue_size": 32, "indices": {"rx": 0, "tx": 1},
                 "status_after_setup": "FEATURES_OK", "buffers_required_for_driver_ok": True,
                 "driver_source": device["driver_source"], "syscalls": {"setup": 161, "query": 162},
             }
-        if args.linux_source_driver in ("net-packets", "net-rx", "net-rx-poll", "net-rx-irq"):
+        if args.linux_source_driver in ("net-packets", "net-rx", "net-rx-poll", "net-rx-irq", "net-restart"):
             env["JNOX_NATIVE_LINUX_NET_PACKETS"] = "1"
             metadata["linux_net_packets"] = {
                 "driver_slot": 0, "unauthorized_slots": [1], "virtio_net_header_bytes": 12,
@@ -816,7 +825,7 @@ def main():
                 "syscalls": {"start": 163, "tx_submit": 164, "tx_kick": 165, "tx_reap": 166,
                              "rx_receive": 167, "irq_ack": 168, "tx_callbacks": 169},
             }
-        if args.linux_source_driver in ("net-rx", "net-rx-poll", "net-rx-irq"):
+        if args.linux_source_driver in ("net-rx", "net-rx-poll", "net-rx-irq", "net-restart"):
             env["JNOX_NATIVE_LINUX_SOURCE_NET_RX"] = "1"
             packet_calls = metadata["linux_net_packets"]["syscalls"]
             del packet_calls["start"], packet_calls["rx_receive"]
@@ -826,14 +835,14 @@ def main():
                 "virtio_net_header_bytes": 12, "frame_count": 80, "frame_ethertype": 0x88b5,
                 "syscalls": {"start": 170, "post": 171, "reap": 172},
             }
-        if args.linux_source_driver in ("net-rx-poll", "net-rx-irq"):
+        if args.linux_source_driver in ("net-rx-poll", "net-rx-irq", "net-restart"):
             env["JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL"] = "1"
             metadata["linux_source_net_rx_poll"] = {
                 "driver_slot": 0, "syscalls": {"rx_callbacks": 173},
                 "modes": {"disable": 0, "enable_prepare": 1, "poll": 2, "refill_kick": 3},
                 "initial_kick": "driver_ok", "live_refill_kick": "explicit",
             }
-        if args.linux_source_driver == "net-rx-irq":
+        if args.linux_source_driver in ("net-rx-irq", "net-restart"):
             env["JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ"] = "1"
             if args.linux_source_net_rx_irq_rearm_test:
                 env["JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST"] = "1"
@@ -843,6 +852,12 @@ def main():
                 "callback": "skb_recv_done", "registrar": "virtnet_find_vqs",
                 "syscalls": {"wait": 174},
             }
+        if args.linux_source_driver == "net-restart":
+            env["JNOX_NATIVE_LINUX_SOURCE_NET_RESTART"] = "1"
+            if args.linux_source_net_restart_pending_test:
+                env["JNOX_NATIVE_LINUX_SOURCE_NET_RESTART_PENDING_TEST"] = "1"
+            metadata["linux_source_net_restart"] = {"primary_slot": 0, "survivor_slot": 1,
+                "dormant_spare_slot": 2, "intid": 79, "max_replacements": 1}
         metadata["package_argv"] = sys.argv[:]
     if args.pubsub_service:
         env["JNOX_NATIVE_PUBSUB_SERVICE"] = "3"
@@ -972,6 +987,12 @@ def main():
             if slot == 2 and service:
                 var = "JNOX_NATIVE_DEADLINE_SERVICE_ELF"
             env[var], env[var + "_SHA256"] = str(peer_elf), peer_digest
+        if args.linux_source_net_restart_pending_test:
+            metadata["linux_source_net_restart"]["pending_retirement_test"] = {
+                "scope": "EL1 only",
+                "slot_elf_sha256": {role: slot["elf_sha256"] for role, slot in
+                                    zip(("primary", "survivor", "spare"), slots)},
+            }
         periodic = args.periodic + args.peer_periodic
         reservations = args.reservation + args.peer_reservation
         classes = args.primary_class + args.peer_class
@@ -1092,6 +1113,7 @@ def main():
     metadata.update(user_elf_sha256=digest, kernel_elf_sha256=sha256(kernel_elf),
                     build_log_sha256=sha256(out / "build.log"))
     if (policy == "amc" or args.uart_rx_standby or args.net_standby is not None
+            or args.linux_source_driver == "net-restart"
             or (policy in ("fifo", "rr") and len(slots) == 4)):
         for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
             slot["expected_ttbr0_el1"] = root

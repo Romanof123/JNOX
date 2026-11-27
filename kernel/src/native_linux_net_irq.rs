@@ -114,7 +114,7 @@ pub(super) fn finish_reset() -> bool {
 }
 
 fn authorize(pid: usize, token: u64) -> Result<(), i64> {
-    if pid != 0 { return Err(-13); }
+    if !super::permitted(pid) { return Err(-13); }
     if token == 0 || token != unsafe { EPOCH } { return Err(-116); }
     if read(STATUS) != LIVE { return Err(-5); }
     Ok(())
@@ -209,4 +209,10 @@ pub(in crate::native_el0) fn pend_test(pid: usize, token: u64, arg1: u64, arg2: 
     fence();
     // DAIF.I is still set; ordinary IRQ entry performs the only IAR read.
     if gic_read(PENDING) & LINE != 0 { 0 } else { -5 }
+}
+
+#[cfg(jnox_linux_source_net_restart)]
+pub(super) fn retirement_state() -> [u64; 5] {
+    [unsafe { EPOCH }, get(22), u64::from(gic_read(ENABLE) & LINE != 0),
+     u64::from(gic_read(PENDING) & LINE != 0), u64::from(read(INT_STATUS) & 3)]
 }
