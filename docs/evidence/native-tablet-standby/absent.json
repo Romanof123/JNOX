@@ -1,0 +1,312 @@
+{
+  "case": "absent",
+  "kernel": "d2a768fb08fa983ba8d323a6fa86352557a5046c76a7bd6906c340135cf1c37c",
+  "qemu": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+  "stages": {
+    "primary-ready": {
+      "object_namespace_handshakes": 1,
+      "owner": 0,
+      "client_epoch": 1,
+      "wire_messages": 38,
+      "pointer_serials": [],
+      "focus": false,
+      "buttons": [],
+      "fixed_xy": null,
+      "frames": 1,
+      "client_denials": [
+        -1,
+        -1
+      ],
+      "control_count": 11,
+      "frame_sha256": "4d3f209ce86d246a3a9a9151e823e6317e6111d50a2b439ff8f1d55a6769dde1"
+    },
+    "keyboard": {
+      "object_namespace_handshakes": 1,
+      "owner": 0,
+      "client_epoch": 1,
+      "wire_messages": 47,
+      "pointer_serials": [],
+      "focus": false,
+      "buttons": [],
+      "fixed_xy": null,
+      "frames": 2,
+      "client_denials": [
+        -1,
+        -1
+      ],
+      "control_count": 17,
+      "frame_sha256": "b82564e77d5ac77e106dcf395e66e15e3198d82d4f8b61c2cab2cfad72895977"
+    }
+  },
+  "terminal_tablet_state": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "generations": [
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ],
+  "lease": {
+    "assertions": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "leases": [
+      [
+        13907938,
+        0,
+        2,
+        18446744073709551615,
+        3,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "retirements": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "cleanup": [
+      [
+        13908235,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        13358913,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        13912770,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        13923876,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        2560759278,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "broker_deaths": [
+      [
+        13917305,
+        3,
+        0
+      ],
+      [
+        13367500,
+        3,
+        1
+      ],
+      [
+        13918912,
+        3,
+        2
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    "first_spare_restore": [
+      0,
+      0,
+      0
+    ]
+  },
+  "hardware": {
+    "attached": false
+  },
+  "control": {
+    "count": 4096,
+    "period_ns": 10000000,
+    "limit_ns": 20000000,
+    "whole_boot": {
+      "maximum_gap_ns": 10309008,
+      "misses": []
+    },
+    "startup_origin_to_first_completion_ns": 10240272,
+    "startup_origin_exceeds_interval_limit": false,
+    "deadline_lateness_at_least_one_period": []
+  }
+}

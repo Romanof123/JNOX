@@ -1,6 +1,6 @@
 # CHG-343 · Tablet ownership after compositor failure / 합성기 고장 후 태블릿 소유권
 
-REQ-015 and REQ-024, DES-009 and DES-013, VER-015 and VER-024. This integration covers the native QEMU virt display lease, compositor fault isolation and control continuity in issue #457. IMP-343 implements the combined path. Acceptance measurements are pending.
+REQ-015 and REQ-024, DES-009 and DES-013, VER-015 and VER-024. This integration covers the native QEMU virt display lease, compositor fault isolation and control continuity in issue #457. IMP-343 implements the combined path. Four five-role guest runs have an independent verdict. / 같은 커널의 다섯 역할 구성에서 네 가지 시나리오를 독립 검증했다. [EVD-343 and limits](evidence/native-tablet-standby/README.md)
 
 ## Lease and reset / 소유권과 리셋
 

@@ -1,0 +1,9 @@
+{
+  "clock": "controller cadence or sequence",
+  "stale-release": "current generation button sequence",
+  "authorization": "nonowner denied SVC197 acquire and poll",
+  "dma": "physical DMA vs recorded QMP input",
+  "pixels": "independent external full-frame pixels",
+  "owner-order": "primary retirement before new generation",
+  "reset-read": "reset acknowledgement and both quiescent queues"
+}

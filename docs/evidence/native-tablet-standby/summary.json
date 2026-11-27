@@ -1,0 +1,76 @@
+{
+  "recover": {
+    "accepted": true,
+    "control": {
+      "count": 4096,
+      "period_ns": 10000000,
+      "limit_ns": 20000000,
+      "whole_boot": {
+        "maximum_gap_ns": 10259744,
+        "misses": []
+      },
+      "startup_origin_to_first_completion_ns": 10048576,
+      "startup_origin_exceeds_interval_limit": false,
+      "deadline_lateness_at_least_one_period": [],
+      "recovery_window": {
+        "maximum_gap_ns": 10112912,
+        "misses": [],
+        "last_prefault_sample": 29,
+        "first_postframe_sample": 42,
+        "fault_to_first_new_frame_upper_bound_ns": 130058544
+      }
+    }
+  },
+  "double-fault": {
+    "accepted": true,
+    "control": {
+      "count": 4096,
+      "period_ns": 10000000,
+      "limit_ns": 20000000,
+      "whole_boot": {
+        "maximum_gap_ns": 10622160,
+        "misses": []
+      },
+      "startup_origin_to_first_completion_ns": 10050960,
+      "startup_origin_exceeds_interval_limit": false,
+      "deadline_lateness_at_least_one_period": [],
+      "recovery_window": {
+        "maximum_gap_ns": 10622160,
+        "misses": [],
+        "last_prefault_sample": 23,
+        "first_postframe_sample": 37,
+        "fault_to_first_new_frame_upper_bound_ns": 140006944
+      }
+    }
+  },
+  "clean": {
+    "accepted": true,
+    "control": {
+      "count": 4096,
+      "period_ns": 10000000,
+      "limit_ns": 20000000,
+      "whole_boot": {
+        "maximum_gap_ns": 12587504,
+        "misses": []
+      },
+      "startup_origin_to_first_completion_ns": 10247520,
+      "startup_origin_exceeds_interval_limit": false,
+      "deadline_lateness_at_least_one_period": []
+    }
+  },
+  "absent": {
+    "accepted": true,
+    "control": {
+      "count": 4096,
+      "period_ns": 10000000,
+      "limit_ns": 20000000,
+      "whole_boot": {
+        "maximum_gap_ns": 10309008,
+        "misses": []
+      },
+      "startup_origin_to_first_completion_ns": 10240272,
+      "startup_origin_exceeds_interval_limit": false,
+      "deadline_lateness_at_least_one_period": []
+    }
+  }
+}
