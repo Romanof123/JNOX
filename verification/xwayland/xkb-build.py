@@ -261,6 +261,7 @@ def main():
         # The intake patch's first hunk skips mandatory X11. Keep the upstream
         # dependency in production, applying only the native socket selection.
         run("patch", "-p1", "-i", HERE / "server-unix.patch", cwd=server)
+        run("patch", "-p1", "-i", HERE / "server-local-access.patch", cwd=server)
     else:
         run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
     native_options = []

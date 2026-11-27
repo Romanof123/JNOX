@@ -3,3 +3,10 @@
 @@ -194,1 +194,1 @@
 -conf_data.set('TCPCONN', '1')
 +conf_data.set('TCPCONN', host_machine.system() != 'jnox' or get_option('listen_tcp') ? '1' : false)
+--- a/miext/sync/meson.build
++++ b/miext/sync/meson.build
+@@ -13,3 +13,3 @@
+-if build_dri3 or build_xwayland
++if build_dri3 or (build_xwayland and (host_machine.system() != 'jnox' or xshmfence_dep.found()))
+     srcs_miext_sync += 'misyncshm.c'
+ endif

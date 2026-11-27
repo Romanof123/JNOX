@@ -1,0 +1,112 @@
+--- a/include/meson.build
++++ b/include/meson.build
+@@ -286,6 +286,9 @@
+ conf_data.set_quoted('XKB_DFLT_RULES', get_option('xkb_default_rules'))
+ conf_data.set_quoted('__XSERVERNAME__', 'Xorg')
+ conf_data.set('CSRG_BASED', csrg_based ? '1' : false)
++if host_machine.system() == 'jnox'
++    conf_data.set('JNOX_NATIVE_ACCESS', '1')
++endif
+ 
+ configure_file(output : 'dix-config.h',
+                configuration : conf_data)
+--- a/os/access.c
++++ b/os/access.c
+@@ -96,6 +96,11 @@
+ #include "misc.h"
+ #include <errno.h>
+ #include <sys/types.h>
++#if defined(JNOX_NATIVE_ACCESS) && defined(UNIXCONN) && !defined(TCPCONN) && \
++    !defined(STREAMSCONN) && !defined(IPv6) && !defined(XDMCP)
++#define JNOX_UNIX_ONLY_ACCESS 1
++#endif
++
+ #ifndef WIN32
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+@@ -124,6 +129,7 @@
+ #include <sys/un.h>
+ #endif
+ 
++#ifndef JNOX_UNIX_ONLY_ACCESS
+ #if defined(SVR4) ||  (defined(SYSV) && defined(__i386__)) || defined(__GNU__)
+ #include <sys/utsname.h>
+ #endif
+@@ -178,14 +184,17 @@
+ #include <arpa/inet.h>
+ #endif
+ 
++#endif                          /* !JNOX_UNIX_ONLY_ACCESS */
+ #endif                          /* WIN32 */
+ 
+ #if !defined(WIN32) || defined(__CYGWIN__)
+ #include <libgen.h>
+ #endif
+ 
++#ifndef JNOX_UNIX_ONLY_ACCESS
+ #define X_INCLUDE_NETDB_H
+ #include <X11/Xos_r.h>
++#endif
+ 
+ #include "dixstruct.h"
+ #include "osdep.h"
+@@ -435,7 +444,26 @@
+  * for this fd and add them to the selfhosts list.
+  */
+ 
+-#if !defined(SIOCGIFCONF)
++#ifdef JNOX_UNIX_ONLY_ACCESS
++void
++DefineSelf(int fd)
++{
++    HOST *host;
++
++    (void) fd;
++    for (host = selfhosts; host; host = host->next)
++        if (addrEqual(FamilyLocalHost, "", 0, host))
++            return;
++
++    MakeHost(host, 0);
++    if (host) {
++        host->family = FamilyLocalHost;
++        host->len = 0;
++        host->next = selfhosts;
++        selfhosts = host;
++    }
++}
++#elif !defined(SIOCGIFCONF)
+ void
+ DefineSelf(int fd)
+ {
+@@ -1858,7 +1886,7 @@
+             freeaddrinfo(addresses);
+         }
+     }
+-#else                           /* IPv6 not supported, use gethostbyname instead for IPv4 */
++#elif !defined(JNOX_UNIX_ONLY_ACCESS) /* IPv4 hostname matching */
+     if (family == FamilyInternet) {
+         register struct hostent *hp;
+ 
+--- a/os/utils.c
++++ b/os/utils.c
+@@ -180,2 +180,4 @@
++#if defined(TCPCONN) || !defined(JNOX_NATIVE_ACCESS)
+ #define X_INCLUDE_NETDB_H
++#endif
+ #include <X11/Xos_r.h>
+@@ -529,1 +531,5 @@
++#if defined(JNOX_NATIVE_ACCESS) && !defined(RLIMIT_CORE)
++    ErrorF("-core                  unavailable on this JNOX target\n");
++#else
+     ErrorF("-core                  generate core dump on fatal error\n");
++#endif
+@@ -747,2 +753,5 @@
+         else if (strcmp(argv[i], "-core") == 0) {
++#if defined(JNOX_NATIVE_ACCESS) && !defined(RLIMIT_CORE)
++            FatalError("This JNOX target does not support -core\n");
++#else
+ #if !defined(WIN32) || !defined(__MINGW32__)
+@@ -755,2 +764,3 @@
+             CoreDump = TRUE;
++#endif
+         }
