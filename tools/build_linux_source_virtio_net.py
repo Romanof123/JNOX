@@ -206,7 +206,8 @@ def build(args, work, profile, data):
     upstream = work / "virtio_net.c"
     upstream.write_bytes(data)
     kernel = kernel_flags(headers, tools["cc"], work)
-    irq_service = args.rx_irq_service or args.rx_restart_service or args.lifecycle_service
+    lifecycle_mode = args.lifecycle_service or args.lifecycle_failure_service
+    irq_service = args.rx_irq_service or args.rx_restart_service or lifecycle_mode
     poll_service = args.rx_poll_service or irq_service
     receive_service = args.rx_service or poll_service
     data_service = args.packet_service or receive_service
@@ -252,7 +253,7 @@ def build(args, work, profile, data):
         packet_kernel = ["-I", overlay, "-DJNOX_PACKET_CONTEXT_ABI=1", *kernel]
         if data_service:
             packet_kernel = ["-DJNOX_PACKET_SERVICE=1", "-DJNOX_PACKET_TX_ABI=1", *packet_kernel]
-        if args.lifecycle_service:
+        if lifecycle_mode:
             packet_kernel = ["-DJNOX_PACKET_LIFECYCLE_ABI=1", *packet_kernel]
         original_flags = packet_kernel
         if receive_service:
@@ -287,7 +288,7 @@ def build(args, work, profile, data):
                     roots.append("virtnet_alloc_queues")
                     if irq_service:
                         roots.extend(("virtnet_find_vqs", "skb_recv_done"))
-            if args.lifecycle_service:
+            if lifecycle_mode:
                 roots.append("virtnet_close")
             graph = inventory(obj, tools["objdump"], roots)
             reports[obj.name] = {
@@ -327,14 +328,14 @@ def build(args, work, profile, data):
                 callbacks.extend(("virtnet_alloc_queues", "virtnet_poll"))
                 if irq_service:
                     callbacks.extend(("virtnet_find_vqs", "skb_recv_done"))
-        if args.lifecycle_service:
+        if lifecycle_mode:
             callbacks.extend(("virtnet_probe", "virtnet_remove", "virtnet_open", "virtnet_close", "start_xmit"))
-        exports = callbacks + (["virtio_net_driver", "napi_tx"] if args.lifecycle_service else [])
+        exports = callbacks + (["virtio_net_driver", "napi_tx"] if lifecycle_mode else [])
         invoke(tools["objcopy"], *["--globalize-symbol=" + name for name in exports],
                callback_input.name, derivative.name)
         full = inspect_elf(callback_input, tools)
         exported = inspect_elf(derivative, tools)
-        if args.lifecycle_service:
+        if lifecycle_mode:
             for elf, binding in ((full, "LOCAL"), (exported, "GLOBAL")):
                 if len([s for s in elf["symbols"] if s["type"] == "OBJECT" and s["bind"] == binding
                         and s["name"] == "virtio_net_driver" and s["index"].isdigit()]) != 1:
@@ -443,11 +444,16 @@ def build(args, work, profile, data):
                         result["retention_only"] = ["virtnet_rq_get_buf"]
                 else:
                     adapters = ("transmit", "tx_virtqueue", "tx_runtime")
-                if args.lifecycle_service:
+                if lifecycle_mode:
                     adapters = (*adapters, "lifecycle_bus", "lifecycle_netdev", "lifecycle_platform", "lifecycle_common")
+                if args.lifecycle_failure_service:
+                    adapters = (*adapters, "lifecycle_faults")
                 for name in adapters:
                     source = ROOT / ("drivers/linux-compat/packet/" + name + ".c")
-                    compile_tu(tools["cc"], [*runtime_kernel, "-I", work], source, name + ".o")
+                    adapter_flags = [*runtime_kernel, "-I", work]
+                    if args.lifecycle_failure_service and name in ("lifecycle_netdev", "lifecycle_platform", "lifecycle_faults"):
+                        adapter_flags.append("-DJNOX_LIFECYCLE_FAULT_TEST=1")
+                    compile_tu(tools["cc"], adapter_flags, source, name + ".o")
                     extra_objects.append(name + ".o")
             native = ["--target=aarch64-none-elf", *COMMON, "-I", SDK / "include"]
             if queue_mode:
@@ -456,9 +462,12 @@ def build(args, work, profile, data):
             if data_service:
                 compile_tu(tools["clang"], [*native, "-fno-builtin"], SDK / "memcpy.c", "memcpy.o")
                 extra_objects.append("memcpy.o")
-            if args.lifecycle_service:
+            if lifecycle_mode:
                 app = ROOT / "examples/linux-source-net-lifecycle/driver.c"
                 result["mode"] = "lifecycle-service"
+                if args.lifecycle_failure_service:
+                    app = ROOT / "examples/linux-source-net-lifecycle/failure_driver.c"
+                    result["mode"] = "lifecycle-failure-service"
                 result["queue_service_scope"] = "Linked upstream callbacks and ops tables; registration and execution require guest receipts."
             if args.rx_restart_service:
                 fixture = ROOT / "examples/linux-source-net-restart"
@@ -468,8 +477,10 @@ def build(args, work, profile, data):
                 app_flags = [*native, "-DJNOX_NATIVE_RX_POLL_FIXTURE=1"] if poll_service and source == app else native
                 if irq_service and source == app:
                     app_flags = [*app_flags, "-DJNOX_NATIVE_RX_IRQ_FIXTURE=1"]
-                    if args.lifecycle_service:
+                    if lifecycle_mode:
                         app_flags.append("-DJNOX_NATIVE_LIFECYCLE_FIXTURE=1")
+                        if args.lifecycle_failure_service:
+                            app_flags.append("-DJNOX_LIFECYCLE_FAULT_TEST=1")
                     if args.rx_restart_service:
                         app_flags.append("-DJNOX_NATIVE_RX_RESTART_FIXTURE=1")
                     if args.rx_irq_rearm_test:
@@ -479,10 +490,10 @@ def build(args, work, profile, data):
             files[linkscript.relative_to(ROOT).as_posix()] = sha(linkscript.read_bytes())
             if poll_service:
                 guard = ROOT / "drivers/linux-compat/packet/rx_poll_unsupported.S"
-                result["poll_fault_table"] = select_poll_faults(guard, variant, work, lifecycle=args.lifecycle_service)
+                result["poll_fault_table"] = select_poll_faults(guard, variant, work, lifecycle=lifecycle_mode)
                 compile_tu(tools["clang"], [*native, "-I", work], guard, "rx_poll_unsupported.o")
                 extra_objects.append("rx_poll_unsupported.o")
-            if args.lifecycle_service:
+            if lifecycle_mode:
                 guard = ROOT / "drivers/linux-compat/packet/lifecycle_unsupported.S"
                 compile_tu(tools["clang"], [*native, "-DJNOX_PACKET_LIFECYCLE_ABI=1", "-I", work],
                            guard, "lifecycle_unsupported.o")
@@ -506,8 +517,25 @@ def build(args, work, profile, data):
                 re.search(r"^\s*(?:INTERP|DYNAMIC)\s", service["program_headers"], re.M) or
                 ".note.jnox.abi" not in service["sections"] or not defined(service, "_start", "GLOBAL")):
                 raise ValueError("static JNOX executable failed callback/ABI verification")
-            forbidden_lifecycle = [] if args.lifecycle_service else ["init_module", "cleanup_module"]
-            if not args.lifecycle_service:
+            if lifecycle_mode:
+                failure_symbols = [s for s in service["symbols"] if s["name"] == "jnox_failure_driver"
+                                   and s["type"] == "OBJECT" and s["index"].isdigit()]
+                if args.lifecycle_failure_service:
+                    if len(failure_symbols) != 1 or failure_symbols[0]["size"] != 1280:
+                        raise ValueError("missing 1280-byte driver failure evidence")
+                    ledger_names = ("jnox_lifecycle_fault_state", "jnox_lifecycle_fault_events",
+                                    "jnox_lifecycle_fault_resources")
+                    ledgers = [s for s in service["symbols"] if s["name"] in ledger_names and s["type"] == "OBJECT"
+                               and s["bind"] == "GLOBAL" and s["index"].isdigit()]
+                    if len(ledgers) != len(ledger_names) or {s["name"] for s in ledgers} != set(ledger_names):
+                        raise ValueError("missing test-only fault ledgers")
+                    result["fault_fixture"] = {"test_only": True, "driver_evidence": failure_symbols[0], "adapter_ledgers": ledgers,
+                        "adapter_object": "lifecycle_faults.o", "kernel_abi": "linux-source-net-lifecycle"}
+                elif failure_symbols or any(sym["name"] in ("jnox_lifecycle_fault_arm_v1", "jnox_lifecycle_fault_hit_v1",
+                                                            "jnox_lifecycle_fault_state") for sym in service["symbols"]):
+                    raise ValueError("unexpected failure fixture in ordinary lifecycle service")
+            forbidden_lifecycle = [] if lifecycle_mode else ["init_module", "cleanup_module"]
+            if not lifecycle_mode:
                 forbidden_lifecycle.extend(("virtnet_probe", "virtnet_remove"))
             for symbol in forbidden_lifecycle:
                 if any(s["name"] == symbol for s in service["symbols"]):
@@ -519,13 +547,13 @@ def build(args, work, profile, data):
                 for symbol in ("jnox_queue_find_vqs", registrar):
                     if not defined(service, symbol, "GLOBAL"):
                         raise ValueError(f"missing queue-service implementation: {symbol}")
-                forbidden = [] if args.lifecycle_service else ["virtnet_open"]
+                forbidden = [] if lifecycle_mode else ["virtnet_open"]
                 if irq_service:
                     forbidden.append("jnox_net_setup_queues")
                 if not poll_service:
                     forbidden.append("virtnet_poll")
                 if data_service:
-                    if receive_service and not args.lifecycle_service:
+                    if receive_service and not lifecycle_mode:
                         forbidden.append("start_xmit")
                     link_map = (work / "service.map").read_text()
                     for name in callbacks:
@@ -543,7 +571,7 @@ def build(args, work, profile, data):
                 peer_source = ROOT / "examples/linux-source-net-rx/peer.c"
                 peer_flags = [*native, "-DJNOX_NATIVE_RX_IRQ_FIXTURE=1"]
                 peer_symbol, peer_words = "jnox_rx_irq_peer", 16
-                if args.lifecycle_service:
+                if lifecycle_mode:
                     param_syms = [s for s in service["symbols"] if s["name"] == "napi_tx" and
                                   s["type"] == "OBJECT" and s["bind"] == "GLOBAL" and s["size"] == 1]
                     supplier = derivative.name + ":(" + napi_parameter["section"] + ")"
@@ -561,6 +589,10 @@ def build(args, work, profile, data):
                     peer_source = ROOT / "examples/linux-source-net-lifecycle/peer.c"
                     peer_flags += ["-DJNOX_NATIVE_LIFECYCLE_FIXTURE=1", "-DJNOX_NATIVE_RX_POLL_FIXTURE=1"]
                     peer_symbol, peer_words = "jnox_lifecycle_peer", 24
+                    if args.lifecycle_failure_service:
+                        peer_source = ROOT / "examples/linux-source-net-lifecycle/failure_peer.c"
+                        peer_flags.append("-DJNOX_LIFECYCLE_FAULT_TEST=1")
+                        peer_symbol, peer_words = "jnox_failure_peer", 40
                 if args.rx_restart_service:
                     peer_source = fixture / "peer.c"
                     peer_symbol, peer_words = "jnox_restart_peer", 32
@@ -578,9 +610,11 @@ def build(args, work, profile, data):
                 if (len(peer_witness) != 1 or peer["undefined"] or not defined(peer, "_start", "GLOBAL")
                         or ".note.jnox.abi" not in peer["sections"]):
                     raise ValueError("IRQ peer lacks its native startup, ABI or expected timing witness")
-                if args.lifecycle_service:
+                if lifecycle_mode:
                     expected = {"jnox_lifecycle_peer": 192, "jnox_lifecycle_peer_frames": 80 * 91,
                                 "jnox_lifecycle_peer_ack": 60, "jnox_lifecycle_peer_second": 120}
+                    if args.lifecycle_failure_service:
+                        expected = {"jnox_failure_peer": 320, "jnox_failure_recovery_bytes": 120}
                     for name, size in expected.items():
                         if len([sym for sym in peer["symbols"] if sym["name"] == name and sym["type"] == "OBJECT"
                                 and sym["bind"] == "GLOBAL" and sym["index"].isdigit() and sym["size"] == size]) != 1:
@@ -656,6 +690,8 @@ def main():
     mode.add_argument("--object-only", action="store_true")
     parser.add_argument("--rx-irq-rearm-test", action="store_true",
                         help="enable the test-only RX IRQ rearm fixture; requires --rx-irq-service")
+    mode.add_argument("--lifecycle-failure-service", action="store_true",
+                      help="link the upstream lifecycle with the test-only failure driver, peer and adapter")
     mode.add_argument("--lifecycle-service", action="store_true",
                       help="link original virtio-net driver, netdev operations and bounded native bus/core")
     mode.add_argument("--rx-restart-service", action="store_true",

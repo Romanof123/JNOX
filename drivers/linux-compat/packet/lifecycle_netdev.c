@@ -5,6 +5,9 @@
 #include <jnox_packet_tx_runtime.h>
 #include <jnox_rx_napi.h>
 #include <lifecycle_netdev.h>
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+#include <lifecycle_faults.h>
+#endif
 #include <linux/if_arp.h>
 #include <linux/jiffies.h>
 #include <linux/netlink.h>
@@ -43,6 +46,23 @@ void jnox_lifecycle_netdev_stats_v1(unsigned long long out[JN_NETDEV_STAT_COUNT]
     for (unsigned int i = 0; i < JN_NETDEV_STAT_COUNT; ++i)
         out[i] = READ_ONCE(journal[i]);
 }
+
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+void jnox_lifecycle_fault_read_netdev_v1(volatile unsigned long long out[JF_FIELDS])
+{
+    out[JF_ALLOCATED_DEV] = (unsigned long)allocated;
+    out[JF_REGISTERED_DEV] = (unsigned long)registered;
+    out[JF_RTNL_OWNER] = (unsigned long)rtnl_owner;
+    out[JF_DEV_FLAGS] = allocated ? allocated->flags : 0;
+    out[JF_DEV_STATE] = allocated ? allocated->state : 0;
+    out[JF_PRIVATE] = allocated ? (unsigned long)netdev_priv(allocated) : 0;
+    out[JF_REG_STATE] = allocated ? allocated->reg_state : 0;
+    out[JF_ALLOCS] = journal[JN_ALLOC];
+    out[JF_FREES] = journal[JN_FREE];
+    out[JF_REGISTRATIONS] = journal[JN_REGISTER];
+    out[JF_UNREGISTRATIONS] = journal[JN_UNREGISTER];
+}
+#endif
 
 static __noreturn void fault(unsigned int reason)
 {
@@ -208,6 +228,10 @@ struct net_device *alloc_netdev_mqs(int bytes, const char *name, unsigned char n
     for (unsigned int i = 0; i < sizeof(pattern); ++i)
         if (name[i] != pattern[i])
             return NULL;
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+    if (jnox_lifecycle_fault_hit_v1(JF_ALLOC, &storage.alignment, __builtin_return_address(0)))
+        return NULL;
+#endif
     memset(&storage, 0, sizeof(storage));
     memset(&tx, 0, sizeof(tx));
     memset(&rx, 0, sizeof(rx));
@@ -438,6 +462,10 @@ int register_netdevice(struct net_device *dev)
     if (!ops || !ops->ndo_open || !ops->ndo_stop || !ops->ndo_start_xmit ||
         !dev->real_num_rx_queues || !dev->real_num_tx_queues)
         return -EINVAL;
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+    if (jnox_lifecycle_fault_hit_v1(JF_REGISTER, dev, __builtin_return_address(0)))
+        return -ENOMEM;
+#endif
     if (ops->ndo_init) {
         int rc = ops->ndo_init(dev);
         if (rc)

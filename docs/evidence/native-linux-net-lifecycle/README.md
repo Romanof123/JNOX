@@ -19,6 +19,6 @@ Check the SHA-256, extract the archive in an empty Linux directory and run `pyth
 
 SHA-256 `1a6bd292ea61c5c65ef591158e3deb0a860a69591c9bd89cf0d153ab6c5a603e`. 빈 디렉터리에 압축을 풀고 위 명령으로 재판독한다. 두 부팅에서 각각 여덟 정지 지점을 대조하고 원본 콜백 포인터, 장치 등록, 명령 추적, 소비자 패킷의 변조 네 종류를 모두 검출했다.
 
-These runs cover successful lifecycle and ingress with acknowledgments sent by the external host. The combined original TX/RX workload is tracked in #426. Forced allocation, registration, notifier and XDP memory-model errors are tracked separately in #438. A driver assertion that parks the guest has a dedicated containment test under #440. Physical MMIO/DMA isolation and product safety approval require target evidence. [Combined transmit/receive #426](https://github.com/Romanof123/JNOX/issues/426) · [Driver assertion #440](https://github.com/Romanof123/JNOX/issues/440)
+These runs cover successful lifecycle and ingress with acknowledgments sent by the external host. The combined original TX/RX workload is tracked in #426. Four provider failures and recovery passed two separate cold boots. [Failure evidence](failures/README.md) A driver assertion that parks the guest has a dedicated containment test under #440. Physical MMIO/DMA isolation and product safety approval require target evidence. [Combined transmit/receive #426](https://github.com/Romanof123/JNOX/issues/426) · [Driver assertion #440](https://github.com/Romanof123/JNOX/issues/440)
 
-이 기록은 정상 수명주기와 외부에서 들어오는 패킷을 검증한다. 단일 워크로드에서의 원본 양방향 송수신, 네 가지 오류 주입, 단언 실패 격리 및 실보드 적격성은 각 항목의 후속 증거로 추적한다.
+이 기록은 정상 수명주기와 외부에서 들어오는 패킷을 검증한다. 단일 워크로드에서의 원본 양방향 송수신, 단언 실패 격리 및 실보드 적격성은 각 항목에서 추적한다. 네 가지 오류 주입과 복구는 별도 기록을 참조한다.

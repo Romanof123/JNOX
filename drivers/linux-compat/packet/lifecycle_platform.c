@@ -4,6 +4,9 @@
 #include <linux/cpu.h>
 #include <linux/dim.h>
 #include <net/xdp.h>
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+#include <lifecycle_faults.h>
+#endif
 #include "lifecycle_platform.h"
 
 atomic_t __num_online_cpus = ATOMIC_INIT(1);
@@ -65,6 +68,16 @@ int __cpuhp_state_add_instance(enum cpuhp_state id, struct hlist_node *node, boo
 {
     struct cpu_state_record *s = cpu_state(id);
     if (!s || !s->registered || !node || node->pprev || s->nodes.first) return -EINVAL;
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+    /* virtnet_cpu_notif_add installs the online node first. Match the
+     * second call only when the sibling really belongs to that instance. */
+    if (s == &dead && !invoke) {
+        struct virtnet_info *vi = container_of(node, struct virtnet_info, node_dead);
+        if (online.nodes.first == &vi->node &&
+            jnox_lifecycle_fault_hit_v1(JF_CPU_DEAD, node, __builtin_return_address(0)))
+            return -ENOMEM;
+    }
+#endif
     if (invoke && s->up) {
         int rc = s->up(0, node);
         if (rc) return rc;
@@ -86,6 +99,15 @@ int __cpuhp_state_remove_instance(enum cpuhp_state id, struct hlist_node *node, 
 
 static struct xdp_rxq_info *registered_rx;
 static bool shared_model;
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+void jnox_lifecycle_fault_read_platform_v1(volatile unsigned long long out[JF_FIELDS])
+{
+    out[JF_ONLINE_NODE] = (unsigned long)online.nodes.first;
+    out[JF_DEAD_NODE] = (unsigned long)dead.nodes.first;
+    out[JF_REGISTERED_RXQ] = (unsigned long)registered_rx;
+    out[JF_SHARED_MODEL] = shared_model;
+}
+#endif
 int __xdp_rxq_info_reg(struct xdp_rxq_info *x, struct net_device *dev, u32 index,
                        unsigned int napi_id, u32 frag_size)
 {
@@ -102,6 +124,10 @@ int xdp_rxq_info_reg_mem_model(struct xdp_rxq_info *x, enum xdp_mem_type type, v
 {
     if (!x || x != registered_rx || shared_model || allocator || type != MEM_TYPE_PAGE_SHARED)
         return -EINVAL;
+#ifdef JNOX_LIFECYCLE_FAULT_TEST
+    if (jnox_lifecycle_fault_hit_v1(JF_XDP_MODEL, x, __builtin_return_address(0)))
+        return -ENOMEM;
+#endif
     x->mem.type = type;
     x->mem.id = 0;
     shared_model = true;

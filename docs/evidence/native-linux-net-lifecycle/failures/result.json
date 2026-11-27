@@ -1,0 +1,1065 @@
+{
+  "checksummed_members": 1459,
+  "builds": {
+    "d97501201ebd4efe600a3d9c379c26ec37935bc65855bafef54911dfe0b90cfa": {
+      "source_commit": "311ebf62b345fb0398b892955e53e5bfbbfeb397",
+      "linux_commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+      "linux_tu_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+      "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+      "compiler_input_count": 973,
+      "roles": [
+        {
+          "role": "driver",
+          "slot": 0,
+          "sha256": "7f7784eb93f3b1cc9b2582ad6f38396257640801c6049443ebdbae368dce0ea0",
+          "source": "examples/linux-source-net-lifecycle/failure_driver.c",
+          "linked_ttbr0_el1": "0x1000040278000",
+          "map_sha256": "25a780ce164c902d3909df69ec830cd6918570ba85f3c637a62382d921b1f09c"
+        },
+        {
+          "role": "peer",
+          "slot": 1,
+          "sha256": "2313d670cea3e5aab9de89f424658feadb2112e04b2abe2ccb6491194649dfdc",
+          "source": "examples/linux-source-net-lifecycle/failure_peer.c",
+          "linked_ttbr0_el1": "0x200004068d000",
+          "map_sha256": "5c8d251f4c681ffed7a3071287d17e245d1ddfe5dd1e1585d527c77fa69dac83"
+        }
+      ],
+      "import_sha256": "2a5950cbaf55b6e8afb64c9a7a9db63d59396e9349bf2200f3b2ed134a25e672",
+      "kernel_sha256": "bc77790d171d73441882befce48f80eb541211ef4e543b24477a51f0192c3882",
+      "objects": {
+        "virtio_net.original.o": "5767a14f1d391e2419240bde3a0dab3c39457b894a35f2de581edce177c4862b",
+        "virtio_net.packet.o": "655914bcdfa0f1629e529e61341d03967c397895f976eeca5b7a1397981381ac",
+        "virtio_net.callback.o": "2a260a1a011aaeb552734a37bcecf12074f84cb08e12af855003e042fc0a3a78"
+      }
+    }
+  },
+  "captures": {
+    "cold-02": {
+      "build_commit": "311ebf62b345fb0398b892955e53e5bfbbfeb397",
+      "observer_commit": "23c04015aa13c17c51ed7cd4c4eb45f0f9812aa7",
+      "kernel_sha256": "bc77790d171d73441882befce48f80eb541211ef4e543b24477a51f0192c3882",
+      "qemu_sha256": null,
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "pinned_board_qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "mac": "52:54:00:19:26:41",
+      "mtu": 1410,
+      "capture_scope": "four injected failures and clean recovery",
+      "replay_commit": "ae110c2af54853043f0f820266721e386665f97b",
+      "checkpoints": [
+        "case-1-armed",
+        "case-1-failed",
+        "case-1-retired",
+        "case-2-armed",
+        "case-2-failed",
+        "case-2-retired",
+        "case-3-armed",
+        "case-3-failed",
+        "case-3-retired",
+        "case-4-armed",
+        "case-4-failed",
+        "case-4-retired",
+        "recovery-ready",
+        "recovery-ack",
+        "final"
+      ],
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observers/ae110c2af54853043f0f820266721e386665f97b/tools/verify_linux_source_net_lifecycle_failures.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "builds/d97501201ebd4efe600a3d9c379c26ec37935bc65855bafef54911dfe0b90cfa/native",
+        "--driver-manifest",
+        "builds/d97501201ebd4efe600a3d9c379c26ec37935bc65855bafef54911dfe0b90cfa/imported/import.json",
+        "--out",
+        "captures/cold-02",
+        "--mac",
+        "52:54:00:19:26:41",
+        "--mtu",
+        "1410"
+      ],
+      "rejected_mutations": [
+        "absent register failure",
+        "unremoved hotplug instance",
+        "false DOWN registration",
+        "corrupted peer nonce"
+      ],
+      "result": {
+        "injected": [
+          {
+            "case": 1,
+            "caller_symbols": [
+              "virtnet_probe"
+            ],
+            "errno": -12,
+            "provider_caller": "0x4167a4",
+            "provider_argument": "0x447e00",
+            "token": 0
+          },
+          {
+            "case": 2,
+            "caller_symbols": [
+              "virtnet_probe"
+            ],
+            "errno": -12,
+            "provider_caller": "0x416d00",
+            "provider_argument": "0x447e00",
+            "token": 1
+          },
+          {
+            "case": 3,
+            "caller_symbols": [
+              "virtnet_cpu_notif_add"
+            ],
+            "errno": -12,
+            "provider_caller": "0x412518",
+            "provider_argument": "0x448970",
+            "token": 2
+          },
+          {
+            "case": 4,
+            "caller_symbols": [
+              "virtnet_enable_queue_pair"
+            ],
+            "errno": -12,
+            "provider_caller": "0x410450",
+            "provider_argument": "0x4207c0",
+            "token": 3
+          }
+        ],
+        "recovery_token": 4,
+        "recovery_frames": 2,
+        "hardware_rx_irqs": 2,
+        "entry_counts": [
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 0,
+            "jnox_lifecycle_fault_hit_v1": 1,
+            "virtnet_probe": 1,
+            "virtnet_open": 0,
+            "virtnet_close": 0,
+            "virtnet_remove": 0,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 0,
+            "free_netdev": 0,
+            "__cpuhp_state_add_instance": 0,
+            "__cpuhp_state_remove_instance": 0,
+            "xdp_rxq_info_reg_mem_model": 0,
+            "xdp_rxq_info_unreg": 0,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 0,
+            "jnox_lifecycle_fault_hit_v1": 2,
+            "virtnet_probe": 1,
+            "virtnet_open": 0,
+            "virtnet_close": 0,
+            "virtnet_remove": 0,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 0,
+            "__cpuhp_state_remove_instance": 0,
+            "xdp_rxq_info_reg_mem_model": 0,
+            "xdp_rxq_info_unreg": 0,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 1,
+            "jnox_lifecycle_fault_hit_v1": 3,
+            "virtnet_probe": 1,
+            "virtnet_open": 0,
+            "virtnet_close": 0,
+            "virtnet_remove": 0,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 2,
+            "__cpuhp_state_remove_instance": 1,
+            "xdp_rxq_info_reg_mem_model": 0,
+            "xdp_rxq_info_unreg": 0,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 1,
+            "jnox_lifecycle_fault_hit_v1": 4,
+            "virtnet_probe": 1,
+            "virtnet_open": 1,
+            "virtnet_close": 0,
+            "virtnet_remove": 1,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 2,
+            "__cpuhp_state_remove_instance": 2,
+            "xdp_rxq_info_reg_mem_model": 1,
+            "xdp_rxq_info_unreg": 1,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 1,
+            "jnox_lifecycle_fault_hit_v1": 4,
+            "virtnet_probe": 1,
+            "virtnet_open": 1,
+            "virtnet_close": 1,
+            "virtnet_remove": 1,
+            "skb_recv_done": 2,
+            "virtnet_poll": 3,
+            "gro_receive_skb": 2,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 2,
+            "__cpuhp_state_remove_instance": 2,
+            "xdp_rxq_info_reg_mem_model": 1,
+            "xdp_rxq_info_unreg": 1,
+            "alloc_netdev_mqs.part.0": 1
+          }
+        ]
+      },
+      "independent": {
+        "replay_argv": [
+          "python3",
+          "-B",
+          "qa/replay.py",
+          "builds/d97501201ebd4efe600a3d9c379c26ec37935bc65855bafef54911dfe0b90cfa",
+          "../../captures/cold-02",
+          "source/linux/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+          "--full"
+        ],
+        "report": {
+          "cases": [
+            {
+              "accounting_delta": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "callback_errno": -12,
+              "caller": 4286368,
+              "case": 1,
+              "name": "netdev allocation",
+              "ownership_at_return": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "provider_argument": 4488704,
+              "returned_resources": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "accounting_delta": [
+                1,
+                1,
+                0,
+                0
+              ],
+              "callback_errno": -12,
+              "caller": 4287740,
+              "case": 2,
+              "name": "netdev registration",
+              "ownership_at_return": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "provider_argument": 4488704,
+              "returned_resources": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "accounting_delta": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "callback_errno": -12,
+              "caller": 4269332,
+              "case": 3,
+              "name": "second CPU notifier",
+              "ownership_at_return": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                2,
+                2,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "provider_argument": 4491632,
+              "returned_resources": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "accounting_delta": [
+                1,
+                0,
+                1,
+                0
+              ],
+              "callback_errno": -12,
+              "caller": 4260940,
+              "case": 4,
+              "name": "PAGE_SHARED registration",
+              "ownership_at_return": [
+                4488704,
+                4488704,
+                0,
+                4098,
+                4491616,
+                4491632,
+                0,
+                0,
+                3,
+                1,
+                4313760,
+                3,
+                2,
+                2,
+                1,
+                2,
+                4324736,
+                4324816,
+                4491328,
+                1
+              ],
+              "provider_argument": 4327360,
+              "returned_resources": [
+                32,
+                49,
+                4341840,
+                0,
+                32,
+                0,
+                2,
+                0
+              ]
+            }
+          ],
+          "frame_sha256": [
+            "eca1d4bce8a896e3f4ccb59044c96d6814757368681d177a04857c23396925fe",
+            "57446a17e83d9a676182133ebeeadadd7a7c5d4af064bdf9f11e0a25e976b7f0"
+          ],
+          "hardware_epochs": [
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_add_instance",
+                "__cpuhp_state_add_instance",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_remove_instance",
+                "unregister_netdev",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                15,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_add_instance",
+                "__cpuhp_state_add_instance",
+                "jnox_lifecycle_fault_hit_v1",
+                "virtnet_open",
+                "xdp_rxq_info_reg_mem_model",
+                "jnox_lifecycle_fault_hit_v1",
+                "xdp_rxq_info_unreg",
+                "virtnet_remove",
+                "__cpuhp_state_remove_instance",
+                "__cpuhp_state_remove_instance",
+                "unregister_netdev",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                15,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_add_instance",
+                "__cpuhp_state_add_instance",
+                "jnox_lifecycle_fault_hit_v1",
+                "virtnet_open",
+                "xdp_rxq_info_reg_mem_model",
+                "jnox_lifecycle_fault_hit_v1",
+                "virtnet_poll",
+                "skb_recv_done",
+                "virtnet_poll",
+                "gro_receive_skb",
+                "skb_recv_done",
+                "virtnet_poll",
+                "gro_receive_skb",
+                "virtnet_close",
+                "xdp_rxq_info_unreg",
+                "virtnet_remove",
+                "__cpuhp_state_remove_instance",
+                "__cpuhp_state_remove_instance",
+                "unregister_netdev",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                15,
+                0
+              ]
+            }
+          ],
+          "recovery_token": 4,
+          "source_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29"
+        }
+      }
+    },
+    "cold-03": {
+      "build_commit": "311ebf62b345fb0398b892955e53e5bfbbfeb397",
+      "observer_commit": "ae110c2af54853043f0f820266721e386665f97b",
+      "kernel_sha256": "bc77790d171d73441882befce48f80eb541211ef4e543b24477a51f0192c3882",
+      "qemu_sha256": null,
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "pinned_board_qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "mac": "52:54:00:19:26:52",
+      "mtu": 1490,
+      "capture_scope": "four injected failures and clean recovery",
+      "replay_commit": "ae110c2af54853043f0f820266721e386665f97b",
+      "checkpoints": [
+        "case-1-armed",
+        "case-1-failed",
+        "case-1-retired",
+        "case-2-armed",
+        "case-2-failed",
+        "case-2-retired",
+        "case-3-armed",
+        "case-3-failed",
+        "case-3-retired",
+        "case-4-armed",
+        "case-4-failed",
+        "case-4-retired",
+        "recovery-ready",
+        "recovery-ack",
+        "final"
+      ],
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observers/ae110c2af54853043f0f820266721e386665f97b/tools/verify_linux_source_net_lifecycle_failures.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "builds/d97501201ebd4efe600a3d9c379c26ec37935bc65855bafef54911dfe0b90cfa/native",
+        "--driver-manifest",
+        "builds/d97501201ebd4efe600a3d9c379c26ec37935bc65855bafef54911dfe0b90cfa/imported/import.json",
+        "--out",
+        "captures/cold-03",
+        "--mac",
+        "52:54:00:19:26:52",
+        "--mtu",
+        "1490"
+      ],
+      "rejected_mutations": [
+        "absent register failure",
+        "unremoved hotplug instance",
+        "false DOWN registration",
+        "corrupted peer nonce"
+      ],
+      "result": {
+        "injected": [
+          {
+            "case": 1,
+            "caller_symbols": [
+              "virtnet_probe"
+            ],
+            "errno": -12,
+            "provider_caller": "0x4167a4",
+            "provider_argument": "0x447e00",
+            "token": 0
+          },
+          {
+            "case": 2,
+            "caller_symbols": [
+              "virtnet_probe"
+            ],
+            "errno": -12,
+            "provider_caller": "0x416d00",
+            "provider_argument": "0x447e00",
+            "token": 1
+          },
+          {
+            "case": 3,
+            "caller_symbols": [
+              "virtnet_cpu_notif_add"
+            ],
+            "errno": -12,
+            "provider_caller": "0x412518",
+            "provider_argument": "0x448970",
+            "token": 2
+          },
+          {
+            "case": 4,
+            "caller_symbols": [
+              "virtnet_enable_queue_pair"
+            ],
+            "errno": -12,
+            "provider_caller": "0x410450",
+            "provider_argument": "0x4207c0",
+            "token": 3
+          }
+        ],
+        "recovery_token": 4,
+        "recovery_frames": 2,
+        "hardware_rx_irqs": 2,
+        "entry_counts": [
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 0,
+            "jnox_lifecycle_fault_hit_v1": 1,
+            "virtnet_probe": 1,
+            "virtnet_open": 0,
+            "virtnet_close": 0,
+            "virtnet_remove": 0,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 0,
+            "free_netdev": 0,
+            "__cpuhp_state_add_instance": 0,
+            "__cpuhp_state_remove_instance": 0,
+            "xdp_rxq_info_reg_mem_model": 0,
+            "xdp_rxq_info_unreg": 0,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 0,
+            "jnox_lifecycle_fault_hit_v1": 2,
+            "virtnet_probe": 1,
+            "virtnet_open": 0,
+            "virtnet_close": 0,
+            "virtnet_remove": 0,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 0,
+            "__cpuhp_state_remove_instance": 0,
+            "xdp_rxq_info_reg_mem_model": 0,
+            "xdp_rxq_info_unreg": 0,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 1,
+            "jnox_lifecycle_fault_hit_v1": 3,
+            "virtnet_probe": 1,
+            "virtnet_open": 0,
+            "virtnet_close": 0,
+            "virtnet_remove": 0,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 2,
+            "__cpuhp_state_remove_instance": 1,
+            "xdp_rxq_info_reg_mem_model": 0,
+            "xdp_rxq_info_unreg": 0,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 1,
+            "jnox_lifecycle_fault_hit_v1": 4,
+            "virtnet_probe": 1,
+            "virtnet_open": 1,
+            "virtnet_close": 0,
+            "virtnet_remove": 1,
+            "skb_recv_done": 0,
+            "virtnet_poll": 0,
+            "gro_receive_skb": 0,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 2,
+            "__cpuhp_state_remove_instance": 2,
+            "xdp_rxq_info_reg_mem_model": 1,
+            "xdp_rxq_info_unreg": 1,
+            "alloc_netdev_mqs.part.0": 1
+          },
+          {
+            "alloc_etherdev_mqs": 1,
+            "unregister_netdev": 1,
+            "jnox_lifecycle_fault_hit_v1": 4,
+            "virtnet_probe": 1,
+            "virtnet_open": 1,
+            "virtnet_close": 1,
+            "virtnet_remove": 1,
+            "skb_recv_done": 2,
+            "virtnet_poll": 3,
+            "gro_receive_skb": 2,
+            "register_netdevice": 1,
+            "free_netdev": 1,
+            "__cpuhp_state_add_instance": 2,
+            "__cpuhp_state_remove_instance": 2,
+            "xdp_rxq_info_reg_mem_model": 1,
+            "xdp_rxq_info_unreg": 1,
+            "alloc_netdev_mqs.part.0": 1
+          }
+        ]
+      },
+      "independent": {
+        "replay_argv": [
+          "python3",
+          "-B",
+          "qa/replay.py",
+          "builds/d97501201ebd4efe600a3d9c379c26ec37935bc65855bafef54911dfe0b90cfa",
+          "../../captures/cold-03",
+          "source/linux/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+          "--full"
+        ],
+        "report": {
+          "cases": [
+            {
+              "accounting_delta": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "callback_errno": -12,
+              "caller": 4286368,
+              "case": 1,
+              "name": "netdev allocation",
+              "ownership_at_return": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "provider_argument": 4488704,
+              "returned_resources": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "accounting_delta": [
+                1,
+                1,
+                0,
+                0
+              ],
+              "callback_errno": -12,
+              "caller": 4287740,
+              "case": 2,
+              "name": "netdev registration",
+              "ownership_at_return": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "provider_argument": 4488704,
+              "returned_resources": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "accounting_delta": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "callback_errno": -12,
+              "caller": 4269332,
+              "case": 3,
+              "name": "second CPU notifier",
+              "ownership_at_return": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                2,
+                2,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "provider_argument": 4491632,
+              "returned_resources": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "accounting_delta": [
+                1,
+                0,
+                1,
+                0
+              ],
+              "callback_errno": -12,
+              "caller": 4260940,
+              "case": 4,
+              "name": "PAGE_SHARED registration",
+              "ownership_at_return": [
+                4488704,
+                4488704,
+                0,
+                4098,
+                4491616,
+                4491632,
+                0,
+                0,
+                3,
+                1,
+                4313760,
+                3,
+                2,
+                2,
+                1,
+                2,
+                4324736,
+                4324816,
+                4491328,
+                1
+              ],
+              "provider_argument": 4327360,
+              "returned_resources": [
+                32,
+                49,
+                4341840,
+                0,
+                32,
+                0,
+                2,
+                0
+              ]
+            }
+          ],
+          "frame_sha256": [
+            "f530f6fac840d5c5d8b62b1046aab0c4ffb10560903b0b1b0e8fa6d140d9c068",
+            "398756d1be7d067c9a10a067269c4c3edee25f3452364a5f49a7bb4dffaa2825"
+          ],
+          "hardware_epochs": [
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_add_instance",
+                "__cpuhp_state_add_instance",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_remove_instance",
+                "unregister_netdev",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                15,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_add_instance",
+                "__cpuhp_state_add_instance",
+                "jnox_lifecycle_fault_hit_v1",
+                "virtnet_open",
+                "xdp_rxq_info_reg_mem_model",
+                "jnox_lifecycle_fault_hit_v1",
+                "xdp_rxq_info_unreg",
+                "virtnet_remove",
+                "__cpuhp_state_remove_instance",
+                "__cpuhp_state_remove_instance",
+                "unregister_netdev",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                15,
+                0,
+                0
+              ]
+            },
+            {
+              "calls": [
+                "virtnet_probe",
+                "jnox_lifecycle_fault_hit_v1",
+                "register_netdevice",
+                "jnox_lifecycle_fault_hit_v1",
+                "__cpuhp_state_add_instance",
+                "__cpuhp_state_add_instance",
+                "jnox_lifecycle_fault_hit_v1",
+                "virtnet_open",
+                "xdp_rxq_info_reg_mem_model",
+                "jnox_lifecycle_fault_hit_v1",
+                "virtnet_poll",
+                "skb_recv_done",
+                "virtnet_poll",
+                "gro_receive_skb",
+                "skb_recv_done",
+                "virtnet_poll",
+                "gro_receive_skb",
+                "virtnet_close",
+                "xdp_rxq_info_unreg",
+                "virtnet_remove",
+                "__cpuhp_state_remove_instance",
+                "__cpuhp_state_remove_instance",
+                "unregister_netdev",
+                "free_netdev"
+              ],
+              "status": [
+                1,
+                3,
+                11,
+                15,
+                0
+              ]
+            }
+          ],
+          "recovery_token": 4,
+          "source_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29"
+        }
+      }
+    }
+  }
+}
