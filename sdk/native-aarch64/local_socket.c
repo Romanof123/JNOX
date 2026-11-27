@@ -13,7 +13,7 @@ _Static_assert(sizeof(struct sockaddr_in) == 16 &&
 enum { FD_BASE = 64, FD_COUNT = 4, PATH_MAX_BYTES = 31, DATA_MAX = 64 };
 enum { OP_SOCKET = 1, OP_BIND, OP_CONNECT, OP_LISTEN, OP_ACCEPT, OP_SEND,
        OP_RECV, OP_SHUTDOWN, OP_CLOSE, OP_SOCKET4, OP_BIND4, OP_CONNECT4,
-       OP_SEND4, OP_RECV4, OP_SEND_RIGHTS, OP_RECV_RIGHTS };
+       OP_SEND4, OP_RECV4, OP_SEND_RIGHTS, OP_RECV_RIGHTS, OP_GETSOCKNAME, OP_GETPEERNAME };
 static struct descriptor { unsigned char kind, nonblock, family, cloexec; } descriptors[FD_COUNT];
 static uint64_t broker_pid;
 static unsigned char configured, active;
@@ -245,6 +245,24 @@ static long read_response(struct descriptor desc, unsigned char *data, unsigned 
     }
     return flags & MSG_TRUNC ? full : used;
 }
+static int socket_name(int fd, unsigned op, struct sockaddr *addr, socklen_t *len) {
+    if (!addr || !len) return error(EFAULT);
+    if (!enter()) return -1;
+    struct transaction t = {0};
+    long r = prepare(&t, op, fd);
+    if (r == 0 && descriptors[t.slot].family != AF_UNIX) r = -ENOTSUP;
+    if (r == 0) r = commit(&t);
+    if (r > 0) r = -EIO;
+    if (r == 0) r = read_response(descriptors[t.slot], 0, 0, 0, 0, addr, len);
+    return finish(r);
+}
+int getsockname(int fd, struct sockaddr *addr, socklen_t *len) {
+    return socket_name(fd, OP_GETSOCKNAME, addr, len);
+}
+int getpeername(int fd, struct sockaddr *addr, socklen_t *len) {
+    return socket_name(fd, OP_GETPEERNAME, addr, len);
+}
+
 ssize_t recvfrom(int fd, void *buf, size_t len, int flags,
                  struct sockaddr *addr, socklen_t *addrlen) {
     if (flags & ~(MSG_TRUNC | MSG_DONTWAIT)) return error(ENOTSUP);

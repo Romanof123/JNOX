@@ -2,22 +2,7 @@
  * Contention sleeps on the JNOX monotonic clock for one millisecond. */
 #include "pthread.h"
 #include <errno.h>
-#include "jnox/ipc.h"
-#include "jnox/native_abi.h"
-
-static int pause_waiter(void)
-{
-    struct { long sec, ns; } now;
-    long r = jnox_ipc_trap(JNOX_CALL_CLOCK_GETTIME, 1, (uintptr_t)&now, 0).status;
-    if (r) return EIO;
-    now.ns += 1000000;
-    if (now.ns >= 1000000000) {
-        now.ns -= 1000000000;
-        ++now.sec;
-    }
-    r = jnox_ipc_trap(JNOX_CALL_CLOCK_NANOSLEEP, 1, 1, (uintptr_t)&now).status;
-    return r == 0 || r == -4 ? 0 : EIO;
-}
+int jnox_graphics_pause_waiter(void);
 
 int pthread_mutex_init(pthread_mutex_t *m, const pthread_mutexattr_t *attr)
 {
@@ -28,7 +13,7 @@ int pthread_mutex_init(pthread_mutex_t *m, const pthread_mutexattr_t *attr)
 int pthread_mutex_lock(pthread_mutex_t *m)
 {
     while (__atomic_exchange_n(&m->locked, 1, __ATOMIC_ACQUIRE)) {
-        int r = pause_waiter();
+        int r = jnox_graphics_pause_waiter();
         if (r) return r;
     }
     return 0;
@@ -48,24 +33,75 @@ int pthread_cond_init(pthread_cond_t *c, const pthread_condattr_t *attr)
     *c = (pthread_cond_t){0};
     return 0;
 }
+/* A waiter owns its node until it has unregistered and reacquired its mutex.
+ * All list accesses and notification flags are serialized by this guard. */
+struct jnox_cond_waiter {
+    struct jnox_cond_waiter *next;
+    unsigned notified;
+};
+
+static void cond_lock(pthread_cond_t *c)
+{
+    while (__atomic_exchange_n(&c->guard, 1, __ATOMIC_ACQUIRE)) { }
+}
+
+static void cond_unlock(pthread_cond_t *c)
+{
+    __atomic_store_n(&c->guard, 0, __ATOMIC_RELEASE);
+}
+
 int pthread_cond_destroy(pthread_cond_t *c)
 {
-    return __atomic_load_n(&c->waiters, __ATOMIC_RELAXED) ? EBUSY : 0;
+    cond_lock(c);
+    int r = c->head ? EBUSY : 0;
+    cond_unlock(c);
+    return r;
 }
-int pthread_cond_broadcast(pthread_cond_t *c)
+
+int pthread_cond_signal(pthread_cond_t *c)
 {
-    __atomic_add_fetch(&c->generation, 1, __ATOMIC_RELEASE);
+    cond_lock(c);
+    for (struct jnox_cond_waiter *w = c->head; w; w = w->next) {
+        if (!w->notified) {
+            w->notified = 1;
+            break;
+        }
+    }
+    cond_unlock(c);
     return 0;
 }
+
+int pthread_cond_broadcast(pthread_cond_t *c)
+{
+    cond_lock(c);
+    for (struct jnox_cond_waiter *w = c->head; w; w = w->next)
+        w->notified = 1;
+    cond_unlock(c);
+    return 0;
+}
+
 int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m)
 {
-    uint64_t start = __atomic_load_n(&c->generation, __ATOMIC_ACQUIRE);
-    __atomic_add_fetch(&c->waiters, 1, __ATOMIC_RELAXED);
+    struct jnox_cond_waiter waiter = {0};
+    cond_lock(c);
+    waiter.next = c->head;
+    c->head = &waiter;
     pthread_mutex_unlock(m);
+    cond_unlock(c);
+
     int r = 0;
-    while (__atomic_load_n(&c->generation, __ATOMIC_ACQUIRE) == start && !r)
-        r = pause_waiter();
+    cond_lock(c);
+    while (!waiter.notified && !r) {
+        cond_unlock(c);
+        r = jnox_graphics_pause_waiter();
+        cond_lock(c);
+    }
+    cond_unlock(c);
     int lock_result = pthread_mutex_lock(m);
-    __atomic_sub_fetch(&c->waiters, 1, __ATOMIC_RELAXED);
+    cond_lock(c);
+    struct jnox_cond_waiter **link = &c->head;
+    while (*link != &waiter) link = &(*link)->next;
+    *link = waiter.next;
+    cond_unlock(c);
     return lock_result ? lock_result : r;
 }

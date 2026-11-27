@@ -12,7 +12,8 @@ int main(void)
     pthread_mutex_t mutex;
     pthread_cond_t condition;
     if (pthread_mutex_init(&mutex, NULL) || pthread_cond_init(&condition, NULL) ||
-        pthread_mutex_lock(&mutex) || pthread_cond_broadcast(&condition) ||
+        pthread_mutex_lock(&mutex) || pthread_cond_signal(&condition) ||
+        pthread_cond_broadcast(&condition) ||
         pthread_mutex_unlock(&mutex) || pthread_cond_destroy(&condition) ||
         pthread_mutex_destroy(&mutex)) return 10;
     if (jnox_socket_broker(3)) return 11;

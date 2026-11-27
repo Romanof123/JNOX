@@ -1,0 +1,7 @@
+  CC       xcb_in.lo
+  CC       xcb_util.lo
+  CC       xcb_auth.lo
+  CCLD     libxcb.la
+checking whether malloc(0) returns NULL... yes
+  CC       xim_trans.lo
+<font-prefix>/share/pkgconfig/../../include/X11/Xtrans/Xtransint.h:105:12: fatal error: 'sys/utsname.h' file not found

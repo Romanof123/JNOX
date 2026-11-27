@@ -13,7 +13,7 @@ mkdir "$out"
 exec > >(tee "$out/build.log") 2>&1
 mkdir "$out/src"
 printf '%s\n' "$revision" > "$out/source-commit"
-"${source_git[@]}" archive "$revision" verification/xwayland sdk/native-aarch64/include | tar xf - -C "$out/src"
+"${source_git[@]}" archive "$revision" verification/xwayland sdk/native-aarch64 | tar xf - -C "$out/src"
 driver="$out/src/verification/xwayland"
 export MESON="${MESON:-meson}"
 export JNOX_GRAPHICS_RUNTIME="${JNOX_GRAPHICS_RUNTIME:-$lab/graphics-runtime}"
@@ -30,8 +30,14 @@ pin 89cf9ffa6bf9f88e9e04caf9c275951645a1b9951b2ef5c781e4e964e76e5a87 "$rt/start.
 pin 49f12564c105d16e0f9ff821b3b415f08a8a6f308ce94aa37a6af5d05cfbe185 "$font/lib/libXfont2.a"
 pin 31b3480f7bee59b0d17da9e2db808c0c713dc78fbe2fbe725d3e2a6b64e93e2f "$font/lib/libfontenc.a"
 pin ea51270835a8c27b8ec7c9e0831fdf55dfb0b54212fbb9db793594001a957fa7 "$font/lib/libz.a"
+os="$out/os-prefix"
+mkdir -p "$os/lib"
+cp -R "$rt/target/include" "$os/include"
+ln -s "$rt/target/lib/libc.a" "$os/lib/libc.a"
+python3 "$out/src/sdk/native-aarch64/graphics/os/install.py" --prefix "$os"
+pin 88c993c67fd473d25be7e308d1bae0a9d48295b37e3360fe7c686b659e9a0479 "$os/lib/libjnox-wayland-os.a"
 sh "$driver/xcvt/build.sh" "$inputs/libxcvt-0.1.3.tar.xz" "$out/xcvt" "$out/xcvt-prefix"
 python3 "$driver/xkb-build.py" --build-executable --cache "$inputs" \
   --out "$out/server" --runtime "$rt" --runtime-profile-sha256 "${JNOX_WAYLAND_PROFILE_SHA256:-00266859edb773b5fcad350d35d3e3b7f58621599014b666cc8e8ed308081643}" \
   --protocols "$font" --wayland-work "$wl" --server "$inputs/xwayland-24.1.6.tar.xz" \
-  --xcvt-prefix "$out/xcvt-prefix" --os-prefix "$rt/target" --libmd-source "$inputs/libmd_1.1.0.orig.tar.xz"
+  --xcvt-prefix "$out/xcvt-prefix" --os-prefix "$os" --libmd-source "$inputs/libmd_1.1.0.orig.tar.xz"

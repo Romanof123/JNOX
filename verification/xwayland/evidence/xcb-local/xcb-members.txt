@@ -1,0 +1,11 @@
+xcb_conn.o
+xcb_out.o
+xcb_in.o
+xcb_ext.o
+xcb_xid.o
+xcb_list.o
+xcb_util.o
+xcb_auth.o
+xproto.o
+bigreq.o
+xc_misc.o

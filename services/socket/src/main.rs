@@ -12,6 +12,8 @@ const PAYLOAD: usize = 64;
 const BUFFER: usize = PATH + PAYLOAD;
 const SEND_RIGHTS: u8 = 15;
 const RECV_RIGHTS: u8 = 16;
+const GETSOCKNAME: u8 = 17;
+const GETPEERNAME: u8 = 18;
 
 #[derive(Clone, Copy)]
 struct Request {
@@ -27,7 +29,7 @@ impl Request {
             1 => fd == 0 && path == 0 && payload == 0,
             2 | 3 => path > 0 && arg == 0 && payload == 0,
             4 | 8 => path == 0 && payload == 0,
-            5 | 9 => path == 0 && payload == 0 && arg == 0,
+            5 | 9 | GETSOCKNAME | GETPEERNAME => path == 0 && payload == 0 && arg == 0,
             6 => arg == 0,
             7 | RECV_RIGHTS => usize::from(arg) <= PAYLOAD && path == 0 && payload == 0,
             SEND_RIGHTS => path == 0 && payload != 0,
@@ -179,6 +181,13 @@ fn execute(s: &mut Local, id: usize, r: &Request, token: u64)
         }
         8 => { s.shutdown(id, fd, r.arg)?; 0 }
         9 => { s.close(id, fd)?; 0 }
+        GETSOCKNAME | GETPEERNAME => {
+            let name = s.address(id, fd, r.op == GETPEERNAME)?;
+            let mut response = Response { bytes: [0; BUFFER], count: 0, full: 0, path: name.len(),
+                received_fd: 0, truncated: false };
+            response.bytes[..name.len()].copy_from_slice(name);
+            return Ok((Reply::plain(0), Some(response)));
+        }
         _ => return Err(-22),
     };
     Ok((Reply::plain(count as u64), None))

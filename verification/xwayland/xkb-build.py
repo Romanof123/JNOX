@@ -114,9 +114,11 @@ def main():
         check_archive(xcvt / "lib/libxcvt.a")
         roots.append(xcvt)
         flags.insert(0, "-I" + str(os_prefix / "include/jnox-wayland"))
+        # The base graphics profile embeds its older OS archive by absolute path.
+        ld = [str(os_archive) if Path(arg).name == "libjnox-wayland-os.a" else arg for arg in ld]
         ld = ["-L" + str(prefix / "lib"), "-L" + str(runtime / "target/lib"),
               "-L" + str(protocols / "lib"), "-L" + str(os_prefix / "lib"),
-              "-ljnox-wayland-os", *ld]
+              str(os_archive), *ld]
     if wayland:
         roots.append(wayland / "target")
     pcdirs = [str(p / sub) for p in roots for sub in ("lib/pkgconfig", "share/pkgconfig")]
@@ -199,8 +201,10 @@ def main():
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(sdk / header, dest)
         run("patch", "-p1", "-i", HERE / "xcb-native-stream.patch", cwd=out / "libxcb-1.17.0")
+        run("patch", "-p1", "-i", HERE / "xcb-util-local.patch", cwd=out / "libxcb-1.17.0")
     configure(out / "libxcb-1.17.0", "--disable-shared", "--enable-static")
-    configure(x11, "--disable-shared", "--enable-static", "--disable-xthreads", "--enable-xkb",
+    malloc_options = ["--enable-malloc0returnsnull"] if args.build_executable else []
+    configure(x11, *malloc_options, "--disable-shared", "--enable-static", "--disable-xthreads", "--enable-xkb",
               "--disable-loadable-i18n", "--disable-loadable-xcursor", "--disable-composecache",
               "--disable-specs", "--disable-xf86bigfont")
     for archive_name in ("libXau.a", "libxcb.a", "libX11.a"):

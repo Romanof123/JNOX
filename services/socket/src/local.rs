@@ -20,7 +20,7 @@ impl Attachment {
     const EMPTY: Self = Self { escrow: 0, socket: 0, offset: 0 };
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 struct Name {
     bytes: [u8; 31],
     len: usize,
@@ -65,7 +65,7 @@ impl Record {
 enum Link {
     Unconnected,
     Peer(usize),
-    Closed,
+    Closed(Name),
 }
 #[derive(Clone, Copy)]
 struct Socket {
@@ -156,6 +156,19 @@ impl Local {
     pub fn require_stream(&self, owner: usize, fd: u8) -> Result<(), i32> {
         if self.objects[self.id(owner, fd)?].kind == STREAM { Ok(()) } else { Err(-95) }
     }
+    pub fn address(&self, owner: usize, fd: u8, peer: bool) -> Result<&[u8], i32> {
+        let socket = &self.objects[self.id(owner, fd)?];
+        let name = if peer {
+            match &socket.peer {
+                Link::Unconnected => return Err(-107),
+                Link::Peer(id) => &self.objects[*id].name,
+                Link::Closed(name) => name,
+            }
+        } else {
+            &socket.name
+        };
+        Ok(&name.bytes[..name.len])
+    }
     fn id(&self, owner: usize, fd: u8) -> Result<usize, i32> {
         self.fds
             .get(owner)
@@ -178,7 +191,7 @@ impl Local {
         let mut ready = 0;
         if !s.read_open || s.nbytes > 0 || s.nrecords > 0 { ready |= IN; }
         match s.peer {
-            Link::Closed => {
+            Link::Closed(_) => {
                 ready |= HUP;
                 ready |= if s.kind == DGRAM { ERR } else { IN };
             }
@@ -320,7 +333,7 @@ impl Local {
             Some(_) => return Err(-106),
             None => match src.peer {
                 Link::Peer(n) => n,
-                Link::Closed => return Err(-32),
+                Link::Closed(_) => return Err(-32),
                 Link::Unconnected => return Err(if src.kind == DGRAM { -89 } else { -107 }),
             },
         };
@@ -370,7 +383,7 @@ impl Local {
         if !src.write_open { return Err(-32); }
         let dst = match src.peer {
             Link::Peer(index) => index,
-            Link::Closed => return Err(-32),
+            Link::Closed(_) => return Err(-32),
             Link::Unconnected => return Err(-107),
         };
         let receiver = &self.objects[dst];
@@ -389,7 +402,7 @@ impl Local {
         }
         let eof = s.kind != DGRAM
             && match s.peer {
-                Link::Closed => true,
+                Link::Closed(_) => true,
                 Link::Peer(n) => !self.objects[n].write_open,
                 Link::Unconnected => false,
             };
@@ -422,7 +435,7 @@ impl Local {
             s.nbytes -= n;
             Ok(Received { escrow, ..Received::new(n, n, Name::EMPTY) })
         } else {
-            if s.nrecords == 0 && s.kind == DGRAM && s.peer == Link::Closed {
+            if s.nrecords == 0 && s.kind == DGRAM && matches!(s.peer, Link::Closed(_)) {
                 return Err(-111);
             }
             if s.nrecords == 0 {
@@ -462,9 +475,11 @@ impl Local {
         Ok(())
     }
     fn discard(&mut self, id: usize) {
+        let name = self.objects[id].name;
         for s in &mut self.objects {
             if s.peer == Link::Peer(id) {
-                s.peer = Link::Closed;
+                // The peer object's slot may be reused before this endpoint closes.
+                s.peer = Link::Closed(name);
             }
         }
         self.objects[id] = Socket::EMPTY;
@@ -503,6 +518,48 @@ mod tests {
         s.connect(1, c, b"/service").unwrap();
         (l, c, s.accept(0, l).unwrap())
     }
+    #[test]
+    fn accepted_names_are_owner_local_and_outlive_peer_disposal() {
+        for kind in [STREAM, SEQ] {
+            let mut s = Local::new();
+            let (listener, client, accepted) = pair(&mut s, kind);
+            assert_eq!(s.address(0, listener, false), Ok(&b"/service"[..]));
+            assert_eq!(s.address(0, listener, true), Err(-107));
+            assert_eq!(s.address(0, accepted, false), Ok(&b"/service"[..]));
+            assert_eq!(s.address(0, accepted, true), Ok(&b""[..]));
+            assert_eq!(s.address(1, client, false), Ok(&b""[..]));
+            assert_eq!(s.address(1, client, true), Ok(&b"/service"[..]));
+            assert_eq!(s.address(1, accepted, true), Err(-9));
+            assert_eq!(s.address(2, client, false), Err(-9));
+            s.close(0, accepted).unwrap();
+            let replacement = s.socket(2, kind).unwrap();
+            s.bind(2, replacement, b"/replacement").unwrap();
+            assert_eq!(s.address(1, client, true), Ok(&b"/service"[..]));
+            s.close(0, listener).unwrap();
+            assert_eq!(s.recv(1, client, &mut [0;1]).unwrap().count, 0);
+            s.exit(1);
+            assert_eq!(s.address(1, client, true), Err(-9));
+        }
+    }
+
+    #[test]
+    fn named_peer_survives_exit_and_datagram_reconnect_selects_new_peer() {
+        let mut s = Local::new();
+        let a = s.socket(0, DGRAM).unwrap();
+        let b = s.socket(1, DGRAM).unwrap();
+        assert_eq!(s.address(0, a, true), Err(-107));
+        s.bind(0, a, b"/A").unwrap();
+        s.bind(1, b, b"/B").unwrap();
+        s.connect(0, a, b"/B").unwrap();
+        s.exit(1);
+        let c = s.socket(1, DGRAM).unwrap();
+        s.bind(1, c, b"/C").unwrap();
+        assert_eq!(s.address(0, a, true), Ok(&b"/B"[..]));
+        s.connect(0, a, b"/C").unwrap();
+        assert_eq!(s.address(0, a, true), Ok(&b"/C"[..]));
+        assert_eq!(s.address(0, a, false), Ok(&b"/A"[..]));
+    }
+
     #[test]
     fn stream_coalesces_splits_partially_writes_and_drains_before_eof() {
         let mut s = Local::new();

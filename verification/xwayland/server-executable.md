@@ -15,3 +15,7 @@ The full chain uses target libXau, generated libxcb, libX11, libxkbfile, libmd f
 The archive-only XKB guest passed previously. The complete X11 client transport and server binary still require a new build. libxcb's xcb_conn.c and xcb_util.c include socket/network declarations and use poll/nonblocking I/O. The graphics OS overlay currently covers AF_UNIX, a bounded broker, poll and process-private synchronization. libXau also uses filesystem and process identity calls. The font lsfontdir utility previously failed to link open/stat/fstat, which may affect the complete server. Record the first actual compiler or linker failure and its originating object. Hardware scanout, input, socket namespace creation and runtime limits require guest evidence after static linking.
 
 The [libmd 1.1.0 source archive](https://deb.debian.org/debian/pool/main/libm/libmd/libmd_1.1.0.orig.tar.xz) is pinned by SHA-256 in the driver. The build retains its original COPYING.
+
+The updated driver assembles the socket-name and condition-variable adapter from the selected revision. The completed XCB archive, ordinary application exit records, and next libX11 compiler boundary are recorded in [the XCB results](evidence/xcb-local/README.md).
+
+현재 드라이버는 선택한 소스로 소켓 이름·조건 변수 어댑터를 구성한다. XCB 정적 라이브러리와 일반 앱 종료 기록, 후속 libX11 컴파일 결과는 위 검증 문서에 있다.

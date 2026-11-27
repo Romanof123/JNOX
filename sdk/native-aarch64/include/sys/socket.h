@@ -66,6 +66,8 @@ int bind(int fd, const struct sockaddr *addr, socklen_t len);
 int connect(int fd, const struct sockaddr *addr, socklen_t len);
 int listen(int fd, int backlog);
 int accept(int fd, struct sockaddr *addr, socklen_t *len);
+int getsockname(int fd, struct sockaddr *addr, socklen_t *len);
+int getpeername(int fd, struct sockaddr *addr, socklen_t *len);
 ssize_t send(int fd, const void *buf, size_t len, int flags);
 ssize_t recv(int fd, void *buf, size_t len, int flags);
 ssize_t sendmsg(int fd, const struct msghdr *message, int flags);

@@ -1,0 +1,8 @@
+name-controls3/sdk/uart.log
+NATIVE EL0 EXIT PID 0 77
+NATIVE EL0 EXIT PID 1 0
+name-controls3/picolibc/uart.log
+NATIVE EL0 EXIT PID 0 77
+NATIVE EL0 EXIT PID 1 0
+malloc/uart.log
+NATIVE EL0 EXIT 66
