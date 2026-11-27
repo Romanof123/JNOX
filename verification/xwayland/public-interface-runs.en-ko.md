@@ -2,6 +2,8 @@
 
 CHG-340 · REQ-015/024 · DES-009/013 · VER-015/024. These serialized AArch64 QEMU virt runs exercised C applications and native JNOX services. Exit codes listed together are in ascending kernel slot order, starting at slot 0. Each row identifies the exact local Git revision used to build the public-source candidate. [OS interfaces #471](https://github.com/Romanof123/JNOX/issues/471) · [Filesystem #459](https://github.com/Romanof123/JNOX/issues/459)
 
+The published commits below have identical Git trees to their tested local revisions. [`fd6657c5` source](https://github.com/Romanof123/JNOX/tree/6f8615a4a3856c1e8f7cdaa6ff7644f45158a136) · [`3e3a740` source](https://github.com/Romanof123/JNOX/tree/2407815ca9599d1cead965c948232a0ecada71b2) · [`dcf8a47` source](https://github.com/Romanof123/JNOX/tree/961a415b4c653338f92bd348a59eef578fd9ce0e) · [`da86130` source](https://github.com/Romanof123/JNOX/tree/fb5bb78467140a476605b27bdc881671fbb3eb84)
+
 | Source revision | Guest selection | Observed exit codes |
 | --- | --- | --- |
 | `fd6657c5` | One Picolibc caller exercised six cases in one boot: clock resolution, shrink seals, descriptor limit, two-second sleep, anonymous file offsets and service credentials. This revision has the same tree as public PR #473. | Caller 86. [Six-case receipt](https://github.com/Romanof123/JNOX/pull/473) |
