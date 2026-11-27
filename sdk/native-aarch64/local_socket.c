@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <sys/ioctl.h>
 #include <jnox/ipc.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -13,7 +14,7 @@ _Static_assert(sizeof(struct sockaddr_in) == 16 &&
 enum { FD_BASE = 64, FD_COUNT = 4, PATH_MAX_BYTES = 31, DATA_MAX = 64 };
 enum { OP_SOCKET = 1, OP_BIND, OP_CONNECT, OP_LISTEN, OP_ACCEPT, OP_SEND,
        OP_RECV, OP_SHUTDOWN, OP_CLOSE, OP_SOCKET4, OP_BIND4, OP_CONNECT4,
-       OP_SEND4, OP_RECV4, OP_SEND_RIGHTS, OP_RECV_RIGHTS, OP_GETSOCKNAME, OP_GETPEERNAME };
+       OP_SEND4, OP_RECV4, OP_SEND_RIGHTS, OP_RECV_RIGHTS, OP_GETSOCKNAME, OP_GETPEERNAME, OP_UNREAD_BYTES };
 static struct descriptor { unsigned char kind, nonblock, family, cloexec; } descriptors[FD_COUNT];
 static uint64_t broker_pid;
 static unsigned char configured, active;
@@ -256,6 +257,21 @@ static int socket_name(int fd, unsigned op, struct sockaddr *addr, socklen_t *le
     if (r == 0) r = read_response(descriptors[t.slot], 0, 0, 0, 0, addr, len);
     return finish(r);
 }
+int ioctl(int fd, unsigned long request, void *result) {
+    if (request != FIONREAD) return error(ENOTTY);
+    if (!result) return error(EFAULT);
+    if (!enter()) return -1;
+    struct transaction t = {0};
+    long count = prepare(&t, OP_UNREAD_BYTES, fd);
+    if (count == 0 && descriptors[t.slot].family != AF_UNIX) count = -ENOTSUP;
+    if (count == 0) count = commit(&t);
+    if (count < 0) return finish(count);
+    if (count > DATA_MAX) return finish(-EIO);
+    int bytes = (int)count;
+    __builtin_memcpy(result, &bytes, sizeof(bytes));
+    return finish(0);
+}
+
 int getsockname(int fd, struct sockaddr *addr, socklen_t *len) {
     return socket_name(fd, OP_GETSOCKNAME, addr, len);
 }

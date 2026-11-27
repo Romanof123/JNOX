@@ -7,6 +7,7 @@
 #define EDEADLK 35
 #define EINTR 4
 #define EFAULT 14
+#define ENOTTY 25
 #define EOVERFLOW 75
 #define EINVAL 22
 #define ENOSYS 38

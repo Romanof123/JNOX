@@ -25,6 +25,7 @@ void jnox_graphics_errno(int code)
     case 17: errno = EEXIST; break;
     case 23: errno = ENFILE; break;
     case 24: errno = EMFILE; break;
+    case 25: errno = ENOTTY; break;
     case 28: errno = ENOSPC; break;
     case 32: errno = EPIPE; break;
     case 36: errno = ENAMETOOLONG; break;

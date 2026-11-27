@@ -156,6 +156,12 @@ impl Local {
     pub fn require_stream(&self, owner: usize, fd: u8) -> Result<(), i32> {
         if self.objects[self.id(owner, fd)?].kind == STREAM { Ok(()) } else { Err(-95) }
     }
+    pub fn unread_bytes(&self, owner: usize, fd: u8) -> Result<usize, i32> {
+        let socket = &self.objects[self.id(owner, fd)?];
+        if socket.kind != STREAM { return Err(-95); }
+        if socket.backlog.is_some() { return Err(-22); }
+        Ok(socket.nbytes)
+    }
     pub fn address(&self, owner: usize, fd: u8, peer: bool) -> Result<&[u8], i32> {
         let socket = &self.objects[self.id(owner, fd)?];
         let name = if peer {
@@ -518,6 +524,31 @@ mod tests {
         s.connect(1, c, b"/service").unwrap();
         (l, c, s.accept(0, l).unwrap())
     }
+    #[test]
+    fn unread_stream_bytes_are_owner_local_and_survive_peer_close() {
+        let mut s = Local::new();
+        let (listener, sender, receiver) = pair(&mut s, STREAM);
+        assert_eq!(s.unread_bytes(0, listener), Err(-22));
+        assert_eq!(s.unread_bytes(1, receiver), Err(-9));
+        assert_eq!(s.unread_bytes(1, sender), Ok(0));
+        s.send(1, sender, b"abcdef", None).unwrap();
+        assert_eq!(s.unread_bytes(0, receiver), Ok(6));
+        assert_eq!(s.unread_bytes(0, receiver), Ok(6));
+        assert_eq!(s.recv(0, receiver, &mut [0; 2]).unwrap().count, 2);
+        s.close(1, sender).unwrap();
+        assert_eq!(s.unread_bytes(0, receiver), Ok(4));
+        let mut tail = [0; 4];
+        s.recv(0, receiver, &mut tail).unwrap();
+        assert_eq!(&tail, b"cdef");
+        assert_eq!(s.unread_bytes(0, receiver), Ok(0));
+        s.close(0, receiver).unwrap();
+        assert_eq!(s.unread_bytes(0, receiver), Err(-9));
+        for kind in [DGRAM, SEQ] {
+            let fd = s.socket(1, kind).unwrap();
+            assert_eq!(s.unread_bytes(1, fd), Err(-95));
+        }
+    }
+
     #[test]
     fn accepted_names_are_owner_local_and_outlive_peer_disposal() {
         for kind in [STREAM, SEQ] {
