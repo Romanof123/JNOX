@@ -2542,3 +2542,13 @@ IMP-336,partially-verified-by,VER-011
 VER-004,has-partial-evidence,EVD-336
 VER-011,has-partial-evidence,EVD-336
 IMP-336,tested-in,EVD-336
+CHG-342,affects,REQ-004
+CHG-342,affects,REQ-011
+CHG-342,affects,REQ-015
+CHG-342,affects,REQ-016
+CHG-342,affects,DES-002
+CHG-342,affects,DES-009
+REQ-004,partially-implemented-by,IMP-342
+REQ-011,partially-implemented-by,IMP-342
+REQ-015,partially-implemented-by,IMP-342
+REQ-016,partially-implemented-by,IMP-342

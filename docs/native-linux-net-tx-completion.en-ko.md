@@ -1,4 +1,6 @@
-# Registered TX completion on QEMU virt
+# CHG-342 · Registered TX completion on QEMU virt
+
+REQ-004/011/015/016 · DES-002/009 · VER-004/011/015/016. [TX IRQ acceptance #456](https://github.com/Romanof123/JNOX/issues/456) · [Original driver carryover #3](https://github.com/Romanof123/JNOX/issues/3) · [Driver authority and retirement #5](https://github.com/Romanof123/JNOX/issues/5)
 
 ## Design and implementation
 
@@ -15,7 +17,7 @@ On real SPI 79 delivery EL1 reads and acknowledges the virtio-mmio interrupt sta
 
 ```sh
 python3 tools/build_linux_source_virtio_net.py --source "$source" --headers "$headers" --out "$import" --lifecycle-duplex-service
-python3 tools/build_native_el0.py --board virt --policy fifo --linux-source-net-duplex --elf "$import/service.elf" --peer-elf "$import/peer.elf" --arg t --out "$package"
+python3 tools/build_native_el0.py --board virt --policy fifo --linux-source-net-duplex --priority 8 --peer-priority 8 --elf "$import/service.elf" --peer-elf "$import/peer.elf" --arg t --out "$package"
 python3 tools/verify_linux_source_net_duplex.py --package "$package" --driver-manifest "$import/import.json" --out "$capture" --require-tx-irq --mutation-tests
 python3 tools/verify_linux_source_net_duplex.py --package "$package" --driver-manifest "$import/import.json" --out "$capture" --require-tx-irq --replay
 ```

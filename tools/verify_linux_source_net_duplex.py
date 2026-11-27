@@ -135,7 +135,7 @@ def snapshot(mem,L):
                             require(pte&PA_MASK not in protected|pages[1-i],"user alias of peer or DMA")
             tables=next_tables
     require(int.from_bytes(vread(mem,L["roots"][0],L["ndo"],8),"little")==L["code"]["start_xmit"]["entry"],"live netdev operation")
-    events = mem.read(*L["tx_events"]) if L["tx_events"] else b""
+    events = area(mem,*L["tx_events"]) if L["tx_events"] else b""
     callbacks = groups[0].get("jnox_duplex_tx_irq", b"")
     peer_denial = int.from_bytes(groups[1].get("jnox_duplex_peer_tx_irq_denial", b""),"little",signed=True)
     return dict(peer_denial=peer_denial,events=list(struct.iter_unpack("<8Q",events)), callbacks=list(struct.iter_unpack("<8Q",callbacks)), grants=grants,driver=unpack(groups[0][DRIVER[0]]),tx=unpack(groups[0][DRIVER[1]]),peer=unpack(groups[1][PEER[0]]),
