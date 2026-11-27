@@ -77,6 +77,23 @@ python3 tools/verify_linux_source_rtc.py --replay --require-gic --package "$work
 
 The replay checks source and ELF identity, RTC register activity, GIC acknowledgement, peer access denial and cleanup. For a network driver, use the separate virtio-net builder and matching AArch64 headers. Its pinned input is Linux stable v6.18.65 commit `4700e3adf3b24b39dd4929e9c6d62811ba3ccea8`, file `drivers/net/virtio_net.c`. Choose the profile that exercises the operation being changed, such as RX IRQ or service restart. Archive the header package and configuration hashes with the object and service ELF. [RTC evidence and commands](https://github.com/Romanof123/JNOX/blob/5dabcd904a83b0301650c971d4eba4e884fd1eb5/docs/evidence/native-linux-source-rtc/README.md) · [Original virtio-net source](https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c) · [Network intake profile](https://github.com/Romanof123/JNOX/blob/5dabcd904a83b0301650c971d4eba4e884fd1eb5/drivers/linux-compat/profiles/virtio-net.json) · [Network builder](https://github.com/Romanof123/JNOX/blob/5dabcd904a83b0301650c971d4eba4e884fd1eb5/tools/build_linux_source_virtio_net.py)
 
+## Run an upstream Wayland client in the guest
+
+The AArch64 virtual display build runs the JNOX compositor and AF_UNIX broker in separate processes. The test client uses the upstream Wayland 1.23.1 library. From a JNOX clone, create a worktree for the verified revision. Follow that revision's build instructions to prepare the pinned input cache, the target graphics runtime with its OS adapter, and the upstream client work directory. [Inputs, build steps and expected output](https://github.com/Romanof123/JNOX/blob/aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba/verification/xwayland/client/README.md)
+
+Set `WAYLAND_WORK` to the completed upstream client work directory, `GRAPHICS_RUNTIME` to the target runtime, `INPUT_CACHE` to the pinned source cache and `NEW_OUTPUT` to an unused output path.
+
+```sh
+git fetch origin feature/xwayland-native-port
+git worktree add --detach ../jnox-wayland aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba
+cd ../jnox-wayland
+bash verification/xwayland/client/registry-pair.sh "$WAYLAND_WORK" "$GRAPHICS_RUNTIME" "$INPUT_CACHE" "$NEW_OUTPUT"
+```
+
+Use absolute paths for the three prepared inputs and a fresh output directory. The script boots two images serially. In one, the client's package declares `--env 1:WAYLAND_DISPLAY=/wayland-0` and the client calls `wl_display_connect(NULL)`. In the other, it gives the library a connected FD. In each run the client should receive five registry globals and report two complete bind/release cycles for `wl_output` v3, mode 320×240 and scale 1. Each of the four native processes should exit zero. [Guest UART](https://github.com/Romanof123/JNOX/blob/aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba/verification/xwayland/client/evidence/output-bind/default-display-uart.txt) · [Per-process environment and examples](https://github.com/Romanof123/JNOX/blob/aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba/docs/native-process-environment.en-ko.md)
+
+The X11 client stack has a complete AArch64 static libX11 build. A guest app linked against the archive called `XParseGeometry` and exited 0. Follow #448 for full Xwayland startup and the Mosaic window, and #465 for the five-process authorization tests. [Xlib build and guest result](https://github.com/Romanof123/JNOX/blob/c6be238185967059d174faf091d9f00475e1478c/verification/xwayland/fionread/result.en-ko.md) · [Xwayland #448](https://github.com/Romanof123/JNOX/issues/448) · [Mosaic authorization #465](https://github.com/Romanof123/JNOX/issues/465)
+
 ## Take a change through release
 
 1. **Define the requirement.** Identify the REQ and CHG records, board, roles, externally visible outcome and failure conditions. State timing bounds and the clock used before collecting measurements.
