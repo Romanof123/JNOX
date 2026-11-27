@@ -1,0 +1,7 @@
+--- a/meson.build
++++ b/meson.build
+@@ -71,1 +71,3 @@
+-x11_dep = dependency('x11')
++if host_machine.system() != 'jnox'
++    x11_dep = dependency('x11')
++endif
