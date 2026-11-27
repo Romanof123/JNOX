@@ -1,7 +1,7 @@
 //! Bounded AF_UNIX engine for the EL0 broker. The broker supplies the authenticated
 //! caller slot. Every operation is nonblocking; only -EAGAIN is eligible for retry.
-const CLIENTS: usize = 3;
-const OBJECTS: usize = 8;
+pub const CLIENTS: usize = if cfg!(feature = "display-five-active") { 5 } else { 3 };
+const OBJECTS: usize = if cfg!(feature = "display-five-active") { 12 } else { 8 };
 const FDS: usize = 4;
 const STREAM: u8 = 1;
 const DGRAM: u8 = 2;
@@ -129,6 +129,8 @@ pub struct Local {
     objects: [Socket; OBJECTS],
     fds: [[Option<usize>; FDS]; CLIENTS],
     rights: [Attachment; RIGHTS],
+    #[cfg(feature = "tmpfs")]
+    pub(super) x11_writer: Option<usize>,
 }
 impl Local {
     /// Copy bounded value-only state directly between disjoint private banks.
@@ -136,6 +138,8 @@ impl Local {
         self.objects.copy_from_slice(&source.objects);
         self.fds.copy_from_slice(&source.fds);
         self.rights = source.rights;
+        #[cfg(feature = "tmpfs")]
+        { self.x11_writer = source.x11_writer; }
     }
 
     pub const fn new() -> Self {
@@ -143,6 +147,8 @@ impl Local {
             objects: [Socket::EMPTY; OBJECTS],
             fds: [[None; FDS]; CLIENTS],
             rights: [Attachment::EMPTY; RIGHTS],
+            #[cfg(feature = "tmpfs")]
+            x11_writer: None,
         }
     }
     pub fn escrows(&self) -> [u64; RIGHTS] {
@@ -250,6 +256,16 @@ impl Local {
     pub fn bind(&mut self, owner: usize, fd: u8, path: &[u8]) -> Result<(), i32> {
         let id = self.id(owner, fd)?;
         let name = Name::parse(path)?;
+        #[cfg(feature = "tmpfs")]
+        if let Some(slot) = self.x11_writer {
+            if path == b"/tmp/.X11-unix" { return Err(-98); }
+            if let Some(child) = path.strip_prefix(b"/tmp/.X11-unix/") {
+                if owner != slot { return Err(-13); }
+                if child.is_empty() || child == b"." || child == b".." || child.contains(&b'/') {
+                    return Err(-22);
+                }
+            }
+        }
         if self.objects[id].bound || self.objects[id].peer != Link::Unconnected {
             return Err(-22);
         }
@@ -266,10 +282,10 @@ impl Local {
         if s.kind == DGRAM {
             return Err(-95);
         }
-        if !s.bound || s.peer != Link::Unconnected || !(1..=2).contains(&backlog) {
+        if !s.bound || s.peer != Link::Unconnected || backlog == 0 {
             return Err(-22);
         }
-        s.backlog = Some(backlog);
+        s.backlog = Some(backlog.min(s.pending.len()));
         Ok(())
     }
     pub fn connect(&mut self, owner: usize, fd: u8, path: &[u8]) -> Result<(), i32> {
@@ -661,6 +677,34 @@ mod tests {
         assert_eq!(s.recv(0, a, &mut [0; 1]).unwrap().count, 0);
     }
 
+    #[cfg(feature = "display-five-active")]
+    #[test]
+    fn concurrent_wayland_and_x11_streams_use_authenticated_owner_tables() {
+        let mut s = Local::new();
+        let display = s.socket(0, STREAM).unwrap();
+        s.bind(0, display, b"/wayland-0").unwrap();
+        s.listen(0, display, 2).unwrap();
+        let x11 = s.socket(1, STREAM).unwrap();
+        s.bind(1, x11, b"/tmp/.X11-unix/X0").unwrap();
+        s.listen(1, x11, 1).unwrap();
+        for (client, server, listener, path) in [
+            (1, 0, display, &b"/wayland-0"[..]),
+            (2, 0, display, &b"/wayland-0"[..]),
+            (4, 1, x11, &b"/tmp/.X11-unix/X0"[..]),
+        ] {
+            let socket = s.socket(client, STREAM).unwrap();
+            s.connect(client, socket, path).unwrap();
+            let accepted = s.accept(server, listener).unwrap();
+            s.send(client, socket, &[client as u8], None).unwrap();
+            let mut byte = [0];
+            assert_eq!(s.recv(server, accepted, &mut byte).unwrap().count, 1);
+            assert_eq!(byte, [client as u8]);
+        }
+        s.exit(4);
+        assert!(s.require_stream(1, x11).is_ok());
+        assert!(s.require_stream(0, display).is_ok());
+    }
+
     #[test]
     fn backlog_object_and_owner_limits_reclaim_on_exit() {
         let mut s = Local::new();
@@ -678,6 +722,8 @@ mod tests {
         let accepted = s.accept(0, l).unwrap();
         s.connect(2, c, b"/s").unwrap();
         let last = s.socket(1, STREAM).unwrap();
+        #[cfg(feature = "display-five-active")]
+        for _ in 8..OBJECTS { s.socket(4, STREAM).unwrap(); }
         assert_eq!(s.socket(2, STREAM), Err(-23));
         s.close(1, last).unwrap();
         s.close(0, l).unwrap();

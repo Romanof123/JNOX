@@ -1,6 +1,8 @@
 OUTPUT_FORMAT("elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
 ENTRY(_start)
+/* The resident server selects its arena at link time within the same window. */
+PROVIDE(__jnox_graphics_heap_bytes = 512K);
 PHDRS
 {
     text PT_LOAD FLAGS(5);
@@ -29,7 +31,7 @@ SECTIONS
     .data : { *(.data.private_report) *(.data .data.*) } :rw
     .bss (NOLOAD) : { *(.bss .bss.*) *(COMMON) } :rw
     .heap (NOLOAD) : ALIGN(16) {
-        __heap_start = .; . += 512K; __heap_end = .;
+        __heap_start = .; . += __jnox_graphics_heap_bytes; __heap_end = .;
     } :rw
     ASSERT(_start == 0x00400000, "entry must be first executable byte")
     ASSERT(. <= 0x00800000, "image exceeds the native user window")

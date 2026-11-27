@@ -58,11 +58,13 @@ _Noreturn void abort(void)
 }
 
 extern void __libc_init_array(void);
-extern int main(int argc, char **argv);
+extern char **environ;
+extern int main(int argc, char **argv, char **envp);
 
-_Noreturn void jnox_graphics_start(int argc, char **argv)
+_Noreturn void jnox_graphics_start(int argc, char **argv, char **envp)
 {
+    environ = envp;
     __libc_init_array();
     /* Picolibc pico-exit runs the fini array before calling native _exit. */
-    exit(main(argc, argv));
+    exit(main(argc, argv, environ));
 }

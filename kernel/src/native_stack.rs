@@ -1,8 +1,9 @@
 //! Construct a native-v1 startup tail using user virtual addresses.
 const APP: &[u8] = b"/bin/app";
 const PROBE: &[&[u8]] = &[b"/bin/native_startup_probe", b"8", b"13"];
-const MAX_EXTRAS: usize = 15;
-const MAX_EXTRA_BYTES: usize = 1024;
+#[path = "native_env.rs"]
+mod environment;
+use environment::{MAX_COUNT as MAX_EXTRAS, MAX_BYTES as MAX_EXTRA_BYTES};
 pub(crate) const MAX_TAIL: usize = 1200;
 
 #[derive(Clone, Copy)]
@@ -10,27 +11,49 @@ pub(crate) struct Layout {
     pub(crate) sp: usize,
     pub(crate) len: usize,
     pub(crate) argc: usize,
+    pub(crate) envp: usize,
 }
 
+#[cfg(any(jnox_native_amc, test))]
 pub(crate) fn build(
     extras: &[&[u8]], probe: bool, bottom: usize, top: usize, output: &mut [u8],
 ) -> Option<Layout> {
-    if extras.len() > MAX_EXTRAS || (probe && !extras.is_empty()) || top % 16 != 0 {
+    build_env(extras, &[], probe, bottom, top, output)
+}
+
+pub(crate) fn build_env(
+    extras: &[&[u8]], env: &[&[u8]], probe: bool, bottom: usize, top: usize, output: &mut [u8],
+) -> Option<Layout> {
+    if !fits(extras, env) || !environment::valid(env)
+        || (probe && (!extras.is_empty() || !env.is_empty())) || top % 16 != 0 {
         return None;
     }
-    let extra_bytes = string_bytes(extras)?;
+    let extra_bytes = string_bytes(extras)?.checked_add(string_bytes(env)?)?;
     let primary: &[&[u8]] = if probe { PROBE } else { &[APP] };
     let argc = primary.len().checked_add(extras.len())?;
-    let (offset, len) = if extras.is_empty() {
+    let (offset, len) = if extras.is_empty() && env.is_empty() {
         // Existing ordinary and probe images have a fixed string offset.
         (48, 80)
     } else {
-        // argc, pointers, argv NULL and the empty envp NULL.
-        let header = argc.checked_add(3)?.checked_mul(8)?;
+        // argc, argv pointers and NULL, environment pointers and NULL.
+        let header = (argc + env.len() + 3) * 8;
         let used = header.checked_add(APP.len() + 1)?.checked_add(extra_bytes)?;
         (header, used.checked_add(15)? & !15)
     };
-    encode(primary.iter().chain(extras.iter()).copied(), argc, offset, len, bottom, top, output)
+    encode(primary.iter().chain(extras.iter()).copied(), env, argc, offset, len, bottom, top, output)
+}
+
+pub(crate) const fn fits(argv: &[&[u8]], env: &[&[u8]]) -> bool {
+    if argv.len() + env.len() > MAX_EXTRAS { return false; }
+    let mut total = 0;
+    let mut i = 0;
+    while i < argv.len() + env.len() {
+        let record = if i < argv.len() { argv[i] } else { env[i - argv.len()] };
+        total += record.len() + 1;
+        if total > MAX_EXTRA_BYTES { return false; }
+        i += 1;
+    }
+    true
 }
 
 fn string_bytes(args: &[&[u8]]) -> Option<usize> {
@@ -52,20 +75,23 @@ pub(crate) fn build_argv(argv: &[&[u8]], bottom: usize, top: usize, output: &mut
     let string_len = string_bytes(argv)?;
     let header = (argc + 3) * 8;
     let len = (header + string_len + 15) & !15;
-    encode(argv.iter().copied(), argc, header, len, bottom, top, output)
+    encode(argv.iter().copied(), &[], argc, header, len, bottom, top, output)
 }
 
-fn encode<'a>(args: impl Iterator<Item = &'a [u8]>, argc: usize, mut offset: usize, len: usize,
+fn encode<'a>(args: impl Iterator<Item = &'a [u8]>, env: &[&'a [u8]], argc: usize, mut offset: usize, len: usize,
               bottom: usize, top: usize, output: &mut [u8]) -> Option<Layout> {
     let sp = top.checked_sub(len)?;
     if sp < bottom || len > MAX_TAIL { return None; }
     let tail = output.get_mut(..len)?;
     tail.fill(0);
     tail[..8].copy_from_slice(&(argc as u64).to_le_bytes());
-    for (i, arg) in args.enumerate() {
+    let env_start = argc + 2;
+    let pointers = args.enumerate().map(|(i, arg)| (i + 1, arg))
+        .chain(env.iter().copied().enumerate().map(|(i, arg)| (env_start + i, arg)));
+    for (word, arg) in pointers {
         let end = offset.checked_add(arg.len())?;
         let next = end.checked_add(1)?;
-        let ptr_offset = i.checked_add(1)?.checked_mul(8)?;
+        let ptr_offset = word.checked_mul(8)?;
         let ptr_end = ptr_offset.checked_add(8)?;
         let address = u64::try_from(sp.checked_add(offset)?).ok()?;
         if next > len { return None; }
@@ -73,7 +99,7 @@ fn encode<'a>(args: impl Iterator<Item = &'a [u8]>, argc: usize, mut offset: usi
         tail.get_mut(offset..end)?.copy_from_slice(arg);
         offset = next;
     }
-    Some(Layout { sp, len, argc })
+    Some(Layout { sp, len, argc, envp: sp.checked_add(env_start * 8)? })
 }
 
 #[cfg(test)]
@@ -124,6 +150,39 @@ mod tests {
             let at = 8*(i+1);
             assert_eq!(u64::from_le_bytes(bytes[at..at+8].try_into().unwrap()), layout.sp as u64 + offset);
         }
+    }
+
+    #[test]
+    fn environment_entries_follow_argv_null_and_keep_the_second_null() {
+        let mut out = [0xff; MAX_TAIL];
+        let layout = build_env(&[b"one"], &[b"WAYLAND_DISPLAY=socket", b"_X=", b"A=B=C"],
+            false, 0, 4096, &mut out).unwrap();
+        let word = |i: usize| u64::from_le_bytes(out[8*i..8*i+8].try_into().unwrap()) as usize;
+        assert_eq!((word(0), word(3), word(7)), (2, 0, 0));
+        assert_eq!(layout.envp, layout.sp + 32);
+        for (i, expected) in [(1, &b"/bin/app"[..]), (2,b"one"), (4,b"WAYLAND_DISPLAY=socket"),
+                              (5,b"_X="), (6,b"A=B=C")] {
+            let off = word(i) - layout.sp;
+            assert_eq!(&out[off..off+expected.len()], expected);
+            assert_eq!(out[off + expected.len()], 0);
+        }
+    }
+
+    #[test]
+    fn invalid_environment_and_combined_limits_fail_without_writing() {
+        let mut out = [0xff; MAX_TAIL];
+        for bad in [&b""[..], b"=a", b"1X=a", b"A-B=c", b"name", b"A=\xff", b"A=b\0c"] {
+            assert!(build_env(&[], &[bad], false, 0, 4096, &mut out).is_none());
+        }
+        assert!(build_env(&[], &[b"A=", b"A=b"], false, 0, 4096, &mut out).is_none());
+        assert!(build_env(&[b"".as_slice();15], &[b"A="], false, 0, 4096, &mut out).is_none());
+        let big = [b'x';1021];
+        assert!(build_env(&[&big], &[b"A="], false, 0, 4096, &mut out).is_none());
+        assert!(out.iter().all(|&b| b == 0xff));
+        assert!(build_env(&[&big[..1020]], &[b"A="], false, 0, 4096, &mut out).is_some());
+        let empty = build_env(&[], &[], false, 0, 4096, &mut out).unwrap();
+        assert_eq!((empty.len, empty.envp), (80, empty.sp + 24));
+        assert_eq!(&out[24..32], &[0;8]);
     }
 
     #[test]

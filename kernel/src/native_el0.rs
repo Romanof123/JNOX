@@ -116,7 +116,7 @@ global_asm!(".set NATIVE_PROCESS_SIGNALS,1", include_str!("native_el0_vectors.S"
 #[cfg(not(any(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)), jnox_native_amc, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
-    fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
+    fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64, envp: u64) -> !;
     fn native_sleep_switch(idle_top: *mut u8);
     static native_el0_vectors: u8;
 }
@@ -135,11 +135,21 @@ const PEER2: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer2.elf"
 
 #[cfg(jnox_native_peer3)]
 const PEER3: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer3.elf"));
+#[cfg(jnox_native_peer4)]
+const PEER4: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/native_peer4.elf"));
 include!(concat!(env!("OUT_DIR"), "/native_schedule.rs"));
 const COUNT: usize = NATIVE_PRIORITIES.len();
 #[cfg(jnox_native_fixed)]
 const SERVICE_ACCOUNT: (u16, u16) = include!(concat!(env!("OUT_DIR"), "/native_service_account.rs"));
-const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_peer3) as usize);
+// Also check argv added implicitly by a service or scheduler profile.
+const _: () = {
+    let mut slot = 0;
+    while slot < COUNT {
+        assert!(native_stack::fits(NATIVE_ARGV_EXTRAS[slot], NATIVE_ENV[slot]));
+        slot += 1;
+    }
+};
+const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_peer3) as usize + cfg!(jnox_native_peer4) as usize);
 
 #[derive(Clone, Copy)]
 #[repr(C, align(16))]
@@ -170,7 +180,7 @@ static mut jnox_native_el0_journal: Journal = Journal { header: [0; 16], rows: [
 
 // One terminal assertion per process. Only the masked exception handler on
 // CPU0 writes these kernel-owned records. The user register values are evidence.
-#[cfg(jnox_linux_source_net_rx_irq)]
+#[cfg(any(jnox_linux_source_net_rx_irq, jnox_native_display_standby))]
 #[repr(C)]
 #[derive(Clone, Copy)]
 struct DriverAssertion {
@@ -186,20 +196,22 @@ struct DriverAssertion {
     link_register: u64,
 }
 
-#[cfg(jnox_linux_source_net_rx_irq)]
-#[unsafe(no_mangle)]
+#[cfg(any(jnox_linux_source_net_rx_irq, jnox_native_display_standby))]
+#[cfg_attr(jnox_native_display_standby, unsafe(export_name = "jnox_display_assertions"))]
+#[cfg_attr(jnox_linux_source_net_rx_irq, unsafe(no_mangle))]
 static mut jnox_linux_net_assertions: [DriverAssertion; COUNT] = [DriverAssertion {
     tick: 0, pid: 0, ttbr: 0, vector: 0, esr: 0, elr: 0, spsr: 0,
     far: 0, sp_el0: 0, link_register: 0,
 }; COUNT];
 
-#[cfg(jnox_linux_source_net_rx_irq)]
+#[cfg(any(jnox_linux_source_net_rx_irq, jnox_native_display_standby))]
 const ASSERTION_EVENT: u64 = 0x100;
 
 // One terminal scheduling decision per slot, retained independently of the
 // bounded ordinary scheduler log. Written only after device and IPC teardown.
-#[cfg(jnox_linux_source_net_rx_irq)]
-#[unsafe(no_mangle)]
+#[cfg(any(jnox_linux_source_net_rx_irq, jnox_native_display_standby))]
+#[cfg_attr(jnox_native_display_standby, unsafe(export_name = "jnox_display_retirements"))]
+#[cfg_attr(jnox_linux_source_net_rx_irq, unsafe(no_mangle))]
 static mut jnox_linux_net_assert_exit: [[u64; 6]; COUNT] = [[0; 6]; COUNT];
 
 fn head(index: usize, value: u64) {
@@ -306,6 +318,8 @@ fn count_rx_irq(index: usize) {
 static mut STATES: [TaskState; COUNT] = [TaskState::Absent; COUNT];
 static mut READY: ReadyQueue<COUNT> = ReadyQueue::new();
 static mut CURRENT: usize = 0;
+#[cfg(jnox_native_display_five_active)]
+static mut FIRST_SYSCALL: [bool; COUNT] = [false; COUNT];
 static mut IDLE: context::Stack = context::Stack([0; context::STACK_BYTES]);
 
 fn enqueue(pid: usize) {
@@ -403,6 +417,10 @@ fn dispatch(frame: &mut NativeFrame) {
 static mut FIXED: Option<Fixed> = None;
 static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
 
+#[cfg(jnox_native_display_five_active)]
+#[path = "native_display_fault.rs"]
+mod display_fault;
+
 #[cfg(jnox_native_fixed)]
 #[path = "native_process_groups.rs"]
 mod process_groups;
@@ -428,6 +446,9 @@ mod net_owner;
 #[cfg(jnox_native_display)]
 #[path = "native_ramfb.rs"]
 mod ramfb;
+#[cfg(jnox_native_display_five_active)]
+#[path = "native_display_authority.rs"]
+mod display_authority;
 #[cfg(jnox_native_uart_rx_irq)]
 #[path = "native_uart_rx.rs"]
 mod uart_rx;
@@ -437,7 +458,7 @@ mod pl031;
 #[cfg(jnox_linux_source_net)]
 #[path = "native_linux_net.rs"]
 mod linux_net;
-#[cfg(jnox_native_uart_rx_standby)]
+#[cfg(any(jnox_native_uart_rx_standby, jnox_native_display_standby))]
 #[path = "native_uart_standby.rs"]
 mod uart_standby;
 #[cfg(all(jnox_native_net_service, any(jnox_pi4, not(jnox_native_socket_service),
@@ -453,19 +474,25 @@ fn policy() -> &'static mut Fixed {
     unsafe { (*(&raw mut FIXED)).as_mut().unwrap_or_else(|| fail(9)) }
 }
 
+#[cfg(jnox_native_pointer_tablet)]
+#[path = "native_tablet.rs"]
+mod tablet;
+
 #[cfg(jnox_native_display)]
 const DISPLAY_OWNER: usize = (env!("JNOX_PACKAGED_DISPLAY_SLOT").as_bytes()[0] - b'0') as usize;
 
 #[cfg(jnox_native_display)]
 fn display_call(pid: usize, frame: &NativeFrame) -> i64 {
-    #[cfg(not(jnox_native_uart_rx_standby))]
+    #[cfg(not(any(jnox_native_uart_rx_standby, jnox_native_display_standby)))]
     if pid != DISPLAY_OWNER { return -1; }
-    #[cfg(jnox_native_uart_rx_standby)]
+    #[cfg(any(jnox_native_uart_rx_standby, jnox_native_display_standby))]
     if let Err(err) = uart_standby::authorize(pid, frame.x[8]) { return err; }
     match frame.x[8] {
-        #[cfg(not(jnox_native_uart_rx_standby))]
+        #[cfg(jnox_native_pointer_tablet)]
+        197 => tablet::call(pid, frame.x[0]),
+        #[cfg(not(any(jnox_native_uart_rx_standby, jnox_native_display_standby)))]
         72 => ramfb::init().map_or_else(|err| err, |()| 0),
-        #[cfg(jnox_native_uart_rx_standby)]
+        #[cfg(any(jnox_native_uart_rx_standby, jnox_native_display_standby))]
         72 => uart_standby::init().map_or_else(|err| err, |()| 0),
         73 => {
             let y = frame.x[0] as usize;
@@ -495,6 +522,8 @@ fn activate(next: usize, frame: &mut NativeFrame) {
             native_el0_mmu::switch(next).unwrap_or_else(|_| fail(9));
             *frame = FRAMES[next];
             CURRENT = next;
+            #[cfg(jnox_native_display_standby)]
+            uart_standby::restored(next, FRAMES[next].elr, FRAMES[next].sp_el0);
         }
     }
 }
@@ -519,7 +548,7 @@ mod signal_probe;
 
 const NO_PID: u64 = u64::MAX;
 const RECORD_LIMIT: usize = 128;
-const FIXED_COLUMNS: usize = if cfg!(all(jnox_native_fixed, jnox_native_peer3)) { 4 } else { 3 };
+const FIXED_COLUMNS: usize = if cfg!(jnox_native_peer4) { 5 } else if cfg!(all(jnox_native_fixed, jnox_native_peer3)) { 4 } else { 3 };
 const FIELDS: usize = 12 + 3 * FIXED_COLUMNS;
 static mut DECISIONS: [[u64; FIELDS]; RECORD_LIMIT] = [[0; FIELDS]; RECORD_LIMIT];
 static mut RECORDS: usize = 0;
@@ -582,9 +611,9 @@ fn start_fixed() -> usize {
         _ => fail(9),
     };
     let now = counter();
-    #[cfg(not(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart)))]
+    #[cfg(not(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart)))]
     unsafe { FIXED = Fixed::new(&config, mode, now) };
-    #[cfg(any(jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    #[cfg(any(jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
     unsafe { FIXED = Fixed::new_with_standby(&config, mode, now) };
     #[cfg(jnox_native_shell)]
     unsafe { FIXED = Fixed::new_shell(&config, mode, now) };
@@ -622,8 +651,12 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         let pid = before.pid.unwrap_or_else(|| fail(9));
         linux_net::restart_exit(pid, unsafe { EXIT_STATUS[pid] })
     } else { false };
+    #[cfg(all(jnox_native_pointer_tablet, not(any(jnox_native_uart_rx_standby, jnox_native_display_standby))))]
+    if matches!(action, Action::Exit) {
+        tablet::retire(before.pid.unwrap_or_else(|| fail(9)));
+    }
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
-    #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
+    #[cfg(all(jnox_native_uart_rx_irq, not(any(jnox_native_uart_rx_standby, jnox_native_display_standby))))]
     if matches!(action, Action::Exit) && before.pid == Some(DISPLAY_OWNER) {
         uart_rx::disable();
     }
@@ -641,7 +674,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         loans::exit(p.current().unwrap_or_else(|| fail(9)));
     }
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
-    if !ipc::handles(reason) { ipc::boundary(p, now, matches!(action, Action::Exit)); }
+    if !ipc::handles(reason) {
+        let exiting = matches!(action, Action::Exit).then(|| before.pid.unwrap_or_else(|| fail(9)));
+        ipc::boundary(p, now, exiting);
+    }
     if p.event(now, action) != Some(true) { fail(9) }
     #[cfg(jnox_linux_source_net_restart)]
     if matches!(action, Action::Exit) {
@@ -676,16 +712,16 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     }
     #[cfg(jnox_linux_source_net_rx_irq)]
     if matches!(action, Action::BlockIrq) { count_rx_irq(0); }
-    #[cfg(jnox_native_uart_rx_standby)]
+    #[cfg(any(jnox_native_uart_rx_standby, jnox_native_display_standby))]
     if matches!(action, Action::Exit) {
-        uart_standby::retire(before.pid.unwrap_or_else(|| fail(9)), now, p);
+        uart_standby::retire(before.pid.unwrap_or_else(|| fail(9)), reason, now, p);
     }
     let next = p.current();
     let compare = p.deadline().unwrap_or_else(|_| fail(10));
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     let compare = compare.into_iter().chain(ipc::next_compare()).min();
     arm_compare(compare);
-    #[cfg(jnox_linux_source_net_rx_irq)]
+    #[cfg(any(jnox_linux_source_net_rx_irq, jnox_native_display_standby))]
     if reason == ASSERTION_EVENT {
         let pid = before.pid.unwrap_or_else(|| fail(9));
         let trap_pc = frame.unwrap_or_else(|| fail(9)).elr;
@@ -721,6 +757,8 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
             native_el0_mmu::switch(next).unwrap_or_else(|_| fail(9));
             *f = FRAMES[next];
             CURRENT = next;
+            #[cfg(jnox_native_display_standby)]
+            uart_standby::restored(next, FRAMES[next].elr, FRAMES[next].sp_el0);
         }
         #[cfg(not(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc, jnox_linux_source_net_rx_irq)))]
         activate(next, f);
@@ -728,6 +766,8 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
 }
 
 fn finish_fixed() -> ! {
+    #[cfg(jnox_native_display_five_active)]
+    display_fault::report();
     #[cfg(jnox_native_capability_ipc)]
     ipc::caps::report(1);
     #[cfg(jnox_native_pipe_ipc)]
@@ -762,7 +802,7 @@ fn finish_fixed() -> ! {
             event(b"DISMISSED", pid, None);
             continue;
         }
-        #[cfg(jnox_native_uart_rx_standby)]
+        #[cfg(any(jnox_native_uart_rx_standby, jnox_native_display_standby))]
         if uart_standby::dismissed(pid) {
             event(b"DISMISSED", pid, None);
             continue;
@@ -955,7 +995,7 @@ extern "C" fn native_el0_unexpected() -> ! {
 
 // An A64 BRK raised by a scheduled EL0 process has its own exception class.
 // No syscall operands, frame pointers or user memory are trusted as identity.
-#[cfg(jnox_linux_source_net_rx_irq)]
+#[cfg(any(jnox_linux_source_net_rx_irq, jnox_native_display_standby))]
 fn terminate_asserting_process(f: &mut NativeFrame, vector: u64, vbar: u64,
                               ttbr: u64, far: u64) -> bool {
     const EC_BRK64: u64 = 0x3c;
@@ -967,6 +1007,12 @@ fn terminate_asserting_process(f: &mut NativeFrame, vector: u64, vbar: u64,
     if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64
         || f.current_el != 4 || f.spsr & 0x1f != 0
         || policy().current() != Some(pid) || native_el0_mmu::space_id(pid) != Some(ttbr)
+    {
+        return false;
+    }
+    #[cfg(jnox_native_display_standby)]
+    if !native_el0_mmu::user_return_pc(f.elr as usize)
+        || !(STACK_BOTTOM as u64..=STACK_TOP as u64).contains(&f.sp_el0) || f.sp_el0 % 16 != 0
     {
         return false;
     }
@@ -1001,15 +1047,28 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             out(reg) vbar, out(reg) ttbr, out(reg) far, options(nostack, preserves_flags));
     }
     let count = unsafe { ptr::read_volatile(&raw const jnox_native_el0_journal.header[8]) as usize };
-    #[cfg(jnox_linux_source_net_rx_irq)]
+    #[cfg(any(jnox_linux_source_net_rx_irq, jnox_native_display_standby))]
     if terminate_asserting_process(f, vector, vbar, ttbr, far) { return; }
     #[cfg(jnox_native_proportional)]
     proportional::validate_sync(vector, f, vbar, ttbr, far, entry);
-    if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64
-        || f.current_el != 4 || f.spsr & 0x1f != 0 || f.esr >> 26 != 0x15
+    let from_el0 = vector == 0x400 && vbar == (&raw const native_el0_vectors).addr() as u64
+        && f.current_el == 4 && f.spsr & 0x1f == 0;
+    if !from_el0 || f.esr >> 26 != 0x15
         || f.esr & 0xffff != 0x4a01 || !native_el0_mmu::user_return_pc(f.elr as usize)
         || !(STACK_BOTTOM as u64..=STACK_TOP as u64).contains(&f.sp_el0) || f.sp_el0 % 16 != 0
     {
+        #[cfg(jnox_native_display_five_active)]
+        if from_el0 {
+            let pid = unsafe { CURRENT };
+            event(b"TRAP", pid, Some(((f.esr >> 26) & 63) as i64));
+            if native_el0_mmu::user_return_pc(f.elr as usize) {
+                event(b"TRAP_PC", pid, Some(f.elr as i64));
+            }
+            if display_fault::attributable(f.esr) {
+                display_fault::retire(f, ttbr);
+                return;
+            }
+        }
         #[cfg(jnox_native_edf)]
         if NATIVE_DEADLINE_SERVICE_MASK != 0 { edf::recurring::fault(entry, f); }
         #[cfg(all(jnox_linux_source_net_rx_irq, not(jnox_linux_source_net_restart)))]
@@ -1017,6 +1076,14 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         #[cfg(jnox_linux_source_net_restart)]
         { linux_net::restart_exit(unsafe { CURRENT }, -1); }
         fail(2);
+    }
+    #[cfg(jnox_native_display_five_active)]
+    unsafe {
+        // Single-vCPU profile; EL1 masks interrupts while handling this frame.
+        if !FIRST_SYSCALL[CURRENT] {
+            FIRST_SYSCALL[CURRENT] = true;
+            event(b"ENTERED", CURRENT, None);
+        }
     }
     #[cfg(jnox_native_edf)]
     if NATIVE_DEADLINE_SERVICE_MASK != 0 {
@@ -1033,6 +1100,12 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     }
     let exit = f.x[8] == 1;
     if exit && f.x[0] as i32 as i64 as u64 != f.x[0] {
+        #[cfg(jnox_native_display_five_active)]
+        {
+            display_fault::retire(f, ttbr);
+            return;
+        }
+        #[cfg(not(jnox_native_display_five_active))]
         fail(3);
     }
     #[cfg(jnox_native_batch)]
@@ -1141,6 +1214,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         }
         #[cfg(jnox_native_fixed)]
         209 => signal_probe::call(unsafe { CURRENT }, policy(), f.x[0], f.x[1], f.x[2]),
+        #[cfg(jnox_native_display_five_active)]
+        199 => display_authority::call(unsafe { CURRENT }, f.x[0], f.x[1] as usize, f.x[2] as usize),
         #[cfg(jnox_native_fixed)]
         206 => process_groups::service(policy(), unsafe { CURRENT }, f),
         #[cfg(jnox_native_fixed)]
@@ -1213,6 +1288,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         176 => linux_net::irq::pend_test(unsafe { CURRENT }, f.x[0], f.x[1], f.x[2]),
         #[cfg(jnox_linux_source_rtc)]
         152..=155 => pl031::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
+        #[cfg(jnox_native_pointer_tablet)]
+        197 => display_call(unsafe { CURRENT }, f),
         #[cfg(jnox_native_display)]
         72..=74 => display_call(unsafe { CURRENT }, f),
         #[cfg(jnox_native_uart_rx_irq)]
@@ -1287,6 +1364,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             let status = f.x[0] as i32;
             head(9, f.x[0]);
             unsafe { EXIT_STATUS[pid] = status };
+            #[cfg(jnox_native_display_five_active)]
+            event(b"RETIRED", pid, Some(i64::from(status)));
             Action::Exit
         } else if let Some(target) = deadline {
             Action::Sleep(target - now)
@@ -1382,20 +1461,28 @@ pub(super) fn run() -> ! {
         (PEER2, env!("JNOX_PACKAGED_PEER2_SHA256")),
         #[cfg(jnox_native_peer3)]
         (PEER3, env!("JNOX_PACKAGED_PEER3_SHA256")),
+        #[cfg(jnox_native_peer4)]
+        (PEER4, env!("JNOX_PACKAGED_PEER4_SHA256")),
     ];
     for (pid, (_, digest)) in images.iter().enumerate() {
-        uart_write(match pid { 0 => b"NATIVE EL0 ELF ", 1 => b"NATIVE EL0 PEER ELF ", 2 => b"NATIVE EL0 PEER2 ELF ", _ => b"NATIVE EL0 PEER3 ELF " });
+        uart_write(match pid { 0 => b"NATIVE EL0 ELF ", 1 => b"NATIVE EL0 PEER ELF ", 2 => b"NATIVE EL0 PEER2 ELF ", 3 => b"NATIVE EL0 PEER3 ELF ", _ => b"NATIVE EL0 PEER4 ELF " });
         uart_write(digest.as_bytes());
         uart_write(b"\n");
     }
-    let plans = images.map(|(image, _)| validated_image(image));
+    let plans: [LoadPlan<'_>; COUNT] = core::array::from_fn(|pid| {
+        #[cfg(jnox_native_display_five_active)]
+        event(b"VALIDATE", pid, None);
+        validated_image(images[pid].0)
+    });
     let buffers = unsafe { &mut *(&raw mut STARTUP_TAILS) };
     #[cfg(jnox_native_threads)]
     let stack_bottom = native_el0_mmu::thread_stack(0).unwrap_or_else(|| fail(20)).0;
     #[cfg(not(jnox_native_threads))]
     let stack_bottom = STACK_BOTTOM;
     let layouts: [native_stack::Layout; COUNT] = core::array::from_fn(|pid| {
-        native_stack::build(NATIVE_ARGV_EXTRAS[pid], !cfg!(jnox_native_process),
+        #[cfg(jnox_native_display_five_active)]
+        event(b"STACK", pid, None);
+        native_stack::build_env(NATIVE_ARGV_EXTRAS[pid], NATIVE_ENV[pid], !cfg!(jnox_native_process),
             stack_bottom, STACK_TOP, &mut buffers[pid]).unwrap_or_else(|| fail(19))
     });
     let tails: [&[u8]; COUNT] = core::array::from_fn(|pid| &buffers[pid][..layouts[pid].len]);
@@ -1408,6 +1495,8 @@ pub(super) fn run() -> ! {
         context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         native_el0_mmu::install_processes(&plans, &tails).unwrap_or_else(|_| fail(6));
+        #[cfg(jnox_native_display_five_active)]
+        display_authority::initialize();
         #[cfg(jnox_native_net_service)]
         virtio_net::init().unwrap_or_else(|errno| {
             uart_write(b"NATIVE NET INIT ERROR ");
@@ -1419,6 +1508,7 @@ pub(super) fn run() -> ! {
             FRAMES[pid].elr = plan.entry;
             let layout = layouts[pid];
             FRAMES[pid].sp_el0 = layout.sp as u64;
+            FRAMES[pid].x[2] = layout.envp as u64;
             ptr::write_volatile(&raw mut jnox_native_startup_slots[pid],
                 [plan.entry, layout.sp as u64, layout.len as u64, layout.argc as u64]);
             if !cfg!(any(jnox_native_amc, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) {
@@ -1493,6 +1583,6 @@ pub(super) fn run() -> ! {
         let locator = threads::start(FRAMES[first]);
         #[cfg(not(jnox_native_threads))]
         let locator = 0;
-        native_el0_enter(FRAMES[first].elr, FRAMES[first].sp_el0, INITIAL_PSTATE, locator)
+        native_el0_enter(FRAMES[first].elr, FRAMES[first].sp_el0, INITIAL_PSTATE, locator, FRAMES[first].x[2])
     }
 }

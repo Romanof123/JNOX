@@ -1,0 +1,52 @@
+{
+  "kernel_sha256": "8901c89e5fc29f8dc00ce3ec97d65112ea5b9b3e8b43d89a47ed321e37a12ad2",
+  "case": "matching",
+  "stage": "waiting for blue Mosaic pixels",
+  "exits": {},
+  "frames": [
+    {
+      "color": "coral",
+      "origin": [
+        48,
+        56
+      ],
+      "matched_pixels": 38400,
+      "capture": "mosaic-coral.ppm",
+      "sha256": "8dad4a991fe4b5655b4b96d01db1fda83abb3abc2007611c40c8feb531eccd95"
+    }
+  ],
+  "completed": false,
+  "diagnostic": {
+    "images_announced": [
+      "compositor",
+      "xwayland",
+      "tiles",
+      "broker",
+      "mosaic"
+    ],
+    "validating": [
+      "compositor",
+      "xwayland",
+      "tiles",
+      "broker",
+      "mosaic"
+    ],
+    "constructing_stack": [
+      "compositor",
+      "xwayland",
+      "tiles",
+      "broker",
+      "mosaic"
+    ],
+    "first_syscall": [
+      "compositor",
+      "broker",
+      "xwayland",
+      "mosaic",
+      "tiles"
+    ],
+    "last_server_phase": "dispatch"
+  },
+  "terminal_exits": {},
+  "error_type": "TimeoutError"
+}

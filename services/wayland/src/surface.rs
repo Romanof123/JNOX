@@ -1,6 +1,8 @@
 use crate::platform::Mapping;
 
-pub const PIXELS: usize = 320 * 240;
+pub const WIDTH: usize = 320;
+pub const HEIGHT: usize = 240;
+pub const PIXELS: usize = WIDTH * HEIGHT;
 #[derive(Clone, Copy)]
 pub struct Buffer {
     pub pool: usize,
@@ -112,7 +114,21 @@ impl Surface {
         )
     }
 
-    pub fn pixel(&self, x: usize, y: usize, image: &[u32; PIXELS]) -> Option<u32> {
+    pub fn overlaps_output(&self, anchor: (i64, i64)) -> bool {
+        if !self.mapped {
+            return false;
+        }
+        let (left, top) = self.buffer_origin(anchor);
+        let (w, h) = if self.transform & 1 == 0 {
+            (self.width, self.height)
+        } else {
+            (self.height, self.width)
+        };
+        let (w, h) = ((w / self.scale) as i64, (h / self.scale) as i64);
+        w > 0 && h > 0 && left < WIDTH as i64 && top < HEIGHT as i64 && left + w > 0 && top + h > 0
+    }
+
+    pub fn pixel(&self, x: usize, y: usize, image: &[u32]) -> Option<u32> {
         if !self.mapped {
             return None;
         }
@@ -146,7 +162,8 @@ impl Surface {
 // One synchronous CPU0 dispatcher owns staging. A host file may shrink
 // between rows: callers only observe a new image after the entire copy.
 static mut STAGING: [u32; PIXELS] = [0; PIXELS];
-pub fn snapshot(buffer: Buffer, map: &Mapping, image: &mut [u32; PIXELS]) -> Result<(), ()> {
+pub fn snapshot(buffer: Buffer, map: &Mapping, image: &mut [u32]) -> Result<(), ()> {
+    if buffer.width.checked_mul(buffer.height).ok_or(())? > image.len().min(PIXELS) { return Err(()); }
     let staging = unsafe { &mut *(&raw mut STAGING) };
     for y in 0..buffer.height {
         let row = &mut staging[y * buffer.width..(y + 1) * buffer.width];

@@ -8,6 +8,7 @@ const COMPONENT: usize = 31;
 pub(super) const PATH_BYTES: usize = 63;
 const ROOT: usize = 0;
 const TMP: usize = 1;
+const X11: usize = 2;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Object { File(usize), Dir(usize) }
@@ -37,17 +38,31 @@ impl Dir {
     const EMPTY: Self = Self { ino: 0, mode: 0, times: [Stamp::UNSET; 3] };
 }
 #[derive(Clone, Copy)]
-pub(super) struct Tree { entries: [Entry; NAMES], pub(super) dirs: [Dir; DIRS] }
+pub(super) struct Tree { entries: [Entry; NAMES], pub(super) dirs: [Dir; DIRS], x11: bool }
 #[derive(Clone, Copy)]
 pub(super) struct Location { pub(super) parent: usize, name: Name }
 
 impl Tree {
-    pub(super) const EMPTY: Self = Self { entries: [Entry::EMPTY; NAMES], dirs: [Dir::EMPTY; DIRS] };
+    pub(super) const EMPTY: Self = Self { entries: [Entry::EMPTY; NAMES], dirs: [Dir::EMPTY; DIRS], x11: false };
     pub(super) fn init(&mut self, stamp: Stamp) {
         self.dirs[ROOT] = Dir { ino: 1, mode: 0o555, times: [stamp; 3] };
         self.dirs[TMP] = Dir { ino: 2, mode: 0o1777, times: [stamp; 3] };
         let mut name = Name::EMPTY; name.len = 3; name.bytes[..3].copy_from_slice(b"tmp");
         self.entries[0] = Entry { name, parent: ROOT, object: Object::Dir(TMP) };
+    }
+    // This inode occupies a real directory and name slot for the entire boot.
+    #[no_mangle]
+    #[inline(never)]
+    pub(super) fn jnox_tmpfs_x11_init(&mut self, stamp: Stamp, ino: u32) {
+        self.dirs[X11] = Dir { ino, mode: 0o1777, times: [stamp; 3] };
+        let mut name = Name::EMPTY;
+        name.len = b".X11-unix".len();
+        name.bytes[..name.len].copy_from_slice(b".X11-unix");
+        self.entries[1] = Entry { name, parent: TMP, object: Object::Dir(X11) };
+        self.x11 = true;
+    }
+    pub(super) fn system_owned(&self, obj: Object) -> bool {
+        self.x11 && matches!(obj, Object::Dir(ROOT | TMP | X11))
     }
     fn index(&self, l: Location) -> Option<usize> {
         self.entries.iter().position(|e| e.name.len != 0 && e.parent == l.parent && e.name.matches(&l.name))
@@ -83,6 +98,8 @@ impl Tree {
     }
     pub(super) fn editable(&self, l: Location) -> Result<(), i32> {
         if l.parent == ROOT { return Err(-30); }
+        // This directory's child names belong to the AF_UNIX registry.
+        if self.x11 && l.parent == X11 { return Err(-13); }
         if self.dirs[l.parent].mode & 0o300 != 0o300 { return Err(-13); }
         Ok(())
     }
@@ -146,6 +163,8 @@ impl Fs {
         let now = Stamp::now();
         match op {
             2 => {
+                // An initial unlink of an unused Xtrans pathname sees ENOENT.
+                if self.tree.x11 && from.parent == X11 && source.is_none() { return Err(-2); }
                 self.tree.editable(from)?;
                 let object = source.ok_or(-2)?;
                 if matches!(object, Object::Dir(_)) { return Err(-21); }
@@ -175,6 +194,10 @@ impl Fs {
                 self.tree.editable(from)?;
                 let src = self.tree.index(from).ok_or(-2)?;
                 let replacement = self.tree.index(to);
+                if self.tree.system_owned(source) ||
+                    replacement.is_some_and(|i| self.tree.system_owned(self.tree.entries[i].object)) {
+                    return Err(-1);
+                }
                 if let Object::Dir(dir) = source {
                     if self.tree.contains_dir(dir, to.parent) { return Err(-22); }
                     self.tree.renamed_extent(dir, second.len())?;
@@ -205,6 +228,7 @@ impl Fs {
         if mode > 0o1777 { return Err(-95); }
         match object {
             Object::Dir(ROOT) => return Err(-30),
+            _ if self.tree.system_owned(object) => return Err(-1),
             Object::Dir(i) => self.tree.dirs[i].mode = mode as u16,
             Object::File(i) => {
                 if mode > 0o777 { return Err(-95); }

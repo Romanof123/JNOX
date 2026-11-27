@@ -89,6 +89,12 @@ int __wrap_fcntl(int fd, int cmd, ...) {
         if (!enter()) return -1;
         struct descriptor *desc = &descriptors[fd - FD_BASE];
         if (!desc->kind) return finish(-EBADF);
+        if (cmd == F_GETFL) return finish(O_RDWR | (desc->nonblock ? O_NONBLOCK : 0));
+        if (cmd == F_SETFL) {
+            if (arg & ~(O_ACCMODE | O_NONBLOCK)) return finish(-EINVAL);
+            desc->nonblock = !!(arg & O_NONBLOCK);
+            return finish(0);
+        }
         if (cmd == F_GETFD) return finish(desc->cloexec ? FD_CLOEXEC : 0);
         if (cmd == F_SETFD && !(arg & ~FD_CLOEXEC)) {
             desc->cloexec = !!(arg & FD_CLOEXEC);

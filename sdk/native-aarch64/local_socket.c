@@ -166,20 +166,14 @@ static int simple(unsigned op, int fd, unsigned arg) {
     if (r < 0) return finish(r);
     t.arg = arg;
     r = commit(&t);
-    if (op == OP_ACCEPT)
-        r = new_fd(r, descriptors[t.slot].kind, 0, descriptors[t.slot].family, 0);
     if (op == OP_CLOSE && r == 0)
         descriptors[t.slot] = (struct descriptor){0};
     return finish(r);
 }
 int listen(int fd, int backlog) {
-    if (backlog < 0 || backlog > 2) return error(EINVAL);
-    return simple(OP_LISTEN, fd, (unsigned)backlog);
-}
-int accept(int fd, struct sockaddr *addr, socklen_t *len) {
-    if (addr) return error(ENOTSUP); /* v1 accept has no peer address result */
-    (void)len;
-    return simple(OP_ACCEPT, fd, 0);
+    if (backlog < 0) return error(EINVAL);
+    /* BEGIN has an eight-bit argument. The selected broker owns the queue limit. */
+    return simple(OP_LISTEN, fd, backlog > 255 ? 255 : (unsigned)backlog);
 }
 int shutdown(int fd, int how) {
     if (how < SHUT_RD || how > SHUT_RDWR) return error(EINVAL);
@@ -249,6 +243,28 @@ static long read_response(struct descriptor desc, unsigned char *data, unsigned 
     }
     return flags & MSG_TRUNC ? full : used;
 }
+int accept(int fd, struct sockaddr *addr, socklen_t *len) {
+    if (addr && !len) return error(EFAULT);
+    if (!enter()) return -1;
+    struct transaction t = {0};
+    long r = prepare(&t, OP_ACCEPT, fd);
+    if (r < 0) return finish(r);
+    struct descriptor listener = descriptors[t.slot];
+    if (addr && listener.family != AF_UNIX) return finish(-ENOTSUP);
+    t.arg = addr != NULL;
+    r = new_fd(commit(&t), listener.kind, 0, listener.family, 0);
+    if (r >= 0 && addr) {
+        long status = read_response(listener, NULL, 0, 0, 0, addr, len);
+        if (status < 0) {
+            struct transaction cleanup = {0};
+            if (prepare(&cleanup, OP_CLOSE, (int)r) == 0 && commit(&cleanup) == 0)
+                descriptors[cleanup.slot] = (struct descriptor){0};
+            r = status;
+        }
+    }
+    return finish(r);
+}
+
 static int socket_name(int fd, unsigned op, struct sockaddr *addr, socklen_t *len) {
     if (!addr || !len) return error(EFAULT);
     if (!enter()) return -1;

@@ -32,7 +32,7 @@ for variant in $cases; do
     cmp "$pkg/user.elf" "$out/$variant.elf"
     cmp "$pkg/native_peer.elf" "$out/broker.elf"
     python3 examples/native-pixman/capture.py "$pkg/kernel.elf" "$pkg/uart.log" 2 \
-        --symbol getsockname --symbol getpeername
+        --symbol getsockname --symbol getpeername --symbol listen --symbol accept
     PYTHONPATH=tools python3 - "$pkg/uart.log" <<'PY'
 import sys
 from pathlib import Path

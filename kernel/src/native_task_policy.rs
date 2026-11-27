@@ -10,7 +10,7 @@ global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 include!("native_v1_note.rs");
 
 unsafe extern "C" {
-    fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
+    fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64, envp: u64) -> !;
     fn native_sleep_switch(top: *mut u8);
 }
 
@@ -501,5 +501,5 @@ pub(super) fn run() -> ! {
     uart_write(b"\n");
     let first = select();
     let f = unsafe { FRAMES[first] };
-    unsafe { native_el0_enter(f.elr, f.sp_el0, f.spsr, f.tls[1]) }
+    unsafe { native_el0_enter(f.elr, f.sp_el0, f.spsr, f.tls[1], 0) }
 }

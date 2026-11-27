@@ -108,6 +108,10 @@ pub(super) fn next_compare() -> Option<u64> {
     earliest.map(|ns| compare(ns).unwrap_or_else(|| fail(9)))
 }
 
+#[cfg(jnox_native_display_standby)]
+#[unsafe(no_mangle)]
+static mut jnox_display_broker_deaths: [[u64; 3]; COUNT] = [[0; 3]; COUNT];
+
 // A task has one saved blocking SVC, in at most one family at a time.
 // Complete immediate results on the actual trap stack and deferred results in FRAMES.
 fn drain(fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
@@ -147,7 +151,18 @@ fn drain(fixed: &mut Fixed, mut live: Option<(usize, &mut NativeFrame)>) {
         frame.x[0] = i64::from(status) as u64;
         frame.x[1] = word;
         if let Some(value) = extra { frame.x[2] = value; }
-        if let Some(pid) = caller { frame.x[3] = pid as u64; }
+        if let Some(pid) = caller {
+            frame.x[3] = pid as u64;
+            #[cfg(jnox_native_display_standby)]
+            if id == super::NATIVE_SOCKET_SERVICE && status == 0 && word == 0 {
+                // Token zero identifies an authenticated peer-death delivery.
+                unsafe {
+                    (&raw mut jnox_display_broker_deaths[pid]).write_volatile([
+                        super::counter(), id as u64, pid as u64,
+                    ]);
+                }
+            }
+        }
     }
     #[cfg(jnox_native_sync_ipc)]
     fixed.ipc_priorities(&unsafe { (&*(&raw const ENDPOINTS)).priorities(super::NATIVE_PRIORITIES) });
@@ -176,9 +191,9 @@ fn advance(now: u64, exiting: Option<usize>) {
     update!(SETS);
 }
 
-pub(super) fn boundary(fixed: &mut Fixed, stamp: u64, exit: bool) {
+pub(super) fn boundary(fixed: &mut Fixed, stamp: u64, exiting: Option<usize>) {
     let now = monotonic_ns(stamp);
-    advance(now, exit.then(|| fixed.current().unwrap_or_else(|| fail(9))));
+    advance(now, exiting);
     #[cfg(jnox_native_waitset)]
     refresh(now);
     drain(fixed, None);

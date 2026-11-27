@@ -1,5 +1,7 @@
 # Per-process startup arguments for packaged native applications / 패키지 네이티브 프로세스별 시작 인수
 
+The follow-up design extends the native startup stack with an explicit environment for each packaged application. [Process environment / 프로세스별 환경 변수](native-process-environment.en-ko.md)
+
 [#310](https://github.com/Romanof123/JNOX/issues/310) · CHG-123, with IMP-123 and EVD-123 reserved. Prospective design on main `ee731c7e24b6f1436f2d303f68038f68d0a2f97a`. An operator can deploy one compiled sensor reduction several times, each with its own range, operation and label. The native-v1 startup assembly already loads argc from [sp] and passes argv at sp+8 to main. Today every ordinary slot receives the same 80-byte tail. [Entry assembly](../sdk/native-aarch64/start.S) · [Native boot](../kernel/src/native_el0.rs) · [Private stack installation](../kernel/src/native_el0_mmu.rs)
 
 같은 센서 처리 ELF를 여러 슬롯에 배치하고 슬롯마다 처리 구간·연산·라벨을 지정한다. 기존 시작 어셈블리는 스택에서 argc와 argv를 읽어 main에 전달한다. 이 변경은 각 프로세스의 사설 스택에 독립적인 인수를 구성한다.

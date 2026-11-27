@@ -117,7 +117,10 @@ impl Fs {
             if grant != 2 { return Err(-13); }
             return self.namespace(op, input, arg);
         }
-        if op == 3 { return x.stat(self.metadata(self.tree.object(input)?)); }
+        if op == 3 {
+            let obj = self.tree.object(input)?;
+            return x.stat(self.metadata(obj), self.tree.system_owned(obj));
+        }
         let (slot, desc) = self.desc(id, fd)?;
         let d = self.open[desc];
         if op == 15 {
@@ -127,7 +130,7 @@ impl Fs {
         if op == 16 { return Err(-95); } // RAM has no stable store or device flush.
         match op {
             4 => { self.handles[id][slot] = 0; self.reap(); Ok(0) }
-            5 => x.stat(self.metadata(d.object)),
+            5 => x.stat(self.metadata(d.object), self.tree.system_owned(d.object)),
             6 => {
                 let Object::File(i) = d.object else { return Err(-21) };
                 let f = &mut self.files[i];
@@ -189,7 +192,7 @@ impl Fs {
 struct Exchange { data: [u8; REQUEST_BYTES], used: usize, length: usize, reply: usize, active: bool }
 impl Exchange {
     const EMPTY: Self = Self { data: [0; REQUEST_BYTES], used: 0, length: 0, reply: 0, active: false };
-    fn stat(&mut self, info: (u32, u16, u16, u32, [Stamp; 3])) -> Result<i64, i32> {
+    fn stat(&mut self, info: (u32, u16, u16, u32, [Stamp; 3]), system_owned: bool) -> Result<i64, i32> {
         let (ino, mode, links, size, times) = info;
         if times.iter().any(|t| !t.valid) { return Err(-61); }
         self.data[..4].copy_from_slice(&ino.to_le_bytes());
@@ -201,7 +204,9 @@ impl Exchange {
             self.data[start..start+8].copy_from_slice(&t.seconds.to_le_bytes());
             self.data[start+8..start+12].copy_from_slice(&t.micros.to_le_bytes());
         }
-        self.reply = 48; Ok(0)
+        // Legacy status 0 means the immutable package account. Status 1
+        // identifies an inode provisioned by the system at mount initialization.
+        self.reply = 48; Ok(i64::from(system_owned))
     }
 }
 
@@ -210,14 +215,22 @@ pub(super) struct Mount {
 }
 impl Mount {
     const EMPTY: Self = Self { banks: [Fs::EMPTY; 2], live: 0, clients: [Exchange::EMPTY; CLIENTS], rights: 0 };
-    pub(super) fn init(&mut self) {
+    pub(super) fn init(&mut self) -> Option<usize> {
         let rc: i64;
         unsafe { asm!("svc #0x4a01", in("x8") 204u64, inout("x0") 0u64 => rc,
                       inout("x1") 0u64 => _, inout("x2") 0u64 => _, options(nostack)) };
         if rc > 0 {
             self.rights = rc as u64; let now = Stamp::now();
-            self.banks[0].tree.init(now);
+            let fs = &mut self.banks[0];
+            fs.tree.init(now);
+            if let Some(slot) = (0..CLIENTS).find(|slot| (self.rights >> (2 * slot)) & 3 == 3) {
+                let ino = fs.next_ino;
+                fs.next_ino += 1;
+                fs.tree.jnox_tmpfs_x11_init(now, ino);
+                return Some(slot);
+            }
         }
+        None
     }
     pub(super) fn exit(&mut self, id: usize) {
         let fs = &mut self.banks[self.live];
@@ -252,7 +265,7 @@ pub(super) fn jnox_tmpfs_call(m: &mut Mount, id: usize, token: u64, word: u64) -
         }
         0x72 if x.active && x.used == x.length => {
             let bank = m.trial(); x.reply = 0; x.active = false;
-            let result = m.banks[bank].operate(id, rights, word, &mut x);
+            let result = m.banks[bank].operate(id, rights.min(2), word, &mut x);
             if result.is_ok() { publish = Some(bank); } result
         }
         0x73 if !x.active && args < x.reply as u64 => {
