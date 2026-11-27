@@ -113,7 +113,11 @@ def main():
         check_archive(os_archive)
         check_archive(xcvt / "lib/libxcvt.a")
         roots.append(xcvt)
-        flags.insert(0, "-I" + str(os_prefix / "include/jnox-wayland"))
+        # time.h uses include_next to reach the real Picolibc header. A
+        # second copy of the OS overlay would stop at its own include guard.
+        old_overlay = "-I" + str(runtime / "target/include/jnox-wayland")
+        flags = ["-I" + str(os_prefix / "include/jnox-wayland"),
+                 *(flag for flag in flags if flag != old_overlay)]
         # The base graphics profile embeds its older OS archive by absolute path.
         ld = [str(os_archive) if Path(arg).name == "libjnox-wayland-os.a" else arg for arg in ld]
         ld = ["-L" + str(prefix / "lib"), "-L" + str(runtime / "target/lib"),

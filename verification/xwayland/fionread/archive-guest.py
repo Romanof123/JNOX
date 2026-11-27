@@ -27,9 +27,14 @@ with a.lock.open("a") as lock:
     def run(*args, **kw):
         return subprocess.run(args, check=True, cwd=repo, **kw)
     members = run("llvm-ar", "t", archive, capture_output=True, text=True).stdout.splitlines()
+    names = "".join(name + "\n" for name in sorted(members)).encode()
+    inventory = hashlib.sha256(names).hexdigest()
+    if len(members) != 408 or inventory != "65c0d7dbeb019d93faad2ea7f4f5ee5e9e3349c91d067c7573a6e5ecbeac6330":
+        sys.exit("incomplete or unexpected libX11 1.8.10 AF_UNIX archive inventory")
     desc = run("llvm-readelf", "-h", archive, capture_output=True, text=True).stdout
     machines = re.findall(r"^\s*Machine:\s*(\S+)", desc, re.M)
-    if len(machines) != len(members) or not machines or set(machines) != {"AArch64"}:
+    kinds = re.findall(r"^\s*Type:\s*(\S+)", desc, re.M)
+    if machines != ["AArch64"] * len(members) or kinds != ["REL"] * len(members):
         sys.exit("archive must contain only AArch64 object files")
     source = re.search(r"^srcdir = (.+)$", (build / "src/Makefile").read_text(), re.M)[1]
     cfg = configparser.ConfigParser(interpolation=None)
@@ -50,6 +55,7 @@ with a.lock.open("a") as lock:
     if re.findall(rb"^NATIVE EL0 EXIT (-?\d+)\r?$", uart.read_bytes(), re.M) != [b"0"]:
         sys.exit("Xlib geometry guest failed")
     result = {"archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
-              "members": len(members), "machine": "AArch64", "geometry_guest_exit": 0}
+              "members": len(members), "member_names_sha256": inventory,
+              "machine": "AArch64", "geometry_guest_exit": 0}
     (out / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result))
