@@ -2508,3 +2508,9 @@ CHG-334,affects,VER-011
 REQ-004,partially-implemented-by,IMP-334
 REQ-011,partially-implemented-by,IMP-334
 DES-002,partially-implemented-by,IMP-334
+CHG-334,affects,EVD-334
+IMP-334,partially-verified-by,VER-004
+IMP-334,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-334
+VER-011,has-partial-evidence,EVD-334
+IMP-334,tested-in,EVD-334

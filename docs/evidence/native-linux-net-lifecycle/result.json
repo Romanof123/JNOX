@@ -1,0 +1,491 @@
+{
+  "checksummed_members": 1391,
+  "builds": {
+    "16c26df5ece938576f2054781f1e43305f858e40756a87201a1e803359d46b51": {
+      "source_commit": "b0069650efff2c72789e874ab6c57ef4dcc56a66",
+      "linux_commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+      "linux_tu_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+      "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+      "compiler_input_count": 971,
+      "roles": [
+        {
+          "role": "driver",
+          "slot": 0,
+          "sha256": "e17a110803735c0147cdd40ddb12841322fd0615f403c855af36848a08587118",
+          "source": "examples/linux-source-net-lifecycle/driver.c",
+          "linked_ttbr0_el1": "0x1000040277000",
+          "map_sha256": "5689ed4a2625b8408ce662e2ac9de12e12b0afb4fe5b3bf38c58e83558ea393c"
+        },
+        {
+          "role": "peer",
+          "slot": 1,
+          "sha256": "41e03e6ebf1c81689ba84f08fd49f743d333305e1b1c07757666538fa464b748",
+          "source": "examples/linux-source-net-lifecycle/peer.c",
+          "linked_ttbr0_el1": "0x200004068c000",
+          "map_sha256": "1f5234d9d1e9df23be542c8287d343a6ef56e617021238b7d75318f10751efaf"
+        }
+      ],
+      "import_sha256": "14997b5fc4c451f3b35d6751f0d1bb32c49d3939546f92cd7f1782abc060e987",
+      "kernel_sha256": "c7cba833adfcbf65a5ef73586ccd60aeb210ac43ca170954e8814ec59eb84a16",
+      "objects": {
+        "virtio_net.original.o": "5767a14f1d391e2419240bde3a0dab3c39457b894a35f2de581edce177c4862b",
+        "virtio_net.packet.o": "655914bcdfa0f1629e529e61341d03967c397895f976eeca5b7a1397981381ac",
+        "virtio_net.callback.o": "2a260a1a011aaeb552734a37bcecf12074f84cb08e12af855003e042fc0a3a78"
+      }
+    }
+  },
+  "captures": {
+    "full-02": {
+      "build_commit": "b0069650efff2c72789e874ab6c57ef4dcc56a66",
+      "observer_commit": "47a538f1ca4b3c82a3dc4fd1a849f9bd82cdb179",
+      "kernel_sha256": "c7cba833adfcbf65a5ef73586ccd60aeb210ac43ca170954e8814ec59eb84a16",
+      "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "mac": "52:54:00:19:26:41",
+      "mtu": 1410,
+      "capture_scope": "two generations",
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observers/47a538f1ca4b3c82a3dc4fd1a849f9bd82cdb179/tools/verify_linux_source_net_lifecycle.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "builds/16c26df5ece938576f2054781f1e43305f858e40756a87201a1e803359d46b51/native",
+        "--driver-manifest",
+        "builds/16c26df5ece938576f2054781f1e43305f858e40756a87201a1e803359d46b51/imported/import.json",
+        "--out",
+        "captures/full-02",
+        "--mac",
+        "52:54:00:19:26:41",
+        "--mtu",
+        "1410"
+      ],
+      "rejected_mutations": [
+        "live original ndo_open pointer",
+        "registered netdevice identity",
+        "missing first original probe entry",
+        "second-generation private RX payload"
+      ],
+      "result": {
+        "tokens": [
+          1,
+          2
+        ],
+        "matched_driver": "0x41d2a0",
+        "registry_pointers": [
+          "0x41d2a0",
+          "0x41d268",
+          "0x415e10",
+          "0x415fa0",
+          "0x40fd20",
+          "0x409b00",
+          "0x416ce0"
+        ],
+        "executions": {
+          "init_module": 2,
+          "cleanup_module": 2,
+          "virtnet_validate": 2,
+          "virtnet_probe": 2,
+          "virtnet_open": 3,
+          "virtnet_close": 3,
+          "virtnet_remove": 2,
+          "virtnet_find_vqs": 2,
+          "skb_recv_done": 12,
+          "virtnet_poll": 24,
+          "__register_virtio_driver": 2,
+          "unregister_virtio_driver": 2,
+          "register_netdevice": 2,
+          "jnox_lifecycle_net_up_v1": 3,
+          "jnox_lifecycle_net_down_v1": 3,
+          "gro_receive_skb": 83,
+          "virtqueue_add_inbuf_premapped": 145
+        },
+        "hardware_rx_irqs": 12,
+        "peer_frames": 83,
+        "checkpoints": [
+          "first-probed",
+          "first-open",
+          "first-ack",
+          "first-removed",
+          "second-probed",
+          "second-open",
+          "second-ack",
+          "final"
+        ]
+      },
+      "independent": {
+        "replay_argv": [
+          "python3",
+          "-B",
+          "qa/replay.py",
+          "builds/16c26df5ece938576f2054781f1e43305f858e40756a87201a1e803359d46b51",
+          "captures/full-02",
+          "source/linux/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+          "--full"
+        ],
+        "report": {
+          "source_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+          "device_status_writes": [
+            0,
+            1,
+            3,
+            11,
+            15,
+            0,
+            0,
+            1,
+            3,
+            11,
+            15,
+            0
+          ],
+          "first-probed": {
+            "root": "0x40277000",
+            "token": 1,
+            "status": 15,
+            "posted": 0,
+            "avail": 0,
+            "used": 0,
+            "callbacks": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "mac": "52:54:00:19:26:41",
+            "mtu": 1410
+          },
+          "first-open": {
+            "root": "0x40277000",
+            "token": 1,
+            "status": 15,
+            "posted": 32,
+            "avail": 32,
+            "used": 0,
+            "callbacks": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "mac": "52:54:00:19:26:41",
+            "mtu": 1410
+          },
+          "wire_protocol_frames": 83,
+          "first-removed": {
+            "root": "0x40277000",
+            "token": 1,
+            "status": 18446744073709551597,
+            "posted": 0,
+            "avail": 113,
+            "used": 81,
+            "callbacks": [
+              1,
+              2,
+              2,
+              1
+            ],
+            "mac": "52:54:00:19:26:41",
+            "mtu": 1410
+          },
+          "second-probed": {
+            "root": "0x40277000",
+            "token": 2,
+            "status": 15,
+            "posted": 0,
+            "avail": 0,
+            "used": 0,
+            "callbacks": [
+              2,
+              2,
+              2,
+              1
+            ],
+            "mac": "52:54:00:19:26:41",
+            "mtu": 1410
+          },
+          "second-open": {
+            "root": "0x40277000",
+            "token": 2,
+            "status": 15,
+            "posted": 32,
+            "avail": 32,
+            "used": 0,
+            "callbacks": [
+              2,
+              3,
+              2,
+              1
+            ],
+            "mac": "52:54:00:19:26:41",
+            "mtu": 1410
+          },
+          "final": {
+            "root": "0x40277000",
+            "token": 2,
+            "status": 18446744073709551597,
+            "posted": 0,
+            "avail": 32,
+            "used": 2,
+            "callbacks": [
+              2,
+              3,
+              3,
+              2
+            ],
+            "mac": "52:54:00:19:26:41",
+            "mtu": 1410
+          },
+          "peer_root": "0x4068c000",
+          "deliveries": [
+            {
+              "token": 1,
+              "frames": 80,
+              "bytes": 5912,
+              "ack_bytes": 60,
+              "nonce": "0x4766dfb8804b7ee0",
+              "authority_denials": 3
+            },
+            {
+              "token": 2,
+              "frames": 1,
+              "bytes": 60,
+              "ack_bytes": 60,
+              "nonce": "0xe5546cb4fd5db073",
+              "authority_denials": 3
+            }
+          ],
+          "errors": [],
+          "scope": "full"
+        }
+      }
+    },
+    "full-03": {
+      "build_commit": "b0069650efff2c72789e874ab6c57ef4dcc56a66",
+      "observer_commit": "47a538f1ca4b3c82a3dc4fd1a849f9bd82cdb179",
+      "kernel_sha256": "c7cba833adfcbf65a5ef73586ccd60aeb210ac43ca170954e8814ec59eb84a16",
+      "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "mac": "52:54:00:19:26:52",
+      "mtu": 1490,
+      "capture_scope": "two generations",
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observers/47a538f1ca4b3c82a3dc4fd1a849f9bd82cdb179/tools/verify_linux_source_net_lifecycle.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "builds/16c26df5ece938576f2054781f1e43305f858e40756a87201a1e803359d46b51/native",
+        "--driver-manifest",
+        "builds/16c26df5ece938576f2054781f1e43305f858e40756a87201a1e803359d46b51/imported/import.json",
+        "--out",
+        "captures/full-03",
+        "--mac",
+        "52:54:00:19:26:52",
+        "--mtu",
+        "1490"
+      ],
+      "rejected_mutations": [
+        "live original ndo_open pointer",
+        "registered netdevice identity",
+        "missing first original probe entry",
+        "second-generation private RX payload"
+      ],
+      "result": {
+        "tokens": [
+          1,
+          2
+        ],
+        "matched_driver": "0x41d2a0",
+        "registry_pointers": [
+          "0x41d2a0",
+          "0x41d268",
+          "0x415e10",
+          "0x415fa0",
+          "0x40fd20",
+          "0x409b00",
+          "0x416ce0"
+        ],
+        "executions": {
+          "init_module": 2,
+          "cleanup_module": 2,
+          "virtnet_validate": 2,
+          "virtnet_probe": 2,
+          "virtnet_open": 3,
+          "virtnet_close": 3,
+          "virtnet_remove": 2,
+          "virtnet_find_vqs": 2,
+          "skb_recv_done": 12,
+          "virtnet_poll": 24,
+          "__register_virtio_driver": 2,
+          "unregister_virtio_driver": 2,
+          "register_netdevice": 2,
+          "jnox_lifecycle_net_up_v1": 3,
+          "jnox_lifecycle_net_down_v1": 3,
+          "gro_receive_skb": 83,
+          "virtqueue_add_inbuf_premapped": 145
+        },
+        "hardware_rx_irqs": 13,
+        "peer_frames": 83,
+        "checkpoints": [
+          "first-probed",
+          "first-open",
+          "first-ack",
+          "first-removed",
+          "second-probed",
+          "second-open",
+          "second-ack",
+          "final"
+        ]
+      },
+      "independent": {
+        "replay_argv": [
+          "python3",
+          "-B",
+          "qa/replay.py",
+          "builds/16c26df5ece938576f2054781f1e43305f858e40756a87201a1e803359d46b51",
+          "captures/full-03",
+          "source/linux/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+          "--full"
+        ],
+        "report": {
+          "source_sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+          "device_status_writes": [
+            0,
+            1,
+            3,
+            11,
+            15,
+            0,
+            0,
+            1,
+            3,
+            11,
+            15,
+            0
+          ],
+          "first-probed": {
+            "root": "0x40277000",
+            "token": 1,
+            "status": 15,
+            "posted": 0,
+            "avail": 0,
+            "used": 0,
+            "callbacks": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "mac": "52:54:00:19:26:52",
+            "mtu": 1490
+          },
+          "first-open": {
+            "root": "0x40277000",
+            "token": 1,
+            "status": 15,
+            "posted": 32,
+            "avail": 32,
+            "used": 0,
+            "callbacks": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "mac": "52:54:00:19:26:52",
+            "mtu": 1490
+          },
+          "wire_protocol_frames": 83,
+          "first-removed": {
+            "root": "0x40277000",
+            "token": 1,
+            "status": 18446744073709551597,
+            "posted": 0,
+            "avail": 113,
+            "used": 81,
+            "callbacks": [
+              1,
+              2,
+              2,
+              1
+            ],
+            "mac": "52:54:00:19:26:52",
+            "mtu": 1490
+          },
+          "second-probed": {
+            "root": "0x40277000",
+            "token": 2,
+            "status": 15,
+            "posted": 0,
+            "avail": 0,
+            "used": 0,
+            "callbacks": [
+              2,
+              2,
+              2,
+              1
+            ],
+            "mac": "52:54:00:19:26:52",
+            "mtu": 1490
+          },
+          "second-open": {
+            "root": "0x40277000",
+            "token": 2,
+            "status": 15,
+            "posted": 32,
+            "avail": 32,
+            "used": 0,
+            "callbacks": [
+              2,
+              3,
+              2,
+              1
+            ],
+            "mac": "52:54:00:19:26:52",
+            "mtu": 1490
+          },
+          "final": {
+            "root": "0x40277000",
+            "token": 2,
+            "status": 18446744073709551597,
+            "posted": 0,
+            "avail": 32,
+            "used": 2,
+            "callbacks": [
+              2,
+              3,
+              3,
+              2
+            ],
+            "mac": "52:54:00:19:26:52",
+            "mtu": 1490
+          },
+          "peer_root": "0x4068c000",
+          "deliveries": [
+            {
+              "token": 1,
+              "frames": 80,
+              "bytes": 5912,
+              "ack_bytes": 60,
+              "nonce": "0x234bf24b92dc0bab",
+              "authority_denials": 3
+            },
+            {
+              "token": 2,
+              "frames": 1,
+              "bytes": 60,
+              "ack_bytes": 60,
+              "nonce": "0x8055a021bd413cc3",
+              "authority_denials": 3
+            }
+          ],
+          "errors": [],
+          "scope": "full"
+        }
+      }
+    }
+  }
+}
