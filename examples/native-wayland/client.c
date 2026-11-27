@@ -306,6 +306,11 @@ static int run(void)
     REQUIRE(jnox_display_init() == -EPERM && jnox_display_write_row(0, row) == -EPERM &&
             jnox_display_poll_key() == -EPERM);
     W[DENIALS] = 3;
+    if (pointer_profile) {
+        REQUIRE(jnox_display_call(197, 0, 0) == -EPERM);
+        REQUIRE(jnox_display_call(197, 1, 0) == -EPERM);
+        W[DENIALS] += 2;
+    }
     REQUIRE(connect_display());
     REQUIRE(WORD_REQUEST(DISPLAY, DISPLAY_GET_REGISTRY, REGISTRY));
     REQUIRE(WORD_REQUEST(DISPLAY, DISPLAY_SYNC, START_SYNC));
