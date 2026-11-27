@@ -7,6 +7,14 @@ out=$(realpath -m "${1:?use a fresh output directory}")
 source_git=(git)
 if [[ -n ${JNOX_GIT_DIR:-} ]]; then source_git+=(--git-dir="$JNOX_GIT_DIR"); fi
 revision=$("${source_git[@]}" rev-parse --verify "${2:-HEAD}^{commit}")
+server_options=()
+if (( $# > 2 )); then
+    if [[ $# != 6 || $3 != --selected-xkm ]]; then
+        echo "usage: server-lab.sh OUT REV [--selected-xkm INPUT_RS XKBCOMP_DEB LIBXKBFILE_DEB]" >&2
+        exit 2
+    fi
+    server_options=(--selected-xkm "$(realpath "$4")" "$(realpath "$5")" "$(realpath "$6")")
+fi
 exec 9>"$lab/run.lock"
 flock -x 9
 mkdir "$out"
@@ -34,10 +42,16 @@ os="$out/os-prefix"
 mkdir -p "$os/lib"
 cp -R "$rt/target/include" "$os/include"
 ln -s "$rt/target/lib/libc.a" "$os/lib/libc.a"
-python3 "$out/src/sdk/native-aarch64/graphics/os/install.py" --prefix "$os"
+auth=()
+case "${JNOX_NATIVE_XAUTHORITY:-0}" in
+    0) ;;
+    1) auth+=(--native-xauthority) ;;
+    *) echo "JNOX_NATIVE_XAUTHORITY must be 0 or 1" >&2; exit 2 ;;
+esac
+python3 "$out/src/sdk/native-aarch64/graphics/os/install.py" --prefix "$os" "${auth[@]}"
 pin a8fb5288dea8457a4888cf354ec840dcc241b251be3c511b2892c320e29847d1 "$os/lib/libjnox-wayland-os.a"
 sh "$driver/xcvt/build.sh" "$inputs/libxcvt-0.1.3.tar.xz" "$out/xcvt" "$out/xcvt-prefix"
-python3 "$driver/xkb-build.py" --build-executable --cache "$inputs" \
+python3 "$driver/xkb-build.py" --build-executable "${server_options[@]}" "${auth[@]}" --cache "$inputs" \
   --out "$out/server" --runtime "$rt" --runtime-profile-sha256 "${JNOX_WAYLAND_PROFILE_SHA256:-00266859edb773b5fcad350d35d3e3b7f58621599014b666cc8e8ed308081643}" \
   --protocols "$font" --wayland-work "$wl" --server "$inputs/xwayland-24.1.6.tar.xz" \
   --xcvt-prefix "$out/xcvt-prefix" --os-prefix "$os" --libmd-source "$inputs/libmd_1.1.0.orig.tar.xz"

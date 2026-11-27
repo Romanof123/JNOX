@@ -1,5 +1,7 @@
 # Building the Xwayland 24.1.6 software executable
 
+The combined software profile compiled all selected C sources. The latest final link has 29 unresolved imports. [Reproduction, caller inventory and guest seal result / 재현 방법과 검증 결과](server-link.en-ko.md)
+
 The JNOX Wayland input path uses the fixed wire values for buttons and keys
 from `linux/input-event-codes.h`. The builder verifies the numeric UAPI
 header from `linux-libc-dev 5.15.0-204.214`. Set `JNOX_INPUT_EVENT_CODES`

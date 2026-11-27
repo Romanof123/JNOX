@@ -1,3 +1,12 @@
+--- a/meson.build
++++ b/meson.build
+@@ -109,1 +109,5 @@
+-xfont2_dep = dependency('xfont2', version: '>= 2.0')
++if host_machine.system() == 'jnox'
++    xfont2_dep = dependency('xfont2', version: '>= 2.0', static: true)
++else
++    xfont2_dep = dependency('xfont2', version: '>= 2.0')
++endif
 --- a/include/meson.build
 +++ b/include/meson.build
 @@ -194,1 +194,1 @@

@@ -11,6 +11,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 
 HERE = Path(__file__).resolve().parent
 
@@ -65,10 +66,19 @@ def main():
     parser.add_argument("--runtime-profile-sha256", help="digest of a separately verified derived cross file")
     parser.add_argument("--build-executable", action="store_true",
                         help="build the production software Xwayland binary after the full X11 chain")
+    parser.add_argument("--native-xauthority", action="store_true",
+                        help="require the immutable native Xauthority resource for every client")
     parser.add_argument("--xcvt-prefix", type=Path)
     parser.add_argument("--libmd-source", type=Path)
     parser.add_argument("--os-prefix", type=Path, help="Picolibc target prefix containing the native Wayland OS overlay")
+    parser.add_argument("--selected-xkm", nargs=3, type=Path,
+                        metavar=("COMPOSITOR_INPUT_RS", "XKBCOMP_DEB", "LIBXKBFILE_DEB"),
+                        help="embed the pinned compositor map in the native server")
     args = parser.parse_args()
+    if args.selected_xkm and not args.build_executable:
+        parser.error("--selected-xkm requires --build-executable")
+    if args.native_xauthority and not args.build_executable:
+        parser.error("--native-xauthority requires --build-executable")
     if args.build_executable and not all((args.server, args.wayland_work, args.xcvt_prefix,
                                           args.libmd_source, args.os_prefix)):
         parser.error("executable build requires server, wayland-work, xcvt-prefix, libmd-source and os-prefix")
@@ -267,6 +277,31 @@ def main():
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "software-backend.patch", cwd=server)
     else:
         run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
+    selected_options = []
+    if args.selected_xkm:
+        source_map, compiler, library = args.selected_xkm
+        run(sys.executable, HERE / "selected-xkm.py", "--server", server,
+            "--input-rs", source_map, "--host-deb", compiler, "--host-xkbfile-deb", library,
+            "--out", out / "selected-xkm")
+        selected_options = ["-Djnox_selected_xkm=true", "-Dxkb_default_rules=jnox",
+                            "-Dxkb_default_model=jnox", "-Dxkb_default_layout=jnox",
+                            "-Dxkb_default_variant=", "-Dxkb_default_options="]
+    server_archives = []
+    if args.native_xauthority:
+        archive = os_prefix / "lib/libjnox-xauthority.a"
+        check_archive(archive)
+        run("patch", "-p1", "-i", HERE / "native-xauthority.patch", cwd=server)
+        server_archives.append(str(archive))
+    if args.build_executable:
+        shifts = run(sys.executable, HERE / "toolchain-shifts.py", out / "shift-helpers", output=True).strip()
+        if check_archive(shifts) != 2:
+            raise ValueError("expected two AArch64 arithmetic helpers")
+        server_archives.append(shifts)
+    if server_archives:
+        existing = ast.literal_eval(rtcfg["built-in options"]["c_link_args"])
+        rtcfg["built-in options"]["c_link_args"] = repr([*server_archives, *existing])
+        with cross.open("w") as f:
+            rtcfg.write(f)
     native_options = []
     if wayland:
         host = wayland / "host"
@@ -277,7 +312,7 @@ def main():
         os.environ["PKG_CONFIG_PATH_FOR_BUILD"] = str(host / "lib/pkgconfig")
         native_options = ["--native-file", wayland / "native.ini"]
     run(meson, "setup", out / "xwayland-build", server, "--wrap-mode=nofallback",
-        "--cross-file", cross, "--cross-file", HERE / "software.ini", *native_options,
+        "--cross-file", cross, "--cross-file", HERE / "software.ini", *native_options, *selected_options,
         *(["-Dsha1=libmd", "-Ddefault_library=static"] if args.build_executable else []))
     if args.build_executable:
         build = out / "xwayland-build"

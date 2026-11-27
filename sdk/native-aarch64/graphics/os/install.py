@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--prefix", type=pathlib.Path, required=True)
 parser.add_argument("--cc", default="clang")
 parser.add_argument("--ar", default="llvm-ar")
+parser.add_argument("--native-xauthority", action="store_true")
 args = parser.parse_args()
 here = pathlib.Path(__file__).resolve().parent
 sdk = here.parent.parent
@@ -43,3 +44,12 @@ with tempfile.TemporaryDirectory() as temp:
     shutil.copyfile(here / "time.h", overlay / "time.h")
     shutil.copyfile(here / "pthread.h", overlay / "pthread.h")
     shutil.copyfile(out / "libjnox-wayland-os.a", prefix / "lib/libjnox-wayland-os.a")
+    if args.native_xauthority:
+        headers = overlay / "jnox"
+        headers.mkdir(parents=True, exist_ok=True)
+        for name in ("boot_resource.h", "ipc.h"):
+            shutil.copyfile(native / "jnox" / name, headers / name)
+        shutil.copyfile(here / "jnox/xauthority_stream.h", headers / "xauthority_stream.h")
+        compile("authority.o", here / "xauthority.c", ["-I", overlay, "-isystem", prefix / "include"])
+        subprocess.run([args.ar, "rcs", out / "libjnox-xauthority.a", out / "authority.o"], check=True)
+        shutil.copyfile(out / "libjnox-xauthority.a", prefix / "lib/libjnox-xauthority.a")
