@@ -2480,3 +2480,9 @@ CHG-332,affects,VER-011
 REQ-004,partially-implemented-by,IMP-332
 REQ-011,partially-implemented-by,IMP-332
 DES-002,partially-implemented-by,IMP-332
+CHG-332,affects,EVD-332
+IMP-332,partially-verified-by,VER-004
+IMP-332,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-332
+VER-011,has-partial-evidence,EVD-332
+IMP-332,tested-in,EVD-332

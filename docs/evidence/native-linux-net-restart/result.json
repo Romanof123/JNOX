@@ -1,0 +1,360 @@
+{
+  "checksummed_members": 1358,
+  "source_commit": "b0de2d64adc26bb7bce1a16d6a96f33d092dee23",
+  "kernel_sha256": "afa4aabddf9f33b6759b31b17cd69c0e8cca86b6dd2be61ff6ccd355511b2de1",
+  "linux_source": {
+    "project": "Linux stable",
+    "tag": "v6.18.65",
+    "commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+    "path": "drivers/net/virtio_net.c",
+    "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+    "size": 196513,
+    "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+    "git_blob_sha1": "ea83313caf36381151d21d894da8162729b7d261",
+    "spdx": "GPL-2.0-or-later"
+  },
+  "captures": {
+    "handoff-a": {
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observer/74f9d2010bbcb63e97b7b39184b1b38db084d0e4/tools/verify_linux_source_net_restart.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "native",
+        "--driver-manifest",
+        "imported/import.json",
+        "--out",
+        "handoff-a",
+        "--mac",
+        "52:54:00:19:26:51",
+        "--mtu",
+        "1410"
+      ],
+      "rejected_mutations": [
+        "same-root spare",
+        "authorized stale grant",
+        "reused nonce",
+        "pending DMA bytes",
+        "missing TX QueueReady reset readbacks",
+        "old nonce in replacement delivery",
+        "gate outside authorized word"
+      ],
+      "roots": [
+        281476053090304,
+        562951034081280,
+        844426015072256
+      ],
+      "epochs": [
+        1,
+        2
+      ],
+      "ingress_packets": 83,
+      "unreaped_id": 1,
+      "outstanding_id": 2,
+      "frozen_old_span_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+      "scheduler": [
+        5374464,
+        86,
+        1,
+        11107442,
+        0,
+        1,
+        10
+      ],
+      "executions": {
+        "0/virtnet_find_vqs": 1,
+        "0/skb_recv_done": 1,
+        "0/virtnet_poll": 1,
+        "0/gro_receive_skb": 1,
+        "2/virtnet_find_vqs": 1,
+        "2/skb_recv_done": 10,
+        "2/virtnet_poll": 20,
+        "2/gro_receive_skb": 81
+      },
+      "roles": [
+        {
+          "slot": 0,
+          "elf": "user.elf",
+          "elf_sha256": "7e379bd575b50014ae4a5c5d2cfee2465b60eb1cd006379f2eea8b24d18da530",
+          "elf_entry_pc": "0x400000",
+          "startup_pc": "0x400000",
+          "first_svc_tick": 3194827,
+          "first_svc_instruction_pc": "0x40013c",
+          "first_svc_return_pc": "0x400140",
+          "first_svc_number": 156,
+          "first_svc_ttbr0": "0x1000040284000",
+          "exit_svc_tick": 5374464,
+          "exit_svc_instruction_pc": "0x40001c",
+          "exit_svc_return_pc": "0x400020",
+          "exit_svc_ttbr0": "0x1000040284000"
+        },
+        {
+          "slot": 1,
+          "elf": "native_peer.elf",
+          "elf_sha256": "dc45db9f1796adfd50a21723c23595a70aaf8e945dcb14f9896bc78b19eada47",
+          "elf_entry_pc": "0x400000",
+          "startup_pc": "0x400000",
+          "first_svc_tick": 3332027,
+          "first_svc_instruction_pc": "0x40012c",
+          "first_svc_return_pc": "0x400130",
+          "first_svc_number": 46,
+          "first_svc_ttbr0": "0x2000040699000",
+          "exit_svc_tick": 11035434,
+          "exit_svc_instruction_pc": "0x40001c",
+          "exit_svc_return_pc": "0x400020",
+          "exit_svc_ttbr0": "0x2000040699000"
+        },
+        {
+          "slot": 2,
+          "elf": "native_peer2.elf",
+          "elf_sha256": "e639c05e74dbc6acb14437d99792d7d79cdc5d97ed2eb7a86d6c328c7b0f745f",
+          "elf_entry_pc": "0x400000",
+          "startup_pc": "0x400000",
+          "first_svc_tick": 5438133,
+          "first_svc_instruction_pc": "0x40014c",
+          "first_svc_return_pc": "0x400150",
+          "first_svc_number": 47,
+          "first_svc_ttbr0": "0x3000040aae000",
+          "exit_svc_tick": 11107442,
+          "exit_svc_instruction_pc": "0x40001c",
+          "exit_svc_return_pc": "0x400020",
+          "exit_svc_ttbr0": "0x3000040aae000"
+        }
+      ],
+      "completed_entry_trace_lines_by_pc": {
+        "0x400000": [
+          1078,
+          1211,
+          4877
+        ]
+      },
+      "test_only_survivor_gate_writes": {
+        "preexit": {
+          "physical": 1080688904,
+          "command": "M406a0108,8:5449584500000000",
+          "before": "0000000000000000",
+          "after": "5449584500000000"
+        },
+        "middle": {
+          "physical": 1080688912,
+          "command": "M406a0110,8:444e494200000000",
+          "before": "0000000000000000",
+          "after": "444e494200000000"
+        }
+      },
+      "host_nonces_hex": "8af952c8fd8188ac7424ab708cae3e99",
+      "independent_replay_argv": [
+        "python3",
+        "-B",
+        "qa/reader.py",
+        "native",
+        "handoff-a"
+      ],
+      "independent": {
+        "capture": "handoff-a",
+        "machine_log_sha256": "7ffe342e5fa6c3d0d109df5a719b5db1bb3994fc579ee6690236bb96d6939f67",
+        "irq79_with_used_buffer_status": [
+          2,
+          11
+        ],
+        "kernel_sha256": "afa4aabddf9f33b6759b31b17cd69c0e8cca86b6dd2be61ff6ccd355511b2de1",
+        "wire_sha256": "e4cb25aa89b3b6e706a8248418d27b261d82bc94aa00065fa420850b244fa76b",
+        "nonces": "8af952c8fd8188ac7424ab708cae3e99",
+        "roots": [
+          "0x1000040284000",
+          "0x2000040699000",
+          "0x3000040aae000"
+        ],
+        "role_sha256": [
+          "7e379bd575b50014ae4a5c5d2cfee2465b60eb1cd006379f2eea8b24d18da530",
+          "dc45db9f1796adfd50a21723c23595a70aaf8e945dcb14f9896bc78b19eada47",
+          "e639c05e74dbc6acb14437d99792d7d79cdc5d97ed2eb7a86d6c328c7b0f745f"
+        ],
+        "tokens": [
+          1,
+          2
+        ],
+        "unreaped": 1,
+        "outstanding": 2,
+        "old_gic_pending_at_retire": 0,
+        "old_virtio_interrupt_status_at_retire": 0,
+        "frozen_private_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+        "fresh_frames": 80,
+        "ack_bytes": 60
+      }
+    },
+    "handoff-b": {
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observer/74f9d2010bbcb63e97b7b39184b1b38db084d0e4/tools/verify_linux_source_net_restart.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "native",
+        "--driver-manifest",
+        "imported/import.json",
+        "--out",
+        "handoff-b",
+        "--mac",
+        "52:54:00:19:26:52",
+        "--mtu",
+        "1390"
+      ],
+      "rejected_mutations": [
+        "same-root spare",
+        "authorized stale grant",
+        "reused nonce",
+        "pending DMA bytes",
+        "missing TX QueueReady reset readbacks",
+        "old nonce in replacement delivery",
+        "gate outside authorized word"
+      ],
+      "roots": [
+        281476053090304,
+        562951034081280,
+        844426015072256
+      ],
+      "epochs": [
+        1,
+        2
+      ],
+      "ingress_packets": 83,
+      "unreaped_id": 1,
+      "outstanding_id": 2,
+      "frozen_old_span_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+      "scheduler": [
+        5098359,
+        86,
+        1,
+        9327510,
+        0,
+        1,
+        10
+      ],
+      "executions": {
+        "0/virtnet_find_vqs": 1,
+        "0/skb_recv_done": 1,
+        "0/virtnet_poll": 1,
+        "0/gro_receive_skb": 1,
+        "2/virtnet_find_vqs": 1,
+        "2/skb_recv_done": 10,
+        "2/virtnet_poll": 20,
+        "2/gro_receive_skb": 81
+      },
+      "roles": [
+        {
+          "slot": 0,
+          "elf": "user.elf",
+          "elf_sha256": "7e379bd575b50014ae4a5c5d2cfee2465b60eb1cd006379f2eea8b24d18da530",
+          "elf_entry_pc": "0x400000",
+          "startup_pc": "0x400000",
+          "first_svc_tick": 2874465,
+          "first_svc_instruction_pc": "0x40013c",
+          "first_svc_return_pc": "0x400140",
+          "first_svc_number": 156,
+          "first_svc_ttbr0": "0x1000040284000",
+          "exit_svc_tick": 5098359,
+          "exit_svc_instruction_pc": "0x40001c",
+          "exit_svc_return_pc": "0x400020",
+          "exit_svc_ttbr0": "0x1000040284000"
+        },
+        {
+          "slot": 1,
+          "elf": "native_peer.elf",
+          "elf_sha256": "dc45db9f1796adfd50a21723c23595a70aaf8e945dcb14f9896bc78b19eada47",
+          "elf_entry_pc": "0x400000",
+          "startup_pc": "0x400000",
+          "first_svc_tick": 2982693,
+          "first_svc_instruction_pc": "0x40012c",
+          "first_svc_return_pc": "0x400130",
+          "first_svc_number": 46,
+          "first_svc_ttbr0": "0x2000040699000",
+          "exit_svc_tick": 9285817,
+          "exit_svc_instruction_pc": "0x40001c",
+          "exit_svc_return_pc": "0x400020",
+          "exit_svc_ttbr0": "0x2000040699000"
+        },
+        {
+          "slot": 2,
+          "elf": "native_peer2.elf",
+          "elf_sha256": "e639c05e74dbc6acb14437d99792d7d79cdc5d97ed2eb7a86d6c328c7b0f745f",
+          "elf_entry_pc": "0x400000",
+          "startup_pc": "0x400000",
+          "first_svc_tick": 5154654,
+          "first_svc_instruction_pc": "0x40014c",
+          "first_svc_return_pc": "0x400150",
+          "first_svc_number": 47,
+          "first_svc_ttbr0": "0x3000040aae000",
+          "exit_svc_tick": 9327510,
+          "exit_svc_instruction_pc": "0x40001c",
+          "exit_svc_return_pc": "0x400020",
+          "exit_svc_ttbr0": "0x3000040aae000"
+        }
+      ],
+      "completed_entry_trace_lines_by_pc": {
+        "0x400000": [
+          1078,
+          1211,
+          4884
+        ]
+      },
+      "test_only_survivor_gate_writes": {
+        "preexit": {
+          "physical": 1080688904,
+          "command": "M406a0108,8:5449584500000000",
+          "before": "0000000000000000",
+          "after": "5449584500000000"
+        },
+        "middle": {
+          "physical": 1080688912,
+          "command": "M406a0110,8:444e494200000000",
+          "before": "0000000000000000",
+          "after": "444e494200000000"
+        }
+      },
+      "host_nonces_hex": "e645551ed33618fc561fc944ff6d6fb1",
+      "independent_replay_argv": [
+        "python3",
+        "-B",
+        "qa/reader.py",
+        "native",
+        "handoff-b"
+      ],
+      "independent": {
+        "capture": "handoff-b",
+        "machine_log_sha256": "84f6bd9b8d97f60c7be24b44e3f939e98699ad4b27c090b7b89607afab4f0dbe",
+        "irq79_with_used_buffer_status": [
+          2,
+          10
+        ],
+        "kernel_sha256": "afa4aabddf9f33b6759b31b17cd69c0e8cca86b6dd2be61ff6ccd355511b2de1",
+        "wire_sha256": "1002ea5767e4e25e8309a11d65c1ef96faa988242c97bb51e215776bf9bbb3f3",
+        "nonces": "e645551ed33618fc561fc944ff6d6fb1",
+        "roots": [
+          "0x1000040284000",
+          "0x2000040699000",
+          "0x3000040aae000"
+        ],
+        "role_sha256": [
+          "7e379bd575b50014ae4a5c5d2cfee2465b60eb1cd006379f2eea8b24d18da530",
+          "dc45db9f1796adfd50a21723c23595a70aaf8e945dcb14f9896bc78b19eada47",
+          "e639c05e74dbc6acb14437d99792d7d79cdc5d97ed2eb7a86d6c328c7b0f745f"
+        ],
+        "tokens": [
+          1,
+          2
+        ],
+        "unreaped": 1,
+        "outstanding": 2,
+        "old_gic_pending_at_retire": 0,
+        "old_virtio_interrupt_status_at_retire": 0,
+        "frozen_private_sha256": "0dbe3edd6d65c168a81ffcc1751a1c639f1814b9effded769b06ea55a0bec409",
+        "fresh_frames": 80,
+        "ack_bytes": 60
+      }
+    }
+  }
+}
