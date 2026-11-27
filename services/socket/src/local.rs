@@ -1,7 +1,7 @@
 //! Bounded AF_UNIX engine for the EL0 broker. The broker supplies the authenticated
 //! caller slot. Every operation is nonblocking; only -EAGAIN is eligible for retry.
-const CLIENTS: usize = 3;
-const OBJECTS: usize = 8;
+pub const CLIENTS: usize = if cfg!(feature = "display-five-active") { 5 } else { 3 };
+const OBJECTS: usize = if cfg!(feature = "display-five-active") { 12 } else { 8 };
 const FDS: usize = 4;
 const STREAM: u8 = 1;
 const DGRAM: u8 = 2;
@@ -661,6 +661,34 @@ mod tests {
         assert_eq!(s.recv(0, a, &mut [0; 1]).unwrap().count, 0);
     }
 
+    #[cfg(feature = "display-five-active")]
+    #[test]
+    fn concurrent_wayland_and_x11_streams_use_authenticated_owner_tables() {
+        let mut s = Local::new();
+        let display = s.socket(0, STREAM).unwrap();
+        s.bind(0, display, b"/wayland-0").unwrap();
+        s.listen(0, display, 2).unwrap();
+        let x11 = s.socket(1, STREAM).unwrap();
+        s.bind(1, x11, b"/tmp/.X11-unix/X0").unwrap();
+        s.listen(1, x11, 1).unwrap();
+        for (client, server, listener, path) in [
+            (1, 0, display, &b"/wayland-0"[..]),
+            (2, 0, display, &b"/wayland-0"[..]),
+            (4, 1, x11, &b"/tmp/.X11-unix/X0"[..]),
+        ] {
+            let socket = s.socket(client, STREAM).unwrap();
+            s.connect(client, socket, path).unwrap();
+            let accepted = s.accept(server, listener).unwrap();
+            s.send(client, socket, &[client as u8], None).unwrap();
+            let mut byte = [0];
+            assert_eq!(s.recv(server, accepted, &mut byte).unwrap().count, 1);
+            assert_eq!(byte, [client as u8]);
+        }
+        s.exit(4);
+        assert!(s.require_stream(1, x11).is_ok());
+        assert!(s.require_stream(0, display).is_ok());
+    }
+
     #[test]
     fn backlog_object_and_owner_limits_reclaim_on_exit() {
         let mut s = Local::new();
@@ -678,6 +706,8 @@ mod tests {
         let accepted = s.accept(0, l).unwrap();
         s.connect(2, c, b"/s").unwrap();
         let last = s.socket(1, STREAM).unwrap();
+        #[cfg(feature = "display-five-active")]
+        for _ in 8..OBJECTS { s.socket(4, STREAM).unwrap(); }
         assert_eq!(s.socket(2, STREAM), Err(-23));
         s.close(1, last).unwrap();
         s.close(0, l).unwrap();

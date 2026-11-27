@@ -8,7 +8,7 @@
 #include "pixels.h"
 
 enum { DISPLAY = 1, REGISTRY, START_SYNC, COMPOSITOR, SHM, WM, SEAT, KEYBOARD,
-       SURFACE, XDG, TOPLEVEL, POOL, BUFFER, FRAME, CLOSE_SYNC };
+       SURFACE, XDG, TOPLEVEL, POOL, BUFFER, FRAME, CLOSE_SYNC, POINTER };
 enum { ROLE, STAGE, FAIL_LINE, FAIL_ERRNO, DISPLAY_CODE, GLOBAL_MASK, XRGB,
        KEYMAP_SIZE, KEYMAP_HASH, CONFIGURES, ACK_SERIAL, ENTERS, LEAVES, FOCUSED,
        X_PRESSES, K_PRESSES, KEY_SERIAL, COMMITS, RELEASES, FRAMES, DRAW_HASH,
@@ -26,6 +26,11 @@ static int failed(unsigned line)
 static const char *const interfaces[] = {"wl_compositor", "wl_shm", "xdg_wm_base", "wl_seat"};
 static uint32_t globals[4];
 static int tiles, start_done, caps, keyboard_requested, surface_created, toplevel_configured;
+enum { P_CAPS, P_ENTERS, P_LEAVES, P_MOTIONS, P_PRESSES, P_RELEASES,
+       P_X_FIXED, P_Y_FIXED, P_ENTER_SERIAL, P_BUTTON_SERIAL, P_RESOURCE_RELEASED };
+volatile uint64_t wayland_pointer_witness[11];
+#define P wayland_pointer_witness
+static int pointer_profile, pointer_requested, pointer_focused, button_down;
 static int busy, frame_active, frame_done, damage_pending, die_after_commit, closing;
 static volatile uint32_t *mapping;
 static const struct sockaddr_un endpoint = {AF_UNIX, "/wayland-0"};
@@ -72,7 +77,7 @@ static int bind_globals(void)
         args[0] = globals[i];
         unsigned n = pack_string(args+1, 13, interfaces[i]);
         REQUIRE(n);
-        args[1+n] = 1; /* requested version */
+        args[1+n] = i == 3 && pointer_profile ? 3 : 1; /* requested version */
         args[2+n] = COMPOSITOR+i; /* dynamic new_id includes interface and version */
         REQUIRE(send_wire(REGISTRY, REGISTRY_BIND, args, 3+n, -1));
     }
@@ -129,7 +134,7 @@ static int create_buffer(void)
 static int redraw(void)
 {
     REQUIRE(!busy && !frame_active && mapping && W[CONFIGURES]);
-    W[DRAW_HASH] = paint(mapping, tiles, (unsigned)W[X_PRESSES]);
+    W[DRAW_HASH] = paint(mapping, tiles, (unsigned)(W[X_PRESSES] + P[P_PRESSES]));
     REQUIRE(WORD_REQUEST(SURFACE, SURFACE_ATTACH, BUFFER, 0, 0));
     REQUIRE(WORD_REQUEST(SURFACE, SURFACE_DAMAGE, 0, 0, WIDTH, HEIGHT));
     REQUIRE(WORD_REQUEST(SURFACE, SURFACE_FRAME, FRAME));
@@ -180,6 +185,7 @@ static int event(void)
     case DISPLAY:
         if (op == DISPLAY_ERROR && n >= 2) { W[DISPLAY_CODE] = a[1]; return failed(__LINE__); }
         REQUIRE(op == DISPLAY_DELETE_ID && n == 1);
+        if (a[0] == POINTER) { pointer_requested = 0; ++P[P_RESOURCE_RELEASED]; }
         if (a[0] == FRAME) {
             REQUIRE(frame_active && frame_done);
             frame_active = 0;
@@ -207,9 +213,44 @@ static int event(void)
         REQUIRE(op == SHM_FORMAT && n == 1);
         if (a[0] == FORMAT_XRGB8888) W[XRGB] = 1;
         break;
+    case POINTER:
+        REQUIRE(pointer_requested);
+        if (op == 0) {
+            REQUIRE(n == 4 && a[1] == SURFACE && !pointer_focused);
+            pointer_focused = 1;
+            ++P[P_ENTERS];
+            P[P_ENTER_SERIAL] = a[0];
+            P[P_X_FIXED] = a[2]; P[P_Y_FIXED] = a[3];
+        } else if (op == 1) {
+            REQUIRE(n == 2 && a[1] == SURFACE && pointer_focused);
+            pointer_focused = button_down = 0;
+            ++P[P_LEAVES];
+        } else if (op == 2) {
+            REQUIRE(n == 3 && pointer_focused);
+            ++P[P_MOTIONS];
+            P[P_X_FIXED] = a[1]; P[P_Y_FIXED] = a[2];
+        } else {
+            REQUIRE(op == 3 && n == 4 && pointer_focused && a[2] == 272 && a[3] <= 1);
+            REQUIRE(button_down != (int)a[3]);
+            button_down = a[3];
+            P[P_BUTTON_SERIAL] = a[0];
+            if (button_down) { ++P[P_PRESSES]; damage_pending = 1; }
+            else ++P[P_RELEASES];
+        }
+        break;
     case SEAT:
+        if (op == 1 && pointer_profile) { REQUIRE(n == 3 && a[0] == 6); break; }
         REQUIRE(op == SEAT_CAPABILITIES && n == 1);
         caps = !!(a[0] & CAP_KEYBOARD);
+        if (pointer_profile) {
+            P[P_CAPS] = a[0];
+            if ((a[0] & CAP_POINTER) && !pointer_requested) {
+                REQUIRE(WORD_REQUEST(SEAT, SEAT_GET_POINTER, POINTER));
+                pointer_requested = 1;
+            } else if (!(a[0] & CAP_POINTER) && pointer_requested) {
+                REQUIRE(send_wire(POINTER, POINTER_RELEASE, 0, 0, -1));
+            }
+        }
         break;
     case KEYBOARD:
         REQUIRE(keyboard_requested);
@@ -244,6 +285,8 @@ static int event(void)
 static int shutdown_client(void)
 {
     closing = 1;
+    if (pointer_requested && (P[P_CAPS] & CAP_POINTER))
+        REQUIRE(send_wire(POINTER, POINTER_RELEASE, 0, 0, -1));
     REQUIRE(send_wire(TOPLEVEL, TOPLEVEL_DESTROY, 0, 0, -1));
     REQUIRE(send_wire(XDG, XDG_DESTROY, 0, 0, -1));
     REQUIRE(send_wire(SURFACE, SURFACE_DESTROY, 0, 0, -1));
@@ -263,6 +306,11 @@ static int run(void)
     REQUIRE(jnox_display_init() == -EPERM && jnox_display_write_row(0, row) == -EPERM &&
             jnox_display_poll_key() == -EPERM);
     W[DENIALS] = 3;
+    if (pointer_profile) {
+        REQUIRE(jnox_display_call(197, 0, 0) == -EPERM);
+        REQUIRE(jnox_display_call(197, 1, 0) == -EPERM);
+        W[DENIALS] += 2;
+    }
     REQUIRE(connect_display());
     REQUIRE(WORD_REQUEST(DISPLAY, DISPLAY_GET_REGISTRY, REGISTRY));
     REQUIRE(WORD_REQUEST(DISPLAY, DISPLAY_SYNC, START_SYNC));
@@ -293,8 +341,11 @@ static int run(void)
 
 int main(int argc, char **argv)
 {
-    if (argc != 2 || !argv[1] || (argv[1][0] != 'a' && argv[1][0] != 'b') || argv[1][1]) return 99;
-    tiles = argv[1][0] == 'b';
+    if (argc != 2 || !argv[1]) return 99;
+    const char *role = argv[1];
+    if (*role == 'p') { pointer_profile = 1; ++role; }
+    if ((role[0] != 'a' && role[0] != 'b') || role[1]) return 99;
+    tiles = role[0] == 'b';
     W[ROLE] = tiles ? 2 : 1;
     if (!run()) return 100;
     return tiles ? 72 : 71;

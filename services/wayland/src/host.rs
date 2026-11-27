@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::mem::{align_of, size_of, size_of_val};
 use std::os::fd::{AsRawFd, BorrowedFd, FromRawFd, IntoRawFd};
 use std::os::unix::fs::{FileExt, OpenOptionsExt};
-use std::os::unix::net::UnixListener;
+use std::os::unix::net::{UnixDatagram, UnixListener};
 use std::ptr;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
@@ -60,9 +60,9 @@ const MSG_CMSG_CLOEXEC: i32 = 0x40000000;
 const MSG_CTRUNC: i32 = 8;
 const SOL_SOCKET: i32 = 1;
 const SCM_RIGHTS: i32 = 1;
-const WIDTH: usize = 320;
-const HEIGHT: usize = 240;
+use crate::surface::{HEIGHT, WIDTH};
 
+static POINTER: OnceLock<UnixDatagram> = OnceLock::new();
 static FRAMEBUFFER: OnceLock<File> = OnceLock::new();
 
 fn errno(e: io::Error) -> i32 {
@@ -77,13 +77,18 @@ fn anonymous(name: &'static [u8]) -> io::Result<File> {
     Ok(unsafe { File::from_raw_fd(fd) })
 }
 
-pub fn listen() -> Result<i32, i32> {
+pub fn listen(_spare: bool) -> Result<i32, i32> {
     let path = std::env::args_os().nth(1).ok_or(-22)?;
     let fb = match std::env::var_os("JNOX_WAYLAND_FRAMEBUFFER") {
         Some(path) => OpenOptions::new().write(true).create_new(true).mode(0o600).open(path),
         None => anonymous(b"jnox-framebuffer\0"),
     }.map_err(errno)?;
     fb.set_len((WIDTH * HEIGHT * 4) as u64).map_err(errno)?;
+    if let Some(path) = std::env::var_os("JNOX_WAYLAND_TEST_POINTER") {
+        let input = UnixDatagram::bind(path).map_err(errno)?;
+        input.set_nonblocking(true).map_err(errno)?;
+        POINTER.set(input).map_err(|_| -16)?;
+    }
     let listener = UnixListener::bind(path).map_err(errno)?;
     listener.set_nonblocking(true).map_err(errno)?;
     FRAMEBUFFER.set(fb).map_err(|_| -16)?;
@@ -223,6 +228,14 @@ pub fn now_ms() -> u32 {
 }
 
 pub fn idle() { std::thread::sleep(Duration::from_millis(1)); }
+
+pub fn pointer_available() -> bool { POINTER.get().is_some() }
+pub fn pointer_read() -> Result<u64, i32> {
+    let mut bytes = [0; 9];
+    let size = POINTER.get().ok_or(-19)?.recv(&mut bytes).map_err(errno)?;
+    if size != 8 { return Err(-5); }
+    Ok(u64::from_le_bytes(bytes[..8].try_into().unwrap()))
+}
 
 pub fn input() -> Option<u8> {
     let mut p = PollFd { fd: 0, events: 1, revents: 0 };

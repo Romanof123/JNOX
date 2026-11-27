@@ -3,6 +3,7 @@
 
 mod client;
 mod input;
+mod pointer;
 mod observe;
 #[cfg(target_os = "none")]
 #[path = "guest.rs"]
@@ -13,7 +14,7 @@ mod platform;
 mod surface;
 mod wire;
 use client::{serial, Client};
-use surface::PIXELS;
+use surface::{HEIGHT, PIXELS, WIDTH};
 
 const BACKGROUND: u32 = 0x18232d;
 const POS: [(i64, i64); 2] = [(16, 24), (112, 80)];
@@ -42,7 +43,7 @@ impl Scene {
     }
     fn position(i: usize, c: &Client) -> usize {
         match &c.surface.app_id[..c.surface.app_len] {
-            b"org.jnox.Pulse" => 0,
+            b"org.jnox.Pulse" | b"org.freedesktop.Xwayland" => 0,
             b"org.jnox.Tiles" => 1,
             _ => i,
         }
@@ -102,8 +103,8 @@ impl Scene {
         time: u32,
     ) -> Result<(), i32> {
         let front = self.front.unwrap_or(0);
-        for y in 0..240 {
-            let mut row = [BACKGROUND; 320];
+        for y in 0..HEIGHT {
+            let mut row = [BACKGROUND; WIDTH];
             for index in [1 - front, front] {
                 let c = &clients[index];
                 if !Self::visible(c) {
@@ -164,18 +165,36 @@ impl Scene {
 // an unterminated handshake cannot block keyboard or another connection.
 fn service(
     c: &mut Client,
+    slot: usize,
     image: &mut [u32; PIXELS],
     last: &mut u32,
     focused: bool,
     time: u32,
+    peer_focus: Option<u64>,
 ) -> bool {
     if c.fd < 0 {
         return false;
     }
     let mut progressed = false;
-    match c.out.flush(c.fd) {
-        Ok(wrote) => progressed |= wrote,
-        Err(-11) => {}
+    match c.out.flush(c.fd, peer_focus) {
+        Ok(wrote) => {
+            c.focus_stall = None;
+            progressed |= wrote;
+        }
+        Err(-11) => {
+            // A peer may stop reading with an earlier leave still queued.
+            // Retire that connection after a second without write progress
+            // only while it holds up another client's focus.
+            if c.out.first_focus().zip(peer_focus).is_some_and(|(own, peer)| own < peer) {
+                let start = *c.focus_stall.get_or_insert(time);
+                if time.wrapping_sub(start) >= 1000 {
+                    c.clear();
+                    return true;
+                }
+            } else {
+                c.focus_stall = None;
+            }
+        }
         Err(_) => {
             c.clear();
             return true;
@@ -189,7 +208,7 @@ fn service(
         return progressed;
     }
     for _ in 0..8 {
-        match c.step(last, focused, image) {
+        match c.step(last, focused, image, slot) {
             Ok(true) => {
                 progressed = true;
                 continue;
@@ -217,10 +236,11 @@ fn service(
     progressed
 }
 
-fn run() -> Result<(), i32> {
-    let listener = platform::listen()?;
+fn run(_restart_role: u8) -> Result<(), i32> {
+    let listener = platform::listen(_restart_role == 2)?;
     let (clients, images) = unsafe { (&mut *(&raw mut CLIENTS), &mut *(&raw mut IMAGES)) };
     let mut scene = Scene::new();
+    let mut pointer = pointer::Pointer::new();
     let mut closing = None;
     scene.draw(clients, images, platform::now_ms())?;
     loop {
@@ -231,6 +251,7 @@ fn run() -> Result<(), i32> {
                 match platform::accept(listener) {
                     Ok(fd) => {
                         slot.start(fd);
+                        slot.pointer_available = pointer.available;
                         progressed = true;
                     }
                     Err(-11) => {}
@@ -239,12 +260,15 @@ fn run() -> Result<(), i32> {
             }
         }
         for i in 0..2 {
+            let peer_focus = clients[1 - i].out.first_focus();
             progressed |= service(
                 &mut clients[i],
+                i,
                 &mut images[i],
                 &mut scene.serial,
                 scene.front == Some(i),
                 time,
+                peer_focus,
             );
         }
         let old = scene.front;
@@ -252,6 +276,10 @@ fn run() -> Result<(), i32> {
         if let Some(byte) = platform::input() {
             progressed = true;
             match byte {
+                #[cfg(all(target_os = "none", feature = "restart-probe"))]
+                b'!' if _restart_role != 0 && scene.front.is_some() => {
+                    unsafe { core::arch::asm!("brk #0x449", options(noreturn)) }
+                }
                 b'n' => {
                     if let Some(i) = scene.front {
                         if Scene::visible(&clients[1 - i]) {
@@ -281,6 +309,8 @@ fn run() -> Result<(), i32> {
                 }
             }
         }
+        pointer.reconcile(&mut scene, clients, time);
+        progressed |= pointer.poll(&mut scene, clients, time);
         if scene.front != old || clients.iter().any(|c| c.changed) {
             scene.draw(clients, images, time)?;
         }
@@ -300,6 +330,65 @@ fn run() -> Result<(), i32> {
     Ok(())
 }
 
+#[cfg(all(test, not(target_os = "none")))]
+mod focus_tests {
+    use super::*;
+    use std::{fs::File, io::{Read, Write}, os::{fd::{AsRawFd, IntoRawFd}, unix::net::UnixStream}};
+
+    #[test]
+    fn reverse_slot_focus_waits_for_leave_or_peer_retirement() {
+        let mut image = vec![0u32; PIXELS];
+        for retire in [false, true] {
+            let (later, later_reader) = UnixStream::pair().unwrap();
+            let (mut earlier, mut earlier_reader) = UnixStream::pair().unwrap();
+            earlier.set_nonblocking(true).unwrap();
+            let mut fill = 0;
+            loop {
+                match earlier.write(&[0; 1024]) {
+                    Ok(n) if n > 0 => fill += n,
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
+                    result => panic!("unexpected fill {result:?}"),
+                }
+            }
+            let mut clients = [Client::new(), Client::new()];
+            clients[0].start(later.into_raw_fd());
+            clients[1].start(earlier.into_raw_fd());
+            // Unrelated earlier output, including its SCM_RIGHTS payload, can
+            // pass; the following slot-0 enter must wait for the slot-1 leave.
+            let right = File::open("/dev/null").unwrap().into_raw_fd();
+            clients[0].out.event_fd(8, 9, &[], right).unwrap();
+            clients[1].out.focus_words(7, 1, &[13, 8]).unwrap();
+            clients[0].out.focus_words(7, 0, &[14, 8, 0, 0]).unwrap();
+            let mut bytes = [0u8; 128];
+            let mut rights = [-1; 8];
+            let mut serial = 14;
+            let mut visit = |clients: &mut [Client; 2], i: usize, time| {
+                let peer = clients[1-i].out.first_focus();
+                service(&mut clients[i], i, image.as_mut_slice().try_into().unwrap(), &mut serial, false, time, peer)
+            };
+            visit(&mut clients, 0, 0);
+            assert_eq!(platform::recv(later_reader.as_raw_fd(), &mut bytes, &mut rights), Ok((8, 1)));
+            platform::close(rights[0]);
+            visit(&mut clients, 1, 0);
+            visit(&mut clients, 0, 500);
+            assert_eq!(platform::recv(later_reader.as_raw_fd(), &mut bytes, &mut rights), Err(-11));
+            if retire {
+                visit(&mut clients, 1, 1000);
+                assert_eq!(clients[1].fd, -1);
+            } else {
+                earlier_reader.read_exact(&mut vec![0; fill]).unwrap();
+                visit(&mut clients, 1, 501);
+                earlier_reader.read_exact(&mut bytes[..16]).unwrap();
+                assert_eq!(u32::from_ne_bytes(bytes[8..12].try_into().unwrap()), 13);
+            }
+            visit(&mut clients, 0, 1001);
+            assert_eq!(platform::recv(later_reader.as_raw_fd(), &mut bytes, &mut rights), Ok((24, 0)));
+            assert_eq!(u32::from_ne_bytes(bytes[8..12].try_into().unwrap()), 14);
+            for c in &mut clients { c.clear(); }
+        }
+    }
+}
+
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo<'_>) -> ! {
@@ -308,11 +397,23 @@ fn panic(_: &core::panic::PanicInfo<'_>) -> ! {
 #[cfg(target_os = "none")]
 #[no_mangle]
 pub extern "C" fn main(_argc: i32, _argv: *const *const u8) -> i32 {
-    run().err().unwrap_or(0)
+    #[cfg(feature = "restart-probe")]
+    let role = {
+        if _argc != 2 || _argv.is_null() { return 98; }
+        let arg = unsafe { *_argv.add(1) };
+        if arg.is_null() { return 98; }
+        let matches = |name: &[u8]| name.iter().enumerate().all(|(i, b)| unsafe { *arg.add(i) == *b });
+        if matches(b"restart-primary\0") { 1 }
+        else if matches(b"restart-spare\0") { 2 }
+        else { return 98; }
+    };
+    #[cfg(not(feature = "restart-probe"))]
+    let role = 0;
+    run(role).err().unwrap_or(0)
 }
 #[cfg(not(target_os = "none"))]
 fn main() {
-    if let Err(e) = run() {
+    if let Err(e) = run(0) {
         eprintln!("Wayland compositor failed ({e})");
         std::process::exit(1);
     }

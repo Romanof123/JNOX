@@ -117,7 +117,20 @@ struct Marker {
     offset: usize,
     fd: i32,
 }
+#[derive(Clone, Copy, Default)]
+struct Focus {
+    start: usize,
+    end: usize,
+    ticket: u64,
+}
+
+// A compositor has one dispatcher. Tickets order focus messages across its
+// sockets independently of client-visible serial wrap and resource counts.
+static NEXT_FOCUS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
+
 pub struct Out {
+    focus: [Focus; 64],
+    focuses: usize,
     bytes: [u8; 8192],
     len: usize,
     markers: [Marker; 8],
@@ -126,6 +139,8 @@ pub struct Out {
 impl Out {
     pub const fn new() -> Self {
         Self {
+            focus: [Focus { start: 0, end: 0, ticket: 0 }; 64],
+            focuses: 0,
             bytes: [0; 8192],
             len: 0,
             markers: [Marker { offset: 0, fd: -1 }; 8],
@@ -164,20 +179,46 @@ impl Out {
         }
         self.event(id, op, &body[..4 * words.len()])
     }
+    pub fn focus_words(&mut self, id: u32, op: u16, words: &[u32]) -> Result<(), ()> {
+        if self.focuses == self.focus.len() { return Err(()); }
+        let start = self.len;
+        self.words(id, op, words)?;
+        let ticket = NEXT_FOCUS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+        self.focus[self.focuses] = Focus { start, end: self.len, ticket };
+        self.focuses += 1;
+        Ok(())
+    }
+    pub fn first_focus(&self) -> Option<u64> {
+        (self.focuses != 0).then(|| self.focus[0].ticket)
+    }
+    fn send_limit(&self, peer: Option<u64>) -> usize {
+        peer.and_then(|ticket| self.focus[..self.focuses].iter().find(|f| f.ticket > ticket))
+            .map_or(self.len, |f| f.start)
+    }
+    fn advance_focus(&mut self, sent: usize) {
+        let completed = self.focus[..self.focuses].partition_point(|f| f.end <= sent);
+        self.focus.copy_within(completed..self.focuses, 0);
+        self.focuses -= completed;
+        for f in &mut self.focus[..self.focuses] {
+            f.start = f.start.saturating_sub(sent);
+            f.end -= sent;
+        }
+    }
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
-    pub fn flush(&mut self, sock: i32) -> Result<bool, i32> {
-        if self.len == 0 {
+    pub fn flush(&mut self, sock: i32, peer: Option<u64>) -> Result<bool, i32> {
+        let limit = self.send_limit(peer);
+        if limit == 0 {
             return Ok(false);
         }
         let attached = self.count != 0 && self.markers[0].offset == 0;
         let next = usize::from(attached);
-        let n = if next < self.count {
+        let n = limit.min(if next < self.count {
             self.markers[next].offset
         } else {
             self.len
-        };
+        });
         let fd = attached.then(|| self.markers[0].fd);
         let sent = platform::send(sock, &self.bytes[..n], fd)?;
         if sent == 0 || sent > n {
@@ -192,6 +233,7 @@ impl Out {
         for m in &mut self.markers[..self.count] {
             m.offset -= sent;
         }
+        self.advance_focus(sent);
         self.bytes.copy_within(sent..self.len, 0);
         self.len -= sent;
         Ok(true)
@@ -201,7 +243,26 @@ impl Out {
             platform::close(m.fd);
         }
         self.count = 0;
+        self.focuses = 0;
         self.len = 0;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn partial_leave_keeps_enter_blocked_through_last_byte() {
+        let mut earlier = Out::new();
+        let mut later = Out::new();
+        earlier.focus_words(3, 2, &[u32::MAX, 8]).unwrap();
+        later.focus_words(3, 1, &[1, 8, 0]).unwrap();
+        assert_eq!(later.send_limit(earlier.first_focus()), 0);
+        earlier.advance_focus(15);
+        assert_eq!(later.send_limit(earlier.first_focus()), 0);
+        earlier.advance_focus(1);
+        assert_eq!(later.send_limit(earlier.first_focus()), 20);
     }
 }
 

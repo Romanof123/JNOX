@@ -8,7 +8,7 @@ mod local;
 mod tmpfs;
 use local::Local;
 
-const CLIENTS: usize = 3;
+use local::CLIENTS;
 const PATH: usize = 31;
 const PAYLOAD: usize = 64;
 const BUFFER: usize = PATH + PAYLOAD;
@@ -395,8 +395,14 @@ fn panic(_: &PanicInfo<'_>) -> ! { exit(111) }
 pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
     if argc != 2 || argv.is_null() { return 81; }
     let arg = *argv.add(1);
-    if arg.is_null() || !(b'1'..=b'7').contains(&*arg) || *arg.add(1) != 0 { return 81; }
-    let live = *arg - b'0';
+    if arg.is_null() { return 81; }
+    let live = if cfg!(feature = "display-five-active") {
+        if *arg != b'2' || *arg.add(1) != b'3' || *arg.add(2) != 0 { return 81; }
+        0b10111
+    } else {
+        if !(b'1'..=b'7').contains(&*arg) || *arg.add(1) != 0 { return 81; }
+        *arg - b'0'
+    };
     // Native startup calls main once. Only this single-threaded broker loop
     // accesses these objects, including while a kernel receive is blocked.
     let mut service = Service { banks: &mut *core::ptr::addr_of_mut!(BANKS), live: 0 };

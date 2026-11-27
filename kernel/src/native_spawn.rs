@@ -151,6 +151,7 @@ fn launch(f: &NativeFrame, fixed: &mut Fixed) -> Result<usize, i32> {
             sp_el0: layout.sp as u64,
             ..EMPTY_FRAME
         };
+        FRAMES[child].x[2] = layout.envp as u64;
         core::ptr::write_volatile(
             &raw mut super::jnox_native_startup_slots[child],
             [entry, layout.sp as u64, layout.len as u64, argc as u64],

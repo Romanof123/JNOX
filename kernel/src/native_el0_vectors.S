@@ -182,6 +182,7 @@ native_batch_enter:
 .type native_el0_enter,%function
 native_el0_enter:
     msr daifset,#15
+    mov x19,x4 // retain envp across measured_return (AAPCS callee-saved)
     msr tpidrro_el0,x3
     mov x3,x2
     mrs x2,CurrentEL
@@ -212,7 +213,8 @@ native_el0_enter:
     .irp reg,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
         movi v\reg\().16b,#0
     .endr
-    .irp reg,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+    mov x2,x19
+    .irp reg,0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
         mov x\reg,xzr
     .endr
     clrex

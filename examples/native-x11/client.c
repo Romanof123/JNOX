@@ -2,10 +2,20 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <jnox/display.h>
+#include <jnox/native_abi.h>
 #include <sys/socket.h>
+#include <sys/un.h>
+#include <time.h>
+#include "xauthority.h"
+#if defined(JNOX_CALL_UNAME) && __has_include(<jnox/boot_resource.h>)
+#include <jnox/boot_resource.h>
+#include <jnox/ipc.h>
+#include "../../sdk/native-aarch64/graphics/os/sys/utsname.h"
+#define MOSAIC_LOCAL_AUTH 1
+#endif
 
 typedef unsigned char byte;
-enum { WIDTH = 240, HEIGHT = 160, BROKER = 1, SOCKET_CHUNK = 64, STRIP_ROWS = 32 };
+enum { WIDTH = 240, HEIGHT = 160, IPV4_BROKER = 1, UNIX_BROKER = 3, SOCKET_CHUNK = 64, STRIP_ROWS = 32 };
 enum { LEFT = (JNOX_DISPLAY_WIDTH - WIDTH) / 2, TOP = (JNOX_DISPLAY_HEIGHT - HEIGHT) / 2 };
 _Static_assert(HEIGHT % STRIP_ROWS == 0, "GetImage strips must cover the window");
 enum { CREATE_WINDOW = 1, DESTROY_WINDOW = 4, MAP_WINDOW = 8, CHANGE_PROPERTY = 18,
@@ -62,6 +72,52 @@ static int nibble(char ch)
     return -1;
 }
 
+static int equals(const char *a, const char *b)
+{
+    while (*a && *a == *b) { ++a; ++b; }
+    return *a == *b;
+}
+
+static int hex_cookie(const char *text, byte cookie[MOSAIC_COOKIE_SIZE])
+{
+    for (unsigned i = 0; i < MOSAIC_COOKIE_SIZE; ++i) {
+        int hi = nibble(*text++);
+        if (hi < 0) return 0;
+        int lo = nibble(*text++);
+        if (lo < 0) return 0;
+        cookie[i] = (byte)(hi * 16 + lo);
+    }
+    return !*text;
+}
+
+static void wipe(void *buffer, unsigned size)
+{
+    volatile byte *p = buffer;
+    while (size--) *p++ = 0;
+}
+
+static int read_local_cookie(byte cookie[MOSAIC_COOKIE_SIZE])
+{
+#ifdef MOSAIC_LOCAL_AUTH
+    struct utsname identity;
+    if (jnox_ipc_trap(JNOX_CALL_UNAME, (uintptr_t)&identity, sizeof(identity), 0).status)
+        return 115;
+    unsigned length = 0;
+    while (length < sizeof(identity.nodename) && identity.nodename[length]) ++length;
+    if (!length || length == sizeof(identity.nodename)) return 115;
+    static byte authority[JNOX_XAUTHORITY_MAX];
+    long size = jnox_xauthority_size();
+    int found = size > 0 && size <= (long)sizeof(authority) &&
+                jnox_xauthority_read(authority, size) == size &&
+                local_auth_cookie(authority, size, identity.nodename, length, cookie);
+    wipe(authority, sizeof(authority));
+    return found ? 0 : 116;
+#else
+    (void)cookie;
+    return 115;  /* Older SDKs can still build the original IPv4 profiles. */
+#endif
+}
+
 static int send_all(int fd, const byte *data, unsigned size)
 {
     while (size) {
@@ -97,19 +153,15 @@ static int requests(struct display *d, const byte *data, unsigned size, unsigned
     return 1;
 }
 
-static int send_setup(int fd, const char *cookie)
+static int send_setup(int fd, const byte cookie[MOSAIC_COOKIE_SIZE])
 {
-    static const char name[] = "MIT-MAGIC-COOKIE-1";
+    static const char name[] = MOSAIC_AUTH_PROTOCOL;
     byte request[48] = {'l', 0, 11, 0, 0, 0, sizeof(name) - 1, 0, 16};
     for (unsigned i = 0; i < sizeof(name) - 1; ++i) request[12 + i] = name[i];
-    for (unsigned i = 0; i < 16; ++i) {
-        int hi = nibble(*cookie++);
-        if (hi < 0) return 0;
-        int lo = nibble(*cookie++);
-        if (lo < 0) return 0;
-        request[32 + i] = (byte)(hi * 16 + lo);
-    }
-    return !*cookie && send_all(fd, request, sizeof(request));
+    for (unsigned i = 0; i < MOSAIC_COOKIE_SIZE; ++i) request[32 + i] = cookie[i];
+    int sent = send_all(fd, request, sizeof(request));
+    wipe(request, sizeof(request));
+    return sent;
 }
 
 struct cursor {
@@ -145,14 +197,24 @@ static int select_visual(struct display *d, const byte *v)
            (d->depth == 32 || !(rgb >> d->depth));
 }
 
-static int read_setup(struct display *d)
+static int read_setup(struct display *d, int local)
 {
     /* Keep the variable-length setup off the user stack. No dynamic allocation. */
     static byte payload[65536];
     byte header[8];
-    if (!read_all(d->fd, header, sizeof(header)) || header[0] != 1 ||
+    if (!read_all(d->fd, header, sizeof(header)) ||
         u16(header + 2) != 11 || u16(header + 4) != 0) return 0;
     unsigned size = u16(header + 6) * 4;
+    if (header[0] == 0) {
+        /* Xwayland 24.1.6 os/mitauth.c supplies this reason to SendConnSetup. */
+        static const char bad_key[] = "Invalid MIT-MAGIC-COOKIE-1 key";
+        if (!local || header[1] != sizeof(bad_key) - 1 ||
+            size != ((header[1] + 3u) & ~3u) || !read_all(d->fd, payload, size) ||
+            !auth_matches((struct auth_field){payload, header[1]}, bad_key, sizeof(bad_key) - 1))
+            return 0;
+        return -1;
+    }
+    if (header[0] != 1) return 0;
     if (size > sizeof(payload) || !read_all(d->fd, payload, size)) return 0;
     struct cursor c = {payload, size};
     const byte *setup = take(&c, 32);
@@ -388,31 +450,76 @@ static int event_loop(struct display *d)
     }
 }
 
-int main(int argc, char **argv)
+static int connect_unix(int *fd)
 {
-    static struct display d;
-    if ((argc != 3 && argc != 4) || !argv || !argv[1] || !argv[2]) return 100;
-    if (argc == 4) {
-        static const char mode[] = "scanout";
-        if (!argv[3]) return 100;
-        for (unsigned i = 0; i < sizeof(mode); ++i)
-            if (argv[3][i] != mode[i]) return 100;
-        d.scanout = 1;
+    static const struct sockaddr_un server = { .sun_family = AF_UNIX, .sun_path = "/tmp/.X11-unix/X0" };
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) < 0) return 102;
+    time_t deadline = now.tv_sec + 60;
+    for (;;) {
+        *fd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (*fd < 0) return 101;
+        if (connect(*fd, (const struct sockaddr *)&server, sizeof(server)) == 0) return 0;
+        int error = errno;
+        if (close(*fd) < 0 || (error != ENOENT && error != ECONNREFUSED)) return 102;
+        /* The independently scheduled Xwayland process can still be creating its listener. */
+        if (clock_gettime(CLOCK_MONOTONIC, &now) < 0 || now.tv_sec >= deadline) return 102;
+        now.tv_nsec += 50000000;
+        if (now.tv_nsec >= 1000000000) { now.tv_nsec -= 1000000000; ++now.tv_sec; }
+        int rc;
+        do rc = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &now, NULL); while (rc == EINTR);
+        if (rc) return 102;
     }
-    unsigned port = port_number(argv[1]);
-    if (!port || jnox_socket_broker(BROKER) < 0) return 100;
-    d.fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (d.fd < 0) return 101;
+}
+
+static int connect_ipv4(unsigned port, int *fd)
+{
+    *fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (*fd < 0) return 101;
     struct sockaddr_in host = {0};
     host.sin_family = AF_INET;
     host.sin_addr.s_addr = htonl(0x0a000202u);
     host.sin_port = htons((in_port_t)port);
-    int status;
-    if (connect(d.fd, (struct sockaddr *)&host, sizeof(host)) < 0) status = 102;
-    else if (!send_setup(d.fd, argv[2])) status = 103;
-    else if (!read_setup(&d)) status = 104;
-    else if (d.scanout && !init_scanout()) status = 112;
-    else if (!open_window(&d)) status = 105;
-    else status = event_loop(&d);
+    if (connect(*fd, (struct sockaddr *)&host, sizeof(host)) == 0) return 0;
+    (void)close(*fd);
+    return 102;
+}
+
+int main(int argc, char **argv)
+{
+    static struct display d;
+    if (argc < 2 || !argv || !argv[1]) return 100;
+    int local = equals(argv[1], "unix");
+    unsigned port = 0;
+    byte cookie[MOSAIC_COOKIE_SIZE];
+    if (local) {
+        if (argc != 2) return 100;
+        int status = read_local_cookie(cookie);
+        if (status) return status;
+    } else {
+        if ((argc != 3 && argc != 4) || !argv[2]) return 100;
+        if (argc == 4) {
+            if (!argv[3] || !equals(argv[3], "scanout")) return 100;
+            d.scanout = 1;
+        }
+        port = port_number(argv[1]);
+        if (!port) return 100;
+    }
+    int status = 100;
+    if (jnox_socket_broker(local ? UNIX_BROKER : IPV4_BROKER) == 0)
+        status = local ? connect_unix(&d.fd) : connect_ipv4(port, &d.fd);
+    if (status) {
+        wipe(cookie, sizeof(cookie));
+        return status;
+    }
+    if ((!local && !hex_cookie(argv[2], cookie)) || !send_setup(d.fd, cookie)) status = 103;
+    wipe(cookie, sizeof(cookie));
+    if (!status) {
+        int setup = read_setup(&d, local);
+        if (setup != 1) status = local && setup == -1 ? 114 : 104;
+        else if (d.scanout && !init_scanout()) status = 112;
+        else if (!open_window(&d)) status = 105;
+        else status = event_loop(&d);
+    }
     return close(d.fd) < 0 && status == 0 ? 111 : status;
 }

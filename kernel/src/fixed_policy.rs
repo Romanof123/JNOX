@@ -1,7 +1,7 @@
 //! Single-core fixed-priority policy. All times use one monotonic counter.
 use crate::ready_queue::ReadyQueue;
 
-pub const MAX_TASKS: usize = 4;
+pub const MAX_TASKS: usize = 4 + cfg!(any(jnox_native_display_standby, jnox_native_display_five_active)) as usize;
 const MAX_INTERVAL: u64 = i64::MAX as u64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,7 +53,7 @@ enum State {
     BlockedIpc,
     #[cfg(jnox_linux_source_net_rx_irq)]
     BlockedIrq,
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
     Dormant,
     Sleeping(u64),
     Exited,
@@ -78,22 +78,23 @@ pub struct Fixed {
 
 impl Fixed {
     pub fn new(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
-        Self::initial(tasks, mode, now, tasks.len())
+        Self::initial(tasks, mode, now, 0)
     }
 
     #[cfg(jnox_native_shell)]
     pub(crate) fn new_shell(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
         if tasks.len() != 3 { return None; }
-        Self::initial(tasks, mode, now, 1)
+        Self::initial(tasks, mode, now, 0b110)
     }
 
-    #[cfg(any(jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    #[cfg(any(jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
     pub(crate) fn new_with_standby(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
-        if tasks.len() != 3 || !matches!(mode, Mode::Fifo) { return None; }
-        Self::initial(tasks, mode, now, 2)
+        let count = if cfg!(jnox_native_display_standby) { 5 } else { 3 };
+        if tasks.len() != count || !matches!(mode, Mode::Fifo) { return None; }
+        Self::initial(tasks, mode, now, 1 << 2)
     }
 
-    fn initial(tasks: &[Config], mode: Mode, now: u64, initially_ready: usize) -> Option<Self> {
+    fn initial(tasks: &[Config], mode: Mode, now: u64, dormant_mask: u8) -> Option<Self> {
         if tasks.len() > MAX_TASKS {
             return None;
         }
@@ -118,11 +119,12 @@ impl Fixed {
         };
         for (id, config) in tasks.iter().enumerate() {
             policy.tasks[id].priority = config.priority;
-            if id < initially_ready {
+            let runnable = dormant_mask & (1 << id) == 0;
+            if runnable {
                 policy.tasks[id].state = State::Sleeping(relative_deadline(now, config.delay)?);
             }
-            #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
-            if id >= initially_ready { policy.tasks[id].state = State::Dormant; }
+            #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
+            if !runnable { policy.tasks[id].state = State::Dormant; }
         }
         policy.wake_due();
         policy.select();
@@ -130,18 +132,18 @@ impl Fixed {
         Some(policy)
     }
 
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
     pub(crate) fn dormant(&self, id: usize) -> bool {
         id < self.count && self.tasks[id].state == State::Dormant
     }
 
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
     pub(crate) fn launch(&mut self, id: usize) {
         assert!(self.dormant(id));
         self.join_tail(id);
     }
 
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
     pub(crate) fn dismiss(&mut self, id: usize) {
         assert!(self.dormant(id));
         self.tasks[id].state = State::Exited;
