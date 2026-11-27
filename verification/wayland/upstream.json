@@ -1,0 +1,25 @@
+{
+  "archive": "https://archive.ubuntu.com/ubuntu/",
+  "distribution": "Ubuntu 22.04 Jammy amd64",
+  "packages": {
+    "pool/main/w/wayland/libwayland-bin_1.20.0-1ubuntu0.1_amd64.deb": "81c000e40938392483973bdec9ed7b5529edb00bdd5ba68e96ee117977aeecda",
+    "pool/main/w/wayland/libwayland-client0_1.20.0-1ubuntu0.1_amd64.deb": "2c06ef99bc387136e6357014fcb9fa6f47e0cb4e54d9b5ee10c750743a216e5a",
+    "pool/main/w/wayland/libwayland-dev_1.20.0-1ubuntu0.1_amd64.deb": "376ff93591901b1f0b16558b6cf21aa45f82dd3d7253df95ad7804e52335beee",
+    "pool/main/w/wayland-protocols/wayland-protocols_1.25-1_all.deb": "bc149b96f0f61b8ac32cca970d38a7d7972852abb41cee96755c4c37736d33e1",
+    "pool/main/libx/libxkbcommon/libxkbcommon0_1.4.0-1_amd64.deb": "a0470edb237d52b71ad41f755c043164abed01423585ed5ea19525b3baaf84f7",
+    "pool/main/libx/libxkbcommon/libxkbcommon-dev_1.4.0-1_amd64.deb": "91e5558fabc92f671146e5022256dd4334e095c910589d579c5cd33fe61a42ac"
+  },
+  "files": {
+    "usr/bin/wayland-scanner": "4bade2490b0bce44d61dcb9741504f9925c04e81a7ec1f2082fb56087a5a12e5",
+    "usr/share/wayland/wayland.xml": "e20d8e766908e56828b3d39d20968382a3e725cfbca97bbbf0bbfab956cc7455",
+    "usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml": "637877607a10bcff2f33722d2607ab1edb53ff70325e9df46372c1afd811af43",
+    "usr/lib/x86_64-linux-gnu/libwayland-client.so.0.20.0": "30a119138d812d6e1c3280a7c2d5a9f49f13ae07b31cda2beb397da4f68f6d54",
+    "usr/include/wayland-client.h": "e9dd1fb014aa6ad848cb7d241cc223b1a70fc0b17fed5997262024e4c05532f7",
+    "usr/include/wayland-client-protocol.h": "23a10958994f1d204a6abdc9ce593e8fa8000d5754bb7ede941d0a3c9db19ed9",
+    "usr/lib/x86_64-linux-gnu/libxkbcommon.so.0.0.0": "26773f54626af26f5f26f0279a9748ea2445c1adcfef50a7d572c9b54575bd86",
+    "usr/include/xkbcommon/xkbcommon.h": "570ebff7676b1b16ae1c8861ef6a36fce8376c47d664210b6676fbf8a64d4070",
+    "usr/share/doc/libwayland-dev/copyright": "736bf54141fa9808939ffff2691b817888ea53197484c2099e8d03b954b83e3b",
+    "usr/share/doc/wayland-protocols/copyright": "03336c87de0f28fdf3d1ea238c4a402f93640ebce18e62aca0b219d1707efc05",
+    "usr/share/doc/libxkbcommon-dev/copyright": "5eeaeb1b6e029a0274e1573765bb0bae2926ef96a3679203faa4fd00fdaeaa88"
+  }
+}
