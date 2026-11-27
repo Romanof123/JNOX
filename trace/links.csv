@@ -2567,3 +2567,9 @@ IMP-338,partially-verified-by,VER-024
 VER-015,has-partial-evidence,EVD-338
 VER-024,has-partial-evidence,EVD-338
 IMP-338,tested-in,EVD-338
+CHG-339,affects,REQ-015
+CHG-339,affects,REQ-024
+CHG-339,affects,DES-009
+CHG-339,affects,DES-013
+CHG-339,affects,VER-015
+CHG-339,affects,VER-024

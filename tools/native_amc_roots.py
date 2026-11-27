@@ -11,7 +11,7 @@ def expected_roots(objects, count):
     # native_el0_mmu.rs: repr(C) Space begins with a page-aligned root table.
     # SPACE_CAPACITY is the packaged image count and root_id uses ASID pid+1.
     matches = [(address, size) for name, address, size in objects if private_spaces(name)]
-    if len(matches) != 1 or not 1 <= count <= 4:
+    if len(matches) != 1 or not 1 <= count <= 5:
         raise ValueError("missing or ambiguous linked native MMU Space array")
     base, size = matches[0]
     stride, remainder = divmod(size, count)
