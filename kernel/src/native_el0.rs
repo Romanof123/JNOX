@@ -407,6 +407,10 @@ fn policy() -> &'static mut Fixed {
     unsafe { (*(&raw mut FIXED)).as_mut().unwrap_or_else(|| fail(9)) }
 }
 
+#[cfg(jnox_native_pointer_tablet)]
+#[path = "native_tablet.rs"]
+mod tablet;
+
 #[cfg(jnox_native_display)]
 const DISPLAY_OWNER: usize = (env!("JNOX_PACKAGED_DISPLAY_SLOT").as_bytes()[0] - b'0') as usize;
 
@@ -417,6 +421,8 @@ fn display_call(pid: usize, frame: &NativeFrame) -> i64 {
     #[cfg(jnox_native_uart_rx_standby)]
     if let Err(err) = uart_standby::authorize(pid, frame.x[8]) { return err; }
     match frame.x[8] {
+        #[cfg(jnox_native_pointer_tablet)]
+        197 => tablet::call(pid, frame.x[0]),
         #[cfg(not(jnox_native_uart_rx_standby))]
         72 => ramfb::init().map_or_else(|err| err, |()| 0),
         #[cfg(jnox_native_uart_rx_standby)]
@@ -556,6 +562,10 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
         let pid = before.pid.unwrap_or_else(|| fail(9));
         linux_net::restart_exit(pid, unsafe { EXIT_STATUS[pid] })
     } else { false };
+    #[cfg(jnox_native_pointer_tablet)]
+    if matches!(action, Action::Exit) {
+        tablet::retire(before.pid.unwrap_or_else(|| fail(9)));
+    }
     let argument = match action { Action::Sleep(delay) => delay, _ => 0 };
     #[cfg(all(jnox_native_uart_rx_irq, not(jnox_native_uart_rx_standby)))]
     if matches!(action, Action::Exit) && before.pid == Some(DISPLAY_OWNER) {
@@ -1060,6 +1070,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         176 => linux_net::irq::pend_test(unsafe { CURRENT }, f.x[0], f.x[1], f.x[2]),
         #[cfg(jnox_linux_source_rtc)]
         152..=155 => pl031::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
+        #[cfg(jnox_native_pointer_tablet)]
+        197 => display_call(unsafe { CURRENT }, f),
         #[cfg(jnox_native_display)]
         72..=74 => display_call(unsafe { CURRENT }, f),
         #[cfg(jnox_native_uart_rx_irq)]

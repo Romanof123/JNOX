@@ -65,6 +65,16 @@ pub fn keymap_fd(bytes: &[u8]) -> Result<i32, ()> {
     close(fd);
     result.map_err(|_| ())
 }
+fn pointer_call(command: u64) -> Result<u64, i32> {
+    let value: i64;
+    unsafe {
+        core::arch::asm!("svc #0x4a01", in("x8") 197u64, inout("x0") command => value, options(nostack));
+    }
+    if value < 0 { Err(value as i32) } else { Ok(value as u64) }
+}
+pub fn pointer_available() -> bool { pointer_call(0) == Ok(0) }
+pub fn pointer_read() -> Result<u64, i32> { pointer_call(1) }
+
 pub fn input() -> Option<u8> {
     display::poll_key().ok()
 }

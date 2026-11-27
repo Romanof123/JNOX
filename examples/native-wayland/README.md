@@ -18,6 +18,12 @@ Each client creates a surface, assigns an xdg-toplevel role, sets its title and 
 
 The runner sends **x**, **n**, **x**, **k**, **x**, **q** on PL011. The compositor sends focused keyboard events for **x** and **k**. Each **x** press changes only the recipient’s mapped image. Tiles handles **k** by submitting one last buffer and exiting before it receives the release or callback. Its socket, protocol objects and client mapping are live at exit. Pulse accepts another **x** and closes its objects in response to `xdg_toplevel.close`, waits for a final sync, unmaps and closes its socket. The expected client exits are 71 for Pulse and 72 for Tiles. Failure returns 100 and preserves the first failing C source line.
 
+## Tablet pointer profile
+
+Package Pulse and Tiles with arguments `pa` and `pb` and enable `--pointer-tablet`. QEMU uses `-global virtio-mmio.force-legacy=false -device virtio-tablet-device`. After display initialization the compositor invokes native syscall 197 with command 0 to probe the tablet. A successful probe enables the pointer seat capability. Command 1 reads one packed event, with the type in bits 48-63, code in bits 32-47 and value in bits 0-31. A SYN_REPORT commits the packet. Syscalls 189-196 belong to the native shared-file API.
+
+A left-button press changes the receiving client's palette. Both clients expose `wayland_pointer_witness[11]` containing the seat capability mask, enter count, leave count, motion count, press count, release count, last surface-local fixed-point X and Y, last enter serial, last button serial and pointer resource deletion count.
+
 ## Process-private observations
 
 Resolve `wayland_client_witness[32]` through the corresponding client's address-space root. Entries are unsigned little-endian 64-bit words.

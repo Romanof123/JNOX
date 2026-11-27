@@ -572,6 +572,11 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_display)");
     let display_service = selector("JNOX_NATIVE_DISPLAY_SERVICE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_pointer_tablet)");
+    if let Some(value) = selector("JNOX_NATIVE_POINTER_TABLET") {
+        assert!(value == "1" && display_service.is_some(), "tablet requires a native display service");
+        println!("cargo::rustc-cfg=jnox_native_pointer_tablet");
+    }
     let uart_rx_irq = selector("JNOX_NATIVE_UART_RX_IRQ");
     let uart_standby = selector("JNOX_NATIVE_UART_RX_STANDBY");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_uart_rx_standby)");

@@ -136,6 +136,8 @@ def native_service_slots(parser, args, policy, board):
     if args.net_service and slots > 3:
         parser.error("--net-service supports at most three native processes")
     display = int(args.display_service[0]) if args.display_service else None
+    if getattr(args, "pointer_tablet", False) and display is None:
+        parser.error("--pointer-tablet requires --display-service")
     broker = int(args.socket_service[0]) if args.socket_service else None
     if args.shared_fd and (args.shared_fd != 1 or broker is None or args.net_service
                            or board != "virt" or policy not in ("fifo", "rr") or args.threads):
@@ -547,6 +549,8 @@ def main():
                         metavar="OWNER:READERMASK:WRITERMASK")
     parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
                         metavar="WRITER:WFD:READER:RFD")
+    parser.add_argument("--pointer-tablet", action="store_true",
+                        help="grant the display owner a modern virtio-input absolute tablet on QEMU virt")
     parser.add_argument("--display-service", choices=("0", "1"), action="append", default=[], metavar="SLOT",
                         help="give one ordinary virt FIFO process ramfb scanout and PL011 byte input")
     parser.add_argument("--uart-rx-irq", action="count", default=0,
@@ -914,6 +918,11 @@ def main():
             "width": 320, "height": 240, "stride": 1280, "format": "XRGB8888",
             "syscalls": {"init": 72, "write_row": 73, "poll_key": 74},
         }
+        if args.pointer_tablet:
+            env["JNOX_NATIVE_POINTER_TABLET"] = "1"
+            metadata["pointer_tablet"] = {"device": "virtio-tablet-device", "owner_slot": display_slot,
+                                          "transport": "virtio-mmio-modern", "service": 197,
+                                          "queue_size": 16, "irq_mode": "polled"}
         if args.uart_rx_irq:
             env["JNOX_NATIVE_UART_RX_IRQ"] = "1"
             metadata["uart_rx_irq"] = {"device": "pl011", "controller": "gicv2", "intid": 33,

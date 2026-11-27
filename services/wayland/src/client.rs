@@ -14,8 +14,9 @@ enum Kind {
     Wm,
     Seat,
     Keyboard,
+    Pointer,
     Surface,
-    Region,
+    Region(usize),
     Pool(usize),
     Buffer(Buffer),
     Xdg,
@@ -36,6 +37,22 @@ const EMPTY: Object = Object {
     kind: Kind::Empty,
     version: 0,
 };
+#[derive(Clone, Copy)]
+struct Region {
+    ops: [(bool, [i32; 4]); 16],
+    len: usize,
+}
+impl Region {
+    const EMPTY: Self = Self { ops: [(false, [0; 4]); 16], len: 0 };
+    fn contains(&self, x: i64, y: i64) -> bool {
+        self.ops[..self.len].iter().rev().find_map(|&(add, [left, top, w, h])| {
+            let dx = x - i64::from(left);
+            let dy = y - i64::from(top);
+            (dx >= 0 && dy >= 0 && dx < i64::from(w) && dy < i64::from(h)).then_some(add)
+        }).unwrap_or(false)
+    }
+}
+
 struct Pool {
     map: Option<platform::Mapping>,
     size: usize,
@@ -61,10 +78,16 @@ pub struct Client {
     pub surface: Surface,
     objects: [Object; 64],
     pools: [Pool; 4],
+    regions: [Region; 4],
+    input_region: Option<Region>,
+    pending_region: Option<Option<Region>>,
     configures: [u32; 8],
     configs: usize,
     pub dying: Option<u32>,
     pub changed: bool,
+    pub surface_generation: u64,
+    pub pointer_available: bool,
+    pub pointer_local: Option<(u32, i32, i32)>,
 }
 impl Client {
     pub const fn new() -> Self {
@@ -75,10 +98,16 @@ impl Client {
             surface: Surface::new(),
             objects: [EMPTY; 64],
             pools: [const { Pool { map: None, size: 0 } }; 4],
+            regions: [Region::EMPTY; 4],
+            input_region: None,
+            pending_region: None,
             configures: [0; 8],
             configs: 0,
             dying: None,
             changed: false,
+            surface_generation: 0,
+            pointer_available: false,
+            pointer_local: None,
         }
     }
     pub fn start(&mut self, fd: i32) {
@@ -91,6 +120,7 @@ impl Client {
         };
     }
     pub fn clear(&mut self) {
+        self.pointer_local = None;
         self.incoming.clear();
         self.out.clear();
         self.objects.fill(EMPTY);
@@ -99,6 +129,8 @@ impl Client {
             p.size = 0;
         }
         self.surface = Surface::new();
+        self.input_region = None;
+        self.pending_region = None;
         self.configs = 0;
         self.dying = None;
         self.changed = true;
@@ -180,6 +212,22 @@ impl Client {
             if matches!(o.kind, Kind::Keyboard) {
                 input::key(&mut self.out, o.id, seq, time, code, pressed)?;
             }
+        }
+        Ok(())
+    }
+    pub fn input_contains(&self, x: i64, y: i64) -> bool {
+        self.input_region.is_none_or(|r| r.contains(x, y))
+    }
+    pub fn pointer_event(&mut self, opcode: u16, words: &[u32]) -> Result<()> {
+        for obj in self.objects.iter().filter(|o| matches!(o.kind, Kind::Pointer)) {
+            self.out.words(obj.id, opcode, words)?;
+        }
+        Ok(())
+    }
+    pub fn pointer_lost(&mut self) -> Result<()> {
+        self.pointer_available = false;
+        for obj in self.objects.iter().filter(|o| matches!(o.kind, Kind::Seat)) {
+            self.out.words(obj.id, 0, &[2])?;
         }
         Ok(())
     }
@@ -367,7 +415,7 @@ impl Client {
                     self.out.words(new, 0, &[1])?;
                 }
                 if name == 4 {
-                    input::capabilities(&mut self.out, new, version)?;
+                    input::capabilities(&mut self.out, new, version, self.pointer_available)?;
                 }
             }
             (Kind::Compositor, 0) => {
@@ -378,21 +426,30 @@ impl Client {
                 }
                 self.add(new, Kind::Surface, v)?;
                 self.surface.id = new;
+                self.surface_generation = self.surface_generation.wrapping_add(1);
             }
             (Kind::Compositor, 1) => {
                 let new = r.u()?;
                 r.end()?;
-                self.add(new, Kind::Region, 1)?;
+                let index = (0..self.regions.len()).find(|&i| !self.objects.iter()
+                    .any(|o| matches!(o.kind, Kind::Region(n) if n == i)))
+                    .ok_or(Fault(1, 2, b"region table full"))?;
+                self.regions[index] = Region::EMPTY;
+                self.add(new, Kind::Region(index), 1)?;
             }
-            (Kind::Region, 0) => {
+            (Kind::Region(_), 0) => {
                 r.end()?;
                 self.delete(id)?;
             }
-            (Kind::Region, 1 | 2) => {
-                for _ in 0..4 {
-                    r.i()?;
-                }
+            (Kind::Region(index), 1 | 2) => {
+                let rect = [r.i()?, r.i()?, r.i()?, r.i()?];
                 r.end()?;
+                if rect[2] > 0 && rect[3] > 0 {
+                    let region = &mut self.regions[index];
+                    let slot = region.ops.get_mut(region.len).ok_or(Fault(1, 2, b"region full"))?;
+                    *slot = (op == 1, rect);
+                    region.len += 1;
+                }
             }
             (Kind::Shm, 0) => {
                 let (new, size) = (r.u()?, r.i()?);
@@ -488,7 +545,10 @@ impl Client {
                     ));
                 }
                 self.delete(id)?;
+                self.pointer_local = None;
                 self.surface = Surface::new();
+                self.input_region = None;
+                self.pending_region = None;
                 for o in self.objects {
                     if matches!(o.kind, Kind::Frame | Kind::Presented) {
                         self.delete(o.id)?;
@@ -527,13 +587,18 @@ impl Client {
             (Kind::Surface, 4 | 5) => {
                 let reg = r.u()?;
                 r.end()?;
-                if reg != 0 && !matches!(self.objects[self.index(reg)?].kind, Kind::Region) {
-                    return Err(Fault(1, 0, b"expected wl_region"));
-                }
+                let region = if reg == 0 { None } else {
+                    let Kind::Region(index) = self.objects[self.index(reg)?].kind else {
+                        return Err(Fault(1, 0, b"expected wl_region"));
+                    };
+                    Some(self.regions[index])
+                };
+                if op == 5 { self.pending_region = Some(region); }
             }
             (Kind::Surface, 6) => {
                 r.end()?;
                 self.commit(last, image)?;
+                if let Some(region) = self.pending_region.take() { self.input_region = region; }
             }
             (Kind::Surface, 7) if v >= 2 => {
                 let t = r.i()?;
@@ -706,6 +771,26 @@ impl Client {
                 if focused && self.surface.mapped {
                     input::enter(&mut self.out, new, serial(last), self.surface.id)?;
                 }
+            }
+            (Kind::Seat, 0) if self.pointer_available => {
+                let new = r.u()?;
+                r.end()?;
+                self.add(new, Kind::Pointer, v)?;
+                if let Some((surface, x, y)) = self.pointer_local.filter(|p| p.0 == self.surface.id && self.surface.mapped) {
+                    self.out.words(new, 0, &[serial(last), surface, x as u32, y as u32])?;
+                }
+            }
+            (Kind::Pointer, 0) => {
+                let (_serial, surface, _x, _y) = (r.u()?, r.u()?, r.i()?, r.i()?);
+                r.end()?;
+                if surface != 0 {
+                    self.index(surface)?;
+                    return Err(Fault(id, 0, b"surface already has a role"));
+                }
+            }
+            (Kind::Pointer, 1) if v >= 3 => {
+                r.end()?;
+                self.delete(id)?;
             }
             (Kind::Seat, 0 | 2) => return Err(Fault(id, 0, b"seat capability unavailable")),
             (Kind::Keyboard, 0) if v >= 3 => {

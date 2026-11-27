@@ -3,6 +3,7 @@
 
 mod client;
 mod input;
+mod pointer;
 mod observe;
 #[cfg(target_os = "none")]
 #[path = "guest.rs"]
@@ -221,6 +222,7 @@ fn run() -> Result<(), i32> {
     let listener = platform::listen()?;
     let (clients, images) = unsafe { (&mut *(&raw mut CLIENTS), &mut *(&raw mut IMAGES)) };
     let mut scene = Scene::new();
+    let mut pointer = pointer::Pointer::new();
     let mut closing = None;
     scene.draw(clients, images, platform::now_ms())?;
     loop {
@@ -231,6 +233,7 @@ fn run() -> Result<(), i32> {
                 match platform::accept(listener) {
                     Ok(fd) => {
                         slot.start(fd);
+                        slot.pointer_available = pointer.available;
                         progressed = true;
                     }
                     Err(-11) => {}
@@ -281,6 +284,8 @@ fn run() -> Result<(), i32> {
                 }
             }
         }
+        pointer.reconcile(&mut scene, clients, time);
+        progressed |= pointer.poll(&mut scene, clients, time);
         if scene.front != old || clients.iter().any(|c| c.changed) {
             scene.draw(clients, images, time)?;
         }
