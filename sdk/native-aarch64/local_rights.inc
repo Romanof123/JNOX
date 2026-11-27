@@ -79,6 +79,17 @@ int __wrap_fcntl(int fd, int cmd, ...) {
         arg = __builtin_va_arg(ap, int);
         __builtin_va_end(ap);
     }
+    if (fd >= FD_BASE && fd < FD_BASE + FD_COUNT) {
+        if (!enter()) return -1;
+        struct descriptor *desc = &descriptors[fd - FD_BASE];
+        if (!desc->kind) return finish(-EBADF);
+        if (cmd == F_GETFD) return finish(desc->cloexec ? FD_CLOEXEC : 0);
+        if (cmd == F_SETFD && !(arg & ~FD_CLOEXEC)) {
+            desc->cloexec = !!(arg & FD_CLOEXEC);
+            return finish(0);
+        }
+        return finish(cmd == F_SETFD ? -EINVAL : -ENOTSUP);
+    }
     if (!backing_range(fd)) {
         return __real_fcntl(fd, cmd, arg);
     }
@@ -98,7 +109,7 @@ static long backing_io(int fd) {
  * or a send takes an in-flight reference. A stream call may transfer a prefix. */
 static long prepare_message(struct transaction *t, unsigned op, int fd,
                             const struct msghdr *msg, int flags) {
-    int allowed = op == OP_RECV_RIGHTS ? MSG_DONTWAIT | MSG_CMSG_CLOEXEC : MSG_DONTWAIT;
+    int allowed = op == OP_RECV_RIGHTS ? MSG_DONTWAIT | MSG_CMSG_CLOEXEC : MSG_DONTWAIT | MSG_NOSIGNAL;
     if (flags & ~allowed) return -ENOTSUP;
     if (!msg) return -EFAULT;
     if ((uintptr_t)msg % _Alignof(struct msghdr)) return -EINVAL;

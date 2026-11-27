@@ -48,7 +48,9 @@ static inline struct cmsghdr *CMSG_NXTHDR(const struct msghdr *m, const struct c
 #define SOCK_STREAM 1
 #define SOCK_DGRAM 2
 #define SOCK_SEQPACKET 5
+#define SOCK_CLOEXEC 0x80000
 #define SOCK_NONBLOCK 0x800
+#define MSG_NOSIGNAL 0x4000
 #define MSG_TRUNC 0x20
 #define MSG_DONTWAIT 0x40
 /* Install SCM_RIGHTS descriptors with receiver-local FD_CLOEXEC. */
