@@ -2,6 +2,7 @@
 #include <jnox_virtnet_layout.h>
 #include <linux/cpuhotplug.h>
 #include <linux/cpu.h>
+#include <linux/dim.h>
 #include <net/xdp.h>
 #include "lifecycle_platform.h"
 
@@ -112,4 +113,41 @@ void xdp_rxq_info_unreg(struct xdp_rxq_info *x)
     *x = (struct xdp_rxq_info){ .reg_state = 2 };
     registered_rx = NULL;
     shared_model = false;
+}
+
+/* The lifecycle transport negotiates no VQ_NOTF_COAL control queue.
+ * Upstream gates creation, per-RQ setup, cancellation and release on that
+ * bit. Refuse creation before any work or moderation state is allocated. */
+volatile unsigned int jnox_lifecycle_dim_fault;
+static __noreturn void unexpected_dim(unsigned int operation)
+{
+    WRITE_ONCE(jnox_lifecycle_dim_fault, operation);
+    __builtin_trap();
+}
+
+int net_dim_init_irq_moder(struct net_device *dev, u8 profiles, u8 flags,
+                           u8 rx_mode, u8 tx_mode, work_func_t rx, work_func_t tx)
+{
+    WRITE_ONCE(jnox_lifecycle_dim_fault, 1);
+    return -EOPNOTSUPP;
+}
+
+void net_dim_setting(struct net_device *dev, struct dim *dim, bool tx)
+{
+    unexpected_dim(2);
+}
+
+struct dim_cq_moder net_dim_get_rx_irq_moder(struct net_device *dev, struct dim *dim)
+{
+    unexpected_dim(3);
+}
+
+void net_dim_work_cancel(struct dim *dim)
+{
+    unexpected_dim(4);
+}
+
+void net_dim_free_irq_moder(struct net_device *dev)
+{
+    unexpected_dim(5);
 }

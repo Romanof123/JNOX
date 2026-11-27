@@ -5,4 +5,5 @@ int jnox_rx_lifecycle_ready_v1(void);
 void jnox_rx_lifecycle_retire_v1(unsigned long epoch);
 void jnox_lifecycle_run_work_v1(void);
 unsigned int jnox_lifecycle_page_refs_v1(void);
+extern volatile unsigned int jnox_lifecycle_dim_fault;
 #endif

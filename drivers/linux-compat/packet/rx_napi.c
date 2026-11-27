@@ -114,6 +114,46 @@ int jnox_rx_queue_large_sg_v1(struct scatterlist *sg, unsigned int count)
            (sq_alloc && sg == sq.sg && count == ARRAY_SIZE(sq.sg));
 }
 
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+/* Only the device and queue objects of the current one-CPU service may
+ * acquire these mutexes. RTNL is independently owned by lifecycle_netdev. */
+static unsigned int initialized_locks, held_locks;
+static unsigned int mutex_slot(struct mutex *m)
+{
+    if (!owner) return 0;
+    if (m == &owner->lock) return 1;
+    struct virtnet_info *vi = netdev_priv(owner);
+    if (m == &vi->cvq_lock) return 2;
+    if (rq_alloc && m == &rq.dim_lock) return 4;
+    return 0;
+}
+void __mutex_init(struct mutex *m, const char *name, struct lock_class_key *key)
+{
+    unsigned int slot = mutex_slot(m);
+    if (!slot || (initialized_locks & slot)) bad(2);
+    memset(m, 0, sizeof(*m));
+    INIT_LIST_HEAD(&m->wait_list);
+    initialized_locks |= slot;
+}
+void mutex_lock(struct mutex *m)
+{
+    unsigned int slot = mutex_slot(m);
+    struct task_struct *task = jnox_packet_current_v1();
+    if (!(initialized_locks & slot) || !task || (held_locks & slot) ||
+        atomic_long_cmpxchg_acquire(&m->owner, 0, (long)task)) bad(3);
+    held_locks |= slot;
+    if (slot == 1) locked = true;
+}
+void mutex_unlock(struct mutex *m)
+{
+    unsigned int slot = mutex_slot(m);
+    struct task_struct *task = jnox_packet_current_v1();
+    if (!(held_locks & slot) || !task ||
+        atomic_long_cmpxchg_release(&m->owner, (long)task, 0) != (long)task) bad(4);
+    held_locks &= ~slot;
+    if (slot == 1) locked = false;
+}
+#else
 void __mutex_init(struct mutex *m, const char *name, struct lock_class_key *key)
 {
     (void)name;
@@ -136,6 +176,8 @@ void mutex_unlock(struct mutex *m)
     atomic_long_set(&m->owner, 0);
     locked = false;
 }
+
+#endif
 
 void timer_init_key(struct timer_list *t, void (*fn)(struct timer_list *), unsigned int flags,
                     const char *name, struct lock_class_key *key)
@@ -251,6 +293,10 @@ static void remove_napi(struct napi_struct *n)
 int jnox_rx_napi_release_v1(struct net_device *dev)
 {
     if (!dev || dev != owner || polling || locked || held_spin || rcu_owner) return -EBUSY;
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    if (held_locks) return -EBUSY;
+    initialized_locks = 0;
+#endif
     remove_napi(&rq.napi);
     remove_napi(&sq.napi);
     if (rq_alloc) kfree(&rq);

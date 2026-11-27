@@ -6,6 +6,8 @@
 #include <jnox_rx_napi.h>
 #include <lifecycle_netdev.h>
 #include <linux/if_arp.h>
+#include <linux/jiffies.h>
+#include <linux/netlink.h>
 #include <linux/rbtree_augmented.h>
 #include <linux/rtnetlink.h>
 #include <net/netdev_rx_queue.h>
@@ -52,6 +54,41 @@ static void require_device(const struct net_device *dev)
 {
     if (!dev || dev != allocated)
         fault(1);
+}
+
+/* The timeout diagnostic takes a jiffies delta. This pinned kernel uses an
+ * integral number of microseconds per tick and returns an unsigned int. */
+unsigned int jiffies_to_usecs(const unsigned long ticks)
+{
+    static_assert(USEC_PER_SEC % HZ == 0);
+    return (unsigned int)(ticks * (USEC_PER_SEC / HZ));
+}
+
+/* The three retained NL_SET_ERR_MSG_MOD sites precede original XDP errors.
+ * Preserve the message locally and let the original return its own errno. */
+char jnox_lifecycle_extack_message[NETLINK_MAX_FMTMSG_LEN];
+unsigned long jnox_lifecycle_extack_count;
+
+void do_trace_netlink_extack(const char *message)
+{
+    if (!message)
+        fault(18);
+    unsigned int i = 0;
+    while (i + 1 < sizeof(jnox_lifecycle_extack_message) && message[i]) {
+        jnox_lifecycle_extack_message[i] = message[i];
+        ++i;
+    }
+    jnox_lifecycle_extack_message[i] = '\0';
+    __atomic_add_fetch(&jnox_lifecycle_extack_count, 1UL, __ATOMIC_RELEASE);
+}
+
+/* VIRTIO_NET_S_ANNOUNCE requires the Linux L3 peer-notifier chain (ARP/ND).
+ * That feature is outside this service. Reaching it must stop before the
+ * original acknowledges the announcement to the device. */
+void netdev_notify_peers(struct net_device *dev)
+{
+    require_device(dev);
+    fault(17);
 }
 
 /* The only admitted callback task cannot sleep waiting for itself. An

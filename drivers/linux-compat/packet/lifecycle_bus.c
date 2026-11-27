@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include <jnox_virtnet_layout.h>
 #include <jnox_packet_context.h>
+#include <linux/module.h>
 #include <jnox_tx_virtqueue.h>
 #include <lifecycle_bus.h>
 #include <lifecycle_netdev.h>
@@ -15,6 +16,15 @@ extern void jnox_net_forget_queues(void);
 extern int jnox_lifecycle_bind_worker_v1(struct virtio_device *);
 extern void jnox_lifecycle_unbind_worker_v1(void);
 
+struct module __this_module = {
+    .name = "virtio_net",
+    .state = MODULE_STATE_UNFORMED,
+    .init = init_module,
+#ifdef CONFIG_MODULE_UNLOAD
+    .exit = cleanup_module,
+#endif
+};
+
 static struct virtio_device *matched;
 static bool probed, opened, reset_done;
 struct virtio_driver *jnox_lifecycle_registered_driver;
@@ -27,6 +37,8 @@ int __register_virtio_driver(struct virtio_driver *d, struct module *owner)
 {
     if (jnox_lifecycle_registered_driver || d != &virtio_net_driver || !d->validate || !d->probe ||
         !d->remove || !d->id_table) return -EINVAL;
+    if (owner != &__this_module || owner->state != MODULE_STATE_COMING)
+        return -EINVAL;
     d->driver.owner = owner;
     jnox_lifecycle_registered_driver = d;
     return 0;
@@ -34,7 +46,10 @@ int __register_virtio_driver(struct virtio_driver *d, struct module *owner)
 
 void unregister_virtio_driver(struct virtio_driver *d)
 {
-    if (d != jnox_lifecycle_registered_driver || probed) __builtin_trap();
+    if (d != jnox_lifecycle_registered_driver || probed ||
+        d->driver.owner != &__this_module || __this_module.state != MODULE_STATE_GOING)
+        __builtin_trap();
+    d->driver.owner = NULL;
     jnox_lifecycle_registered_driver = NULL;
 }
 
@@ -60,6 +75,26 @@ static __noreturn void fault(long err)
     __builtin_trap();
 }
 
+static int start_provider(void)
+{
+    if (__this_module.state != MODULE_STATE_UNFORMED) return -EBUSY;
+    __this_module.state = MODULE_STATE_COMING;
+    int err = __this_module.init();
+    if (err && jnox_lifecycle_registered_driver) fault(-EPROTO);
+    if (!err && jnox_lifecycle_registered_driver != &virtio_net_driver) fault(-EPROTO);
+    __this_module.state = err ? MODULE_STATE_UNFORMED : MODULE_STATE_LIVE;
+    return err;
+}
+
+static void stop_provider(void)
+{
+    if (__this_module.state != MODULE_STATE_LIVE || probed) fault(-EBUSY);
+    __this_module.state = MODULE_STATE_GOING;
+    cleanup_module();
+    if (jnox_lifecycle_registered_driver) fault(-EPROTO);
+    __this_module.state = MODULE_STATE_UNFORMED;
+}
+
 bool jnox_lifecycle_feature_v1(unsigned int bit)
 {
     const struct virtio_driver *d = &virtio_net_driver;
@@ -83,7 +118,7 @@ int jnox_lifecycle_validate_v1(struct virtio_device *v)
         jnox_lifecycle_tx_param[2] = selected;
         if (selected) return -EPROTO;
         ++jnox_lifecycle_tx_param[3];
-        int err = init_module();
+        int err = start_provider();
         if (err) return err;
     }
     const struct virtio_device_id *item = jnox_lifecycle_registered_driver->id_table;
@@ -97,12 +132,12 @@ int jnox_lifecycle_validate_v1(struct virtio_device *v)
         stats[1] = (unsigned long)item;
         stats[2] = (unsigned long)virtio_net_driver.validate;
         int err = jnox_lifecycle_registered_driver->validate(v);
-        if (err) cleanup_module();
+        if (err) stop_provider();
         matched = err ? NULL : v;
         return err;
     }
     matched = NULL;
-    cleanup_module();
+    stop_provider();
     return -ENODEV;
 }
 
@@ -139,6 +174,23 @@ void jnox_lifecycle_set_status_v1(struct virtio_device *v, u8 status)
     if (err || jnox_lifecycle_get_status_v1(v) != 15) fault(err ? err : -EPROTO);
 }
 
+/* The sole native FIFO worker serializes these transitions and callbacks.
+ * EL1 IRQ handling publishes events; it never enters this device in EL0. */
+void virtio_config_changed(struct virtio_device *v)
+{
+    if (!v || v != matched) fault(-ENODEV);
+    if (!v->config_core_enabled || v->config_driver_disabled) {
+        v->config_change_pending = true;
+        return;
+    }
+    struct virtio_driver *d = jnox_lifecycle_registered_driver;
+    if (!d || v->dev.driver != &d->driver) fault(-EPROTO);
+    if (d->config_changed) {
+        d->config_changed(v);
+        v->config_change_pending = false;
+    }
+}
+
 void virtio_config_driver_disable(struct virtio_device *v)
 {
     if (v != matched) fault(-ENODEV);
@@ -149,6 +201,7 @@ void virtio_config_driver_enable(struct virtio_device *v)
 {
     if (v != matched) fault(-ENODEV);
     v->config_driver_disabled = false;
+    if (v->config_change_pending) virtio_config_changed(v);
 }
 
 void jnox_lifecycle_reset_v1(struct virtio_device *v)
@@ -179,12 +232,13 @@ static int probe(void)
     if (jnox_lifecycle_get_status_v1(v) != 11) return -EPROTO;
     reset_done = false;
     stats[3] = (unsigned long)virtio_net_driver.probe;
+    v->config_core_enabled = false;
     int err = jnox_lifecycle_registered_driver->probe(v);
     if (err) {
         if (!reset_done) jnox_lifecycle_reset_v1(v);
         jnox_net_forget_queues();
         jnox_lifecycle_devres_release_v1(&v->dev);
-        cleanup_module();
+        stop_provider();
         memset(v, 0, sizeof(*v));
         matched = NULL;
         return err;
@@ -205,6 +259,8 @@ static int probe(void)
     stats[6] = (unsigned long)virtio_net_driver.remove;
     err = jnox_lifecycle_bind_worker_v1(v);
     if (err) fault(err);
+    v->config_core_enabled = true;
+    if (v->config_change_pending) virtio_config_changed(v);
     jnox_lifecycle_run_work_v1();
     probed = true;
     ++stats[7];
@@ -246,6 +302,7 @@ static int remove_device(void)
         int err = close_device();
         if (err) return err;
     }
+    matched->config_core_enabled = false;
     jnox_lifecycle_unbind_worker_v1();
     jnox_lifecycle_registered_driver->remove(matched);
     jnox_lifecycle_devres_release_v1(&matched->dev);
@@ -254,7 +311,7 @@ static int remove_device(void)
     memset(matched, 0, sizeof(*matched));
     matched = NULL;
     probed = false;
-    cleanup_module();
+    stop_provider();
     ++stats[10];
     return 0;
 }

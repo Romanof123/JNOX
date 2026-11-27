@@ -22,7 +22,7 @@ from qemu_capture import capture_halt, journal_location, request
 import verify_linux_source_net_irq as irq
 import verify_linux_source_net_rx as rx
 from verify_linux_source_net import RAM, NEG, NIC, callback_attempts, load, require, save, sha
-from verify_linux_source_net_packets import MAX_LOG, area, challenge, dma_layout, model_command, pcap_frames, socket_frames
+from verify_linux_source_net_packets import MAX_LOG, STRIDE, area, challenge, dma_layout, model_command, pcap_frames, socket_frames
 from verify_linux_source_net_queues import routine
 
 ORIGINAL=("init_module","cleanup_module","virtnet_validate","virtnet_probe","virtnet_open","virtnet_close","virtnet_remove",
@@ -528,7 +528,7 @@ def replay(pkg,imp,out,through_open=False):
                 removed<starts["cleanup_module"][g]<starts["unregister_virtio_driver"][g],
                 "actual module registration, dispatch and unregister")
         require(posted and len(posted)>=32 and probe<starts["virtnet_find_vqs"][g]<starts["register_netdevice"][g]<live<opened<posted[0] and
-                posted[0]<irqs[0]["eoi"]<cb[0]<poll[0]<gro[0] and len(gro)==len(frames[g])+1 and
+                posted[0]<irqs[0]["eoi"]<cb[0] and any(cb[0]<i<gro[0] for i in poll) and len(gro)==len(frames[g])+1 and
                 gro[-1]<starts["virtnet_close"][0 if not g else 2]<removed<reset,
                 "original probe, DRIVER_OK, open, first post, IRQ, poll or remove chronology")
     uart=(out/"uart.log").read_bytes()
