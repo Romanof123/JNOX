@@ -2551,3 +2551,9 @@ CHG-337,affects,EVD-337
 IMP-337,partially-verified-by,VER-024
 VER-024,has-partial-evidence,EVD-337
 IMP-337,tested-in,EVD-337
+CHG-338,affects,REQ-015
+CHG-338,affects,REQ-024
+CHG-338,affects,DES-009
+CHG-338,affects,DES-013
+CHG-338,affects,VER-015
+CHG-338,affects,VER-024

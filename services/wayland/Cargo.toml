@@ -1,0 +1,10 @@
+[package]
+name = "jnox-wayland"
+version = "0.1.0"
+edition = "2021"
+
+[target.'cfg(target_os = "none")'.dependencies]
+jnox-native = { path = "../../sdk/native-aarch64/rust", features = ["local-socket", "display"] }
+
+[profile.release]
+panic = "abort"
