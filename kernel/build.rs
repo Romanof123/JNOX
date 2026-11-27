@@ -707,6 +707,23 @@ fn main() {
     }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
+    let account = selector("JNOX_NATIVE_SERVICE_ACCOUNT");
+    let fixed_process = profile.as_deref() == Some("native") && native_image.is_some()
+        && matches!(policy.as_deref(), Some("fifo" | "rr")) && threads.is_none();
+    assert!(account.is_none() || fixed_process, "service account requires packaged FIFO/RR processes");
+    if fixed_process {
+        let account = account.as_deref().unwrap_or("65534:65534");
+        let (uid, gid) = account.split_once(':').expect("expected service UID:GID");
+        let id = |s: &str| {
+            assert!(!s.is_empty() && s.bytes().all(|c| c.is_ascii_digit()), "expected numeric service ID");
+            let value: u16 = s.parse().expect("service ID exceeds u16");
+            assert!((1..=65534).contains(&value), "service ID must be in 1..65534");
+            value
+        };
+        let out = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap());
+        std::fs::write(out.join("native_service_account.rs"), format!("({}, {})", id(uid), id(gid)))
+            .expect("write trusted package service account");
+    }
     if let Some(node) = selector("JNOX_NATIVE_NODENAME") {
         let bytes = node.as_bytes();
         assert!(native_image.is_some() && threads.is_none() && matches!(policy.as_deref(), Some("fifo" | "rr")) &&
@@ -831,7 +848,7 @@ fn main() {
                 "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"
                 | "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256" | "JNOX_NATIVE_PEER_ELF"
                 | "JNOX_NATIVE_PEER_ELF_SHA256" | "JNOX_NATIVE_POLICY" | "JNOX_NATIVE_PRIORITIES"
-                | "JNOX_NATIVE_ARGV0_HEX" | "JNOX_NATIVE_ARGV1_HEX"),
+                | "JNOX_NATIVE_ARGV0_HEX" | "JNOX_NATIVE_ARGV1_HEX" | "JNOX_NATIVE_SERVICE_ACCOUNT"),
                 "{env_key} conflicts with {key}");
         }
         println!("cargo::rustc-cfg={cfg}");

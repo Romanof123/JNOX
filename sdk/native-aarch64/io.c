@@ -8,6 +8,7 @@
 #include <sched.h>
 #include <unistd.h>
 #include <time.h>
+#include "process_id.inc"
 
 _Static_assert(sizeof(void *) == 8 && sizeof(long) == 8 && sizeof(int) == 4,
                "native ABI v1 requires AArch64 LP64");
@@ -161,6 +162,11 @@ _Static_assert(sizeof(struct timespec) == 16 &&
 int clock_gettime(clockid_t clock, struct timespec *result)
 {
     return (int)service(JNOX_CALL_CLOCK_GETTIME, clock, (long)result, 0);
+}
+
+int clock_getres(clockid_t clock, struct timespec *result)
+{
+    return (int)service(JNOX_CALL_CLOCK_GETRES, clock, (long)result, 0);
 }
 
 /* All cache state is in the application's private, pristine-on-restart BSS. */

@@ -303,16 +303,32 @@ extern int __real_close(int);
 extern ssize_t __real_read(int, void *, size_t);
 extern ssize_t __real_write(int, const void *, size_t);
 static int socket_range(int fd) { return fd >= FD_BASE && fd < FD_BASE + FD_COUNT; }
+long jnox_file_seek(int fd, long offset, int whence) {
+    if (fd < 0 || fd >= JNOX_SHM_FD_BASE + JNOX_SHM_FD_COUNT) return error(EBADF);
+    if (socket_range(fd)) {
+        if (__wrap_fcntl(fd, F_GETFD) < 0) return -1;
+        return error(ESPIPE);
+    }
+    if (!backing_range(fd)) return error(ENOTSUP);
+    if (whence < SEEK_SET || whence > SEEK_END) return error(EINVAL);
+    long r = jnox_ipc_trap(JNOX_CALL_SHM_FILE_IO, fd, whence, (uint64_t)offset).status;
+    return r < 0 ? error(-r) : r;
+}
+#ifndef JNOX_GRAPHICS_OS
+off_t lseek(int fd, off_t offset, int whence) {
+    return jnox_file_seek(fd, offset, whence);
+}
+#endif
 int __wrap_close(int fd) {
     if (backing_range(fd)) return jnox_shm_close(fd);
     return socket_range(fd) ? simple(OP_CLOSE, fd, 0) : __real_close(fd);
 }
 ssize_t __wrap_read(int fd, void *buf, size_t n) {
-    if (backing_range(fd)) return backing_io(fd);
+    if (backing_range(fd)) return backing_io(fd, JNOX_SHM_FILE_READ, n, (uintptr_t)buf);
     return socket_range(fd) ? recv(fd, buf, n, 0) : __real_read(fd, buf, n);
 }
 ssize_t __wrap_write(int fd, const void *buf, size_t n) {
-    if (backing_range(fd)) return backing_io(fd);
+    if (backing_range(fd)) return backing_io(fd, JNOX_SHM_FILE_WRITE, n, (uintptr_t)buf);
     return socket_range(fd) ? send(fd, buf, n, 0) : __real_write(fd, buf, n);
 }
 

@@ -124,6 +124,13 @@ def pipe_fields(value):
     return tuple(unsigned_decimal(field) for field in value.split(":"))
 
 
+def service_account(value):
+    fields = pipe_fields(value)
+    if len(fields) != 2 or not all(1 <= item <= 65534 for item in fields):
+        raise argparse.ArgumentTypeError("expected UID:GID, each in 1..65534")
+    return fields
+
+
 def native_service_slots(parser, args, policy, board):
     if len(args.socket_service) > 1 or len(args.display_service) > 1:
         parser.error("--socket-service and --display-service may each appear only once")
@@ -544,6 +551,8 @@ def main():
     parser.add_argument("--rom-file", action="append", default=[], metavar="NAME=FILE",
                         help="embed a host file under an immutable guest basename")
     parser.add_argument("--nodename", help="one explicit ASCII node label for all native FIFO/RR processes")
+    parser.add_argument("--service-account", type=service_account, action=SinglePath, metavar="UID:GID",
+                        help="unprivileged account for every native FIFO/RR process in this package (default 65534:65534)")
     parser.add_argument("--console-write", action="append", type=int, choices=range(4), default=[],
                         help="grant this process slot bounded SVC 4 console output on fd 1 and 2")
     parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
@@ -584,7 +593,7 @@ def main():
     if args.linux_source_driver:
         option = f"--linux-source-{args.linux_source_driver}"
         allowed = {"out", "board", "kernel_profile", "linux_source_driver", "linux_source_net_rx_irq_rearm_test", "linux_source_net_restart_pending_test", "elf", "peer_elf",
-                   "policy", "priority", "peer_priority", "arg", "peer_arg"}
+                   "policy", "priority", "peer_priority", "arg", "peer_arg", "service_account"}
         conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
                      and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
         peers = 2 if args.linux_source_driver == "net-restart" else 1
@@ -652,6 +661,8 @@ def main():
     board = args.board or "virt"
     display_slot, service_slot, service_clients = native_service_slots(parser, args, policy, board)
     validate_pipes(parser, args, policy, board)
+    if args.service_account is not None and (policy not in ("fifo", "rr") or args.threads or not (args.elf or args.source)):
+        parser.error("--service-account requires packaged native FIFO/RR processes")
     if args.nodename is not None and (policy not in ("fifo", "rr") or args.threads or not args.elf or
             not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", args.nodename)):
         parser.error("--nodename requires native FIFO/RR and one 1..63 byte alphanumeric or hyphen label")
@@ -1147,6 +1158,11 @@ def main():
         if args.nodename is not None:
             metadata["nodename"] = args.nodename
             env["JNOX_NATIVE_NODENAME"] = args.nodename
+        if policy in ("fifo", "rr") and not args.threads:
+            uid, gid = args.service_account or (65534, 65534)
+            metadata["service_account"] = {"uid": uid, "gid": gid}
+            if args.service_account is not None:
+                env["JNOX_NATIVE_SERVICE_ACCOUNT"] = f"{uid}:{gid}"
         env.update(encoded_arguments)
         env.update(JNOX_BOARD=board, JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,

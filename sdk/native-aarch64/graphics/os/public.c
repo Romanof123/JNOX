@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stddef.h>
 
 void jnox_graphics_errno(int code)
 {
@@ -26,7 +27,9 @@ void jnox_graphics_errno(int code)
     case 23: errno = ENFILE; break;
     case 24: errno = EMFILE; break;
     case 25: errno = ENOTTY; break;
+    case 27: errno = EFBIG; break;
     case 28: errno = ENOSPC; break;
+    case 29: errno = ESPIPE; break;
     case 32: errno = EPIPE; break;
     case 36: errno = ENAMETOOLONG; break;
     case 110: errno = ETIMEDOUT; break;
@@ -41,6 +44,16 @@ void jnox_graphics_errno(int code)
     case 111: errno = ECONNREFUSED; break;
     default: errno = EIO; break;
     }
+}
+
+#include <stdio.h>
+#include <unistd.h>
+extern long jnox_file_seek(int, long, int);
+_Static_assert(sizeof(off_t) == sizeof(long), "graphics file offsets require LP64");
+_Static_assert(SEEK_SET == 0 && SEEK_CUR == 1 && SEEK_END == 2, "graphics seek selectors");
+off_t lseek(int fd, off_t offset, int whence)
+{
+    return jnox_file_seek(fd, offset, whence);
 }
 
 extern int jnox_transport_fcntl(int, int, ...);
@@ -80,6 +93,20 @@ int fcntl(int fd, int cmd, ...)
 
 #include <time.h>
 extern int jnox_monotonic_now(long *, long *);
+extern int jnox_monotonic_getres(void *);
+
+_Static_assert(sizeof(struct timespec) == 16 && sizeof(time_t) == 8 &&
+               offsetof(struct timespec, tv_nsec) == 8 && sizeof(long) == 8,
+               "native clock result uses signed LP64 seconds and nanoseconds");
+
+int clock_getres(clockid_t clock, struct timespec *result)
+{
+    if (clock != CLOCK_MONOTONIC) {
+        errno = EINVAL;
+        return -1;
+    }
+    return jnox_monotonic_getres(result);
+}
 
 int clock_gettime(clockid_t clock, struct timespec *result)
 {

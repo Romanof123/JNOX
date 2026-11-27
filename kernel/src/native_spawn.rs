@@ -304,6 +304,12 @@ pub(super) fn started(pid: usize) -> bool {
         Phase::Live | Phase::Zombie | Phase::Reaped
     )
 }
+/// Shell is the sole userspace parent. Its exit marks every living child orphaned
+/// before another EL0 process can run.
+pub(super) fn has_live_parent(slot: usize) -> bool {
+    let child = unsafe { CHILD[slot] };
+    slot != 0 && child.phase == Phase::Live && !child.orphan
+}
 fn print(tag: &[u8], values: &[u64]) {
     super::uart_write(tag);
     for &v in values {

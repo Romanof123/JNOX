@@ -54,3 +54,8 @@ int jnox_monotonic_now(long *seconds, long *nanoseconds)
     *nanoseconds = now.tv_nsec;
     return 0;
 }
+
+int jnox_monotonic_getres(void *output)
+{
+    return result(jnox_ipc_trap(JNOX_CALL_CLOCK_GETRES, CLOCK_MONOTONIC, (uintptr_t)output, 0).status);
+}

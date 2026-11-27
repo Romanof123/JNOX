@@ -7,5 +7,6 @@
 #include_next <time.h>
 #if __POSIX_VISIBLE
 int clock_gettime(clockid_t clock, struct timespec *result);
+int clock_getres(clockid_t clock, struct timespec *result);
 #endif
 #endif

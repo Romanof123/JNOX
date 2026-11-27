@@ -39,6 +39,18 @@ fn backing(object: usize) -> *mut u8 {
     unsafe { (&raw mut jnox_native_shared_pages[object]).cast() }
 }
 
+pub(crate) fn read_file(object: usize, offset: usize, out: &mut [u8]) {
+    // The descriptor table bounds the logical extent. The kernel stack buffer
+    // is independent of the backing even when an EL0 mapping aliases it.
+    assert!(offset <= MAX_SIZE && out.len() <= MAX_SIZE - offset);
+    unsafe { ptr::copy_nonoverlapping(backing(object).add(offset), out.as_mut_ptr(), out.len()) };
+}
+
+pub(crate) fn write_file(object: usize, offset: usize, bytes: &[u8]) {
+    assert!(offset <= MAX_SIZE && bytes.len() <= MAX_SIZE - offset);
+    unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), backing(object).add(offset), bytes.len()) };
+}
+
 pub(crate) fn clear(object: usize, size: usize) {
     // The caller holds the last-reference check across allocation. Clear all
     // bytes that can be accessed through the new page-rounded EL0 mapping.

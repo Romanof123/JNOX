@@ -20,6 +20,8 @@
 #define ENFILE 23
 #define EMFILE 24
 #define ENOSPC 28
+#define EFBIG 27
+#define ESPIPE 29
 #define EPIPE 32
 #define ENAMETOOLONG 36
 #define ETIMEDOUT 110

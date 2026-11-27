@@ -1,4 +1,4 @@
-"""Build isolated Picolibc public-fcntl caller and collect its genuine guest exit."""
+"""Build an isolated Picolibc caller and collect its guest exit."""
 import ast
 import configparser
 import hashlib
@@ -12,8 +12,8 @@ from pathlib import Path
 
 runtime, out, qemu = map(Path,sys.argv[1:4])
 mode = sys.argv[4:]
-if mode not in ([], ["--seals"]):
-    raise SystemExit("usage: graphics_dup_gate.py RUNTIME OUT QEMU [--seals]")
+if mode not in ([], ["--seals"], ["--clockres"], ["--interfaces"]):
+    raise SystemExit("usage: graphics_dup_gate.py RUNTIME OUT QEMU [--seals|--clockres|--interfaces]")
 repo = Path.cwd()
 sdk = repo/"sdk/native-aarch64"
 os_port = sdk/"graphics/os"
@@ -29,10 +29,35 @@ cross.read(runtime/"jnox.ini")
 cc = ast.literal_eval(cross["binaries"]["c"])
 flags = ast.literal_eval(cross["built-in options"]["c_args"])
 ld = ast.literal_eval(cross["built-in options"]["c_link_args"])
+objects = []
 if mode:
-    source = os_port/"seal_caller.c"
     flags = ["-I" + str(prefix/"include/jnox-wayland"), *flags]
-    expected = 75
+    if mode == ["--interfaces"]:
+        verification = repo / "verification/xwayland"
+        cases = [
+            ("clock_resolution", os_port / "clockres_caller.c", 76),
+            ("shared_seals", os_port / "seal_caller.c", 75),
+            ("open_limit", os_port / "open_max_caller.c", 76),
+            ("relative_sleep", verification / "sleep/guest.c", 77),
+            ("anonymous_file", os_port / "memfd_io_caller.c", 76),
+            ("credentials", verification / "credentials/guest.c", 84),
+        ]
+        source = out / "interface-caller.c"
+        declarations = []
+        calls = []
+        for index, (name, unit, success) in enumerate(cases):
+            obj = out / (name + ".o")
+            subprocess.run([*cc, *flags, "-iquote", sdk / "include", "-Dmain=probe_" + name,
+                            "-c", unit, "-o", obj], check=True)
+            objects.append(obj)
+            declarations.append(f"int probe_{name}(void);")
+            calls.append(f"    if (probe_{name}() != {success}) return {111 + index};")
+        expected = 86
+        source.write_text("\n".join([*declarations, "int main(void) {", *calls,
+                                    f"    return {expected};", "}"]) + "\n")
+    else:
+        name, expected = ("clockres_caller.c", 76) if mode == ["--clockres"] else ("seal_caller.c", 75)
+        source = os_port/name
 else:
     source = out/"picolibc-caller.c"
     source.write_text('#define _POSIX_C_SOURCE 200809L\n#include "upstream-dup.inc"\n'
@@ -41,7 +66,7 @@ else:
     expected = 74
 subprocess.run([*cc,*flags,"-iquote",sdk/"include","-c",source,"-o",out/"picolibc-caller.o"],check=True)
 elf = out/"picolibc-caller.elf"
-subprocess.run([*cc,out/"picolibc-caller.o",prefix/"lib/libjnox-wayland-os.a",*ld,
+subprocess.run([*cc,out/"picolibc-caller.o",*objects,prefix/"lib/libjnox-wayland-os.a",*ld,
                 "-Wl,-Map,"+str(out/"picolibc-caller.map"),"-o",elf],check=True)
 package = out/"picolibc-package"
 subprocess.run([sys.executable,"tools/build_native_el0.py","--board","virt","--policy","fifo","--priority","7",
@@ -63,7 +88,7 @@ with (out/"picolibc-stderr").open("xb") as err:
                 status = int(match[1])
                 if status != expected:
                     raise ValueError(f"public Picolibc caller exited {status}")
-                print(f"Public Picolibc fcntl caller exited {status}.",flush=True)
+                print(f"Public Picolibc caller exited {status}.",flush=True)
                 break
             if proc.poll() is not None:
                 raise ValueError(f"QEMU exited {proc.returncode}")
