@@ -2,6 +2,10 @@
 #define JNOX_GRAPHICS_PTHREAD_H
 #include <stdint.h>
 #include <time.h>
+/* X11's public locking records use these handle types even in the
+ * --disable-xthreads build. pthread_t matches the native AArch64 SDK ABI. */
+typedef uint64_t pthread_t;
+typedef unsigned int pthread_key_t;
 typedef struct { unsigned locked; } pthread_mutex_t;
 struct jnox_cond_waiter;
 typedef struct { struct jnox_cond_waiter *head; unsigned guard; } pthread_cond_t;

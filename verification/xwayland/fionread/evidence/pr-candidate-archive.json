@@ -1,0 +1,7 @@
+{
+  "archive_sha256": "40a7b03445b4f616da0d8120e3fc357e690ce75c3d08c86404ce271932c32efa",
+  "members": 408,
+  "member_names_sha256": "65c0d7dbeb019d93faad2ea7f4f5ee5e9e3349c91d067c7573a6e5ecbeac6330",
+  "machine": "AArch64",
+  "geometry_guest_exit": 0
+}

@@ -115,13 +115,15 @@ static long backing_io(int fd) {
 /* Validate the vector count and all lengths before a receive consumes bytes
  * or a send takes an in-flight reference. A stream call may transfer a prefix. */
 static long prepare_message(struct transaction *t, unsigned op, int fd,
-                            const struct msghdr *msg, int flags) {
+                            const struct msghdr *msg, int flags, int vector_io) {
     int allowed = op == OP_RECV_RIGHTS ? MSG_DONTWAIT | MSG_CMSG_CLOEXEC : MSG_DONTWAIT | MSG_NOSIGNAL;
     if (flags & ~allowed) return -ENOTSUP;
     if (!msg) return -EFAULT;
     if ((uintptr_t)msg % _Alignof(struct msghdr)) return -EINVAL;
     if (msg->msg_name || msg->msg_namelen) return -ENOTSUP;
-    if (msg->msg_iovlen > JNOX_MSG_IOV_MAX) return -EMSGSIZE;
+    unsigned limit = vector_io ? JNOX_UIO_MAXIOV : JNOX_MSG_IOV_MAX;
+    int size_error = vector_io ? -EINVAL : -EMSGSIZE;
+    if (msg->msg_iovlen > limit) return size_error;
     if ((msg->msg_iovlen && !msg->msg_iov) ||
         (msg->msg_controllen && !msg->msg_control)) return -EFAULT;
     if (msg->msg_iovlen && (uintptr_t)msg->msg_iov % _Alignof(struct iovec)) return -EINVAL;
@@ -131,7 +133,7 @@ static long prepare_message(struct transaction *t, unsigned op, int fd,
     for (size_t i = 0; i < msg->msg_iovlen; ++i) {
         const struct iovec *v = &msg->msg_iov[i];
         if (v->iov_len && !v->iov_base) return -EFAULT;
-        if (v->iov_len > (size_t)__PTRDIFF_MAX__ - length) return -EMSGSIZE;
+        if (v->iov_len > (size_t)__PTRDIFF_MAX__ - length) return size_error;
         length += v->iov_len;
     }
     long r = prepare(t, op, fd);
@@ -155,11 +157,12 @@ static long sending_right(const struct msghdr *msg) {
     return backing_range(fd) ? fd : -EBADF;
 }
 
-ssize_t sendmsg(int fd, const struct msghdr *msg, int flags) {
+static ssize_t send_vectors(int fd, const struct msghdr *msg, int flags, int vector_io) {
     if (!enter()) return -1;
     struct transaction t = {0};
-    long n = prepare_message(&t, OP_SEND, fd, msg, flags);
+    long n = prepare_message(&t, OP_SEND, fd, msg, flags, vector_io);
     if (n < 0) return finish(n);
+    if (vector_io && n == 0) return finish(0);
     long right = sending_right(msg);
     if (right < 0) return finish(right);
     if (right) {
@@ -221,14 +224,35 @@ failed:
     return status;
 }
 
-ssize_t recvmsg(int fd, struct msghdr *msg, int flags) {
+static ssize_t recv_vectors(int fd, struct msghdr *msg, int flags, int vector_io) {
     if (!enter()) return -1;
     struct transaction t = {0};
-    long n = prepare_message(&t, OP_RECV_RIGHTS, fd, msg, flags);
+    long n = prepare_message(&t, OP_RECV_RIGHTS, fd, msg, flags, vector_io);
     if (n < 0) return finish(n);
+    if (vector_io && n == 0) return finish(0);
     t.arg = (unsigned)n;
     t.cloexec = !!(flags & MSG_CMSG_CLOEXEC);
     t.accept_right = msg->msg_controllen >= CMSG_LEN(sizeof(int));
     long r = commit(&t);
     return finish(r < 0 ? r : receive_message(msg, &t, r));
+}
+
+ssize_t sendmsg(int fd, const struct msghdr *msg, int flags) {
+    return send_vectors(fd, msg, flags, 0);
+}
+
+ssize_t recvmsg(int fd, struct msghdr *msg, int flags) {
+    return recv_vectors(fd, msg, flags, 0);
+}
+
+ssize_t writev(int fd, const struct iovec *iov, int count) {
+    if (count < 0) return error(EINVAL);
+    struct msghdr msg = { .msg_iov = (struct iovec *)iov, .msg_iovlen = (size_t)count };
+    return send_vectors(fd, &msg, 0, 1);
+}
+
+ssize_t readv(int fd, const struct iovec *iov, int count) {
+    if (count < 0) return error(EINVAL);
+    struct msghdr msg = { .msg_iov = (struct iovec *)iov, .msg_iovlen = (size_t)count };
+    return recv_vectors(fd, &msg, 0, 1);
 }

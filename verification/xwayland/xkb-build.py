@@ -113,7 +113,11 @@ def main():
         check_archive(os_archive)
         check_archive(xcvt / "lib/libxcvt.a")
         roots.append(xcvt)
-        flags.insert(0, "-I" + str(os_prefix / "include/jnox-wayland"))
+        # time.h uses include_next to reach the real Picolibc header. A
+        # second copy of the OS overlay would stop at its own include guard.
+        old_overlay = "-I" + str(runtime / "target/include/jnox-wayland")
+        flags = ["-I" + str(os_prefix / "include/jnox-wayland"),
+                 *(flag for flag in flags if flag != old_overlay)]
         # The base graphics profile embeds its older OS archive by absolute path.
         ld = [str(os_archive) if Path(arg).name == "libjnox-wayland-os.a" else arg for arg in ld]
         ld = ["-L" + str(prefix / "lib"), "-L" + str(runtime / "target/lib"),
@@ -196,6 +200,7 @@ def main():
     configure(out / "libXau-1.0.11", "--disable-shared", "--enable-static", "--disable-xthreads")
     if args.build_executable:
         sdk = HERE.parents[1] / "sdk/native-aarch64/include"
+        run("patch", "--fuzz=0", "-p1", "-i", HERE / "xlib-single-thread-diagnostics.patch", cwd=x11)
         for header in ("netinet/in.h", "arpa/inet.h"):
             dest = prefix / "include" / header
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -204,7 +209,26 @@ def main():
         run("patch", "-p1", "-i", HERE / "xcb-util-local.patch", cwd=out / "libxcb-1.17.0")
     configure(out / "libxcb-1.17.0", "--disable-shared", "--enable-static")
     malloc_options = ["--enable-malloc0returnsnull"] if args.build_executable else []
-    configure(x11, *malloc_options, "--disable-shared", "--enable-static", "--disable-xthreads", "--enable-xkb",
+    transport_options = []
+    if args.build_executable:
+        inc = out / "xtrans-include"
+        shutil.copytree(protocols / "include/X11/Xtrans", inc / "X11/Xtrans")
+        if hashlib.sha256((inc / "X11/Xtrans/Xtrans.c").read_bytes()).hexdigest() != "bba1bbccec1ea44213cb67d2a77628ee1790c3fdbadbb755721927da52785f41":
+            raise ValueError("unexpected Xtrans.c input")
+        for name in ("xtrans-1.4.0-uname.patch", "xtrans-unix-only.patch"):
+            run("patch", "--fuzz=0", "-p1", "-i", HERE / "identity" / name, cwd=inc)
+        # Automake prepends protocol pkg-config inputs to CFLAGS.
+        # Apply the private headers at compiler entry for X11 and the server.
+        private_args = ["-I" + str(inc), "-I" + str(os_prefix / "include/jnox-wayland"),
+                        "-DJNOX_XTRANS_LOCAL=1", "-DNO_TCP_H=1"]
+        x11cc = out / "x11-cc"
+        x11cc.write_text("#!/bin/sh\nexec " + shlex.join([str(wrapper), *private_args]) + ' "$@"\n')
+        x11cc.chmod(0o755)
+        os.environ["CC"] = str(x11cc)
+        rtcfg["binaries"]["c"] = repr([*cc, *private_args])
+        transport_options = ["--enable-unix-transport", "--disable-tcp-transport",
+                             "--disable-local-transport"]
+    configure(x11, *transport_options, *malloc_options, "--disable-shared", "--enable-static", "--disable-xthreads", "--enable-xkb",
               "--disable-loadable-i18n", "--disable-loadable-xcursor", "--disable-composecache",
               "--disable-specs", "--disable-xf86bigfont")
     for archive_name in ("libXau.a", "libxcb.a", "libX11.a"):
