@@ -15,7 +15,7 @@ mode = sys.argv[4:]
 tmpfs_modes = {
     "--tmpfs-rw": "rw", "--tmpfs-ro": "ro", "--tmpfs-unset": "unset",
     "--tmpfs-paths": "rw", "--tmpfs-paths-ro": "ro",
-    "--tmpfs-roles": "writer", "--tmpfs-cold": "cold",
+    "--tmpfs-roles": "x11-writer", "--tmpfs-cold": "cold",
 }
 if mode and (len(mode) != 1 or mode[0] not in {
         "--seals", "--clockres", "--interfaces", "--signals", "--signal-default",
@@ -106,12 +106,12 @@ peers = ["--peer-elf", broker, "--peer-arg", "1", "--peer-priority", "1",
 if mode == ["--tmpfs-roles"]:
     # The broker must answer the higher-priority writer before the reader can
     # open its file. Slot 2 has a real IPC route but no tmpfs grant.
-    peers = ["--peer-elf", elf, "--peer-arg", "reader", "--peer-priority", "6",
-             "--peer-elf", elf, "--peer2-arg", "denied", "--peer-priority", "5",
+    peers = ["--peer-elf", elf, "--peer-arg", "x11-reader", "--peer-priority", "6",
+             "--peer-elf", elf, "--peer2-arg", "x11-denied", "--peer-priority", "5",
              "--peer-elf", broker, "--peer3-arg", "7", "--peer-priority", "8",
              "--display-service", "0", "--socket-service", "3", "--shared-fd",
              "--ipc-route", "0:3", "--ipc-route", "1:3", "--ipc-route", "2:3",
-             "--tmpfs", "1:ro"]
+             "--tmpfs", "1:ro", "--tmpfs-x11-dir", "0"]
 subprocess.run([sys.executable, "tools/build_native_el0.py", "--board", "virt", "--policy", "fifo",
                 "--priority", "7", "--elf", elf, *peers, *package_options, "--out", package], check=True)
 if mode and mode[0] in ("--tmpfs-paths", "--tmpfs-paths-ro", "--tmpfs-roles", "--tmpfs-cold"):

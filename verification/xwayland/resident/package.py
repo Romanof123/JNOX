@@ -37,7 +37,7 @@ def package(server_dir, out, epoch):
     dest = out / "package"
     run(sys.executable, "tools/build_native_el0.py", "--board", "virt", "--policy", "fifo", "--display-five-active",
         "--nodename", "guest-x11", "--console-write", "1", "--display-service", "0", "--socket-service", "3",
-        "--shared-fd", "--pointer-tablet", "--tmpfs", "1:rw", "--boot-utc-seconds", str(epoch),
+        "--shared-fd", "--pointer-tablet", "--tmpfs", "1:rw", "--tmpfs-x11-dir", "1", "--boot-utc-seconds", str(epoch),
         "--ipc-route", "0:3", "--ipc-route", "1:3", "--ipc-route", "2:3", "--ipc-route", "4:3",
         "--elf", comp, "--priority", "7", "--peer-elf", server, "--peer-priority", "5",
         *("--peer-arg=" + arg for arg in SERVER_ARGS), "--env", "1:WAYLAND_DISPLAY=/wayland-0",

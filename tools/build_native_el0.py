@@ -640,6 +640,8 @@ def main():
                         help="allow the selected AF_UNIX broker to pass shared-memory descriptors")
     parser.add_argument("--tmpfs", type=tmpfs_grant, action="append", default=[], metavar="SLOT:ro|rw",
                         help="grant this client access to the volatile /tmp service on the selected socket broker")
+    parser.add_argument("--tmpfs-x11-dir", type=int, choices=range(5), action=SinglePath, metavar="SLOT",
+                        help="provision root-owned /tmp/.X11-unix and authorize this rw client to bind there")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
                         help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
     parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
@@ -726,6 +728,8 @@ def main():
             parser.error(str(exc))
     board = args.board or "virt"
     display_slot, service_slot, service_clients = native_service_slots(parser, args, policy, board)
+    if args.tmpfs_x11_dir is not None and dict(args.tmpfs).get(args.tmpfs_x11_dir) != "rw":
+        parser.error("--tmpfs-x11-dir requires a matching --tmpfs SLOT:rw grant")
     if args.tmpfs:
         slots = [slot for slot, _ in args.tmpfs]
         if (board != "virt" or policy not in ("fifo", "rr") or not args.elf or args.threads or
@@ -734,8 +738,11 @@ def main():
                     or slot > len(args.peer_elf) for slot in slots)):
             parser.error("--tmpfs requires distinct, routed clients of the virt FIFO/RR AF_UNIX broker")
         broker_elf = [args.elf, *args.peer_elf][service_slot]
-        if not re.search(r"\bjnox_tmpfs_call$", output(["readelf", "-sW", broker_elf]), re.M):
+        broker_symbols = output(["readelf", "-sW", broker_elf])
+        if not re.search(r"\bjnox_tmpfs_call$", broker_symbols, re.M):
             parser.error("--tmpfs requires a socket broker compiled with the tmpfs Cargo feature")
+        if args.tmpfs_x11_dir is not None and not re.search(r"\bjnox_tmpfs_x11_init$", broker_symbols, re.M):
+            parser.error("--tmpfs-x11-dir requires a broker with X11 directory provisioning")
     validate_pipes(parser, args, policy, board)
     if args.service_account is not None and (policy not in ("fifo", "rr") or args.threads or not (args.elf or args.source)):
         parser.error("--service-account requires packaged native FIFO/RR processes")
@@ -1006,11 +1013,15 @@ def main():
     if args.tmpfs:
         volume_grants = dict(args.tmpfs)
         env["JNOX_NATIVE_TMPFS_GRANTS"] = "".join(
-            {"ro": "1", "rw": "2"}.get(volume_grants.get(i), "0") for i in range(5))
+            "3" if i == args.tmpfs_x11_dir else {"ro": "1", "rw": "2"}.get(volume_grants.get(i), "0")
+            for i in range(5))
         metadata["tmpfs"] = {"service_slot": service_slot, "grants": volume_grants, "mount": "/tmp",
                              "files": 4, "bytes_per_file": 1024, "fd_first": 32, "fds_per_client": 8,
                              "directories_including_root_and_tmp": 6, "directory_entries_including_tmp": 12,
                              "max_path_bytes": 63, "max_component_bytes": 31}
+        if args.tmpfs_x11_dir is not None:
+            metadata["tmpfs"]["x11_socket_directory"] = {"path": "/tmp/.X11-unix", "uid": 0, "gid": 0,
+                "mode": "01777", "bind_slot": args.tmpfs_x11_dir}
     if args.pipes:
         env["JNOX_NATIVE_PIPES"] = "1"
         fifo_grants = sorted(args.fifo_grant)

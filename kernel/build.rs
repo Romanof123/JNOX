@@ -786,8 +786,9 @@ fn main() {
             .into_iter().filter(|present| *present).count();
         assert!(native_image.is_some() && board == "virt" && matches!(policy.as_deref(), Some("fifo" | "rr"))
                 && threads.is_none() && net_service.is_none() && grants.len() == 5 && grants != "00000"
+                && grants.bytes().filter(|g| *g == b'3').count() <= 1
                 && grants.bytes().enumerate().all(|(slot, g)| g == b'0' ||
-                    (matches!(g, b'1' | b'2') && slot < count && slot != broker &&
+                    (matches!(g, b'1' | b'2' | b'3') && slot < count && slot != broker &&
                      routes.split(',').any(|r| r == format!("{slot}:{broker}")))),
                 "invalid native tmpfs package grants");
         println!("cargo::rustc-cfg=jnox_native_tmpfs");

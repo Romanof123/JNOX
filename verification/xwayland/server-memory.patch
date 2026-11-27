@@ -1,0 +1,42 @@
+--- a/hw/xwayland/meson.build
++++ b/hw/xwayland/meson.build
+@@ -144,4 +144,5 @@
+     'Xwayland',
+     srcs,
++    link_args: host_machine.system() == 'jnox' ? ['-Wl,--defsym=__jnox_graphics_heap_bytes=2097152'] : [],
+     include_directories: wayland_inc,
+     dependencies: [
+--- a/mi/meson.build
++++ b/mi/meson.build
+@@ -45,4 +45,5 @@
+ libxserver_mi = static_library('libxserver_mi',
+     srcs_mi,
++    c_args: host_machine.system() == 'jnox' ? ['-DMI_QUEUE_INITIAL_SIZE=128'] : [],
+     include_directories: inc,
+     dependencies: [
+--- a/mi/mieq.c
++++ b/mi/mieq.c
+@@ -61,5 +61,7 @@
+
+ /* Maximum size should be initial size multiplied by a power of 2 */
+-#define QUEUE_INITIAL_SIZE                 512
++#ifndef MI_QUEUE_INITIAL_SIZE
++#define MI_QUEUE_INITIAL_SIZE              512
++#endif
+ #define QUEUE_RESERVED_SIZE                 64
+ #define QUEUE_MAXIMUM_SIZE                4096
+@@ -144,5 +146,6 @@
+             size_t j;
+
+-            for (j = 0; j < i; j++)
++            /* The original queue still owns the copied prefix. */
++            for (j = eventQueue->nevents; j < i; j++)
+                 FreeEventList(new_events[j].events, 1);
+             free(new_events);
+@@ -169,5 +172,5 @@
+
+     input_lock();
+-    if (!mieqGrowQueue(&miEventQueue, QUEUE_INITIAL_SIZE))
++    if (!mieqGrowQueue(&miEventQueue, MI_QUEUE_INITIAL_SIZE))
+         FatalError("Could not allocate event queue.\n");
+     input_unlock();

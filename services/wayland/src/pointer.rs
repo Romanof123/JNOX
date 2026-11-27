@@ -55,7 +55,7 @@ impl Pointer {
         for (i, c) in clients.iter_mut().enumerate() {
             if let Some((surface, _, _)) = c.pointer_local {
                 if target.is_none_or(|p| p.0 != i) || c.surface.id != surface {
-                    c.pointer_local = None;
+                    c.clear_pointer_focus();
                     if c.surface.id == surface && c.dying.is_none() {
                         if let Err(e) = c.pointer_event(1, &[serial(&mut scene.serial), surface]) {
                             c.fault(e, time);
@@ -74,6 +74,7 @@ impl Pointer {
                 c.pointer_event(2, &[time, x as u32, y as u32])
             };
             c.pointer_local = state;
+            c.cursor_moved();
             if let Err(e) = result { c.fault(e, time); }
         }
     }

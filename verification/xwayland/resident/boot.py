@@ -74,7 +74,7 @@ def sample_stopped_pc(address, code_ranges):
     return None
 
 
-def observe(kernel, private, mode, timeout, receipt, identity, code_ranges):
+def observe(kernel, private, mode, timeout, receipt, identity, code_ranges, output_dir):
     auth = private.parent / "authority"
     address = private / "qmp"
     uart = private / "uart"
@@ -153,12 +153,19 @@ def observe(kernel, private, mode, timeout, receipt, identity, code_ranges):
                                     time.sleep(.1)
                                     continue
                                 now = time.monotonic()
-                                if crop(frame.read_bytes()) == expected:
+                                pixels = crop(frame.read_bytes())
+                                if pixels == expected:
                                     if first is None:
                                         first = now
                                     if now-first >= .2:
+                                        _, _, width, height = GEOMETRY
+                                        capture = f"P6\n{width} {height}\n255\n".encode() + pixels
+                                        name = f"mosaic-{label}.ppm"
+                                        (output_dir / name).write_bytes(capture)
                                         receipt["frames"].append({"color": label, "origin": [48,56],
-                                                                  "matched_pixels": 240*160})
+                                                                  "matched_pixels": width * height,
+                                                                  "capture": name,
+                                                                  "sha256": hashlib.sha256(capture).hexdigest()})
                                         break
                                 else:
                                     first = None
@@ -240,7 +247,7 @@ def main():
         for mode in ("wrong", "matching"):
             receipt = {"kernel_sha256": identity["kernel_sha256"]}
             try:
-                observe(kernel, private / mode, mode, args.timeout, receipt, identity, code_ranges)
+                observe(kernel, private / mode, mode, args.timeout, receipt, identity, code_ranges, args.out)
             except (OSError, ValueError, RuntimeError, TimeoutError) as error:
                 # Raw UART, QEMU logs and authority files stay inside the private
                 # workspace. The public JSON retains allowlisted fields only.

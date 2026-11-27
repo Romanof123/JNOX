@@ -15,7 +15,7 @@ enum Kind {
     Seat,
     Output { entered: bool },
     Keyboard,
-    Pointer,
+    Pointer(u32),
     Surface,
     Region(usize),
     Pool(usize),
@@ -23,8 +23,8 @@ enum Kind {
     Xdg,
     Top,
     Callback,
-    Frame,
-    Presented,
+    Frame(u32),
+    Presented(u32),
     Positioner,
 }
 #[derive(Clone, Copy)]
@@ -77,6 +77,13 @@ pub struct Client {
     pub incoming: In,
     pub out: Out,
     pub surface: Surface,
+    // One xdg toplevel and one independent cursor per client.
+    auxiliary: Surface,
+    cursor_role: u32,
+    cursor_hotspot: Option<(i32, i32)>,
+    cursor_pixels: [u32; 64 * 64],
+    aux_input_region: Option<Region>,
+    aux_pending_region: Option<Option<Region>>,
     objects: [Object; 64],
     pools: [Pool; 4],
     regions: [Region; 4],
@@ -98,6 +105,12 @@ impl Client {
             incoming: In::new(),
             out: Out::new(),
             surface: Surface::new(),
+            auxiliary: Surface::new(),
+            cursor_role: 0,
+            cursor_hotspot: None,
+            cursor_pixels: [0; 64 * 64],
+            aux_input_region: None,
+            aux_pending_region: None,
             objects: [EMPTY; 64],
             pools: [const { Pool { map: None, size: 0 } }; 4],
             regions: [Region::EMPTY; 4],
@@ -124,6 +137,11 @@ impl Client {
     }
     pub fn clear(&mut self) {
         self.pointer_local = None;
+        self.auxiliary = Surface::new();
+        self.cursor_role = 0;
+        self.cursor_hotspot = None;
+        self.aux_input_region = None;
+        self.aux_pending_region = None;
         self.incoming.clear();
         self.out.clear();
         self.objects.fill(EMPTY);
@@ -180,7 +198,8 @@ impl Client {
                 .surface
                 .pending
                 .flatten()
-                .is_some_and(|a| a.buffer.pool == index);
+                .is_some_and(|a| a.buffer.pool == index)
+                || self.auxiliary.pending.flatten().is_some_and(|a| a.buffer.pool == index);
             if !referenced {
                 pool.map = None;
                 pool.size = 0;
@@ -223,7 +242,10 @@ impl Client {
         self.input_region.is_none_or(|r| r.contains(x, y))
     }
     pub fn pointer_event(&mut self, opcode: u16, words: &[u32]) -> Result<()> {
-        for obj in self.objects.iter().filter(|o| matches!(o.kind, Kind::Pointer)) {
+        for obj in &mut self.objects {
+            let Kind::Pointer(ref mut entered) = obj.kind else { continue; };
+            if opcode == 0 { *entered = words[0]; }
+            if opcode == 1 { *entered = 0; }
             if opcode <= 1 {
                 self.out.focus_words(obj.id, opcode, words)?;
             } else {
@@ -232,7 +254,16 @@ impl Client {
         }
         Ok(())
     }
+    pub fn cursor_moved(&mut self) {
+        if self.cursor_hotspot.is_some() { self.changed = true; }
+    }
+    pub fn clear_pointer_focus(&mut self) {
+        self.cursor_moved();
+        self.cursor_hotspot = None;
+        self.pointer_local = None;
+    }
     pub fn pointer_lost(&mut self) -> Result<()> {
+        self.cursor_hotspot = None;
         self.pointer_available = false;
         for obj in self.objects.iter().filter(|o| matches!(o.kind, Kind::Seat)) {
             self.out.words(obj.id, 0, &[2])?;
@@ -294,8 +325,45 @@ impl Client {
         }
         Ok(())
     }
-    fn commit(&mut self, last: &mut u32, image: &mut [u32; PIXELS]) -> Result<()> {
-        if self.surface.xdg != 0 {
+    fn surface_mut(&mut self, id: u32) -> &mut Surface {
+        if id == self.surface.id { &mut self.surface } else { &mut self.auxiliary }
+    }
+
+    fn swap_unassigned(&mut self, image: &mut [u32; PIXELS]) -> Result<()> {
+        if self.surface.role_assigned || self.surface.xdg != 0 || self.cursor_role != 0 {
+            return Err(Fault(1, 0, b"surface role conflict"));
+        }
+        if self.surface.width > 64 || self.surface.height > 64 {
+            return Err(Fault(1, 2, b"cursor exceeds 64x64"));
+        }
+        core::mem::swap(&mut self.surface, &mut self.auxiliary);
+        core::mem::swap(&mut self.input_region, &mut self.aux_input_region);
+        core::mem::swap(&mut self.pending_region, &mut self.aux_pending_region);
+        image[..self.cursor_pixels.len()].swap_with_slice(&mut self.cursor_pixels);
+        self.surface_generation = self.surface_generation.wrapping_add(1);
+        Ok(())
+    }
+
+    pub fn draw_cursor(&self, origin: (i64, i64), y: usize, row: &mut [u32]) {
+        let (Some((_, px, py)), Some((hx, hy))) = (self.pointer_local, self.cursor_hotspot) else { return; };
+        if self.cursor_role == 0 || self.dying.is_some() { return; }
+        let cursor = &self.auxiliary;
+        let left = origin.0 + i64::from(px.div_euclid(256)) - i64::from(self.surface.content_x)
+            - i64::from(hx) + i64::from(cursor.content_x);
+        let top = origin.1 + i64::from(py.div_euclid(256)) - i64::from(self.surface.content_y)
+            - i64::from(hy) + i64::from(cursor.content_y);
+        if (y as i64) < top { return; }
+        for (x, dst) in row.iter_mut().enumerate() {
+            if (x as i64) >= left {
+                if let Some(src) = cursor.pixel((x as i64 - left) as usize, (y as i64 - top) as usize, &self.cursor_pixels) {
+                    *dst = surface::over(src, *dst);
+                }
+            }
+        }
+    }
+
+    fn commit(&mut self, id: u32, last: &mut u32, image: &mut [u32; PIXELS]) -> Result<()> {
+        if id == self.surface.id && self.surface.xdg != 0 {
             if self.surface.top == 0 {
                 return Err(Fault(self.surface.xdg, 1, b"missing surface role"));
             }
@@ -310,24 +378,32 @@ impl Client {
                 self.configure(last)?;
             }
         }
-        let s = &mut self.surface;
+        let aux = id == self.auxiliary.id;
+        let (s, pixels): (&mut Surface, &mut [u32]) = if aux {
+            (&mut self.auxiliary, &mut self.cursor_pixels)
+        } else {
+            (&mut self.surface, image)
+        };
         s.scale = s.next_scale;
         s.transform = s.next_transform;
         if let Some(attachment) = s.pending.take() {
             if let Some(a) = attachment {
                 let b = a.buffer;
-                surface::snapshot(b, self.pools[b.pool].map.as_ref().ok_or(())?, image)
+                if aux && (b.width > 64 || b.height > 64) {
+                    return Err(Fault(id, 2, b"cursor exceeds 64x64"));
+                }
+                surface::snapshot(b, self.pools[b.pool].map.as_ref().ok_or(())?, pixels)
                     .map_err(|_| Fault(a.id, 2, b"shared backing extent changed"))?;
                 s.width = b.width;
                 s.height = b.height;
                 s.content_x = s.content_x.saturating_add(s.dx);
                 s.content_y = s.content_y.saturating_add(s.dy);
-                s.mapped = s.top != 0;
+                s.mapped = s.top != 0 || (aux && self.cursor_role == id);
                 if a.id != 0 {
                     self.out.event(a.id, 0, &[])?;
                 }
             } else {
-                if s.mapped {
+                if s.mapped && !aux {
                     s.geometry = None;
                     s.next_geometry = None;
                     s.configure = 0;
@@ -352,8 +428,8 @@ impl Client {
         }
         s.commit_geometry();
         for o in &mut self.objects {
-            if matches!(o.kind, Kind::Frame) {
-                o.kind = Kind::Presented;
+            if matches!(o.kind, Kind::Frame(owner) if owner == id) {
+                o.kind = Kind::Presented(id);
             }
         }
         s.damaged = false;
@@ -363,7 +439,7 @@ impl Client {
     }
     pub fn presented(&mut self, time: u32) -> Result<()> {
         for i in 0..self.objects.len() {
-            if matches!(self.objects[i].kind, Kind::Presented) {
+            if matches!(self.objects[i].kind, Kind::Presented(_)) {
                 let id = self.objects[i].id;
                 self.out.words(id, 0, &[time])?;
                 self.delete(id)?;
@@ -469,12 +545,16 @@ impl Client {
             (Kind::Compositor, 0) => {
                 let new = r.u()?;
                 r.end()?;
-                if self.surface.id != 0 {
+                if self.surface.id != 0 && self.auxiliary.id != 0 {
                     return Err(Fault(1, 2, b"surface capacity exhausted"));
                 }
                 self.add(new, Kind::Surface, v)?;
-                self.surface.id = new;
-                self.surface_generation = self.surface_generation.wrapping_add(1);
+                if self.surface.id == 0 {
+                    self.surface.id = new;
+                    self.surface_generation = self.surface_generation.wrapping_add(1);
+                } else {
+                    self.auxiliary.id = new;
+                }
             }
             (Kind::Compositor, 1) => {
                 let new = r.u()?;
@@ -575,9 +655,9 @@ impl Client {
             }
             (Kind::Buffer(_), 0) => {
                 r.end()?;
-                if let Some(Some(ref mut pending)) = self.surface.pending {
-                    if pending.id == id {
-                        pending.id = 0;
+                for s in [&mut self.surface, &mut self.auxiliary] {
+                    if let Some(Some(pending)) = &mut s.pending {
+                        if pending.id == id { pending.id = 0; }
                     }
                 }
                 self.delete(id)?;
@@ -585,7 +665,7 @@ impl Client {
             }
             (Kind::Surface, 0) => {
                 r.end()?;
-                if self.surface.xdg != 0 {
+                if id == self.surface.id && self.surface.xdg != 0 {
                     return Err(Fault(
                         self.surface.xdg,
                         6,
@@ -593,12 +673,23 @@ impl Client {
                     ));
                 }
                 self.delete(id)?;
-                self.pointer_local = None;
-                self.surface = Surface::new();
-                self.input_region = None;
-                self.pending_region = None;
+                if id == self.surface.id {
+                    self.pointer_local = None;
+                    self.cursor_hotspot = None;
+                    self.surface = Surface::new();
+                    self.input_region = None;
+                    self.pending_region = None;
+                } else {
+                    self.auxiliary = Surface::new();
+                    self.aux_input_region = None;
+                    self.aux_pending_region = None;
+                    if self.cursor_role == id {
+                        self.cursor_role = 0;
+                        self.cursor_hotspot = None;
+                    }
+                }
                 for o in self.objects {
-                    if matches!(o.kind, Kind::Frame | Kind::Presented) {
+                    if matches!(o.kind, Kind::Frame(owner) | Kind::Presented(owner) if owner == id) {
                         self.delete(o.id)?;
                     }
                 }
@@ -608,7 +699,7 @@ impl Client {
             (Kind::Surface, 1) => {
                 let (b, x, y) = (r.u()?, r.i()?, r.i()?);
                 r.end()?;
-                self.surface.pending = Some(if b == 0 {
+                let attached = Some(if b == 0 {
                     None
                 } else {
                     let Kind::Buffer(buffer) = self.objects[self.index(b)?].kind else {
@@ -616,8 +707,10 @@ impl Client {
                     };
                     Some(Attachment { id: b, buffer })
                 });
-                self.surface.dx = x;
-                self.surface.dy = y;
+                let s = self.surface_mut(id);
+                s.pending = attached;
+                s.dx = x;
+                s.dy = y;
                 self.collect();
             }
             (Kind::Surface, 2 | 9) if op == 2 || v >= 4 => {
@@ -625,12 +718,12 @@ impl Client {
                     r.i()?;
                 }
                 r.end()?;
-                self.surface.damaged = true;
+                self.surface_mut(id).damaged = true;
             }
             (Kind::Surface, 3) => {
                 let new = r.u()?;
                 r.end()?;
-                self.add(new, Kind::Frame, 1)?;
+                self.add(new, Kind::Frame(id), 1)?;
             }
             (Kind::Surface, 4 | 5) => {
                 let reg = r.u()?;
@@ -641,12 +734,17 @@ impl Client {
                     };
                     Some(self.regions[index])
                 };
-                if op == 5 { self.pending_region = Some(region); }
+                if op == 5 {
+                    if id == self.surface.id { self.pending_region = Some(region); }
+                    else { self.aux_pending_region = Some(region); }
+                }
             }
             (Kind::Surface, 6) => {
                 r.end()?;
-                self.commit(last, image)?;
-                if let Some(region) = self.pending_region.take() { self.input_region = region; }
+                self.commit(id, last, image)?;
+                if id == self.surface.id {
+                    if let Some(region) = self.pending_region.take() { self.input_region = region; }
+                } else if let Some(region) = self.aux_pending_region.take() { self.aux_input_region = region; }
             }
             (Kind::Surface, 7) if v >= 2 => {
                 let t = r.i()?;
@@ -654,7 +752,7 @@ impl Client {
                 if !(0..8).contains(&t) {
                     return Err(Fault(id, 1, b"invalid buffer transform"));
                 }
-                self.surface.next_transform = t as u32;
+                self.surface_mut(id).next_transform = t as u32;
             }
             (Kind::Surface, 8) if v >= 3 => {
                 let s = r.i()?;
@@ -662,7 +760,7 @@ impl Client {
                 if s <= 0 {
                     return Err(Fault(id, 0, b"invalid buffer scale"));
                 }
-                self.surface.next_scale = s as usize;
+                self.surface_mut(id).next_scale = s as usize;
             }
             (Kind::Wm, 0) => {
                 r.end()?;
@@ -679,6 +777,12 @@ impl Client {
             (Kind::Wm, 2) => {
                 let (new, surface) = (r.u()?, r.u()?);
                 r.end()?;
+                if surface != 0 && surface == self.auxiliary.id {
+                    if self.cursor_role == surface || self.surface.xdg != 0 || self.surface.role_assigned {
+                        return Err(Fault(id, 0, b"surface role conflict"));
+                    }
+                    self.swap_unassigned(image)?;
+                }
                 if surface != self.surface.id || surface == 0 {
                     return Err(Fault(1, 0, b"expected wl_surface"));
                 }
@@ -826,20 +930,39 @@ impl Client {
             (Kind::Seat, 0) if self.pointer_available => {
                 let new = r.u()?;
                 r.end()?;
-                self.add(new, Kind::Pointer, v)?;
+                self.add(new, Kind::Pointer(0), v)?;
                 if let Some((surface, x, y)) = self.pointer_local.filter(|p| p.0 == self.surface.id && self.surface.mapped) {
-                    self.out.focus_words(new, 0, &[serial(last), surface, x as u32, y as u32])?;
+                    let entered = serial(last);
+                    let i = self.index(new)?;
+                    self.objects[i].kind = Kind::Pointer(entered);
+                    self.out.focus_words(new, 0, &[entered, surface, x as u32, y as u32])?;
                 }
             }
-            (Kind::Pointer, 0) => {
-                let (_serial, surface, _x, _y) = (r.u()?, r.u()?, r.i()?, r.i()?);
+            (Kind::Pointer(entered), 0) => {
+                let (request, surface, x, y) = (r.u()?, r.u()?, r.i()?, r.i()?);
                 r.end()?;
-                if surface != 0 {
-                    self.index(surface)?;
-                    return Err(Fault(id, 0, b"surface already has a role"));
+                if surface != 0 && !matches!(self.objects[self.index(surface)?].kind, Kind::Surface) {
+                    return Err(Fault(1, 0, b"expected wl_surface"));
                 }
+                if self.pointer_local.is_none() || entered == 0 || request != entered { return Ok(()); }
+                if surface == 0 {
+                    self.cursor_hotspot = None;
+                } else {
+                    if surface == self.surface.id {
+                        if self.surface.xdg != 0 || self.surface.role_assigned || self.cursor_role != 0 {
+                            return Err(Fault(id, 0, b"surface already has a role"));
+                        }
+                        self.swap_unassigned(image)?;
+                    }
+                    self.cursor_role = surface;
+                    self.auxiliary.mapped = self.auxiliary.width != 0;
+                    self.cursor_hotspot = Some((x, y));
+                    self.auxiliary.content_x = 0;
+                    self.auxiliary.content_y = 0;
+                }
+                self.changed = true;
             }
-            (Kind::Pointer, 1) if v >= 3 => {
+            (Kind::Pointer(_), 1) if v >= 3 => {
                 r.end()?;
                 self.delete(id)?;
             }
@@ -860,3 +983,62 @@ const GLOBALS: [(u32, &[u8], u32); 5] = [
     (4, b"wl_seat", 4),
     (5, b"wl_output", 3),
 ];
+
+#[cfg(all(test, not(target_os = "none")))]
+mod cursor_tests {
+    use super::*;
+
+    #[test]
+    fn root_and_cursor_have_separate_pixels_roles_and_frame_callbacks() {
+        let mut client = Client::new();
+        let mut root_image = vec![0x440055u32; PIXELS];
+        let image: &mut [u32; PIXELS] = root_image.as_mut_slice().try_into().unwrap();
+        let mut seq = 40;
+        fn request(c: &mut Client, image: &mut [u32; PIXELS], seq: &mut u32, obj: u32, opcode: u16, args: &[u32]) -> Result<()> {
+            let o = c.objects[c.index(obj)?];
+            let bytes: Vec<u8> = args.iter().flat_map(|v| v.to_ne_bytes()).collect();
+            c.dispatch(o, opcode, &bytes, None, seq, false, image)
+        }
+        macro_rules! send {
+            ($obj:expr, $op:expr, $args:expr) => {
+                assert!(request(&mut client, &mut *image, &mut seq, $obj, $op, $args).is_ok())
+            };
+        }
+        assert!(client.add(2, Kind::Compositor, 4).is_ok());
+        assert!(client.add(3, Kind::Wm, 1).is_ok());
+        assert!(client.add(4, Kind::Pointer(99), 4).is_ok());
+        send!(2, 0, &[10]); // Xwayland creates the seat cursor before its root.
+        send!(2, 0, &[11]);
+        send!(3, 2, &[12, 11]);
+        assert_eq!((client.surface.id, client.auxiliary.id), (11, 10));
+        client.pointer_local = Some((11, 256, 0));
+        send!(4, 0, &[98, 10, 0, 0]);
+        assert!(client.cursor_hotspot.is_none());
+        assert!(request(&mut client, &mut *image, &mut seq, 4, 0, &[99, 11, 0, 0]).is_err());
+        send!(4, 0, &[99, 10, 1, 0]);
+        let bytes: Vec<u8> = [0xffff0000u32, 0x80008000].iter().flat_map(|v| v.to_ne_bytes()).collect();
+        let fd = platform::keymap_fd(&bytes).unwrap();
+        client.pools[0] = Pool { map: platform::map_readonly(fd).ok(), size: bytes.len() };
+        platform::close(fd);
+        assert!(client.add(20, Kind::Buffer(Buffer { pool: 0, offset: 0, width: 2, height: 1, stride: 8, argb: true }), 1).is_ok());
+        send!(10, 1, &[20, 0, 0]);
+        send!(10, 3, &[21]);
+        send!(11, 3, &[22]);
+        image[0] = 0x440055;
+        send!(10, 6, &[]);
+        assert_eq!(image[0], 0x440055);
+        assert!(matches!(client.objects[client.index(21).ok().unwrap()].kind, Kind::Presented(10)));
+        assert!(matches!(client.objects[client.index(22).ok().unwrap()].kind, Kind::Frame(11)));
+        let mut row = [0x0000ff; 3];
+        client.draw_cursor((0, 0), 0, &mut row);
+        assert_eq!(row, [0xff0000, 0x00807f, 0x0000ff]);
+        send!(4, 0, &[99, 0, 0, 0]);
+        let mut hidden = [7; 3];
+        client.draw_cursor((0, 0), 0, &mut hidden);
+        assert_eq!(hidden, [7; 3]);
+        send!(10, 0, &[]);
+        assert_eq!(client.surface.id, 11);
+        assert!(client.index(21).is_err());
+        assert!(client.index(22).is_ok());
+    }
+}

@@ -126,6 +126,11 @@ impl Scene {
                     }
                 }
             }
+            for (index, c) in clients.iter().enumerate() {
+                if Self::visible(c) && c.pointer_local.is_some() {
+                    c.draw_cursor(c.surface.buffer_origin(POS[Self::position(index, c)]), y, &mut row);
+                }
+            }
             platform::row(y, &row).map_err(|_| 93)?;
         }
         self.presents += 1;

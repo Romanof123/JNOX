@@ -142,12 +142,13 @@ static long metadata(int op, int fd, const char *path, struct stat *result)
     unsigned char wire[STAT_BYTES];
     long rc = exchange(op, fd, 0, 0, path, n, wire, sizeof wire);
     if (rc < 0) return rc;
+    if (rc > 1) return -5;
     uint32_t ino, size; uint16_t mode, links;
     memcpy(&ino, wire, 4); memcpy(&mode, wire+4, 2); memcpy(&links, wire+6, 2); memcpy(&size, wire+8, 4);
     struct stat s = {0};
     s.st_dev = 1; s.st_mode = mode; s.st_nlink = links; s.st_size = size; s.st_ino = ino;
     if ((uint32_t)s.st_ino != ino) return -75;
-    s.st_uid = getuid(); s.st_gid = getgid(); s.st_blksize = 64;
+    s.st_uid = rc == 1 ? 0 : getuid(); s.st_gid = rc == 1 ? 0 : getgid(); s.st_blksize = 64;
     s.st_blocks = S_ISREG(mode) ? 2 : 0; /* Fixed 1024-byte data slot, in 512-byte units. */
     struct timespec *times[] = {&s.st_atim, &s.st_mtim, &s.st_ctim};
     for (unsigned i = 0; i < 3; ++i) {

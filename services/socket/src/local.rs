@@ -129,6 +129,8 @@ pub struct Local {
     objects: [Socket; OBJECTS],
     fds: [[Option<usize>; FDS]; CLIENTS],
     rights: [Attachment; RIGHTS],
+    #[cfg(feature = "tmpfs")]
+    pub(super) x11_writer: Option<usize>,
 }
 impl Local {
     /// Copy bounded value-only state directly between disjoint private banks.
@@ -136,6 +138,8 @@ impl Local {
         self.objects.copy_from_slice(&source.objects);
         self.fds.copy_from_slice(&source.fds);
         self.rights = source.rights;
+        #[cfg(feature = "tmpfs")]
+        { self.x11_writer = source.x11_writer; }
     }
 
     pub const fn new() -> Self {
@@ -143,6 +147,8 @@ impl Local {
             objects: [Socket::EMPTY; OBJECTS],
             fds: [[None; FDS]; CLIENTS],
             rights: [Attachment::EMPTY; RIGHTS],
+            #[cfg(feature = "tmpfs")]
+            x11_writer: None,
         }
     }
     pub fn escrows(&self) -> [u64; RIGHTS] {
@@ -250,6 +256,16 @@ impl Local {
     pub fn bind(&mut self, owner: usize, fd: u8, path: &[u8]) -> Result<(), i32> {
         let id = self.id(owner, fd)?;
         let name = Name::parse(path)?;
+        #[cfg(feature = "tmpfs")]
+        if let Some(slot) = self.x11_writer {
+            if path == b"/tmp/.X11-unix" { return Err(-98); }
+            if let Some(child) = path.strip_prefix(b"/tmp/.X11-unix/") {
+                if owner != slot { return Err(-13); }
+                if child.is_empty() || child == b"." || child == b".." || child.contains(&b'/') {
+                    return Err(-22);
+                }
+            }
+        }
         if self.objects[id].bound || self.objects[id].peer != Link::Unconnected {
             return Err(-22);
         }
@@ -266,10 +282,10 @@ impl Local {
         if s.kind == DGRAM {
             return Err(-95);
         }
-        if !s.bound || s.peer != Link::Unconnected || !(1..=2).contains(&backlog) {
+        if !s.bound || s.peer != Link::Unconnected || backlog == 0 {
             return Err(-22);
         }
-        s.backlog = Some(backlog);
+        s.backlog = Some(backlog.min(s.pending.len()));
         Ok(())
     }
     pub fn connect(&mut self, owner: usize, fd: u8, path: &[u8]) -> Result<(), i32> {

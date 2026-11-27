@@ -21,7 +21,7 @@ BEGIN opens a transaction. A second BEGIN during input returns EBUSY. CHUNK cove
 | 2 | bind | zero | pathname |
 | 3 | connect | zero | pathname |
 | 4 | listen | backlog | none |
-| 5 | accept | zero | none |
+| 5 | accept | zero for FD only, one for FD and peer address | none |
 | 6 | send | zero | optional destination pathname, then data |
 | 7 | receive | capacity, 0–64 | none |
 | 8 | shutdown | 0 read, 1 write, 2 both | none |

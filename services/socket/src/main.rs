@@ -32,7 +32,8 @@ impl Request {
             1 => fd == 0 && path == 0 && payload == 0,
             2 | 3 => path > 0 && arg == 0 && payload == 0,
             4 | 8 => path == 0 && payload == 0,
-            5 | 9 | GETSOCKNAME | GETPEERNAME | UNREAD_BYTES => path == 0 && payload == 0 && arg == 0,
+            5 => path == 0 && payload == 0 && arg <= 1,
+            9 | GETSOCKNAME | GETPEERNAME | UNREAD_BYTES => path == 0 && payload == 0 && arg == 0,
             6 => arg == 0,
             7 | RECV_RIGHTS => usize::from(arg) <= PAYLOAD && path == 0 && payload == 0,
             SEND_RIGHTS => path == 0 && payload != 0,
@@ -66,6 +67,12 @@ struct Response {
     received_fd: u8, truncated: bool,
 }
 impl Response {
+    fn name(path: &[u8]) -> Self {
+        let mut response = Self { bytes: [0; BUFFER], count: 0, full: 0, path: path.len(),
+            received_fd: 0, truncated: false };
+        response.bytes[..path.len()].copy_from_slice(path);
+        response
+    }
     fn meta(&self) -> u64 {
         (self.count | self.full << 8 | self.path << 16) as u64
             | u64::from(self.received_fd) << 24 | u64::from(self.truncated) << 32
@@ -158,7 +165,14 @@ fn execute(s: &mut Local, id: usize, r: &Request, token: u64)
         2 => { s.bind(id, fd, path)?; 0 }
         3 => { s.connect(id, fd, path)?; 0 }
         4 => { s.listen(id, fd, r.arg.into())?; 0 }
-        5 => usize::from(s.accept(id, fd)?),
+        5 => {
+            let child = s.accept(id, fd)?;
+            if r.arg == 1 {
+                let name = s.address(id, child, true)?;
+                return Ok((Reply::plain(u64::from(child)), Some(Response::name(name))));
+            }
+            usize::from(child)
+        }
         6 => s.send(id, fd, &r.bytes[r.path..r.used], (!path.is_empty()).then_some(path))?,
         SEND_RIGHTS => {
             if !(96..=103).contains(&r.arg) { return Err(-9); }
@@ -187,10 +201,7 @@ fn execute(s: &mut Local, id: usize, r: &Request, token: u64)
         UNREAD_BYTES => s.unread_bytes(id, fd)?,
         GETSOCKNAME | GETPEERNAME => {
             let name = s.address(id, fd, r.op == GETPEERNAME)?;
-            let mut response = Response { bytes: [0; BUFFER], count: 0, full: 0, path: name.len(),
-                received_fd: 0, truncated: false };
-            response.bytes[..name.len()].copy_from_slice(name);
-            return Ok((Reply::plain(0), Some(response)));
+            return Ok((Reply::plain(0), Some(Response::name(name))));
         }
         _ => return Err(-22),
     };
@@ -352,7 +363,7 @@ impl Service<'_> {
         #[cfg(feature = "tmpfs")]
         let mount = unsafe { &mut *core::ptr::addr_of_mut!(tmpfs::MOUNT) };
         #[cfg(feature = "tmpfs")]
-        mount.init();
+        { self.banks[self.live].x11_writer = mount.init(); }
         while live != 0 {
             let Ok((token, word, id)) = receive() else { return 82 };
             if id >= CLIENTS || live & (1 << id) == 0 { return 83; }

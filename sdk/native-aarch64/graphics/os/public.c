@@ -63,6 +63,8 @@ off_t lseek(int fd, off_t offset, int whence)
 }
 
 extern int jnox_transport_fcntl(int, int, ...);
+_Static_assert(O_RDONLY == 0 && O_WRONLY == 1 && O_RDWR == 2 && O_ACCMODE == 3,
+               "native and Picolibc access mode bits must agree");
 int fcntl(int fd, int cmd, ...)
 {
     // Picolibc uses 14 for F_DUPFD_CLOEXEC; the native SDK uses 1030.
@@ -74,6 +76,23 @@ int fcntl(int fd, int cmd, ...)
         return jnox_transport_fcntl(fd, cmd == F_DUPFD ? 0 : 1030, minimum);
     }
     if (cmd == F_GETFD) return jnox_transport_fcntl(fd, 1);
+    /* The two libc interfaces use different values for O_NONBLOCK. */
+    if (cmd == F_GETFL) {
+        int flags = jnox_transport_fcntl(fd, 3);
+        if (flags < 0) return -1;
+        return (flags & O_ACCMODE) | ((flags & 0x800) ? O_NONBLOCK : 0);
+    }
+    if (cmd == F_SETFL) {
+        va_list ap;
+        va_start(ap, cmd);
+        int flags = va_arg(ap, int);
+        va_end(ap);
+        if (flags & ~(O_ACCMODE | O_NONBLOCK)) {
+            errno = EINVAL;
+            return -1;
+        }
+        return jnox_transport_fcntl(fd, 4, (flags & O_NONBLOCK) ? 0x800 : 0);
+    }
     if (cmd == F_GET_SEALS) return jnox_transport_fcntl(fd, F_GET_SEALS);
     if (cmd == F_ADD_SEALS) {
         va_list ap;

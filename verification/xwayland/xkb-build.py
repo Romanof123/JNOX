@@ -288,6 +288,7 @@ def main():
         run("patch", "-p1", "-i", HERE / "server-local-access.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-broker.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-busfault.patch", cwd=server)
+        run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-memory.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "software-backend.patch", cwd=server)
     else:
         run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
@@ -313,6 +314,12 @@ def main():
         server_archives.append(shifts)
     if server_archives:
         existing = ast.literal_eval(rtcfg["built-in options"]["c_link_args"])
+        # An imported graphics runtime's cross file points at its own SDK checkout.
+        # Use the current native layout for final server links, including its heap option.
+        scripts = [i for i, arg in enumerate(existing) if arg.startswith("-Wl,-T,")]
+        if len(scripts) != 1:
+            raise ValueError("expected one graphics runtime linker script")
+        existing[scripts[0]] = "-Wl,-T," + str(HERE.parents[1] / "sdk/native-aarch64/graphics/app.ld")
         rtcfg["built-in options"]["c_link_args"] = repr([*server_archives, *existing])
         with cross.open("w") as f:
             rtcfg.write(f)
@@ -332,7 +339,7 @@ def main():
         build = out / "xwayland-build"
         target = "hw/xwayland/Xwayland"
         run("ninja", "-C", build, "-j1", target)
-        verify_server(out)
+        verify_server(out, resident=True)
 
 
 if __name__ == "__main__":

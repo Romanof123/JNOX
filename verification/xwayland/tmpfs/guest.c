@@ -4,16 +4,30 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #define CHECK(e, code) do { if (!(e)) return code; } while (0)
 static int create(const char *name) { return open(name, O_RDWR | O_CREAT | O_EXCL, 0666); }
+
+static int x11_bind_as_role(int allowed)
+{
+    if (jnox_socket_broker(3) < 0) return 0;
+    int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sock < 0) return 0;
+    struct sockaddr_un addr = {AF_UNIX, "/tmp/.X11-unix/X0"};
+    int rc = bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+    int ok = allowed ? (rc == 0 && listen(sock, 1) == 0) : (rc == -1 && errno == EACCES);
+    return close(sock) == 0 && ok;
+}
 
 int main(int argc, char **argv)
 {
     struct stat st;
     char buf[8] = {0};
     const char *mode = argc > 1 ? argv[1] : "rw";
+    int x11 = strncmp(mode, "x11-", 4) == 0;
+    if (x11) mode += 4;
     if (strcmp(mode, "cold") == 0) {
         const char *name = "/tmp/cold-marker";
         CHECK(stat(name, &st) == -1 && errno == ENOENT, 145);
@@ -27,6 +41,7 @@ int main(int argc, char **argv)
     if (strcmp(mode, "denied") == 0) {
         CHECK(open("/tmp/file", O_RDONLY) == -1 && errno == EACCES, 101);
         CHECK(stat("/tmp", &st) == -1 && errno == EACCES, 102);
+        if (x11) CHECK(x11_bind_as_role(0), 149);
         return 88;
     }
     if (strcmp(mode, "ro") == 0) {
@@ -36,12 +51,30 @@ int main(int argc, char **argv)
         return 88;
     }
     if (strcmp(mode, "reader") == 0) {
+        if (x11) CHECK(lstat("/tmp/.X11-unix", &st) == 0 && st.st_uid == 0 && st.st_gid == 0 &&
+              S_ISDIR(st.st_mode) && (st.st_mode & 01777) == 01777 && x11_bind_as_role(0), 150);
         int fd = open("/tmp/share", O_RDONLY);
         CHECK(fd >= 32 && fd < 40, 106);
         CHECK(read(fd, buf, 3) == 3 && memcmp(buf, "abc", 3) == 0, 107);
         CHECK(fstat(fd, &st) == 0 && st.st_size == 3 && st.st_uid == getuid(), 108);
         CHECK(unlink("/tmp/share") == -1 && errno == EACCES && close(fd) == 0, 109);
         return 88;
+    }
+    if (x11 && strcmp(mode, "writer") == 0) {
+        const char *dir = "/tmp/.X11-unix";
+        CHECK(geteuid() != 0 && lstat(dir, &st) == 0 && S_ISDIR(st.st_mode) &&
+              (st.st_mode & 01777) == 01777 && st.st_uid == 0 && st.st_gid == 0, 151);
+        ino_t ino = st.st_ino;
+        int d = open(dir, O_RDONLY);
+        CHECK(d >= 0 && fstat(d, &st) == 0 && st.st_ino == ino && st.st_uid == 0 &&
+              fchmod(d, 0777) == -1 && errno == EPERM && close(d) == 0, 152);
+        CHECK(chmod("/tmp", 0700) == -1 && errno == EPERM &&
+              chmod(dir, 0777) == -1 && errno == EPERM, 153);
+        CHECK(mkdir(dir, 01777) == -1 && errno == EEXIST &&
+              rename(dir, "/tmp/moved") == -1 && errno == EPERM, 154);
+        CHECK(mkdir("/tmp/replacement", 0700) == 0 && rename("/tmp/replacement", dir) == -1 &&
+              errno == EPERM && create("/tmp/.X11-unix/X0") == -1 && errno == EACCES, 155);
+        CHECK(unlink("/tmp/.X11-unix/X0") == -1 && errno == ENOENT && x11_bind_as_role(1), 156);
     }
     if (strcmp(mode, "writer") == 0) {
         int f = create("/tmp/share"), gone = create("/tmp/unlinked");

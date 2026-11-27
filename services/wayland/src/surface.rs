@@ -128,7 +128,7 @@ impl Surface {
         w > 0 && h > 0 && left < WIDTH as i64 && top < HEIGHT as i64 && left + w > 0 && top + h > 0
     }
 
-    pub fn pixel(&self, x: usize, y: usize, image: &[u32; PIXELS]) -> Option<u32> {
+    pub fn pixel(&self, x: usize, y: usize, image: &[u32]) -> Option<u32> {
         if !self.mapped {
             return None;
         }
@@ -162,7 +162,8 @@ impl Surface {
 // One synchronous CPU0 dispatcher owns staging. A host file may shrink
 // between rows: callers only observe a new image after the entire copy.
 static mut STAGING: [u32; PIXELS] = [0; PIXELS];
-pub fn snapshot(buffer: Buffer, map: &Mapping, image: &mut [u32; PIXELS]) -> Result<(), ()> {
+pub fn snapshot(buffer: Buffer, map: &Mapping, image: &mut [u32]) -> Result<(), ()> {
+    if buffer.width.checked_mul(buffer.height).ok_or(())? > image.len().min(PIXELS) { return Err(()); }
     let staging = unsafe { &mut *(&raw mut STAGING) };
     for y in 0..buffer.height {
         let row = &mut staging[y * buffer.width..(y + 1) * buffer.width];
