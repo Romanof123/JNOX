@@ -1,0 +1,13 @@
+cout.c.o
+maprules.c.o
+srvmisc.c.o
+xkbatom.c.o
+xkbbells.c.o
+xkbconfig.c.o
+xkbdraw.c.o
+xkberrs.c.o
+xkbmisc.c.o
+xkbout.c.o
+xkbtext.c.o
+xkmout.c.o
+xkmread.c.o
