@@ -1,9 +1,12 @@
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include "sys/utsname.h"
 #include "jnox/ipc.h"
 #include "jnox/native_abi.h"
+#include "../../process_id.inc"
+#include "../../process_signal.inc"
 
 _Static_assert(sizeof(struct utsname) == 325, "native uname record layout");
 int uname(struct utsname *out)

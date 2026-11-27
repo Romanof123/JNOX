@@ -1,6 +1,6 @@
 # Building the Xwayland 24.1.6 software executable
 
-The combined software profile compiled all selected C sources. The latest final link has 29 unresolved imports. [Reproduction, caller inventory and guest seal result / 재현 방법과 검증 결과](server-link.en-ko.md)
+The first combined build had 29 unresolved imports; the subsequent interface build reduced that count to 18. Integrated revision `f2e4f3d` resolved the required imports and produced a static AArch64 executable. [First link report](server-link.en-ko.md) · [ELF identity and public guest results](public-interface-runs.en-ko.md) · [Native interfaces #471](https://github.com/Romanof123/JNOX/issues/471)
 
 The JNOX Wayland input path uses the fixed wire values for buttons and keys
 from `linux/input-event-codes.h`. The builder verifies the numeric UAPI
@@ -18,13 +18,17 @@ Run from the published source checkout. Set JNOX_LAB_ROOT to the shared build ro
     export JNOX_INPUT_ROOT="$ARCHIVE_CACHE"
     bash verification/xwayland/server-lab.sh "$NEW_EXT4_OUTPUT" HEAD
 
+The default command uses the original authorization-file and keyboard-map paths. For the guest profile, set `JNOX_NATIVE_XAUTHORITY=1` and pass `--selected-xkm` with the compositor source and the two host packages as shown in the [link recipe](server-link.en-ko.md). The authorization option adds the boot-resource reader as a separate archive. Both configurations verify the rebuilt target graphics adapter in `$NEW_EXT4_OUTPUT/os-prefix/lib/libjnox-wayland-os.a`.
+
+기본 명령은 원본 서버의 인증 파일과 키맵 경로를 선택한다. 게스트용 구성은 `JNOX_NATIVE_XAUTHORITY=1`과 `--selected-xkm`으로 선택한다. 두 구성 모두 같은 대상 그래픽 어댑터의 SHA-256을 확인한다.
+
 The default subdirectories of JNOX_LAB_ROOT are graphics-runtime (original graphics runtime), wayland-runtime (derived native OS runtime), wayland (host scanner and target client), and font-prefix (fonts, X.Org protocol headers and xtrans). Set JNOX_GRAPHICS_RUNTIME, JNOX_WAYLAND_RUNTIME, JNOX_WAYLAND_WORK and JNOX_FONT_PREFIX to select their installed locations. Set JNOX_GIT_DIR for an explicit Git object store. The default source is the current checkout at HEAD.
 
 Cross files record absolute installation paths. A relocated profile needs a regenerated manifest for the original graphics cross file, and JNOX_WAYLAND_PROFILE_SHA256 set to the independently verified hash of the relocated derived profile. The default profile hash and binary pins identify the historical build. Host tools are Bash, Git, flock, Clang/LLD, LLVM archive tools, Python, Meson, Ninja, Make, pkg-config, tar, patch, readelf and sha256sum. Set MESON and PYTHONPATH as needed for a standalone host Meson distribution. The driver adds the prefix-local host xcbgen package.
 
 The full chain uses target libXau, generated libxcb, libX11, libxkbfile, libmd for mandatory SHA-1, libXfont2/fontenc/zlib, Pixman, libxcvt, and libwayland-client/libffi. The build preserves the stock Meson X11 dependency, runs the full XKB+Xlib link probe, and allows upstream Ninja to generate the Wayland client protocol code using the native scanner. The pinned protocol metadata supplies xproto, randrproto, renderproto, xextproto, inputproto, kbproto, fontsproto, fixesproto, damageproto, xcmiscproto, bigreqsproto, presentproto, videoproto, compositeproto, recordproto, scrnsaverproto, resourceproto, xineramaproto and xf86vidmodeproto. The software profile disables glamor, GLX, DRM/DRI3, TCP and XDMCP. The existing one-hunk socket patch honors local-only transport.
 
-The guest XKB probe exercised the upstream keyboard reader. Separate Xtrans and Xlib probes exercised native stream I/O and geometry parsing. The full server still requires the remaining filesystem, identity and time interfaces listed in the link report. Display, input and server restart require observations from the running guest server.
+The guest XKB probe exercised the upstream keyboard reader. Separate Xtrans and Xlib probes exercised native stream I/O and geometry parsing. Integrated source now links the required filesystem, identity and time interfaces. Display, input and server restart require observations from the running guest server.
 
 The [libmd 1.1.0 source archive](https://deb.debian.org/debian/pool/main/libm/libmd/libmd_1.1.0.orig.tar.xz) is pinned by SHA-256 in the driver. The build retains its original COPYING.
 

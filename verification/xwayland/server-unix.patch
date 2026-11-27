@@ -27,3 +27,37 @@
 +#else
  #include <linux/input.h>
 +#endif
+--- a/os/utils.c
++++ b/os/utils.c
+@@ -218,3 +218,5 @@
+-    if (sigaction(sig, &act, &oact))
++    if (sigaction(sig, &act, &oact)) {
+         perror("sigaction");
++        return SIG_ERR;
++    }
+     return oact.sa_handler;
+--- a/os/connection.c
++++ b/os/connection.c
+@@ -189,5 +189,7 @@
+     handler = OsSignal(SIGUSR1, SIG_IGN);
+-    if (handler == SIG_IGN)
+-        RunFromSmartParent = TRUE;
+-    OsSignal(SIGUSR1, handler);
++    if (handler == SIG_ERR)
++        FatalError("Cannot inspect the inherited SIGUSR1 disposition\n");
++    if (OsSignal(SIGUSR1, handler) == SIG_ERR)
++        FatalError("Cannot restore the inherited SIGUSR1 disposition\n");
++    RunFromSmartParent = (handler == SIG_IGN);
+     ParentProcess = getppid();
+@@ -295,5 +297,7 @@
+-    OsSignal(SIGPIPE, SIG_IGN);
+-    OsSignal(SIGHUP, AutoResetServer);
++    if (OsSignal(SIGPIPE, SIG_IGN) == SIG_ERR ||
++        OsSignal(SIGHUP, AutoResetServer) == SIG_ERR)
++        FatalError("Cannot install server SIGPIPE or SIGHUP disposition\n");
+ #endif
+-    OsSignal(SIGINT, GiveUp);
+-    OsSignal(SIGTERM, GiveUp);
++    if (OsSignal(SIGINT, GiveUp) == SIG_ERR ||
++        OsSignal(SIGTERM, GiveUp) == SIG_ERR)
++        FatalError("Cannot install server SIGINT or SIGTERM disposition\n");

@@ -4,6 +4,8 @@
 use core::{arch::asm, panic::PanicInfo};
 use jnox_native::{exit, ipc};
 mod local;
+#[cfg(feature = "tmpfs")]
+mod tmpfs;
 use local::Local;
 
 const CLIENTS: usize = 3;
@@ -347,10 +349,22 @@ impl Service<'_> {
     }
 
     fn serve(&mut self, clients: &mut [Client; CLIENTS], mut live: u8) -> i32 {
+        #[cfg(feature = "tmpfs")]
+        let mount = unsafe { &mut *core::ptr::addr_of_mut!(tmpfs::MOUNT) };
+        #[cfg(feature = "tmpfs")]
+        mount.init();
         while live != 0 {
             let Ok((token, word, id)) = receive() else { return 82 };
             if id >= CLIENTS || live & (1 << id) == 0 { return 83; }
+            #[cfg(feature = "tmpfs")]
+            if token != 0 && (0x70..=0x73).contains(&(word >> 56)) {
+                if tmpfs::jnox_tmpfs_call(mount, id, token, word).is_err() { return 84; }
+                if self.retry(clients).is_err() { return 84; }
+                continue;
+            }
             if token == 0 {
+                #[cfg(feature = "tmpfs")]
+                mount.exit(id);
                 let bank = self.trial_bank();
                 self.banks[bank].exit(id);
                 if self.publish(bank, Transfer::None).is_err() { return 85; }

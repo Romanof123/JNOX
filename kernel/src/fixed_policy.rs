@@ -151,6 +151,17 @@ impl Fixed {
         self.owner
     }
 
+    #[cfg(jnox_native_fixed)]
+    pub(crate) fn has_live_process(&self, id: usize) -> bool {
+        let Some(task) = self.tasks[..self.count].get(id) else { return false; };
+        match task.state {
+            State::Exited => false,
+            #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
+            State::Dormant => false,
+            _ => true,
+        }
+    }
+
     pub fn finished(&self) -> bool {
         self.tasks[..self.count]
             .iter()
@@ -229,6 +240,15 @@ impl Fixed {
         self.tasks[id].state = State::Ready;
         self.tasks[id].remaining = self.quantum.unwrap_or(0);
         assert!(self.ready.push_back(id));
+    }
+
+    #[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+    pub(crate) fn interrupt_sleep(&mut self, id: usize) -> bool {
+        if matches!(self.tasks[id].state, State::Sleeping(_)) {
+            self.join_tail(id);
+            return true;
+        }
+        false
     }
 
     fn wake_due(&mut self) {

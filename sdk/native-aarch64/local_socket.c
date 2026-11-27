@@ -1,6 +1,9 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <jnox/ipc.h>
+#ifdef JNOX_GRAPHICS_OS
+#include <jnox/native_abi.h>
+#endif
 #include <sys/un.h>
 #include <netinet/in.h>
 
@@ -303,16 +306,88 @@ extern int __real_close(int);
 extern ssize_t __real_read(int, void *, size_t);
 extern ssize_t __real_write(int, const void *, size_t);
 static int socket_range(int fd) { return fd >= FD_BASE && fd < FD_BASE + FD_COUNT; }
+#ifdef JNOX_GRAPHICS_OS
+/* The optional pipe service owns descriptors 0..10. In the graphics profile
+ * stdout and stderr can also be console endpoints granted by the package. */
+static int graphics_stream_present(int fd) {
+    if (fd < 0 || fd > 10) return 0;
+    if (jnox_ipc_trap(49, fd, F_GETFD, 0).status >= 0) return 1;
+    if (fd != STDOUT_FILENO && fd != STDERR_FILENO) return 0;
+    char probe = 0;
+    return jnox_ipc_trap(JNOX_CALL_WRITE, fd, (uintptr_t)&probe, 0).status == 0;
+}
+/* Used when a metadata operation is only implemented by the named file service. */
+int jnox_graphics_unsupported_fd(int fd) {
+    if (socket_range(fd) || backing_range(fd)) {
+        if (__wrap_fcntl(fd, F_GETFD) < 0) {
+            /* With no shared-file service or route the caller owns no backing FDs. */
+            if (backing_range(fd) && (errno == ENOSYS || errno == EACCES)) return error(EBADF);
+            return -1;
+        }
+        return error(ENOTSUP);
+    }
+    return error(graphics_stream_present(fd) ? ENOTSUP : EBADF);
+}
+int dup2(int source, int target) {
+    const int limit = JNOX_SHM_FD_BASE + JNOX_SHM_FD_COUNT;
+    if (source < 0 || source >= limit || target < 0 || target >= limit) return error(EBADF);
+    if (jnox_tmp_fd(source)) {
+        if (jnox_tmp_fd(target)) return jnox_tmp_dup2(source, target);
+        if (jnox_tmp_fcntl(source, F_GETFD, 0) < 0) return -1;
+        return error(ENOTSUP);
+    }
+    if (backing_range(source))
+        return (int)backing_call(JNOX_CALL_SHM_DUP2, source, target);
+    if (socket_range(source)) {
+        if (__wrap_fcntl(source, F_GETFD) < 0) return -1;
+    } else if (!graphics_stream_present(source)) return error(EBADF);
+    return source == target ? target : error(ENOTSUP);
+}
+#endif
+long jnox_file_seek(int fd, long offset, int whence) {
+#ifdef JNOX_GRAPHICS_OS
+    if (jnox_tmp_fd(fd)) return jnox_tmp_seek(fd, offset, whence);
+#endif
+    if (fd < 0 || fd >= JNOX_SHM_FD_BASE + JNOX_SHM_FD_COUNT) return error(EBADF);
+    if (socket_range(fd)) {
+        if (__wrap_fcntl(fd, F_GETFD) < 0) return -1;
+        return error(ESPIPE);
+    }
+    if (!backing_range(fd)) {
+#ifdef JNOX_GRAPHICS_OS
+        return error(graphics_stream_present(fd) ? ESPIPE : EBADF);
+#else
+        return error(ENOTSUP);
+#endif
+    }
+    if (whence < SEEK_SET || whence > SEEK_END) return error(EINVAL);
+    long r = jnox_ipc_trap(JNOX_CALL_SHM_FILE_IO, fd, whence, (uint64_t)offset).status;
+    return r < 0 ? error(-r) : r;
+}
+#ifndef JNOX_GRAPHICS_OS
+off_t lseek(int fd, off_t offset, int whence) {
+    return jnox_file_seek(fd, offset, whence);
+}
+#endif
 int __wrap_close(int fd) {
+#ifdef JNOX_GRAPHICS_OS
+    if (jnox_tmp_fd(fd)) return jnox_tmp_close(fd);
+#endif
     if (backing_range(fd)) return jnox_shm_close(fd);
     return socket_range(fd) ? simple(OP_CLOSE, fd, 0) : __real_close(fd);
 }
 ssize_t __wrap_read(int fd, void *buf, size_t n) {
-    if (backing_range(fd)) return backing_io(fd);
+#ifdef JNOX_GRAPHICS_OS
+    if (jnox_tmp_fd(fd)) return jnox_tmp_read(fd, buf, n);
+#endif
+    if (backing_range(fd)) return backing_io(fd, JNOX_SHM_FILE_READ, n, (uintptr_t)buf);
     return socket_range(fd) ? recv(fd, buf, n, 0) : __real_read(fd, buf, n);
 }
 ssize_t __wrap_write(int fd, const void *buf, size_t n) {
-    if (backing_range(fd)) return backing_io(fd);
+#ifdef JNOX_GRAPHICS_OS
+    if (jnox_tmp_fd(fd)) return jnox_tmp_write(fd, buf, n);
+#endif
+    if (backing_range(fd)) return backing_io(fd, JNOX_SHM_FILE_WRITE, n, (uintptr_t)buf);
     return socket_range(fd) ? send(fd, buf, n, 0) : __real_write(fd, buf, n);
 }
 

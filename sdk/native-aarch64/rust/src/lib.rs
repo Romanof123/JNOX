@@ -161,3 +161,6 @@ pub mod display;
 
 #[cfg(all(feature = "raw-ethernet", target_arch = "aarch64"))]
 pub mod raw_ethernet;
+
+#[cfg(all(feature = "tmpfs", target_arch = "aarch64"))]
+pub mod tmpfs;

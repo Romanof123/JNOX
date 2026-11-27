@@ -1,0 +1,76 @@
+--- a/include/meson.build
++++ b/include/meson.build
+@@ -159,4 +159,7 @@
+ conf_data.set('HAVE_SHMCTL64', cc.has_function('shmctl64') ? '1' : false)
+ conf_data.set('HAVE_SIGACTION', cc.has_function('sigaction') ? '1' : false)
++# JNOX serves asynchronous process signals, without synchronous fault recovery.
++jnox_no_fault_signals = host_machine.system() == 'jnox'
++conf_data.set('JNOX_NO_FAULT_SIGNALS', jnox_no_fault_signals ? '1' : false)
+ conf_data.set('HAVE_SIGPROCMASK', cc.has_function('sigprocmask') ? '1' : false)
+ # HAVE_SOCKLEN_T is used by xtrans when IPv6 is disabled
+--- a/os/meson.build
++++ b/os/meson.build
+@@ -50,5 +50,5 @@
+ endif
+
+-if conf_data.get('HAVE_SIGACTION').to_int() != 0
++if conf_data.get('HAVE_SIGACTION').to_int() != 0 and not jnox_no_fault_signals
+     srcs_os += 'busfault.c'
+ endif
+--- a/include/busfault.h
++++ b/include/busfault.h
+@@ -26,5 +26,5 @@
+ #include <dix-config.h>
+
+-#ifdef HAVE_SIGACTION
++#if defined(HAVE_SIGACTION) && !defined(JNOX_NO_FAULT_SIGNALS)
+
+ #include <sys/types.h>
+--- a/os/osinit.c
++++ b/os/osinit.c
+@@ -105,5 +105,5 @@
+  *    Catch unexpected signals and exit or continue cleanly.
+  */
+-#if !defined(WIN32) || defined(__CYGWIN__)
++#if (!defined(WIN32) || defined(__CYGWIN__)) && !defined(JNOX_NO_FAULT_SIGNALS)
+ static void
+ #ifdef SA_SIGINFO
+@@ -157,5 +157,5 @@
+                signo, strsignal(signo));
+ }
+-#endif /* !WIN32 || __CYGWIN__ */
++#endif /* synchronous fault signals */
+
+ #include "busfault.h"
+@@ -171,5 +171,5 @@
+
+     if (!been_here) {
+-#if !defined(WIN32) || defined(__CYGWIN__)
++#if (!defined(WIN32) || defined(__CYGWIN__)) && !defined(JNOX_NO_FAULT_SIGNALS)
+         struct sigaction act, oact;
+         int i;
+@@ -199,5 +199,5 @@
+             }
+         }
+-#endif /* !WIN32 || __CYGWIN__ */
++#endif /* synchronous fault signals */
+         busfault_init();
+         server_poll = ospoll_create();
+--- a/Xext/shmint.h
++++ b/Xext/shmint.h
+@@ -57,5 +57,5 @@
+ } ShmFuncs, *ShmFuncsPtr;
+
+-#if XTRANS_SEND_FDS
++#if XTRANS_SEND_FDS && !defined(JNOX_NO_FAULT_SIGNALS)
+ #define SHM_FD_PASSING  1
+ #endif
+--- a/include/protocol-versions.h
++++ b/include/protocol-versions.h
+@@ -105,5 +105,5 @@
+ /* SHM */
+ #define SERVER_SHM_MAJOR_VERSION		1
+-#if XTRANS_SEND_FDS
++#if XTRANS_SEND_FDS && !defined(JNOX_NO_FAULT_SIGNALS)
+ #define SERVER_SHM_MINOR_VERSION		2
+ #else

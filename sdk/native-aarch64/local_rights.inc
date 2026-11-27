@@ -3,13 +3,15 @@
 #include <jnox/shared_fd_abi.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#ifdef JNOX_GRAPHICS_OS
+#include <jnox/tmpfs_fd.h>
+#endif
 
 _Static_assert(sizeof(struct cmsghdr) == 16 && sizeof(struct msghdr) == 56 &&
                sizeof(struct iovec) == 16, "native LP64 message layout");
 
-enum { BACKING_BASE = 96, BACKING_COUNT = 8 };
 static int backing_range(int fd) {
-    return fd >= BACKING_BASE && fd < BACKING_BASE + BACKING_COUNT;
+    return fd >= JNOX_SHM_FD_BASE && fd < JNOX_SHM_FD_BASE + JNOX_SHM_FD_COUNT;
 }
 static long backing_call(unsigned op, long first, long second) {
     long r = jnox_ipc_trap(op, first, second, 0).status;
@@ -80,6 +82,9 @@ int __wrap_fcntl(int fd, int cmd, ...) {
         arg = __builtin_va_arg(ap, int);
         __builtin_va_end(ap);
     }
+#ifdef JNOX_GRAPHICS_OS
+    if (jnox_tmp_fd(fd)) return jnox_tmp_fcntl(fd, cmd, arg);
+#endif
     if (fd >= FD_BASE && fd < FD_BASE + FD_COUNT) {
         if (!enter()) return -1;
         struct descriptor *desc = &descriptors[fd - FD_BASE];
@@ -108,8 +113,10 @@ int __wrap_fcntl(int fd, int cmd, ...) {
     return jnox_shm_size(fd) < 0 ? -1 : error(ENOTSUP);
 }
 
-static long backing_io(int fd) {
-    return jnox_shm_size(fd) < 0 ? -1 : error(ENOTSUP);
+static long backing_io(int fd, unsigned operation, size_t length, uintptr_t buffer) {
+    size_t n = length < JNOX_SHM_FILE_TRANSFER ? length : JNOX_SHM_FILE_TRANSFER;
+    long r = jnox_ipc_trap(JNOX_CALL_SHM_FILE_IO, fd, (n << 8) | operation, buffer).status;
+    return r < 0 ? error(-r) : r;
 }
 
 /* Validate the vector count and all lengths before a receive consumes bytes

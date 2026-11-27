@@ -1,0 +1,15 @@
+# Selected AArch64 process signal delivery / 프로세스 신호 전달
+
+[Xwayland fault handling and shared-memory build profile / Xwayland 장애 처리와 공유 메모리 빌드 프로필](busfault.en-ko.md)
+
+CHG-340 · REQ-015/024 · DES-009/013 · VER-015/024. This profile targets single-core FIFO/RR native shell packages and the graphics package with shared descriptors. Picolibc `sigaction` supports HUP, INT, PIPE, TERM and USR1. Xwayland's `OsSignal` installs an empty or single-signal action mask and zero flags for these five signals. Its optional synchronous crash reporters use a separate facility outside this profile. [Server link and interfaces #471](https://github.com/Romanof123/JNOX/issues/471)
+
+The kernel starts each slot with default dispositions. Queries and replacements operate on the calling process only. It copies the new action once, validates all options and code pointers, writes any requested previous value, then commits the replacement. Unsupported masks or flags return `ENOTSUP`. SIGKILL and SIGSTOP cannot be caught or ignored. Each registered handler and the Picolibc return stub must be aligned within a file-backed executable segment of the caller's ELF. The ABI function checks cover the 24-byte AArch64 Picolibc structure.
+
+An authorized `kill` either discards an ignored signal or queues its bit. A later installation of ignore also discards the pending bit. Repeated standard signals coalesce. At return to EL0, default disposition terminates the process through the existing scheduler cleanup, recording status 128 plus the signal number. For a caught signal, the kernel saves the complete interrupted register frame and mask in EL1, passes the signal number in x0 and resumes the handler in the same private EL0 address space and stack. During the handler its own signal and the selected action mask are blocked. Other supported signals can nest. This bounds the private frame depth to five. On the registered stub's return SVC, EL1 restores its own saved frame, including SIMD, TLS and prior mask.
+
+Explicit delivery can wake an interruptible native clock sleep with `EINTR`. A signal queued for an IPC or device waiter is delivered upon that operation's ordinary return to EL0. This profile covers explicit authorized sends. Pipe-generated signals, general signal masks, job control, arbitrary signal numbers, synchronous CPU faults, alternate stacks and SA_SIGINFO callbacks require additional implementation.
+
+Compile `guest.c` as an ordinary Picolibc graphics application. With no application arguments, expect exit 86 following actual nested HUP/USR1 callbacks, coalescing, integer/SIMD preservation, an ignored delivery, prior disposition queries and rejected options. With argument `default`, expect exit 143 caused by SIGTERM. The public `kill(pid,0)` authority probe and its shell-to-child test have separate receipts. [Signal probe](../signal-probe/README.md)
+
+지정된 FIFO/RR 패키지에서 신호 처분은 프로세스별로 관리한다. 커널은 실행 가능한 ELF 구간에서만 핸들러와 복귀 주소를 허용한다. 대기 신호는 종류별 한 비트로 합쳐지고, 차단되지 않은 신호는 EL0 복귀 경계에서 처리한다. 인터럽트된 레지스터·SIMD·TLS·마스크는 EL1에 보존하며, 복귀 시 커널이 보관한 문맥을 사용한다. 기본 종료는 기존 프로세스 자원 회수를 거친다. 자체 신호 시험은 86, 기본 SIGTERM 종료는 143을 기대하며 다른 프로세스 전달은 별도 셸 시험으로 확인한다.

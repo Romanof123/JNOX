@@ -1,7 +1,7 @@
 //! Shared backing descriptors and queued AF_UNIX rights. All access runs on
 //! the masked boot CPU. Descriptors, VM mappings and queue entries hold
 //! independent references to the same object.
-use super::{COUNT, NATIVE_IPC_ROUTES, NATIVE_SOCKET_SERVICE, native_el0_mmu::shared};
+use super::{COUNT, NATIVE_IPC_ROUTES, NATIVE_SOCKET_SERVICE, native_el0_mmu::{self, shared}};
 use core::mem::size_of;
 
 const FD_BASE: usize = 96;
@@ -48,6 +48,8 @@ struct State {
     resizable: [bool; shared::OBJECTS],
     seals: [u8; shared::OBJECTS],
     cloexec: [[bool; FDS]; COUNT],
+    // A memfd has one open description; dup and SCM_RIGHTS both share it.
+    positions: [usize; shared::OBJECTS],
 }
 
 const _: () = assert!(size_of::<Right>() == 2 && size_of::<Escrow>() == 16
@@ -61,6 +63,7 @@ static mut jnox_native_shared_state: State = State {
     resizable: [false; shared::OBJECTS],
     seals: [0; shared::OBJECTS],
     cloexec: [[false; FDS]; COUNT],
+    positions: [0; shared::OBJECTS],
 };
 
 fn routed(pid: usize) -> bool {
@@ -98,6 +101,7 @@ impl State {
         self.sizes[object] = size;
         self.resizable[object] = resizable;
         self.seals[object] = 0;
+        self.positions[object] = 0;
         self.cloexec[pid][slot] = resizable;
         self.descriptors[pid][slot] = Right { object_plus_one: (object + 1) as u8, writable: 1 };
         Ok(FD_BASE + slot)
@@ -105,6 +109,55 @@ impl State {
 
     fn escrow_slot(&self, id: u64) -> Option<usize> {
         self.escrow.iter().position(|slot| id != 0 && slot.id == id)
+    }
+
+    fn file_io(&mut self, right: Right, command: usize, argument: usize) -> Result<usize, i32> {
+        const TRANSFER: usize = 256;
+        let object = right.index();
+        if !self.resizable[object] { return Err(-95); }
+        let size = self.sizes[object];
+        let pos = self.positions[object];
+        if command <= 2 {
+            let base = [0, pos, size][command] as i64;
+            let next = base.checked_add(argument as i64).ok_or(-75)?;
+            if next < 0 { return Err(-22); }
+            self.positions[object] = next as usize;
+            return Ok(next as usize);
+        }
+        let count = command >> 8;
+        if count > TRANSFER { return Err(-22); }
+        let mut bytes = [0u8; TRANSFER];
+        let n = match command & 255 {
+            3 => {
+                let n = count.min(size.saturating_sub(pos));
+                if n == 0 { return Ok(0); }
+                shared::read_file(object, pos, &mut bytes[..n]);
+                if !native_el0_mmu::copy_to_user(argument, &bytes[..n]) { return Err(-14); }
+                n
+            }
+            4 => {
+                if right.writable == 0 { return Err(-9); }
+                if count == 0 { return Ok(0); }
+                let n = count.min(shared::MAX_SIZE.saturating_sub(pos));
+                if n == 0 { return Err(-27); }
+                let end = pos + n;
+                if end > size {
+                    if self.seals[object] & 4 != 0 { return Err(-1); }
+                    if shared::referenced(object) { return Err(-16); }
+                }
+                // Copy first, including when the user buffer aliases this same backing.
+                if !native_el0_mmu::copy_from_user(argument, &mut bytes[..n]) { return Err(-14); }
+                if end > size {
+                    shared::zero_resize_tail(object, size, end);
+                    self.sizes[object] = end;
+                }
+                shared::write_file(object, pos, &bytes[..n]);
+                n
+            }
+            _ => return Err(-22),
+        };
+        self.positions[object] = pos + n;
+        Ok(n)
     }
 }
 
@@ -130,6 +183,23 @@ pub(super) fn direct(pid: usize, op: u64, arg: usize, prot: usize, extra: usize)
             Ok(0)
         }
         187 => state.right(pid, arg).map(|right| state.sizes[right.index()]),
+        202 => {
+            let right = state.right(pid, arg)?;
+            state.file_io(right, prot, extra)
+        }
+        208 => {
+            let source = state.right(pid, arg)?;
+            if extra != 0 { return Err(-22); }
+            if prot >= FD_BASE + FDS { return Err(-9); }
+            let slot = prot.checked_sub(FD_BASE).ok_or(-95)?;
+            if prot != arg {
+                // Both slots belong to this caller. The masked SVC installs
+                // the new reference and clears FD_CLOEXEC as one operation.
+                state.descriptors[pid][slot] = source;
+                state.cloexec[pid][slot] = false;
+            }
+            Ok(prot)
+        }
         188 => {
             let source = state.right(pid, arg)?;
             let (right, slot, cloexec) = if prot & !3 == DUP_TAG {
@@ -174,7 +244,7 @@ pub(super) fn direct(pid: usize, op: u64, arg: usize, prot: usize, extra: usize)
             if state.seals[obj] & seal != 0 { return Err(-1); }
             // This profile has whole-file mappings, with no SIGBUS contract.
             if shared::referenced(obj) { return Err(-16); }
-            if prot > old { shared::zero_growth(obj, old, prot); }
+            shared::zero_resize_tail(obj, old, prot);
             state.sizes[obj] = prot;
             Ok(0)
         }

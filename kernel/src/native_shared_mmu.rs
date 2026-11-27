@@ -39,16 +39,30 @@ fn backing(object: usize) -> *mut u8 {
     unsafe { (&raw mut jnox_native_shared_pages[object]).cast() }
 }
 
+pub(crate) fn read_file(object: usize, offset: usize, out: &mut [u8]) {
+    // The descriptor table bounds the logical extent. The kernel stack buffer
+    // is independent of the backing even when an EL0 mapping aliases it.
+    assert!(offset <= MAX_SIZE && out.len() <= MAX_SIZE - offset);
+    unsafe { ptr::copy_nonoverlapping(backing(object).add(offset), out.as_mut_ptr(), out.len()) };
+}
+
+pub(crate) fn write_file(object: usize, offset: usize, bytes: &[u8]) {
+    assert!(offset <= MAX_SIZE && bytes.len() <= MAX_SIZE - offset);
+    unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), backing(object).add(offset), bytes.len()) };
+}
+
 pub(crate) fn clear(object: usize, size: usize) {
     // The caller holds the last-reference check across allocation. Clear all
     // bytes that can be accessed through the new page-rounded EL0 mapping.
     unsafe { ptr::write_bytes(backing(object), 0, size.next_multiple_of(PAGE)) };
 }
 
-// Bytes beyond the logical EOF in a previously writable last page may
-// contain user data. Zero the entire newly exposed page tail on growth.
-pub(crate) fn zero_growth(object: usize, old: usize, new: usize) {
-    unsafe { ptr::write_bytes(backing(object).add(old), 0, new.next_multiple_of(PAGE) - old) };
+// On shrink, clear the discarded suffix of the retained last page. On
+// growth, clear newly exposed bytes through the last mapped page boundary.
+pub(crate) fn zero_resize_tail(object: usize, old: usize, new: usize) {
+    assert!(old <= MAX_SIZE && new <= MAX_SIZE);
+    let start = old.min(new);
+    unsafe { ptr::write_bytes(backing(object).add(start), 0, new.next_multiple_of(PAGE) - start) };
 }
 
 pub(crate) fn referenced(object: usize) -> bool {

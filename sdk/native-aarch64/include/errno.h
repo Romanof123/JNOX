@@ -11,6 +11,7 @@
 #define EOVERFLOW 75
 #define EINVAL 22
 #define ENOSYS 38
+#define ENODATA 61
 #define ENOTSUP 95
 #define ENOENT 2
 #define ENXIO 6
@@ -20,6 +21,8 @@
 #define ENFILE 23
 #define EMFILE 24
 #define ENOSPC 28
+#define EFBIG 27
+#define ESPIPE 29
 #define EPIPE 32
 #define ENAMETOOLONG 36
 #define ETIMEDOUT 110

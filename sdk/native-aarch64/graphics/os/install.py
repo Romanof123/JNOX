@@ -29,12 +29,18 @@ with tempfile.TemporaryDirectory() as temp:
             "-D__wrap_close=close", "-D__wrap_read=read", "-D__wrap_write=write",
             "-D__wrap_fcntl=jnox_transport_fcntl"])
     compile("native.o", here / "native.c", ["-I", native])
+    compile("sleep.o", here / "sleep.c", ["-I", native])
     compile("public.o", here / "public.c", ["-I", here, "-isystem", prefix / "include"])
     compile("pause.o", here / "sync-pause.c", ["-isystem", prefix / "include", "-iquote", native])
     compile("identity.o", here / "identity.c", ["-isystem", prefix / "include", "-iquote", native])
+    compile("sysconf.o", here / "sysconf.c", ["-isystem", prefix / "include", "-iquote", native])
+    compile("credentials.o", here / "credentials.c", ["-isystem", prefix / "include", "-iquote", native])
+    compile("tmpfs.o", here / "tmpfs.c", ["-isystem", prefix / "include", "-iquote", native])
+    compile("signals.o", here / "signals.c", ["-isystem", prefix / "include", "-iquote", native])
     compile("sync.o", here / "sync.c", ["-isystem", prefix / "include", "-iquote", native, "-mno-outline-atomics"])
     subprocess.run([args.ar, "rcs", out / "libjnox-wayland-os.a", out / "socket.o",
-                    out / "native.o", out / "public.o", out / "sync.o", out / "pause.o", out / "identity.o"], check=True)
+                    out / "native.o", out / "sleep.o", out / "public.o", out / "sync.o", out / "pause.o", out / "identity.o",
+                    out / "sysconf.o", out / "credentials.o", out / "tmpfs.o", out / "signals.o"], check=True)
     for name in ("sys/socket.h", "sys/ioctl.h", "sys/un.h", "sys/uio.h", "sys/poll.h", "sys/mman.h", "poll.h"):
         target = overlay / name
         target.parent.mkdir(parents=True, exist_ok=True)

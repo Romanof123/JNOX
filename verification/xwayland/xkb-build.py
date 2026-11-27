@@ -12,6 +12,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+from server_receipt import verify as verify_server
 
 HERE = Path(__file__).resolve().parent
 
@@ -274,6 +275,7 @@ def main():
         # dependency in production, applying only the native socket selection.
         run("patch", "-p1", "-i", HERE / "server-unix.patch", cwd=server)
         run("patch", "-p1", "-i", HERE / "server-local-access.patch", cwd=server)
+        run("patch", "--fuzz=0", "-p1", "-i", HERE / "server-busfault.patch", cwd=server)
         run("patch", "--fuzz=0", "-p1", "-i", HERE / "software-backend.patch", cwd=server)
     else:
         run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
@@ -318,13 +320,7 @@ def main():
         build = out / "xwayland-build"
         target = "hw/xwayland/Xwayland"
         run("ninja", "-C", build, "-j1", target)
-        elf = build / target
-        headers = run("readelf", "-hlWd", elf, output=True)
-        if "AArch64" not in headers or re.search(r"^\s*(INTERP|DYNAMIC|TLS)\s", headers, re.M):
-            raise ValueError("unexpected Xwayland target ELF layout")
-        if run("llvm-nm", "--undefined-only", elf, output=True).strip():
-            raise ValueError("unresolved Xwayland symbols")
-        (out / "Xwayland.sha256").write_text(hashlib.sha256(elf.read_bytes()).hexdigest() + "  " + target + "\n")
+        verify_server(out)
 
 
 if __name__ == "__main__":
