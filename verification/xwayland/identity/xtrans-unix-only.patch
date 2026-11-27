@@ -1,0 +1,17 @@
+--- a/X11/Xtrans/Xtranssock.c
++++ b/X11/Xtrans/Xtranssock.c
+@@ -85 +85 @@
+-#if defined(TCPCONN) || defined(UNIXCONN)
++#if defined(TCPCONN) || (defined(UNIXCONN) && !defined(JNOX_XTRANS_LOCAL))
+@@ -1689,2 +1689,7 @@
+-    TRANS(GetHostname) (hostnamebuf, sizeof (hostnamebuf));
+-
++    if (TRANS(GetHostname) (hostnamebuf, sizeof (hostnamebuf)) <= 0)
++        return 0;
++
++#ifdef JNOX_XTRANS_LOCAL
++    /* Unix-only deployments use the exact kernel-packaged node name. */
++    return strcmp(hostnamebuf, host) == 0;
++#else
+@@ -1811,0 +1817 @@
++#endif /* JNOX_XTRANS_LOCAL */

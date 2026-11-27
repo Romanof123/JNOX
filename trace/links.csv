@@ -2576,3 +2576,11 @@ CHG-340,affects,VER-024
 REQ-015,partially-implemented-by,IMP-340
 REQ-024,partially-implemented-by,IMP-340
 DES-013,partially-implemented-by,IMP-340
+CHG-345,affects,REQ-020
+CHG-345,affects,DES-005
+CHG-345,affects,VER-020
+REQ-020,partially-implemented-by,IMP-345
+DES-005,partially-implemented-by,IMP-345
+IMP-345,partially-verified-by,VER-020
+VER-020,has-partial-evidence,EVD-345
+IMP-345,tested-in,EVD-345

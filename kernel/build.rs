@@ -707,6 +707,15 @@ fn main() {
     }
     let native_image = selector("JNOX_NATIVE_ELF");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
+    if let Some(node) = selector("JNOX_NATIVE_NODENAME") {
+        let bytes = node.as_bytes();
+        assert!(native_image.is_some() && threads.is_none() && matches!(policy.as_deref(), Some("fifo" | "rr")) &&
+                (1..=63).contains(&bytes.len()) && bytes[0].is_ascii_alphanumeric() &&
+                bytes[bytes.len()-1].is_ascii_alphanumeric() &&
+                bytes.iter().all(|c| c.is_ascii_alphanumeric() || *c == b'-'),
+                "native nodename requires a packaged FIFO/RR kernel and one ASCII node label");
+        println!("cargo::rustc-env=JNOX_NATIVE_NODENAME={node}");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_console_write)");
     if let Some(writers) = selector("JNOX_NATIVE_CONSOLE_WRITERS") {
         assert!(native_image.is_some() && !writers.is_empty() && writers.len() <= 4 &&
