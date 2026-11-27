@@ -3,6 +3,9 @@ name = "jnox-local-socket"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+display-five-active = []
+
 [dependencies]
 jnox-native = { path = "../../sdk/native-aarch64/rust", features = ["sync-ipc"] }
 

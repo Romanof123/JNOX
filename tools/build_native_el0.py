@@ -102,8 +102,8 @@ def topic_vector(parser, grants):
 
 
 def ipc_route(value):
-    if len(value) != 3 or value[1] != ":" or value[0] not in "0123" or value[2] not in "0123":
-        raise argparse.ArgumentTypeError("expected two colon-separated slots 0 through 3")
+    if len(value) != 3 or value[1] != ":" or value[0] not in "01234" or value[2] not in "01234":
+        raise argparse.ArgumentTypeError("expected two colon-separated slots 0 through 4")
     return int(value[0]), int(value[2])
 
 
@@ -151,21 +151,24 @@ def native_service_slots(parser, args, policy, board):
                 args.loan_route, args.pipes, args.waitset, args.socket_service, args.pubsub_service)):
             parser.error("--uart-rx-standby excludes IPC routes, endpoints and services")
     display_standby = args.display_standby
-    if display_standby is not None:
-        if (display_standby != "2" or slots != 5 or display != 0 or broker != 3 or args.shared_fd != 1
+    active = getattr(args, "display_five_active", False)
+    if active or display_standby is not None:
+        if ((active and display_standby is not None) or slots != 5 or display != 0 or broker != 3 or args.shared_fd != 1
                 or any((args.uart_rx_irq, args.exec_child, args.rom_file, args.mailbox_route, args.notify_route,
                         args.loan_route, args.cap_grant, args.cap_route, args.pipes, args.waitset))):
-            parser.error("--display-standby 2 requires five ordinary processes, owner 0, local broker 3 and --shared-fd")
+            parser.error("select one five-role profile with owner 0, broker 3, shared FDs and ordinary processes")
     elif slots > 4:
-        parser.error("five native processes require --display-standby 2")
+        parser.error("five native processes require --display-standby 2 or --display-five-active")
     if broker == 3:
-        if slots != (5 if display_standby else 4) or display != 0 or args.pubsub_service:
-            parser.error("socket broker 3 requires four ordinary virt FIFO processes with display owner 0")
-        if sorted(args.ipc_route) != [(0, 3), (1, 3), (2, 3)]:
-            parser.error("display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3")
-        if args.peer3_arg and args.peer3_arg != ["7"]:
-            parser.error("socket broker 3 requires client mask 7")
-        args.peer3_arg = ["7"]
+        if slots != (5 if active or display_standby else 4) or display != 0 or args.pubsub_service:
+            parser.error("socket broker 3 requires the selected display profile with owner 0")
+        callers = [0, 1, 2, 4] if active else [0, 1, 2]
+        if sorted(args.ipc_route) != [(pid, 3) for pid in callers]:
+            parser.error(f"display/socket package requires exactly the broker routes from slots {callers}")
+        mask = str(sum(1 << pid for pid in callers))
+        if args.peer3_arg and args.peer3_arg != [mask]:
+            parser.error(f"socket broker 3 requires client mask {mask}")
+        args.peer3_arg = [mask]
     if display is not None and (board != "virt" or policy != "fifo" or args.threads
                                 or display >= slots or (slots > 2 and broker != 3 and standby is None)):
         parser.error("--display-service requires an ordinary virt FIFO owner in one or two slots, or owner 0 with UART standby 2 or socket broker 3")
@@ -267,7 +270,7 @@ def thread_priorities(value):
 
 
 def native_schedule(parser, args):
-    max_peers = 4 if args.display_standby is not None else 3
+    max_peers = 4 if args.display_standby is not None or getattr(args, "display_five_active", False) else 3
     if len(args.peer_elf) > (max_peers if args.policy in (["amc"], ["fifo"], ["rr"]) else 2):
         parser.error("too many peer ELFs for the selected policy")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
@@ -526,7 +529,7 @@ def main():
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
-                        help="independently linked peer in slot order (four peers for display standby, three for virt FIFO/RR or AMC, two otherwise)")
+                        help="independently linked peer in slot order (four peers for five-slot display profiles, three for virt FIFO/RR or AMC, two otherwise)")
     parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
@@ -589,7 +592,7 @@ def main():
                         help="reserve child executable slot 1 or 2 in a native shell package")
     parser.add_argument("--rom-file", action="append", default=[], metavar="NAME=FILE",
                         help="embed a host file under an immutable guest basename")
-    parser.add_argument("--console-write", action="append", type=int, choices=range(4), default=[],
+    parser.add_argument("--console-write", action="append", type=int, choices=range(5), default=[],
                         help="grant this process slot bounded SVC 4 console output on fd 1 and 2")
     parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
     parser.add_argument("--fifo-grant", type=pipe_fields, action="append", default=[],
@@ -600,6 +603,7 @@ def main():
                         help="grant the display owner a modern virtio-input absolute tablet on QEMU virt")
     parser.add_argument("--display-service", choices=("0", "1"), action="append", default=[], metavar="SLOT",
                         help="give one ordinary virt FIFO process ramfb scanout and PL011 byte input")
+    parser.add_argument("--display-five-active", action="store_true", help="start five ordinary display roles with broker 3 and X11 client 4")
     parser.add_argument("--display-standby", choices=("2",), action=SinglePath, metavar="SLOT",
                         help="reserve slot 2 for one display handoff in the five-process local compositor package")
     parser.add_argument("--uart-rx-irq", action="count", default=0,
@@ -611,7 +615,7 @@ def main():
     parser.add_argument("--net-standby", choices=("0", "1", "2"), action=SinglePath, metavar="SLOT",
                         help="allow one packaged process to claim raw NIC access after owner retirement")
     parser.add_argument("--socket-service", choices=("0", "1", "2", "3"), action="append", default=[], metavar="SLOT",
-                        help="select the socket broker; slot 3 serves display owner 0 and clients 1 and 2 on virt FIFO")
+                        help="select the socket broker; display broker 3 accepts the profile-specific callers on virt FIFO")
     parser.add_argument("--shared-fd", action="count", default=0,
                         help="allow the selected AF_UNIX broker to pass shared-memory descriptors")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
@@ -703,7 +707,7 @@ def main():
     validate_pipes(parser, args, policy, board)
     if args.console_write and (policy not in ("fifo", "rr") or not args.elf or
             len(set(args.console_write)) != len(args.console_write) or
-            max(args.console_write) > len(args.peer_elf)):
+            max(args.console_write) > len(args.peer_elf) or (4 in args.console_write and not args.display_five_active)):
         parser.error("--console-write requires distinct, packaged native FIFO/RR process slots")
     shell = None
     if args.exec_child or args.rom_file:
@@ -722,7 +726,7 @@ def main():
         if not routes:
             continue
         count = 1 + len(args.peer_elf)
-        maximum = (5 if args.display_standby else 4) if kind == "ipc" else 3
+        maximum = (5 if args.display_standby or args.display_five_active else 4) if kind == "ipc" else 3
         if board != "virt" or policy not in ("fifo", "rr") or args.threads or not 2 <= count <= maximum:
             parser.error(f"--{kind}-route requires 2..{maximum} native processes under FIFO or RR on virt")
         if len(set(routes)) != len(routes):
@@ -980,6 +984,9 @@ def main():
             metadata["pointer_tablet"] = {"device": "virtio-tablet-device", "owner_slot": display_slot,
                                           "transport": "virtio-mmio-modern", "service": 197,
                                           "queue_size": 16, "irq_mode": "polled"}
+        if args.display_five_active:
+            env["JNOX_NATIVE_DISPLAY_FIVE_ACTIVE"] = "1"
+            metadata["display_five_active"] = {"compositor": 0, "xwayland": 1, "native_client": 2, "broker": 3, "x11_client": 4}
         if args.display_standby is not None:
             env["JNOX_NATIVE_DISPLAY_STANDBY"] = args.display_standby
             metadata["display_standby"] = {"owner_slot": 0, "client_slot": 1, "standby_slot": 2,
@@ -1011,7 +1018,7 @@ def main():
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
     if args.shared_fd:
         env["JNOX_NATIVE_SHARED_FD"] = "1"
-        metadata["shared_fd"] = {"broker_slot": service_slot, "client_slots": service_clients,
+        metadata["shared_fd"] = {"broker_slot": service_slot, "client_slots": [0, 1, 2] if args.display_five_active else service_clients,
                                  "fd_first": 96, "fds_per_client": 8, "mappings_per_client": 4,
                                  "objects": 4, "max_bytes_per_object": 307200, "in_flight": 8}
     if args.cap_grant or args.cap_route:

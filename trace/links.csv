@@ -2611,3 +2611,12 @@ IMP-344,partially-verified-by,VER-020
 CHG-344,affects,EVD-344
 IMP-344,tested-in,EVD-344
 VER-020,has-partial-evidence,EVD-344
+CHG-346,affects,REQ-011
+CHG-346,affects,DES-001
+CHG-346,affects,VER-011
+REQ-011,partially-implemented-by,IMP-346
+DES-001,partially-implemented-by,IMP-346
+IMP-346,partially-verified-by,VER-011
+CHG-346,affects,EVD-346
+IMP-346,tested-in,EVD-346
+VER-011,has-partial-evidence,EVD-346

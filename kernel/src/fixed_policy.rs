@@ -1,7 +1,7 @@
 //! Single-core fixed-priority policy. All times use one monotonic counter.
 use crate::ready_queue::ReadyQueue;
 
-pub const MAX_TASKS: usize = 4 + cfg!(jnox_native_display_standby) as usize;
+pub const MAX_TASKS: usize = 4 + cfg!(any(jnox_native_display_standby, jnox_native_display_five_active)) as usize;
 const MAX_INTERVAL: u64 = i64::MAX as u64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

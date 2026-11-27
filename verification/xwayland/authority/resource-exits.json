@@ -1,0 +1,100 @@
+[
+  {
+    "case": "positive",
+    "exits": [
+      44,
+      40,
+      44,
+      44,
+      40
+    ],
+    "accepted": true
+  },
+  {
+    "case": "crossed",
+    "exits": [
+      44,
+      41,
+      44,
+      44,
+      41
+    ],
+    "accepted": true
+  },
+  {
+    "case": "server-only",
+    "exits": [
+      44,
+      40,
+      44,
+      44,
+      42
+    ],
+    "accepted": true
+  },
+  {
+    "case": "client-only",
+    "exits": [
+      44,
+      42,
+      44,
+      44,
+      40
+    ],
+    "accepted": true
+  },
+  {
+    "case": "absent",
+    "exits": [
+      44,
+      42,
+      44,
+      44,
+      42
+    ],
+    "accepted": true
+  },
+  {
+    "case": "invalid",
+    "exits": [
+      44,
+      43,
+      44,
+      44,
+      43
+    ],
+    "accepted": true
+  },
+  {
+    "case": "reverse-invalid",
+    "exits": [
+      44,
+      43,
+      44,
+      44,
+      43
+    ],
+    "accepted": true
+  },
+  {
+    "case": "boundaries",
+    "exits": [
+      44,
+      46,
+      44,
+      44,
+      47
+    ],
+    "accepted": true
+  },
+  {
+    "case": "ordinary",
+    "exits": [
+      45,
+      45,
+      45,
+      45
+    ],
+    "accepted": true
+  }
+]

@@ -141,7 +141,7 @@ const _: () = {
         slot += 1;
     }
 };
-const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_peer3) as usize + cfg!(jnox_native_display_standby) as usize);
+const _: () = assert!(COUNT >= 1 && COUNT <= 3 + cfg!(jnox_native_peer3) as usize + cfg!(jnox_native_peer4) as usize);
 
 #[derive(Clone, Copy)]
 #[repr(C, align(16))]
@@ -394,6 +394,9 @@ mod net_owner;
 #[cfg(jnox_native_display)]
 #[path = "native_ramfb.rs"]
 mod ramfb;
+#[cfg(jnox_native_display_five_active)]
+#[path = "native_display_authority.rs"]
+mod display_authority;
 #[cfg(jnox_native_uart_rx_irq)]
 #[path = "native_uart_rx.rs"]
 mod uart_rx;
@@ -475,7 +478,7 @@ fn activate(next: usize, frame: &mut NativeFrame) {
 
 const NO_PID: u64 = u64::MAX;
 const RECORD_LIMIT: usize = 128;
-const FIXED_COLUMNS: usize = if cfg!(jnox_native_display_standby) { 5 } else if cfg!(all(jnox_native_fixed, jnox_native_peer3)) { 4 } else { 3 };
+const FIXED_COLUMNS: usize = if cfg!(jnox_native_peer4) { 5 } else if cfg!(all(jnox_native_fixed, jnox_native_peer3)) { 4 } else { 3 };
 const FIELDS: usize = 12 + 3 * FIXED_COLUMNS;
 static mut DECISIONS: [[u64; FIELDS]; RECORD_LIMIT] = [[0; FIELDS]; RECORD_LIMIT];
 static mut RECORDS: usize = 0;
@@ -1072,6 +1075,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_native_display_five_active)]
+        199 => display_authority::call(unsafe { CURRENT }, f.x[0], f.x[1] as usize, f.x[2] as usize),
         #[cfg(jnox_native_console_write)]
         4 => {
             let caller = unsafe { CURRENT } as u8;
@@ -1298,6 +1303,8 @@ pub(super) fn run() -> ! {
         context::configure_timer_ppi();
         asm!("dsb sy", "isb", options(nostack, preserves_flags));
         native_el0_mmu::install_processes(&plans, &tails).unwrap_or_else(|_| fail(6));
+        #[cfg(jnox_native_display_five_active)]
+        display_authority::initialize();
         #[cfg(jnox_native_net_service)]
         virtio_net::init().unwrap_or_else(|errno| {
             uart_write(b"NATIVE NET INIT ERROR ");

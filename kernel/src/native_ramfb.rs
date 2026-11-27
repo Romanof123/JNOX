@@ -57,11 +57,11 @@ fn barrier() {
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) }
 }
 
-fn fw_select(selector: u16) {
+pub(super) fn fw_select(selector: u16) {
     unsafe { ((FW_CFG + 8) as *mut u16).write_volatile(selector.to_be()) }
 }
 
-fn fw_bytes<const N: usize>() -> [u8; N] {
+pub(super) fn fw_bytes<const N: usize>() -> [u8; N] {
     core::array::from_fn(|_| unsafe { (FW_CFG as *const u8).read_volatile() })
 }
 
