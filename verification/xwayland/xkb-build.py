@@ -62,7 +62,16 @@ def main():
     parser.add_argument("--server", type=Path, help="pinned Xwayland 24.1.6 release archive for full dependency build and configure")
     parser.add_argument("--wayland-work", type=Path,
                         help="for combined server configure, use this completed client build's target libraries and host scanner")
+    parser.add_argument("--runtime-profile-sha256", help="digest of a separately verified derived cross file")
+    parser.add_argument("--build-executable", action="store_true",
+                        help="build the production software Xwayland binary after the full X11 chain")
+    parser.add_argument("--xcvt-prefix", type=Path)
+    parser.add_argument("--libmd-source", type=Path)
+    parser.add_argument("--os-prefix", type=Path, help="Picolibc target prefix containing the native Wayland OS overlay")
     args = parser.parse_args()
+    if args.build_executable and not all((args.server, args.wayland_work, args.xcvt_prefix,
+                                          args.libmd_source, args.os_prefix)):
+        parser.error("executable build requires server, wayland-work, xcvt-prefix, libmd-source and os-prefix")
     if args.wayland_work and not args.server:
         parser.error("--wayland-work requires --server")
     out, runtime, protocols = [p.resolve() for p in (args.out, args.runtime, args.protocols)]
@@ -76,7 +85,10 @@ def main():
         raise ValueError("expected JNOX graphics runtime cross file")
     manifest = json.loads((runtime / "manifest.json").read_text())
     for rel in ("jnox.ini", "target/lib/libc.a", "target/lib/libpixman-1.a"):
-        if hashlib.sha256((runtime / rel).read_bytes()).hexdigest() != manifest["artifacts"][rel]:
+        expected = manifest["artifacts"][rel]
+        if rel == "jnox.ini" and args.runtime_profile_sha256:
+            expected = args.runtime_profile_sha256
+        if hashlib.sha256((runtime / rel).read_bytes()).hexdigest() != expected:
             raise ValueError("graphics runtime input changed: " + rel)
     cc = ast.literal_eval(rtcfg["binaries"]["c"])
     flags = ast.literal_eval(rtcfg["built-in options"]["c_args"])
@@ -94,6 +106,17 @@ def main():
                 "CFLAGS", "CPPFLAGS", "LDFLAGS", "LIBS", "DESTDIR", "SDKROOT"):
             os.environ.pop(key)
     roots = [prefix, protocols, runtime / "target"]
+    if args.build_executable:
+        os_prefix = args.os_prefix.resolve()
+        os_archive = os_prefix / "lib/libjnox-wayland-os.a"
+        xcvt = args.xcvt_prefix.resolve()
+        check_archive(os_archive)
+        check_archive(xcvt / "lib/libxcvt.a")
+        roots.append(xcvt)
+        flags.insert(0, "-I" + str(os_prefix / "include/jnox-wayland"))
+        ld = ["-L" + str(prefix / "lib"), "-L" + str(runtime / "target/lib"),
+              "-L" + str(protocols / "lib"), "-L" + str(os_prefix / "lib"),
+              "-ljnox-wayland-os", *ld]
     if wayland:
         roots.append(wayland / "target")
     pcdirs = [str(p / sub) for p in roots for sub in ("lib/pkgconfig", "share/pkgconfig")]
@@ -128,6 +151,14 @@ def main():
     os.environ.update(CC=shlex.join(cc), CFLAGS=shlex.join(flags + ["-Os", "-D_DEFAULT_SOURCE"]),
                       AR="llvm-ar", RANLIB="llvm-ranlib", NM="llvm-nm",
                       LIBS=shlex.join(ld), CC_FOR_BUILD="cc")
+    if args.build_executable:
+        # Libtool must not treat crt objects as inputs to every static archive.
+        wrapper = out / "target-cc"
+        wrapper.write_text("#!/bin/sh\ncase \" $* \" in *' -c '*|*' -E '*|*' -S '*) exec " +
+                           shlex.join(cc) + " \"$@\";; esac\nexec " + shlex.join(cc) +
+                           " \"$@\" " + shlex.join(ld) + "\n")
+        wrapper.chmod(0o755)
+        os.environ.update(CC=str(wrapper), LIBS="")
     build_machine = run("sh", x11 / "config.guess", output=True).strip()
 
     def configure(source, *options, host=True):
@@ -145,8 +176,29 @@ def main():
         os.environ.pop(key)
     configure(out / "xcb-proto-1.17.0", host=False)
     os.environ.update(target_env)
+    # libxcb's host Python generator imports the xcbgen installed above.
+    if args.build_executable:
+        packages = list(prefix.rglob("xcbgen/__init__.py"))
+        if len(packages) != 1:
+            raise ValueError("expected one installed host xcbgen package")
+        os.environ["PYTHONPATH"] = os.pathsep.join(filter(None, (str(packages[0].parents[1]), os.environ.get("PYTHONPATH"))))
+    if args.build_executable:
+        md_source = args.libmd_source.resolve()
+        if hashlib.sha256(md_source.read_bytes()).hexdigest() != "1bd6aa42275313af3141c7cf2e5b964e8b1fd488025caf2f971f43b00776b332":
+            raise ValueError("libmd 1.1.0 source hash mismatch")
+        run("tar", "xf", md_source, "-C", out)
+        configure(out / "libmd-1.1.0", "--disable-shared", "--enable-static")
+        check_archive(prefix / "lib/libmd.a")
+        shutil.copy(out / "libmd-1.1.0/COPYING", out / "libmd-COPYING")
     configure(out / "libpthread-stubs-0.5")
     configure(out / "libXau-1.0.11", "--disable-shared", "--enable-static", "--disable-xthreads")
+    if args.build_executable:
+        sdk = HERE.parents[1] / "sdk/native-aarch64/include"
+        for header in ("netinet/in.h", "arpa/inet.h"):
+            dest = prefix / "include" / header
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(sdk / header, dest)
+        run("patch", "-p1", "-i", HERE / "xcb-native-stream.patch", cwd=out / "libxcb-1.17.0")
     configure(out / "libxcb-1.17.0", "--disable-shared", "--enable-static")
     configure(x11, "--disable-shared", "--enable-static", "--disable-xthreads", "--enable-xkb",
               "--disable-loadable-i18n", "--disable-loadable-xcursor", "--disable-composecache",
@@ -177,7 +229,12 @@ def main():
         raise ValueError("Xwayland 24.1.6 release hash mismatch")
     run("tar", "xf", release, "-C", out)
     server = out / "xwayland-24.1.6"
-    run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
+    if args.build_executable:
+        # The intake patch's first hunk skips mandatory X11. Keep the upstream
+        # dependency in production, applying only the native socket selection.
+        run("patch", "-p1", "-i", HERE / "server-unix.patch", cwd=server)
+    else:
+        run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
     native_options = []
     if wayland:
         host = wayland / "host"
@@ -188,7 +245,19 @@ def main():
         os.environ["PKG_CONFIG_PATH_FOR_BUILD"] = str(host / "lib/pkgconfig")
         native_options = ["--native-file", wayland / "native.ini"]
     run(meson, "setup", out / "xwayland-build", server, "--wrap-mode=nofallback",
-        "--cross-file", cross, "--cross-file", HERE / "software.ini", *native_options)
+        "--cross-file", cross, "--cross-file", HERE / "software.ini", *native_options,
+        *(["-Dsha1=libmd", "-Ddefault_library=static"] if args.build_executable else []))
+    if args.build_executable:
+        build = out / "xwayland-build"
+        target = "hw/xwayland/Xwayland"
+        run("ninja", "-C", build, "-j1", target)
+        elf = build / target
+        headers = run("readelf", "-hlWd", elf, output=True)
+        if "AArch64" not in headers or re.search(r"^\s*(INTERP|DYNAMIC|TLS)\s", headers, re.M):
+            raise ValueError("unexpected Xwayland target ELF layout")
+        if run("llvm-nm", "--undefined-only", elf, output=True).strip():
+            raise ValueError("unresolved Xwayland symbols")
+        (out / "Xwayland.sha256").write_text(hashlib.sha256(elf.read_bytes()).hexdigest() + "  " + target + "\n")
 
 
 if __name__ == "__main__":

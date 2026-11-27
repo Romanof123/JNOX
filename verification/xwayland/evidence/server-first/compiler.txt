@@ -1,0 +1,20 @@
+[build-01.log @ ce9d4c990a3668174f54e1d5b647f2755886ed74]
+ValueError: expected one installed host xcbgen package
+
+[build-02.log @ aac86175919433154d2a3d7e09c5530ae4bcb84c]
+libtool:   error: cannot build libtool library 'libmd.la' from non-libtool objects on this host: <lab>/448-wayland-first-02/clock-acc5d87/runtime/start.o <lab>/448-wayland-first-02/clock-acc5d87/runtime/runtime.o
+
+[build-03.log @ d46620eb9bf327182a0e0038bc53bf27a89add4e]
+  CC       xcb_conn.lo
+<lab>/448-server-real-03/server/libxcb-1.17.0/src/xcb_conn.c:54:10: error: 'netinet/in.h' file not found with <angled> include; use "quotes" instead
+<lab>/448-server-real-03/server/libxcb-1.17.0/src/xcb_conn.c:296:13: error: implicit declaration of function 'writev' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+
+[build-04.log @ 3efd694030d0e26be9a0581a6d78f544f3615640]
+  CC       xcb_conn.lo
+  CC       xcb_out.lo
+  CC       xcb_in.lo
+<lab>/448-server-real-04/server/libxcb-1.17.0/src/xcb_in.c:111:9: error: implicit declaration of function 'pthread_cond_signal' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+<lab>/448-server-real-04/server/libxcb-1.17.0/src/xcb_in.c:162:13: error: implicit declaration of function 'pthread_cond_signal' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+<lab>/448-server-real-04/server/libxcb-1.17.0/src/xcb_in.c:326:13: error: implicit declaration of function 'pthread_cond_signal' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+<lab>/448-server-real-04/server/libxcb-1.17.0/src/xcb_in.c:344:9: error: implicit declaration of function 'pthread_cond_signal' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+<lab>/448-server-real-04/server/libxcb-1.17.0/src/xcb_in.c:938:22: error: implicit declaration of function 'pthread_cond_signal' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
