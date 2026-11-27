@@ -1,0 +1,27 @@
+{
+  "token": 1,
+  "reply_frames": 80,
+  "incoming_frames": 81,
+  "queue_notifications": [
+    17,
+    80
+  ],
+  "original_entries": {
+    "virtnet_probe": 1,
+    "virtnet_open": 1,
+    "skb_recv_done": 81,
+    "virtnet_poll": 82,
+    "start_xmit": 80,
+    "virtnet_close": 1,
+    "virtnet_remove": 1,
+    "skb_xmit_done": 80
+  },
+  "rejected": {
+    "pcap": "ordered NIC ingress and egress",
+    "used": "RX posted and used versus TX published and consumed at overlap",
+    "peer": "separate peer private byte history",
+    "grant": "posted RX grant owner or capacity",
+    "tx-event": "protected TX interrupt and claim at ack",
+    "tx-callback": "registered TX wake and cookie release"
+  }
+}
