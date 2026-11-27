@@ -18,3 +18,5 @@ The guest fixture uses a producer, a display consumer, an unrelated client and t
 생성한 앱의 FD, 각 앱의 매핑, 아직 수신하지 않은 소켓 데이터에 붙은 권한을 각각 추적한다. 송신자가 FD를 닫고 같은 번호로 새 객체를 만들어도 수신자는 처음 보낸 객체를 얻어야 한다. 송신자는 쓰기 매핑을 유지하면서 읽기 전용 FD를 만들어 보낼 수 있다. 수신자의 쓰기 매핑 요청은 커널이 거부한다. 커널이 살아 있는 호출의 신원과 응답 토큰을 확인한 뒤 전송 또는 설치를 확정한다. 데이터보다 먼저 받기, 부분 읽기, 제어 공간 부족, 호출 취소와 프로세스 종료에서도 객체 수명이 일관돼야 한다.
 
 두 앱의 실제 페이지 테이블과 접근 비트, 전송 중 권한, 수신자 전용 FD를 정지된 게스트에서 읽는다. 송신자가 픽셀을 갱신하기 전후로 공유 페이지와 화면 전체를 대조한다. 종료 후 미수신 권한과 매핑의 해제를 확인한다. 이 변경의 검증 범위는 지정 가상 장치의 공유 메모리와 FD 전달이며, Wayland 합성기와 Xwayland 실행은 상위 계획에서 별도로 검증한다.
+
+EVD-337 records two cold guest runs and an ordinary byte-socket window regression, including scanouts, reconstructed RAM and independent replay. 두 번의 부팅과 기존 창 시험 회귀에서 공유 메모리·페이지 테이블·화면을 확인했다. [Measured results and captures / 실측과 원본](evidence/native-shared-fd/README.md)

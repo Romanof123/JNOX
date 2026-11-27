@@ -1,0 +1,97 @@
+{
+  "pass": true,
+  "source_commit": "a1876bd4dc51e292fe63b0785bc4ea586b367b97",
+  "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+  "verified_archive_members": 808,
+  "restored_ram_files": 12,
+  "restored_ram_bytes": 1610612736,
+  "unique_ram_blocks": 105,
+  "block_size": 65536,
+  "shared_fd_primary_stdout_equal": true,
+  "shared_fd_qa_stdout_equal": true,
+  "shared_fd_qa_two_complete_passes": true,
+  "shared_fd_mutations": [
+    "REJECTED queued right write bit: queued SCM_RIGHTS reference",
+    "REJECTED expired receive: queued role 0 witness 29",
+    "REJECTED installed fd98 right: local descriptor installation",
+    "REJECTED read-only leaf: invalid page permission",
+    "REJECTED physical framebuffer: XRGB8888 backing bytes differ from external scanout",
+    "REJECTED stale fd98: receiver retained closed descriptor",
+    "REJECTED truncated control: terminal role 0 witness 16",
+    "REJECTED terminal descriptor: retained protected state",
+    "REJECTED raw QMP scanout: scanout"
+  ],
+  "shared_fd_uart_exits": {
+    "cold-1": [
+      [
+        "0",
+        "70"
+      ],
+      [
+        "1",
+        "71"
+      ],
+      [
+        "2",
+        "72"
+      ],
+      [
+        "3",
+        "0"
+      ]
+    ],
+    "cold-2": [
+      [
+        "0",
+        "70"
+      ],
+      [
+        "1",
+        "71"
+      ],
+      [
+        "2",
+        "72"
+      ],
+      [
+        "3",
+        "0"
+      ]
+    ]
+  },
+  "shared_fd_dropped_fixed_events": {
+    "cold-1": 1255,
+    "cold-2": 1255
+  },
+  "window_regression": {
+    "boots": 1,
+    "scenes": 4,
+    "raw_ppm": 8,
+    "png": 4,
+    "bytes": "xnxq",
+    "exits": [
+      [
+        0,
+        70
+      ],
+      [
+        1,
+        71
+      ],
+      [
+        2,
+        72
+      ],
+      [
+        3,
+        0
+      ]
+    ],
+    "capture_source_files": 283,
+    "fixed_events": 128,
+    "dropped_fixed_events": 1513
+  },
+  "archive": "jnox-444-shared-fd-a1876bd.tar.xz",
+  "archive_sha256": "6c48d4496ab89ece471ae1c9db21a039a57cea603916761d50655bc81b0ddb7f",
+  "archive_bytes": 6243488
+}

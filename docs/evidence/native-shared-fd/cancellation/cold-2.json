@@ -1,0 +1,76 @@
+{
+  "rejected_phase9_controls": [
+    "broker token",
+    "caller slot",
+    "broker operation"
+  ],
+  "capture": "cold-2",
+  "stages": [
+    {
+      "phase": 9,
+      "cancel_status": 0,
+      "fd98": [
+        0,
+        0
+      ],
+      "escrows": [],
+      "kernel_request": {
+        "server": 3,
+        "word": "0x1300000000000000",
+        "deadline": 2115383312,
+        "token": 57,
+        "delivered": true
+      },
+      "broker_pending": 57,
+      "broker_request": {
+        "op": 16,
+        "fd": 1,
+        "count": 1,
+        "request_niche": 1
+      },
+      "same_delivered_commit_pending": true,
+      "bank_views": [
+        {
+          "endpoint": 2,
+          "kind": 1,
+          "bytes": 0
+        },
+        {
+          "endpoint": 2,
+          "kind": 1,
+          "bytes": 0
+        }
+      ],
+      "empty_stream_confirmed": true
+    },
+    {
+      "phase": 10,
+      "cancel_status": -110,
+      "fd98": [
+        0,
+        0
+      ],
+      "escrows": [
+        [
+          72,
+          2,
+          0
+        ]
+      ],
+      "kernel_request": null,
+      "broker_pending": null
+    },
+    {
+      "phase": 11,
+      "cancel_status": -110,
+      "fd98": [
+        2,
+        0
+      ],
+      "escrows": [],
+      "kernel_request": null,
+      "broker_pending": null
+    }
+  ],
+  "limit": "Snapshots bound transitions; no continuous observation between stops."
+}
