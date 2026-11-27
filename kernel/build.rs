@@ -532,8 +532,10 @@ fn main() {
     let four_fixed = board == "virt" && matches!(policy.as_deref(), Some("fifo" | "rr"));
     assert!(peer3_image.is_none() || (peer2_image.is_some() && (amc.is_some() || four_fixed)),
         "third peer requires AMC or ordinary virt FIFO/RR");
-    assert!(selector("JNOX_NATIVE_PEER4_ELF").is_none() && selector("JNOX_NATIVE_PEER4_ELF_SHA256").is_none(),
-        "at most four native slots");
+    let peer4_image = selector("JNOX_NATIVE_PEER4_ELF");
+    let peer4_hash = selector("JNOX_NATIVE_PEER4_ELF_SHA256");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_peer4)");
+    assert_eq!(peer4_image.is_some(), peer4_hash.is_some(), "fourth peer requires digest");
     let peer_image = selector("JNOX_NATIVE_PEER_ELF");
     let peer_hash = selector("JNOX_NATIVE_PEER_ELF_SHA256");
     let net_standby = selector("JNOX_NATIVE_NET_STANDBY");
@@ -563,7 +565,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_threads)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_rr)");
     let threads = selector("JNOX_NATIVE_THREADS");
-    if let Some(value) = shared_fd {
+    if let Some(value) = shared_fd.as_deref() {
         assert!(value == "1" && profile.as_deref() == Some("native") && board == "virt"
                 && matches!(policy.as_deref(), Some("fifo" | "rr")) && threads.is_none()
                 && socket_service.is_some() && net_service.is_none() && ipc_routes.is_some(),
@@ -588,6 +590,16 @@ fn main() {
             && !capabilities && loan_route.is_none() && socket_service.is_none() && topic_masks.is_none(),
             "UART standby excludes IPC routes, endpoints and services");
         println!("cargo::rustc-cfg=jnox_native_uart_rx_standby");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_display_standby)");
+    let display_standby = selector("JNOX_NATIVE_DISPLAY_STANDBY");
+    assert_eq!(display_standby.is_some(), peer4_image.is_some(), "display standby requires five native processes");
+    if let Some(slot) = display_standby.as_deref() {
+        assert!(slot == "2" && display_service.as_deref() == Some("0") && socket_service.as_deref() == Some("3")
+            && peer3_image.is_some() && shared_fd.as_deref() == Some("1") && uart_rx_irq.is_none()
+            && mailbox_routes.is_none() && notify_routes.is_none() && loan_route.is_none() && !capabilities,
+            "display standby requires owner 0, standby 2, local broker 3 and shared descriptors");
+        println!("cargo::rustc-cfg=jnox_native_display_standby");
     }
     let display_broker = socket_service.as_deref() == Some("3");
     if display_broker {
@@ -637,6 +649,8 @@ fn main() {
             "JNOX_NATIVE_UART_RX_IRQ=1 requires an ordinary virt FIFO display service");
         println!("cargo::rustc-cfg=jnox_native_uart_rx_irq");
     }
+    assert!(display_standby.is_none() || (children.is_none() && rom.is_none() && rom_hash.is_none()),
+        "display standby requires ordinary native processes");
     let pipe_config = match (children, rom, rom_hash) {
         (None, None, None) => pipe_config,
         (Some(children), Some(file), Some(hash)) => {
@@ -699,14 +713,14 @@ fn main() {
         cap = value.parse().expect("deadline switch cap exceeds u64");
         assert!(cap > 0, "deadline switch cap must be positive");
     }
-    let native_argv = [0, 1, 2, 3].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    let native_argv = [0, 1, 2, 3, 4].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
     assert!(amc.is_none() || native_argv.iter().all(Option::is_none), "declare AMC arguments in its manifest");
     for (slot, args) in native_argv.iter().enumerate() {
         if args.is_some() {
             assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
                 "slot {slot}: arguments require an ordinary native application");
             assert!(slot == 0 || (slot == 1 && peer_image.is_some()) || (slot == 2 && peer2_image.is_some())
-                || (slot == 3 && peer3_image.is_some()),
+                || (slot == 3 && peer3_image.is_some()) || (slot == 4 && peer4_image.is_some()),
                 "slot {slot}: arguments supplied without an ELF");
         }
     }
@@ -850,7 +864,7 @@ fn main() {
             }
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
-            let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some()) + usize::from(peer3_image.is_some());
+            let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some()) + usize::from(peer3_image.is_some()) + usize::from(peer4_image.is_some());
             if let (Some(program), Some(hash)) = (extension, extension_hash) {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
@@ -870,6 +884,10 @@ fn main() {
             if let (Some(source), Some(hash)) = (peer3_image.as_deref(), peer3_hash.as_deref()) {
                 package_native_image(source, hash, "native_peer3.elf", "JNOX_PACKAGED_PEER3_SHA256");
                 println!("cargo::rustc-cfg=jnox_native_peer3");
+            }
+            if let (Some(source), Some(hash)) = (peer4_image.as_deref(), peer4_hash.as_deref()) {
+                package_native_image(source, hash, "native_peer4.elf", "JNOX_PACKAGED_PEER4_SHA256");
+                println!("cargo::rustc-cfg=jnox_native_peer4");
             }
             println!("cargo::rustc-cfg=jnox_native_el0");
         }
@@ -1339,7 +1357,7 @@ fn parse_ipc_route(pair: &str, slots: usize) -> [usize; 2] {
     [caller, server]
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>, pipe_config: Option<&str>, socket_service: Option<&str>, topic_masks: Option<(&str, &str)>, caps: [Option<&str>; 2]) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 5], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>, pipe_config: Option<&str>, socket_service: Option<&str>, topic_masks: Option<(&str, &str)>, caps: [Option<&str>; 2]) {
     let batch_jobs = if let Some(raw) = batch {
         let jobs: Vec<_> = raw.split(';').map(parse_batch_job).collect();
         assert_eq!(jobs.len(), slots, "provide one batch tuple per slot");
@@ -1565,7 +1583,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         if raw.is_none() && !(capability_backend && cfg == "jnox_native_mailbox_ipc") {
             continue;
         }
-        let maximum = if cfg == "jnox_native_sync_ipc" { 4 } else { 3 };
+        let maximum = if cfg == "jnox_native_sync_ipc" { 5 } else { 3 };
         assert!((2..=maximum).contains(&slots), "unsupported process count for IPC configuration");
         let mut routes = vec![0u8; slots];
         for pair in raw.into_iter().flat_map(|list| list.split(',')) {
@@ -1589,7 +1607,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
                     _ => panic!("invalid socket service slot"),
                 };
                 if slot == 3 {
-                    assert_eq!(routes.as_slice(), &[8, 8, 8, 0], "display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3");
+                    assert!(routes[..3] == [8, 8, 8] && routes[3..].iter().all(|&mask| mask == 0), "display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3");
                 } else {
                     assert!(slots < 4 || topic_masks.is_some(), "four native socket processes require display broker 3 or a separate pubsub service");
                 }

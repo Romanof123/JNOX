@@ -1,0 +1,30 @@
+{
+  "tool": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "product_module_sha256": "fd36e447c7ec706658b326f38e116fe544f1ba04a8bf0a5a37780d72c8093f32",
+  "transport_model": {
+    "last-permitted-poll": {
+      "return": 0,
+      "dma_byte": "00",
+      "status_polls": 1024,
+      "reclamations": 1
+    },
+    "no-status-ack": {
+      "return": -5,
+      "dma_byte": "a5",
+      "status_polls": 1024,
+      "reclamations": 0
+    },
+    "event-queue-busy": {
+      "return": -5,
+      "dma_byte": "a5",
+      "status_polls": 2,
+      "reclamations": 0
+    },
+    "status-queue-busy": {
+      "return": -5,
+      "dma_byte": "a5",
+      "status_polls": 3,
+      "reclamations": 0
+    }
+  }
+}

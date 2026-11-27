@@ -1,0 +1,469 @@
+{
+  "case": "clean",
+  "kernel": "d2a768fb08fa983ba8d323a6fa86352557a5046c76a7bd6906c340135cf1c37c",
+  "qemu": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+  "stages": {
+    "primary-ready": {
+      "object_namespace_handshakes": 1,
+      "owner": 0,
+      "client_epoch": 1,
+      "wire_messages": 39,
+      "pointer_serials": [],
+      "focus": false,
+      "buttons": [],
+      "fixed_xy": null,
+      "frames": 1,
+      "client_denials": [
+        -1,
+        -1
+      ],
+      "dma_events": [],
+      "generations": [
+        [
+          1,
+          1109298,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "reset_count": 0,
+      "control_count": 11,
+      "frame_sha256": "4d3f209ce86d246a3a9a9151e823e6317e6111d50a2b439ff8f1d55a6769dde1"
+    },
+    "primary-aim": {
+      "object_namespace_handshakes": 1,
+      "owner": 0,
+      "client_epoch": 1,
+      "wire_messages": 40,
+      "pointer_serials": [
+        4
+      ],
+      "focus": true,
+      "buttons": [],
+      "fixed_xy": [
+        6144,
+        7680
+      ],
+      "frames": 1,
+      "client_denials": [
+        -1,
+        -1
+      ],
+      "dma_events": [
+        [
+          1,
+          0,
+          3,
+          0,
+          4109
+        ],
+        [
+          2,
+          1,
+          3,
+          1,
+          7404
+        ],
+        [
+          3,
+          2,
+          0,
+          0,
+          0
+        ]
+      ],
+      "generations": [
+        [
+          1,
+          1109298,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "reset_count": 0,
+      "control_count": 17,
+      "frame_sha256": "4d3f209ce86d246a3a9a9151e823e6317e6111d50a2b439ff8f1d55a6769dde1"
+    },
+    "primary-held": {
+      "object_namespace_handshakes": 1,
+      "owner": 0,
+      "client_epoch": 1,
+      "wire_messages": 48,
+      "pointer_serials": [
+        4,
+        5
+      ],
+      "focus": true,
+      "buttons": [
+        1
+      ],
+      "fixed_xy": [
+        6144,
+        7680
+      ],
+      "frames": 2,
+      "client_denials": [
+        -1,
+        -1
+      ],
+      "dma_events": [
+        [
+          4,
+          3,
+          1,
+          272,
+          1
+        ],
+        [
+          5,
+          4,
+          0,
+          0,
+          0
+        ]
+      ],
+      "generations": [
+        [
+          1,
+          1109298,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "reset_count": 0,
+      "control_count": 24,
+      "frame_sha256": "b82564e77d5ac77e106dcf395e66e15e3198d82d4f8b61c2cab2cfad72895977"
+    }
+  },
+  "terminal_tablet_state": [
+    167788032,
+    0,
+    2,
+    0,
+    32767,
+    0,
+    32767,
+    21,
+    5,
+    5,
+    2,
+    1
+  ],
+  "generations": [
+    [
+      1,
+      1109298,
+      0,
+      18405496,
+      5,
+      0,
+      2
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ],
+  "lease": {
+    "assertions": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "leases": [
+      [
+        18391131,
+        0,
+        2,
+        18446744073709551615,
+        3,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "retirements": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "cleanup": [
+      [
+        18391457,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        17900548,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        18407318,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        18419291,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        2560761166,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "broker_deaths": [
+      [
+        18412136,
+        3,
+        0
+      ],
+      [
+        17910102,
+        3,
+        1
+      ],
+      [
+        18413762,
+        3,
+        2
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    "first_spare_restore": [
+      0,
+      0,
+      0
+    ]
+  },
+  "hardware": {
+    "status_writes": [
+      0,
+      3,
+      11,
+      15,
+      0
+    ],
+    "reset_readbacks": [
+      {
+        "status": true,
+        "queues": [
+          0,
+          1
+        ]
+      },
+      {
+        "status": true,
+        "queues": [
+          0,
+          1
+        ]
+      }
+    ],
+    "negotiations": 1,
+    "mmio_writes": 44
+  },
+  "control": {
+    "count": 4096,
+    "period_ns": 10000000,
+    "limit_ns": 20000000,
+    "whole_boot": {
+      "maximum_gap_ns": 12587504,
+      "misses": []
+    },
+    "startup_origin_to_first_completion_ns": 10247520,
+    "startup_origin_exceeds_interval_limit": false,
+    "deadline_lateness_at_least_one_period": []
+  }
+}

@@ -1,0 +1,289 @@
+{
+  "four_process_tablet": {
+    "source": "5a61919856e43b453cfb1eeb2a59cb1a8fd04e8a",
+    "kernel_sha256": "3c60b13e6be0a839fe565cd5cb2419815430f8b3391adb62a5b97a429488020c",
+    "native_images": [
+      {
+        "pid": 0,
+        "argv": [
+          "/bin/app"
+        ],
+        "sha256": "62f107e83131099f66e9984fea4698d5cb1ab23390968c0d4fca11364b1d9877"
+      },
+      {
+        "pid": 1,
+        "argv": [
+          "/bin/app",
+          "pa"
+        ],
+        "sha256": "ae09b8663fe4a89779b642581b85e2aac1e4da39d5d9f3934c33c776d1322cdd"
+      },
+      {
+        "pid": 2,
+        "argv": [
+          "/bin/app",
+          "pb"
+        ],
+        "sha256": "ae09b8663fe4a89779b642581b85e2aac1e4da39d5d9f3934c33c776d1322cdd"
+      },
+      {
+        "pid": 3,
+        "argv": [
+          "/bin/app",
+          "7"
+        ],
+        "sha256": "8fd40f19e91190108b30831e53346c1d902a99769ce5b0d198af9d0912fa98e9"
+      }
+    ],
+    "start_utc": "2026-11-27T04:01:29Z",
+    "end_utc": "2026-11-27T04:01:38Z",
+    "gate_exit": 0,
+    "assertions": {
+      "initial_client_wire_screen": "PASS",
+      "qemu_topology": "PASS",
+      "four_guest_process_exits": "PASS",
+      "seat_capabilities": "PASS",
+      "nonowner_counters": "PASS",
+      "live_hardware": "PASS",
+      "owner_exit_device_reset": "PASS",
+      "both_queue_ready_after_exit": "PASS",
+      "all_host_commands_and_terminal_receipts": "PASS",
+      "qmp_dma_and_syn": "PASS",
+      "both_clicks_client_wire_screen": "PASS",
+      "overlap_client_wire_screen": "PASS",
+      "axis_and_application_delivery": "PASS",
+      "overlap_focus": "PASS",
+      "focus_restack_scene": "PASS",
+      "both_directions_and_restack_actual_sends": "PASS",
+      "focus_disconnect_scene": "PASS",
+      "focused_disconnect_retarget": "PASS"
+    },
+    "exits": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        71
+      ],
+      [
+        2,
+        72
+      ],
+      [
+        3,
+        0
+      ]
+    ],
+    "seats": {
+      "Pulse": [
+        3
+      ],
+      "Tiles": [
+        3
+      ]
+    },
+    "focus_transitions": [
+      [
+        "Pulse",
+        "Tiles",
+        55,
+        56
+      ],
+      [
+        "Tiles",
+        "Pulse",
+        61,
+        62
+      ],
+      [
+        "Pulse",
+        "Tiles",
+        66,
+        67
+      ]
+    ],
+    "controller_clock": "Four-role profile has no periodic control process.",
+    "rejected_mutations": [
+      "DMA X value",
+      "used byte count",
+      "descriptor writable bit",
+      "used index",
+      "replenished descriptor",
+      "QMP press replaced by release",
+      "Pulse private press byte",
+      "duplicate serial in real Wayland packet",
+      "one QEMU RGB channel",
+      "terminal DEVICE_STATUS still live",
+      "retired queue 0 still ready",
+      "retired queue 1 still ready",
+      "reverse Pulse leave 55 and Tiles enter 56",
+      "reverse Tiles leave 61 and Pulse enter 62",
+      "reverse Pulse leave 66 and Tiles enter 67"
+    ],
+    "mutation_results_sha256": "570046f490c17d3353322a44f36c64845eab6002ca1c9d5f698349c08c868eb7",
+    "mutation_reader_sha256": "ab5d0958a90985c418a6faa28d289b8f6dbdf9d40465e8bb896797446599652f",
+    "reader_sha256": "c9456b296daa302b94798e08f20598cefb4e6d6d4f4ff37235d1106e118abec1",
+    "png_sha256": {
+      "b-dead.png": "c86b50be6f77247ffe73378a559bf12ebc3b3703770e446f9089eb426a7bb275",
+      "both-clicked.png": "15a5a7c1d7fe1210492b4c9093182e0aedf175e0b0a37b53251460f2744a8c37",
+      "initial.png": "ea20f80a69de57214ffe42b781710dddc7bdb7af599e98fa8c92d46c137c3f14",
+      "overlap-motion.png": "15a5a7c1d7fe1210492b4c9093182e0aedf175e0b0a37b53251460f2744a8c37",
+      "tiles-front.png": "2831076bb0445324d778d6f7041a27b483a15af5893d8ccbef3534f2b7aba490"
+    }
+  },
+  "five_process_keyboard": {
+    "source": "5a61919856e43b453cfb1eeb2a59cb1a8fd04e8a",
+    "kernel_sha256": "5277ab5703231650f0f19b2c35df71c1b5eea70176d7d8ce7a4bf12bd410de4a",
+    "native_images": [
+      {
+        "pid": 0,
+        "argv": [
+          "/bin/app",
+          "restart-primary"
+        ],
+        "sha256": "f9af7e023934a8f48dfd5d5c8e2bd35abf574bdff75738381fdaf91977f7ebe0"
+      },
+      {
+        "pid": 1,
+        "argv": [
+          "/bin/app",
+          "reconnect"
+        ],
+        "sha256": "f3e7985f6111be12832805d90fd35e7faf045e8f42cb71b2a4b6d844db9876b3"
+      },
+      {
+        "pid": 2,
+        "argv": [
+          "/bin/app",
+          "restart-spare"
+        ],
+        "sha256": "f9af7e023934a8f48dfd5d5c8e2bd35abf574bdff75738381fdaf91977f7ebe0"
+      },
+      {
+        "pid": 3,
+        "argv": [
+          "/bin/app",
+          "7"
+        ],
+        "sha256": "8fd40f19e91190108b30831e53346c1d902a99769ce5b0d198af9d0912fa98e9"
+      },
+      {
+        "pid": 4,
+        "argv": [
+          "/bin/app"
+        ],
+        "sha256": "b35162105fe5688c60088ec5a7e90a4a311be7d4e2f5d4998f1800f556034a51"
+      }
+    ],
+    "start_utc": "2026-11-27T04:02:01Z",
+    "end_utc": "2026-11-27T04:02:53Z",
+    "gate_exit": 0,
+    "input_bytes": "x!xxq",
+    "caps": {
+      "primary1": [
+        2
+      ],
+      "spare2": [
+        2
+      ]
+    },
+    "eof": [
+      1,
+      0
+    ],
+    "all_gaps_over_20ms": [],
+    "all_releases_at_least_10ms_late": [],
+    "exits": [
+      [
+        0,
+        -5
+      ],
+      [
+        1,
+        71
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        3,
+        0
+      ],
+      [
+        4,
+        74
+      ]
+    ],
+    "timing": {
+      "period_ms": 10,
+      "limit_ms": 20,
+      "maximum_gap_ms": "324993/31250",
+      "misses": [],
+      "sequence_start": 38,
+      "sequence_end": 86,
+      "timestamp_unit": "guest monotonic nanoseconds",
+      "reported_max_gap": 10585296,
+      "reported_missed": 0,
+      "all_completions": {
+        "period_ms": 10,
+        "limit_ms": 20,
+        "maximum_gap_ms": "661581/62500",
+        "misses": []
+      },
+      "sample_count": 4096
+    },
+    "reader_sha256": "b2e813d6d0a1c3f3eb554ef7add522d374f6dbb9aec0501fec2485cc52ea44cd",
+    "mutation_results_sha256": "db9f04e1f0844f393fcf0ec3c8e8e688c9f2123e855a22c76d17512a4655092a",
+    "mutation_reader_sha256": "d6134bdf294b835000ce90b5ca742abaa504b82306cc8075afdbd863cd73fc48",
+    "rejected_mutations": {
+      "pixel": "independent full scanout spare2",
+      "owner": "fault origin",
+      "timing_misses": [
+        [
+          86,
+          "20000001/1000000"
+        ]
+      ]
+    }
+  },
+  "single_process_headless": {
+    "source": "5a61919856e43b453cfb1eeb2a59cb1a8fd04e8a",
+    "kernel_sha256": "2b0c3fed3fbe7c5a2a77c1eab732ddd63648656f348e7b1ec6feb734f341cbc9",
+    "native_images": [
+      {
+        "pid": 0,
+        "argv": [
+          "/bin/app"
+        ],
+        "sha256": "b35162105fe5688c60088ec5a7e90a4a311be7d4e2f5d4998f1800f556034a51"
+      }
+    ],
+    "start_utc": "2026-11-27T04:08:10Z",
+    "end_utc": "2026-11-27T04:08:54Z",
+    "first_reader_gate_exit": 1,
+    "corrected_reader_exit": 0,
+    "first_reader_failure": "Single-process manifest omitted optional expected_ttbr0_el1; the corrected reader obtains PID0 TTBR from the linked kernel Space array and checks actual mapped data.",
+    "control_sha256": "b35162105fe5688c60088ec5a7e90a4a311be7d4e2f5d4998f1800f556034a51",
+    "qtree_sha256": "0829464a73c2730f32498564d0410dc6828b6471ec077327b89f64083d510fd7",
+    "samples": 4096,
+    "status": 74,
+    "largest_inter_completion_ns": 10271312,
+    "over_20ms": [],
+    "late_one_period": [],
+    "display_roles": [],
+    "tablet_devices": [],
+    "monotonic_period_ns": 10000000,
+    "gap_limit_ns": 20000000,
+    "reader_sha256": "acaa3dcb47338ea6c71eddcf6e61903a089d53213ad94044f4263e44c1533279",
+    "prior_attempt": {
+      "directory": "regress-headless-01",
+      "gate_exit": 2,
+      "guest_started": false,
+      "cause": "Explicit FIFO package required one priority for the sole ELF.",
+      "log_sha256": "9d6586a64ed0582f0643ad6db7f69090476a0f6bce47fa75ac8823a307436d48"
+    }
+  }
+}

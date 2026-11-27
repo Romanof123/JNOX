@@ -51,6 +51,13 @@ static mut jnox_tablet_transport: [u64; 11] = [0; 11];
 #[unsafe(no_mangle)]
 static mut jnox_tablet_events: [[u64; 4]; 64] = [[0; 4]; 64];
 
+// The combined profile can acquire at most once per compositor process.
+// Each row records owner+1, acquired tick, sequence before first read,
+// retired tick, last sequence, pending words discarded and terminal phase.
+#[cfg(jnox_native_display_standby)]
+#[unsafe(no_mangle)]
+static mut jnox_tablet_generations: [[u64; 7]; 2] = [[0; 7]; 2];
+
 struct Tablet {
     base: usize,
     owner: Option<usize>,
@@ -230,6 +237,12 @@ impl Tablet {
         evidence(0, b as u64);
         if let Err(e) = self.configure() { self.stop(true); return Err(e); }
         self.owner = Some(pid);
+        #[cfg(jnox_native_display_standby)]
+        unsafe {
+            (&raw mut jnox_tablet_generations[usize::from(pid == 2)]).write_volatile([
+                pid as u64 + 1, super::counter(), self.sequence, 0, 0, 0, 0,
+            ]);
+        }
         evidence(1, pid as u64 + 1);
         evidence(2, 1);
         for (i, (min, max)) in axes.into_iter().enumerate() {
@@ -318,7 +331,10 @@ impl Tablet {
     }
 
     fn stop(&mut self, fault: bool) {
+        #[cfg(jnox_native_display_standby)]
+        let previous = self.owner.map(|pid| (usize::from(pid == 2), self.len - self.pos));
         self.owner = None;
+        self.pending.fill(0);
         self.pos = 0;
         self.len = 0;
         evidence(1, 0);
@@ -327,7 +343,18 @@ impl Tablet {
         });
         let masked = mask_irq(self.base);
         self.broken = fault || result.is_err() || masked.is_err();
-        evidence(2, if self.broken { 3 } else { 2 });
+        let phase = if self.broken { 3 } else { 2 };
+        evidence(2, phase);
+        #[cfg(jnox_native_display_standby)]
+        if let Some((index, discarded)) = previous {
+            unsafe {
+                let row = &raw mut jnox_tablet_generations[index];
+                (&raw mut (*row)[3]).write_volatile(super::counter());
+                (&raw mut (*row)[4]).write_volatile(self.sequence);
+                (&raw mut (*row)[5]).write_volatile(discarded as u64);
+                (&raw mut (*row)[6]).write_volatile(phase);
+            }
+        }
         unsafe { evidence(11, jnox_tablet_state[11] + u64::from(result.is_ok())); }
     }
 }
@@ -337,7 +364,8 @@ pub(super) fn call(pid: usize, op: u64) -> i64 {
     match op { 0 => tablet.acquire(pid), 1 => tablet.poll(pid), _ => Err(-22) }.unwrap_or_else(|e| e)
 }
 
-pub(super) fn retire(pid: usize) {
+pub(super) fn retire(pid: usize) -> bool {
     let tablet = unsafe { &mut *(&raw mut TABLET) };
     if tablet.owner == Some(pid) { tablet.stop(false); }
+    tablet.owner.is_none() && !tablet.broken
 }

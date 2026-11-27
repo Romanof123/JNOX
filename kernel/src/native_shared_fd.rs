@@ -152,11 +152,30 @@ pub(super) fn discard(id: u64) -> Result<(), i32> {
     Ok(())
 }
 
+// Snapshot the retiring process only. Escrow may legitimately outlive it.
+#[cfg(jnox_native_display_standby)]
+#[unsafe(no_mangle)]
+static mut jnox_display_shared_exit: [[u64; 6]; COUNT] = [[0; 6]; COUNT];
+
 pub(super) fn exit(pid: usize) {
+    #[cfg(jnox_native_display_standby)]
+    let maps_before = shared::mapping_count(pid);
     shared::exit(pid);
     let state = unsafe { &mut *(&raw mut jnox_native_shared_state) };
+    #[cfg(jnox_native_display_standby)]
+    let fd_count = |state: &State| state.descriptors[pid].iter().filter(|r| r.object_plus_one != 0).count();
+    #[cfg(jnox_native_display_standby)]
+    let fds_before = fd_count(state);
     state.descriptors[pid].fill(Right::EMPTY);
     // Queued rights survive their sender. The broker owns their disposal on
     // socket teardown. On broker exit the entire queue domain disappears.
     if pid == NATIVE_SOCKET_SERVICE { state.escrow.fill(Escrow::EMPTY); }
+    #[cfg(jnox_native_display_standby)]
+    unsafe {
+        (&raw mut jnox_display_shared_exit[pid]).write_volatile([
+            super::counter(), fds_before as u64, fd_count(state) as u64,
+            maps_before as u64, shared::mapping_count(pid) as u64,
+            state.escrow.iter().filter(|e| e.id != 0).count() as u64,
+        ]);
+    }
 }
