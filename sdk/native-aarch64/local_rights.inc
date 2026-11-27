@@ -1,5 +1,6 @@
 /* Included in the opt-in local socket client. User pointers stay in EL0. */
 #include <jnox/shm.h>
+#include <jnox/shared_fd_abi.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 
@@ -42,7 +43,7 @@ long jnox_shm_size(int fd) {
     return backing_call(187, fd, 0);
 }
 int jnox_shm_dup_readonly(int fd) {
-    return (int)backing_call(188, fd, 0);
+    return (int)backing_call(JNOX_CALL_SHM_DUP, fd, 0);
 }
 /* The native image has no exec transition. Anonymous files live in the
  * process FD table and are always retired at process teardown. */
@@ -73,7 +74,7 @@ int munmap(void *address, size_t length) {
 extern int __real_fcntl(int, int, ...);
 int __wrap_fcntl(int fd, int cmd, ...) {
     int arg = 0;
-    if (cmd == F_ADD_SEALS || cmd == F_SETFL || cmd == F_SETFD) {
+    if (cmd == F_ADD_SEALS || cmd == F_SETFL || cmd == F_SETFD || cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
         __builtin_va_list ap;
         __builtin_va_start(ap, cmd);
         arg = __builtin_va_arg(ap, int);
@@ -90,8 +91,14 @@ int __wrap_fcntl(int fd, int cmd, ...) {
         }
         return finish(cmd == F_SETFD ? -EINVAL : -ENOTSUP);
     }
+    if (fd < 0 && (cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC)) return error(EBADF);
     if (!backing_range(fd)) {
         return __real_fcntl(fd, cmd, arg);
+    }
+    if (cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
+        unsigned selector = cmd == F_DUPFD_CLOEXEC ? JNOX_SHM_DUP_CLOEXEC : JNOX_SHM_DUP_PLAIN;
+        long value = jnox_ipc_trap(JNOX_CALL_SHM_DUP, fd, selector, (long)arg).status;
+        return value < 0 ? error(-value) : (int)value;
     }
     if (cmd == F_ADD_SEALS) return jnox_shm_add_seals(fd, (unsigned)arg);
     if (cmd == F_GET_SEALS) return jnox_shm_get_seals(fd);

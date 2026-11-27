@@ -3,6 +3,8 @@
 #include "probe.h"
 #include <sys/socket.h>
 #include <jnox/ipc.h>
+#include "dup_probe.h"
+static int duplicate_frame;
 static int create_shared_frame;
 static int receiver;
 static int receive_cloexec;
@@ -60,6 +62,21 @@ static jnox_ipc_response fixture_call(unsigned peer, uint64_t word, uint64_t dea
     return jnox_ipc_call(peer, word, deadline);
 }
 
+static int frame_readonly(int fd)
+{
+    int original = jnox_shm_dup_readonly(fd);
+    if (!duplicate_frame || original < 0) return original;
+    int alias = fcntl(original, F_DUPFD_CLOEXEC, 0);
+    if (alias >= 0 && jnox_shm_size(fd) == JNOX_SHM_MAX_BYTES) {
+        dup_observation[13] = original;
+        dup_observation[14] = alias;
+        dup_observation[15] = fcntl(alias, F_GETFD);
+        emit_dup_observations();
+    }
+    jnox_shm_close(original);
+    return alias;
+}
+#define jnox_shm_dup_readonly frame_readonly
 #define jnox_ipc_call fixture_call
 #define sendmsg send_frame
 #define recvmsg receive_frame
@@ -71,8 +88,10 @@ static jnox_ipc_response fixture_call(unsigned peer, uint64_t word, uint64_t dea
 
 int main(int argc, char **argv)
 {
-    if (argc == 2 && argv[1] && argv[1][0] == 'm' && !argv[1][1]) {
+    if (argc == 2 && argv[1] && (argv[1][0] == 'm' || argv[1][0] == 'd') && !argv[1][1]) {
+        duplicate_frame = argv[1][0] == 'd';
         if (jnox_socket_broker(3) || !shared_file_probe()) return 104;
+        if (duplicate_frame && !duplicate_probe()) return 105;
         create_shared_frame = 1;
         W[ROLE] = 1;
         return producer();

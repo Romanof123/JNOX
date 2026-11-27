@@ -1,4 +1,5 @@
 /* Picolibc and the JNOX service ABI use different socket errno values. */
+#define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -44,6 +45,14 @@ void jnox_graphics_errno(int code)
 extern int jnox_transport_fcntl(int, int, ...);
 int fcntl(int fd, int cmd, ...)
 {
+    // Picolibc uses 14 for F_DUPFD_CLOEXEC; the native SDK uses 1030.
+    if (cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
+        va_list ap;
+        va_start(ap, cmd);
+        int minimum = va_arg(ap, int);
+        va_end(ap);
+        return jnox_transport_fcntl(fd, cmd == F_DUPFD ? 0 : 1030, minimum);
+    }
     if (cmd == F_GETFD) return jnox_transport_fcntl(fd, 1);
     if (cmd == F_SETFD) {
         va_list ap;

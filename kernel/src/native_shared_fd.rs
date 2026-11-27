@@ -7,6 +7,9 @@ use core::mem::size_of;
 const FD_BASE: usize = 96;
 const FDS: usize = 8;
 const ESCROWS: usize = 8;
+// SVC 188 historically attenuates to read-only. Reserve four explicit x1
+// selectors; all other x1 values retain that old behavior (x2 ignored).
+const DUP_TAG: usize = 0x4a46_4400;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -71,7 +74,13 @@ impl State {
     }
 
     fn free_fd(&self, pid: usize) -> Result<usize, i32> {
-        self.descriptors[pid].iter().position(|r| r.object_plus_one == 0).ok_or(-24)
+        self.free_fd_from(pid, 0)
+    }
+
+    fn free_fd_from(&self, pid: usize, minimum: usize) -> Result<usize, i32> {
+        if minimum >= FD_BASE + FDS { return Err(-22); }
+        self.descriptors[pid].iter().enumerate().skip(minimum.saturating_sub(FD_BASE))
+            .find(|(_, right)| right.object_plus_one == 0).map(|(slot, _)| slot).ok_or(-24)
     }
 
     fn create(&mut self, pid: usize, size: usize, resizable: bool) -> Result<usize, i32> {
@@ -99,7 +108,7 @@ impl State {
     }
 }
 
-pub(super) fn direct(pid: usize, op: u64, arg: usize, prot: usize) -> Result<usize, i32> {
+pub(super) fn direct(pid: usize, op: u64, arg: usize, prot: usize, extra: usize) -> Result<usize, i32> {
     if !routed(pid) { return Err(-13); }
     let state = unsafe { &mut *(&raw mut jnox_native_shared_state) };
     match op {
@@ -122,10 +131,17 @@ pub(super) fn direct(pid: usize, op: u64, arg: usize, prot: usize) -> Result<usi
         }
         187 => state.right(pid, arg).map(|right| state.sizes[right.index()]),
         188 => {
-            let right = state.right(pid, arg)?;
-            let slot = state.free_fd(pid)?;
-            state.cloexec[pid][slot] = false;
-            state.descriptors[pid][slot] = Right { writable: 0, ..right };
+            let source = state.right(pid, arg)?;
+            let (right, slot, cloexec) = if prot & !3 == DUP_TAG {
+                let mode = prot - DUP_TAG;
+                if mode > 1 { return Err(-22); }
+                (source, state.free_fd_from(pid, extra)?, mode == 1)
+            } else {
+                (Right { writable: 0, ..source }, state.free_fd(pid)?, false)
+            };
+            // The masked SVC path publishes both fields as one operation.
+            state.cloexec[pid][slot] = cloexec;
+            state.descriptors[pid][slot] = right;
             Ok(FD_BASE + slot)
         }
         195 | 196 => {
