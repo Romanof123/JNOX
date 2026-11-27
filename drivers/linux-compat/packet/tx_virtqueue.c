@@ -326,6 +326,14 @@ void jnox_tx_reset_complete(unsigned long epoch)
             --stats[6];
         }
     }
+#ifdef JNOX_PACKET_DUPLEX_ABI
+    /* This hook runs only after reset acknowledgement. No old token can
+     * submit a descriptor or retain an SKB registration into the next probe. */
+    for (unsigned i = 0; i < QSIZE; ++i)
+        if (storage[i].epoch == epoch) storage[i] = (struct tx_storage){};
+    extern void jnox_duplex_tx_reset_v1(unsigned long);
+    jnox_duplex_tx_reset_v1(epoch);
+#endif
     if (notify_epoch == epoch) {
         notify_epoch = 0;
         need_notify = false;

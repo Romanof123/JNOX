@@ -45,7 +45,7 @@ static mut CURSORS: [Cursor; 2] = unsafe { core::mem::zeroed() };
 static mut RUNNING_TOKEN: u64 = 0;
 
 #[cfg(jnox_linux_source_net_rx)]
-#[cfg_attr(jnox_linux_source_net_restart, repr(C))]
+#[cfg_attr(any(jnox_linux_source_net_restart, jnox_linux_source_net_lifecycle), repr(C))]
 #[derive(Clone, Copy)]
 struct RxGrant {
     token: u64,
@@ -55,12 +55,13 @@ struct RxGrant {
 
 #[cfg(jnox_linux_source_net_rx)]
 const EMPTY_GRANT: RxGrant = RxGrant { token: 0, address: 0, len: 0 };
-#[cfg(jnox_linux_source_net_restart)]
+#[cfg(any(jnox_linux_source_net_restart, jnox_linux_source_net_lifecycle))]
 const _: () = assert!(core::mem::size_of::<RxGrant>() == 24
     && core::mem::offset_of!(RxGrant, address) == 8 && core::mem::offset_of!(RxGrant, len) == 16);
 
 #[cfg(jnox_linux_source_net_rx)]
 #[cfg_attr(jnox_linux_source_net_restart, unsafe(export_name = "jnox_linux_net_restart_grants"))]
+#[cfg_attr(jnox_linux_source_net_lifecycle, unsafe(export_name = "jnox_linux_net_lifecycle_grants"))]
 static mut RX_GRANTS: [RxGrant; SIZE] = [EMPTY_GRANT; SIZE];
 
 pub(super) fn running(token: u64) -> bool { token != 0 && token == unsafe { RUNNING_TOKEN } }

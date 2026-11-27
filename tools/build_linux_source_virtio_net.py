@@ -206,7 +206,7 @@ def build(args, work, profile, data):
     upstream = work / "virtio_net.c"
     upstream.write_bytes(data)
     kernel = kernel_flags(headers, tools["cc"], work)
-    lifecycle_mode = args.lifecycle_service or args.lifecycle_failure_service
+    lifecycle_mode = args.lifecycle_service or args.lifecycle_failure_service or args.lifecycle_duplex_service
     irq_service = args.rx_irq_service or args.rx_restart_service or lifecycle_mode
     poll_service = args.rx_poll_service or irq_service
     receive_service = args.rx_service or poll_service
@@ -415,6 +415,8 @@ def build(args, work, profile, data):
         if not args.object_only:
             adapter = ROOT / profile["adapter_source"]
             runtime_kernel = packet_kernel + ["-DJNOX_QUEUE_SERVICE=1"] if queue_mode else kernel
+            if args.lifecycle_duplex_service:
+                runtime_kernel = [*runtime_kernel, "-DJNOX_PACKET_DUPLEX_ABI=1"]
             compile_tu(tools["cc"], runtime_kernel, adapter, "adapter.o")
             extra_objects = []
             app = ROOT / profile["service_source"]
@@ -448,6 +450,8 @@ def build(args, work, profile, data):
                     adapters = (*adapters, "lifecycle_bus", "lifecycle_netdev", "lifecycle_platform", "lifecycle_common")
                 if args.lifecycle_failure_service:
                     adapters = (*adapters, "lifecycle_faults")
+                elif args.lifecycle_duplex_service:
+                    adapters = (*adapters, "transmit")
                 for name in adapters:
                     source = ROOT / ("drivers/linux-compat/packet/" + name + ".c")
                     adapter_flags = [*runtime_kernel, "-I", work]
@@ -469,6 +473,10 @@ def build(args, work, profile, data):
                     app = ROOT / "examples/linux-source-net-lifecycle/failure_driver.c"
                     result["mode"] = "lifecycle-failure-service"
                 result["queue_service_scope"] = "Linked upstream callbacks and ops tables; registration and execution require guest receipts."
+            if args.lifecycle_duplex_service:
+                app = ROOT / "examples/linux-source-net-duplex/driver.c"
+                result["mode"] = "lifecycle-duplex-service"
+                result["queue_service_scope"] = "One native lifecycle owner with upstream registered TX and RX callbacks on a shared queue pair."
             if args.rx_restart_service:
                 fixture = ROOT / "examples/linux-source-net-restart"
                 app = fixture / "primary.c"
@@ -481,6 +489,10 @@ def build(args, work, profile, data):
                         app_flags.append("-DJNOX_NATIVE_LIFECYCLE_FIXTURE=1")
                         if args.lifecycle_failure_service:
                             app_flags.append("-DJNOX_LIFECYCLE_FAULT_TEST=1")
+                        elif args.lifecycle_assert_test:
+                            app_flags.append("-DJNOX_LIFECYCLE_ASSERT_TEST=1")
+                        elif args.lifecycle_duplex_service:
+                            app_flags.append("-DJNOX_NATIVE_LIFECYCLE_DUPLEX_FIXTURE=1")
                     if args.rx_restart_service:
                         app_flags.append("-DJNOX_NATIVE_RX_RESTART_FIXTURE=1")
                     if args.rx_irq_rearm_test:
@@ -505,6 +517,16 @@ def build(args, work, profile, data):
                    "--build-id=none", "-z", "max-page-size=4096", "-T", linkscript, "-Map=service.map",
                    "start.o", "io.o", "driver.o", "adapter.o", *extra_objects, derivative.name, "-o", "service.elf")
             service = inspect_elf(work / "service.elf", tools)
+            if args.lifecycle_service:
+                trap = defined(service, "jnox_lifecycle_assert_trap", "GLOBAL")
+                if len(trap) != int(args.lifecycle_assert_test):
+                    raise ValueError("unexpected lifecycle assertion symbol for selected fixture")
+                if args.lifecycle_assert_test:
+                    trap_vma = int(trap[0]["value"], 16)
+                    if load_address_bytes(work / "service.elf", trap_vma, 4) != bytes.fromhex("008820d4"):
+                        raise ValueError("assertion entry must execute BRK #0x440")
+                    result["lifecycle_assert_test"] = {"immediate": 0x440, "trap_symbol": trap[0],
+                        "driver_receipt": "jnox_assert_driver", "rx_slots": "jnox_assert_rx_slots"}
             if irq_service:
                 witness = [sym for sym in service["symbols"] if sym["name"] == "jnox_irq_race_gate"
                            and sym["index"].isdigit()]
@@ -593,6 +615,30 @@ def build(args, work, profile, data):
                         peer_source = ROOT / "examples/linux-source-net-lifecycle/failure_peer.c"
                         peer_flags.append("-DJNOX_LIFECYCLE_FAULT_TEST=1")
                         peer_symbol, peer_words = "jnox_failure_peer", 40
+                    elif args.lifecycle_assert_test:
+                        peer_flags.append("-DJNOX_LIFECYCLE_ASSERT_TEST=1")
+                        peer_symbol, peer_words = "jnox_assert_peer", 12
+                    elif args.lifecycle_duplex_service:
+                        member = next(row for row in result["lifecycle_ops"]["virtnet_netdev"]["members"]
+                                      if row["callback"] == "start_xmit")
+                        tx, = defined(service, "start_xmit", "GLOBAL")
+                        upstream_tx, = defined(full, "start_xmit", "LOCAL")
+                        if (member["relocation"] != "R_AARCH64_ABS64" or
+                                int(tx["value"], 16) != member["linked_target"] or
+                                not tx["size"] or tx["size"] != upstream_tx["size"]):
+                            raise ValueError("duplex ndo_start_xmit lacks a linked original body")
+                        result["duplex_tx"] = {"member": "ndo_start_xmit", "original_object": variant.name,
+                            "linked_object": derivative.name, "adapter_object": "transmit.o",
+                            "linked_entry": member["linked_target"], "linked_size": tx["size"],
+                            "adapter_sha256": sha((work / "transmit.o").read_bytes()),
+                            "table_offset": member["offset"]}
+                        if not any(sym["name"] == "jnox_duplex_driver" and sym["type"] == "OBJECT" and
+                                   sym["bind"] == "GLOBAL" and sym["size"] == 256 and sym["index"].isdigit()
+                                   for sym in service["symbols"]):
+                            raise ValueError("missing duplex driver receipt")
+                        peer_source = ROOT / "examples/linux-source-net-duplex/peer.c"
+                        peer_symbol, peer_words = "jnox_duplex_peer", 16
+                        peer_flags.append("-DJNOX_NATIVE_LIFECYCLE_DUPLEX_FIXTURE=1")
                 if args.rx_restart_service:
                     peer_source = fixture / "peer.c"
                     peer_symbol, peer_words = "jnox_restart_peer", 32
@@ -615,6 +661,11 @@ def build(args, work, profile, data):
                                 "jnox_lifecycle_peer_ack": 60, "jnox_lifecycle_peer_second": 120}
                     if args.lifecycle_failure_service:
                         expected = {"jnox_failure_peer": 320, "jnox_failure_recovery_bytes": 120}
+                    elif args.lifecycle_assert_test:
+                        expected = {"jnox_assert_peer": 96, "jnox_assert_peer_frame": 91}
+                    elif args.lifecycle_duplex_service:
+                        expected = {"jnox_duplex_peer": 128, "jnox_duplex_peer_requests": 80 * 91,
+                                    "jnox_duplex_peer_replies": 80 * 91, "jnox_duplex_peer_ack": 60}
                     for name, size in expected.items():
                         if len([sym for sym in peer["symbols"] if sym["name"] == name and sym["type"] == "OBJECT"
                                 and sym["bind"] == "GLOBAL" and sym["index"].isdigit() and sym["size"] == size]) != 1:
@@ -692,6 +743,10 @@ def main():
                         help="enable the test-only RX IRQ rearm fixture; requires --rx-irq-service")
     mode.add_argument("--lifecycle-failure-service", action="store_true",
                       help="link the upstream lifecycle with the test-only failure driver, peer and adapter")
+    parser.add_argument("--lifecycle-assert-test", action="store_true",
+                        help="assert at EL0 with outstanding RX after one ingress frame; requires --lifecycle-service")
+    mode.add_argument("--lifecycle-duplex-service", action="store_true",
+                      help="link one original lifecycle netdev with its registered RX and TX operations")
     mode.add_argument("--lifecycle-service", action="store_true",
                       help="link original virtio-net driver, netdev operations and bounded native bus/core")
     mode.add_argument("--rx-restart-service", action="store_true",
@@ -713,6 +768,8 @@ def main():
                           ("clang", "clang"), ("ld", "ld.lld"), ("readelf", "readelf"), ("nm", "nm")]:
         parser.add_argument("--" + name, default=default)
     args = parser.parse_args()
+    if args.lifecycle_assert_test and not args.lifecycle_service:
+        parser.error("--lifecycle-assert-test requires --lifecycle-service")
     if args.rx_irq_rearm_test and not args.rx_irq_service:
         parser.error("--rx-irq-rearm-test requires --rx-irq-service")
     profile = json.loads(PROFILE.read_text(encoding="utf-8"))

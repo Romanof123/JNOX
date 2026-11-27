@@ -131,9 +131,8 @@ void sk_skb_reason_drop(struct sock *sk, struct sk_buff *skb,
         ++stats.dropped;
 }
 
-/* The shared cleanup helpers can release a live, undelivered RX SKB.
- * This profile has no registered TX cookies. Never consume unknown or
- * already-delivered storage through the TX compatibility entry. */
+/* A live RX slot owns its SKB until delivery or release. Duplex also owns
+ * one independent TX SKB; only unmatched addresses reach its retire hook. */
 int jnox_packet_retire_skb_v1(struct sk_buff *skb, unsigned int reason)
 {
     for (unsigned int i = 0; i < DEPTH; ++i) {
@@ -144,7 +143,12 @@ int jnox_packet_retire_skb_v1(struct sk_buff *skb, unsigned int reason)
         sk_skb_reason_drop(NULL, skb, reason);
         return 0;
     }
+#ifdef JNOX_PACKET_DUPLEX_ABI
+    extern int jnox_duplex_retire_tx_v1(struct sk_buff *, unsigned int);
+    return jnox_duplex_retire_tx_v1(skb, reason);
+#else
     return -ENOENT;
+#endif
 }
 
 extern int rx_clock_gettime(int, struct __kernel_timespec *) asm("clock_gettime");
