@@ -49,7 +49,7 @@ case "${JNOX_NATIVE_XAUTHORITY:-0}" in
     *) echo "JNOX_NATIVE_XAUTHORITY must be 0 or 1" >&2; exit 2 ;;
 esac
 python3 "$out/src/sdk/native-aarch64/graphics/os/install.py" --prefix "$os" "${auth[@]}"
-pin 7db976b7c9a55ad67c13f1714344a5ce99639856a0b4bbd1b18841abcadc0285 "$os/lib/libjnox-wayland-os.a"
+pin 8563d0e22e7b471c4ffb781c2d9e357edd0fe992e3406b6820403ff83f967c50 "$os/lib/libjnox-wayland-os.a"
 sh "$driver/xcvt/build.sh" "$inputs/libxcvt-0.1.3.tar.xz" "$out/xcvt" "$out/xcvt-prefix"
 python3 "$driver/xkb-build.py" --build-executable "${server_options[@]}" "${auth[@]}" --cache "$inputs" \
   --out "$out/server" --runtime "$rt" --runtime-profile-sha256 "${JNOX_WAYLAND_PROFILE_SHA256:-00266859edb773b5fcad350d35d3e3b7f58621599014b666cc8e8ed308081643}" \

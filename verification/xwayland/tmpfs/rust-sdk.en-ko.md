@@ -28,3 +28,5 @@ flock "$JNOX_LAB_ROOT/run.lock" sh verification/xwayland/tmpfs/rust-guest.sh "$N
 The writer checks partial I/O, independent reopen, seek, error preservation, unlink while open and repeated descriptor release on drop. It publishes six bytes to a second file. A reader with a read-only grant checks the bytes and denied mutations. A routed client with no mount grant checks access denial. Expected exits are 90 for each Rust client and 0 for the broker. The runner retains each terminal row and the ELF identities in `tmpfs-result.json`. [Rust guest](rust-guest/src/main.rs)
 
 네이티브 Rust 앱은 Cargo의 `tmpfs` 기능과 빌드 옵션 `--tmpfs`를 선택한다. 파일 핸들은 디스크립터를 소유하며 `Drop`에서 반환한다. 명시적으로 닫을 때 오류가 있으면 같은 핸들로 재시도할 수 있다. C와 Rust가 동일한 권한 검사와 IPC 전송 코드를 사용한다. 쓰기 앱은 파일 생성·부분 전송·탐색·재열기·삭제를 확인하고, 읽기 전용 앱과 권한이 없는 앱은 같은 게스트에서 허용·거부 결과를 검증한다.
+
+On the public `ce9b35f` source tree, the Rust writer, reader and ungranted caller each exited 90 and the broker exited 0. 공개 후보에서 네 역할이 모두 기대 종료값을 기록했다. [Guest receipt and kernel identity / 게스트 검증 기록](../public-interface-runs.en-ko.md)
