@@ -63,6 +63,73 @@ static void removed(void *data, struct wl_registry *registry, uint32_t name)
 
 static const struct wl_registry_listener listener = {advertised, removed};
 
+struct output_state {
+    struct wl_output *proxy;
+    unsigned stage;
+    int failed;
+};
+
+static void output_step(struct output_state *s, struct wl_output *proxy,
+                        unsigned expected, int fields_match)
+{
+    if (proxy != s->proxy || s->stage != expected || !fields_match)
+        s->failed = 1;
+    s->stage++;
+}
+
+static void geometry(void *data, struct wl_output *proxy, int32_t x, int32_t y,
+                     int32_t mm_w, int32_t mm_h, int32_t subpixel, const char *make,
+                     const char *model, int32_t transform)
+{
+    output_step(data, proxy, 0, x == 0 && y == 0 && mm_w == 0 && mm_h == 0 &&
+                subpixel == WL_OUTPUT_SUBPIXEL_UNKNOWN && !strcmp(make, "JNOX") &&
+                !strcmp(model, "RAM framebuffer") && transform == WL_OUTPUT_TRANSFORM_NORMAL);
+}
+
+static void mode(void *data, struct wl_output *proxy, uint32_t flags,
+                 int32_t width, int32_t height, int32_t refresh)
+{
+    output_step(data, proxy, 1, flags == (WL_OUTPUT_MODE_CURRENT | WL_OUTPUT_MODE_PREFERRED) &&
+                width == 320 && height == 240 && refresh == 0);
+}
+
+static void scale(void *data, struct wl_output *proxy, int32_t factor)
+{
+    output_step(data, proxy, 2, factor == 1);
+}
+
+static void done(void *data, struct wl_output *proxy)
+{
+    output_step(data, proxy, 3, 1);
+}
+
+static const struct wl_output_listener output_events = {
+    .geometry = geometry, .mode = mode, .scale = scale, .done = done
+};
+
+static int check_output(struct wl_display *display, struct wl_registry *registry, uint32_t name)
+{
+    /* Release is a v3 destructor. The second bind exercises the same stream
+     * after a synchronized destruction without referencing the freed proxy. */
+    for (unsigned pass = 1; pass <= 2; pass++) {
+        struct output_state state = {0};
+        state.proxy = wl_registry_bind(registry, name, &wl_output_interface, 3);
+        if (!state.proxy)
+            return 16;
+        int ok = wl_output_add_listener(state.proxy, &output_events, &state) == 0 &&
+                 wl_display_roundtrip(display) >= 0 && !state.failed && state.stage == 4;
+        wl_output_release(state.proxy);
+        if (!ok || wl_display_roundtrip(display) < 0)
+            return 17;
+        char line[100];
+        int n = snprintf(line, sizeof(line),
+                         "JNOX_OUTPUT v3 pass %u geometry-ok mode 320x240 scale 1 done released\n", pass);
+        if (n < 0 || (size_t)n >= sizeof(line) || jnox_graphics_emit(line, (size_t)n))
+            return 18;
+    }
+    return 0;
+}
+
 static int run(void)
 {
 #ifdef JNOX_REGISTRY_ENV_CONNECT
@@ -141,6 +208,11 @@ static int run(void)
         }
         if (invalid)
             result = 8;
+        else {
+            for (size_t i = 0; i < sizeof(globals) / sizeof(globals[0]); i++)
+                if (globals[i].name && !strcmp(globals[i].interface, "wl_output"))
+                    result = check_output(display, registry, globals[i].name);
+        }
     }
     if (registry)
         wl_registry_destroy(registry);

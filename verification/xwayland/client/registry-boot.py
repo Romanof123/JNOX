@@ -62,6 +62,11 @@ def boot(package, out, profile, env_connect=False):
     report = dict(accepted=passed, profile=profile, argv=command, qemu_sha256=digest(qemu), uart_sha256=digest(out/"uart.bin"),
                   package={p.name: digest(p) for p in package.glob("*.elf")}, exits=exits,
                   globals=[dict(interface=n, name=int(i), version=int(v)) for n,i,v in rows])
+    if profile == "output":
+        receipts = re.findall(r"^JNOX_OUTPUT v3 pass (\d+) geometry-ok mode 320x240 scale 1 done released$", text, re.MULTILINE)
+        passed = passed and receipts == ["1", "2"]
+        report["accepted"] = passed
+        report["completed_output_bindings"] = receipts
     if env_connect:
         matches = re.findall(r"^JNOX_REGISTRY env-connect (/wayland-0) fd (\d+) absent-errno (\d+)$",
                              text, re.MULTILINE)

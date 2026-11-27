@@ -1,0 +1,8 @@
+JNOX_REGISTRY global wl_compositor 1 4
+JNOX_REGISTRY global wl_shm 2 1
+JNOX_REGISTRY global xdg_wm_base 3 1
+JNOX_REGISTRY global wl_seat 4 4
+JNOX_REGISTRY global wl_output 5 3
+JNOX_OUTPUT v3 pass 1 geometry-ok mode 320x240 scale 1 done released
+JNOX_OUTPUT v3 pass 2 geometry-ok mode 320x240 scale 1 done released
+JNOX_REGISTRY disconnect-result 0

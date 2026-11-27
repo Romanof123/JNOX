@@ -72,3 +72,24 @@ bash verification/xwayland/client/registry-pair.sh "$work" "$runtime" "$cache" "
 ```
 
 같은 소스에서 시작 코드 두 개를 다시 빌드하여 별도의 AArch64 ELF 두 개를 연결하고 각각 콜드 부팅했다. 환경변수 방식은 /wayland-0에 연결했고, 없는 경로는 오류 2로 거부했다. 두 방식 모두 wl_output v3를 포함한 다섯 전역 객체를 수신하고 연결 해제 뒤 파일 디스크립터가 닫혔음을 확인했다. 각 부팅의 네 프로세스가 모두 정상 종료했다. 표의 출력과 해시는 두 부팅에서 수집했으며, 앞 절에서 기존 네 전역 객체 결과도 확인할 수 있다.
+
+## Binding the reported output · 출력 객체 바인딩
+
+Two AArch64 QEMU cold boots used separate upstream client ELFs. Each bound the advertised wl_output at version 3, received geometry, mode, scale and done in that order, sent release and completed a display sync. Each repeated the sequence on a fresh binding on the same connection. The callbacks checked the proxy identity, origin (0,0), unspecified physical size, unknown subpixel layout, JNOX/RAM framebuffer strings, normal transform, current and preferred 320×240 mode, unspecified refresh and unit scale. Each client disconnected and all four processes exited zero. Reproduce with the registry-pair.sh command above.
+
+| Connection | Application UART | Package SHA-256 |
+|---|---|---|
+| Environment-selected | [Default display](evidence/output-bind/default-display-uart.txt) | [Hashes](evidence/output-bind/default-display.sha256) |
+| Supplied descriptor | [Connected FD](evidence/output-bind/supplied-fd-uart.txt) | [Hashes](evidence/output-bind/supplied-fd.sha256) |
+
+A separate Linux host run built the resident compositor from the public parent and exercised its Unix socket with the wire fixture. It checked version-specific output events, per-peer surface enter/leave, clipping, release/delete_id, object ID reuse and errors for released or foreign IDs. To repeat from the repository root with Python assertions enabled, run the following. [Host wire fixture](../../wayland/probe-output.py)
+
+```sh
+export CARGO_TARGET_DIR="$PWD/target-output-host"
+cargo build --offline --release --manifest-path services/wayland/Cargo.toml
+python3 verification/wayland/probe-output.py "$CARGO_TARGET_DIR/release/jnox-wayland"
+```
+
+AArch64 게스트 두 부팅에서 서로 다른 upstream 클라이언트가 각각 wl_output v3에 두 번 바인딩했다. 각 바인딩에서 geometry, 320×240 mode, scale 1, done을 순서대로 검증하고 release 뒤 동기화를 완료했다. 두 게스트 모두 연결을 닫았으며 각 부팅의 네 프로세스가 정상 종료했다. 위 표는 클라이언트가 출력한 UART와 패키지 해시를 담고 있다.
+
+별도의 Linux 호스트 시험은 같은 컴포지터의 출력 버전별 이벤트, 표면 진입·이탈과 클리핑, 해제된 객체 ID 및 다른 클라이언트 ID의 거부를 검증했다. Xwayland/Mosaic의 화면 출력은 별도 검증 범위이다. [Output #461](https://github.com/Romanof123/JNOX/issues/461) · [Xwayland #448](https://github.com/Romanof123/JNOX/issues/448)
