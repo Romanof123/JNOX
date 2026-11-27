@@ -1,5 +1,7 @@
 # Volatile pathname storage / 휘발성 경로 파일
 
+Native Rust applications can open this mount through an opt-in owned file handle. [Rust SDK and guest acceptance / Rust SDK와 게스트 시험](rust-sdk.en-ko.md)
+
 CAP-007 · REQ-010/011/014 · CHG-340 · REQ-015/024 · VER-015/024. [Filesystem #459](https://github.com/Romanof123/JNOX/issues/459) · [Xwayland OS interfaces #471](https://github.com/Romanof123/JNOX/issues/471)
 
 The Rust EL0 broker hosts a volatile `/tmp` mount when built with Cargo feature `tmpfs` and granted clients at packaging time. The kernel's SVC 204 discloses the trusted endpoint to an authorized caller and the grant mask only to the broker. It can validate a client's own bounded I/O buffer. Paths, file data, permissions, descriptors, and mutations live in the user service. The existing IPC sender slot and process-exit notification identify each client. The service publishes a mutation after the kernel accepts its reply token. [Rust service](../../../services/socket/src/tmpfs.rs) · [Picolibc API](../../../sdk/native-aarch64/graphics/os/tmpfs.c)

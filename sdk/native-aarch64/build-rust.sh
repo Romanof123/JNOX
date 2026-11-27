@@ -3,6 +3,7 @@
 set -eu
 local_socket=0
 pubsub=0
+tmpfs=0
 cargo_features=
 pipe_define=
 shell_define=
@@ -12,6 +13,7 @@ while [ "$#" -gt 0 ]; do
         --pipes) pipe_define=-DJNOX_SDK_PIPES ;;
         --local-socket) local_socket=1 ;;
         --pubsub) pubsub=1 ;;
+        --tmpfs) tmpfs=1 ;;
         --features)
             if [ "$#" -lt 2 ] || [ -z "$2" ] || [ -n "$cargo_features" ]; then
                 echo "--features needs one Cargo feature list" >&2
@@ -24,7 +26,7 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 if [ "$#" -ne 2 ]; then
-    echo "usage: $0 [--pipes|--native-shell] [--local-socket] [--pubsub] [--features FEATURES] Cargo.toml OUTPUT.elf" >&2
+    echo "usage: $0 [--pipes|--native-shell] [--local-socket] [--pubsub] [--tmpfs] [--features FEATURES] Cargo.toml OUTPUT.elf" >&2
     exit 2
 fi
 sdk=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -51,6 +53,13 @@ if [ "$pubsub" = 1 ]; then
         -mgeneral-regs-only -mno-outline-atomics -I"$sdk/include" \
         -c "$sdk/pubsub.c" -o "$tmp/pubsub.o"
     set -- "$@" -C link-arg="$tmp/pubsub.o"
+fi
+if [ "$tmpfs" = 1 ]; then
+    clang --target=aarch64-none-elf -std=c11 -O2 -ffreestanding -nostdinc \
+        -fno-pic -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables \
+        -mgeneral-regs-only -mno-outline-atomics -I"$sdk/include" \
+        -c "$sdk/tmpfs_native.c" -o "$tmp/tmpfs_native.o"
+    set -- "$@" -C link-arg="$tmp/tmpfs_native.o"
 fi
 set -- --message-format=json-render-diagnostics -- -C panic=abort -C relocation-model=static \
     -C link-arg="$tmp/start.o" -C link-arg="$tmp/io.o" -C link-arg=-T"$sdk/app.ld" \
