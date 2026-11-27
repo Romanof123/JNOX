@@ -1,3 +1,4 @@
+#include <stddef.h>
 /* Built against the private SDK ABI. Only native errno numbers reach this TU. */
 #include <errno.h>
 #include <time.h>

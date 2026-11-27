@@ -10,7 +10,7 @@ EXPECTED = {
     "shared_seal": 2, "negative_min_errno": 22, "readonly_write_errno": 13,
     "closed_source_errno": 9, "table_full_errno": 24, "reused_hole": 98,
     "map_after_close": 165, "socket_dup_errno": 95, "closed_socket_errno": 9,
-    "original_right": 97, "outgoing_alias": 98, "outgoing_cloexec": 1,
+    "original_right": 98, "outgoing_alias": 97, "outgoing_cloexec": 1,
 }
 
 def check(data):

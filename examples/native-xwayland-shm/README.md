@@ -38,3 +38,19 @@ Wayland는 송신할 FD를 보관할 때 최솟값 0으로 F_DUPFD_CLOEXEC를 �
 Before combining profiles, run `python3 examples/native-xwayland-shm/check_dispatch.py --tablet-ref ff1f2f940bab59d4dd5e540f51cd296cae1aea8a`. The guard checks the complete shared descriptor call-number set and verifies that the tablet revision owns 197. The allocation of top-level native SVCs is unchanged. The four extended selector values inside shared-FD SVC 188 are 0x4a464400 (plain), 0x4a464401 (close-on-exec), and 0x4a464402/403 (invalid). No descriptor has a shared seek offset in this mmap-only profile; the only supported file mapping offset remains zero.
 
 기존 공유 파일 복제 SVC 188의 하위 선택자로 구현했다. 태블릿 SVC 197과 겹치지 않는다. x1=0인 기존 호출은 읽기 전용으로 권한을 줄이며, 새 호출도 원본보다 높은 권한을 부여하지 않는다. 공유 가능한 파일 위치 상태는 없고 매핑 오프셋은 0만 지원한다.
+
+### Serialized upstream duplication gate
+
+The earlier provisional SVC 197 candidate was caught before publication. The integrated source uses shared-FD SVC 188 and preserves tablet SVC 197. The gate starts from a clean integrated Linux checkout and records the exact commit, tree, archived Wayland source hash, linked symbol, QEMU identity, original UART and both physical capture sets. It serializes the whole campaign using the existing gate lock.
+
+```sh
+bash examples/native-xwayland-shm/run_dup_gate.sh \
+  /mnt/d/codex/jnox448-xwayland/dep-inputs/wayland/wayland_1.23.1.orig.tar.gz \
+  /mnt/d/codex/jnox444-independent \
+  /home/ywcho/jnox406-lab/448-graphics-93e41a9/attempts/attempt05/runtime \
+  /home/ywcho/jnox406-lab/448-dup-fresh-output /home/ywcho/jnox406-lab/run.lock
+```
+
+The build extracts the upstream function pointer, unmodified set_cloexec_or_close and wl_os_dupfd_cloexec bodies from src/wayland-os.c, and the exact minimum-zero expression from src/connection.c. It links these into both the native C SDK frame producer and a separate Picolibc caller. This exercises the exact descriptor-duplication path; running the complete libwayland closure/dispatch and Xwayland server remains a separate gate. A short-lived reservation makes the original read-only FD 98 and the outgoing duplicate 97, allowing the independent historical physical-memory/PCAP-free framebuffer oracle to keep its existing FD reuse expectations. The package runs two cold boots and the independent before/after/cancellation/authority checks and per-field mutations before the Picolibc process. Its raw terminal exit must be 74. Neither a compilation nor guest run was performed while preparing this gate.
+
+직렬 게이트는 배포 전 발견된 197번 충돌을 피한 188번 구현으로 실행한다. 원본 Wayland 복제 함수와 하한 0 호출식을 추출하여 SDK와 Picolibc 호출자에 각각 링크한다. 기존 검사기의 슬롯 배치를 유지하고, 두 번의 콜드 부트와 픽셀·권한·변조 판정 및 별도 Picolibc 프로세스의 종료 코드 74를 요구한다.

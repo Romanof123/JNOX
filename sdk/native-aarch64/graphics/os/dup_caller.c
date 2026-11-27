@@ -11,7 +11,11 @@ int main(void)
 {
     int original = jnox_shm_create(4096);
     if (original != 96) return 101;
+#ifdef JNOX_FRAME_DUP
+    int atomic = JNOX_FRAME_DUP(original);
+#else
     int atomic = fcntl(original, F_DUPFD_CLOEXEC, 0);
+#endif
     int ordinary = fcntl(original, F_DUPFD, 101);
     if (atomic != 97 || ordinary != 101) return 102;
     if (fcntl(atomic, F_GETFD) != FD_CLOEXEC || fcntl(ordinary, F_GETFD) != 0) return 103;

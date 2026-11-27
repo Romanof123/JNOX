@@ -64,9 +64,19 @@ static jnox_ipc_response fixture_call(unsigned peer, uint64_t word, uint64_t dea
 
 static int frame_readonly(int fd)
 {
+    if (!duplicate_frame) return jnox_shm_dup_readonly(fd);
+    // Keep the established on-wire fd97 and decoy layout. The temporary slot
+    // leaves a lower hole for the real upstream minimum-zero call.
+    int reserve = fcntl(fd, F_DUPFD, 0);
+    if (reserve < 0) return -1;
     int original = jnox_shm_dup_readonly(fd);
-    if (!duplicate_frame || original < 0) return original;
+    jnox_shm_close(reserve);
+    if (original < 0) return -1;
+#ifdef JNOX_FRAME_DUP
+    int alias = JNOX_FRAME_DUP(original);
+#else
     int alias = fcntl(original, F_DUPFD_CLOEXEC, 0);
+#endif
     if (alias >= 0 && jnox_shm_size(fd) == JNOX_SHM_MAX_BYTES) {
         dup_observation[13] = original;
         dup_observation[14] = alias;
