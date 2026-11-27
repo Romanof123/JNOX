@@ -15,6 +15,12 @@ The controller requested 10 ms absolute releases. No measured consecutive comple
 
 The first SDK build failed at the signed 64-bit type used for denial receipts. A subsequent sparse checkout omitted the controller's existing clock header. Both were corrected before the four captures. The first independent reader expected three generic device denials. The pointer-enabled caller records five, including separately checked acquisition and read denials. After correcting this assumption, the reader rejected all seven altered inputs. A separate host model of the Rust reset module returned an error and preserved DMA storage in all three stuck-register cases. Acknowledgement on the last permitted poll reclaimed exactly once. [Altered-data results](controls.json) · [Reset model](reset-model.json) · [Acceptance and regressions](https://github.com/Romanof123/JNOX/issues/457)
 
+## Other profiles / 구성별 회귀 시험
+
+Three separately packaged regressions used the same source. The ordinary four-process tablet image passed the click, focus, redraw, cleanup and process-exit checks. A keyboard-only five-role image retained keyboard capability before and after reconnect, observed EOF on the old connection, and completed all 4,096 releases with a maximum interval of 10.585296 ms. A headless image ran the controller alone, exited 74 and completed all 4,096 releases with a maximum interval of 10.271312 ms. Its device tree and kernel image excluded the display and tablet. The initial headless package omitted its FIFO priority. The first reader expected an optional manifest entry and the corrected reader used the captured single-process page tables in the same boot. [Per-profile identities and results](regressions.json)
+
+태블릿 기본 구성, 키보드 전용 합성기 복구, 화면 없는 단일 제어 앱까지 같은 소스에서 각각 회귀 시험했다. 키보드 전용과 헤드리스 구성의 제어 완료 간격은 모두 20 ms 이내였다.
+
 ## Display captures / 게스트 화면
 
 | Button held in the primary | Spare ready after reconnect | Fresh press at the spare |
