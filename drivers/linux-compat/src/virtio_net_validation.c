@@ -54,6 +54,10 @@ void virtio_check_driver_offered_feature(const struct virtio_device *vdev,
          * virtio_has_feature still tests the actual negotiated bitmap. */
         if (validation_ok && vdev == &device && bit == VIRTIO_NET_F_GUEST_HDRLEN)
             return;
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+        if (validation_ok && vdev == &device && bit == VIRTIO_NET_F_CTRL_VQ)
+            return;
+#endif
         native_call(1, 92, 0);
         __builtin_unreachable();
     }

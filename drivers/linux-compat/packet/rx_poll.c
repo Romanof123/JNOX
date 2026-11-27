@@ -27,6 +27,56 @@ static struct receive_queue *bound_rq;
 static unsigned long bound_epoch;
 static unsigned long long receipt[8];
 
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+extern bool jnox_rx_equal_name_v1(const char *, const char *);
+extern int virtnet_find_vqs(struct virtnet_info *);
+extern bool jnox_rx_napi_pending_v1(void);
+static unsigned long long irq_receipt[8];
+static unsigned long long catchups;
+
+void jnox_original_rx_irq_stats_v1(unsigned long long out[8])
+{
+    if (bound_rq)
+        irq_receipt[6] = bound_rq->calls;
+    memcpy(out, irq_receipt, sizeof(irq_receipt));
+}
+
+unsigned long long jnox_rx_catchups_v1(void)
+{
+    return catchups;
+}
+
+static int schedule_rx(void)
+{
+    struct virtqueue *vq = bound_rq->vq;
+    if (jnox_rx_napi_pending_v1()) {
+        ++irq_receipt[7];
+        return 0;
+    }
+    register unsigned long op asm("x8") = 174;
+    register long result asm("x0") = bound_epoch;
+    register unsigned long sequence asm("x1") = irq_receipt[5];
+    register unsigned long reserved asm("x2") = 0;
+    ++irq_receipt[4];
+    asm volatile("svc #0x4a01" : "+r"(result), "+r"(sequence), "+r"(reserved)
+                 : "r"(op) : "memory", "cc");
+    if (result <= 0)
+        return result < 0 ? result : -EPROTO;
+    if (result == LONG_MAX) {
+        /* EL1 found real used work across the wait boundary. Invoke the
+         * registered queue callback but record the source independently. */
+        ++catchups;
+    } else {
+        if ((unsigned long)result <= irq_receipt[5])
+            return -EPROTO;
+        irq_receipt[5] = result;
+        ++irq_receipt[3];
+    }
+    vq->callback(vq);
+    return jnox_rx_napi_pending_v1() ? 0 : -EPROTO;
+}
+#endif
+
 static int read_mac(void)
 {
     for (unsigned int i = 0; i < ETH_ALEN; ++i) {
@@ -47,9 +97,13 @@ static int bind_poll(void)
     struct virtqueue *rx = jnox_packet_active_vq(0);
     struct virtqueue *tx = jnox_packet_active_vq(1);
     unsigned long epoch = jnox_packet_token();
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+    if (!vdev || rx || tx || epoch) return -ENODEV;
+#else
     if (!vdev || !rx || !tx || !epoch || rx->index != 0 || tx->index != 1 ||
         rx->vdev != vdev || tx->vdev != vdev || rx->num_free != RX_DEPTH)
         return -ENODEV;
+#endif
     if (bound_epoch || vdev->priv)
         return -EBUSY;
     int err = read_mac();
@@ -61,6 +115,7 @@ static int bind_poll(void)
     dev->hard_header_len = ETH_HLEN;
     dev->addr_len = ETH_ALEN;
     dev->mtu = ETH_DATA_LEN;
+    dev->max_mtu = ETH_DATA_LEN;
     dev->priv_len = sizeof(struct virtnet_info);
     dev->num_tx_queues = dev->real_num_tx_queues = 1;
     dev->_tx = &txq;
@@ -81,9 +136,26 @@ static int bind_poll(void)
     if (!vi->sq || !vi->rq || vi->rq->napi.dev != dev ||
         vi->rq->napi.poll != virtnet_poll || vi->rq->napi.weight < POLL_BUDGET)
         return -EPROTO;
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+    err = virtnet_find_vqs(vi);
+    if (err) return err;
+    rx = jnox_packet_active_vq(0);
+    tx = jnox_packet_active_vq(1);
+    bound_epoch = jnox_packet_token();
+    if (!rx || !tx || !bound_epoch || vi->rq->vq != rx || vi->sq->vq != tx ||
+        rx->index || rx->num_free != RX_DEPTH || !rx->callback ||
+        rx->name != vi->rq->name || !jnox_rx_equal_name_v1(rx->name, "input.0"))
+        return -EPROTO;
+    irq_receipt[0] = (unsigned long)rx->callback;
+    irq_receipt[1] = rx->index;
+    for (unsigned int i = 0; i < sizeof("input.0") - 1; ++i)
+        irq_receipt[2] |= (unsigned long long)(unsigned char)rx->name[i] << (8*i);
+    napi_enable(&vi->rq->napi);
+#else
     vi->sq->vq = tx;
-    vi->sq->napi.weight = 0; /* RX-only profile has no outstanding TX. */
     vi->rq->vq = rx;
+#endif
+    vi->sq->napi.weight = 0; /* RX-only profile has no outstanding TX. */
     receipt[0] = (unsigned long)vi->rq->napi.poll;
     receipt[1] = POLL_BUDGET;
     for (unsigned int n = 0; n < RX_DEPTH; ++n) {
@@ -116,6 +188,10 @@ static int poll_read(void *out, unsigned int cap)
         return -ENODEV;
     int len = jnox_rx_skb_read_v1(out, cap);
     if (len == -EAGAIN) {
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+        int err = schedule_rx();
+        if (err) return err;
+#endif
         int work = jnox_rx_napi_poll_v1(&bound_rq->napi, POLL_BUDGET);
         ++receipt[2];
         receipt[6] = (long long)work;

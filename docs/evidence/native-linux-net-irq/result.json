@@ -1,0 +1,252 @@
+{
+  "profiles": {
+    "ordinary": {
+      "commit": "6c9c5926ec09ee97bea2bffcaeb4cb73d3e5f2bb",
+      "kernel_sha256": "c01936a662f30da44716dc284c27eff986a3b21cf2bb1fa62ce12706d69f2ec9",
+      "driver_sha256": "a883b079b27bc436375f3cce91b106feee607cc6cb0adc2bde13577da04d60b2",
+      "peer_sha256": "68dcb5af16b9ea88c3220e36a8aece017d642b1fd33ffa428d2ebf4c163d007b",
+      "manifest_sha256": "489bda747911f8f4942b8929b9ddfdcddb4c4064985f59ab923e4a97bebd3040",
+      "import_sha256": "d32372617dc868f1137e24ee5ea6a06ff1bd46d63803b3b34ab3fddf3249a07e",
+      "upstream": {
+        "project": "Linux stable",
+        "tag": "v6.18.65",
+        "commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+        "path": "drivers/net/virtio_net.c",
+        "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+        "size": 196513,
+        "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+        "git_blob_sha1": "ea83313caf36381151d21d894da8162729b7d261",
+        "spdx": "GPL-2.0-or-later"
+      },
+      "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+      "rearm_test_only": false,
+      "package_argv": [
+        "tools/build_native_el0.py",
+        "--board",
+        "virt",
+        "--linux-source-net-rx-irq",
+        "--policy",
+        "fifo",
+        "--priority",
+        "8",
+        "--peer-priority",
+        "8",
+        "--elf",
+        "/home/ywcho/jnox406-lab/434-irq-04/imported/service.elf",
+        "--peer-elf",
+        "/home/ywcho/jnox406-lab/434-irq-04/imported/peer.elf",
+        "--out",
+        "/home/ywcho/jnox406-lab/434-irq-04/native"
+      ]
+    },
+    "race": {
+      "commit": "6c9c5926ec09ee97bea2bffcaeb4cb73d3e5f2bb",
+      "kernel_sha256": "6a9dd4613170d7e0c98decee69502dc64dda2772ce023b0956708d6d6a37d129",
+      "driver_sha256": "275a58f605493f7613c79526149c276385743df3b26d4ad92404be3be9aff40b",
+      "peer_sha256": "68dcb5af16b9ea88c3220e36a8aece017d642b1fd33ffa428d2ebf4c163d007b",
+      "manifest_sha256": "07a9d70191d2b5bbd1aadccc9e37ca37a1385a682fa20b28b6aada29c36eb510",
+      "import_sha256": "c837596dde93aab4aa0a5804e61c9b3b8c105674024a33d7ea29e56dd64c02e5",
+      "upstream": {
+        "project": "Linux stable",
+        "tag": "v6.18.65",
+        "commit": "4700e3adf3b24b39dd4929e9c6d62811ba3ccea8",
+        "path": "drivers/net/virtio_net.c",
+        "url": "https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c",
+        "size": 196513,
+        "sha256": "05e676f7fc4f91783c961c860b930fae33462348064887eea95be3a440282a29",
+        "git_blob_sha1": "ea83313caf36381151d21d894da8162729b7d261",
+        "spdx": "GPL-2.0-or-later"
+      },
+      "header_tree_sha256": "901bb6ced9321e225b59395161f80a66146e3beaa9252f94c6430f545c84806b",
+      "rearm_test_only": true,
+      "package_argv": [
+        "tools/build_native_el0.py",
+        "--board",
+        "virt",
+        "--linux-source-net-rx-irq",
+        "--linux-source-net-rx-irq-rearm-test",
+        "--policy",
+        "fifo",
+        "--priority",
+        "8",
+        "--peer-priority",
+        "8",
+        "--elf",
+        "/home/ywcho/jnox406-lab/434-race-04/imported/service.elf",
+        "--peer-elf",
+        "/home/ywcho/jnox406-lab/434-race-04/imported/peer.elf",
+        "--out",
+        "/home/ywcho/jnox406-lab/434-race-04/native"
+      ]
+    }
+  },
+  "captures": [
+    {
+      "path": "ordinary/capture-a",
+      "profile": "ordinary",
+      "observer_commit": "08e492586020588cb4afcde631c3d3bf356ca109",
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observers/08e492586020588cb4afcde631c3d3bf356ca109/tools/verify_linux_source_net_irq.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "ordinary/native",
+        "--driver-manifest",
+        "ordinary/imported/import.json",
+        "--out",
+        "ordinary/capture-a",
+        "--mac",
+        "52:54:00:19:34:41",
+        "--mtu",
+        "1410"
+      ],
+      "independent_replay_argv": [
+        "python3",
+        "-B",
+        "qa/read_irq.py",
+        "ordinary",
+        "ordinary/capture-a"
+      ],
+      "nonce": "6b37f1f86972e2c9",
+      "mac": "52:54:00:19:34:41",
+      "mtu": 1410,
+      "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "result_sha256": "b4e8053d19fa554bef10227aefce712eb807d7418fa3567c49df84a37f943de7",
+      "pcap_sha256": "d0bdf6cf2edabe18cc6e36becac908e2cfbdea2b052456dc8f3964790c61b764",
+      "machine_log_sha256": "e6549a165f56edf8d9f721aad556d9ce9f9f24ede0fa1b3cfb394b65938a3a2c",
+      "independent_report": "qa/independent/capture-a.json"
+    },
+    {
+      "path": "ordinary/capture-b",
+      "profile": "ordinary",
+      "observer_commit": "08e492586020588cb4afcde631c3d3bf356ca109",
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observers/08e492586020588cb4afcde631c3d3bf356ca109/tools/verify_linux_source_net_irq.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "ordinary/native",
+        "--driver-manifest",
+        "ordinary/imported/import.json",
+        "--out",
+        "ordinary/capture-b",
+        "--mac",
+        "52:54:00:19:34:42",
+        "--mtu",
+        "1386"
+      ],
+      "independent_replay_argv": [
+        "python3",
+        "-B",
+        "qa/read_irq.py",
+        "ordinary",
+        "ordinary/capture-b"
+      ],
+      "nonce": "0f693082bbeb8d40",
+      "mac": "52:54:00:19:34:42",
+      "mtu": 1386,
+      "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "result_sha256": "a512fab098aab635e9098b93bd172538eb2b2e04b7d0971554ba3d22d28be4df",
+      "pcap_sha256": "e7b137ca53f63b488f7c5e13f95b2690228665f6c59aa7cac93e76639238720d",
+      "machine_log_sha256": "402b702b4b31838b7f9840a0e8d9035aa68b4e58025941e2b0c1d6bf402ca2b7",
+      "independent_report": "qa/independent/capture-b.json"
+    },
+    {
+      "path": "race/directed-final",
+      "profile": "race",
+      "observer_commit": "9559913e98abc7a1a2033e69dc90d1071cbc2a7b",
+      "replay_argv": [
+        "python3",
+        "-B",
+        "observers/9559913e98abc7a1a2033e69dc90d1071cbc2a7b/tools/verify_linux_source_net_irq.py",
+        "--replay",
+        "--mutation-tests",
+        "--package",
+        "race/native",
+        "--driver-manifest",
+        "race/imported/import.json",
+        "--out",
+        "race/directed-final",
+        "--mac",
+        "52:54:00:19:34:43",
+        "--mtu",
+        "1420"
+      ],
+      "independent_replay_argv": [
+        "python3",
+        "-B",
+        "qa/read_irq.py",
+        "race",
+        "race/directed-final"
+      ],
+      "nonce": "22cd7789f92458d3",
+      "mac": "52:54:00:19:34:43",
+      "mtu": 1420,
+      "qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "result_sha256": "c4e616a4013b49d203e970a2c0aadc5b9d121e88b0312ddc3ed02e88119786e4",
+      "pcap_sha256": "6aef5ea177f2802c9fd4e63c99bb4ebf9068cee1ff7d9860b64dc1d985754e95",
+      "machine_log_sha256": "5ef3c53f242fb985b25655aaf1d35be0478d1e00e216890018d9a844698b9139",
+      "independent_report": "qa/independent/directed-final.json"
+    }
+  ],
+  "independent_reports": {
+    "qa/independent/capture-a.json": "35c48aa4c06bcba3918c2ee1c509b7ef2035a03f67fd211555a8a3032ba89bb0",
+    "qa/independent/capture-b.json": "d23124b43708387f389621c7a88577951e800ed62a86e3a45e5bf0f2f649c87a",
+    "qa/independent/directed-final.json": "36dfc3281413413853926129f7275b85f3b1776782b7aba3a781096b0266763b",
+    "qa/independent/observations.en-ko.md": "ea1f9b30d6a12edb0c7406c327ca728324f54ec8b1a78edcff5dbbf676494480"
+  },
+  "observers": {
+    "08e492586020588cb4afcde631c3d3bf356ca109": {
+      "root": "observers/08e492586020588cb4afcde631c3d3bf356ca109",
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "board_json_sha256": "196b8ab6ae7d4aab998d07a23d0ba20f3ebb4d1b5f7fe61bdd955fcb3b842b82",
+      "board_gzip_sha256": "f557a4d03d632c33d09c2e97c4bf9fd7cdb4e898dd10db5115efcd3083f49bd7",
+      "board_qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "board_qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "module_sha256": {
+        "tools/verify_linux_source_net_irq.py": "d55945d6a7caf93327b02640047e8aa27e446bddd671b095b503f71940fce8f6",
+        "tools/verify_linux_source_net_rx_poll.py": "14ea6fba0aa73b6c0bcbdbdeaaa953cb85c521ef1504397f3aa67504839ea4ba",
+        "tools/verify_linux_source_net_rx.py": "be194d13d2417822cbb7a7de9e7981a24c64cee95ea18fd36cdc84a1ec394917",
+        "tools/verify_linux_source_net_packets.py": "ab5794693594cf48539e7adff7ed563a64de5fb5917fc5c6160c8112709843c6",
+        "tools/verify_linux_source_net_queues.py": "a0bb52dacfb5fb9fda95420c167777bd23071509add2cddc780e7acaa78746e0",
+        "tools/verify_linux_source_net.py": "e25201683d7bc07efbfde9ad6d7fb9ad1d2c3212b73baf0355d9adeb5bbb9696",
+        "tools/verify_linux_source_rtc.py": "2d8c485b47412a763838e66254d6b318f8634198dd0f4c1e1242c8f9fc6a2346",
+        "tools/native_el0_replay.py": "55d7c912e27c8010457990197389bbf717c673df7da6084465f5a4fd4c15c322",
+        "tools/native_amc_roots.py": "d38fcd3bd663823d4e8cecdfd07cc6ddfa3dc34afa85e408bb596559ced52ce5",
+        "tools/ordinary_amc_replay.py": "3007867c2f4a4d55c798c1bede0b422f8368e3ed119bc46f44fc5aeb9438474b",
+        "tools/ordinary_amc_capture.py": "1b51be185c5ee27b05730c25d4576f2e43731172748a1670078a37cb0ed2e465",
+        "tools/qemu_capture.py": "f333f79826c8bb69da832482a37b704d752ac066182842a1ee4b6c0f586e1c63"
+      }
+    },
+    "9559913e98abc7a1a2033e69dc90d1071cbc2a7b": {
+      "root": "observers/9559913e98abc7a1a2033e69dc90d1071cbc2a7b",
+      "board_dtb_sha256": "d029746308665dfa81ee4792518425c995b2356df990c46297e5c52e84dc2212",
+      "board_json_sha256": "196b8ab6ae7d4aab998d07a23d0ba20f3ebb4d1b5f7fe61bdd955fcb3b842b82",
+      "board_gzip_sha256": "f557a4d03d632c33d09c2e97c4bf9fd7cdb4e898dd10db5115efcd3083f49bd7",
+      "board_qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+      "board_qemu_version": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+      "module_sha256": {
+        "tools/verify_linux_source_net_irq.py": "43636199650256e3c1ee3d1179b994f62e3e53460958188215745617d7807922",
+        "tools/verify_linux_source_net_rx_poll.py": "14ea6fba0aa73b6c0bcbdbdeaaa953cb85c521ef1504397f3aa67504839ea4ba",
+        "tools/verify_linux_source_net_rx.py": "be194d13d2417822cbb7a7de9e7981a24c64cee95ea18fd36cdc84a1ec394917",
+        "tools/verify_linux_source_net_packets.py": "ab5794693594cf48539e7adff7ed563a64de5fb5917fc5c6160c8112709843c6",
+        "tools/verify_linux_source_net_queues.py": "a0bb52dacfb5fb9fda95420c167777bd23071509add2cddc780e7acaa78746e0",
+        "tools/verify_linux_source_net.py": "e25201683d7bc07efbfde9ad6d7fb9ad1d2c3212b73baf0355d9adeb5bbb9696",
+        "tools/verify_linux_source_rtc.py": "2d8c485b47412a763838e66254d6b318f8634198dd0f4c1e1242c8f9fc6a2346",
+        "tools/native_el0_replay.py": "55d7c912e27c8010457990197389bbf717c673df7da6084465f5a4fd4c15c322",
+        "tools/native_amc_roots.py": "d38fcd3bd663823d4e8cecdfd07cc6ddfa3dc34afa85e408bb596559ced52ce5",
+        "tools/ordinary_amc_replay.py": "3007867c2f4a4d55c798c1bede0b422f8368e3ed119bc46f44fc5aeb9438474b",
+        "tools/ordinary_amc_capture.py": "1b51be185c5ee27b05730c25d4576f2e43731172748a1670078a37cb0ed2e465",
+        "tools/qemu_capture.py": "f333f79826c8bb69da832482a37b704d752ac066182842a1ee4b6c0f586e1c63"
+      }
+    }
+  },
+  "same_peer_elf": true
+}

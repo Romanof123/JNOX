@@ -149,3 +149,25 @@ long jnox_net_setup_queues(unsigned mode, unsigned long long *receipt)
     }
     return 0;
 }
+
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+extern bool jnox_rx_equal_name_v1(const char *, const char *);
+int jnox_net_irq_queue_receipt_v1(unsigned long long out[10])
+{
+    if (!token || !out) return -ENODEV;
+    memset(out, 0, sizeof(*out) * 10);
+    out[0] = token;
+    for (unsigned int i = 0; i < 2; ++i) {
+        struct virtqueue *vq = &queues[i].vq;
+        out[1+i] = queues[i].state;
+        out[3+i] = (queues[i].state >> 16) & 0xffff; /* size at discovery */
+        out[5+i] = vq->num_max;
+        if (vq->index == i && vq->callback && vq->name &&
+            jnox_rx_equal_name_v1(vq->name, i ? "output.0" : "input.0") &&
+            vq->vdev == jnox_net_validated_device() && queues[i].ctx == !i &&
+            vq->list.next->prev == &vq->list && vq->list.prev->next == &vq->list)
+            out[7] |= 1U << i;
+    }
+    return out[7] == 3 ? 0 : -EPROTO;
+}
+#endif

@@ -1,0 +1,199 @@
+{
+  "archive_sha256": "aa9cdcc2317a956df2a4a1404c4d192bb442112485f7ddc941a4a76dbe739d86",
+  "archive_bytes": 568732,
+  "source_commit": "6c9c5926ec09ee97bea2bffcaeb4cb73d3e5f2bb",
+  "model": "QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)",
+  "qemu_sha256": "0a63468782d096485932acf6aa0a69d358b3e3a6f68f655e960e9f5e3fc578d8",
+  "kernel_sha256": "34292950442f6499b1ad73b6bd4bf89b06fc78829b9963c769128ab2718a3167",
+  "driver_sha256": "438b46e7a625827e2c299d8aeca78f2a9b324f88803f59d3afbafd6a33603c40",
+  "peer_sha256": "a759b848785baed3821850671efc748cb298962862f42a96ef798437eca651d5",
+  "boot_slot_exits": [
+    [
+      0,
+      0
+    ],
+    [
+      1,
+      0
+    ]
+  ],
+  "mac": "52:54:00:19:34:55",
+  "mtu": 1430,
+  "nonce_hex": "9fc11d78fdb0328c",
+  "observer_checkout_at_packaging": "627027d6fcffca8aff57b74e5b166aff960aba32",
+  "observer_sha256": {
+    "native_amc_roots.py": "9297ce9de94b5e2abc654eeed3dedc613abdf50aa8e939b0632dc34f661c3a9e",
+    "native_el0_replay.py": "54334e742e38ebb7095bfb8205aea030830e130f152767168e93d6173a09f05c",
+    "ordinary_amc_capture.py": "2a27b7241175c6947473355c1ce0c6a07f5909071332bd8ae53d39bccb7b4628",
+    "ordinary_amc_replay.py": "5a00b87dd50c03ca73083d02eaba3ae00a202de2056bdc8ad798ec1d210782f3",
+    "qemu_capture.py": "043fed6ba5c2445d2ac638ad65437b2bc563b43b4b2fef0e688e78362926df51",
+    "verify_linux_source_net.py": "b182fa2c3848142f2702634179fcf5dd410dbb5a4a6d47e1efe271d4d5d7bebd",
+    "verify_linux_source_net_packets.py": "9f35f99bf5d600ffe76976fd642ee6b1276741230e297d19c129a310d821dab4",
+    "verify_linux_source_net_queues.py": "bf4a5cc277f8b2b6bd4b214f2cc25af16b15f8392ac71f32c2d5027412d1a4bc",
+    "verify_linux_source_net_rx.py": "5c566086610b257c568739515449a2dfa40cc93659bea79a930d9c47017c1c98",
+    "verify_linux_source_net_rx_poll.py": "062221ed8be5a22dbb7be9fd48261a47933ef69a59c1a6b061f88bcf981aa461",
+    "verify_linux_source_rtc.py": "cf607ea259b6c930a6bb9ad8dbb2255291ee11052518910d8c7e2f348e9b1ad5"
+  },
+  "replay_argv": [
+    "python3",
+    "-B",
+    "tools/verify_linux_source_net_rx_poll.py",
+    "--replay",
+    "--mutation-tests",
+    "--package",
+    "native",
+    "--driver-manifest",
+    "imported/import.json",
+    "--out",
+    "regression",
+    "--mac",
+    "52:54:00:19:34:55",
+    "--mtu",
+    "1430"
+  ],
+  "observed": {
+    "executed_entries": {
+      "virtnet_alloc_queues": 1,
+      "virtnet_poll": 25,
+      "gro_receive_skb": 81,
+      "jnox_rx_disable_cb_v1": 25,
+      "virtqueue_enable_cb_prepare": 15
+    },
+    "registered_poll_va": "0x40ac80",
+    "budget": 8,
+    "budget_exhaustions": 10,
+    "data_frames": 80,
+    "terminal_ack_frames": 1,
+    "typed_gro_normal_deliveries": 81,
+    "queue_notifications": 11,
+    "polled_interrupt_bits": 1,
+    "phases": {
+      "ready": {
+        "posts": 32,
+        "device_owned": 32,
+        "available_flags": 0,
+        "poll": [
+          4238464,
+          8,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "napi": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "skb": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "token": 1
+      },
+      "active": {
+        "posts": 112,
+        "device_owned": 32,
+        "available_flags": 0,
+        "poll": [
+          4238464,
+          8,
+          22,
+          80,
+          10,
+          80,
+          8,
+          10
+        ],
+        "napi": [
+          1,
+          1,
+          22,
+          10,
+          12,
+          12,
+          0,
+          10
+        ],
+        "skb": [
+          80,
+          80,
+          80,
+          80,
+          80,
+          80,
+          0,
+          0
+        ],
+        "token": 1
+      },
+      "final": {
+        "posts": 112,
+        "device_owned": 31,
+        "available_flags": 0,
+        "poll": [
+          4238464,
+          8,
+          25,
+          81,
+          10,
+          81,
+          1,
+          11
+        ],
+        "napi": [
+          1,
+          1,
+          25,
+          10,
+          15,
+          15,
+          0,
+          10
+        ],
+        "skb": [
+          81,
+          81,
+          81,
+          81,
+          81,
+          81,
+          0,
+          0
+        ],
+        "token": 1
+      }
+    }
+  },
+  "clean_replay": {
+    "passed": true,
+    "source_commit": "6c9c5926ec09ee97bea2bffcaeb4cb73d3e5f2bb",
+    "data_frames": 80,
+    "terminal_ack_frames": 1,
+    "budget_exhaustions": 10,
+    "typed_gro_normal_deliveries": 81,
+    "rejected_mutations": [
+      "running CPU at burst",
+      "wire.pcap",
+      "host-to-guest.bin",
+      "registered NAPI pointer",
+      "no budget exhaustion",
+      "skb build",
+      "removed executed virtnet_poll",
+      "removed executed gro_receive_skb"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+PASS ordinary/capture-a: retained IRQ result reproduced, 13 mutations rejected
+PASS ordinary/capture-a: independent reader matched retained report
+PASS ordinary/capture-b: retained IRQ result reproduced, 13 mutations rejected
+PASS ordinary/capture-b: independent reader matched retained report
+PASS race/directed-final: retained IRQ result reproduced, 14 mutations rejected
+PASS race/directed-final: independent reader matched retained report

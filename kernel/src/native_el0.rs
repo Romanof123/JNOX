@@ -1,4 +1,14 @@
 //! Statically packaged native-v1 processes on a dedicated CPU0 virt boot.
+//!
+//! In the Linux-source RX IRQ profile, SVC 174 takes (queue token, last
+//! delivered sequence, 0). An IRQ returns a positive sequence. i64::MAX
+//! reports unannounced ring work and leaves the caller's sequence unchanged.
+//! An empty, enabled RX queue suspends the owner until a qualifying SPI 79.
+//! SVC 175 takes (queue token, metric index, 0) and returns the hardware
+//! counter. Both calls check slot 0 before validating the live generation.
+//! A non-owner gets -13, an expired token -116, and invalid arguments -22.
+//! The directed rearm test adds SVC 176 (token, 0, 0) to pend the GIC line
+//! once before RX activity, independently of the NIC's interrupt status.
 use crate::native_elf::{self, LoadPlan, Permission};
 use crate::native_el0_mmu::{self, STACK_BOTTOM, STACK_TOP};
 use crate::fixed_policy::{Action, Config, Fixed, Mode};
@@ -194,6 +204,17 @@ const EMPTY_FRAME: NativeFrame = NativeFrame {
 // CPU0 masks IRQs on every scheduler entry. The idle continuation keeps no
 // reference into scheduler storage across the interval with IRQs enabled.
 static mut FRAMES: [NativeFrame; COUNT] = [EMPTY_FRAME; COUNT];
+// Scheduler observations across the boot: committed waits, completed
+// saved-frame returns, idle completions, immediate IRQs, ring catch-ups.
+#[cfg(jnox_linux_source_net_rx_irq)]
+#[unsafe(no_mangle)]
+static mut jnox_linux_net_irq_scheduler: [u64; 5] = [0; 5];
+
+#[cfg(jnox_linux_source_net_rx_irq)]
+fn count_rx_irq(index: usize) {
+    let word = unsafe { &raw mut jnox_linux_net_irq_scheduler[index] };
+    unsafe { word.write_volatile(word.read_volatile().saturating_add(1)) };
+}
 static mut STATES: [TaskState; COUNT] = [TaskState::Absent; COUNT];
 static mut READY: ReadyQueue<COUNT> = ReadyQueue::new();
 static mut CURRENT: usize = 0;
@@ -502,6 +523,8 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
     if !ipc::handles(reason) { ipc::boundary(p, now, matches!(action, Action::Exit)); }
     if p.event(now, action) != Some(true) { fail(9) }
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    if matches!(action, Action::BlockIrq) { count_rx_irq(0); }
     #[cfg(jnox_native_uart_rx_standby)]
     if matches!(action, Action::Exit) {
         uart_standby::retire(before.pid.unwrap_or_else(|| fail(9)), now, p);
@@ -522,11 +545,13 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
     } else if policy().finished() {
         finish_fixed();
     } else {
+        // A device waiter is live even if every remaining slot is blocked
+        // and the timer compare is disabled. SPI delivery can leave WFI.
         unsafe { FRAMES[pid] = *f };
         let top = (&raw mut IDLE).cast::<u8>().wrapping_add(context::STACK_BYTES);
         unsafe { native_sleep_switch(top) };
         let next = policy().current().unwrap_or_else(|| fail(9));
-        #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
+        #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc, jnox_linux_source_net_rx_irq))]
         unsafe {
             // An idle IRQ can complete the very owner that went to sleep.
             // FRAMES holds the completion. The interrupted SVC stack still
@@ -535,7 +560,7 @@ fn fixed_dispatch(now: u64, action: Action, reason: u64, f: &mut NativeFrame) {
             *f = FRAMES[next];
             CURRENT = next;
         }
-        #[cfg(not(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc)))]
+        #[cfg(not(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc, jnox_linux_source_net_rx_irq)))]
         activate(next, f);
     }
 }
@@ -679,8 +704,21 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     let _ = entry;
     let mut next_owner = None;
     let ready = if id != context::TIMER_IRQ {
-        false
+        #[cfg(jnox_linux_source_net_rx_irq)]
+        if id == linux_net::irq::IRQ {
+            if let Some(sequence) = linux_net::irq::interrupt(iar, frame.is_null()) {
+                // The hardware latch consumes the wait once. The owner was
+                // descheduled with its return PC already past SVC 174.
+                next_owner = fixed_event(counter(), Action::WakeIrq(0), u64::from(id), unsafe { frame.as_ref() });
+                unsafe { FRAMES[0].x[0] = sequence };
+                count_rx_irq(1);
+                if frame.is_null() { count_rx_irq(2); }
+            }
+        }
+        next_owner.is_some()
     } else if cfg!(jnox_native_fixed) {
+        #[cfg(jnox_linux_source_net_rx_irq)]
+        linux_net::irq::timer();
         let now = counter();
         // Null marks an EL1 idle IRQ. The blocked owner's EL0 frame was saved
         // by the syscall and is separate from this idle continuation.
@@ -692,6 +730,8 @@ extern "C" fn native_sleep_irq(frame: *mut NativeFrame, entry: u64) -> u64 {
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
     context::gic_write(context::GICC + 0x10, iar);
     unsafe { asm!("dsb sy", options(nostack, preserves_flags)) };
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    if id == linux_net::irq::IRQ { linux_net::irq::eoi(iar); }
     if let (Some(next), Some(interrupted)) = (next_owner, unsafe { frame.as_mut() }) {
         activate(next, interrupted);
     }
@@ -757,6 +797,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     {
         #[cfg(jnox_native_edf)]
         if NATIVE_DEADLINE_SERVICE_MASK != 0 { edf::recurring::fault(entry, f); }
+        #[cfg(jnox_linux_source_net_rx_irq)]
+        if unsafe { CURRENT } == 0 { linux_net::release_on_exit(); }
         fail(2);
     }
     #[cfg(jnox_native_edf)]
@@ -817,6 +859,24 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         fixed_dispatch(now, action, service, f);
         return;
     }
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    if f.x[8] == 174 {
+        // x0=queue token, x1=last IRQ sequence, x2=0. A positive
+        // sequence, i64::MAX (ring catch-up), or errno returns immediately.
+        // Zero is internal: IRQs stay masked from the hardware recheck and
+        // waiter installation through saving the frame and descheduling.
+        let result = linux_net::irq::wait(unsafe { CURRENT }, f.x[0], f.x[1], f.x[2]);
+        let action = if result == 0 {
+            Action::BlockIrq
+        } else {
+            if result == i64::MAX { count_rx_irq(4); }
+            else if result > 0 { count_rx_irq(3); }
+            f.x[0] = result as u64;
+            Action::Poll
+        };
+        fixed_dispatch(now, action, 174, f);
+        return;
+    }
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
@@ -830,6 +890,10 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         170..=172 => linux_net::packet_service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1], f.x[2]),
         #[cfg(jnox_linux_source_net_rx_poll)]
         173 => linux_net::packet_service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1], f.x[2]),
+        #[cfg(jnox_linux_source_net_rx_irq)]
+        175 => linux_net::irq::metric(unsafe { CURRENT }, f.x[0], f.x[1], f.x[2]),
+        #[cfg(jnox_linux_source_net_rx_irq_rearm_test)]
+        176 => linux_net::irq::pend_test(unsafe { CURRENT }, f.x[0], f.x[1], f.x[2]),
         #[cfg(jnox_linux_source_rtc)]
         152..=155 => pl031::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
         #[cfg(jnox_native_display)]
@@ -913,6 +977,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         if !exit { f.x[0] = result as u64; }
         let reason = match action { Action::Exit => 3, Action::Sleep(_) => 2, Action::Yield => 1, Action::Poll => 5,
             #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))] Action::BlockIpc => unreachable!(),
+            #[cfg(jnox_linux_source_net_rx_irq)] Action::BlockIrq | Action::WakeIrq(_) => unreachable!(),
         };
         fixed_dispatch(now, action, reason, f);
         return;

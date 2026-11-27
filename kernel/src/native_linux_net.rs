@@ -6,6 +6,10 @@ use core::{arch::asm, ptr};
 #[path = "native_linux_net_queues.rs"]
 mod queues;
 
+#[cfg(jnox_linux_source_net_rx_irq)]
+#[path = "native_linux_net_irq.rs"]
+pub(super) mod irq;
+
 const BASE: usize = 0x0a00_3e00;
 const FEATURES: usize = 0x10;
 const FEATURES_SEL: usize = 0x14;
