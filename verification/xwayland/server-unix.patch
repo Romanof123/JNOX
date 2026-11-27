@@ -10,3 +10,11 @@
 +if build_dri3 or (build_xwayland and (host_machine.system() != 'jnox' or xshmfence_dep.found()))
      srcs_miext_sync += 'misyncshm.c'
  endif
+--- a/hw/xwayland/xwayland-input.c
++++ b/hw/xwayland/xwayland-input.c
+@@ -29,1 +29,5 @@
++#ifdef JNOX_NATIVE_ACCESS
++#include <linux/input-event-codes.h>
++#else
+ #include <linux/input.h>
++#endif

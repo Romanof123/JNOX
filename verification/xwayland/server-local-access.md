@@ -1,6 +1,6 @@
 # Xwayland local host access on JNOX (#448)
 
-The full-server build applies `server-local-access.patch` to the pinned Xwayland 24.1.6 source. Use the existing `server-lab.sh NEW_OUT REV` entry point and its documented runtime inputs. Set `JNOX_NATIVE_XAUTHORITY=1` for the cookie-enforced profile.
+The full-server build applies `server-local-access.patch` to the pinned Xwayland 24.1.6 source. Use the existing `server-lab.sh NEW_OUT REV` entry point and its documented runtime inputs. A JNOX target without local peer credentials requires the native cookie implementation from the combined #465 profile before it can start serving connections. [Authorization scope](https://github.com/Romanof123/JNOX/issues/465)
 
 For the JNOX Unix-only transport, each listener calls upstream's DefineSelf entry point to record one zero-length FamilyLocalHost in selfhosts. MakeHost initializes its requested flag to false. Upstream AddLocalHosts, DisableLocalHost and InvalidHost retain responsibility for enabling or removing access. Hostname-based IPv4/IPv6 matching has no eligible peer on this transport. TCP-enabled JNOX and other systems use the original interface and DNS logic.
 
@@ -16,6 +16,9 @@ The first remaining compiler error on the measured integration revision
 `c45b49d` was an unconditional `xf86drm.h` include in the software
 window header. Full server linking and display startup are still open.
 [Server issue](https://github.com/Romanof123/JNOX/issues/448)
+
+The subsequent integrated build compiled that window header, the input
+callback and the software Present code. [Later compiler results](server-executable.md)
 
 ## Remaining guest checks
 

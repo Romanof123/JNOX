@@ -110,3 +110,16 @@
              CoreDump = TRUE;
 +#endif
          }
+--- a/hw/xwayland/xwayland.c
++++ b/hw/xwayland/xwayland.c
+@@ -461,1 +461,10 @@
++#if defined(JNOX_NATIVE_ACCESS) && defined(NO_LOCAL_CLIENT_CRED)
++#ifdef JNOX_XSERVER_NATIVE_AUTHORITY
++    /* Every connection must pass native CheckAuthorization. */
++    DisableLocalHost();
++#else
++    FatalError("Local JNOX Xwayland requires native Xauthority without peer credentials\n");
++#endif
++#else
+     LocalAccessScopeUser();
++#endif

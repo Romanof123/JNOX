@@ -213,6 +213,8 @@ def main():
     if args.build_executable:
         inc = out / "xtrans-include"
         shutil.copytree(protocols / "include/X11/Xtrans", inc / "X11/Xtrans")
+        run(sys.executable, HERE / "input-codes.py",
+            os.environ.get("JNOX_INPUT_EVENT_CODES", "/usr/include/linux/input-event-codes.h"), inc)
         if hashlib.sha256((inc / "X11/Xtrans/Xtrans.c").read_bytes()).hexdigest() != "bba1bbccec1ea44213cb67d2a77628ee1790c3fdbadbb755721927da52785f41":
             raise ValueError("unexpected Xtrans.c input")
         for name in ("xtrans-1.4.0-uname.patch", "xtrans-unix-only.patch"):
@@ -262,6 +264,7 @@ def main():
         # dependency in production, applying only the native socket selection.
         run("patch", "-p1", "-i", HERE / "server-unix.patch", cwd=server)
         run("patch", "-p1", "-i", HERE / "server-local-access.patch", cwd=server)
+        run("patch", "--fuzz=0", "-p1", "-i", HERE / "software-backend.patch", cwd=server)
     else:
         run("patch", "-p1", "-i", HERE / "jnox-server.patch", cwd=server)
     native_options = []
