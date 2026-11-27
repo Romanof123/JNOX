@@ -494,13 +494,51 @@ def race_stage(stream,read,pkg,out,healthy,phase):
     save(where/"ram.json",mem.records)
 
 
+def setup_route(lines,first_iar):
+    """Match the SPI79 target byte write, its enable write, and both setup readbacks."""
+    target=0x0800084f
+    typer=0x08000004
+    enable=0x08000108
+    route=[]
+    for i,line in enumerate(lines):
+        if i>=first_iar:
+            break
+        m=re.search(rb"memory_region_ops_(read|write) cpu (-?\d+) mr \S+ addr (0x[0-9a-f]+) value (0x[0-9a-f]+) size (\d+)",line,re.I)
+        if not m:
+            continue
+        reg=int(m[3],16)
+        if reg in (target,typer,enable):
+            route.append((i,m[1],int(m[2]),reg,int(m[4],16),int(m[5])))
+    writes=[i for i,op,cpu,reg,v,w in route if (op,cpu,reg,v,w)==(b"write",0,target,1,1)]
+    require(len(writes)==1,"GIC SPI79 target setup write")
+    subsequent=[r for r in route if r[0]>writes[0]]
+    relevant=[(op,cpu,reg,value,width) for _,op,cpu,reg,value,width in subsequent
+              if (reg==enable and op==b"write") or reg in (typer,target)]
+    require(len(relevant)==3 and relevant[0]==(b"write",0,enable,1<<(79%32),4) and
+            relevant[1][:3]==(b"read",0,typer) and relevant[1][4]==4 and
+            relevant[2][:3]==(b"read",0,target) and relevant[2][4]==1,
+            "GIC SPI79 ordered TYPER and ITARGETSR readbacks")
+    raw=relevant[1][3]
+    byte=relevant[2][3]
+    interfaces=1+((raw>>5)&7)
+    count=32*((raw&31)+1)
+    require(raw<=0xffffffff and count>79 and (byte==1 or (byte==0 and interfaces==1)),
+            "GIC SPI79 target or implemented INTID range")
+    return dict(typer=raw,target_byte=byte,cpu_interfaces=interfaces,implemented_ids=count,
+                routing="implicit single interface" if byte==0 else "explicit CPU0")
+
+
 def irq_evidence(pkg,out,lines,meta,phases):
     epochs=delivery_epochs(lines)
+    route=setup_route(lines,epochs[0]["iar"])
     directed=race_profile(pkg)
     samples={}
     for stage,_ in PHASES:
         ram=RAM(load(out/stage/"ram.json"))
         k=irq_words(ram,pkg,None,KERNEL_METRICS)
+        cpus=load(out/stage/"qmp.json")["cpus"]
+        require([cpu["cpu-index"] for cpu in cpus]==[0] and k[28:30]==[route["typer"],route["target_byte"]],
+                "GIC route readbacks differ from stopped EL1 metrics or QMP CPUs")
         sched=irq_words(ram,pkg,None,"jnox_linux_net_irq_scheduler")
         o,flat,ks,p=[irq_words(ram,pkg,int(n==IRQ_JOURNALS[-1]),n) for n in IRQ_JOURNALS]
         require([len(o),len(flat),len(ks),len(p)]==[32,32,81,16],"IRQ journal dimensions")
@@ -564,7 +602,7 @@ def irq_evidence(pkg,out,lines,meta,phases):
         require(gate[5]<gate[7]<=gate[10] and gate[6]==2 and gate[8:10]==[1,1] and gate[12:15]==[2,k[19],0]
                 and gate[15]>0 and phases["final"]["napi"][6]>0,"positive post-rearm pending check")
         race=gate
-    return dict(hardware_epochs=epochs,observations=samples,rearm_race=race,
+    return dict(hardware_epochs=epochs,routing=route,observations=samples,rearm_race=race,
                 registered_callback=hex(callback["entry"]),completed_callbacks=len(callbacks),
                 irq_sequence=k[21],catchups=k[10],blocked_rx_wakes=k[7],idle_rx_wakes=k[25],
                 software_pended_zero_status_irqs=int(directed))
@@ -631,6 +669,12 @@ def negative_controls(pkg,imp,out):
         reject("missing committed scheduler block",path,json.dumps(dict(journal,**{key:raw.hex()})).encode(),
                "scheduler block/wake")
         path=work/"machine.log"
+        # Removing the setup read destroys the route witness even with all IRQ deliveries intact.
+        route_reads=[i for i,l in enumerate(lines) if re.search(
+            rb"memory_region_ops_read cpu 0 mr \S+ addr 0x0*800084f value 0x[0-9a-f]+ size 1\b",l,re.I)]
+        require(route_reads,"no target read for routing mutation")
+        missing=route_reads[-1]
+        reject("missing target readback",path,b"".join(lines[:missing]+lines[missing+1:]),"ordered TYPER")
         e=delivery_epochs(lines)[0]
         i=e["eoi"]
         wrong=lines[i].replace(b"0x0000004f",b"0x0000044f")

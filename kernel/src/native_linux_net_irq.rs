@@ -63,10 +63,17 @@ pub(super) fn enable(token: u64) -> bool {
     fence();
     gic_write(ENABLE, LINE);
     fence();
+    let typer = gic_read(GICD + 4);
+    let target = unsafe { (TARGET as *const u8).read_volatile() };
+    // GICD_TYPER.CPUNumber counts interfaces minus one. QEMU GICv2
+    // implements ITARGETSR as RAZ/WI on a uniprocessor distributor.
+    let single_cpu = (typer >> 5) & 7 == 0;
+    let irq_implemented = IRQ < 32 * ((typer & 31) + 1);
+    let cpu0_route = irq_implemented && (target == 1 || (single_cpu && target == 0));
     let checks = u64::from(gic_read(GROUP) & LINE == 0)
         | u64::from(gic_read(CONFIG) & EDGE != 0) << 1
         | u64::from(unsafe { (PRIORITY as *const u8).read_volatile() } == 0xa0) << 2
-        | u64::from(unsafe { (TARGET as *const u8).read_volatile() } == 1) << 3
+        | u64::from(cpu0_route) << 3
         | u64::from(gic_read(ENABLE) & LINE != 0) << 4
         | u64::from(gic_read(GICD) & 1 != 0 && gic_read(GICC) & 1 != 0
             && gic_read(GICC + 4) & 0xff > 0xa0) << 5;
@@ -77,6 +84,8 @@ pub(super) fn enable(token: u64) -> bool {
     }
     set(19, token);
     set(20, checks);
+    set(28, u64::from(typer));
+    set(29, u64::from(target));
     if checks != 63 { mask(); return false; }
     let head = u64::from(queues::rx_progress().0);
     set(17, head);
