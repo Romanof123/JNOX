@@ -29,7 +29,7 @@ from qemu_capture import capture_halt, journal_location, request
 import verify_linux_source_net_rx_poll as poll_gate
 from verify_linux_source_net_rx_poll import ring_state
 
-TRACE += "gic_acknowledge_irq\ngic_cpu_read\ngic_cpu_write\n"
+TRACE += "gic_acknowledge_irq\ngic_cpu_read\ngic_cpu_write\nvirtio_mmio_setting_irq\ngic_set_irq\n"
 FUNCTIONS=(*poll_gate.FUNCTIONS,"virtnet_find_vqs","skb_recv_done")
 KERNEL_METRICS="jnox_linux_net_irq_metrics"
 IRQ_JOURNALS=("jnox_rx_irq_owner","jnox_rx_irq_phase","jnox_rx_irq_kernel","jnox_rx_irq_peer")
@@ -152,10 +152,11 @@ def delivery_epochs(lines):
         if re.search(rb"\bgic_acknowledge_irq (?:v?cpu) 0 acknowledged irq 79$",line):
             require(not pending and current is None,"unpaired GIC ACK")
             pending=True
+            acknowledge_line=i
         m=re.search(rb"\bgic_cpu_read cpu 0 iface read at 0x0000000c: (0x[0-9a-f]+)$",line)
         if m and int(m[1],16)&1023==79:
             require(pending and current is None,"IAR without GIC acknowledgement")
-            current={"token":int(m[1],16),"iar":i,"status":[],"ack":[]}
+            current={"acknowledge_line":acknowledge_line,"token":int(m[1],16),"iar":i,"status":[],"ack":[]}
             pending=False
         if current is None:
             continue
@@ -163,6 +164,8 @@ def delivery_epochs(lines):
         if m and int(m[2],16) in (NIC+96,NIC+100):
             off=int(m[2],16)-NIC
             require(int(m[4])==4 and (off,m[1]) in ((96,b"read"),(100,b"write")),"incorrect IRQ status/ACK register access")
+            if off==96:
+                current["status_read"]=i
             current["status" if off==96 else "ack"].append(int(m[3],16))
         m=re.search(rb"\bgic_cpu_write cpu 0 iface write at 0x00000010 (0x[0-9a-f]+)$",line)
         if m:
@@ -170,7 +173,7 @@ def delivery_epochs(lines):
             status=current["status"]
             require(len(status)==1 and status[0] in range(4) and current["ack"]==([status[0]] if status[0] else []),
                     "unpaired device interrupt status/ACK inside IAR/EOIR")
-            deliveries.append(dict(iar=current["iar"],eoi=i,token=current["token"],status=status[0]))
+            deliveries.append(dict(iar=current["iar"],acknowledge=current["acknowledge_line"],status_read=current["status_read"],eoi=i,token=current["token"],status=status[0]))
             current=None
     require(deliveries and not pending and current is None,"missing complete NIC SPI 79")
     return deliveries
@@ -178,7 +181,7 @@ def delivery_epochs(lines):
 def replay(pkg,imp,out):
     meta=provenance(pkg,imp)
     launch=load(out/"launch.json")
-    require(launch["identities"]==meta and launch["schema"]==1 and (out/"net.events").read_text()==TRACE and
+    require(launch["identities"]==meta and launch["schema"]==2 and (out/"net.events").read_text()==TRACE and
             launch["argv"]==model_command(launch["argv"][0],Path(launch["out"]),Path(launch["kernel"]),launch["fd"],
                                          launch["mac"],launch["mtu"],meta["machine_layout"]),"poll profile launch identity")
     manifest=load(pkg/"manifest.json")
@@ -293,7 +296,7 @@ def capture(pkg,imp,out,binary,mtu,mac,timeout):
         with subprocess.Popen(cmd,pass_fds=(fd,),stdin=subprocess.PIPE,stdout=subprocess.PIPE,
                               stderr=stderr,bufsize=0) as proc:
             device.close()
-            save(out/"launch.json",dict(schema=1,identities=meta,argv=cmd,pid=proc.pid,fd=fd,
+            save(out/"launch.json",dict(schema=2,identities=meta,argv=cmd,pid=proc.pid,fd=fd,
                  out=str(out),kernel=str(pkg/"kernel.elf"),mtu=mtu,mac=mac,qemu_sha256=sha(Path(qemu)),
                  qemu_version=subprocess.check_output([qemu,"--version"],text=True).splitlines()[0]))
             watchdog=threading.Timer(timeout+8,proc.kill)
@@ -528,9 +531,61 @@ def setup_route(lines,first_iar):
                 routing="implicit single interface" if byte==0 else "explicit CPU0")
 
 
+def wire_delivery(lines,epochs,directed):
+    """QEMU 6.2 emits transport requests before qemu_set_irq, and GIC traces only level changes."""
+    transport_low=True
+    expected=[]
+    actual=[]
+    pending_accesses=[]
+    for i,line in enumerate(lines):
+        if b"virtio_mmio_setting_irq" in line:
+            row=re.search(rb"\bvirtio_mmio_setting_irq virtio_mmio setting IRQ ([01])$",line)
+            require(row,"malformed VirtIO IRQ assertion")
+            low=row[1]==b"0"
+            if low!=transport_low:
+                expected.append((i,int(not low)))
+                transport_low=low
+        if b"gic_set_irq" in line:
+            row=re.search(rb"\bgic_set_irq irq (\d+) level ([01]) cpumask (0x[0-9a-f]+) target (0x[0-9a-f]+)$",line,re.I)
+            require(row,"malformed GIC input trace")
+            # arm_gic.c:gic_set_irq adds 32 to the external input before tracing.
+            if int(row[1])==79:
+                require(int(row[3],16)&1 and int(row[4],16)&1,"GIC input does not target CPU0")
+                actual.append((i,int(row[2])))
+        if b"memory_region_ops_" in line:
+            access=re.search(rb"\bmemory_region_ops_(read|write) cpu 0 mr \S+ addr 0x0*8000208 "
+                             rb"value (0x[0-9a-f]+) size 4 name 'gic_dist'$",line,re.I)
+            if access:
+                pending_accesses.append((i,access[1],int(access[2],16)))
+    pends=[j for j,(_,op,v) in enumerate(pending_accesses) if op==b"write" and v==0x8000]
+    sourced=[e for e in epochs if e["status"]]
+    require(transport_low and len(expected)==len(actual)==2*len(sourced),
+            "missing NIC assertion/clear or GIC input transition")
+    for (source,level),(pin,observed) in zip(expected,actual):
+        require(level==observed and source<pin,"NIC assertion/clear and GIC input disagree")
+    for n,e in enumerate(sourced):
+        start,end=2*n,2*n+1
+        rise,fall=expected[start][0],expected[end][0]
+        high,low=actual[start][0],actual[end][0]
+        require(rise<high<e["acknowledge"]<e["iar"]<e["status_read"]<fall<low<e["eoi"],
+                "NIC assertion/clear and GIC input do not bracket delivery")
+        e.update(transport_assert=rise,gic_assert=high,transport_clear=fall,gic_clear=low)
+    if directed:
+        require(len(pends)==1 and 0<pends[0]<len(pending_accesses)-1,"missing software pending write")
+        before,write,after=pending_accesses[pends[0]-1:pends[0]+2]
+        require(before[1]==b"read" and before[2]&0x8000==0 and after[1]==b"read" and after[2]&0x8000 and
+                epochs[0]["status"]==0 and after[0]<epochs[0]["acknowledge"] and
+                epochs[0]["eoi"]<expected[0][0],"software pending epoch overlaps NIC assertion")
+        epochs[0].update(pending_clear_read=before[0],pending_write=write[0],pending_set_read=after[0])
+    else:
+        require(not pends and len(sourced)==len(epochs),"unexpected software-pended epoch")
+    return len(sourced)
+
+
 def irq_evidence(pkg,out,lines,meta,phases):
     epochs=delivery_epochs(lines)
     route=setup_route(lines,epochs[0]["iar"])
+    device_epochs=wire_delivery(lines,epochs,race_profile(pkg))
     directed=race_profile(pkg)
     samples={}
     for stage,_ in PHASES:
@@ -601,8 +656,16 @@ def irq_evidence(pkg,out,lines,meta,phases):
                     gate[:5]==[0x4952515241434531,n,k[19],1,1] and gate[11]==1,"directed ring and original snapshot")
         require(gate[5]<gate[7]<=gate[10] and gate[6]==2 and gate[8:10]==[1,1] and gate[12:15]==[2,k[19],0]
                 and gate[15]>0 and phases["final"]["napi"][6]>0,"positive post-rearm pending check")
+        _,gro=callback_attempts(lines,meta["routines"]["gro_receive_skb"]["entry"])
+        # Seq1 arrives inside the first poll after enable_prepare. The positive
+        # original recheck retains scheduling and dispatches a second poll.
+        require(len(genuine)>=3 and len(polls)>=2 and len(gro)>=2 and
+                genuine[0]["eoi"]<callbacks[0]<polls[0]<gro[0]<genuine[1]["iar"] and
+                genuine[1]["eoi"]<polls[1]<gro[1]<genuine[2]["iar"] and
+                sum(callbacks[0]<=c<gro[1] for c in callbacks)==1 and phases["final"]["napi"][6]>=1,
+                "directed original NAPI repoll and second skb delivery")
         race=gate
-    return dict(hardware_epochs=epochs,routing=route,observations=samples,rearm_race=race,
+    return dict(hardware_epochs=epochs,transport_assert_clear_pairs=device_epochs,routing=route,observations=samples,rearm_race=race,
                 registered_callback=hex(callback["entry"]),completed_callbacks=len(callbacks),
                 irq_sequence=k[21],catchups=k[10],blocked_rx_wakes=k[7],idle_rx_wakes=k[25],
                 software_pended_zero_status_irqs=int(directed))
@@ -675,7 +738,15 @@ def negative_controls(pkg,imp,out):
         require(route_reads,"no target read for routing mutation")
         missing=route_reads[-1]
         reject("missing target readback",path,b"".join(lines[:missing]+lines[missing+1:]),"ordered TYPER")
-        e=delivery_epochs(lines)[0]
+        epochs=delivery_epochs(lines)
+        wire_delivery(lines,epochs,race_profile(pkg))
+        if race_profile(pkg):
+            write=epochs[0]["pending_write"]
+            reject("removed only software-pending write",path,b"".join(lines[:write]+lines[write+1:]),
+                   "missing software pending write")
+        high=next(e["transport_assert"] for e in epochs if e["status"])
+        reject("removed transport assertion only",path,b"".join(lines[:high]+lines[high+1:]),"NIC assertion")
+        e=epochs[0]
         i=e["eoi"]
         wrong=lines[i].replace(b"0x0000004f",b"0x0000044f")
         require(wrong!=lines[i],"could not mutate full EOI")

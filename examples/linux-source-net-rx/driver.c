@@ -238,7 +238,12 @@ static int deliver(void)
     IRQ_OWNER[7] = (uint64_t)native_call(174, R[3], 0, 1);
     IRQ_OWNER[8] = (uint64_t)native_call(174, R[3], (uint64_t)-1, 0);
     IRQ_OWNER[9] = (uint64_t)native_call(175, R[3], 0, 1);
+#ifdef JNOX_NATIVE_RX_IRQ_RACE_FIXTURE
+    /* Metric 27 counts the test-only software-pended interrupt. */
+    IRQ_OWNER[10] = (uint64_t)native_call(175, R[3], 28, 0);
+#else
     IRQ_OWNER[10] = (uint64_t)native_call(175, R[3], 27, 0);
+#endif
     for (unsigned int i = 7; i <= 10; ++i)
         if (IRQ_OWNER[i] != (uint64_t)-22L) return 61;
     if ((check = snapshot_irq(0))) return check;
