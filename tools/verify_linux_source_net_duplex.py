@@ -88,7 +88,8 @@ def layout(pkg, imp):
     journal=[{n:journal_location(pkg/native["slots"][slot]["elf"],n) for n in names}
              for slot,names in enumerate((DRIVER,PEER))]
     return dict(code=code,ops=ops,tx_callback=tx_callback,ndo=ops+offsets[0],roots=roots,journal=journal,ring=ring,buf=buf,
-                irq=journal_location(kernel,"jnox_linux_net_irq_metrics"))
+                irq=journal_location(kernel,"jnox_linux_net_irq_metrics"),
+                grants=journal_location(kernel,"jnox_linux_net_lifecycle_grants"))
 
 
 def snapshot(mem,L):
@@ -96,7 +97,16 @@ def snapshot(mem,L):
     pages=[]
     protected=set(range(L["ring"],L["ring"]+8192,4096))|set(range(L["buf"],L["buf"]+64*STRIDE,4096))
     irq_addr,irq_size=L["irq"]
-    protected.add(irq_addr&~4095)
+    grant_addr,grant_size=L["grants"]
+    require(grant_size==32*24,"protected grant table ABI")
+    for addr,size in (L["irq"],L["grants"]):
+        protected.update(range(addr&~4095,(addr+size+4095)&~4095,4096))
+    grants=list(struct.iter_unpack("<QQQ",mem.read(grant_addr,grant_size)))
+    for token,va,n in grants:
+        if token:
+            require(0x400000<=va<va+n<=0x800000 and n==1530,"RX grant range")
+            for page in range(va//4096,(va+n-1)//4096+1):
+                permissions(mem,L["roots"][0],page*4096,"user rw")
     for root,syms in zip(L["roots"],L["journal"]):
         group={}
         private=set()
@@ -122,7 +132,7 @@ def snapshot(mem,L):
                             require(pte&PA_MASK not in protected|pages[1-i],"user alias of peer or DMA")
             tables=next_tables
     require(int.from_bytes(vread(mem,L["roots"][0],L["ndo"],8),"little")==L["code"]["start_xmit"]["entry"],"live netdev operation")
-    return dict(driver=unpack(groups[0][DRIVER[0]]),tx=unpack(groups[0][DRIVER[1]]),peer=unpack(groups[1][PEER[0]]),
+    return dict(grants=grants,driver=unpack(groups[0][DRIVER[0]]),tx=unpack(groups[0][DRIVER[1]]),peer=unpack(groups[1][PEER[0]]),
                 qtx=unpack(groups[0][DRIVER[2]]),qrx=unpack(groups[0][DRIVER[3]]),wire=[groups[1][n] for n in PEER[1:]],irq=unpack(mem.read(irq_addr,irq_size)),
                 rings=[area(mem,L["ring"]+i*4096,4096) for i in range(2)],buffers=area(mem,L["buf"],64*STRIDE))
 
@@ -205,6 +215,7 @@ def capture(pkg,imp,out,qemu,mac,mtu,timeout):
                 where=out/stage
                 where.mkdir()
                 capture_halt(q,where)
+                save(where/"trace.json",{"machine_log_bytes":(out/"machine.log").stat().st_size})
                 mem=RAM({},read)
                 try:
                     s=snapshot(mem,L)
@@ -253,11 +264,25 @@ def check_rings(s,stage,L,frames,replies):
     n,posted,done={"ready":(0,0,0),"held":(1,1,0),"overlap":(2,1,0),"completed":(3,3,3),"ack":(80,80,80),"final":(81,80,80)}[stage]
     r,t=s["rings"]
     u16=lambda raw,off: struct.unpack_from("<H",raw,off)[0]
+    grants=s["grants"]
     if stage=="final":
+        require(all(g==(0,0,0) for g in grants),"grant survived retirement")
         require(not any(s["buffers"]) and u16(r,586)==81 and (u16(t,514),u16(t,586))==(80,80),"DMA buffer scrub and terminal used indices after remove")
         return
     require(u16(r,586)==n and 28<=u16(r,514)-n<=32 and (u16(t,514),u16(t,586))==(posted,done),
             "RX posted and used versus TX published and consumed at "+stage)
+    avail=u16(r,514)
+    owned=[u16(r,516+2*(i%32)) for i in range(n,avail)]
+    require(len(set(owned))==len(owned) and all(i<32 for i in owned),"duplicate or invalid RX avail ID")
+    spans=[]
+    for idx,(token,va,length) in enumerate(grants):
+        if idx in owned:
+            require(token==s["driver"][2]>0 and length==1530,"posted RX grant owner or capacity")
+            spans.append((va,va+length))
+        else:
+            require((token,va,length)==(0,0,0),"inactive descriptor retains a grant")
+    spans.sort()
+    require(all(a[1]<=b[0] for a,b in zip(spans,spans[1:])),"overlapping active grants")
     for i in range(32):
         require(struct.unpack_from("<QIHH",r,16*i)==(L["buf"]+i*STRIDE,1530,2,0),"registered RX descriptor")
     rxids={}
@@ -335,8 +360,10 @@ def replay(pkg,imp,out,mutation=None):
         wire.pop(3)
     require(len(wire)==161 and all(p in (f,bytes(10)+f,bytes(12)+f) for p,f in zip(wire,expected)),"ordered NIC ingress and egress")
     stages={}
+    boundaries=[]
     for stage,phase in STAGES.items():
         path=out/stage
+        boundaries.append(load(path/"trace.json")["machine_log_bytes"])
         q,h=load(path/"qmp.json"),load(path/"halted.json")
         require(q["status"]["running"] and q["stop_return"]=={} and [x["cpu-index"] for x in q["cpus"]]==[0]
                 and h["status"]=="paused" and not h["running"],"single stopped CPU")
@@ -348,6 +375,9 @@ def replay(pkg,imp,out,mutation=None):
             ring=bytearray(s["rings"][1])
             struct.pack_into("<H",ring,586,1)
             s["rings"][1]=ring
+        if mutation=="grant" and stage=="overlap":
+            idx=next(i for i,g in enumerate(s["grants"]) if g[0])
+            s["grants"][idx]=(0,0,0)
         check_rings(s,stage,L,frames+[ack],replies)
     require(stages["ready"]["irq"][22]==1 and stages["ready"]["irq"][2]==0 and stages["completed"]["irq"][2]>0,"genuine parked RX owner and subsequent device event")
     final=stages["final"]
@@ -371,7 +401,13 @@ def replay(pkg,imp,out,mutation=None):
         require(rq[1]==rx_done and 28<=rq[2]<=32 and tq[:3]==([1,0,0] if not tx_done else [80]*3)
                 and tq[6]==int(not tx_done) and tq[7]==0,"sampled Linux RX/TX cookie lifetime")
     require((out/"machine.log").stat().st_size<=MAX_LOG,"capture exceeds trace bound")
-    lines=(out/"machine.log").read_bytes().splitlines()
+    raw=(out/"machine.log").read_bytes()
+    require(all(0<offset<=len(raw) for offset in boundaries) and boundaries==sorted(boundaries),"trace checkpoint extent")
+    pattern=rb"memory_region_ops_write cpu 0 mr [^\n]+? addr 0x0*%x value 0x0*1 size 4" % (NIC+80)
+    tx_bells=[m.end() for m in re.finditer(pattern,raw)]
+    for stage,offset,count in zip(STAGES,boundaries,(0,0,0,3,80,80)):
+        require(sum(pos<=offset for pos in tx_bells)==count,"TX notifications at stopped "+stage)
+    lines=raw.splitlines()
     kicks=check_mmio(lines,L)
     epochs=irq.delivery_epochs(lines)
     irq.wire_delivery(lines,epochs,False)
@@ -409,7 +445,7 @@ def main():
         capture(pkg,imp,out,a.qemu,a.mac,a.mtu,a.timeout)
     result=replay(pkg,imp,out)
     if a.mutation_tests:
-        for case in ("pcap","used","peer"):
+        for case in ("pcap","used","peer","grant"):
             try:
                 replay(pkg,imp,out,case)
             except (ValueError,RuntimeError,AssertionError) as exc:
