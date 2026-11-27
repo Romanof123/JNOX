@@ -77,6 +77,23 @@ python3 tools/verify_linux_source_rtc.py --replay --require-gic --package "$work
 
 재검증 도구는 소스와 ELF의 식별값, RTC 레지스터 접근, GIC 응답, 비인가 프로세스의 접근 거부와 정리를 확인한다. 네트워크에는 별도의 virtio-net 빌더와 지정된 AArch64 헤더를 사용한다. 원본은 Linux stable v6.18.65 커밋 `4700e3adf3b24b39dd4929e9c6d62811ba3ccea8`의 `drivers/net/virtio_net.c`다. RX IRQ 또는 서비스 재시작 등 변경할 동작을 실행하는 프로필을 고른다. 헤더 패키지와 구성 해시, 오브젝트, 서비스 ELF를 함께 보관한다. [RTC 검증 기록과 명령](https://github.com/Romanof123/JNOX/blob/5dabcd904a83b0301650c971d4eba4e884fd1eb5/docs/evidence/native-linux-source-rtc/README.md) · [virtio-net 원본](https://github.com/gregkh/linux/blob/4700e3adf3b24b39dd4929e9c6d62811ba3ccea8/drivers/net/virtio_net.c) · [네트워크 프로필](https://github.com/Romanof123/JNOX/blob/5dabcd904a83b0301650c971d4eba4e884fd1eb5/drivers/linux-compat/profiles/virtio-net.json) · [빌더](https://github.com/Romanof123/JNOX/blob/5dabcd904a83b0301650c971d4eba4e884fd1eb5/tools/build_linux_source_virtio_net.py)
 
+## 게스트에서 원본 Wayland 클라이언트 실행
+
+AArch64 가상 디스플레이 구성은 JNOX 합성기와 AF_UNIX 브로커를 별도 프로세스로 실행한다. 시험 앱은 원본 Wayland 1.23.1 라이브러리를 사용한다. JNOX 복제본에서 검증한 버전의 작업 트리를 만든다. 해당 버전의 절차에 따라 고정 입력 캐시, OS 어댑터가 설치된 대상 그래픽 런타임, 원본 클라이언트 작업 디렉터리를 준비한다. [입력·빌드 절차·예상 출력](https://github.com/Romanof123/JNOX/blob/aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba/verification/xwayland/client/README.md)
+
+`WAYLAND_WORK`에는 빌드한 원본 클라이언트 작업 디렉터리, `GRAPHICS_RUNTIME`에는 대상 런타임, `INPUT_CACHE`에는 고정 소스 캐시, `NEW_OUTPUT`에는 아직 사용하지 않은 출력 경로를 지정한다.
+
+```sh
+git fetch origin feature/xwayland-native-port
+git worktree add --detach ../jnox-wayland aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba
+cd ../jnox-wayland
+bash verification/xwayland/client/registry-pair.sh "$WAYLAND_WORK" "$GRAPHICS_RUNTIME" "$INPUT_CACHE" "$NEW_OUTPUT"
+```
+
+준비한 입력 세 개는 절대 경로로 지정하고 출력에는 새 디렉터리를 쓴다. 스크립트는 이미지 두 개를 차례로 부팅한다. 첫 번째 패키지는 `--env 1:WAYLAND_DISPLAY=/wayland-0`를 선언하고, 앱은 `wl_display_connect(NULL)`로 연결한다. 두 번째 앱은 연결한 FD를 라이브러리에 건넨다. 두 부팅에서 각각 레지스트리 전역 객체 다섯 개, `wl_output` v3의 320×240 모드와 배율 1, 두 차례의 바인딩·해제를 확인한다. 게스트 프로세스 네 개의 종료 코드는 모두 0이어야 한다. [게스트 UART](https://github.com/Romanof123/JNOX/blob/aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba/verification/xwayland/client/evidence/output-bind/default-display-uart.txt) · [프로세스별 환경과 예제](https://github.com/Romanof123/JNOX/blob/aa1fd5aa91481ca4d53a50598d2c22bcf271d6ba/docs/native-process-environment.en-ko.md)
+
+X11 클라이언트용 AArch64 정적 libX11 전체 빌드를 검증했다. 이 라이브러리를 링크한 게스트 앱이 `XParseGeometry`를 호출하고 0으로 종료했다. 전체 Xwayland 기동과 Mosaic 창 출력은 #448에서, 다섯 프로세스 로컬 인증은 #465에서 추적한다. [Xlib 빌드와 게스트 결과](https://github.com/Romanof123/JNOX/blob/3c1fe2ce6bacb81071217d4d4d56a8a6f137ace5/verification/xwayland/fionread/result.en-ko.md) · [Xwayland #448](https://github.com/Romanof123/JNOX/issues/448) · [Mosaic 인증 #465](https://github.com/Romanof123/JNOX/issues/465)
+
 ## 변경에서 릴리스까지
 
 1. **요구사항을 정한다.** REQ와 CHG, 대상 보드와 역할, 외부에서 확인할 결과 및 실패 조건을 기록한다. 시간 기준과 측정 시계는 측정 전에 정한다.
