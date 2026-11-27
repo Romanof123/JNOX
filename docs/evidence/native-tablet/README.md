@@ -1,5 +1,15 @@
 # EVD-341 · Tablet input and retirement / 태블릿 입력과 장치 회수
 
+## Corrected guest result / 수정본 결과
+
+Both cold boots of source `560bcb768e6287da8732c2e81a9a4ece166ba9f6` passed independent device, input, wire-order, frame and normal-retirement checks. In each of three focus transitions the previous surface's leave was sent before the new surface's enter. Both apps received and reacted to a real click. After the focused client exited, the remaining app received fresh motion. Both queue-ready readbacks were zero after device retirement. Device absence, keyboard-only and headless profiles passed. Thirty intentionally altered inputs were rejected. The host additionally exercised an explicit surface destruction while the peer connection stayed open. [Independent results and controls](corrected/CORRECTED.md) · [Corrected raw replay archive](corrected/corrected-560bcb7-replay.zip) · [Fresh archive verification](corrected/corrected-archive-readback.json)
+
+The corrected raw archive is 1,016,691 bytes with SHA-256 `57c96d203bafcfb0775c373d9c323f6b5e7b85ed0a36143916866da2a1f38214`. The ordinary profile retires the device on owner exit. Reassigning a tablet to the standby after an active compositor fault is a separate integration experiment. [Recovery integration #457](https://github.com/Romanof123/JNOX/issues/457)
+
+수정본을 두 번 부팅해 두 방향의 포커스 전환과 창 겹침 순서 변경 모두에서 이탈 후 진입이 실제 소켓으로 전송되는지 확인했다. 손상 대조 30건을 거부했고 배포할 원본을 새 디렉터리에 풀어 재현했다. 고장 난 합성기에서 예비 합성기로의 태블릿 인계는 #457에서 추적한다.
+
+## Original failing revision / 최초 실패 원본
+
 JNOX source `1feb5b1f4773486dd6c92edae74af740e9fcbf22`. The four-process QEMU virt image ran two clients, a compositor and the local socket broker. Only the compositor could acquire or read the virtio-input device. The QMP device list and launch arguments identify the selected absolute tablet. An independent reader found a cross-client focus-order failure on this revision. [Acceptance #451](https://github.com/Romanof123/JNOX/issues/451) · [Capture summary](summary.json) · [QMP device](mice.json)
 
 | Before input | After one click in each window | After the focused client exited |

@@ -1,6 +1,6 @@
 # CHG-341 · Native tablet input / 네이티브 태블릿 입력
 
-REQ-015/016/024 · DES-009/013 · VER-015/016/024. [Device and pointer acceptance #451](https://github.com/Romanof123/JNOX/issues/451) · [Measured QEMU device, windows and open protocol finding](evidence/native-tablet/README.md)
+REQ-015/016/024 · DES-009/013 · VER-015/016/024. [Device and pointer acceptance #451](https://github.com/Romanof123/JNOX/issues/451) · [Measured QEMU device, initial defect and corrected results](evidence/native-tablet/README.md)
 
 SVC 197 belongs to the display-owner tablet interface. Shared-file operations reserve 189 through 196. The caller sets x8 to 197 and executes the ordinary native SVC. With x0 zero, the owner acquires or probes the device. With x0 one, it reads one packed event. Bits 63–48 carry the input type, 47–32 the code, and 31–0 the value. A zero result on read is SYN_REPORT. Empty reads return -11, unauthorized callers receive -1, an absent tablet returns -19, and a broken transport returns -5. Packages built without the tablet return -38.
 
