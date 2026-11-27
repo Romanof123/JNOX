@@ -228,6 +228,15 @@ impl<const N: usize> SyncIpc<N> {
     }
 
     pub fn reply(&mut self, server: usize, token: u64, word: u64, now: u64) -> Result<(), i32> {
+        self.reply_with(server, token, now, |_, _| Ok((word, ())))
+    }
+
+    /// Authenticate and expire the request before committing any attached
+    /// objects. An attachment error leaves the token available for an error
+    /// reply. After the callback succeeds, completion cannot fail.
+    pub fn reply_with<T>(&mut self, server: usize, token: u64, now: u64,
+        commit: impl FnOnce(usize, u64) -> Result<(u64, T), i32>) -> Result<T, i32>
+    {
         self.advance(now);
         self.available(server)?;
         for pid in 0..N {
@@ -236,8 +245,9 @@ impl<const N: usize> SyncIpc<N> {
                     if r.server != server {
                         return Err(-1);
                     }
+                    let (word, result) = commit(pid, r.word)?;
                     self.finish_call(pid, 0, word);
-                    return Ok(());
+                    return Ok(result);
                 }
             }
         }

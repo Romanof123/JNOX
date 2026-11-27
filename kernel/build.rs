@@ -421,6 +421,8 @@ fn main() {
     let socket_service = selector("JNOX_NATIVE_SOCKET_SERVICE");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_net_service)");
     let net_service = selector("JNOX_NATIVE_NET_SERVICE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_shared_fd)");
+    let shared_fd = selector("JNOX_NATIVE_SHARED_FD");
     if let Some(net_service) = net_service.as_ref() {
         assert!(socket_service.as_ref() == Some(net_service),
             "network service must match the configured native socket service");
@@ -561,6 +563,13 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_threads)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_rr)");
     let threads = selector("JNOX_NATIVE_THREADS");
+    if let Some(value) = shared_fd {
+        assert!(value == "1" && profile.as_deref() == Some("native") && board == "virt"
+                && matches!(policy.as_deref(), Some("fifo" | "rr")) && threads.is_none()
+                && socket_service.is_some() && net_service.is_none() && ipc_routes.is_some(),
+                "JNOX_NATIVE_SHARED_FD=1 requires ordinary virt FIFO/RR processes and a local socket broker with routed clients");
+        println!("cargo::rustc-cfg=jnox_native_shared_fd");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_display)");
     let display_service = selector("JNOX_NATIVE_DISPLAY_SERVICE");
     let uart_rx_irq = selector("JNOX_NATIVE_UART_RX_IRQ");

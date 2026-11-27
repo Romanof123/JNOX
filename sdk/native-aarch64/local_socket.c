@@ -13,7 +13,7 @@ _Static_assert(sizeof(struct sockaddr_in) == 16 &&
 enum { FD_BASE = 64, FD_COUNT = 4, PATH_MAX_BYTES = 31, DATA_MAX = 64 };
 enum { OP_SOCKET = 1, OP_BIND, OP_CONNECT, OP_LISTEN, OP_ACCEPT, OP_SEND,
        OP_RECV, OP_SHUTDOWN, OP_CLOSE, OP_SOCKET4, OP_BIND4, OP_CONNECT4,
-       OP_SEND4, OP_RECV4 };
+       OP_SEND4, OP_RECV4, OP_SEND_RIGHTS, OP_RECV_RIGHTS };
 static struct descriptor { unsigned char kind, nonblock, family; } descriptors[FD_COUNT];
 static uint64_t broker_pid;
 static unsigned char configured, active;
@@ -46,7 +46,7 @@ static long rpc(uint64_t request) {
 }
 
 struct transaction {
-    unsigned op, slot, arg, nonblock;
+    unsigned op, slot, arg, nonblock, accept_right;
     const unsigned char *path, *data;
     unsigned pathlen, datalen;
 };
@@ -56,7 +56,7 @@ static long commit(const struct transaction *t) {
     uint64_t begin = (0x11ULL << 56) | ((uint64_t)t->op << 48)
         | ((uint64_t)t->slot << 40) | ((uint64_t)t->arg << 32)
         | ((uint64_t)t->pathlen << 24) | ((uint64_t)t->datalen << 16)
-        | ((uint64_t)t->nonblock << 8);
+        | ((uint64_t)t->nonblock << 8) | ((uint64_t)t->accept_right << 9);
     long r = rpc(begin);
     if (r != 0) return r < 0 ? r : -EIO;
     unsigned total = t->pathlen + t->datalen;
@@ -198,6 +198,17 @@ ssize_t send(int fd, const void *buf, size_t len, int flags) {
     return sendto(fd, buf, len, flags, 0, 0);
 }
 
+static long response_bytes(unsigned char *bytes, unsigned total) {
+    for (unsigned off = 0; off < total; off += 6) {
+        long word = rpc((0x15ULL << 56) | ((uint64_t)off << 48));
+        if (word < 0) return word;
+        if ((unsigned long)word >> 48) return -EIO;
+        for (unsigned j = 0; j < 6 && off + j < total; ++j)
+            bytes[off + j] = (unsigned long)word >> (8 * j);
+    }
+    return 0;
+}
+
 static long read_response(struct descriptor desc, unsigned char *data, unsigned cap, long count, int flags,
                           struct sockaddr *addr, socklen_t *addrlen) {
     long meta = rpc(0x14ULL << 56);
@@ -215,19 +226,10 @@ static long read_response(struct descriptor desc, unsigned char *data, unsigned 
     __builtin_memcpy(source, &source_family, sizeof source_family);
     unsigned offset = family == AF_INET ? __builtin_offsetof(struct sockaddr_in, sin_port)
                                         : __builtin_offsetof(struct sockaddr_un, sun_path);
-    unsigned total = used + path;
-    unsigned char payload[DATA_MAX];
-    for (unsigned off = 0; off < total; off += 6) {
-        long word = rpc((0x15ULL << 56) | ((uint64_t)off << 48));
-        if (word < 0) return word;
-        if ((unsigned long)word >> 48) return -EIO;
-        for (unsigned j = 0; j < 6 && off + j < total; ++j) {
-            unsigned i = off + j;
-            unsigned char byte = (unsigned long)word >> (8 * j);
-            if (i < used) payload[i] = byte;
-            else source[offset + i - used] = byte;
-        }
-    }
+    unsigned char payload[DATA_MAX + PATH_MAX_BYTES];
+    long result = response_bytes(payload, used + path);
+    if (result < 0) return result;
+    for (unsigned i = 0; i < path; ++i) source[offset + i] = payload[used + i];
     for (unsigned i = 0; i < used; ++i) data[i] = payload[i];
     if (addr) {
         socklen_t actual = offset + path + !!path;
@@ -257,16 +259,21 @@ ssize_t recv(int fd, void *buf, size_t len, int flags) {
     return recvfrom(fd, buf, len, flags, 0, 0);
 }
 
+#include "local_rights.inc"
+
 extern int __real_close(int);
 extern ssize_t __real_read(int, void *, size_t);
 extern ssize_t __real_write(int, const void *, size_t);
 static int socket_range(int fd) { return fd >= FD_BASE && fd < FD_BASE + FD_COUNT; }
 int __wrap_close(int fd) {
+    if (backing_range(fd)) return jnox_shm_close(fd);
     return socket_range(fd) ? simple(OP_CLOSE, fd, 0) : __real_close(fd);
 }
 ssize_t __wrap_read(int fd, void *buf, size_t n) {
+    if (backing_range(fd)) return backing_io(fd);
     return socket_range(fd) ? recv(fd, buf, n, 0) : __real_read(fd, buf, n);
 }
 ssize_t __wrap_write(int fd, const void *buf, size_t n) {
+    if (backing_range(fd)) return backing_io(fd);
     return socket_range(fd) ? send(fd, buf, n, 0) : __real_write(fd, buf, n);
 }
