@@ -1,6 +1,9 @@
 --- a/dix/main.c
 +++ b/dix/main.c
-@@ -122,1 +122,8 @@
+@@ -120,6 +120,13 @@
+ #include "dpmsproc.h"
+ #endif
+ 
 +#ifdef JNOX_NATIVE_ACCESS
 +#include <sys/socket.h>
 +#include <unistd.h>
@@ -9,7 +12,12 @@
 +#define JNOX_PHASE(label) ((void)0)
 +#endif
  extern void Dispatch(void);
-@@ -133,1 +140,7 @@
+ 
+ CallbackListPtr RootWindowFinalizeCallback = NULL;
+@@ -130,6 +137,12 @@
+     int i;
+     HWEventQueueType alwaysCheckForInput[2];
+ 
 +#ifdef JNOX_NATIVE_ACCESS
 +    /* The native five-role profile grants this process IPC to broker slot 3. */
 +    if (jnox_socket_broker(3) < 0)
@@ -17,18 +25,40 @@
 +#endif
 +    JNOX_PHASE("BROKER");
      display = "0";
-@@ -141,1 +154,2 @@
+ 
+     InitRegions();
+@@ -139,6 +152,7 @@
+     CheckUserAuthorization();
+ 
      ProcessCommandLine(argc, argv);
 +    JNOX_PHASE("ARGUMENTS");
-@@ -154,1 +168,2 @@
+ 
+     alwaysCheckForInput[0] = 0;
+     alwaysCheckForInput[1] = 1;
+@@ -152,8 +166,10 @@
+         InitBlockAndWakeupHandlers();
+         /* Perform any operating system dependent initializations you'd like */
          OsInit();
 +        JNOX_PHASE("OS");
-@@ -156,1 +171,2 @@
+         if (serverGeneration == 1) {
              CreateWellKnownSockets();
 +            JNOX_PHASE("LISTENERS");
-@@ -193,1 +209,2 @@
+             for (i = 1; i < LimitClients; i++)
+                 clients[i] = NullClient;
+             serverClient = calloc(1, sizeof(ClientRec));
+@@ -191,6 +207,7 @@
+         InitFonts();
+         InitCallbackManager();
          InitOutput(&screenInfo, argc, argv);
 +        JNOX_PHASE("OUTPUT");
-@@ -277,1 +294,2 @@
+ 
+         if (screenInfo.numScreens < 1)
+             FatalError("no screens found");
+@@ -274,6 +291,7 @@
+ 
+         InputThreadInit();
+ 
 +        JNOX_PHASE("DISPATCH");
          Dispatch();
+ 
+         UnrefCursor(rootCursor);
