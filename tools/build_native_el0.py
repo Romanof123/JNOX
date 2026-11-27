@@ -952,7 +952,9 @@ def main():
         env["JNOX_NATIVE_TMPFS_GRANTS"] = "".join(
             {"ro": "1", "rw": "2"}.get(volume_grants.get(i), "0") for i in range(4))
         metadata["tmpfs"] = {"service_slot": service_slot, "grants": volume_grants, "mount": "/tmp",
-                             "files": 4, "bytes_per_file": 1024, "fd_first": 32, "fds_per_client": 8}
+                             "files": 4, "bytes_per_file": 1024, "fd_first": 32, "fds_per_client": 8,
+                             "directories_including_root_and_tmp": 6, "directory_entries_including_tmp": 12,
+                             "max_path_bytes": 63, "max_component_bytes": 31}
     if args.pipes:
         env["JNOX_NATIVE_PIPES"] = "1"
         fifo_grants = sorted(args.fifo_grant)

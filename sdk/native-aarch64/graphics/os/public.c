@@ -30,6 +30,8 @@ void jnox_graphics_errno(int code)
     case 24: errno = EMFILE; break;
     case 25: errno = ENOTTY; break;
     case 21: errno = EISDIR; break;
+    case 20: errno = ENOTDIR; break;
+    case 39: errno = ENOTEMPTY; break;
     case 30: errno = EROFS; break;
     case 27: errno = EFBIG; break;
     case 28: errno = ENOSPC; break;

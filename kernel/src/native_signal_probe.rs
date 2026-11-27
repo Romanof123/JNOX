@@ -1,7 +1,7 @@
 use super::{COUNT, Fixed, fail, native_el0_mmu, process_present, public_pid};
 
-/// Positive-PID existence and permission probe. No signal is queued by this call.
-pub(super) fn call(caller: usize, fixed: &Fixed, pid: u64, signal: u64, reserved: u64) -> i64 {
+/// A positive PID identifies one target. Signal zero only checks its existence and authority.
+pub(super) fn call(caller: usize, fixed: &mut Fixed, pid: u64, signal: u64, reserved: u64) -> i64 {
     if fixed.current() != Some(caller) || native_el0_mmu::active() != Some(caller) {
         fail(9);
     }
@@ -17,6 +17,9 @@ pub(super) fn call(caller: usize, fixed: &Fixed, pid: u64, signal: u64, reserved
     let permitted = permitted || (caller == 0 && target != 0 &&
         (super::spawn::has_live_parent(target) || super::spawn::zombie(target)));
     if !permitted { return -1; }
-    if signal != 0 { return -95; }
-    0
+    if signal == 0 { return 0; }
+    #[cfg(any(jnox_native_shell, jnox_native_shared_fd))]
+    { super::signals::send(fixed, target, signal) }
+    #[cfg(not(any(jnox_native_shell, jnox_native_shared_fd)))]
+    { -95 }
 }

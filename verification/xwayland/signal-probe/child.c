@@ -11,7 +11,7 @@ int main(int argc, char **argv)
     pid_t own = getpid(), parent = getppid();
     if (parent != 3 || kill(own, 0)) return 122;
     if (kill(parent, 0) != -1 || errno != EPERM) return 123;
-    if (kill(own, SIGUSR1) != -1 || errno != ENOTSUP) return 124;
+    if (kill(own, SIGUSR2) != -1 || errno != ENOTSUP) return 124;
     if (kill(100, 0) != -1 || errno != ESRCH) return 125;
     if (strcmp(argv[0], "live") == 0)
         return own == 1 && kill(2, 0) == -1 && errno == ESRCH ? 81 : 126;

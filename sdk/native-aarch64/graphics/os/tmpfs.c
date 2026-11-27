@@ -10,9 +10,10 @@
 #include "jnox/ipc.h"
 #include "jnox/tmpfs_fd.h"
 
-enum { OPEN = 1, UNLINK, STAT, CLOSE, FSTAT, READ, WRITE, SEEK, DUP, FLAGS };
+enum { OPEN = 1, UNLINK, STAT, CLOSE, FSTAT, READ, WRITE, SEEK, DUP, FLAGS,
+       MKDIR, RENAME, LINK, CHMOD, FCHMOD, TMPFS_FSYNC };
 enum { R = 1, W = 2, CREATE = 4, EXCL = 8, TRUNC = 16, APPEND = 32, CLOEXEC = 64 };
-enum { MAX_PAYLOAD = 64, STAT_BYTES = 48 };
+enum { MAX_PAYLOAD = 64, MAX_PATH_BYTES = 63, MAX_REQUEST = 2 * MAX_PATH_BYTES + 1, STAT_BYTES = 48 };
 static unsigned int mask = 022;
 static unsigned char busy;
 void jnox_graphics_errno(int code);
@@ -35,7 +36,7 @@ static long rpc(int broker, uint64_t word)
 static long exchange(unsigned op, int fd, unsigned flags, uint32_t arg, const void *in, size_t n,
                      void *out, size_t capacity)
 {
-    if (n > MAX_PAYLOAD || capacity > MAX_PAYLOAD) return -22;
+    if (n > MAX_REQUEST || capacity > MAX_PAYLOAD) return -22;
     long broker = jnox_ipc_trap(204, 0, 0, 0).status;
     if (broker < 0) return broker;
     if (n) { long rc = user_range(in, n, 0); if (rc < 0) return rc; }
@@ -70,7 +71,7 @@ static long path_len(const char *path)
 {
     uintptr_t addr = (uintptr_t)path;
     if (!addr) return -14;
-    for (size_t n = 0; n <= 36; ++n) {
+    for (size_t n = 0; n <= MAX_PATH_BYTES; ++n) {
         if (addr > UINTPTR_MAX - n) return -14;
         const char *p = (const char *)(addr+n);
         long rc = user_range(p, 1, 0);
@@ -109,6 +110,45 @@ int unlink(const char *path)
 {
     long n = path_len(path);
     return complete(n < 0 ? n : exchange(UNLINK, 0, 0, 0, path, n, NULL, 0));
+}
+int mkdir(const char *path, mode_t mode)
+{
+    if (mode & ~01777U) return complete(-95);
+    long n = path_len(path);
+    mode &= ~__atomic_load_n(&mask, __ATOMIC_RELAXED);
+    return complete(n < 0 ? n : exchange(MKDIR, 0, 0, mode, path, n, NULL, 0));
+}
+static int two_paths(unsigned op, const char *first, const char *second)
+{
+    long n = path_len(first);
+    if (n < 0) return complete(n);
+    long m = path_len(second);
+    if (m < 0) return complete(m);
+    unsigned char pair[MAX_REQUEST];
+    memcpy(pair, first, (size_t)n); pair[n] = 0;
+    memcpy(pair+n+1, second, (size_t)m);
+    return complete(exchange(op, 0, 0, 0, pair, (size_t)(n+1+m), NULL, 0));
+}
+int rename(const char *first, const char *second) { return two_paths(RENAME, first, second); }
+int link(const char *first, const char *second) { return two_paths(LINK, first, second); }
+int chmod(const char *path, mode_t mode)
+{
+    if (mode & ~01777U) return complete(-95);
+    long n = path_len(path);
+    return complete(n < 0 ? n : exchange(CHMOD, 0, 0, mode, path, n, NULL, 0));
+}
+static int descriptor_op(unsigned op, int fd, uint32_t arg)
+{
+    if (!jnox_tmp_fd(fd)) return complete(fd < 0 || fd >= 104 ? -9 : -95);
+    return complete(exchange(op, fd, 0, arg, NULL, 0, NULL, 0));
+}
+int fchmod(int fd, mode_t mode)
+{
+    return descriptor_op(FCHMOD, fd, mode);
+}
+int fsync(int fd)
+{
+    return descriptor_op(TMPFS_FSYNC, fd, 0);
 }
 long jnox_tmp_seek(int fd, long offset, int whence)
 {

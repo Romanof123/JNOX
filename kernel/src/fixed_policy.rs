@@ -242,6 +242,15 @@ impl Fixed {
         assert!(self.ready.push_back(id));
     }
 
+    #[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+    pub(crate) fn interrupt_sleep(&mut self, id: usize) -> bool {
+        if matches!(self.tasks[id].state, State::Sleeping(_)) {
+            self.join_tail(id);
+            return true;
+        }
+        false
+    }
+
     fn wake_due(&mut self) {
         loop {
             let due = self.tasks[..self.count]

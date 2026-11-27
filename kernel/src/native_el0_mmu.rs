@@ -49,6 +49,17 @@ pub(crate) fn thread_errno(slot: usize) -> Option<usize> {
 static mut THREAD_CODE: [(usize, usize); crate::native_elf::MAX_LOADS] =
     [(0, 0); crate::native_elf::MAX_LOADS];
 
+#[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+static mut SIGNAL_CODE: [[(usize, usize); crate::native_elf::MAX_LOADS]; SPACE_CAPACITY] =
+    [[(0, 0); crate::native_elf::MAX_LOADS]; SPACE_CAPACITY];
+
+#[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+pub(crate) fn signal_code(pid: usize, pc: u64, bytes: usize) -> bool {
+    let Ok(start) = usize::try_from(pc) else { return false };
+    let Some(end) = start.checked_add(bytes) else { return false };
+    start % 4 == 0 && unsafe { SIGNAL_CODE[pid] }.iter().any(|&(lo, hi)| lo <= start && end <= hi)
+}
+
 #[cfg(jnox_native_threads)]
 pub(crate) fn valid_thread_entry(address: u64) -> bool {
     let Ok(addr) = usize::try_from(address) else { return false };
@@ -352,6 +363,13 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
             if segment.permission == Permission::ReadExecute {
                 let lo = segment.address as usize;
                 THREAD_CODE[index] = (lo, lo + segment.bytes.len());
+            }
+        }
+        #[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+        for (index, segment) in plan.segments().iter().enumerate() {
+            if segment.permission == Permission::ReadExecute {
+                let lo = segment.address as usize;
+                SIGNAL_CODE[pid][index] = (lo, lo + segment.bytes.len());
             }
         }
         let stack = space.stack_ram.0.as_mut_ptr();

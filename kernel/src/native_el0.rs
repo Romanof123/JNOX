@@ -18,6 +18,10 @@ use core::arch::{asm, global_asm};
 use core::mem::{offset_of, size_of};
 use core::ptr;
 
+#[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+#[path = "native_signals.rs"]
+mod signals;
+
 #[cfg(jnox_native_weighted)]
 #[path = "native_weighted.rs"]
 mod weighted;
@@ -107,7 +111,9 @@ global_asm!(".set NATIVE_BATCH,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n
 mod proportional;
 #[cfg(jnox_native_proportional)]
 global_asm!(".set NATIVE_PROPORTIONAL,1\n.set NATIVE_WEIGHTED_CONTINUOUS,1\n.set NATIVE_CYCLIC,1\n.set NATIVE_MEASURED,1\n.macro measured_return\nbl native_prop_return\n.endm", include_str!("native_el0_vectors.S"), options(raw));
-#[cfg(not(any(jnox_native_amc, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
+#[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+global_asm!(".set NATIVE_PROCESS_SIGNALS,1", include_str!("native_el0_vectors.S"), options(raw));
+#[cfg(not(any(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)), jnox_native_amc, jnox_native_batch, jnox_native_proportional, jnox_native_extension, jnox_native_hierarchy, jnox_native_aperiodic, jnox_native_partition, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel, jnox_native_threads)))]
 global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 unsafe extern "C" {
     fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
@@ -597,6 +603,8 @@ fn fixed_event(now: u64, action: Action, reason: u64, frame: Option<&NativeFrame
     let before = Before {
         pid: p.current(), wake: p.next_wake(), expiry: p.expiry().unwrap_or_else(|_| fail(10)),
     };
+    #[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+    if matches!(action, Action::Exit) { signals::retire(before.pid.unwrap_or_else(|| fail(9))); }
     #[cfg(jnox_native_net_service)]
     if matches!(action, Action::Exit) {
         net_owner::exit(before.pid.unwrap_or_else(|| fail(9)));
@@ -1015,6 +1023,14 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         edf::recurring::syscall(entry, f);
         return;
     }
+    #[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+    if f.x[8] == 211 {
+        if let Err(error) = signals::restore(unsafe { CURRENT }, f) {
+            f.x[0] = error as u64;
+        }
+        fixed_dispatch(counter(), Action::Poll, 211, f);
+        return;
+    }
     let exit = f.x[8] == 1;
     if exit && f.x[0] as i32 as i64 as u64 != f.x[0] {
         fail(3);
@@ -1110,6 +1126,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             }
             else if grants[pid] == b'0' { -13 } else { NATIVE_SOCKET_SERVICE as i64 }
         }
+        #[cfg(all(jnox_native_fixed, any(jnox_native_shell, jnox_native_shared_fd)))]
+        210 => signals::action(unsafe { CURRENT }, f.x[0], f.x[1] as usize, f.x[2] as usize, f.x[3]),
         #[cfg(jnox_native_fixed)]
         203 => {
             let (uid, gid) = SERVICE_ACCOUNT;

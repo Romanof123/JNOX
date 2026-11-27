@@ -14,7 +14,8 @@ runtime, out, qemu = map(Path,sys.argv[1:4])
 mode = sys.argv[4:]
 tmpfs_modes = {"--tmpfs-rw": "rw", "--tmpfs-ro": "ro", "--tmpfs-unset": "unset"}
 if mode and (len(mode) != 1 or mode[0] not in {
-        "--seals", "--clockres", "--interfaces", "--utc-unset", "--utc-seeded", *tmpfs_modes}):
+        "--seals", "--clockres", "--interfaces", "--signals", "--signal-default",
+        "--utc-unset", "--utc-seeded", *tmpfs_modes}):
     raise SystemExit("unknown public Picolibc guest selection")
 repo = Path.cwd()
 sdk = repo/"sdk/native-aarch64"
@@ -74,6 +75,12 @@ if mode:
         package_options = ["--arg", selection, "--tmpfs", "0:" + grant]
         if selection != "unset":
             package_options += ["--boot-utc-seconds", "1700000000"]
+    elif mode in (["--signals"], ["--signal-default"]):
+        source = repo / "verification/xwayland/signals/guest.c"
+        expected = 86
+        if mode == ["--signal-default"]:
+            expected = 143
+            package_options = ["--arg", "default"]
     else:
         name, expected = ("clockres_caller.c", 76) if mode == ["--clockres"] else ("seal_caller.c", 75)
         source = os_port/name

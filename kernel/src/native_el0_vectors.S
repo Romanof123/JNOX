@@ -317,6 +317,10 @@ native_el0_enter:
     mov x1,#0x400
     bl native_el0_sync
 .Lrestore:
+    .ifdef NATIVE_PROCESS_SIGNALS
+    mov x0,sp
+    bl native_signal_return_boundary
+    .endif
     .ifdef NATIVE_MEASURED
     measured_return
     .endif

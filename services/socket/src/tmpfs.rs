@@ -3,12 +3,15 @@
 use super::CLIENTS;
 use core::arch::asm;
 use jnox_native::ipc;
+mod tree;
+use tree::{Object, Tree};
 
 const FILES: usize = 4;
 const CAPACITY: usize = 1024;
 const FDS: usize = 8;
 const BASE: u8 = 32;
 const PAYLOAD: usize = 64;
+const REQUEST_BYTES: usize = tree::PATH_BYTES * 2 + 1;
 const DESCRIPTIONS: usize = CLIENTS * FDS;
 const READ: u8 = 1;
 const WRITE: u8 = 2;
@@ -34,40 +37,25 @@ impl Stamp {
 
 #[derive(Clone, Copy)]
 struct Node {
-    ino: u32, mode: u16, size: usize, length: usize, name: [u8; 31],
+    ino: u32, mode: u16, size: usize,
     times: [Stamp; 3], data: [u8; CAPACITY],
 }
 impl Node {
-    const EMPTY: Self = Self { ino: 0, mode: 0, size: 0, length: 0, name: [0; 31],
+    const EMPTY: Self = Self { ino: 0, mode: 0, size: 0,
                               times: [Stamp::UNSET; 3], data: [0; CAPACITY] };
 }
 
 #[derive(Clone, Copy)]
-struct Open { node: usize, flags: u8, position: i64 }
-impl Open { const EMPTY: Self = Self { node: 0, flags: 0, position: 0 }; }
+struct Open { object: Object, flags: u8, position: i64 }
+impl Open { const EMPTY: Self = Self { object: Object::File(0), flags: 0, position: 0 }; }
 #[derive(Clone, Copy)]
 struct Fs {
     files: [Node; FILES], open: [Open; DESCRIPTIONS], handles: [[u8; FDS]; CLIENTS],
-    next_ino: u32, root_time: Stamp, dir_times: [Stamp; 3],
-}
-enum Path<'a> { Root, Tmp, Leaf(&'a [u8]), Outside }
-fn path(raw: &[u8]) -> Result<Path<'_>, i32> {
-    if raw == b"/" { return Ok(Path::Root); }
-    if raw == b"/tmp" { return Ok(Path::Tmp); }
-    if raw.is_empty() { return Err(-2); }
-    if raw[0] != b'/' || raw[1..].split(|b| *b == b'/')
-        .any(|s| s.is_empty() || s == b"." || s == b".." || s.contains(&0)) { return Err(-22); }
-    let Some(name) = raw.strip_prefix(b"/tmp/") else { return Ok(Path::Outside) };
-    if name.contains(&b'/') { return Err(-2); }
-    if name.len() > 31 { return Err(-36); }
-    Ok(Path::Leaf(name))
+    next_ino: u32, tree: Tree,
 }
 impl Fs {
     const EMPTY: Self = Self { files: [Node::EMPTY; FILES], open: [Open::EMPTY; DESCRIPTIONS],
-        handles: [[0; FDS]; CLIENTS], next_ino: 3, root_time: Stamp::UNSET, dir_times: [Stamp::UNSET; 3] };
-    fn lookup(&self, name: &[u8]) -> Option<usize> {
-        self.files.iter().position(|f| f.ino != 0 && f.length != 0 && &f.name[..f.length] == name)
-    }
+        handles: [[0; FDS]; CLIENTS], next_ino: 3, tree: Tree::EMPTY };
     fn desc(&self, id: usize, fd: u8) -> Result<(usize, usize), i32> {
         let slot = usize::from(fd.checked_sub(BASE).ok_or(-9)?);
         let handle = *self.handles[id].get(slot).ok_or(-9)? & 127;
@@ -80,45 +68,43 @@ impl Fs {
                 *d = Open::EMPTY;
             }
         }
-        for (idx, f) in self.files.iter_mut().enumerate() {
-            if f.ino != 0 && f.length == 0 && !self.open.iter().any(|d| d.flags != 0 && d.node == idx) {
-                f.ino = 0;
-            }
-        }
+        self.reclaim_inodes();
     }
     fn opened(&mut self, id: usize, grant: u8, raw: &[u8], flags: u8, mode: u32) -> Result<i64, i32> {
         if flags & 128 != 0 || flags & 3 == 0 || mode > 0o777 ||
             flags & TRUNC != 0 && flags & WRITE == 0 { return Err(-22); }
-        let name = match path(raw)? {
-            Path::Leaf(n) => n, Path::Outside => return Err(if flags & (WRITE|CREATE) != 0 { -30 } else { -2 }),
-            _ => return Err(-21),
-        };
         if grant != 2 && flags & (WRITE | CREATE | TRUNC) != 0 { return Err(-13); }
         let slot = self.handles[id].iter().position(|h| *h == 0).ok_or(-24)?;
         let desc = self.open.iter().position(|d| d.flags == 0).ok_or(-23)?;
-        let node = if let Some(i) = self.lookup(name) {
-            let f = &mut self.files[i];
-            if flags & (CREATE | EXCL) == (CREATE | EXCL) { return Err(-17); }
-            if flags & READ != 0 && f.mode & 0o400 == 0 || flags & WRITE != 0 && f.mode & 0o200 == 0 {
-                return Err(-13);
+        let object = match self.tree.object(raw) {
+            Ok(object) => {
+                if flags & (CREATE | EXCL) == (CREATE | EXCL) { return Err(-17); }
+                let (_, bits, _, _, _) = self.metadata(object);
+                if matches!(object, Object::Dir(_)) && flags & (WRITE | TRUNC) != 0 { return Err(-21); }
+                if flags & READ != 0 && bits & 0o400 == 0 || flags & WRITE != 0 && bits & 0o200 == 0 {
+                    return Err(-13);
+                }
+                if flags & TRUNC != 0 {
+                    if let Object::File(i) = object {
+                        self.files[i].size = 0; self.files[i].times[1..].fill(Stamp::now());
+                    }
+                }
+                object
             }
-            if flags & TRUNC != 0 {
-                f.size = 0;
-                let now = Stamp::now(); f.times[1..].fill(now);
+            Err(-2) if flags & CREATE != 0 => {
+                let location = self.tree.location(raw, true)?;
+                self.tree.editable(location)?;
+                let i = self.files.iter().position(|f| f.ino == 0).ok_or(-28)?;
+                self.tree.add(location, Object::File(i))?;
+                let now = Stamp::now(); let ino = self.allocate_ino()?;
+                let f = &mut self.files[i];
+                f.ino = ino; f.size = 0; f.mode = mode as u16; f.times = [now; 3];
+                self.tree.dirs[location.parent].times[1..].fill(now);
+                Object::File(i)
             }
-            i
-        } else {
-            if flags & CREATE == 0 { return Err(-2); }
-            let i = self.files.iter().position(|f| f.ino == 0).ok_or(-28)?;
-            let ino = self.next_ino;
-            self.next_ino = ino.checked_add(1).ok_or(-75)?;
-            let f = &mut self.files[i];
-            f.ino = ino; f.size = 0; f.mode = mode as u16; f.length = name.len();
-            f.name[..name.len()].copy_from_slice(name);
-            let now = Stamp::now(); f.times = [now; 3]; self.dir_times[1..].fill(now);
-            i
+            Err(e) => return Err(e)
         };
-        self.open[desc] = Open { node, flags, position: 0 };
+        self.open[desc] = Open { object, flags, position: 0 };
         self.handles[id][slot] = (desc + 1) as u8 | if flags & CLOEXEC != 0 { 128 } else { 0 };
         Ok(i64::from(BASE) + slot as i64)
     }
@@ -127,30 +113,24 @@ impl Fs {
         let flags = (word >> 32) as u8; let arg = word as u32;
         let input = &x.data[..x.used];
         if op == 1 { return self.opened(id, grant, input, flags, arg); }
-        if op == 2 {
-            let name = match path(input)? { Path::Leaf(n) => n, Path::Outside => return Err(-30), _ => return Err(-21) };
+        if matches!(op, 2 | 11..=14) {
             if grant != 2 { return Err(-13); }
-            let i = self.lookup(name).ok_or(-2)?;
-            self.files[i].length = 0;
-            let now = Stamp::now(); self.files[i].times[2] = now; self.dir_times[1..].fill(now);
-            self.reap(); return Ok(0);
+            return self.namespace(op, input, arg);
         }
-        if op == 3 {
-            let info = match path(input)? {
-                Path::Root => (1, 0o40555, 3, 0, [self.root_time; 3]),
-                Path::Tmp => (2, 0o40777, 2, 0, self.dir_times),
-                Path::Outside => return Err(-2),
-                Path::Leaf(name) => self.info(self.lookup(name).ok_or(-2)?),
-            };
-            return x.stat(info);
-        }
+        if op == 3 { return x.stat(self.metadata(self.tree.object(input)?)); }
         let (slot, desc) = self.desc(id, fd)?;
         let d = self.open[desc];
-        let f = &mut self.files[d.node];
+        if op == 15 {
+            if grant != 2 { return Err(-13); }
+            self.chmod(d.object, arg)?; return Ok(0);
+        }
+        if op == 16 { return Err(-95); } // RAM has no stable store or device flush.
         match op {
             4 => { self.handles[id][slot] = 0; self.reap(); Ok(0) }
-            5 => x.stat(self.info(d.node)),
+            5 => x.stat(self.metadata(d.object)),
             6 => {
+                let Object::File(i) = d.object else { return Err(-21) };
+                let f = &mut self.files[i];
                 if d.flags & READ == 0 { return Err(-9); }
                 let n = (arg as usize).min(PAYLOAD).min(f.size.saturating_sub(d.position as usize));
                 if n != 0 {
@@ -160,9 +140,12 @@ impl Fs {
                 x.reply = n; self.open[desc].position += n as i64; Ok(n as i64)
             }
             7 => {
+                let Object::File(i) = d.object else { return Err(-21) };
+                let f = &mut self.files[i];
                 if d.flags & WRITE == 0 { return Err(-9); }
                 if input.is_empty() { return Ok(0); }
                 let pos = if d.flags & APPEND != 0 { f.size } else { d.position as usize };
+                if input.len() > PAYLOAD { return Err(-22); }
                 let n = input.len().min(CAPACITY.saturating_sub(pos));
                 if n == 0 { return Err(-28); }
                 if pos > f.size { f.data[f.size..pos].fill(0); }
@@ -171,6 +154,8 @@ impl Fs {
                 Ok(n as i64)
             }
             8 => {
+                let Object::File(i) = d.object else { return Err(-22) };
+                let f = &self.files[i];
                 let delta = i64::from_le_bytes(input.try_into().map_err(|_| -22)?);
                 let base = match flags { 0 => 0, 1 => d.position, 2 => f.size as i64, _ => return Err(-22) };
                 let new = base.checked_add(delta).ok_or(-75)?;
@@ -198,16 +183,12 @@ impl Fs {
             _ => Err(-22),
         }
     }
-    fn info(&self, node: usize) -> (u32, u16, u16, u32, [Stamp; 3]) {
-        let f = &self.files[node];
-        (f.ino, 0o100000 | f.mode, u16::from(f.length != 0), f.size as u32, f.times)
-    }
 }
 
 #[derive(Clone, Copy)]
-struct Exchange { data: [u8; PAYLOAD], used: usize, length: usize, reply: usize, active: bool }
+struct Exchange { data: [u8; REQUEST_BYTES], used: usize, length: usize, reply: usize, active: bool }
 impl Exchange {
-    const EMPTY: Self = Self { data: [0; PAYLOAD], used: 0, length: 0, reply: 0, active: false };
+    const EMPTY: Self = Self { data: [0; REQUEST_BYTES], used: 0, length: 0, reply: 0, active: false };
     fn stat(&mut self, info: (u32, u16, u16, u32, [Stamp; 3])) -> Result<i64, i32> {
         let (ino, mode, links, size, times) = info;
         if times.iter().any(|t| !t.valid) { return Err(-61); }
@@ -235,7 +216,7 @@ impl Mount {
                       inout("x1") 0u64 => _, inout("x2") 0u64 => _, options(nostack)) };
         if rc > 0 {
             self.rights = rc as u64; let now = Stamp::now();
-            self.banks[0].root_time = now; self.banks[0].dir_times = [now; 3];
+            self.banks[0].tree.init(now);
         }
     }
     pub(super) fn exit(&mut self, id: usize) {
@@ -260,7 +241,7 @@ pub(super) fn jnox_tmpfs_call(m: &mut Mount, id: usize, token: u64, word: u64) -
     let mut x = m.clients[id];
     let mut publish = None;
     let result = if rights == 0 { Err(-13) } else { match tag {
-        0x70 if args <= PAYLOAD as u64 => {
+        0x70 if args <= REQUEST_BYTES as u64 => {
             x = Exchange { length: args as usize, active: true, ..Exchange::EMPTY }; Ok(0)
         }
         0x71 if x.active && (args >> 48) as usize == x.used && x.used < x.length => {

@@ -9,10 +9,11 @@ The native and Picolibc C SDKs expose the positive-PID probe through `<signal.h>
 | Signal 0 to self or from the shell to its own launched child | Zero, preserving `errno`. Ready, running, sleeping, blocked and unreaped shell children retain identity. |
 | Existing process outside that authority | `EPERM`. Knowing a numeric PID gives no grant to manage a peer. |
 | Missing PID, dormant or dismissed slot, reaped child, or a terminated boot process | `ESRCH`. |
-| Valid nonzero signal on an authorized PID or a process group/broadcast selector | `ENOTSUP`. |
+| Positive signal on an authorized PID | The shell and shared-FD profiles pass the request to their disposition and delivery service. Other profiles or unsupported signals return `ENOTSUP`. |
+| Process group or broadcast selector | `ENOTSUP`. |
 | Invalid signal number outside 0–31 or malformed SVC arguments | `EINVAL`. |
 
-Xwayland also calls `sigaction` for real handlers during `OsInit` and sets handlers for hangup and termination in `os/connection.c`. The smart-parent protocol conditionally sends `SIGUSR1`. These require a signal delivery contract, disposition inheritance and safe interrupted frame restoration. The lock probe has no signal queues, handler entry or return path. Running the complete server and observing its shutdown remains separate.
+Xwayland also calls `sigaction` for real handlers during `OsInit` and sets handlers for hangup and termination in `os/connection.c`. Its optional smart-parent protocol sends `SIGUSR1` from a child to its parent. The current grant covers the opposite direction, from the shell to its own child, and self delivery. Full server startup and shutdown remain separate guest acceptance items. [Parent-to-child delivery](../signal-delivery/README.md)
 
 The three-role FIFO guest checks both SDKs. It tests a dormant PID, self, denied parent lookup, malformed arguments and explicit nonzero-signal rejection. The first child retains a pipe writer until exit. The shell observes EOF, probes the zombie, reaps it and checks `ESRCH`. The second child blocks on a pipe. The shell successfully probes the blocked child, exits, and the waking child verifies that the former parent is gone. Expected terminal slot exits are 80, 81 and 82 with one block and wake for the second child. [Parent fixture](parent.c) · [Picolibc child fixture](child.c)
 
@@ -21,4 +22,4 @@ flock "$JNOX_LAB_ROOT/run.lock" python3 verification/xwayland/process-id/guest.p
   "$JNOX_WAYLAND_RUNTIME" "$NEW_OUTPUT" --signal-probe
 ```
 
-Xwayland는 기존 잠금 파일에서 PID를 읽은 뒤 0번 신호로 소유자를 조회한다. 커널은 호출자의 스케줄러 슬롯과 주소 공간을 먼저 확인한다. 자기 자신과 셸이 기동한 자식은 조회할 수 있고, 권한이 없는 다른 프로세스는 `EPERM`을 반환한다. 미기동·회수된 PID는 `ESRCH`이며, 아직 회수하지 않은 자식은 존재한다. 실제 신호 전달과 등록한 핸들러 실행은 후속 검증 항목이다. 게스트 시험은 파이프 EOF를 이용해 종료·회수 전후를 구별한다.
+Xwayland는 기존 잠금 파일에서 PID를 읽은 뒤 0번 신호로 소유자를 조회한다. 커널은 호출자의 스케줄러 슬롯과 주소 공간을 먼저 확인한다. 자기 자신과 셸이 기동한 자식은 조회할 수 있고, 권한이 없는 다른 프로세스는 `EPERM`을 반환한다. 미기동·회수된 PID는 `ESRCH`이며, 아직 회수하지 않은 자식은 존재한다. 게스트 시험은 파이프 EOF를 이용해 종료·회수 전후를 구별한다. 양수 신호는 대상에 대한 권한 검사 후 현재 구성의 전달 서비스로 보낸다.
