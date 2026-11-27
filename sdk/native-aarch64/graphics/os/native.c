@@ -45,3 +45,12 @@ int jnox_poll_sleep(int clock, int flags, const struct timespec *ts, struct time
     (void)rest;
     return -jnox_ipc_trap(JNOX_CALL_CLOCK_NANOSLEEP, clock, flags, (uintptr_t)ts).status;
 }
+
+int jnox_monotonic_now(long *seconds, long *nanoseconds)
+{
+    struct timespec now;
+    if (jnox_poll_clock(CLOCK_MONOTONIC, &now) < 0) return -1;
+    *seconds = now.tv_sec;
+    *nanoseconds = now.tv_nsec;
+    return 0;
+}

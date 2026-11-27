@@ -74,6 +74,7 @@ if args.phase == "prepare":
     metadata.write_text(metadata.read_text().replace("prefix=/usr\n", f"prefix={work}/expat/usr\n"))
     shutil.copytree(source, work/"client-source")
     run("patch", "-p1", "-i", HERE/"client-only.patch", cwd=work/"client-source")
+    run("patch", "-p1", "-i", HERE/"native-diagnostics.patch", cwd=work/"client-source")
     manifest = json.loads((runtime/"manifest.json").read_bytes())
     for name in ("target/lib/libc.a", "target/lib/libm.a", "target/lib/libpixman-1.a"):
         if sha(runtime/name) != manifest["artifacts"][name]:
@@ -110,14 +111,24 @@ elif args.phase == "ffi":
     run(work/"libffi-3.4.4/configure", "--host=aarch64-none-elf", "--build=x86_64-pc-linux-gnu",
         "--prefix="+str(target), "--libdir="+str(target/"lib"), "--disable-shared", "--enable-static",
         "--disable-multi-os-directory", "--disable-docs", env=env, cwd=build)
+    # Configure links executable probes with the native startup objects.
+    # Libtool must never insert those application objects into libffi.a.
+    makefile = build / "Makefile"
+    prepared, count = re.subn(r"^LDFLAGS = .*$", "LDFLAGS =", makefile.read_text(), flags=re.M)
+    if count != 1:
+        raise ValueError("unexpected generated libffi archive link settings")
+    makefile.write_text(prepared)
     run("make", "-j1", "install", env=env, cwd=build)
     archive_check(target/"lib/libffi.a", ["ffi_call","ffi_prep_cif"])
 else:
     archive_check(target/"lib/libffi.a", ["ffi_call", "ffi_prep_cif"])
     env = pc_env(target/"lib/pkgconfig")
     env["PKG_CONFIG_PATH_FOR_BUILD"] = str(host/"lib/pkgconfig")
+    cc, flags, ld = read_cross()
+    port = work/"client-options.ini"
+    port.write_text("[built-in options]\nc_args = " + repr(["-D_GNU_SOURCE", *flags]) + "\n")
     run(meson, "setup", work/"client-build", work/"client-source", "--cross-file", runtime/"jnox.ini",
-        "--cross-file", work/"target.ini", "--native-file", work/"native.ini", "--prefix", target,
+        "--cross-file", work/"target.ini", "--cross-file", port, "--native-file", work/"native.ini", "--prefix", target,
         "--libdir", "lib", "--wrap-mode=nofallback", "-Ddefault_library=static", "-Dscanner=false",
         "-Dtests=false", "-Ddocumentation=false", env=env)
     run("ninja", "-j1", "-C", work/"client-build", "install", env=env)

@@ -1,6 +1,7 @@
 #ifndef JNOX_GRAPHICS_PTHREAD_H
 #define JNOX_GRAPHICS_PTHREAD_H
 #include <stdint.h>
+#include <time.h>
 typedef struct { unsigned locked; } pthread_mutex_t;
 typedef struct { uint64_t generation; unsigned waiters; } pthread_cond_t;
 typedef struct { unsigned reserved; } pthread_mutexattr_t;

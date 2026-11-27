@@ -68,3 +68,29 @@ int fcntl(int fd, int cmd, ...)
     errno = ENOTSUP;
     return -1;
 }
+
+#include <time.h>
+extern int jnox_monotonic_now(long *, long *);
+
+int clock_gettime(clockid_t clock, struct timespec *result)
+{
+    if (clock != CLOCK_MONOTONIC) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!result) {
+        errno = EFAULT;
+        return -1;
+    }
+    long seconds, nanoseconds;
+    if (jnox_monotonic_now(&seconds, &nanoseconds) < 0) return -1;
+    time_t public_seconds = (time_t)seconds;
+    if (seconds < 0 || (long)public_seconds != seconds ||
+        nanoseconds < 0 || nanoseconds >= 1000000000L) {
+        errno = EOVERFLOW;
+        return -1;
+    }
+    result->tv_sec = public_seconds;
+    result->tv_nsec = nanoseconds;
+    return 0;
+}

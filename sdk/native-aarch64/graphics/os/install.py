@@ -28,7 +28,7 @@ with tempfile.TemporaryDirectory() as temp:
             "-D__wrap_close=close", "-D__wrap_read=read", "-D__wrap_write=write",
             "-D__wrap_fcntl=jnox_transport_fcntl"])
     compile("native.o", here / "native.c", ["-I", native])
-    compile("public.o", here / "public.c", ["-isystem", prefix / "include"])
+    compile("public.o", here / "public.c", ["-I", here, "-isystem", prefix / "include"])
     compile("sync.o", here / "sync.c", ["-isystem", prefix / "include", "-iquote", native, "-mno-outline-atomics"])
     subprocess.run([args.ar, "rcs", out / "libjnox-wayland-os.a", out / "socket.o",
                     out / "native.o", out / "public.o", out / "sync.o"], check=True)
@@ -36,5 +36,6 @@ with tempfile.TemporaryDirectory() as temp:
         target = overlay / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(native / name, target)
+    shutil.copyfile(here / "time.h", overlay / "time.h")
     shutil.copyfile(here / "pthread.h", overlay / "pthread.h")
     shutil.copyfile(out / "libjnox-wayland-os.a", prefix / "lib/libjnox-wayland-os.a")

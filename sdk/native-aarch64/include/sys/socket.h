@@ -42,6 +42,7 @@ static inline struct cmsghdr *CMSG_NXTHDR(const struct msghdr *m, const struct c
     if (step > left - sizeof(*c) || at > (uintptr_t)-1 - step) return NULL;
     return (struct cmsghdr *)(at + step);
 }
+#define PF_LOCAL AF_UNIX
 #define AF_UNIX 1
 #define AF_INET 2
 #define AF_LOCAL AF_UNIX
