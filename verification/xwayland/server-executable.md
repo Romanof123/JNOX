@@ -24,7 +24,7 @@ Cross files record absolute installation paths. A relocated profile needs a rege
 
 The full chain uses target libXau, generated libxcb, libX11, libxkbfile, libmd for mandatory SHA-1, libXfont2/fontenc/zlib, Pixman, libxcvt, and libwayland-client/libffi. The build preserves the stock Meson X11 dependency, runs the full XKB+Xlib link probe, and allows upstream Ninja to generate the Wayland client protocol code using the native scanner. The pinned protocol metadata supplies xproto, randrproto, renderproto, xextproto, inputproto, kbproto, fontsproto, fixesproto, damageproto, xcmiscproto, bigreqsproto, presentproto, videoproto, compositeproto, recordproto, scrnsaverproto, resourceproto, xineramaproto and xf86vidmodeproto. The software profile disables glamor, GLX, DRM/DRI3, TCP and XDMCP. The existing one-hunk socket patch honors local-only transport.
 
-The archive-only XKB guest passed previously. The complete X11 client transport and server binary still require a new build. libxcb's xcb_conn.c and xcb_util.c include socket/network declarations and use poll/nonblocking I/O. The graphics OS overlay currently covers AF_UNIX, a bounded broker, poll and process-private synchronization. libXau also uses filesystem and process identity calls. The font lsfontdir utility previously failed to link open/stat/fstat, which may affect the complete server. Record the first actual compiler or linker failure and its originating object. Hardware scanout, input, socket namespace creation and runtime limits require guest evidence after static linking.
+The guest XKB probe exercised the upstream keyboard reader. Separate Xtrans and Xlib probes exercised native stream I/O and geometry parsing. The full server still requires the remaining filesystem, identity and time interfaces listed in the link report. Display, input and server restart require observations from the running guest server.
 
 The [libmd 1.1.0 source archive](https://deb.debian.org/debian/pool/main/libm/libmd/libmd_1.1.0.orig.tar.xz) is pinned by SHA-256 in the driver. The build retains its original COPYING.
 
@@ -46,13 +46,13 @@ window, pixmap and Present objects in the native software configuration.
 The configured target ran all independent Ninja steps sequentially. Its
 only failed C compilation was `xwayland-shm.c`, where Picolibc lacked
 `F_ADD_SEALS` and `F_SEAL_SHRINK`. The existing native SDK and kernel
-already implement the shrink seal. A guest test must exercise the Picolibc
-entry point before the software frame-buffer path can claim it.
+already implement the shrink seal. The subsequent Picolibc guest test
+rejected shrink with `EPERM` and the server's SHM unit compiled.
 
 통합 리비전 `537cd22`에서 실제 원본 서버의 시작·입력·화면·창·Present
 모듈이 컴파일됐다. 독립적인 빌드 단계를 직렬로 모두 실행했을 때 남은
 C 컴파일 오류는 `xwayland-shm.c`의 축소 방지 seal 선언이었다. 커널이
-기능을 제공하며, 그래픽 C 런타임에서 이 경로를 별도로 검증한다.
+기능을 제공하며, 후속 게스트 시험에서 공개 C API의 축소 거부를 확인했다.
 
 ## Software rendering and DRM selection
 
@@ -72,4 +72,4 @@ Runtime acceptance requires the actual guest Xwayland process to create a `wl_sh
 
 기존 전체 빌드 진입점이 압축 해제된 Xwayland 24.1.6에 패치를 적용한다. 세 옵션을 끈 JNOX 설정에서는 공용 창·화면 헤더에서 DRM·GBM 자료형을 제외하고, RandR 임대 콜백을 등록하지 않는다. 실제 `wl_shm` 픽스맵과 Present 제출, 버퍼 반환 처리는 원본 코드를 사용한다. DRM만 활성화한 구성에서도 원래의 임대 기능을 사용할 수 있다.
 
-직렬 빌드에서는 소프트웨어 오브젝트와 최종 링크 입력, 컴파일러가 실제로 사용한 헤더를 확인한다. DRM 활성 구성은 실제 의존성을 갖춘 대상에서 별도로 확인한다. 게스트 수용에는 원본 Xwayland의 SHM 풀과 버퍼 생성, 화면 커밋, 버퍼 반환·재사용, X11 Present 완료 이벤트가 필요하다. 이 커밋에는 빌드 또는 게스트 실행 결과가 포함돼 있지 않다.
+직렬 빌드에서는 소프트웨어 오브젝트와 최종 링크 입력, 컴파일러가 실제로 사용한 헤더를 확인한다. DRM 활성 구성은 실제 의존성을 갖춘 대상에서 별도로 확인한다. 게스트 수용에는 원본 Xwayland의 SHM 풀과 버퍼 생성, 화면 커밋, 버퍼 반환·재사용, X11 Present 완료 이벤트가 필요하다.
