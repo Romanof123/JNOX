@@ -2472,3 +2472,11 @@ IMP-331,partially-verified-by,VER-011
 VER-004,has-partial-evidence,EVD-331
 VER-011,has-partial-evidence,EVD-331
 IMP-331,tested-in,EVD-331
+CHG-332,affects,REQ-004
+CHG-332,affects,REQ-011
+CHG-332,affects,DES-002
+CHG-332,affects,VER-004
+CHG-332,affects,VER-011
+REQ-004,partially-implemented-by,IMP-332
+REQ-011,partially-implemented-by,IMP-332
+DES-002,partially-implemented-by,IMP-332

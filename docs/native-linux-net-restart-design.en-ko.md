@@ -1,10 +1,22 @@
-# Original virtio-net driver replacement / 원본 virtio-net 드라이버 프로세스 교체
+# CHG-332 · Original virtio-net driver replacement / 원본 virtio-net 드라이버 프로세스 교체
 
-**Proposed acceptance for [#5](https://github.com/Romanof123/JNOX/issues/5) and [#426](https://github.com/Romanof123/JNOX/issues/426).** In one AArch64 QEMU virt FIFO boot, let a driver exit while the device still owns RX buffers. Admit a distinct driver process only after verified reset, then deliver a fresh external challenge through the original RX path to the surviving consumer. This is a plan based on source inspection of the [published native poll implementation](https://github.com/Romanof123/JNOX/tree/e4027e6a57d91904306d6ba266047bab1090aa0d).
+**REQ-004/011 · DES-002 · IMP-332 · planned VER-004/011.** The AArch64 QEMU virt FIFO build at `7dce35756ea48b8cf8790476c9e2433fe348e323` packages three native processes. Slot 0 is the primary Linux-source driver, slot 1 is the consumer that survives the handoff, and slot 2 is a separately linked spare in a dormant address space. REQ-004 tracks original RX behavior across the handoff. REQ-011 tracks the owner, generation and DMA grants. Guest results and independent verification are pending. [Linux-source driver #426](https://github.com/Romanof123/JNOX/issues/426) · [Driver resources #5](https://github.com/Romanof123/JNOX/issues/5) · [Trace links](../trace/links.csv)
 
-**목표.** 단일 QEMU 부팅에서 수신 버퍼가 장치에 게시된 채로 드라이버를 종료한다. 리셋을 확인한 뒤 별도 프로세스가 장치를 인수하고, 기존 소비자가 원본 RX 경로를 통해 새 외부 프레임을 받는지 검증한다. 아래 항목은 소스 검토를 바탕으로 한 구현·실측 계획이다.
+세 프로세스 빌드에서 슬롯 0은 주 드라이버, 슬롯 1은 인계 전후 계속 실행할 소비자, 슬롯 2는 별도 실행 파일과 주소 공간을 가진 휴면 예비 드라이버다. 원본 RX 경로가 인계 뒤에도 동작하는지는 REQ-004에서, 장치 소유자·세대 및 DMA 버퍼 권한은 REQ-011에서 추적한다. 게스트 실측과 독립 판정은 대기 중이다.
 
-## Existing boundaries / 현재 경계
+## Conditional handoff and observations / 인계 조건과 관측
+
+Slot 0 must own a live queue epoch and IRQ generation and return exit status 86. EL1 first withdraws admission, retires the IRQ and invalidates the queue token. It checks the device reset and both QueueReady readbacks. Only a successful release of that active generation admits slot 2 once. A failed reset quarantines the pool. The spare must obtain a fresh token and its own writable RX grants. [EL1 exit decision](../kernel/src/native_linux_net_restart.rs) · [Primary](../examples/linux-source-net-restart/primary.c) · [Spare](../examples/linux-source-net-restart/spare.c)
+
+슬롯 0이 활성 큐와 IRQ 세대를 소유한 상태로 종료 코드 86을 반환해야 한다. EL1은 기존 장치 접근을 차단하고 IRQ 및 토큰을 회수한다. 장치 리셋과 두 큐의 QueueReady 해제를 확인한 경우에만 슬롯 2를 한 번 허가한다. 리셋 실패 시 버퍼 풀은 격리되며, 예비 드라이버에는 새 토큰과 자체 수신 버퍼 권한이 필요하다.
+
+The capture checker at `b0de2d64adc26bb7bce1a16d6a96f33d092dee23` binds the old pending frame’s used ID and bytes to an actual posted grant, and checks a different still-outstanding writable descriptor against the old token. It checks cleared grants after retirement, followed by fresh-token RX into the surviving consumer. The fixture permits the host to write exactly two 64-bit release words in slot 1’s `jnox_restart_gates`, one at `preexit` and one at `middle`. Each write has an address and before/after readback. The host reads the observation journals, rings, grants and frame memory without modifying them. [Capture checker](../tools/verify_linux_source_net_restart.py) · [Surviving consumer](../examples/linux-source-net-restart/peer.c)
+
+검증기는 이전 세대에서 완료됐으나 소비되지 않은 프레임의 used ID와 내용을 게시된 권한에 대응시키고, 장치에 계속 게시된 별도의 쓰기 가능 디스크립터도 같은 세대와 대조한다. 회수 후 권한 정리와 새 토큰을 사용한 프레임 전달도 검사한다. 시험에서 호스트가 쓰는 위치는 슬롯 1의 진행 제어용 64비트 워드 두 개뿐이다. `preexit`와 `middle`에서 각각 주소와 쓰기 전후 값을 남기고, 저널·링·권한 표·프레임 메모리는 읽기만 한다.
+
+## Polling baseline used for the design / 설계 기준이 된 폴링 구현
+
+The original design below starts from the [published polling profile](https://github.com/Romanof123/JNOX/tree/e4027e6a57d91904306d6ba266047bab1090aa0d). 아래 표는 교체 기능을 설계할 당시의 폴링 프로필을 설명한다.
 
 | Entry point | What can be reused / 재사용 범위 |
 |---|---|

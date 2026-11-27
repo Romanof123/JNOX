@@ -449,9 +449,13 @@ def replay(pkg,imp,out):
             not any(end["kernel"][K[5]]),"live or scrubbed RX grants")
     require(not any(mid["buffers"]) and not any(end["buffers"]),"retirement did not scrub DMA")
     require(primary[1] not in pre["old"],"unreaped frame already copied into primary destination")
-    for label,s,total in (("ready",spare,0),("active",active,80),("final",end,81)):
+    for label,s,total in (("ready",spare,0),("active",active,80)):
         rings=(s["rings"][:4096],s["rings"][4096:])
         irq.poll_gate.ring_state(label,rings,s["buffers"],L["buffers"],[*fresh,ack],total)
+    require(not any(mid["rings"]) and not any(end["rings"]),"retired split rings not scrubbed")
+    retired=end["kernel"][K[0]][48:]
+    require(retired[7:10]==[81,81,81] and retired[12]==0 and retired[24:26]==[81,token] and
+            28<=retired[6]-81<=32,"terminal pre-reset hardware head and harvested/delivered cursors")
     row=mid["kernel"][K[0]][:48]
     other=row[18]
     require(row[:6]==[1,0,1,86,oldtoken,15] and row[7:10]==[2,1,1] and row[12:17]==[1,used_id,used_len,watch,1530]
