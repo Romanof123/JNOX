@@ -1,0 +1,96 @@
+{
+  "kernel": "ed364b9f79d04f7c52de7e71ac77a8047af9e6a2d936bc6bd32f4f3457e40938",
+  "poller": "f46c63a456c4da5e271deb0cc930abee43bcc8e622bc17776a1c9189754db426",
+  "broker": "2214dbd7306cbe8154d5e22e6ce6272dee21226f1c0bcbf43ca69bb7dcfb0e62",
+  "elapsed_ns": 20487968,
+  "byte": 120,
+  "journal": {
+    "count": 128,
+    "dropped": 22,
+    "priorities": [
+      7,
+      4,
+      1
+    ],
+    "competing_selections": 81,
+    "first_competition": [
+      0,
+      0,
+      [
+        1,
+        2
+      ]
+    ],
+    "broker_chosen_over_higher_base_priority": 56,
+    "poll_calls": [
+      {
+        "row": 22,
+        "tick": 877202,
+        "pc": 4207012,
+        "sp": 16846576,
+        "selected": 2,
+        "resume": {
+          "row": 39,
+          "tick": 978724,
+          "cause": 23,
+          "previous": 2,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 48,
+        "tick": 1009199,
+        "pc": 4207012,
+        "sp": 16846576,
+        "selected": 2,
+        "resume": {
+          "row": 56,
+          "tick": 2266914,
+          "cause": 4,
+          "previous": 18446744073709551615,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 58,
+        "tick": 2279315,
+        "pc": 4207012,
+        "sp": 16846576,
+        "selected": 2,
+        "resume": {
+          "row": 59,
+          "tick": 2281426,
+          "cause": 23,
+          "previous": 2,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 69,
+        "tick": 2309036,
+        "pc": 4207012,
+        "sp": 16846576,
+        "selected": 2,
+        "resume": {
+          "row": 87,
+          "tick": 2349489,
+          "cause": 23,
+          "previous": 2,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 109,
+        "tick": 2374041,
+        "pc": 4207012,
+        "sp": 16846576,
+        "selected": 2,
+        "resume": null
+      }
+    ]
+  }
+}

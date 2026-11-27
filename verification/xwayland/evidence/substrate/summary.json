@@ -1,0 +1,443 @@
+{
+  "source": "5cc4884a292fb45844b53e80d4db0766def4ebfe",
+  "poll": {
+    "exits": [
+      [
+        0,
+        71
+      ],
+      [
+        1,
+        72
+      ],
+      [
+        2,
+        0
+      ]
+    ],
+    "start_ns": 7570832,
+    "end_ns": 28058800,
+    "timeout_ns": 20487968,
+    "byte": 120,
+    "completed_roles": 3,
+    "scheduler_events_recorded": 128,
+    "selected_by_pid": {
+      "0": 27,
+      "1": 18,
+      "2": 82
+    },
+    "scheduler_events_dropped": 22,
+    "trace_start_tick": 665732,
+    "trace_end_tick": 2388394
+  },
+  "boots": [
+    {
+      "variant": "baseline",
+      "boot": "cold-1",
+      "raw_ppm_sha256": {
+        "after.ppm": "836d1619ce15976e74093a6334d42d20481f79cfb3a410d42ed5f7e9c240e502",
+        "before.ppm": "16e0bf236e79704def49a06e52723d61d0d366d9e8138dedbbba29a995d2d3b4"
+      },
+      "cancelled_receive_errno": -110,
+      "queued_escrow": [
+        [
+          72,
+          2,
+          0
+        ]
+      ],
+      "installed_fds": [
+        [
+          0,
+          96,
+          1,
+          1
+        ],
+        [
+          0,
+          97,
+          1,
+          0
+        ],
+        [
+          0,
+          98,
+          2,
+          0
+        ],
+        [
+          1,
+          96,
+          3,
+          1
+        ],
+        [
+          1,
+          97,
+          3,
+          0
+        ]
+      ],
+      "terminal": {
+        "fds": [],
+        "maps": [],
+        "escrow": []
+      }
+    },
+    {
+      "variant": "baseline",
+      "boot": "cold-2",
+      "raw_ppm_sha256": {
+        "after.ppm": "836d1619ce15976e74093a6334d42d20481f79cfb3a410d42ed5f7e9c240e502",
+        "before.ppm": "16e0bf236e79704def49a06e52723d61d0d366d9e8138dedbbba29a995d2d3b4"
+      },
+      "cancelled_receive_errno": -110,
+      "queued_escrow": [
+        [
+          72,
+          2,
+          0
+        ]
+      ],
+      "installed_fds": [
+        [
+          0,
+          96,
+          1,
+          1
+        ],
+        [
+          0,
+          97,
+          1,
+          0
+        ],
+        [
+          0,
+          98,
+          2,
+          0
+        ],
+        [
+          1,
+          96,
+          3,
+          1
+        ],
+        [
+          1,
+          97,
+          3,
+          0
+        ]
+      ],
+      "terminal": {
+        "fds": [],
+        "maps": [],
+        "escrow": []
+      }
+    },
+    {
+      "variant": "default",
+      "boot": "cold-1",
+      "raw_ppm_sha256": {
+        "after.ppm": "836d1619ce15976e74093a6334d42d20481f79cfb3a410d42ed5f7e9c240e502",
+        "before.ppm": "16e0bf236e79704def49a06e52723d61d0d366d9e8138dedbbba29a995d2d3b4"
+      },
+      "cancelled_receive_errno": -110,
+      "queued_escrow": [
+        [
+          72,
+          2,
+          0
+        ]
+      ],
+      "installed_fds": [
+        [
+          0,
+          96,
+          1,
+          1
+        ],
+        [
+          0,
+          97,
+          1,
+          0
+        ],
+        [
+          0,
+          98,
+          2,
+          0
+        ],
+        [
+          1,
+          96,
+          3,
+          1
+        ],
+        [
+          1,
+          97,
+          3,
+          0
+        ]
+      ],
+      "terminal": {
+        "fds": [],
+        "maps": [],
+        "escrow": []
+      },
+      "fd98_cloexec_at_install": 0,
+      "producer_seal_checks": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "consumer_flag_checks": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "variant": "default",
+      "boot": "cold-2",
+      "raw_ppm_sha256": {
+        "after.ppm": "836d1619ce15976e74093a6334d42d20481f79cfb3a410d42ed5f7e9c240e502",
+        "before.ppm": "16e0bf236e79704def49a06e52723d61d0d366d9e8138dedbbba29a995d2d3b4"
+      },
+      "cancelled_receive_errno": -110,
+      "queued_escrow": [
+        [
+          72,
+          2,
+          0
+        ]
+      ],
+      "installed_fds": [
+        [
+          0,
+          96,
+          1,
+          1
+        ],
+        [
+          0,
+          97,
+          1,
+          0
+        ],
+        [
+          0,
+          98,
+          2,
+          0
+        ],
+        [
+          1,
+          96,
+          3,
+          1
+        ],
+        [
+          1,
+          97,
+          3,
+          0
+        ]
+      ],
+      "terminal": {
+        "fds": [],
+        "maps": [],
+        "escrow": []
+      },
+      "fd98_cloexec_at_install": 0,
+      "producer_seal_checks": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "consumer_flag_checks": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "variant": "cloexec",
+      "boot": "cold-1",
+      "raw_ppm_sha256": {
+        "after.ppm": "836d1619ce15976e74093a6334d42d20481f79cfb3a410d42ed5f7e9c240e502",
+        "before.ppm": "16e0bf236e79704def49a06e52723d61d0d366d9e8138dedbbba29a995d2d3b4"
+      },
+      "cancelled_receive_errno": -110,
+      "queued_escrow": [
+        [
+          72,
+          2,
+          0
+        ]
+      ],
+      "installed_fds": [
+        [
+          0,
+          96,
+          1,
+          1
+        ],
+        [
+          0,
+          97,
+          1,
+          0
+        ],
+        [
+          0,
+          98,
+          2,
+          0
+        ],
+        [
+          1,
+          96,
+          3,
+          1
+        ],
+        [
+          1,
+          97,
+          3,
+          0
+        ]
+      ],
+      "terminal": {
+        "fds": [],
+        "maps": [],
+        "escrow": []
+      },
+      "fd98_cloexec_at_install": 1,
+      "producer_seal_checks": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "consumer_flag_checks": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "variant": "cloexec",
+      "boot": "cold-2",
+      "raw_ppm_sha256": {
+        "after.ppm": "836d1619ce15976e74093a6334d42d20481f79cfb3a410d42ed5f7e9c240e502",
+        "before.ppm": "16e0bf236e79704def49a06e52723d61d0d366d9e8138dedbbba29a995d2d3b4"
+      },
+      "cancelled_receive_errno": -110,
+      "queued_escrow": [
+        [
+          72,
+          2,
+          0
+        ]
+      ],
+      "installed_fds": [
+        [
+          0,
+          96,
+          1,
+          1
+        ],
+        [
+          0,
+          97,
+          1,
+          0
+        ],
+        [
+          0,
+          98,
+          2,
+          0
+        ],
+        [
+          1,
+          96,
+          3,
+          1
+        ],
+        [
+          1,
+          97,
+          3,
+          0
+        ]
+      ],
+      "terminal": {
+        "fds": [],
+        "maps": [],
+        "escrow": []
+      },
+      "fd98_cloexec_at_install": 1,
+      "producer_seal_checks": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "consumer_flag_checks": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "full_ram": {
+    "captures": 36,
+    "original_bytes": 4831838208,
+    "distinct_blocks": 282,
+    "bytes": 2140677
+  }
+}

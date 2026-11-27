@@ -10,7 +10,7 @@ global_asm!(include_str!("native_el0_vectors.S"), options(raw));
 include!("native_v1_note.rs");
 
 unsafe extern "C" {
-    fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64) -> !;
+    fn native_el0_enter(entry: u64, sp: u64, spsr: u64, locator: u64, envp: u64) -> !;
     fn native_sleep_switch(top: *mut u8);
 }
 
@@ -418,7 +418,7 @@ extern "C" fn native_el0_sync(f: &mut NativeFrame, vector: u64) {
             scheduler().exit(id, now, emit);
             0
         }
-        4 => console_write(f.x[0], f.x[1] as usize, f.x[2] as usize),
+        4 => crate::native_console::write(f.x[0], f.x[1] as usize, f.x[2] as usize),
         6 => clock_gettime(f.x[0], f.x[1] as usize, now),
         7 => match sleep_until(f) {
             Ok(target) => {
@@ -458,21 +458,7 @@ fn ticks(ms: u32, hz: u64) -> u64 {
     u64::try_from(product / 1000).unwrap_or_else(|_| fail(11))
 }
 
-fn console_write(fd: u64, address: usize, length: usize) -> i64 {
-    if !matches!(fd, 1 | 2) {
-        return -9;
-    }
-    let mut bytes = [0u8; 256];
-    let n = length.min(bytes.len());
-    if n == 0 {
-        return 0;
-    }
-    if !native_el0_mmu::copy_from_user(address, &mut bytes[..n]) {
-        return -14;
-    }
-    uart_write(&bytes[..n]);
-    n as i64
-}
+
 
 pub(super) fn run() -> ! {
     let hz: u64;
@@ -515,5 +501,5 @@ pub(super) fn run() -> ! {
     uart_write(b"\n");
     let first = select();
     let f = unsafe { FRAMES[first] };
-    unsafe { native_el0_enter(f.elr, f.sp_el0, f.spsr, f.tls[1]) }
+    unsafe { native_el0_enter(f.elr, f.sp_el0, f.spsr, f.tls[1], 0) }
 }

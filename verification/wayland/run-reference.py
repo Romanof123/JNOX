@@ -100,6 +100,8 @@ def run(args, out, sock):
                 command = [args.client, "--socket", sock, "--hold-frame"]
                 if args.geometry:
                     command.append("--geometry")
+                if args.output_profile:
+                    command.append("--output")
                 client = subprocess.Popen(command,
                                           stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=wire, env=env)
                 try:
@@ -111,6 +113,7 @@ def run(args, out, sock):
                     if result["frame"]["origin"] != expected:
                         raise ValueError(f"buffer origin {result['frame']['origin']} differs from {expected}")
                     result["window_geometry"] = [3, 2, 14, 12] if args.geometry else None
+                    result["wl_output_v2"] = args.output_profile
                     output, _ = client.communicate(b"\n", timeout=10)
                     (out / "client.log").write_bytes(b"FRAME\n" + output)
                     if client.returncode != 0 or not output.startswith(b"PASS configure_serial="):
@@ -131,6 +134,8 @@ def run(args, out, sock):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-profile", action="store_true",
+                        help="bind wl_output v2, inspect mode and track the mapped surface")
     parser.add_argument("--geometry", action="store_true",
                         help="set a smaller, offset xdg window geometry and verify the full buffer placement")
     for name in ("server", "client", "sysroot", "output"):

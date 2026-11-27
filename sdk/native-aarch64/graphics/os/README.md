@@ -1,0 +1,11 @@
+# Wayland client transport for the Picolibc graphics profile
+
+Run `python3 install.py --prefix /absolute/runtime/target` after installing the graphics runtime. Compile the application with `-I$prefix/include/jnox-wayland -nostdlibinc -isystem $prefix/include`. Link `-ljnox-wayland-os` before Picolibc using the graphics startup object and linker script. Call `jnox_socket_broker(pid)` before opening the display. The package must grant IPC to that broker.
+
+Wayland 1.23.1 opens a stream with SOCK_CLOEXEC and uses MSG_NOSIGNAL on sends. Native descriptors retain FD_CLOEXEC across queries and clear it on a new ordinary accept. Broken stream writes return EPIPE. Native errors are translated into Picolibc errno. The broker still limits socket count, Unix path length, vectors and payload, and enforces peer identity. Poll uses its existing readiness and timeout protocol.
+
+The graphics pthread header exposes the default process-private mutex and condition operations used by wayland-client.c. Lock acquisition and broadcasts use AArch64 atomics. Contended calls sleep on the native monotonic clock and recheck their predicate. There is no priority inheritance, cancellation, thread creation or process-shared initialization in this profile. Picolibc remains configured for a single application thread. Multi-threaded libc use and scheduling bounds require separate support and evidence.
+
+`caller.c` is the ordinary target caller contract for a one-byte echo-plus-one peer. It uses both send and receive flags, a positive poll timeout, socket descriptor flags, stale-descriptor errno, and uncontended synchronization. It does not validate a contended wait. F_DUPFD and F_DUPFD_CLOEXEC select the existing shared-file kernel table. Socket duplication and peer credentials remain unsupported.
+
+The optional `dup_caller.c` validates the Picolibc ABI separately from the freestanding SDK fixture. Compile this TU using the graphics runtime's target C flags, its public Picolibc headers and `-iquote SDK/include` for jnox/shm.h. Link the target object, libjnox-wayland-os.a and the graphics runtime startup/libc in the normal order. Package it in a shared-fd-authorized client slot. Its expected terminal status is 74. The real Picolibc header must report F_DUPFD=0 and F_DUPFD_CLOEXEC=14; the caller exercises both forms and descriptor-local flags.

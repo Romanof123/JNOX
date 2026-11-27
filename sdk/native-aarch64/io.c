@@ -72,6 +72,15 @@ int sched_yield(void)
 
 #ifdef JNOX_SDK_PIPES
 #include "pipe_io.inc"
+#else
+/* A wrapped call still needs a concrete provider when pipes are disabled. */
+__attribute__((weak)) int fcntl(int fd, int cmd, ...)
+{
+    (void)fd;
+    (void)cmd;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
 #ifdef JNOX_SDK_NATIVE_SHELL
 #include "native_shell_io.inc"

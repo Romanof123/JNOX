@@ -42,15 +42,20 @@ static inline struct cmsghdr *CMSG_NXTHDR(const struct msghdr *m, const struct c
     if (step > left - sizeof(*c) || at > (uintptr_t)-1 - step) return NULL;
     return (struct cmsghdr *)(at + step);
 }
+#define PF_LOCAL AF_UNIX
 #define AF_UNIX 1
 #define AF_INET 2
 #define AF_LOCAL AF_UNIX
 #define SOCK_STREAM 1
 #define SOCK_DGRAM 2
 #define SOCK_SEQPACKET 5
+#define SOCK_CLOEXEC 0x80000
 #define SOCK_NONBLOCK 0x800
+#define MSG_NOSIGNAL 0x4000
 #define MSG_TRUNC 0x20
 #define MSG_DONTWAIT 0x40
+/* Install SCM_RIGHTS descriptors with receiver-local FD_CLOEXEC. */
+#define MSG_CMSG_CLOEXEC 0x40000000
 #define SHUT_RD 0
 #define SHUT_WR 1
 #define SHUT_RDWR 2

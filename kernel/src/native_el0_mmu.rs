@@ -84,7 +84,7 @@ const LINK_START: usize = 0x0200_0000;
 const GPIO: usize = 0xfe20_0000;
 #[cfg(not(jnox_task_policy))]
 const SPACE_CAPACITY: usize = 1 + cfg!(jnox_native_peer) as usize + cfg!(jnox_native_peer2) as usize
-    + cfg!(jnox_native_peer3) as usize;
+    + cfg!(jnox_native_peer3) as usize + cfg!(jnox_native_display_standby) as usize;
 // Each slot admits an 8 MiB embedded ELF and backs its 4 MiB virtual image.
 // Leave another 4 MiB per slot for tables, stacks and the linked kernel.
 #[cfg(not(jnox_task_policy))]
@@ -164,9 +164,9 @@ static jnox_native_shell_rom: Storage<SHELL_ROM_BYTES> =
     Storage(*include_bytes!(env!("JNOX_NATIVE_ROM_IMAGE")));
 #[cfg(jnox_native_shell)]
 static mut SHELL_STACK_INSTALLED: [bool; SPACE_CAPACITY] = [false; SPACE_CAPACITY];
-#[cfg(any(jnox_native_net_service, jnox_linux_source_net))]
+#[cfg(any(jnox_native_net_service, jnox_linux_source_net, jnox_native_pointer_tablet))]
 const VIRTIO_MMIO_BASE: usize = 0x0a00_0000;
-#[cfg(any(jnox_native_net_service, jnox_linux_source_net))]
+#[cfg(any(jnox_native_net_service, jnox_linux_source_net, jnox_native_pointer_tablet))]
 static mut VIRTIO_MMIO: Table = Table::EMPTY;
 // The horizon word has a privileged writable identity mapping and one
 // read-only EL0 alias shared by all participating processes.
@@ -302,7 +302,7 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         {
             link(&raw mut space.root, LINK_START, 30, &raw mut HIGH);
             link(&raw mut space.low, crate::UART0, 21, &raw mut UART);
-            #[cfg(any(jnox_native_net_service, jnox_linux_source_net))]
+            #[cfg(any(jnox_native_net_service, jnox_linux_source_net, jnox_native_pointer_tablet))]
             link(&raw mut space.low, VIRTIO_MMIO_BASE, 21, &raw mut VIRTIO_MMIO);
             link(&raw mut space.low, crate::context::GICD, 21, &raw mut GIC);
         }
@@ -451,7 +451,7 @@ unsafe fn install_spaces<'a>(
             link(&raw mut HIGH, crate::context::GICD, 21, &raw mut GIC);
             page(&raw mut UART, GPIO, GPIO, DEVICE);
         }
-        #[cfg(jnox_native_net_service)]
+        #[cfg(any(jnox_native_net_service, jnox_native_pointer_tablet))]
         for offset in (0..0x4000).step_by(PAGE) {
             let addr = VIRTIO_MMIO_BASE + offset;
             page(&raw mut VIRTIO_MMIO, addr, addr, DEVICE);

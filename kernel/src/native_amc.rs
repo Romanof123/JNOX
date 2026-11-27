@@ -259,6 +259,7 @@ impl Runtime {
                 FRAMES[i] = EMPTY_FRAME;
                 FRAMES[i].elr = plan.entry;
                 FRAMES[i].sp_el0 = l.sp as u64;
+                FRAMES[i].x[2] = l.envp as u64;
             }
         }
         #[cfg(jnox_native_amc_clock_page)]

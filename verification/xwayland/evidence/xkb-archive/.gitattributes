@@ -1,0 +1,10 @@
+# Keep recorded byte streams stable across platform checkouts.
+*.log -text
+*.map -text
+*.sha256 -text
+SHA256SUMS -text
+archive.members -text
+probe.headers -text
+probe.symbols -text
+probe.undefined -text
+source-commit -text

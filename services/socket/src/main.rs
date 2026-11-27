@@ -16,7 +16,7 @@ const RECV_RIGHTS: u8 = 16;
 #[derive(Clone, Copy)]
 struct Request {
     op: u8, fd: u8, arg: u8, path: usize, payload: usize, nonblock: bool,
-    accept_right: bool,
+    accept_right: bool, cloexec: bool,
     bytes: [u8; BUFFER], used: usize,
 }
 
@@ -33,11 +33,11 @@ impl Request {
             SEND_RIGHTS => path == 0 && payload != 0,
             _ => false,
         };
-        let allowed_flags = if op == RECV_RIGHTS { 3 } else { 1 };
+        let allowed_flags = if op == RECV_RIGHTS { 7 } else { 1 };
         if !valid || reserved != 0 || flags > allowed_flags || usize::from(path) > PATH ||
             usize::from(payload) > PAYLOAD { return Err(-22); }
         Ok(Self { op, fd, arg, path: path.into(), payload: payload.into(),
-            nonblock: flags & 1 != 0, accept_right: flags & 2 != 0,
+            nonblock: flags & 1 != 0, accept_right: flags & 2 != 0, cloexec: flags & 4 != 0,
             bytes: [0; BUFFER], used: 0 })
     }
 
@@ -77,9 +77,9 @@ impl Response {
 
 #[derive(Clone, Copy)]
 struct Client {
-    request: Option<Request>, response: Option<Response>, pending: Option<u64>,
+    request: Option<Request>, response: Option<Response>, pending: Option<u64>, poll: Option<u64>,
 }
-const EMPTY: Client = Client { request: None, response: None, pending: None };
+const EMPTY: Client = Client { request: None, response: None, pending: None, poll: None };
 
 // app.ld places .data.* in the process-private RW load. Initialize the live
 // socket table in its final location, without constructing it on the EL0 stack.
@@ -91,7 +91,7 @@ static mut CLIENT_STATE: [Client; CLIENTS] = [EMPTY; CLIENTS];
 enum Transfer {
     None,
     Hold(u8),
-    Install(u64),
+    Install(u64, bool),
 }
 
 #[derive(Clone, Copy)]
@@ -104,19 +104,19 @@ impl Reply {
     // COMMIT at the same kernel boundary. On failure the ordinary error reply
     // may itself see ESTALE if the client deadline has expired.
     fn deliver(self, token: u64, client: &mut Client) -> Result<bool, i64> {
-        let (op, argument) = match self.transfer {
+        let (op, argument, word) = match self.transfer {
             Transfer::None => {
                 ipc::reply(token, self.word)?;
                 return Ok(true);
             }
-            Transfer::Hold(fd) => (184, u64::from(fd)),
-            Transfer::Install(escrow) => (185, escrow),
+            Transfer::Hold(fd) => (184, u64::from(fd), self.word),
+            Transfer::Install(escrow, cloexec) => (185, escrow, self.word | (u64::from(cloexec) << 8)),
         };
-        match rights_call(op, token, self.word, argument) {
+        match rights_call(op, token, word, argument) {
             Ok(value) => {
                 match self.transfer {
                     Transfer::Hold(_) if value != token => return Err(-5),
-                    Transfer::Install(_) => {
+                    Transfer::Install(_, _) => {
                         if !(96..=103).contains(&value) { return Err(-5); }
                         client.response.as_mut().ok_or(-5i64)?.received_fd = value as u8;
                     }
@@ -170,7 +170,7 @@ fn execute(s: &mut Local, id: usize, r: &Request, token: u64)
             response.path = got.source_len;
             response.bytes[got.count..got.count + got.source_len].copy_from_slice(&got.source[..got.source_len]);
             let transfer = if got.escrow != 0 && r.accept_right {
-                Transfer::Install(got.escrow)
+                Transfer::Install(got.escrow, r.cloexec)
             } else {
                 response.truncated = r.op == RECV_RIGHTS && got.escrow != 0;
                 Transfer::None
@@ -251,7 +251,7 @@ impl Service<'_> {
     fn publish(&mut self, bank: usize, transfer: Transfer) -> Result<(), i64> {
         let previous = self.banks[self.live].escrows();
         self.live = bank;
-        let installed = match transfer { Transfer::Install(escrow) => escrow, _ => 0 };
+        let installed = match transfer { Transfer::Install(escrow, _) => escrow, _ => 0 };
         discard_removed(previous, self.banks[bank].escrows(), installed)
     }
 
@@ -262,6 +262,34 @@ impl Service<'_> {
             // Receiving another authenticated call from this PID proves that
             // its former one-shot call ended, even if the new call also expires.
             *client = EMPTY;
+        }
+        // POLL uses one authenticated call. A canceled wait is displaced above
+        // by the next call from the same owner. No socket state is mutated.
+        let poll = match word {
+            Some(w) if w >> 56 == 0x17 => Some(w),
+            None => client.poll,
+            _ => None,
+        };
+        if let Some(w) = poll {
+            let mut ready = 0u64;
+            let mut valid = client.request.is_none() && w & 0x00ff_fffe_0000_0000 == 0;
+            for fd in 0..4 {
+                let interest = (w >> (fd * 8)) as u8;
+                if interest == 0 { continue; }
+                valid &= interest & !0x85 == 0 && interest & 0x80 != 0;
+                ready |= u64::from(self.banks[self.live].poll_slot(id, fd as u8, interest & 5)) << (fd * 8);
+            }
+            if valid && ready == 0 && w & (1u64 << 32) == 0 {
+                client.pending = Some(token);
+                client.poll = Some(w);
+                return Ok(false);
+            }
+            client.pending = None;
+            client.poll = None;
+            match ipc::reply(token, if valid { ready } else { (-22i64) as u64 }) {
+                Ok(()) | Err(-116) => return Ok(true),
+                Err(e) => return Err(e),
+            }
         }
         let mut trial = *client;
         let is_commit = word.is_none() || word == Some(0x13u64 << 56);

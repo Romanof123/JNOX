@@ -24,7 +24,7 @@ app=$1
 out=$2
 set --
 if [ "$local_socket" = 1 ]; then
-    set -- "$sdk/local_socket.c" -Wl,--wrap=read,--wrap=write,--wrap=close
+    set -- "$sdk/local_socket.c" -Wl,--wrap=read,--wrap=write,--wrap=close,--wrap=fcntl
 fi
 if [ "$pubsub" = 1 ]; then set -- "$sdk/pubsub.c" "$@"; fi
 if [ -n "$shell_define" ]; then set -- "$shell_define" "$@"; fi

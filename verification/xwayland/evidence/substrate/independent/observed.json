@@ -1,0 +1,272 @@
+{
+  "kernel": "009361d1954609f805fa9c668317e5f9a0dac7a53953d2cbb667e61d6e5a0a64",
+  "application": "355c4dda3a7abd838606573afa022ee9411eb8c12d39b74539363de5592c983a",
+  "phases": {
+    "timeout-pending": {
+      "fds": [
+        64,
+        65
+      ],
+      "interests": [
+        1,
+        1
+      ],
+      "word": "0x1700000000008181",
+      "token": 16,
+      "deadline": 1507544160,
+      "entered_ns": 7529184,
+      "slots": [
+        0,
+        2
+      ],
+      "ring_head_and_preceding_byte": [
+        0,
+        0
+      ],
+      "saved_pc": 4207880,
+      "saved_sp": 16846480
+    },
+    "data-pending": {
+      "fds": [
+        64,
+        65
+      ],
+      "interests": [
+        1,
+        1
+      ],
+      "word": "0x1700000000008181",
+      "token": 23,
+      "deadline": 18446744073709551615,
+      "entered_ns": 1508432320,
+      "slots": [
+        0,
+        2
+      ],
+      "ring_head_and_preceding_byte": [
+        0,
+        0
+      ],
+      "saved_pc": 4207880,
+      "saved_sp": 16846480
+    },
+    "hangup-pending": {
+      "fds": [
+        64,
+        65
+      ],
+      "interests": [
+        1,
+        0
+      ],
+      "word": "0x1700000000008081",
+      "token": 36,
+      "deadline": 18446744073709551615,
+      "entered_ns": 3009821840,
+      "slots": [
+        0,
+        2
+      ],
+      "ring_head_and_preceding_byte": [
+        1,
+        120
+      ],
+      "saved_pc": 4207880,
+      "saved_sp": 16846480
+    }
+  },
+  "returned_rows": [
+    [
+      1,
+      64,
+      1,
+      1,
+      -1,
+      1,
+      0,
+      5585344,
+      7293632
+    ],
+    [
+      0,
+      64,
+      1,
+      0,
+      65,
+      1,
+      0,
+      7529184,
+      1507841392
+    ],
+    [
+      1,
+      64,
+      1,
+      0,
+      65,
+      4,
+      4,
+      1507921040,
+      1507994608
+    ],
+    [
+      1,
+      64,
+      1,
+      0,
+      65,
+      1,
+      1,
+      1508432320,
+      3009379024
+    ],
+    [
+      1,
+      64,
+      1,
+      0,
+      65,
+      0,
+      16,
+      3009821840,
+      4512133872
+    ],
+    [
+      1,
+      64,
+      1,
+      0,
+      65,
+      0,
+      32,
+      4512389760,
+      4512427360
+    ]
+  ],
+  "server_io": [
+    65,
+    0,
+    33,
+    4512280960,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "peer_io": [
+    64,
+    1508911376,
+    1,
+    3009871936,
+    3010014080,
+    0,
+    4512736224,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "byte": 120,
+  "journal": {
+    "count": 128,
+    "dropped": 54,
+    "priorities": [
+      7,
+      4,
+      1
+    ],
+    "competing_selections": 84,
+    "first_competition": [
+      0,
+      0,
+      [
+        1,
+        2
+      ]
+    ],
+    "broker_chosen_over_higher_base_priority": 52,
+    "poll_calls": [
+      {
+        "row": 23,
+        "tick": 745911,
+        "pc": 4207880,
+        "sp": 16846480,
+        "selected": 2,
+        "resume": {
+          "row": 40,
+          "tick": 830790,
+          "cause": 23,
+          "previous": 2,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 51,
+        "tick": 850670,
+        "pc": 4207880,
+        "sp": 16846480,
+        "selected": 2,
+        "resume": {
+          "row": 59,
+          "tick": 94607870,
+          "cause": 4,
+          "previous": 18446744073709551615,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 63,
+        "tick": 94623779,
+        "pc": 4207880,
+        "sp": 16846480,
+        "selected": 2,
+        "resume": {
+          "row": 64,
+          "tick": 94626693,
+          "cause": 23,
+          "previous": 2,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 76,
+        "tick": 94655982,
+        "pc": 4207880,
+        "sp": 16846480,
+        "selected": 2,
+        "resume": {
+          "row": 98,
+          "tick": 188463780,
+          "cause": 23,
+          "previous": 2,
+          "wake": 0,
+          "programmed_compare": 0
+        }
+      },
+      {
+        "row": 122,
+        "tick": 188492790,
+        "pc": 4207880,
+        "sp": 16846480,
+        "selected": 2,
+        "resume": null
+      }
+    ]
+  },
+  "rejected_controls": [
+    "delivered OP_POLL in PID0 kernel slot",
+    "broker PID0 owns matching pending token and poll word",
+    "delivered OP_POLL in PID0 kernel slot",
+    "broker PID0 owns matching pending token and poll word",
+    "delivered OP_POLL in PID0 kernel slot",
+    "broker PID0 owns matching pending token and poll word"
+  ]
+}

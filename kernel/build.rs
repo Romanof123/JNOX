@@ -7,6 +7,8 @@ mod proportional_policy;
 
 mod build_native_extension;
 mod build_task_policy;
+#[path = "src/native_env.rs"]
+mod native_env;
 use std::env;
 mod build_native_hierarchy;
 
@@ -532,8 +534,10 @@ fn main() {
     let four_fixed = board == "virt" && matches!(policy.as_deref(), Some("fifo" | "rr"));
     assert!(peer3_image.is_none() || (peer2_image.is_some() && (amc.is_some() || four_fixed)),
         "third peer requires AMC or ordinary virt FIFO/RR");
-    assert!(selector("JNOX_NATIVE_PEER4_ELF").is_none() && selector("JNOX_NATIVE_PEER4_ELF_SHA256").is_none(),
-        "at most four native slots");
+    let peer4_image = selector("JNOX_NATIVE_PEER4_ELF");
+    let peer4_hash = selector("JNOX_NATIVE_PEER4_ELF_SHA256");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_peer4)");
+    assert_eq!(peer4_image.is_some(), peer4_hash.is_some(), "fourth peer requires digest");
     let peer_image = selector("JNOX_NATIVE_PEER_ELF");
     let peer_hash = selector("JNOX_NATIVE_PEER_ELF_SHA256");
     let net_standby = selector("JNOX_NATIVE_NET_STANDBY");
@@ -563,7 +567,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(jnox_native_threads)");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_thread_rr)");
     let threads = selector("JNOX_NATIVE_THREADS");
-    if let Some(value) = shared_fd {
+    if let Some(value) = shared_fd.as_deref() {
         assert!(value == "1" && profile.as_deref() == Some("native") && board == "virt"
                 && matches!(policy.as_deref(), Some("fifo" | "rr")) && threads.is_none()
                 && socket_service.is_some() && net_service.is_none() && ipc_routes.is_some(),
@@ -572,6 +576,11 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_display)");
     let display_service = selector("JNOX_NATIVE_DISPLAY_SERVICE");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_pointer_tablet)");
+    if let Some(value) = selector("JNOX_NATIVE_POINTER_TABLET") {
+        assert!(value == "1" && display_service.is_some(), "tablet requires a native display service");
+        println!("cargo::rustc-cfg=jnox_native_pointer_tablet");
+    }
     let uart_rx_irq = selector("JNOX_NATIVE_UART_RX_IRQ");
     let uart_standby = selector("JNOX_NATIVE_UART_RX_STANDBY");
     println!("cargo::rustc-check-cfg=cfg(jnox_native_uart_rx_standby)");
@@ -583,6 +592,16 @@ fn main() {
             && !capabilities && loan_route.is_none() && socket_service.is_none() && topic_masks.is_none(),
             "UART standby excludes IPC routes, endpoints and services");
         println!("cargo::rustc-cfg=jnox_native_uart_rx_standby");
+    }
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_display_standby)");
+    let display_standby = selector("JNOX_NATIVE_DISPLAY_STANDBY");
+    assert_eq!(display_standby.is_some(), peer4_image.is_some(), "display standby requires five native processes");
+    if let Some(slot) = display_standby.as_deref() {
+        assert!(slot == "2" && display_service.as_deref() == Some("0") && socket_service.as_deref() == Some("3")
+            && peer3_image.is_some() && shared_fd.as_deref() == Some("1") && uart_rx_irq.is_none()
+            && mailbox_routes.is_none() && notify_routes.is_none() && loan_route.is_none() && !capabilities,
+            "display standby requires owner 0, standby 2, local broker 3 and shared descriptors");
+        println!("cargo::rustc-cfg=jnox_native_display_standby");
     }
     let display_broker = socket_service.as_deref() == Some("3");
     if display_broker {
@@ -632,6 +651,9 @@ fn main() {
             "JNOX_NATIVE_UART_RX_IRQ=1 requires an ordinary virt FIFO display service");
         println!("cargo::rustc-cfg=jnox_native_uart_rx_irq");
     }
+    assert!(display_standby.is_none() || (children.is_none() && rom.is_none() && rom_hash.is_none()),
+        "display standby requires ordinary native processes");
+    let has_shell_children = children.is_some();
     let pipe_config = match (children, rom, rom_hash) {
         (None, None, None) => pipe_config,
         (Some(children), Some(file), Some(hash)) => {
@@ -694,19 +716,33 @@ fn main() {
         cap = value.parse().expect("deadline switch cap exceeds u64");
         assert!(cap > 0, "deadline switch cap must be positive");
     }
-    let native_argv = [0, 1, 2, 3].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
+    let native_argv = [0, 1, 2, 3, 4].map(|slot| selector(&format!("JNOX_NATIVE_ARGV{slot}_HEX")));
     assert!(amc.is_none() || native_argv.iter().all(Option::is_none), "declare AMC arguments in its manifest");
-    for (slot, args) in native_argv.iter().enumerate() {
-        if args.is_some() {
+    let native_environ = [0, 1, 2, 3, 4].map(|slot| selector(&format!("JNOX_NATIVE_ENV{slot}_HEX")));
+    for (slot, (args, environment)) in native_argv.iter().zip(&native_environ).enumerate() {
+        if environment.is_some() {
+            assert!(amc.is_none(), "slot {slot}: explicit AMC environment is unsupported");
+            assert!(!has_shell_children || slot == 0, "slot {slot}: dynamic shell child environment is unsupported");
+        }
+        if args.is_some() || environment.is_some() {
             assert!(profile.as_deref() == Some("native") && app.as_deref() == Some("process"),
                 "slot {slot}: arguments require an ordinary native application");
             assert!(slot == 0 || (slot == 1 && peer_image.is_some()) || (slot == 2 && peer2_image.is_some())
-                || (slot == 3 && peer3_image.is_some()),
+                || (slot == 3 && peer3_image.is_some()) || (slot == 4 && peer4_image.is_some()),
                 "slot {slot}: arguments supplied without an ELF");
         }
     }
     let native_image = selector("JNOX_NATIVE_ELF");
+    assert!(native_environ.iter().all(Option::is_none) || native_image.is_some(), "native environment requires an explicit native image");
     let native_hash = selector("JNOX_NATIVE_ELF_SHA256");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_console_write)");
+    if let Some(writers) = selector("JNOX_NATIVE_CONSOLE_WRITERS") {
+        assert!(native_image.is_some() && !writers.is_empty() && writers.len() <= 4 &&
+                writers.bytes().all(|b| (b'0'..=b'3').contains(&b)),
+                "native console requires explicit process slots 0 through 3");
+        println!("cargo::rustc-cfg=jnox_native_console_write");
+        println!("cargo::rustc-env=JNOX_NATIVE_CONSOLE_WRITERS={writers}");
+    }
     if profile.as_deref() != Some("native") {
         assert!(native_image.is_none() && native_hash.is_none(),
             "native ELF packaging variables require JNOX_PROFILE=native");
@@ -845,12 +881,12 @@ fn main() {
             }
             let peer2_image = peer2_image.or(service_image);
             let peer2_hash = peer2_hash.or(service_hash);
-            let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some()) + usize::from(peer3_image.is_some());
+            let slots = 1 + usize::from(peer_image.is_some()) + usize::from(peer2_image.is_some()) + usize::from(peer3_image.is_some()) + usize::from(peer4_image.is_some());
             if let (Some(program), Some(hash)) = (extension, extension_hash) {
                 assert_eq!(slots, 3, "extension requires three ordinary applications");
                 build_native_extension::configure(&program, &hash);
             }
-            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()), [ipc_routes.as_deref(), mailbox_routes.as_deref(), notify_routes.as_deref()], loan_route.as_deref(), pipe_config.as_deref(), socket_service.as_deref(), topic_masks, [cap_grants.as_deref(), cap_routes.as_deref()]);
+            write_native_schedule(slots, policy.as_deref(), priorities.as_deref(), weights.as_deref(), quantum.as_deref(), edf_jobs.as_deref(), periodic.as_deref(), reservations.as_deref(), multilevel, &native_argv, &native_environ, thread_rr, service_mask, cap, partition.as_deref(), server_settings, notification, hierarchy.as_deref(), thread_priorities, lottery, batch.as_deref(), amc.as_deref().zip(amc_sha.as_deref()), [ipc_routes.as_deref(), mailbox_routes.as_deref(), notify_routes.as_deref()], loan_route.as_deref(), pipe_config.as_deref(), socket_service.as_deref(), topic_masks, [cap_grants.as_deref(), cap_routes.as_deref()]);
             package_native_image(native_image.as_deref().expect("missing JNOX_NATIVE_ELF"),
                 native_hash.as_deref().expect("missing JNOX_NATIVE_ELF_SHA256"),
                 "native_user.elf", "JNOX_PACKAGED_ELF_SHA256");
@@ -865,6 +901,10 @@ fn main() {
             if let (Some(source), Some(hash)) = (peer3_image.as_deref(), peer3_hash.as_deref()) {
                 package_native_image(source, hash, "native_peer3.elf", "JNOX_PACKAGED_PEER3_SHA256");
                 println!("cargo::rustc-cfg=jnox_native_peer3");
+            }
+            if let (Some(source), Some(hash)) = (peer4_image.as_deref(), peer4_hash.as_deref()) {
+                package_native_image(source, hash, "native_peer4.elf", "JNOX_PACKAGED_PEER4_SHA256");
+                println!("cargo::rustc-cfg=jnox_native_peer4");
             }
             println!("cargo::rustc-cfg=jnox_native_el0");
         }
@@ -1107,10 +1147,31 @@ fn multilevel_duration(field: &str) -> u64 {
 }
 
 // Hex wire: u8 count, then (u16 little-endian byte length, UTF-8 payload) per extra.
+fn native_env_literals(slot: usize, hex: &str, argv: Option<&str>) -> String {
+    if hex.is_empty() { return "&[]".to_owned(); }
+    assert!(hex.len() <= 2 * native_env::MAX_BYTES && hex.len() % 2 == 0
+        && hex.bytes().all(|b| b.is_ascii_hexdigit()), "slot {slot}: malformed environment hex");
+    let raw: Vec<u8> = (0..hex.len()).step_by(2)
+        .map(|i| u8::from_str_radix(&hex[i..i+2], 16).unwrap()).collect();
+    let payload = raw.strip_suffix(&[0]).expect("environment needs a final NUL");
+    let entries: Vec<_> = payload.split(|&b| b == 0).collect();
+    let args = native_extra_values(slot, argv);
+    assert!(args.len() + entries.len() <= native_env::MAX_COUNT &&
+        args.iter().map(|arg| arg.len() + 1).sum::<usize>() + raw.len() <= native_env::MAX_BYTES,
+        "slot {slot}: combined argv/environment limit exceeded");
+    assert!(native_env::valid(&entries), "slot {slot}: invalid or duplicate NAME=VALUE");
+    format!("&[{}]", entries.iter().map(|v| format!("&{v:?}")).collect::<Vec<_>>().join(", "))
+}
+
 fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
-    let Some(encoded) = encoded else { return "&[]".to_owned() };
-    const MAX_COUNT: usize = 15;
-    const MAX_BYTES: usize = 1024;
+    let values = native_extra_values(slot, encoded);
+    format!("&[{}]", values.iter().map(|v| format!("&{v:?}")).collect::<Vec<_>>().join(", "))
+}
+
+fn native_extra_values(slot: usize, encoded: Option<&str>) -> Vec<Vec<u8>> {
+    let Some(encoded) = encoded else { return Vec::new() };
+    const MAX_COUNT: usize = native_env::MAX_COUNT;
+    const MAX_BYTES: usize = native_env::MAX_BYTES;
     // Two length bytes per item, one of which replaces its budgeted NUL.
     const MAX_HEX: usize = 2 * (1 + MAX_BYTES + MAX_COUNT);
     assert!(!encoded.is_empty() && encoded.len() <= MAX_HEX && encoded.len() % 2 == 0,
@@ -1134,10 +1195,10 @@ fn native_extra_literals(slot: usize, encoded: Option<&str>) -> String {
         assert!(used <= MAX_BYTES, "slot {slot}: arguments exceed {MAX_BYTES} bytes including NULs");
         assert!(!value.contains(&0), "slot {slot}: argument contains NUL");
         assert!(std::str::from_utf8(value).is_ok(), "slot {slot}: invalid UTF-8");
-        literals.push(format!("&{value:?}"));
+        literals.push(value.to_vec());
     }
     assert!(rest.is_empty(), "slot {slot}: trailing argument bytes");
-    format!("&[{}]", literals.join(", "))
+    literals
 }
 
 // Canonical amc-v1 is ASCII LF-delimited. Each task is followed by one native
@@ -1334,7 +1395,7 @@ fn parse_ipc_route(pair: &str, slots: usize) -> [usize; 2] {
     [caller, server]
 }
 
-fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 4], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>, pipe_config: Option<&str>, socket_service: Option<&str>, topic_masks: Option<(&str, &str)>, caps: [Option<&str>; 2]) {
+fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<&str>, weights: Option<&str>, quantum: Option<&str>, edf_jobs: Option<&str>, periodic: Option<&str>, reservations: Option<&str>, multilevel: [Option<&str>; 3], argv: &[Option<String>; 5], environ: &[Option<String>; 5], thread_rr: bool, service_mask: u16, switch_cap: u64, partition: Option<&str>, server_settings: Option<(u64, u32, u32, u64)>, notification: (&str, u64), hierarchy: Option<&str>, thread_priorities: Option<[u8; 4]>, lottery: [Option<&str>; 3], batch: Option<&str>, amc: Option<(&str, &str)>, ipc_grants: [Option<&str>; 3], loan_route: Option<&str>, pipe_config: Option<&str>, socket_service: Option<&str>, topic_masks: Option<(&str, &str)>, caps: [Option<&str>; 2]) {
     let batch_jobs = if let Some(raw) = batch {
         let jobs: Vec<_> = raw.split(';').map(parse_batch_job).collect();
         assert_eq!(jobs.len(), slots, "provide one batch tuple per slot");
@@ -1508,10 +1569,13 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         assert!(argv[3].is_none() || extras[3] == client_mask, "socket broker 3 requires client mask 7");
         extras[3] = client_mask;
     }
+    let env_slots = environ[..slots].iter().enumerate()
+        .map(|(slot, v)| native_env_literals(slot, v.as_deref().unwrap_or(""), argv[slot].as_deref()))
+        .collect::<Vec<_>>().join(", ");
     let extra_slots = extras.join(", ");
     let thread_bases = thread_priorities.unwrap_or_default();
     let mut generated = format!(
-        "pub const NATIVE_BATCH_JOBS: [(u64, u64); {slots}] = {batch_jobs:?};\npub const NATIVE_THREAD_PRIORITIES: [u8; 4] = {thread_bases:?};\npub const NATIVE_LOTTERY_SEED: u64 = {seed};\npub const NATIVE_LOTTERY_HORIZON: usize = {horizon};\npub const NATIVE_LOTTERY_WINDOW: usize = {width};\npub const NATIVE_LOTTERY_FLOORS: [u8; {slots}] = {counts:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
+        "pub const NATIVE_BATCH_JOBS: [(u64, u64); {slots}] = {batch_jobs:?};\npub const NATIVE_THREAD_PRIORITIES: [u8; 4] = {thread_bases:?};\npub const NATIVE_LOTTERY_SEED: u64 = {seed};\npub const NATIVE_LOTTERY_HORIZON: usize = {horizon};\npub const NATIVE_LOTTERY_WINDOW: usize = {width};\npub const NATIVE_LOTTERY_FLOORS: [u8; {slots}] = {counts:?};\npub const NATIVE_WEIGHTED_NOTIFY_MODE: &str = {notify_mode:?};\npub const NATIVE_WEIGHTED_NOTIFY_COUNT: u64 = {notify_count};\npub const NATIVE_SERVER_SLOT_MS: u64 = {slot_ms};\npub const NATIVE_SERVER_QUOTA: u64 = {quota};\npub const NATIVE_SERVER_PERIOD: u64 = {period};\npub const NATIVE_SERVER_CREDITS: usize = {credits};\npub const NATIVE_PARTITION_WINDOWS: &[(Option<usize>, u64)] = &{windows:?};\npub const NATIVE_ARGV_EXTRAS: [&[&[u8]]; {slots}] = [{extra_slots}];\npub const NATIVE_ENV: [&[&[u8]]; {slots}] = [{env_slots}];\npub const NATIVE_POLICY: &str = {mode:?};\npub const NATIVE_PRIORITIES: [u8; {slots}] = {values:?};\npub const NATIVE_WEIGHTS: [u32; {slots}] = {slot_weights:?};\npub const NATIVE_DEADLINE_LLF: bool = {llf};\npub const NATIVE_DEADLINE_SERVICE_MASK: u16 = {service_mask};\npub const NATIVE_DEADLINE_SWITCH_CAP: u64 = {switch_cap};\npub const NATIVE_EDF_JOBS: [(u64, u64, u64); {job_count}] = {jobs:?};\npub const NATIVE_PERIODIC: [(u64, u64, u64); {slots}] = {periods:?};\npub const NATIVE_RESERVATIONS: [(u32, u32); {slots}] = {servers:?};\npub const NATIVE_CLASSES: [u8; {slots}] = {classes:?};\npub const NATIVE_ALLOTMENT_TICKS: [u64; 3] = {allotments:?};\npub const NATIVE_BOOST_TICKS: u64 = {boost};\npub const NATIVE_QUANTUM_TICKS: u64 = {ticks};\n"
     );
     let path = std::path::PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("native_schedule.rs");
     if mode == "extension" {
@@ -1560,7 +1624,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
         if raw.is_none() && !(capability_backend && cfg == "jnox_native_mailbox_ipc") {
             continue;
         }
-        let maximum = if cfg == "jnox_native_sync_ipc" { 4 } else { 3 };
+        let maximum = if cfg == "jnox_native_sync_ipc" { 5 } else { 3 };
         assert!((2..=maximum).contains(&slots), "unsupported process count for IPC configuration");
         let mut routes = vec![0u8; slots];
         for pair in raw.into_iter().flat_map(|list| list.split(',')) {
@@ -1584,7 +1648,7 @@ fn write_native_schedule(slots: usize, policy: Option<&str>, priorities: Option<
                     _ => panic!("invalid socket service slot"),
                 };
                 if slot == 3 {
-                    assert_eq!(routes.as_slice(), &[8, 8, 8, 0], "display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3");
+                    assert!(routes[..3] == [8, 8, 8] && routes[3..].iter().all(|&mask| mask == 0), "display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3");
                 } else {
                     assert!(slots < 4 || topic_masks.is_some(), "four native socket processes require display broker 3 or a separate pubsub service");
                 }

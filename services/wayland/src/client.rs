@@ -13,9 +13,11 @@ enum Kind {
     Shm,
     Wm,
     Seat,
+    Output { entered: bool },
     Keyboard,
+    Pointer,
     Surface,
-    Region,
+    Region(usize),
     Pool(usize),
     Buffer(Buffer),
     Xdg,
@@ -36,6 +38,22 @@ const EMPTY: Object = Object {
     kind: Kind::Empty,
     version: 0,
 };
+#[derive(Clone, Copy)]
+struct Region {
+    ops: [(bool, [i32; 4]); 16],
+    len: usize,
+}
+impl Region {
+    const EMPTY: Self = Self { ops: [(false, [0; 4]); 16], len: 0 };
+    fn contains(&self, x: i64, y: i64) -> bool {
+        self.ops[..self.len].iter().rev().find_map(|&(add, [left, top, w, h])| {
+            let dx = x - i64::from(left);
+            let dy = y - i64::from(top);
+            (dx >= 0 && dy >= 0 && dx < i64::from(w) && dy < i64::from(h)).then_some(add)
+        }).unwrap_or(false)
+    }
+}
+
 struct Pool {
     map: Option<platform::Mapping>,
     size: usize,
@@ -61,10 +79,17 @@ pub struct Client {
     pub surface: Surface,
     objects: [Object; 64],
     pools: [Pool; 4],
+    regions: [Region; 4],
+    input_region: Option<Region>,
+    pending_region: Option<Option<Region>>,
     configures: [u32; 8],
     configs: usize,
     pub dying: Option<u32>,
+    pub focus_stall: Option<u32>,
     pub changed: bool,
+    pub surface_generation: u64,
+    pub pointer_available: bool,
+    pub pointer_local: Option<(u32, i32, i32)>,
 }
 impl Client {
     pub const fn new() -> Self {
@@ -75,10 +100,17 @@ impl Client {
             surface: Surface::new(),
             objects: [EMPTY; 64],
             pools: [const { Pool { map: None, size: 0 } }; 4],
+            regions: [Region::EMPTY; 4],
+            input_region: None,
+            pending_region: None,
             configures: [0; 8],
             configs: 0,
             dying: None,
+            focus_stall: None,
             changed: false,
+            surface_generation: 0,
+            pointer_available: false,
+            pointer_local: None,
         }
     }
     pub fn start(&mut self, fd: i32) {
@@ -91,6 +123,7 @@ impl Client {
         };
     }
     pub fn clear(&mut self) {
+        self.pointer_local = None;
         self.incoming.clear();
         self.out.clear();
         self.objects.fill(EMPTY);
@@ -99,8 +132,11 @@ impl Client {
             p.size = 0;
         }
         self.surface = Surface::new();
+        self.input_region = None;
+        self.pending_region = None;
         self.configs = 0;
         self.dying = None;
+        self.focus_stall = None;
         self.changed = true;
         if self.fd >= 0 {
             crate::observe::wire(self.fd, 4, &[], &[]);
@@ -183,6 +219,26 @@ impl Client {
         }
         Ok(())
     }
+    pub fn input_contains(&self, x: i64, y: i64) -> bool {
+        self.input_region.is_none_or(|r| r.contains(x, y))
+    }
+    pub fn pointer_event(&mut self, opcode: u16, words: &[u32]) -> Result<()> {
+        for obj in self.objects.iter().filter(|o| matches!(o.kind, Kind::Pointer)) {
+            if opcode <= 1 {
+                self.out.focus_words(obj.id, opcode, words)?;
+            } else {
+                self.out.words(obj.id, opcode, words)?;
+            }
+        }
+        Ok(())
+    }
+    pub fn pointer_lost(&mut self) -> Result<()> {
+        self.pointer_available = false;
+        for obj in self.objects.iter().filter(|o| matches!(o.kind, Kind::Seat)) {
+            self.out.words(obj.id, 0, &[2])?;
+        }
+        Ok(())
+    }
     pub fn close_event(&mut self) -> Result<()> {
         if self.surface.top != 0 {
             self.out.event(self.surface.top, 1, &[])?;
@@ -207,6 +263,34 @@ impl Client {
             let end = 4 + with_string(&mut body[4..], iface);
             body[end..end + 4].copy_from_slice(&ver.to_ne_bytes());
             self.out.event(reg, 0, &body[..end + 4])?;
+        }
+        Ok(())
+    }
+    fn output_description(&mut self, id: u32, version: u32) -> Result<()> {
+        // Origin, physical millimeters and subpixel layout are all zero for RAMFB.
+        let mut body = [0u8; 64];
+        let mut end = 20;
+        end += with_string(&mut body[end..], b"JNOX");
+        end += with_string(&mut body[end..], b"RAM framebuffer");
+        self.out.event(id, 0, &body[..end+4])?; // normal transform
+        self.out.words(id, 1, &[3, surface::WIDTH as u32, surface::HEIGHT as u32, 0])?;
+        if version >= 2 {
+            self.out.words(id, 3, &[1])?; // scale
+            self.out.event(id, 2, &[])?; // done
+        }
+        Ok(())
+    }
+    fn output_membership(&mut self, slot: usize) -> Result<()> {
+        let anchor = crate::POS[crate::Scene::position(slot, self)];
+        let overlaps = self.surface.overlaps_output(anchor);
+        for obj in &mut self.objects {
+            if let Kind::Output { entered } = &mut obj.kind {
+                if *entered != overlaps {
+                    let opcode = if overlaps { 0 } else { 1 };
+                    self.out.words(self.surface.id, opcode, &[obj.id])?;
+                    *entered = overlaps;
+                }
+            }
         }
         Ok(())
     }
@@ -294,6 +378,7 @@ impl Client {
         last: &mut u32,
         focused: bool,
         image: &mut [u32; PIXELS],
+        slot: usize,
     ) -> Result<bool> {
         let Some((id, op, size)) = self.incoming.header()? else {
             return Ok(false);
@@ -314,6 +399,9 @@ impl Client {
             platform::close(fd);
         }
         result?;
+        if matches!((obj.kind, op), (Kind::Registry, 0) | (Kind::Surface, 6) | (Kind::Top, 0 | 3)) {
+            self.output_membership(slot)?;
+        }
         Ok(true)
     }
 
@@ -359,6 +447,7 @@ impl Client {
                     2 => Kind::Shm,
                     3 => Kind::Wm,
                     4 => Kind::Seat,
+                    5 => Kind::Output { entered: false },
                     _ => unreachable!(),
                 };
                 self.add(new, kind, version)?;
@@ -367,8 +456,15 @@ impl Client {
                     self.out.words(new, 0, &[1])?;
                 }
                 if name == 4 {
-                    input::capabilities(&mut self.out, new, version)?;
+                    input::capabilities(&mut self.out, new, version, self.pointer_available)?;
                 }
+                if name == 5 {
+                    self.output_description(new, version)?;
+                }
+            }
+            (Kind::Output { .. }, 0) if v >= 3 => {
+                r.end()?;
+                self.delete(id)?;
             }
             (Kind::Compositor, 0) => {
                 let new = r.u()?;
@@ -378,21 +474,30 @@ impl Client {
                 }
                 self.add(new, Kind::Surface, v)?;
                 self.surface.id = new;
+                self.surface_generation = self.surface_generation.wrapping_add(1);
             }
             (Kind::Compositor, 1) => {
                 let new = r.u()?;
                 r.end()?;
-                self.add(new, Kind::Region, 1)?;
+                let index = (0..self.regions.len()).find(|&i| !self.objects.iter()
+                    .any(|o| matches!(o.kind, Kind::Region(n) if n == i)))
+                    .ok_or(Fault(1, 2, b"region table full"))?;
+                self.regions[index] = Region::EMPTY;
+                self.add(new, Kind::Region(index), 1)?;
             }
-            (Kind::Region, 0) => {
+            (Kind::Region(_), 0) => {
                 r.end()?;
                 self.delete(id)?;
             }
-            (Kind::Region, 1 | 2) => {
-                for _ in 0..4 {
-                    r.i()?;
-                }
+            (Kind::Region(index), 1 | 2) => {
+                let rect = [r.i()?, r.i()?, r.i()?, r.i()?];
                 r.end()?;
+                if rect[2] > 0 && rect[3] > 0 {
+                    let region = &mut self.regions[index];
+                    let slot = region.ops.get_mut(region.len).ok_or(Fault(1, 2, b"region full"))?;
+                    *slot = (op == 1, rect);
+                    region.len += 1;
+                }
             }
             (Kind::Shm, 0) => {
                 let (new, size) = (r.u()?, r.i()?);
@@ -488,7 +593,10 @@ impl Client {
                     ));
                 }
                 self.delete(id)?;
+                self.pointer_local = None;
                 self.surface = Surface::new();
+                self.input_region = None;
+                self.pending_region = None;
                 for o in self.objects {
                     if matches!(o.kind, Kind::Frame | Kind::Presented) {
                         self.delete(o.id)?;
@@ -527,13 +635,18 @@ impl Client {
             (Kind::Surface, 4 | 5) => {
                 let reg = r.u()?;
                 r.end()?;
-                if reg != 0 && !matches!(self.objects[self.index(reg)?].kind, Kind::Region) {
-                    return Err(Fault(1, 0, b"expected wl_region"));
-                }
+                let region = if reg == 0 { None } else {
+                    let Kind::Region(index) = self.objects[self.index(reg)?].kind else {
+                        return Err(Fault(1, 0, b"expected wl_region"));
+                    };
+                    Some(self.regions[index])
+                };
+                if op == 5 { self.pending_region = Some(region); }
             }
             (Kind::Surface, 6) => {
                 r.end()?;
                 self.commit(last, image)?;
+                if let Some(region) = self.pending_region.take() { self.input_region = region; }
             }
             (Kind::Surface, 7) if v >= 2 => {
                 let t = r.i()?;
@@ -690,8 +803,11 @@ impl Client {
                 }
             }
             (Kind::Top, 9 | 10 | 11 | 12 | 13) => {
-                if op == 11 && r.u()? != 0 {
-                    return Err(Fault(1, 0, b"unknown output"));
+                if op == 11 {
+                    let output = r.u()?;
+                    if output != 0 && !matches!(self.objects[self.index(output)?].kind, Kind::Output { .. }) {
+                        return Err(Fault(1, 0, b"expected wl_output"));
+                    }
                 }
                 r.end()?;
                 if op != 13 && self.surface.configure != 0 {
@@ -707,6 +823,26 @@ impl Client {
                     input::enter(&mut self.out, new, serial(last), self.surface.id)?;
                 }
             }
+            (Kind::Seat, 0) if self.pointer_available => {
+                let new = r.u()?;
+                r.end()?;
+                self.add(new, Kind::Pointer, v)?;
+                if let Some((surface, x, y)) = self.pointer_local.filter(|p| p.0 == self.surface.id && self.surface.mapped) {
+                    self.out.focus_words(new, 0, &[serial(last), surface, x as u32, y as u32])?;
+                }
+            }
+            (Kind::Pointer, 0) => {
+                let (_serial, surface, _x, _y) = (r.u()?, r.u()?, r.i()?, r.i()?);
+                r.end()?;
+                if surface != 0 {
+                    self.index(surface)?;
+                    return Err(Fault(id, 0, b"surface already has a role"));
+                }
+            }
+            (Kind::Pointer, 1) if v >= 3 => {
+                r.end()?;
+                self.delete(id)?;
+            }
             (Kind::Seat, 0 | 2) => return Err(Fault(id, 0, b"seat capability unavailable")),
             (Kind::Keyboard, 0) if v >= 3 => {
                 r.end()?;
@@ -717,9 +853,10 @@ impl Client {
         Ok(())
     }
 }
-const GLOBALS: [(u32, &[u8], u32); 4] = [
+const GLOBALS: [(u32, &[u8], u32); 5] = [
     (1, b"wl_compositor", 4),
     (2, b"wl_shm", 1),
     (3, b"xdg_wm_base", 1),
     (4, b"wl_seat", 4),
+    (5, b"wl_output", 3),
 ];

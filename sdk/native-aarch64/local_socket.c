@@ -14,11 +14,15 @@ enum { FD_BASE = 64, FD_COUNT = 4, PATH_MAX_BYTES = 31, DATA_MAX = 64 };
 enum { OP_SOCKET = 1, OP_BIND, OP_CONNECT, OP_LISTEN, OP_ACCEPT, OP_SEND,
        OP_RECV, OP_SHUTDOWN, OP_CLOSE, OP_SOCKET4, OP_BIND4, OP_CONNECT4,
        OP_SEND4, OP_RECV4, OP_SEND_RIGHTS, OP_RECV_RIGHTS };
-static struct descriptor { unsigned char kind, nonblock, family; } descriptors[FD_COUNT];
+static struct descriptor { unsigned char kind, nonblock, family, cloexec; } descriptors[FD_COUNT];
 static uint64_t broker_pid;
 static unsigned char configured, active;
 
 static long error(long code) {
+#ifdef JNOX_GRAPHICS_OS
+    extern void jnox_graphics_errno(int);
+    jnox_graphics_errno((int)code);
+#endif
     errno = (int)code;
     return -1;
 }
@@ -46,7 +50,7 @@ static long rpc(uint64_t request) {
 }
 
 struct transaction {
-    unsigned op, slot, arg, nonblock, accept_right;
+    unsigned op, slot, arg, nonblock, accept_right, cloexec;
     const unsigned char *path, *data;
     unsigned pathlen, datalen;
 };
@@ -56,7 +60,7 @@ static long commit(const struct transaction *t) {
     uint64_t begin = (0x11ULL << 56) | ((uint64_t)t->op << 48)
         | ((uint64_t)t->slot << 40) | ((uint64_t)t->arg << 32)
         | ((uint64_t)t->pathlen << 24) | ((uint64_t)t->datalen << 16)
-        | ((uint64_t)t->nonblock << 8) | ((uint64_t)t->accept_right << 9);
+        | ((uint64_t)t->nonblock << 8) | ((uint64_t)t->accept_right << 9) | ((uint64_t)t->cloexec << 10);
     long r = rpc(begin);
     if (r != 0) return r < 0 ? r : -EIO;
     unsigned total = t->pathlen + t->datalen;
@@ -95,14 +99,14 @@ static long prepare(struct transaction *t, unsigned op, int fd) {
     return 0;
 }
 
-static long new_fd(long result, unsigned kind, unsigned nonblock, unsigned family) {
+static long new_fd(long result, unsigned kind, unsigned nonblock, unsigned family, unsigned cloexec) {
     if (result < 0) return result;
     if (result >= FD_COUNT || descriptors[result].kind) return -EIO;
-    descriptors[result] = (struct descriptor){kind, nonblock, family};
+    descriptors[result] = (struct descriptor){kind, nonblock, family, cloexec};
     return FD_BASE + result;
 }
 int socket(int domain, int type, int protocol) {
-    unsigned kind = type & ~SOCK_NONBLOCK;
+    unsigned kind = type & ~(SOCK_NONBLOCK | SOCK_CLOEXEC);
     if (domain == AF_INET) {
         if ((kind != SOCK_STREAM && kind != SOCK_DGRAM) ||
             (protocol && protocol != (kind == SOCK_STREAM ? IPPROTO_TCP : IPPROTO_UDP)))
@@ -117,7 +121,7 @@ int socket(int domain, int type, int protocol) {
     if (r < 0) return finish(r);
     t.arg = kind;
     t.nonblock = !!(type & SOCK_NONBLOCK);
-    return finish(new_fd(commit(&t), kind, t.nonblock, domain));
+    return finish(new_fd(commit(&t), kind, t.nonblock, domain, !!(type & SOCK_CLOEXEC)));
 }
 
 /* Use byte copies of the common family field so sockaddr casts need no
@@ -159,7 +163,7 @@ static int simple(unsigned op, int fd, unsigned arg) {
     t.arg = arg;
     r = commit(&t);
     if (op == OP_ACCEPT)
-        r = new_fd(r, descriptors[t.slot].kind, 0, descriptors[t.slot].family);
+        r = new_fd(r, descriptors[t.slot].kind, 0, descriptors[t.slot].family, 0);
     if (op == OP_CLOSE && r == 0)
         descriptors[t.slot] = (struct descriptor){0};
     return finish(r);
@@ -180,7 +184,7 @@ int shutdown(int fd, int how) {
 
 ssize_t sendto(int fd, const void *buf, size_t len, int flags,
                const struct sockaddr *addr, socklen_t addrlen) {
-    if (flags & ~MSG_DONTWAIT) return error(ENOTSUP);
+    if (flags & ~(MSG_DONTWAIT | MSG_NOSIGNAL)) return error(ENOTSUP);
     if (len && !buf) return error(EFAULT);
     if (!enter()) return -1;
     struct transaction t = {0};
@@ -277,3 +281,5 @@ ssize_t __wrap_write(int fd, const void *buf, size_t n) {
     if (backing_range(fd)) return backing_io(fd);
     return socket_range(fd) ? send(fd, buf, n, 0) : __real_write(fd, buf, n);
 }
+
+#include "socket_poll.inc"

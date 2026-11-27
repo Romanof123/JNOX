@@ -13,7 +13,7 @@ class Parser(argparse.ArgumentParser):
 
 def select(slots, *, display=None, socket=None, net=None, pubsub=None, routes=(),
            mask=None, board="virt", policy="fifo", threads=(), irq=0, children=(), rom=(),
-           standby=None, **ipc):
+           standby=None, display_standby=None, **ipc):
     def option(slot):
         return [] if slot is None else [str(slot)]
 
@@ -22,6 +22,7 @@ def select(slots, *, display=None, socket=None, net=None, pubsub=None, routes=()
                               pubsub_service=option(pubsub), ipc_route=list(routes),
                               peer3_arg=option(mask), threads=threads, uart_rx_irq=irq,
                               exec_child=children, rom_file=rom, uart_rx_standby=standby,
+                              display_standby=display_standby,
                               mailbox_route=[], notify_route=[], loan_route=[], cap_grant=[],
                               cap_route=[], pipes=0, waitset=0, shared_fd=0)
     vars(args).update(ipc)
@@ -78,6 +79,18 @@ class NativeServiceSlotTests(unittest.TestCase):
         base = dict(slots=2, display=0, irq=1)
         for change in (dict(display=None), dict(board="pi4"), dict(policy="rr"), dict(irq=2),
                        dict(children=["1:child"]), dict(rom=["file=a"]), dict(threads=["2"])):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                select(**(base | change))
+
+    def test_display_standby_profile(self):
+        routes = [(0, 3), (1, 3), (2, 3)]
+        base = dict(slots=5, display=0, display_standby="2", socket=3, shared_fd=1, routes=routes)
+        self.assertEqual(select(**base), ((0, 3, [0, 1, 2]), ["7"]))
+        for change in (dict(display_standby=None), dict(display_standby="1"), dict(slots=4),
+                       dict(display=1), dict(socket=2), dict(shared_fd=0), dict(board="pi4"),
+                       dict(policy="rr"), dict(routes=routes + [(4, 3)]), dict(routes=routes[1:]),
+                       dict(irq=1), dict(threads=["2"]), dict(children=["1:child"]), dict(rom=["file=a"]),
+                       dict(pipes=1), dict(waitset=1), dict(mailbox_route=[(4, 0)])):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 select(**(base | change))
 

@@ -1,0 +1,421 @@
+Build started at 2026-11-27T11:21:30.042370
+Main binary: /usr/bin/python3
+Build Options: -Dwrap_mode=nofallback '--cross-file /mnt/d/codex/jnox448-xwayland/configure-03/jnox.ini' '--cross-file /mnt/d/codex/.jnox-work/native-xwayland-intake/verification/xwayland/software.ini'
+Python system: Linux
+The Meson build system
+Version: 0.61.2
+Source dir: /mnt/d/codex/jnox448-xwayland/xwayland-24.1.6
+Build dir: /mnt/d/codex/jnox448-xwayland/configure-03/meson
+Build type: cross build
+Project name: xwayland
+Project version: 24.1.6
+Sanity testing C compiler: clang --target=aarch64-none-elf
+Is cross compiler: True.
+Sanity check compiler command line: clang --target=aarch64-none-elf sanitycheckc.c -o sanitycheckc_cross.exe -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include -D_FILE_OFFSET_BITS=64 -c
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+C compiler for the host machine: clang --target=aarch64-none-elf (clang 14.0.0-1ubuntu1 "Ubuntu clang version 14.0.0-1ubuntu1.1")
+C linker for the host machine: clang --target=aarch64-none-elf ld.lld 14.0.0
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/sanitycheckc.exe
+C compiler for the build machine: cc (gcc 11.4.0 "cc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0")
+C linker for the build machine: cc ld.bfd 2.38
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: aarch64
+Host machine cpu: aarch64
+Target machine cpu family: aarch64
+Target machine cpu: aarch64
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpk9qv7e7h
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpk9qv7e7h/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpk9qv7e7h/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wall 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wall: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpt3p3h7sj
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpt3p3h7sj/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpt3p3h7sj/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wpointer-arith 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wpointer-arith: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpg3ywq0hl
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpg3ywq0hl/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpg3ywq0hl/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wmissing-declarations 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wmissing-declarations: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpnc_7jm5k
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpnc_7jm5k/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpnc_7jm5k/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wformat=2 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wformat=2: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpk4ksaumm
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpk4ksaumm/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpk4ksaumm/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wstrict-prototypes 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wstrict-prototypes: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpcupv78sk
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpcupv78sk/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpcupv78sk/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wmissing-prototypes 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wmissing-prototypes: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpes0jeu94
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpes0jeu94/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpes0jeu94/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wnested-externs 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wnested-externs: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp2noxlteu
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp2noxlteu/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp2noxlteu/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wbad-function-cast 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wbad-function-cast: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpqzloeu1p
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpqzloeu1p/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpqzloeu1p/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wold-style-definition 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wold-style-definition: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpz7_3agea
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpz7_3agea/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpz7_3agea/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wunused 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wunused: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpq7wenmlc
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpq7wenmlc/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpq7wenmlc/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wuninitialized 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wuninitialized: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp9aeaay02
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp9aeaay02/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp9aeaay02/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wshadow 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wshadow: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmppifxs80c
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmppifxs80c/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmppifxs80c/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wmissing-noreturn 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wmissing-noreturn: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpmq2nr254
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpmq2nr254/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpmq2nr254/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wmissing-format-attribute 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wmissing-format-attribute: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp3fvro7l6
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp3fvro7l6/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp3fvro7l6/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Wredundant-decls 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Wredundant-decls: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpike7kxfw
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpike7kxfw/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpike7kxfw/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=implicit 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=implicit: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp1yn41g9k
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp1yn41g9k/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp1yn41g9k/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=nonnull 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=nonnull: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpy__hfrbv
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpy__hfrbv/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpy__hfrbv/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=init-self 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=init-self: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp9fkc6dvr
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp9fkc6dvr/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp9fkc6dvr/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=main 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=main: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmplvjnb_a0
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmplvjnb_a0/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmplvjnb_a0/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=missing-braces 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=missing-braces: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmphepz31gg
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmphepz31gg/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmphepz31gg/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=sequence-point 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=sequence-point: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpi3zwgc5t
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpi3zwgc5t/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpi3zwgc5t/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=return-type 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=return-type: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpvmcyp1il
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpvmcyp1il/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpvmcyp1il/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=trigraphs 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=trigraphs: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpjxcjj_1g
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpjxcjj_1g/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpjxcjj_1g/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=array-bounds 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=array-bounds: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpki9jc_l3
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpki9jc_l3/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpki9jc_l3/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=write-strings 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=write-strings: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp4at1dz4m
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp4at1dz4m/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp4at1dz4m/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=address 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=address: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp8ibgaigr
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp8ibgaigr/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmp8ibgaigr/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=int-to-pointer-cast 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=int-to-pointer-cast: YES 
+Running compile:
+Working directory:  /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpnsezzuc4
+Command line:  clang --target=aarch64-none-elf -I/mnt/d/codex/.jnox-work/native-xwayland-intake/sdk/native-aarch64/include -I/mnt/d/codex/jnox448-xwayland/target-prefix/include /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpnsezzuc4/testfile.c -o /mnt/d/codex/jnox448-xwayland/configure-03/meson/meson-private/tmpnsezzuc4/output.obj -c -ffreestanding -nostdinc -fno-pic -fno-pie -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -mgeneral-regs-only -mno-outline-atomics -D_FILE_OFFSET_BITS=64 -O0 -Werror=implicit-function-declaration -Werror=unknown-warning-option -Werror=unused-command-line-argument -Werror=ignored-optimization-argument -Werror=pointer-to-int-cast 
+
+Code:
+ extern int i;
+int i;
+
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler for C supports arguments -Werror=pointer-to-int-cast: YES 
+xwayland-24.1.6/meson.build:61: WARNING: Consider using the built-in warning_level option instead of using "-Wall".
+Pkg-config binary for 1 is not cached.
+Pkg-config binary for 1 specified from cross file, native file, or env var as ['pkg-config']
+Found pkg-config: /usr/bin/pkg-config (0.29.2)
+Determining dependency 'x11' with pkg-config executable '/usr/bin/pkg-config'
+env[PKG_CONFIG_PATH]: 
+env[PKG_CONFIG_LIBDIR]: /mnt/d/codex/jnox448-xwayland/target-prefix/lib/pkgconfig:/mnt/d/codex/jnox448-xwayland/target-prefix/share/pkgconfig
+Called `/usr/bin/pkg-config --modversion x11` -> 1
+
+CMake binary for 1 is not cached
+CMake binary for 1 specified from cross file, native file, or env var as ['/bin/false']
+WARNING: Found CMake '/bin/false' but couldn't run it
+Found CMake: NO
+CMake binary for machine 1 not found. Giving up.
+Run-time dependency x11 found: NO (tried pkgconfig)
+
+xwayland-24.1.6/meson.build:71:0: ERROR: Dependency "x11" not found, tried pkgconfig
