@@ -2573,3 +2573,11 @@ CHG-339,affects,DES-009
 CHG-339,affects,DES-013
 CHG-339,affects,VER-015
 CHG-339,affects,VER-024
+REQ-015,partially-implemented-by,IMP-339
+REQ-024,partially-implemented-by,IMP-339
+CHG-339,affects,EVD-339
+IMP-339,partially-verified-by,VER-015
+IMP-339,partially-verified-by,VER-024
+VER-015,has-partial-evidence,EVD-339
+VER-024,has-partial-evidence,EVD-339
+IMP-339,tested-in,EVD-339
