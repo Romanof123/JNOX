@@ -1,0 +1,20 @@
+{
+  "01-primary-button-held.png": {
+    "ppm": "capture-01/recover/boot/primary-held.ppm",
+    "ppm_sha256": "b82564e77d5ac77e106dcf395e66e15e3198d82d4f8b61c2cab2cfad72895977",
+    "png_sha256": "e8ccf27d9fa9afed49c8aa9fddc9eaeebb8a5ccad3ca29f80d74760bedc732dc",
+    "rgb_sha256": "600253939c6bfd354848ac8901807f672b2b886d18fb3c9fe20b6c9a0ea6f378"
+  },
+  "02-spare-ready.png": {
+    "ppm": "capture-01/recover/boot/spare-ready.ppm",
+    "ppm_sha256": "9a191d92255d54c0c05a803397a45cc9f5018953f4504c1c8cbc67ccea8e8272",
+    "png_sha256": "a9df4f39efcd334683c832b788fa336b06bf36a29b60d9dcbfa4ca2f5038593e",
+    "rgb_sha256": "3974eb7b38fa425c6c0d8f448277c5b2a6fba03ffdc26ca1aa9ef08a86724ed0"
+  },
+  "03-spare-button-pressed.png": {
+    "ppm": "capture-01/recover/boot/spare-down.ppm",
+    "ppm_sha256": "4d3f209ce86d246a3a9a9151e823e6317e6111d50a2b439ff8f1d55a6769dde1",
+    "png_sha256": "be300de9ac52448dbb79f3435a91809aad370171d2c8504b075f83f0ef47469b",
+    "rgb_sha256": "cfc2927cdcb1de3f7164bfda7c9c4fc011869176f54c994f9f2ab4fbe1977d29"
+  }
+}

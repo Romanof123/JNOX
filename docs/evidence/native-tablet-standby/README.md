@@ -15,6 +15,14 @@ The controller requested 10 ms absolute releases. No measured consecutive comple
 
 The first SDK build failed at the signed 64-bit type used for denial receipts. A subsequent sparse checkout omitted the controller's existing clock header. Both were corrected before the four captures. The first independent reader expected three generic device denials. The pointer-enabled caller records five, including separately checked acquisition and read denials. After correcting this assumption, the reader rejected all seven altered inputs. A separate host model of the Rust reset module returned an error and preserved DMA storage in all three stuck-register cases. Acknowledgement on the last permitted poll reclaimed exactly once. [Altered-data results](controls.json) · [Reset model](reset-model.json) · [Acceptance and regressions](https://github.com/Romanof123/JNOX/issues/457)
 
+## Display captures / 게스트 화면
+
+| Button held in the primary | Spare ready after reconnect | Fresh press at the spare |
+| --- | --- | --- |
+| ![Primary client after press](previews/01-primary-button-held.png) | ![Reconnected client before input](previews/02-spare-ready.png) | ![New client press on the spare](previews/03-spare-button-pressed.png) |
+
+The release verifier restored 197 locally retained files, including 25 complete guest RAM snapshots, into a fresh directory and compared the four capture trees byte for byte. The retained local archive is 6,765,821 bytes with SHA-256 `7ca42a6c968920d62773f5fc4ab04d1779754ea3179cbcf9cbf47a35be9a9b6c`. These three public PNGs reproduce the external framebuffer RGB bytes at the named checkpoints. / 원본 메모리와 장치 기록은 로컬에서 복원·대조했다. 공개 화면에는 각 시점의 게스트 프레임버퍼 픽셀을 담았다. [Frame hashes / 화면 해시](previews/frames.json)
+
 ## 한국어
 
 주 합성기가 태블릿 버튼을 누른 채 고장 난 뒤 두 장치 큐를 회수하고 예비 합성기가 새 세대로 장치를 인수했다. 이전 누름의 해제는 DMA에서 관찰됐지만 새 Wayland 연결에는 전달되지 않았다. 예비 합성기에서 새 클릭을 보내 클라이언트의 누름·해제, 화면 갱신, 실제 출력 픽셀을 독립 대조했다. 태블릿이 없는 구성에서는 키보드로 화면을 갱신하고 정상 종료했다.
