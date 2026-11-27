@@ -79,6 +79,47 @@ static int read_frame(void)
     return n;
 }
 
+#ifdef JNOX_LIFECYCLE_ASSERT_TEST
+volatile uint64_t jnox_assert_driver[8];
+volatile uint64_t jnox_assert_rx_slots[32];
+
+__attribute__((noinline, noreturn)) void jnox_lifecycle_assert_trap(void)
+{
+    __asm__ volatile("brk #0x440" ::: "memory");
+    __builtin_unreachable();
+}
+
+static int assert_exchange(struct lifecycle_session *s, volatile uint64_t *d)
+{
+    if (pipe_send(DATA_FD,s,sizeof(*s)) || expect_reply(0xa3)) return 20;
+    MARK("NET ASSERT FIRST READY");
+    int n=read_frame();
+    if (n!=(int)frame_length(0)) return 21;
+    d[4]=read_be(frame+22,8);
+    if (!d[4] || !valid_frame(frame,n,0,s->mac,d[4]) ||
+        pipe_send(DATA_FD,frame,n) || expect_reply(0xa6)) return 22;
+    d[5]=1;
+    d[6]=n;
+    if (record(0,DELIVERED,s->token)) return 25;
+    unsigned count=0;
+    for (unsigned i=0; i<32; ++i) {
+        jnox_assert_rx_slots[i]=jnox_rx_posted_address_v1(i);
+        count+=jnox_assert_rx_slots[i]!=0;
+    }
+    if (!count || count!=jnox_lifecycle_state[0][DELIVERED][3]) return 29;
+    jnox_assert_driver[0]=s->token;
+    jnox_assert_driver[1]=d[4];
+    jnox_assert_driver[2]=n;
+    jnox_assert_driver[3]=count;
+    jnox_assert_driver[4]=jnox_lifecycle_state[0][DELIVERED][0];
+    jnox_assert_driver[5]=jnox_lifecycle_state[0][DELIVERED][1];
+    jnox_assert_driver[6]=jnox_lifecycle_state[0][DELIVERED][2];
+    jnox_assert_driver[7]=1;
+    MARK("NET ASSERT ARMED");
+    if (hold(0,3)) return 28;
+    jnox_lifecycle_assert_trap();
+}
+#else
 static int exchange(struct lifecycle_session *s, volatile uint64_t *d)
 {
     unsigned g=s->generation;
@@ -101,6 +142,8 @@ static int exchange(struct lifecycle_session *s, volatile uint64_t *d)
     return 0;
 }
 
+#endif
+
 static int generation(unsigned g)
 {
     volatile uint64_t *d=jnox_lifecycle_driver[g];
@@ -122,6 +165,9 @@ static int generation(unsigned g)
     }
     if (jnox_lifecycle_open_v1() || record(g,OPENED,s.token)) return 19;
     d[1]=2;
+#ifdef JNOX_LIFECYCLE_ASSERT_TEST
+    return assert_exchange(&s,d);
+#else
     err=exchange(&s,d);
     if (err) return err;
     if (record(g,DELIVERED,s.token) || jnox_lifecycle_close_v1() ||
@@ -133,10 +179,16 @@ static int generation(unsigned g)
     if (!g && hold(g,4)) return 28;
     d[1]=100;
     return 0;
+#endif
 }
 
 int main(void)
 {
+#ifdef JNOX_LIFECYCLE_ASSERT_TEST
+    int rc=generation(0);
+    jnox_lifecycle_driver[0][15]=rc;
+    return rc ? rc : 30;
+#else
     for (unsigned g=0; g<2; ++g) {
         int rc=generation(g);
         jnox_lifecycle_driver[g][15]=rc;
@@ -144,4 +196,5 @@ int main(void)
     }
     MARK("NET LIFECYCLE DRIVER PASS");
     return 0;
+#endif
 }
