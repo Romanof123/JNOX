@@ -110,7 +110,8 @@ def build(args, work, profile, data):
     upstream = work / "virtio_net.c"
     upstream.write_bytes(data)
     kernel = kernel_flags(headers, tools["cc"], work)
-    receive_service = args.rx_service or args.rx_poll_service
+    poll_service = args.rx_poll_service or args.rx_irq_service
+    receive_service = args.rx_service or poll_service
     data_service = args.packet_service or receive_service
     queue_mode = args.queue_service or data_service
     packet_mode = args.packet_object_only or queue_mode
@@ -157,15 +158,23 @@ def build(args, work, profile, data):
         original_flags = packet_kernel
         if receive_service:
             packet_kernel = ["-DJNOX_PACKET_RX_ABI=1", *packet_kernel]
-            if args.rx_poll_service:
+            if poll_service:
                 packet_kernel = ["-DJNOX_PACKET_RX_POLL_ABI=1", *packet_kernel]
+                if args.rx_irq_service:
+                    packet_kernel = ["-DJNOX_PACKET_RX_IRQ_ABI=1", *packet_kernel]
+                    if args.rx_irq_rearm_test:
+                        packet_kernel = ["-DJNOX_PACKET_RX_IRQ_RACE_ABI=1", *packet_kernel]
             # The driver normally inlines its private receive helpers. Preserve
             # separate definitions in the original TU; gc-sections discards
             # unreferenced functions at link time.
             from linux_driver_tx_layout import upstream_prelude
             rx_prefix = work / "jnox_rx_original_prefix.h"
-            rx_prefix.write_text(upstream_prelude(data.decode("utf-8"))
-                                 + "\n#include <jnox_rx_page_api.h>\n", encoding="utf-8")
+            prefix_text = upstream_prelude(data.decode("utf-8")) + "\n#include <jnox_rx_page_api.h>\n"
+            if args.rx_irq_service:
+                prefix_text += ("#undef sprintf\n"
+                                "extern int jnox_rx_queue_name_v1(char *, const char *, unsigned int);\n"
+                                "#define sprintf(dst,fmt,val) jnox_rx_queue_name_v1((dst),(fmt),(val))\n")
+            rx_prefix.write_text(prefix_text, encoding="utf-8")
             original_flags = [*packet_kernel, "-fkeep-static-functions", "-include", rx_prefix]
         compile_tu(tools["cc"], original_flags, upstream.name, variant.name)
         upstream.unlink()
@@ -175,8 +184,10 @@ def build(args, work, profile, data):
             roots = list(entries)
             if receive_service and obj == variant:
                 roots.extend(("add_recvbuf_small", "virtnet_rq_get_buf"))
-                if args.rx_poll_service:
+                if poll_service:
                     roots.append("virtnet_alloc_queues")
+                    if args.rx_irq_service:
+                        roots.extend(("virtnet_find_vqs", "skb_recv_done"))
             graph = inventory(obj, tools["objdump"], roots)
             reports[obj.name] = {
                 "elf": inspect_elf(obj, tools), "relocations": graph,
@@ -211,8 +222,10 @@ def build(args, work, profile, data):
         callbacks = [callback] + (["start_xmit"] if args.packet_service else [])
         if receive_service:
             callbacks.extend(("add_recvbuf_small", "virtnet_rq_get_buf"))
-            if args.rx_poll_service:
+            if poll_service:
                 callbacks.extend(("virtnet_alloc_queues", "virtnet_poll"))
+                if args.rx_irq_service:
+                    callbacks.extend(("virtnet_find_vqs", "skb_recv_done"))
         invoke(tools["objcopy"], *["--globalize-symbol=" + name for name in callbacks],
                callback_input.name, derivative.name)
         full = inspect_elf(callback_input, tools)
@@ -257,7 +270,22 @@ def build(args, work, profile, data):
             result.update(control_report)
             result["mode"] = "packet-service" if args.packet_service else "queue-service"
             if receive_service:
-                result["mode"] = "rx-poll-service" if args.rx_poll_service else "rx-service"
+                result["mode"] = "rx-poll-service" if poll_service else "rx-service"
+                if args.rx_irq_service:
+                    result["mode"] = "rx-irq-service"
+                    graph = reports[variant.name]["relocations"]
+                    registrar = graph["entries"]["virtnet_find_vqs"]["root"]
+                    callback_id = graph["entries"]["skb_recv_done"]["root"]
+                    refs = [ref for ref in graph["nodes"][registrar]["references"]
+                            if ref["kind"] == "address" and ref["to"] == callback_id
+                            and ref.get("target_offset") == 0]
+                    if not refs:
+                        raise ValueError("missing original RX registration address relocation")
+                    result["irq_registration"] = {
+                        "source_object": derivative.name, "registrar": "virtnet_find_vqs",
+                        "queue_index": 0, "callback": "skb_recv_done", "object_address_references": refs,
+                        "scope": "Actual queue registration and IRQ delivery require guest evidence.",
+                    }
             result["callback_input"] = variant.name
             result["queue_service_scope"] = "Source validation and native bus queue setup only; Linux TX, RX and lifecycle entry points remain unadmitted."
         else:
@@ -287,9 +315,9 @@ def build(args, work, profile, data):
                 result["queue_service_scope"] = "Original validation and TX callback plus native transport. Full Linux lifecycle and RX poll remain unadmitted."
                 if receive_service:
                     result["queue_service_scope"] = "Original RX small-buffer provisioning and used-buffer retrieval. Full Linux RX poll and lifecycle remain unadmitted."
-                    receive_adapters = ("rx_poll", "rx_napi", "rx_skb") if args.rx_poll_service else ("receive",)
+                    receive_adapters = ("rx_poll", "rx_napi", "rx_skb") if poll_service else ("receive",)
                     adapters = (*receive_adapters, "rx_pages", "rx_virtqueue", "tx_virtqueue", "tx_runtime")
-                    if args.rx_poll_service:
+                    if poll_service:
                         result["queue_service_scope"] = "Upstream queue allocation and RX poll with the bounded native packet adapters; guest execution requires separate evidence."
                         result["retention_only"] = ["virtnet_rq_get_buf"]
                 else:
@@ -307,22 +335,33 @@ def build(args, work, profile, data):
                 extra_objects.append("memcpy.o")
             for source, output in [(app, "driver.o"), (SDK / "start.S", "start.o"),
                                    (SDK / "io.c", "io.o")]:
-                app_flags = [*native, "-DJNOX_NATIVE_RX_POLL_FIXTURE=1"] if args.rx_poll_service and source == app else native
+                app_flags = [*native, "-DJNOX_NATIVE_RX_POLL_FIXTURE=1"] if poll_service and source == app else native
+                if args.rx_irq_service and source == app:
+                    app_flags = [*app_flags, "-DJNOX_NATIVE_RX_IRQ_FIXTURE=1"]
+                    if args.rx_irq_rearm_test:
+                        app_flags.append("-DJNOX_NATIVE_RX_IRQ_RACE_FIXTURE=1")
                 compile_tu(tools["clang"], app_flags, source, output)
             linkscript = SDK / "app.ld"
             files[linkscript.relative_to(ROOT).as_posix()] = sha(linkscript.read_bytes())
-            if args.rx_poll_service:
+            if poll_service:
                 guard = ROOT / "drivers/linux-compat/packet/rx_poll_unsupported.S"
                 result["poll_fault_table"] = select_poll_faults(guard, variant, work)
                 compile_tu(tools["clang"], [*native, "-I", work], guard, "rx_poll_unsupported.o")
                 extra_objects.append("rx_poll_unsupported.o")
             # Inlining inside the original poll may eliminate the reference to
             # this standalone helper. Retention does not establish execution.
-            retain = ["--error-limit=0", "--undefined=virtnet_rq_get_buf", "--undefined=jnox_rx_poll_fault_id"] if args.rx_poll_service else []
+            retain = ["--error-limit=0", "--undefined=virtnet_rq_get_buf", "--undefined=jnox_rx_poll_fault_id"] if poll_service else []
             invoke(tools["ld"], *retain, "-m", "aarch64elf", "-static", "--no-undefined", "--gc-sections",
                    "--build-id=none", "-z", "max-page-size=4096", "-T", linkscript, "-Map=service.map",
                    "start.o", "io.o", "driver.o", "adapter.o", *extra_objects, derivative.name, "-o", "service.elf")
             service = inspect_elf(work / "service.elf", tools)
+            if args.rx_irq_service:
+                witness = [sym for sym in service["symbols"] if sym["name"] == "jnox_irq_race_gate"
+                           and sym["index"].isdigit()]
+                if len(witness) != int(args.rx_irq_rearm_test):
+                    raise ValueError("IRQ race witness conflicts with the selected service profile")
+                result["irq_rearm_test"] = {"test_only": args.rx_irq_rearm_test,
+                    "witness": witness[0] if witness else None}
             if (not defined(service, callback, "GLOBAL") or service["undefined"] or
                 not re.search(r"Type:\s+EXEC\b", service["header"]) or
                 re.search(r"^\s*(?:INTERP|DYNAMIC)\s", service["program_headers"], re.M) or
@@ -332,11 +371,16 @@ def build(args, work, profile, data):
                 if any(s["name"] == symbol for s in service["symbols"]):
                     raise ValueError(f"unexpected Linux lifecycle root in the service: {symbol}")
             if queue_mode:
-                for symbol in ("jnox_queue_find_vqs", "jnox_net_setup_queues"):
+                # IRQ discovery passes through the upstream registrar into the
+                # same transport callback. Earlier profiles synthesize the pair.
+                registrar = "virtnet_find_vqs" if args.rx_irq_service else "jnox_net_setup_queues"
+                for symbol in ("jnox_queue_find_vqs", registrar):
                     if not defined(service, symbol, "GLOBAL"):
                         raise ValueError(f"missing queue-service implementation: {symbol}")
                 forbidden = ["virtnet_open"]
-                if not args.rx_poll_service:
+                if args.rx_irq_service:
+                    forbidden.append("jnox_net_setup_queues")
+                if not poll_service:
                     forbidden.append("virtnet_poll")
                 if data_service:
                     if receive_service:
@@ -353,7 +397,26 @@ def build(args, work, profile, data):
                 for symbol in forbidden:
                     if any(s["name"] == symbol for s in service["symbols"]):
                         raise ValueError(f"unadmitted packet entry point in queue service: {symbol}")
-            if args.rx_poll_service:
+            if args.rx_irq_service:
+                peer_source = ROOT / "examples/linux-source-net-rx/peer.c"
+                peer_flags = [*native, "-DJNOX_NATIVE_RX_IRQ_FIXTURE=1"]
+                if args.rx_irq_rearm_test:
+                    peer_flags.append("-DJNOX_NATIVE_RX_IRQ_RACE_FIXTURE=1")
+                compile_tu(tools["clang"], peer_flags, peer_source, "irq_peer.o")
+                invoke(tools["ld"], "-m", "aarch64elf", "-static", "--no-undefined", "--gc-sections",
+                       "--build-id=none", "-z", "max-page-size=4096", "-T", linkscript, "-Map=peer.map",
+                       "start.o", "io.o", "irq_peer.o", "-o", "peer.elf")
+                peer = inspect_elf(work / "peer.elf", tools)
+                peer_witness = [sym for sym in peer["symbols"] if sym["name"] == "jnox_rx_irq_peer"
+                                and sym["type"] == "OBJECT" and sym["bind"] == "GLOBAL"
+                                and sym["index"].isdigit() and int(sym["size"]) == 16 * 8]
+                if (len(peer_witness) != 1 or peer["undefined"] or not defined(peer, "_start", "GLOBAL")
+                        or ".note.jnox.abi" not in peer["sections"]):
+                    raise ValueError("IRQ peer lacks its native startup, ABI or 128-byte timing witness")
+                result["irq_peer"] = {"elf": peer, "slot": 1, "source": peer_source.relative_to(ROOT).as_posix(),
+                    "witness": peer_witness[0], "test_only_rearm": args.rx_irq_rearm_test,
+                    "link_map_sha256": sha((work / "peer.map").read_bytes())}
+            if poll_service:
                 for row in result["poll_fault_table"]["imports"]:
                     name = row["symbol"]
                     supplier = f"rx_poll_unsupported.o:(.text.{name})"
@@ -386,6 +449,10 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--object-only", action="store_true")
+    parser.add_argument("--rx-irq-rearm-test", action="store_true",
+                        help="enable the test-only RX IRQ rearm fixture; requires --rx-irq-service")
+    mode.add_argument("--rx-irq-service", action="store_true",
+                      help="link the original queue registration and RX callback for native GIC dispatch")
     mode.add_argument("--rx-poll-service", action="store_true",
                       help="link original virtio-net queue allocation and RX poll for native service")
     mode.add_argument("--rx-service", action="store_true",
@@ -401,6 +468,8 @@ def main():
                           ("clang", "clang"), ("ld", "ld.lld"), ("readelf", "readelf"), ("nm", "nm")]:
         parser.add_argument("--" + name, default=default)
     args = parser.parse_args()
+    if args.rx_irq_rearm_test and not args.rx_irq_service:
+        parser.error("--rx-irq-rearm-test requires --rx-irq-service")
     profile = json.loads(PROFILE.read_text(encoding="utf-8"))
     data = pinned_source(args.source, profile["upstream"])
     out = args.out.resolve()

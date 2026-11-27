@@ -6,6 +6,11 @@
 enum { DATA_FD = 3, REPLY_FD = 4, FRAME_COUNT = 80, MAX_FRAME = 91, ACK_SIZE = 60 };
 /* Bit 63 in the IPC hello's MAC word selects the extra peer callback check. */
 #define RX_POLL_SESSION (1ULL << 63)
+#define RX_IRQ_SESSION (1ULL << 62)
+#define RX_IRQ_RACE_SESSION (1ULL << 61)
+#if defined(JNOX_NATIVE_RX_IRQ_FIXTURE) && !defined(JNOX_NATIVE_RX_POLL_FIXTURE)
+#define JNOX_NATIVE_RX_POLL_FIXTURE 1
+#endif
 
 static inline long native_call(unsigned long service, unsigned long a, unsigned long b, unsigned long c)
 {

@@ -718,7 +718,21 @@ fn main() {
     let rx_source = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX");
     let packet_io = selector("JNOX_NATIVE_LINUX_NET_PACKETS");
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx_poll)");
-    if let Some(value) = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL") {
+    let rx_poll = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx_irq)");
+    let rx_irq = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx_irq_rearm_test)");
+    if let Some(test) = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST") {
+        assert!(test == "1" && rx_irq.as_deref() == Some("1"),
+            "native RX IRQ rearm test requires the IRQ grant profile");
+        println!("cargo::rustc-cfg=jnox_linux_source_net_rx_irq_rearm_test");
+    }
+    if let Some(value) = rx_irq {
+        assert!(value == "1" && rx_poll.as_deref() == Some("1"),
+            "native Linux-source RX IRQ requires the poll grant profile");
+        println!("cargo::rustc-cfg=jnox_linux_source_net_rx_irq");
+    }
+    if let Some(value) = rx_poll {
         assert!(value == "1" && rx_source.as_deref() == Some("1"),
             "native Linux-source RX polling requires the RX grant profile");
         println!("cargo::rustc-cfg=jnox_linux_source_net_rx_poll");
@@ -759,6 +773,7 @@ fn main() {
                     && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_PACKET_QUEUES" | "JNOX_NATIVE_LINUX_NET_PACKETS"))
                 || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && rx_source.is_some()
                     && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RX" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL"
+                        | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST"
                         | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
                 || matches!(key.as_ref(),
                 "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"

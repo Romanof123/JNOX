@@ -459,6 +459,10 @@ def main():
                                help="grant slot 0 virtio-net receive buffers and connect it to the slot 1 consumer")
     source_device.add_argument("--linux-source-net-rx-poll", dest="linux_source_driver", action="store_const",
                                const="net-rx-poll", help="grant slot 0 RX callback control for upstream NAPI polling")
+    parser.add_argument("--linux-source-net-rx-irq-rearm-test", action="store_true",
+                        help="enable the test-only synthetic rearm event for the RX IRQ package")
+    source_device.add_argument("--linux-source-net-rx-irq", dest="linux_source_driver", action="store_const",
+                               const="net-rx-irq", help="grant slot 0 the virtio-net receive IRQ on virt")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--task-policy", type=Path, action=SinglePath, help="package a declarative virt task policy")
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
@@ -554,9 +558,11 @@ def main():
     parser.add_argument("--pubsub-publish", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     parser.add_argument("--pubsub-subscribe", type=topic_grant, action="append", default=[], metavar="SLOT:MASK")
     args = parser.parse_args()
+    if args.linux_source_net_rx_irq_rearm_test and args.linux_source_driver != "net-rx-irq":
+        parser.error("--linux-source-net-rx-irq-rearm-test requires --linux-source-net-rx-irq")
     if args.linux_source_driver:
         option = f"--linux-source-{args.linux_source_driver}"
-        allowed = {"out", "board", "kernel_profile", "linux_source_driver", "elf", "peer_elf",
+        allowed = {"out", "board", "kernel_profile", "linux_source_driver", "linux_source_net_rx_irq_rearm_test", "elf", "peer_elf",
                    "policy", "priority", "peer_priority", "arg", "peer_arg"}
         conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
                      and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
@@ -564,7 +570,7 @@ def main():
             parser.error(f"{option} requires virt FIFO, one --elf and one --peer-elf")
         if conflicts:
             parser.error(f"options incompatible with {option}: " + ", ".join(conflicts))
-        if args.linux_source_driver in ("net-rx", "net-rx-poll"):
+        if args.linux_source_driver in ("net-rx", "net-rx-poll", "net-rx-irq"):
             args.pipes = 1
             args.pipe_link = [(0, 3, 1, 3), (1, 4, 0, 4)]
     if args.task_policy is not None:
@@ -795,14 +801,14 @@ def main():
                       "driver_source": "drivers/net/virtio_net.c", "transport": "virtio-net-mmio-modern",
                       "qemu_device": "virtio-net-device"}
         metadata[f"linux_source_{driver_kind}"] = {"driver_slot": 0, "unauthorized_slots": [1], **device}
-        if args.linux_source_driver in ("net-queues", "net-packets", "net-rx", "net-rx-poll"):
+        if args.linux_source_driver in ("net-queues", "net-packets", "net-rx", "net-rx-poll", "net-rx-irq"):
             env["JNOX_NATIVE_LINUX_PACKET_QUEUES"] = "1"
             metadata["linux_packet_queues"] = {
                 "queue_size": 32, "indices": {"rx": 0, "tx": 1},
                 "status_after_setup": "FEATURES_OK", "buffers_required_for_driver_ok": True,
                 "driver_source": device["driver_source"], "syscalls": {"setup": 161, "query": 162},
             }
-        if args.linux_source_driver in ("net-packets", "net-rx", "net-rx-poll"):
+        if args.linux_source_driver in ("net-packets", "net-rx", "net-rx-poll", "net-rx-irq"):
             env["JNOX_NATIVE_LINUX_NET_PACKETS"] = "1"
             metadata["linux_net_packets"] = {
                 "driver_slot": 0, "unauthorized_slots": [1], "virtio_net_header_bytes": 12,
@@ -810,7 +816,7 @@ def main():
                 "syscalls": {"start": 163, "tx_submit": 164, "tx_kick": 165, "tx_reap": 166,
                              "rx_receive": 167, "irq_ack": 168, "tx_callbacks": 169},
             }
-        if args.linux_source_driver in ("net-rx", "net-rx-poll"):
+        if args.linux_source_driver in ("net-rx", "net-rx-poll", "net-rx-irq"):
             env["JNOX_NATIVE_LINUX_SOURCE_NET_RX"] = "1"
             packet_calls = metadata["linux_net_packets"]["syscalls"]
             del packet_calls["start"], packet_calls["rx_receive"]
@@ -820,12 +826,22 @@ def main():
                 "virtio_net_header_bytes": 12, "frame_count": 80, "frame_ethertype": 0x88b5,
                 "syscalls": {"start": 170, "post": 171, "reap": 172},
             }
-        if args.linux_source_driver == "net-rx-poll":
+        if args.linux_source_driver in ("net-rx-poll", "net-rx-irq"):
             env["JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL"] = "1"
             metadata["linux_source_net_rx_poll"] = {
                 "driver_slot": 0, "syscalls": {"rx_callbacks": 173},
                 "modes": {"disable": 0, "enable_prepare": 1, "poll": 2, "refill_kick": 3},
                 "initial_kick": "driver_ok", "live_refill_kick": "explicit",
+            }
+        if args.linux_source_driver == "net-rx-irq":
+            env["JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ"] = "1"
+            if args.linux_source_net_rx_irq_rearm_test:
+                env["JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST"] = "1"
+            metadata["linux_source_net_rx_irq"] = {
+                "rearm_test_only": args.linux_source_net_rx_irq_rearm_test,
+                "driver_slot": 0, "peer_slot": 1, "queue_index": 0, "intid": 79,
+                "callback": "skb_recv_done", "registrar": "virtnet_find_vqs",
+                "syscalls": {"wait": 174},
             }
         metadata["package_argv"] = sys.argv[:]
     if args.pubsub_service:

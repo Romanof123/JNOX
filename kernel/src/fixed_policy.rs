@@ -36,6 +36,10 @@ pub enum Action {
     Poll,
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
     BlockIpc,
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    BlockIrq,
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    WakeIrq(usize),
     Yield,
     Sleep(u64),
     Exit,
@@ -47,6 +51,8 @@ enum State {
     Running,
     #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
     BlockedIpc,
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    BlockedIrq,
     #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
     Dormant,
     Sleeping(u64),
@@ -260,8 +266,14 @@ impl Fixed {
     /// Some(false), with elapsed time and any simultaneous releases processed.
     pub fn event(&mut self, now: u64, action: Action) -> Option<bool> {
         let elapsed = now.checked_sub(self.now)?;
-        if self.owner.is_none() && !matches!(action, Action::Poll) {
-            return None;
+        match action {
+            Action::Poll => {}
+            #[cfg(jnox_linux_source_net_rx_irq)]
+            Action::WakeIrq(id) => {
+                if id >= self.count || self.tasks[id].state != State::BlockedIrq { return None; }
+            }
+            _ if self.owner.is_none() => return None,
+            _ => {}
         }
         self.now = now;
         if let Some(id) = self.owner {
@@ -271,10 +283,23 @@ impl Fixed {
             task.remaining = task.remaining.saturating_sub(elapsed);
         }
         self.wake_due();
+        #[cfg(jnox_linux_source_net_rx_irq)]
+        if let Action::WakeIrq(id) = action {
+            // Sleepers already due and existing ready peers keep their FIFO
+            // turns. An equal-priority running peer also keeps its turn.
+            self.join_tail(id);
+        }
         let mut accepted = true;
         if let Some(id) = self.owner {
             match action {
                 Action::Poll => {}
+                #[cfg(jnox_linux_source_net_rx_irq)]
+                Action::WakeIrq(_) => {}
+                #[cfg(jnox_linux_source_net_rx_irq)]
+                Action::BlockIrq => {
+                    self.tasks[id].state = State::BlockedIrq;
+                    self.owner = None;
+                }
                 #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset, jnox_native_pipe_ipc))]
                 Action::BlockIpc => {
                     self.tasks[id].state = State::BlockedIpc;

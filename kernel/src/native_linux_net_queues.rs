@@ -58,12 +58,22 @@ impl reset_protocol::ResetIo for Io {
 
 pub(super) fn quarantined() -> bool { unsafe { QUARANTINED } }
 
+#[cfg(jnox_linux_source_net_rx_irq)]
+pub(super) fn rx_progress() -> (u16, bool) { packets::rx_progress() }
+#[cfg(jnox_linux_source_net_rx_irq)]
+pub(super) fn rx_callbacks_enabled() -> bool { packets::rx_callbacks_enabled() }
+
 pub(super) fn reset() -> bool {
     // Retire the token before reset. The serialized path never reuses RAM
     // until Status=0 and QueueReady=0 have been observed for both queues.
     unsafe { ACTIVE_TOKEN = 0; }
     if quarantined() { return false; }
-    if reset_protocol::reset(&mut Io, || {}).is_err() {
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    super::irq::retire();
+    let reset_failed = reset_protocol::reset(&mut Io, || {}).is_err();
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    let reset_failed = !super::irq::finish_reset() || reset_failed;
+    if reset_failed {
         unsafe { QUARANTINED = true; }
         return false;
     }

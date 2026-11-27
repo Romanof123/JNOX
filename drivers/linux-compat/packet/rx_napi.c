@@ -8,8 +8,18 @@
 static struct send_queue sq;
 static struct receive_queue rq;
 static struct napi_config cfg;
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+static struct virtqueue *pair_tmp[2];
+static struct virtqueue_info info_tmp[2];
+static bool ctx_tmp[2];
+static bool pair_busy, info_busy, ctx_busy;
+
+#endif
 static struct net_device *owner;
 static bool sq_alloc, rq_alloc, locked, polling, queued, missed;
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+bool jnox_rx_napi_pending_v1(void) { return queued; }
+#endif
 static int current_budget;
 static raw_spinlock_t *held_spin;
 static struct task_struct *rcu_owner;
@@ -46,6 +56,23 @@ int jnox_rx_napi_prepare_v1(struct net_device *dev)
 void *jnox_rx_queue_calloc_v1(size_t count, size_t size, gfp_t flags)
 {
     (void)flags;
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+    if (owner && count == 2) {
+        if (size == sizeof(*pair_tmp) && !pair_busy) {
+            pair_busy = true;
+            return memset(pair_tmp, 0, sizeof(pair_tmp));
+        }
+        if (size == sizeof(*info_tmp) && !info_busy) {
+            info_busy = true;
+            return memset(info_tmp, 0, sizeof(info_tmp));
+        }
+        if (size == sizeof(*ctx_tmp) && !ctx_busy) {
+            ctx_busy = true;
+            return memset(ctx_tmp, 0, sizeof(ctx_tmp));
+        }
+        return NULL;
+    }
+#endif
     if (!owner || count != 1) return NULL;
     if (size == sizeof(sq) && !sq_alloc) {
         memset(&sq, 0, sizeof(sq));
@@ -63,6 +90,11 @@ void *jnox_rx_queue_calloc_v1(size_t count, size_t size, gfp_t flags)
 void kfree(const void *ptr)
 {
     if (!ptr) return;
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+    if (ptr == pair_tmp && pair_busy) { pair_busy = false; return; }
+    if (ptr == info_tmp && info_busy) { info_busy = false; return; }
+    if (ptr == ctx_tmp && ctx_busy) { ctx_busy = false; return; }
+#endif
     if (ptr == &sq && sq_alloc && !sq.napi.dev) sq_alloc = false;
     else if (ptr == &rq && rq_alloc && !rq.napi.dev) rq_alloc = false;
     else bad(1);
@@ -177,8 +209,10 @@ int jnox_rx_napi_poll_v1(struct napi_struct *n, int budget)
 {
     if (!owner || !rq_alloc || n != &rq.napi || n->dev != owner || !n->poll ||
         budget <= 0 || budget > n->weight || polling) return -EINVAL;
+#ifndef JNOX_PACKET_RX_IRQ_ABI
     n->state &= ~BIT(NAPI_STATE_DISABLED);
     if (!queued && napi_schedule_prep(n)) __napi_schedule(n);
+#endif
     if (!queued) return -EAGAIN;
     queued = false;
     polling = true;
@@ -318,3 +352,26 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
     ++refill_queue.rejected;
     bad(21);
 }
+#ifdef JNOX_PACKET_RX_IRQ_ABI
+bool jnox_rx_equal_name_v1(const char *a, const char *b)
+{
+    while (*a && *a == *b) {
+        ++a;
+        ++b;
+    }
+    return *a == *b;
+}
+
+int jnox_rx_queue_name_v1(char *dst, const char *fmt, unsigned int index)
+{
+    if (index == 0 && rq_alloc && dst == rq.name && jnox_rx_equal_name_v1(fmt, "input.%u")) {
+        memcpy(dst, "input.0", sizeof("input.0"));
+        return sizeof("input.0") - 1;
+    }
+    if (index == 0 && sq_alloc && dst == sq.name && jnox_rx_equal_name_v1(fmt, "output.%u")) {
+        memcpy(dst, "output.0", sizeof("output.0"));
+        return sizeof("output.0") - 1;
+    }
+    bad(22);
+}
+#endif

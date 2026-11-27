@@ -141,6 +141,15 @@ fn start(token: u64) -> i64 {
         let rx = unsafe { &mut *(&raw mut CURSORS[RX]) };
         for id in 0..SIZE { post(rx, RX, id, CAPACITY); }
     }
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    {
+        let flags = unsafe { &raw mut (*ring(RX)).available[0] };
+        unsafe { flags.write_volatile(0) };
+        fence();
+        if unsafe { flags.read_volatile() } != 0 || !super::super::irq::enable(token) {
+            return abort_setup();
+        }
+    }
     write(STATUS, LIVE);
     if read(STATUS) != LIVE { return abort_setup(); }
     unsafe { RUNNING_TOKEN = token };
@@ -212,6 +221,8 @@ fn reap_rx(token: u64) -> Result<i64, i64> {
     // Retain this exact completion and grant until the entire copy succeeds.
     if !copy_to_user(grant.address, bytes) { return Ok(-14); }
     pop(rx, id);
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    super::super::irq::consumed(rx.used.wrapping_sub(rx.count as u16));
     unsafe { RX_GRANTS[id] = EMPTY_GRANT; }
     Ok(((len as i64) << 16) | id as i64)
 }
@@ -295,6 +306,9 @@ pub(in crate::native_el0::linux_net) fn packet_service(number: u64, token: u64, 
         169 => return tx_callbacks(address, len),
         #[cfg(jnox_linux_source_net_rx_poll)]
         173 => return rx_callbacks(address, len),
+        #[cfg(jnox_linux_source_net_rx_irq)]
+        168 => return -95, // The IRQ handler owns INTERRUPT_ACK.
+        #[cfg(not(jnox_linux_source_net_rx_irq))]
         168 => {
             let pending = read(INTERRUPT_STATUS) & 3;
             if pending != 0 { write(INTERRUPT_ACK, pending); }
@@ -303,4 +317,18 @@ pub(in crate::native_el0::linux_net) fn packet_service(number: u64, token: u64, 
         _ => return -38,
     };
     result.unwrap_or_else(|_| abort_setup())
+}
+
+#[cfg(jnox_linux_source_net_rx_irq)]
+pub(super) fn rx_progress() -> (u16, bool) {
+    let cursor = unsafe { &*(&raw const CURSORS[RX]) };
+    fence();
+    let head = unsafe { (&raw const (*ring(RX)).used_header[1]).read_volatile() };
+    fence();
+    (head, cursor.count != 0 || head != cursor.used)
+}
+
+#[cfg(jnox_linux_source_net_rx_irq)]
+pub(super) fn rx_callbacks_enabled() -> bool {
+    unsafe { (&raw const (*ring(RX)).available[0]).read_volatile() == 0 }
 }

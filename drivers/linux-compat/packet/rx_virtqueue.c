@@ -251,6 +251,111 @@ void jnox_rx_vq_stats(unsigned long long out[8])
 
 #ifdef JNOX_PACKET_RX_POLL_ABI
 #include <jnox_rx_napi.h>
+#ifdef JNOX_PACKET_RX_IRQ_RACE_ABI
+#include <uapi/linux/time_types.h>
+#ifndef JNOX_PACKET_RX_IRQ_ABI
+#error "The controlled rearm race requires real owner IRQ delivery"
+#endif
+/* This journal is read by the replay harness using physical RAM snapshots.
+ * Host ingress is held at exactly one frame until WAIT, and two until PASS. */
+volatile unsigned long long jnox_irq_race_gate[16];
+extern int race_clock(int, struct __kernel_timespec *) asm("clock_gettime");
+extern int race_sleep(int, int, const struct __kernel_timespec *, struct __kernel_timespec *)
+    asm("clock_nanosleep");
+extern void jnox_original_rx_irq_stats_v1(unsigned long long out[8]);
+extern unsigned long long jnox_rx_catchups_v1(void);
+
+static void race_phase(unsigned phase)
+{
+    asm volatile("dmb ishst" ::: "memory");
+    jnox_irq_race_gate[1] = phase;
+}
+
+static __noreturn void race_fail(unsigned reason)
+{
+    jnox_irq_race_gate[14] = reason;
+    race_phase(255);
+    call_rx(1, 99, NULL, 0);
+    __builtin_unreachable();
+}
+
+static u64 race_now(void)
+{
+    struct __kernel_timespec t;
+    if (race_clock(1, &t) || t.tv_sec < 0 || t.tv_nsec < 0 || t.tv_nsec >= 1000000000L)
+        race_fail(1);
+    return (u64)t.tv_sec * 1000000000ULL + t.tv_nsec;
+}
+
+static long race_metric(unsigned index)
+{
+    long value = call_rx(175, running, (const void *)(unsigned long)index, 0);
+    if (value < 0) race_fail(2);
+    return value;
+}
+
+static void race_after_rearm(unsigned snapshot)
+{
+    if (jnox_irq_race_gate[1]) return;
+    if (snapshot != 1) {
+        if (stats[1] || snapshot) race_fail(3);
+        return;
+    }
+    unsigned long long notified[8];
+    jnox_original_rx_irq_stats_v1(notified);
+    jnox_irq_race_gate[0] = 0x4952515241434531ULL;
+    jnox_irq_race_gate[2] = running;
+    jnox_irq_race_gate[3] = snapshot;
+    long baseline = race_metric(21);
+    long head = race_metric(18);
+    jnox_irq_race_gate[4] = baseline;
+    jnox_irq_race_gate[11] = head;
+    if (stats[1] != 1 || baseline != 1 || head != 1 ||
+        notified[3] != 1 || notified[5] != 1 || jnox_rx_catchups_v1() ||
+        race_metric(10) || (unsigned long)race_metric(19) != running) race_fail(4);
+    u64 start = race_now();
+    jnox_irq_race_gate[5] = start;
+    race_phase(1);
+    /* Yield even if the host injects immediately upon seeing WAIT. Physical
+     * IRQs arrive normally; this loop never consumes or acknowledges one. */
+    for (;;) {
+        u64 now = race_now();
+        if (now - start >= 10000000000ULL) race_fail(5);
+        u64 target = now + 1000000ULL;
+        struct __kernel_timespec t = { .tv_sec = target / 1000000000ULL,
+                                      .tv_nsec = target % 1000000000ULL };
+        if (race_sleep(1, 1, &t, NULL)) race_fail(6);
+        ++jnox_irq_race_gate[15];
+        long seen = race_metric(21);
+        if (seen == baseline) continue;
+        u64 observed = race_now();
+        if (observed - start >= 10000000000ULL) race_fail(5);
+        long advanced_head = race_metric(18);
+        unsigned long generation = race_metric(19);
+        jnox_irq_race_gate[6] = seen;
+        jnox_irq_race_gate[7] = observed;
+        jnox_irq_race_gate[12] = advanced_head;
+        jnox_irq_race_gate[13] = generation;
+        if (seen != baseline + 1 || advanced_head != 2 || race_metric(17) != 1 ||
+            generation != running || stats[1] != 1 || race_metric(10)) race_fail(7);
+        race_phase(2);
+        return;
+    }
+}
+
+static void race_after_poll(unsigned snapshot, bool pending)
+{
+    if (jnox_irq_race_gate[1] != 2) return;
+    jnox_irq_race_gate[8] = snapshot;
+    jnox_irq_race_gate[9] = pending;
+    jnox_irq_race_gate[10] = race_now();
+    if (snapshot != jnox_irq_race_gate[3] || !pending || stats[1] != 1 ||
+        race_metric(21) != 2 || (unsigned long)race_metric(19) != jnox_irq_race_gate[2])
+        race_fail(8);
+    race_phase(3);
+}
+#endif
+
 static long rx_event(struct virtqueue *vq, unsigned long mode, unsigned arg)
 {
     if (!active(vq) || running != jnox_packet_token()) {
@@ -275,12 +380,20 @@ void jnox_rx_disable_cb_v1(struct virtqueue *vq)
 
 unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq)
 {
-    return rx_event(vq, 1, 0);
+    unsigned snapshot = rx_event(vq, 1, 0);
+#ifdef JNOX_PACKET_RX_IRQ_RACE_ABI
+    race_after_rearm(snapshot);
+#endif
+    return snapshot;
 }
 
 bool virtqueue_poll(struct virtqueue *vq, unsigned snapshot)
 {
-    return rx_event(vq, 2, snapshot) != 0;
+    bool pending = rx_event(vq, 2, snapshot) != 0;
+#ifdef JNOX_PACKET_RX_IRQ_RACE_ABI
+    race_after_poll(snapshot, pending);
+#endif
+    return pending;
 }
 
 bool jnox_rx_kick_prepare_v1(struct virtqueue *vq)
