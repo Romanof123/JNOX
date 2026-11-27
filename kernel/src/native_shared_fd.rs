@@ -64,6 +64,7 @@ static mut jnox_native_shared_state: State = State {
 };
 
 fn routed(pid: usize) -> bool {
+    if cfg!(jnox_native_display_five_active) && pid == 4 { return false; }
     NATIVE_IPC_ROUTES[pid] & (1 << NATIVE_SOCKET_SERVICE) != 0
 }
 
