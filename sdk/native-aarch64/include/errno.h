@@ -11,6 +11,7 @@
 #define EOVERFLOW 75
 #define EINVAL 22
 #define ENOSYS 38
+#define ENODATA 61
 #define ENOTSUP 95
 #define ENOENT 2
 #define ENXIO 6

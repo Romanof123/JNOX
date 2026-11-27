@@ -13,4 +13,6 @@
 #define JNOX_SHM_FILE_READ 3u
 #define JNOX_SHM_FILE_WRITE 4u
 #define JNOX_SHM_FILE_TRANSFER 256u
+/* Exact shared slot replacement: x0 = source fd, x1 = destination fd, x2 = 0. */
+#define JNOX_CALL_SHM_DUP2 208
 #endif

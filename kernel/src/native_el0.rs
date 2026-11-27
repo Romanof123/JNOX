@@ -204,6 +204,9 @@ fn head(index: usize, value: u64) {
 // Initialized once on this masked boot path, before the first EL0 entry.
 static mut CLOCK_DOMAIN: (u64, u64) = (0, 0);
 
+#[cfg(jnox_native_fixed)]
+include!(concat!(env!("OUT_DIR"), "/native_boot_utc.rs"));
+
 fn counter() -> u64 {
     let ticks: u64;
     unsafe { asm!("isb", "mrs {}, cntpct_el0", out(reg) ticks, options(nostack, preserves_flags)) };
@@ -236,9 +239,26 @@ fn clock_getres(clock_id: u64, address: usize) -> i64 {
 
 fn write_nanoseconds(address: usize, ns: u128) -> i64 {
     let Ok(seconds) = i64::try_from(ns / 1_000_000_000) else { return -75 };
+    write_time_fields(address, seconds, (ns % 1_000_000_000) as i64)
+}
+
+#[cfg(jnox_native_fixed)]
+fn gettimeofday(address: usize, timezone: usize, now: u64) -> i64 {
+    if timezone != 0 { return -95; }
+    if address == 0 { return -14; }
+    let Some(seed) = BOOT_UTC_SECONDS else { return -61 };
+    let (origin, frequency) = unsafe { CLOCK_DOMAIN };
+    let Some(elapsed) = now.checked_sub(origin) else { return -75 };
+    let total = i128::from(seed) + i128::from(elapsed / frequency);
+    let Ok(seconds) = i64::try_from(total) else { return -75 };
+    let micros = u128::from(elapsed % frequency) * 1_000_000 / u128::from(frequency);
+    write_time_fields(address, seconds, micros as i64)
+}
+
+fn write_time_fields(address: usize, seconds: i64, fraction: i64) -> i64 {
     let mut bytes = [0; 16];
     bytes[..8].copy_from_slice(&seconds.to_le_bytes());
-    bytes[8..].copy_from_slice(&((ns % 1_000_000_000) as i64).to_le_bytes());
+    bytes[8..].copy_from_slice(&fraction.to_le_bytes());
     if native_el0_mmu::copy_to_user(address, &bytes) { 0 } else { -14 }
 }
 
@@ -377,6 +397,10 @@ fn dispatch(frame: &mut NativeFrame) {
 static mut FIXED: Option<Fixed> = None;
 static mut EXIT_STATUS: [i32; COUNT] = [0; COUNT];
 
+#[cfg(jnox_native_fixed)]
+#[path = "native_process_groups.rs"]
+mod process_groups;
+
 #[cfg(any(jnox_native_sync_ipc, jnox_native_mailbox_ipc, jnox_native_notify_ipc, jnox_native_waitset))]
 #[path = "native_sync_ipc.rs"]
 mod ipc;
@@ -468,6 +492,24 @@ fn activate(next: usize, frame: &mut NativeFrame) {
         }
     }
 }
+
+/// The shell ABI already exposes positive child slots as public PIDs.
+#[cfg(jnox_native_fixed)]
+fn public_pid(slot: usize) -> u64 {
+    if slot == 0 { COUNT as u64 } else { slot as u64 }
+}
+
+#[cfg(jnox_native_fixed)]
+fn process_present(fixed: &Fixed, slot: usize) -> bool {
+    if slot >= COUNT { return false; }
+    #[cfg(jnox_native_shell)]
+    if spawn::zombie(slot) { return true; }
+    fixed.has_live_process(slot)
+}
+
+#[cfg(jnox_native_fixed)]
+#[path = "native_signal_probe.rs"]
+mod signal_probe;
 
 const NO_PID: u64 = u64::MAX;
 const RECORD_LIMIT: usize = 128;
@@ -1053,6 +1095,21 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
     let mut deadline = None;
     let result = match f.x[8] {
         1 => 0,
+        #[cfg(jnox_native_tmpfs)]
+        204 => {
+            let pid = unsafe { CURRENT };
+            let grants = env!("JNOX_NATIVE_TMPFS_GRANTS").as_bytes();
+            if f.x[0] == 1 || f.x[0] == 2 {
+                if grants[pid] == b'0' { -13 }
+                else if f.x[2] > 256 { -22 }
+                else if native_el0_mmu::user_range(f.x[1] as usize, f.x[2] as usize, f.x[0] == 2) { 0 }
+                else { -14 }
+            } else if f.x[..3] != [0, 0, 0] { -22 }
+            else if pid == NATIVE_SOCKET_SERVICE {
+                grants.iter().enumerate().fold(0i64, |mask, (i, g)| mask | (i64::from(g - b'0') << (2 * i)))
+            }
+            else if grants[pid] == b'0' { -13 } else { NATIVE_SOCKET_SERVICE as i64 }
+        }
         #[cfg(jnox_native_fixed)]
         203 => {
             let (uid, gid) = SERVICE_ACCOUNT;
@@ -1065,6 +1122,10 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             }
         }
         #[cfg(jnox_native_fixed)]
+        209 => signal_probe::call(unsafe { CURRENT }, policy(), f.x[0], f.x[1], f.x[2]),
+        #[cfg(jnox_native_fixed)]
+        206 => process_groups::service(policy(), unsafe { CURRENT }, f),
+        #[cfg(jnox_native_fixed)]
         201 => {
             let slot = unsafe { CURRENT };
             if policy().current() != Some(slot) || native_el0_mmu::active() != Some(slot) {
@@ -1076,10 +1137,10 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             if valid {
                 // Preserve the existing positive child IDs returned by spawn/wait.
                 // Slots have at most one process lifetime in this package.
-                f.x[1] = if slot == 0 { COUNT as u64 } else { slot as u64 };
+                f.x[1] = public_pid(slot);
                 #[cfg(jnox_native_shell)]
                 if spawn::has_live_parent(slot) {
-                    f.x[2] = COUNT as u64;
+                    f.x[2] = public_pid(0);
                 }
                 0
             } else {
@@ -1112,7 +1173,7 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         }
 
         #[cfg(jnox_native_shared_fd)]
-        op @ (180..=183 | 187..=196 | 202) => shared_fd::direct(unsafe { CURRENT }, op, f.x[0] as usize,
+        op @ (180..=183 | 187..=196 | 202 | 208) => shared_fd::direct(unsafe { CURRENT }, op, f.x[0] as usize,
             f.x[1] as usize, f.x[2] as usize).map_or_else(i64::from, |value| value as i64),
         #[cfg(jnox_linux_source_net)]
         156..=160 => linux_net::service(unsafe { CURRENT }, f.x[8], f.x[0], f.x[1]),
@@ -1141,6 +1202,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
         6 => clock_gettime(f.x[0], f.x[1] as usize, now),
         #[cfg(jnox_native_fixed)]
         200 => clock_getres(f.x[0], f.x[1] as usize),
+        #[cfg(jnox_native_fixed)]
+        207 => gettimeofday(f.x[0] as usize, f.x[1] as usize, now),
         7 => match sleep_until(f) {
             Ok(target) if cfg!(any(jnox_native_fixed, jnox_native_weighted, jnox_native_edf, jnox_native_periodic, jnox_native_cbs, jnox_native_multilevel)) && target.saturating_sub(now) > i64::MAX as u64 => -75,
             Ok(target) => { deadline = (target > now).then_some(target); 0 }

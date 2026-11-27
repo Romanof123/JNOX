@@ -148,7 +148,7 @@ impl State {
                 // Copy first, including when the user buffer aliases this same backing.
                 if !native_el0_mmu::copy_from_user(argument, &mut bytes[..n]) { return Err(-14); }
                 if end > size {
-                    shared::zero_growth(object, size, end);
+                    shared::zero_resize_tail(object, size, end);
                     self.sizes[object] = end;
                 }
                 shared::write_file(object, pos, &bytes[..n]);
@@ -186,6 +186,19 @@ pub(super) fn direct(pid: usize, op: u64, arg: usize, prot: usize, extra: usize)
         202 => {
             let right = state.right(pid, arg)?;
             state.file_io(right, prot, extra)
+        }
+        208 => {
+            let source = state.right(pid, arg)?;
+            if extra != 0 { return Err(-22); }
+            if prot >= FD_BASE + FDS { return Err(-9); }
+            let slot = prot.checked_sub(FD_BASE).ok_or(-95)?;
+            if prot != arg {
+                // Both slots belong to this caller. The masked SVC installs
+                // the new reference and clears FD_CLOEXEC as one operation.
+                state.descriptors[pid][slot] = source;
+                state.cloexec[pid][slot] = false;
+            }
+            Ok(prot)
         }
         188 => {
             let source = state.right(pid, arg)?;
@@ -231,7 +244,7 @@ pub(super) fn direct(pid: usize, op: u64, arg: usize, prot: usize, extra: usize)
             if state.seals[obj] & seal != 0 { return Err(-1); }
             // This profile has whole-file mappings, with no SIGBUS contract.
             if shared::referenced(obj) { return Err(-16); }
-            if prot > old { shared::zero_growth(obj, old, prot); }
+            shared::zero_resize_tail(obj, old, prot);
             state.sizes[obj] = prot;
             Ok(0)
         }

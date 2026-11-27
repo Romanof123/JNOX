@@ -124,6 +124,13 @@ def pipe_fields(value):
     return tuple(unsigned_decimal(field) for field in value.split(":"))
 
 
+def tmpfs_grant(value):
+    match = re.fullmatch(r"([0-3]):(ro|rw)", value)
+    if not match:
+        raise argparse.ArgumentTypeError("expected SLOT:ro or SLOT:rw")
+    return int(match[1]), match[2]
+
+
 def service_account(value):
     fields = pipe_fields(value)
     if len(fields) != 2 or not all(1 <= item <= 65534 for item in fields):
@@ -553,6 +560,8 @@ def main():
     parser.add_argument("--nodename", help="one explicit ASCII node label for all native FIFO/RR processes")
     parser.add_argument("--service-account", type=service_account, action=SinglePath, metavar="UID:GID",
                         help="unprivileged account for every native FIFO/RR process in this package (default 65534:65534)")
+    parser.add_argument("--boot-utc-seconds", type=int, metavar="SECONDS",
+                        help="provision signed POSIX UTC seconds at the virt FIFO/RR monotonic origin")
     parser.add_argument("--console-write", action="append", type=int, choices=range(4), default=[],
                         help="grant this process slot bounded SVC 4 console output on fd 1 and 2")
     parser.add_argument("--pipes", action="count", default=0, help="enable native pipe descriptors")
@@ -574,6 +583,8 @@ def main():
                         help="select the socket broker; slot 3 serves display owner 0 and clients 1 and 2 on virt FIFO")
     parser.add_argument("--shared-fd", action="count", default=0,
                         help="allow the selected AF_UNIX broker to pass shared-memory descriptors")
+    parser.add_argument("--tmpfs", type=tmpfs_grant, action="append", default=[], metavar="SLOT:ro|rw",
+                        help="grant this client access to the volatile /tmp service on the selected socket broker")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
                         help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
     parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
@@ -660,12 +671,26 @@ def main():
             parser.error(str(exc))
     board = args.board or "virt"
     display_slot, service_slot, service_clients = native_service_slots(parser, args, policy, board)
+    if args.tmpfs:
+        slots = [slot for slot, _ in args.tmpfs]
+        if (board != "virt" or policy not in ("fifo", "rr") or not args.elf or args.threads or
+                not args.socket_service or args.net_service or len(set(slots)) != len(slots) or
+                any((slot, service_slot) not in args.ipc_route or slot == service_slot
+                    or slot > len(args.peer_elf) for slot in slots)):
+            parser.error("--tmpfs requires distinct, routed clients of the virt FIFO/RR AF_UNIX broker")
+        broker_elf = [args.elf, *args.peer_elf][service_slot]
+        if not re.search(r"\bjnox_tmpfs_call$", output(["readelf", "-sW", broker_elf]), re.M):
+            parser.error("--tmpfs requires a socket broker compiled with the tmpfs Cargo feature")
     validate_pipes(parser, args, policy, board)
     if args.service_account is not None and (policy not in ("fifo", "rr") or args.threads or not (args.elf or args.source)):
         parser.error("--service-account requires packaged native FIFO/RR processes")
     if args.nodename is not None and (policy not in ("fifo", "rr") or args.threads or not args.elf or
             not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", args.nodename)):
         parser.error("--nodename requires native FIFO/RR and one 1..63 byte alphanumeric or hyphen label")
+    if args.boot_utc_seconds is not None and (
+            board != "virt" or policy not in ("fifo", "rr") or args.threads or
+            not (args.elf or args.source) or not -(1 << 63) <= args.boot_utc_seconds < (1 << 63)):
+        parser.error("--boot-utc-seconds requires ordinary virt FIFO/RR and a signed 64-bit POSIX epoch")
     if args.console_write and (policy not in ("fifo", "rr") or not args.elf or
             len(set(args.console_write)) != len(args.console_write) or
             max(args.console_write) > len(args.peer_elf)):
@@ -922,6 +947,12 @@ def main():
     if args.console_write:
         metadata["console_write_slots"] = sorted(args.console_write)
         env["JNOX_NATIVE_CONSOLE_WRITERS"] = "".join(map(str, sorted(args.console_write)))
+    if args.tmpfs:
+        volume_grants = dict(args.tmpfs)
+        env["JNOX_NATIVE_TMPFS_GRANTS"] = "".join(
+            {"ro": "1", "rw": "2"}.get(volume_grants.get(i), "0") for i in range(4))
+        metadata["tmpfs"] = {"service_slot": service_slot, "grants": volume_grants, "mount": "/tmp",
+                             "files": 4, "bytes_per_file": 1024, "fd_first": 32, "fds_per_client": 8}
     if args.pipes:
         env["JNOX_NATIVE_PIPES"] = "1"
         fifo_grants = sorted(args.fifo_grant)
@@ -1163,6 +1194,13 @@ def main():
             metadata["service_account"] = {"uid": uid, "gid": gid}
             if args.service_account is not None:
                 env["JNOX_NATIVE_SERVICE_ACCOUNT"] = f"{uid}:{gid}"
+        if board == "virt" and policy in ("fifo", "rr") and not args.threads:
+            metadata["utc_clock"] = {"source": "unset"}
+            if args.boot_utc_seconds is not None:
+                seed = str(args.boot_utc_seconds)
+                env["JNOX_NATIVE_BOOT_UTC_SECONDS"] = seed
+                metadata["utc_clock"] = {"source": "package", "epoch_seconds": seed,
+                                         "reference": "monotonic-origin", "uncertainty_ns": None}
         env.update(encoded_arguments)
         env.update(JNOX_BOARD=board, JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,

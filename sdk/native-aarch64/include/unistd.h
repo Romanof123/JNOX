@@ -6,6 +6,8 @@ typedef long off_t;
 typedef int pid_t;
 pid_t getpid(void);
 pid_t getppid(void);
+pid_t getpgrp(void);
+int setpgid(pid_t pid, pid_t pgid);
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2

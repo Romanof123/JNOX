@@ -59,3 +59,8 @@ int jnox_monotonic_getres(void *output)
 {
     return result(jnox_ipc_trap(JNOX_CALL_CLOCK_GETRES, CLOCK_MONOTONIC, (uintptr_t)output, 0).status);
 }
+
+int jnox_gettimeofday(void *output, void *timezone)
+{
+    return result(jnox_ipc_trap(JNOX_CALL_GETTIMEOFDAY, (uintptr_t)output, (uintptr_t)timezone, 0).status);
+}

@@ -19,3 +19,8 @@ For the native guest gate compile [memfd_io_caller.c](../../sdk/native-aarch64/g
 네이티브 AArch64 공유 FD 프로필에서 `memfd_create`로 만든 익명 파일의 탐색·읽기·쓰기를 제공한다. 같은 파일의 복제 FD는 오프셋을 공유하고, 새로 만든 파일은 0부터 시작한다. 파일 끝을 넘긴 탐색은 크기를 바꾸지 않는다. 이후 쓰기는 중간을 0으로 채우며 축소·확장 봉인과 기존 매핑의 수명을 따른다. 한 호출의 사용자 데이터 복사는 최대 256바이트이며, 파일 전체 한도는 307,200바이트다. 읽기 전용 FD·잘못된 사용자 주소·범위 초과가 거부되면 기존 위치와 파일 크기를 보존한다.
 
 게스트 수용 기준은 공개 Picolibc 호출자의 종료값 76이다. 경로명으로 읽는 폰트와 잠금 파일의 수용은 #459에서, 게스트 전체 서버 실행은 #448에서 추적한다. 별도 프로세스가 받은 FD의 오프셋 공유와 물리 보드의 최악 실행 시간은 추가 시험 항목이다.
+## Partial-page shrink / 마지막 페이지 축소
+
+After permissions, seals and mapping checks pass, the kernel clears the suffix of the retained page before publishing a smaller file extent. Page-aligned shrink has no retained suffix. The guest caller checks that a mapped shrink returns `EBUSY` and preserves its four readable bytes, and that ordinary shrink followed by growth preserves the prefix and yields zero bytes over the restored extent.
+
+권한·봉인·매핑 검사를 통과한 축소는 새 크기를 기록하기 전에 마지막 페이지의 잘린 부분을 지운다. 게스트 시험은 매핑 중 축소 거부 시 기존 크기와 데이터 유지, 매핑이 없는 파일의 축소·재확장 시 앞부분 보존과 0 채움을 확인한다.

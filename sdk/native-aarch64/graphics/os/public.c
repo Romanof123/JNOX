@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <sys/time.h>
 
 void jnox_graphics_errno(int code)
 {
@@ -18,6 +19,7 @@ void jnox_graphics_errno(int code)
     case 75: errno = EOVERFLOW; break;
     case 22: errno = EINVAL; break;
     case 38: errno = ENOSYS; break;
+    case 61: errno = ENODATA; break;
     case 95: errno = ENOTSUP; break;
     case 2: errno = ENOENT; break;
     case 6: errno = ENXIO; break;
@@ -27,6 +29,8 @@ void jnox_graphics_errno(int code)
     case 23: errno = ENFILE; break;
     case 24: errno = EMFILE; break;
     case 25: errno = ENOTTY; break;
+    case 21: errno = EISDIR; break;
+    case 30: errno = EROFS; break;
     case 27: errno = EFBIG; break;
     case 28: errno = ENOSPC; break;
     case 29: errno = ESPIPE; break;
@@ -94,6 +98,15 @@ int fcntl(int fd, int cmd, ...)
 #include <time.h>
 extern int jnox_monotonic_now(long *, long *);
 extern int jnox_monotonic_getres(void *);
+extern int jnox_gettimeofday(void *, void *);
+
+_Static_assert(sizeof(struct timeval) == 16 && sizeof(suseconds_t) == 8 &&
+               offsetof(struct timeval, tv_usec) == 8, "native timeval layout");
+
+int gettimeofday(struct timeval *value, void *timezone)
+{
+    return jnox_gettimeofday(value, timezone);
+}
 
 _Static_assert(sizeof(struct timespec) == 16 && sizeof(time_t) == 8 &&
                offsetof(struct timespec, tv_nsec) == 8 && sizeof(long) == 8,

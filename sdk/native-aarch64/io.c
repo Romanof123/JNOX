@@ -8,7 +8,9 @@
 #include <sched.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/time.h>
 #include "process_id.inc"
+#include "process_signal.inc"
 
 _Static_assert(sizeof(void *) == 8 && sizeof(long) == 8 && sizeof(int) == 4,
                "native ABI v1 requires AArch64 LP64");
@@ -167,6 +169,13 @@ int clock_gettime(clockid_t clock, struct timespec *result)
 int clock_getres(clockid_t clock, struct timespec *result)
 {
     return (int)service(JNOX_CALL_CLOCK_GETRES, clock, (long)result, 0);
+}
+
+_Static_assert(sizeof(struct timeval) == 16 && __builtin_offsetof(struct timeval, tv_usec) == 8,
+               "native timeval requires two signed LP64 fields");
+int gettimeofday(struct timeval *value, void *timezone)
+{
+    return (int)service(JNOX_CALL_GETTIMEOFDAY, (long)value, (long)timezone, 0);
 }
 
 /* All cache state is in the application's private, pristine-on-restart BSS. */

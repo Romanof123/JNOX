@@ -151,6 +151,17 @@ impl Fixed {
         self.owner
     }
 
+    #[cfg(jnox_native_fixed)]
+    pub(crate) fn has_live_process(&self, id: usize) -> bool {
+        let Some(task) = self.tasks[..self.count].get(id) else { return false; };
+        match task.state {
+            State::Exited => false,
+            #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_native_display_standby, jnox_linux_source_net_restart))]
+            State::Dormant => false,
+            _ => true,
+        }
+    }
+
     pub fn finished(&self) -> bool {
         self.tasks[..self.count]
             .iter()

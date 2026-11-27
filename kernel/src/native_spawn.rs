@@ -166,6 +166,8 @@ fn launch(f: &NativeFrame, fixed: &mut Fixed) -> Result<usize, i32> {
             ..Child::EMPTY
         };
     }
+    // The child observes the parent's current group on its very first instruction.
+    super::process_groups::inherit(0, child);
     fixed.launch(child);
     klog::push(klog::Event::Spawn(child), unsafe { CHILD[child].spawned });
     Ok(child)
@@ -303,6 +305,10 @@ pub(super) fn started(pid: usize) -> bool {
         unsafe { CHILD[pid].phase },
         Phase::Live | Phase::Zombie | Phase::Reaped
     )
+}
+
+pub(super) fn zombie(slot: usize) -> bool {
+    unsafe { CHILD[slot].phase == Phase::Zombie }
 }
 /// Shell is the sole userspace parent. Its exit marks every living child orphaned
 /// before another EL0 process can run.

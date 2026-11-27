@@ -724,6 +724,13 @@ fn main() {
         std::fs::write(out.join("native_service_account.rs"), format!("({}, {})", id(uid), id(gid)))
             .expect("write trusted package service account");
     }
+    let utc_seed = selector("JNOX_NATIVE_BOOT_UTC_SECONDS").map(|text| {
+        assert!(board == "virt" && native_image.is_some() && threads.is_none() &&
+                matches!(policy.as_deref(), Some("fifo" | "rr")), "UTC seed requires ordinary virt FIFO/RR");
+        text.parse::<i64>().expect("UTC seed must be signed 64-bit POSIX seconds")
+    });
+    std::fs::write(std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("native_boot_utc.rs"),
+                   format!("const BOOT_UTC_SECONDS: Option<i64> = {utc_seed:?};\n")).unwrap();
     if let Some(node) = selector("JNOX_NATIVE_NODENAME") {
         let bytes = node.as_bytes();
         assert!(native_image.is_some() && threads.is_none() && matches!(policy.as_deref(), Some("fifo" | "rr")) &&
@@ -734,6 +741,21 @@ fn main() {
         println!("cargo::rustc-env=JNOX_NATIVE_NODENAME={node}");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_native_console_write)");
+    println!("cargo::rustc-check-cfg=cfg(jnox_native_tmpfs)");
+    if let Some(grants) = selector("JNOX_NATIVE_TMPFS_GRANTS") {
+        let broker: usize = socket_service.as_deref().expect("tmpfs requires socket broker").parse().unwrap();
+        let routes = ipc_routes.as_deref().unwrap_or("");
+        let count = 1 + [peer_image.is_some(), peer2_image.is_some(), peer3_image.is_some()]
+            .into_iter().filter(|present| *present).count();
+        assert!(native_image.is_some() && board == "virt" && matches!(policy.as_deref(), Some("fifo" | "rr"))
+                && threads.is_none() && net_service.is_none() && grants.len() == 4 && grants != "0000"
+                && grants.bytes().enumerate().all(|(slot, g)| g == b'0' ||
+                    (matches!(g, b'1' | b'2') && slot < count && slot != broker &&
+                     routes.split(',').any(|r| r == format!("{slot}:{broker}")))),
+                "invalid native tmpfs package grants");
+        println!("cargo::rustc-cfg=jnox_native_tmpfs");
+        println!("cargo::rustc-env=JNOX_NATIVE_TMPFS_GRANTS={grants}");
+    }
     if let Some(writers) = selector("JNOX_NATIVE_CONSOLE_WRITERS") {
         assert!(native_image.is_some() && !writers.is_empty() && writers.len() <= 4 &&
                 writers.bytes().all(|b| (b'0'..=b'3').contains(&b)),

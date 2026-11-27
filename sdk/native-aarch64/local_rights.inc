@@ -3,6 +3,9 @@
 #include <jnox/shared_fd_abi.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#ifdef JNOX_GRAPHICS_OS
+#include <jnox/tmpfs_fd.h>
+#endif
 
 _Static_assert(sizeof(struct cmsghdr) == 16 && sizeof(struct msghdr) == 56 &&
                sizeof(struct iovec) == 16, "native LP64 message layout");
@@ -79,6 +82,9 @@ int __wrap_fcntl(int fd, int cmd, ...) {
         arg = __builtin_va_arg(ap, int);
         __builtin_va_end(ap);
     }
+#ifdef JNOX_GRAPHICS_OS
+    if (jnox_tmp_fd(fd)) return jnox_tmp_fcntl(fd, cmd, arg);
+#endif
     if (fd >= FD_BASE && fd < FD_BASE + FD_COUNT) {
         if (!enter()) return -1;
         struct descriptor *desc = &descriptors[fd - FD_BASE];

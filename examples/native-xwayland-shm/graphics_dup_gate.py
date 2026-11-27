@@ -12,8 +12,10 @@ from pathlib import Path
 
 runtime, out, qemu = map(Path,sys.argv[1:4])
 mode = sys.argv[4:]
-if mode not in ([], ["--seals"], ["--clockres"], ["--interfaces"]):
-    raise SystemExit("usage: graphics_dup_gate.py RUNTIME OUT QEMU [--seals|--clockres|--interfaces]")
+tmpfs_modes = {"--tmpfs-rw": "rw", "--tmpfs-ro": "ro", "--tmpfs-unset": "unset"}
+if mode and (len(mode) != 1 or mode[0] not in {
+        "--seals", "--clockres", "--interfaces", "--utc-unset", "--utc-seeded", *tmpfs_modes}):
+    raise SystemExit("unknown public Picolibc guest selection")
 repo = Path.cwd()
 sdk = repo/"sdk/native-aarch64"
 os_port = sdk/"graphics/os"
@@ -30,6 +32,7 @@ cc = ast.literal_eval(cross["binaries"]["c"])
 flags = ast.literal_eval(cross["built-in options"]["c_args"])
 ld = ast.literal_eval(cross["built-in options"]["c_link_args"])
 objects = []
+package_options = []
 if mode:
     flags = ["-I" + str(prefix/"include/jnox-wayland"), *flags]
     if mode == ["--interfaces"]:
@@ -41,6 +44,7 @@ if mode:
             ("relative_sleep", verification / "sleep/guest.c", 77),
             ("anonymous_file", os_port / "memfd_io_caller.c", 76),
             ("credentials", verification / "credentials/guest.c", 84),
+            ("replace_descriptor", os_port / "dup2_caller.c", 76),
         ]
         source = out / "interface-caller.c"
         declarations = []
@@ -53,8 +57,23 @@ if mode:
             declarations.append(f"int probe_{name}(void);")
             calls.append(f"    if (probe_{name}() != {success}) return {111 + index};")
         expected = 86
+        package_options = ["--console-write", "0"]
         source.write_text("\n".join([*declarations, "int main(void) {", *calls,
                                     f"    return {expected};", "}"]) + "\n")
+    elif mode in (["--utc-unset"], ["--utc-seeded"]):
+        source = repo / "verification/xwayland/wall-clock/guest.c"
+        expected = 87
+        if mode == ["--utc-seeded"]:
+            flags.append("-DJNOX_TEST_UTC_SEEDED")
+            package_options = ["--boot-utc-seconds", "2208988800"]
+    elif mode[0] in tmpfs_modes:
+        selection = tmpfs_modes[mode[0]]
+        source = repo / "verification/xwayland/tmpfs/guest.c"
+        expected = 88
+        grant = "ro" if selection == "ro" else "rw"
+        package_options = ["--arg", selection, "--tmpfs", "0:" + grant]
+        if selection != "unset":
+            package_options += ["--boot-utc-seconds", "1700000000"]
     else:
         name, expected = ("clockres_caller.c", 76) if mode == ["--clockres"] else ("seal_caller.c", 75)
         source = os_port/name
@@ -71,7 +90,7 @@ subprocess.run([*cc,out/"picolibc-caller.o",*objects,prefix/"lib/libjnox-wayland
 package = out/"picolibc-package"
 subprocess.run([sys.executable,"tools/build_native_el0.py","--board","virt","--policy","fifo","--priority","7",
                 "--elf",elf,"--peer-elf",out/"broker.elf","--peer-arg","1","--peer-priority","1",
-                "--socket-service","1","--shared-fd","--ipc-route","0:1","--out",package],check=True)
+                "--socket-service","1","--shared-fd","--ipc-route","0:1",*package_options,"--out",package],check=True)
 uart = out/"picolibc-uart.bin"
 cmd = list(map(str,[qemu,"-machine","virt,gic-version=2","-cpu","cortex-a72","-smp","1","-accel","tcg",
                     "-m","128M","-nodefaults","-display","none","-monitor","none","-no-reboot",
