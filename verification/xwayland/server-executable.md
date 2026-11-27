@@ -1,6 +1,6 @@
 # Building the Xwayland 24.1.6 software executable
 
-The combined software profile compiled all selected C sources. The latest final link has 29 unresolved imports. [Reproduction, caller inventory and guest seal result / 재현 방법과 검증 결과](server-link.en-ko.md)
+The first combined software build compiled every selected C source and reported 29 unresolved imports. The subsequent integrated interface build reduced that count to 18. [First link report](server-link.en-ko.md) · [Interface update #473](https://github.com/Romanof123/JNOX/pull/473) · [Current link tracking #471](https://github.com/Romanof123/JNOX/issues/471)
 
 The JNOX Wayland input path uses the fixed wire values for buttons and keys
 from `linux/input-event-codes.h`. The builder verifies the numeric UAPI
@@ -17,6 +17,10 @@ Run from the published source checkout. Set JNOX_LAB_ROOT to the shared build ro
     export JNOX_LAB_ROOT="$LAB_ROOT"
     export JNOX_INPUT_ROOT="$ARCHIVE_CACHE"
     bash verification/xwayland/server-lab.sh "$NEW_EXT4_OUTPUT" HEAD
+
+The default command uses the original authorization-file and keyboard-map paths. For the guest profile, set `JNOX_NATIVE_XAUTHORITY=1` and pass `--selected-xkm` with the compositor source and the two host packages as shown in the [link recipe](server-link.en-ko.md). The authorization option adds the boot-resource reader as a separate archive. Both configurations verify the rebuilt target graphics adapter in `$NEW_EXT4_OUTPUT/os-prefix/lib/libjnox-wayland-os.a`.
+
+기본 명령은 원본 서버의 인증 파일과 키맵 경로를 선택한다. 게스트용 구성은 `JNOX_NATIVE_XAUTHORITY=1`과 `--selected-xkm`으로 선택한다. 두 구성 모두 같은 대상 그래픽 어댑터의 SHA-256을 확인한다.
 
 The default subdirectories of JNOX_LAB_ROOT are graphics-runtime (original graphics runtime), wayland-runtime (derived native OS runtime), wayland (host scanner and target client), and font-prefix (fonts, X.Org protocol headers and xtrans). Set JNOX_GRAPHICS_RUNTIME, JNOX_WAYLAND_RUNTIME, JNOX_WAYLAND_WORK and JNOX_FONT_PREFIX to select their installed locations. Set JNOX_GIT_DIR for an explicit Git object store. The default source is the current checkout at HEAD.
 

@@ -14,6 +14,16 @@ int main(int argc, char **argv)
     struct stat st;
     char buf[8] = {0};
     const char *mode = argc > 1 ? argv[1] : "rw";
+    if (strcmp(mode, "cold") == 0) {
+        const char *name = "/tmp/cold-marker";
+        CHECK(stat(name, &st) == -1 && errno == ENOENT, 145);
+        int fd = create(name);
+        CHECK(fd >= 0 && write(fd, "JNOX", 4) == 4 && close(fd) == 0, 146);
+        fd = open(name, O_RDONLY);
+        CHECK(fd >= 0 && read(fd, buf, 4) == 4 && memcmp(buf, "JNOX", 4) == 0, 147);
+        CHECK(close(fd) == 0 && stat(name, &st) == 0 && st.st_size == 4, 148);
+        return 88; /* Leave the named file present through this boot's final stat. */
+    }
     if (strcmp(mode, "denied") == 0) {
         CHECK(open("/tmp/file", O_RDONLY) == -1 && errno == EACCES, 101);
         CHECK(stat("/tmp", &st) == -1 && errno == EACCES, 102);

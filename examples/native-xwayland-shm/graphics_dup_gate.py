@@ -12,7 +12,11 @@ from pathlib import Path
 
 runtime, out, qemu = map(Path,sys.argv[1:4])
 mode = sys.argv[4:]
-tmpfs_modes = {"--tmpfs-rw": "rw", "--tmpfs-ro": "ro", "--tmpfs-unset": "unset"}
+tmpfs_modes = {
+    "--tmpfs-rw": "rw", "--tmpfs-ro": "ro", "--tmpfs-unset": "unset",
+    "--tmpfs-paths": "rw", "--tmpfs-paths-ro": "ro",
+    "--tmpfs-roles": "writer", "--tmpfs-cold": "cold",
+}
 if mode and (len(mode) != 1 or mode[0] not in {
         "--seals", "--clockres", "--interfaces", "--signals", "--signal-default",
         "--utc-unset", "--utc-seeded", *tmpfs_modes}):
@@ -69,8 +73,9 @@ if mode:
             package_options = ["--boot-utc-seconds", "2208988800"]
     elif mode[0] in tmpfs_modes:
         selection = tmpfs_modes[mode[0]]
-        source = repo / "verification/xwayland/tmpfs/guest.c"
-        expected = 88
+        paths = mode[0] in ("--tmpfs-paths", "--tmpfs-paths-ro")
+        source = repo / "verification/xwayland/tmpfs" / ("pathops.c" if paths else "guest.c")
+        expected = 89 if paths else 88
         grant = "ro" if selection == "ro" else "rw"
         package_options = ["--arg", selection, "--tmpfs", "0:" + grant]
         if selection != "unset":
@@ -95,9 +100,27 @@ elf = out/"picolibc-caller.elf"
 subprocess.run([*cc,out/"picolibc-caller.o",*objects,prefix/"lib/libjnox-wayland-os.a",*ld,
                 "-Wl,-Map,"+str(out/"picolibc-caller.map"),"-o",elf],check=True)
 package = out/"picolibc-package"
-subprocess.run([sys.executable,"tools/build_native_el0.py","--board","virt","--policy","fifo","--priority","7",
-                "--elf",elf,"--peer-elf",out/"broker.elf","--peer-arg","1","--peer-priority","1",
-                "--socket-service","1","--shared-fd","--ipc-route","0:1",*package_options,"--out",package],check=True)
+broker = out/"broker.elf"
+peers = ["--peer-elf", broker, "--peer-arg", "1", "--peer-priority", "1",
+         "--socket-service", "1", "--shared-fd", "--ipc-route", "0:1"]
+if mode == ["--tmpfs-roles"]:
+    # The broker must answer the higher-priority writer before the reader can
+    # open its file. Slot 2 has a real IPC route but no tmpfs grant.
+    peers = ["--peer-elf", elf, "--peer-arg", "reader", "--peer-priority", "6",
+             "--peer-elf", elf, "--peer2-arg", "denied", "--peer-priority", "5",
+             "--peer-elf", broker, "--peer3-arg", "7", "--peer-priority", "8",
+             "--display-service", "0", "--socket-service", "3", "--shared-fd",
+             "--ipc-route", "0:3", "--ipc-route", "1:3", "--ipc-route", "2:3",
+             "--tmpfs", "1:ro"]
+subprocess.run([sys.executable, "tools/build_native_el0.py", "--board", "virt", "--policy", "fifo",
+                "--priority", "7", "--elf", elf, *peers, *package_options, "--out", package], check=True)
+if mode and mode[0] in ("--tmpfs-paths", "--tmpfs-paths-ro", "--tmpfs-roles", "--tmpfs-cold"):
+    from tmpfs_boot import capture
+    roles = [(selection, expected), ("broker", 0)]
+    if mode == ["--tmpfs-roles"]:
+        roles = [("writer", 88), ("reader", 88), ("denied", 88), ("broker", 0)]
+    capture(qemu, package/"kernel.elf", elf, broker, out, mode[0], roles)
+    sys.exit(0)
 uart = out/"picolibc-uart.bin"
 cmd = list(map(str,[qemu,"-machine","virt,gic-version=2","-cpu","cortex-a72","-smp","1","-accel","tcg",
                     "-m","128M","-nodefaults","-display","none","-monitor","none","-no-reboot",
