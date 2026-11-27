@@ -23,6 +23,8 @@ Xtrans normally creates or inspects the directory for the local X11 socket path.
 
 XTrans 원본 C 소스를 타깃 접두 경로에 설치한다. X11 소켓 디렉터리 권한 검사와 미충족 시 실패하는 동작을 유지한다. 실제 서버가 게스트에서 소켓을 열고 Mosaic의 연결을 수락하는 단계에서 경로 처리와 접근 권한을 검증한다.
 
+The upstream libxkbfile and X11 dependency build uses the graphics runtime and separate fresh output directories. [Source pins, commands and target probes](xkbfile.en-ko.md)
+
 ## First target compile with Xtrans
 
 With the pinned 2024.1 protocol package, authentic Xtrans 1.4.0 source and the JNOX server patch, Meson accepted the required X protocol metadata including Present 1.4, found Xtrans, and reached the missing pixman-1 target archive. Pixman 0.44.0 itself completed target configure. Ninja then invoked Clang on upstream pixman.c using the AArch64 JNOX SDK and stopped on the first missing C runtime header, assert.h in pixman-private.h. The attempt produced no pixman archive or Xwayland ELF. [Server configure](evidence/server-with-xtrans.log) · [Pixman configure and compiler output](evidence/pixman-first-compile.log)
