@@ -1,11 +1,3 @@
---- a/hw/xwayland/meson.build
-+++ b/hw/xwayland/meson.build
-@@ -144,4 +144,5 @@
-     'Xwayland',
-     srcs,
-+    link_args: host_machine.system() == 'jnox' ? ['-Wl,--defsym=__jnox_graphics_heap_bytes=2097152'] : [],
-     include_directories: wayland_inc,
-     dependencies: [
 --- a/mi/meson.build
 +++ b/mi/meson.build
 @@ -45,4 +45,5 @@

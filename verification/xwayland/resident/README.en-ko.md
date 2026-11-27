@@ -1,35 +1,12 @@
 # Launching the five-process X11 guest / 다섯 프로세스 X11 게스트 실행
 
+[Two observed Mosaic frames, authentication and teardown result / 실제 Mosaic 화면 두 장과 인증·종료 결과](evidence/five-02/README.en-ko.md)
+
+[Resident server heap, event storage and pixel buffers / 상주 서버 힙·이벤트 저장 공간·픽셀 버퍼](memory.en-ko.md)
+
+[Proposed opt-in server replacement / 선택형 서버 재기동 설계안](replacement.en-ko.md)
+
 CHG-340 · REQ-015/024 · DES-009/013 · VER-015/024. This procedure requires a successfully linked static server and its build receipt from the selected XKM and native Xauthority build. The prerequisites include the staged native tmpfs broker with per-slot grants and the explicit UTC boot anchor used for its metadata. [Server and platform interfaces #471](https://github.com/Romanof123/JNOX/issues/471) · [Guest window acceptance #448](https://github.com/Romanof123/JNOX/issues/448) · [Authorization #465](https://github.com/Romanof123/JNOX/issues/465)
-
-### Public source and acceptance status / 공개 소스와 검증 상태
-
-The first integrated Xwayland guest reported `listener-unavailable` during
-startup. This draft includes the subsequent bounded listen backlog, protected
-X11 socket directory, peer address from accept, descriptor flag support,
-current C environment startup, server heap and separate cursor surface.
-The five-role server builder pins the measured graphics OS archive
-`b4a91dcb62111bc9852b54a29db4bc2c0be17eaa5c176ed7e90cc47c8bde9901`.
-The four-role parent retains its own build receipt. The normal build still
-requires its declared upstream archives, toolchain and prepared external
-prefixes. The source tree does not carry those binary inputs.
-[Platform source](https://github.com/Romanof123/JNOX/pull/473)
-
-On the integration source, the native SDK and Picolibc socket cases each
-produced slot exits 77 and 0. The directory grant guest produced 88, 88, 88
-and 0. Four native compositor host tests passed. These component results are
-recorded separately from a complete matching-cookie render and pointer
-session, a wrong-cookie rejection on the real server, an independent repeat
-from the public source, and physical hardware acceptance. Those guest and
-hardware results remain open here.
-[Resident acceptance](https://github.com/Romanof123/JNOX/issues/448)
-
-최초 통합 게스트에서 X11 리스너 생성 오류를 관찰했다. 이 초안에는 소켓 대기열,
-X11 디렉터리 보호, 연결 수락과 파일 플래그, C 앱 환경 전달, 서버 힙과 별도
-커서 서피스가 포함된다. 통합 소스의 SDK와 Picolibc 소켓 게스트는 각각 77·0,
-디렉터리 권한 게스트는 88·88·88·0으로 종료했고, 컴포지터 호스트 시험 네 건이
-통과했다. 실제 서버의 인증 거부와 정상 렌더링·포인터 입력, 공개 소스에서의
-독립 재현, 실보드 검증은 각각 #448에서 추적한다.
 
 | Slot | Program | Arguments and responsibilities |
 | --- | --- | --- |
@@ -57,7 +34,7 @@ python3 verification/xwayland/resident/boot.py "$WORKLOAD" "$OBSERVATION" "$JNOX
 
 The packager verifies the server's pinned output, selected implementation symbols and each packaged role's ELF identity. A package or loader rejection is a separate result from a link failure. In the matching cold boot, completed startup is demonstrated by the actual client drawing the 240 × 160 coral scene. The observer compares all 38,400 pixels in the Mosaic crop over two observations at least 200 ms apart. It injects a physical guest tablet click through QMP and matches the blue scene. A second click must produce the client's DestroyNotify exit 0. The compositor then receives its normal quit input. The expected slot exits are 0, 0, 72, 0, 0. In the wrong-cookie boot Mosaic must return 114 after parsing Xwayland's rejection. The JSON reports include the last reached stage and available process exits even on a timed-out run.
 
-The two boots use a newly generated local cookie pair and the same kernel. The kernel loads private per-role authority at boot through fw_cfg. Only role/status, input stage, verified pixel counts and the kernel identity go to the observation directory. Temporary credentials, UART, stderr and intermediate scanouts are removed after observation. Server restart, native-client continuity during restart and real-hardware display and input have separate acceptance criteria.
+The two boots use a newly generated local cookie pair and the same kernel. The kernel loads private per-role authority at boot through fw_cfg. The observation directory retains the kernel identity, startup stages, role exits and measured pixel counts. Once a Mosaic crop matches, the verifier also saves those observed pixels as a PPM with its SHA-256. Temporary credentials, UART, stderr and intermediate full scanouts are removed after observation. Server restart, native-client continuity during restart and real-hardware display and input have separate acceptance criteria.
 
 원본 서버가 받은 `WAYLAND_DISPLAY`는 네이티브 합성기의 경로다. 서버는 자신의 프로세스에서 브로커 3을 선택하고 X11 리스너를 생성한다. 서버와 Mosaic의 인증 자료는 게스트 시작 시 배정하며 역할별로 접근을 제한한다. 동일 커널을 두 번 부팅해 잘못된 쿠키의 실제 거부와 정상 쿠키의 전체 화면·입력 경로를 각각 검사한다.
 
@@ -99,7 +76,9 @@ only publishes the terminal records when the whole session has stopped.
 
 Xwayland 24.1.6 creates a cursor wl_surface while binding the seat, before assigning xdg_surface to its distinct root surface. The compositor supports one xdg toplevel and one independent cursor surface per client in either creation order. The cursor uses a bounded 64×64 premultiplied snapshot (16 KiB per client), a pointer-enter serial and a surface-local hotspot. Its buffer releases, frame callbacks, destruction and pixels are independent of the root. A null cursor hides it. A cursor never becomes a pointer hit target.
 
-The advertised globals are wl_compositor v4, wl_shm v1, xdg_wm_base v1, wl_seat v4 and wl_output v3. For the selected geometry an XRGB8888 root at stride 1,280 occupies 307,200 bytes, exactly 75 kernel backing pages. The ARGB8888 cursor and Tiles' 128×96 XRGB8888 surface use additional objects. Four backing objects exist globally and each process has four mapping slots. Two root pixmaps, a live Tiles backing and one cursor consume all four. The client compositor snapshots committed pixels before release. Peak simultaneous allocations and the server's 512 KiB graphics heap require a live run. Mosaic sends X11 drawing requests for a 240×160 window at (32,32); it has a separate address space.
+The advertised globals are wl_compositor v4, wl_shm v1, xdg_wm_base v1, wl_seat v4 and wl_output v3. For the selected geometry an XRGB8888 root at stride 1,280 occupies 307,200 bytes, exactly 75 kernel backing pages. The ARGB8888 cursor and Tiles' 128×96 XRGB8888 surface use additional objects. Four backing objects exist globally and each process has four mapping slots. Two root pixmaps, a live Tiles backing and one cursor consume all four. The compositor snapshots committed pixels before release. Peak simultaneous allocations and peak use of the server's 2 MiB heap require a live run. Mosaic sends X11 drawing requests for a 240×160 window at (32,32) from its own address space.
+
+루트 화면 한 장은 공유 객체 하나를 채운다. 서버 전용 힙은 2 MiB로 설정했으며 입력·연속 그리기 중의 최대 사용량은 실측 항목이다. 검증기는 일치한 Mosaic 창의 실제 픽셀을 PPM으로 저장하고 그 파일의 해시를 기록한다.
 
 Focused host regression for PM:
 

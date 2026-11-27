@@ -319,7 +319,11 @@ def main():
         scripts = [i for i, arg in enumerate(existing) if arg.startswith("-Wl,-T,")]
         if len(scripts) != 1:
             raise ValueError("expected one graphics runtime linker script")
-        existing[scripts[0]] = "-Wl,-T," + str(HERE.parents[1] / "sdk/native-aarch64/graphics/app.ld")
+        layout = HERE.parents[1] / "sdk/native-aarch64/graphics/app.ld"
+        # lld evaluates the script's PROVIDE default when -T is processed.
+        # Keep the resident override before the script in the same driver flag.
+        existing[scripts[0]] = ("-Wl,--defsym=__jnox_graphics_heap_bytes=2097152,-T," + str(layout)
+                                if args.build_executable else "-Wl,-T," + str(layout))
         rtcfg["built-in options"]["c_link_args"] = repr([*server_archives, *existing])
         with cross.open("w") as f:
             rtcfg.write(f)
