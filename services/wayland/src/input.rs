@@ -52,15 +52,13 @@ pub(crate) fn keymap(out: &mut Out, id: u32, version: u32) -> Result<(), ()> {
 
 pub(crate) fn enter(out: &mut Out, id: u32, serial: u32, surface: u32) -> Result<(), ()> {
     // Each UART byte produces a complete press/release before the next focus action.
-    let body = [serial, surface, 0].map(u32::to_le_bytes); // empty pressed-keys array
-    out.event(id, 1, body.as_flattened())?;
+    out.focus_words(id, 1, &[serial, surface, 0])?; // empty pressed-keys array
     let modifiers = [serial, 0, 0, 0, 0].map(u32::to_le_bytes);
     out.event(id, 4, modifiers.as_flattened())
 }
 
 pub(crate) fn leave(out: &mut Out, id: u32, serial: u32, surface: u32) -> Result<(), ()> {
-    let body = [serial, surface].map(u32::to_le_bytes);
-    out.event(id, 2, body.as_flattened())
+    out.focus_words(id, 2, &[serial, surface])
 }
 
 pub(crate) fn keycode(byte: u8) -> Option<u32> {

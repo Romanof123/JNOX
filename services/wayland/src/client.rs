@@ -84,6 +84,7 @@ pub struct Client {
     configures: [u32; 8],
     configs: usize,
     pub dying: Option<u32>,
+    pub focus_stall: Option<u32>,
     pub changed: bool,
     pub surface_generation: u64,
     pub pointer_available: bool,
@@ -104,6 +105,7 @@ impl Client {
             configures: [0; 8],
             configs: 0,
             dying: None,
+            focus_stall: None,
             changed: false,
             surface_generation: 0,
             pointer_available: false,
@@ -133,6 +135,7 @@ impl Client {
         self.pending_region = None;
         self.configs = 0;
         self.dying = None;
+        self.focus_stall = None;
         self.changed = true;
         if self.fd >= 0 {
             crate::observe::wire(self.fd, 4, &[], &[]);
@@ -220,7 +223,11 @@ impl Client {
     }
     pub fn pointer_event(&mut self, opcode: u16, words: &[u32]) -> Result<()> {
         for obj in self.objects.iter().filter(|o| matches!(o.kind, Kind::Pointer)) {
-            self.out.words(obj.id, opcode, words)?;
+            if opcode <= 1 {
+                self.out.focus_words(obj.id, opcode, words)?;
+            } else {
+                self.out.words(obj.id, opcode, words)?;
+            }
         }
         Ok(())
     }
@@ -777,7 +784,7 @@ impl Client {
                 r.end()?;
                 self.add(new, Kind::Pointer, v)?;
                 if let Some((surface, x, y)) = self.pointer_local.filter(|p| p.0 == self.surface.id && self.surface.mapped) {
-                    self.out.words(new, 0, &[serial(last), surface, x as u32, y as u32])?;
+                    self.out.focus_words(new, 0, &[serial(last), surface, x as u32, y as u32])?;
                 }
             }
             (Kind::Pointer, 0) => {
