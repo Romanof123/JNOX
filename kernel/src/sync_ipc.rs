@@ -58,7 +58,7 @@ pub struct SyncIpc<const N: usize> {
 
 impl<const N: usize> SyncIpc<N> {
     pub const fn new(routes: [u8; N]) -> Self {
-        assert!(N >= 2 && N <= 4);
+        assert!(N >= 2 && N <= 4 + cfg!(jnox_native_display_standby) as usize);
         Self {
             routes,
             slots: [Slot::FRESH; N],

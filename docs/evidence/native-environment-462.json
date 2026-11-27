@@ -1,0 +1,195 @@
+{
+  "tested_commit": "6e3690354b62e69d3e974225aeb3beb70ea2fc48",
+  "host_tests": {
+    "packager": 3,
+    "native_stack": 6
+  },
+  "cases": {
+    "ordinary-distinct": {
+      "kernel_elf_sha256": "c7edd81826ee3f9aab0033f1dc609ae9415c767479226be6f80892c77906db09",
+      "slot_elf_sha256": [
+        "ebd39b4e511ade25efa5d37840726ae44cfb3f2e87c1fdf332b7bd1edae7b01b",
+        "ebd39b4e511ade25efa5d37840726ae44cfb3f2e87c1fdf332b7bd1edae7b01b"
+      ],
+      "application_uart": [
+        "JNOX ENV M B 4 bec6e2cc",
+        "JNOX ENV M A 4 73fb947c"
+      ],
+      "exits": [
+        [
+          0,
+          73
+        ],
+        [
+          1,
+          74
+        ]
+      ]
+    },
+    "ordinary-empty": {
+      "kernel_elf_sha256": "7548948aa46554c00ba9593f1d51e4b741a75347e5bb980218d454833d2a4d43",
+      "slot_elf_sha256": [
+        "ebd39b4e511ade25efa5d37840726ae44cfb3f2e87c1fdf332b7bd1edae7b01b",
+        "ebd39b4e511ade25efa5d37840726ae44cfb3f2e87c1fdf332b7bd1edae7b01b"
+      ],
+      "application_uart": [
+        "JNOX ENV M B 0 811c9dc5",
+        "JNOX ENV M A 0 811c9dc5"
+      ],
+      "exits": [
+        [
+          0,
+          83
+        ],
+        [
+          1,
+          84
+        ]
+      ]
+    },
+    "ordinary-mixed": {
+      "kernel_elf_sha256": "d5122122f9e8effb92ff7e3ff858aa14cf56b8f7d37172efa815f03a4ec0e55c",
+      "slot_elf_sha256": [
+        "ebd39b4e511ade25efa5d37840726ae44cfb3f2e87c1fdf332b7bd1edae7b01b",
+        "ebd39b4e511ade25efa5d37840726ae44cfb3f2e87c1fdf332b7bd1edae7b01b"
+      ],
+      "application_uart": [
+        "JNOX ENV M B 4 bec6e2cc",
+        "JNOX ENV M A 0 811c9dc5"
+      ],
+      "exits": [
+        [
+          0,
+          83
+        ],
+        [
+          1,
+          74
+        ]
+      ]
+    },
+    "picolibc-distinct": {
+      "kernel_elf_sha256": "9eb2bc99c305993114c78e9fc24589466dbd17e1f9d89a348d1c7fb10ca5b1d6",
+      "slot_elf_sha256": [
+        "a57bb16343165309b837d07a2bd2ab70d4e043b59cf4097a113cdc30c9a7da17",
+        "a57bb16343165309b837d07a2bd2ab70d4e043b59cf4097a113cdc30c9a7da17"
+      ],
+      "application_uart": [
+        "JNOX ENV C B 4 bec6e2cc",
+        "JNOX ENV M B 4 bec6e2cc",
+        "JNOX ENV C A 4 73fb947c",
+        "JNOX ENV M A 4 73fb947c"
+      ],
+      "exits": [
+        [
+          0,
+          73
+        ],
+        [
+          1,
+          74
+        ]
+      ]
+    },
+    "picolibc-empty": {
+      "kernel_elf_sha256": "b368a05f5093cd4489bc29a597e2c81f2b29497b6a18c6ae9d569be9fdee0490",
+      "slot_elf_sha256": [
+        "a57bb16343165309b837d07a2bd2ab70d4e043b59cf4097a113cdc30c9a7da17",
+        "a57bb16343165309b837d07a2bd2ab70d4e043b59cf4097a113cdc30c9a7da17"
+      ],
+      "application_uart": [
+        "JNOX ENV C - 0 811c9dc5",
+        "JNOX ENV M B 0 811c9dc5",
+        "JNOX ENV C - 0 811c9dc5",
+        "JNOX ENV M A 0 811c9dc5"
+      ],
+      "exits": [
+        [
+          0,
+          83
+        ],
+        [
+          1,
+          84
+        ]
+      ]
+    },
+    "picolibc-mixed": {
+      "kernel_elf_sha256": "6902288bd7acb534f0c10201ae686220a1f1298633fc79b02fa817a830a365f4",
+      "slot_elf_sha256": [
+        "a57bb16343165309b837d07a2bd2ab70d4e043b59cf4097a113cdc30c9a7da17",
+        "a57bb16343165309b837d07a2bd2ab70d4e043b59cf4097a113cdc30c9a7da17"
+      ],
+      "application_uart": [
+        "JNOX ENV C B 4 bec6e2cc",
+        "JNOX ENV M B 4 bec6e2cc",
+        "JNOX ENV C - 0 811c9dc5",
+        "JNOX ENV M A 0 811c9dc5"
+      ],
+      "exits": [
+        [
+          0,
+          83
+        ],
+        [
+          1,
+          74
+        ]
+      ]
+    },
+    "yield-ordinary": {
+      "kernel_elf_sha256": "cbf67087adc388da4b9771c57c71376ee13e694283cb1c35346adb57748f9865",
+      "slot_elf_sha256": [
+        "5188f90271523fb4a570d2b464983a470641106bc2e3d95e92fabf3f3cf07ff8",
+        "5188f90271523fb4a570d2b464983a470641106bc2e3d95e92fabf3f3cf07ff8"
+      ],
+      "application_uart": [
+        "ENV YIELD A 0",
+        "ENV YIELD B 0",
+        "ENV YIELD A 1",
+        "ENV YIELD B 1"
+      ],
+      "exits": [
+        [
+          0,
+          91
+        ],
+        [
+          1,
+          92
+        ]
+      ],
+      "rejected_controls": {
+        "dropped_after_yield": "missing real interleave across yield",
+        "peer_return_identity": "wrong slot validation result"
+      }
+    },
+    "yield-picolibc": {
+      "kernel_elf_sha256": "be1fc163298b925b0058cd25afd6ef9656ee853380a70743f6ef7236240ee96c",
+      "slot_elf_sha256": [
+        "af0e571950b15af45cad0287228745588d6e82ba3d6e7383938ecda03b462cb7",
+        "af0e571950b15af45cad0287228745588d6e82ba3d6e7383938ecda03b462cb7"
+      ],
+      "application_uart": [
+        "ENV YIELD A 0",
+        "ENV YIELD B 0",
+        "ENV YIELD A 1",
+        "ENV YIELD B 1"
+      ],
+      "exits": [
+        [
+          0,
+          91
+        ],
+        [
+          1,
+          92
+        ]
+      ],
+      "rejected_controls": {
+        "dropped_after_yield": "missing real interleave across yield",
+        "peer_return_identity": "wrong slot validation result"
+      }
+    }
+  }
+}

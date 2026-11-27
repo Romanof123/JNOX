@@ -21,7 +21,20 @@ The runner starts the supplied server on a fresh socket with a new 320×240 raw 
 
 The report contains the preserved mapped frame, stock client's wire log, client and server logs, loaded library mappings, hashes and matched origin. Its backend field is `linux-host`. To connect a separate orchestrator, run `reference-client --socket /absolute/path` or `reference-client --fd N` with a connected, inherited Unix-stream FD. With `--hold-frame` the client prints `FRAME` on stdout and waits for a newline on stdin so the external observer can capture the mapped pixels.
 
+## Fixed virtual output
+
+For the fixed output, run the raw version and lifetime cases and the pinned upstream client as follows:
+
+```sh
+python3 probe-output.py "$server"
+python3 run-reference.py --output-profile "$server" "$work/build/reference-client" "$work/intake/sysroot" "$work/output-report"
+```
+
+The raw clients exercise v1/v2/v3 event boundaries, two bindings on the same connection, late binding, clipping, null-buffer unmap, invalid objects, v3 release and ID reuse. The pinned libwayland client binds v2, registers a surface listener, requests fullscreen on that output, maps the checked pixel buffer, then unmaps it and waits for leave. The normal client mode ignores the output global.
+
 ## 한국어
+
+위 첫 명령은 출력 프로토콜 버전별 이벤트, 같은 연결의 복수 바인딩, 화면 밖 이동과 복귀, 해제 후 ID 재사용, 다른 연결의 객체 접근 거절을 검사한다. 두 번째 명령은 고정한 libwayland-client에서 출력 v2 속성을 읽고, 실제 화면 버퍼에 대해 enter와 leave를 확인한다. 기본 참조 클라이언트는 새 전역 객체를 무시한다.
 
 Ubuntu 22.04 amd64에서 실제 libwayland-client와 wayland-scanner를 사용한다. 위 명령은 여섯 패키지의 SHA-256을 확인한 뒤 작업 디렉터리에만 압축을 푼다. 두 프로토콜 XML에서 새로 생성한 바인딩과 배포판 라이브러리로 참조 클라이언트를 빌드한다. `upstream.json`에는 원본 아카이브, XML, 실행 파일, 라이브러리 및 저작권 고지의 해시가 있다.
 

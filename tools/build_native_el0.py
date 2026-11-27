@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Package up to four native AArch64 applications for virt or Raspberry Pi 4."""
+"""Package up to five native AArch64 applications for virt or Raspberry Pi 4."""
 import argparse
 import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -136,6 +137,8 @@ def native_service_slots(parser, args, policy, board):
     if args.net_service and slots > 3:
         parser.error("--net-service supports at most three native processes")
     display = int(args.display_service[0]) if args.display_service else None
+    if getattr(args, "pointer_tablet", False) and display is None:
+        parser.error("--pointer-tablet requires --display-service")
     broker = int(args.socket_service[0]) if args.socket_service else None
     if args.shared_fd and (args.shared_fd != 1 or broker is None or args.net_service
                            or board != "virt" or policy not in ("fifo", "rr") or args.threads):
@@ -147,8 +150,16 @@ def native_service_slots(parser, args, policy, board):
         if any((args.ipc_route, args.mailbox_route, args.notify_route, args.cap_grant, args.cap_route,
                 args.loan_route, args.pipes, args.waitset, args.socket_service, args.pubsub_service)):
             parser.error("--uart-rx-standby excludes IPC routes, endpoints and services")
+    display_standby = args.display_standby
+    if display_standby is not None:
+        if (display_standby != "2" or slots != 5 or display != 0 or broker != 3 or args.shared_fd != 1
+                or any((args.uart_rx_irq, args.exec_child, args.rom_file, args.mailbox_route, args.notify_route,
+                        args.loan_route, args.cap_grant, args.cap_route, args.pipes, args.waitset))):
+            parser.error("--display-standby 2 requires five ordinary processes, owner 0, local broker 3 and --shared-fd")
+    elif slots > 4:
+        parser.error("five native processes require --display-standby 2")
     if broker == 3:
-        if slots != 4 or display != 0 or args.pubsub_service:
+        if slots != (5 if display_standby else 4) or display != 0 or args.pubsub_service:
             parser.error("socket broker 3 requires four ordinary virt FIFO processes with display owner 0")
         if sorted(args.ipc_route) != [(0, 3), (1, 3), (2, 3)]:
             parser.error("display/socket package requires exactly IPC routes 0:3, 1:3 and 2:3")
@@ -256,7 +267,8 @@ def thread_priorities(value):
 
 
 def native_schedule(parser, args):
-    if len(args.peer_elf) > (3 if args.policy in (["amc"], ["fifo"], ["rr"]) else 2):
+    max_peers = 4 if args.display_standby is not None else 3
+    if len(args.peer_elf) > (max_peers if args.policy in (["amc"], ["fifo"], ["rr"]) else 2):
         parser.error("too many peer ELFs for the selected policy")
     if (args.peer_elf or args.policy) and not (args.source or args.elf):
         parser.error("peers and scheduling policies require an ordinary --source or --elf")
@@ -389,7 +401,7 @@ def amc_manifest(source, slots):
 
 
 def encode_arguments(parser, args):
-    vectors = [args.arg, args.peer_arg, args.peer2_arg, args.peer3_arg]
+    vectors = [args.arg, args.peer_arg, args.peer2_arg, args.peer3_arg, args.peer4_arg]
     encoded = {}
     for slot, extras in enumerate(vectors):
         if not extras:
@@ -414,6 +426,39 @@ def encode_arguments(parser, args):
             wire.extend(data)
         encoded[f"JNOX_NATIVE_ARGV{slot}_HEX"] = wire.hex()
     return vectors, encoded
+
+
+def encode_environment(parser, args, vectors, policy):
+    entries = [{} for _ in vectors]
+    for declaration in args.env:
+        slot_text, sep, assignment = declaration.partition(":")
+        name, eq, value = assignment.partition("=")
+        if (not sep or slot_text not in ("0", "1", "2", "3", "4") or not eq
+                or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) or "\0" in value):
+            parser.error("--env requires SLOT:NAME=VALUE with an ASCII identifier and a NUL-free value")
+        slot = int(slot_text)
+        if not (args.source or args.elf) or slot > len(args.peer_elf):
+            parser.error(f"--env slot {slot} requires a supplied ordinary application")
+        if policy == "amc" or (args.exec_child and slot > 0):
+            parser.error("--env is unsupported for AMC generations and dynamically spawned children")
+        if name in entries[slot]:
+            parser.error(f"slot {slot}: duplicate environment name {name}")
+        entries[slot][name] = value
+
+    encoded = {}
+    for slot, environment in enumerate(entries):
+        if not environment:
+            continue
+        argv = vectors[slot]
+        try:
+            wire = b"".join(f"{name}={value}\0".encode("utf-8") for name, value in environment.items())
+            used = len(wire) + sum(len(arg.encode("utf-8")) + 1 for arg in argv)
+        except UnicodeEncodeError:
+            parser.error(f"slot {slot}: startup strings must be valid UTF-8")
+        if len(argv) + len(environment) > 15 or used > 1024:
+            parser.error(f"slot {slot}: extra arguments and environment exceed 15 entries or 1024 bytes")
+        encoded[f"JNOX_NATIVE_ENV{slot}_HEX"] = wire.hex()
+    return entries, encoded
 
 
 def package_pi4_image(out, kernel, env):
@@ -481,7 +526,7 @@ def main():
     group.add_argument("--source", type=Path, action=SinglePath, help="C application to compile with the native SDK")
     group.add_argument("--elf", type=Path, action=SinglePath, help="already linked native AArch64 application")
     parser.add_argument("--peer-elf", type=Path, action="append", default=[],
-                        help="independently linked peer in slot order (up to three peers for virt FIFO/RR or AMC, two for other policies)")
+                        help="independently linked peer in slot order (four peers for display standby, three for virt FIFO/RR or AMC, two otherwise)")
     parser.add_argument("--policy", choices=["fifo", "rr", "weighted", "edf", "llf", "rm", "dm", "cbs", "mlq", "mlfq", "partition", "polling", "deferrable", "sporadic", "hierarchy", "lottery", "stride", "sjf", "srtf", "hrrn", "extension", "amc"], action="append", default=[])
     parser.add_argument("--server-slot-ms", type=unsigned_decimal, action=SinglePath)
     parser.add_argument("--server-budget", type=budget_tuple, action=SinglePath, metavar="Q,P")
@@ -523,9 +568,11 @@ def main():
     parser.add_argument("--peer-class", type=unsigned_decimal, action="append", default=[])
     parser.add_argument("--allotment-ticks", type=allotments, action="append", default=[], metavar="TOP,MIDDLE,BOTTOM")
     parser.add_argument("--boost-ticks", type=unsigned_decimal, action="append", default=[])
-    for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg", "--peer3-arg")):
+    for slot, option in enumerate(("--arg", "--peer-arg", "--peer2-arg", "--peer3-arg", "--peer4-arg")):
         parser.add_argument(option, action="append", default=[], metavar="VALUE",
                             help=f"append one UTF-8 argument to slot {slot} (use {option}=-name for a leading dash)")
+    parser.add_argument("--env", action="append", default=[], metavar="SLOT:NAME=VALUE",
+                        help="set one package environment entry for an ordinary process slot")
     parser.add_argument("--thread-priorities", type=thread_priorities, action=SinglePath)
     parser.add_argument("--threads", choices=["2", "4"], action="append", default=[],
                         help="thread context capacity for one ordinary ELF")
@@ -549,8 +596,12 @@ def main():
                         metavar="OWNER:READERMASK:WRITERMASK")
     parser.add_argument("--pipe-link", type=pipe_fields, action="append", default=[],
                         metavar="WRITER:WFD:READER:RFD")
+    parser.add_argument("--pointer-tablet", action="store_true",
+                        help="grant the display owner a modern virtio-input absolute tablet on QEMU virt")
     parser.add_argument("--display-service", choices=("0", "1"), action="append", default=[], metavar="SLOT",
                         help="give one ordinary virt FIFO process ramfb scanout and PL011 byte input")
+    parser.add_argument("--display-standby", choices=("2",), action=SinglePath, metavar="SLOT",
+                        help="reserve slot 2 for one display handoff in the five-process local compositor package")
     parser.add_argument("--uart-rx-irq", action="count", default=0,
                         help="receive PL011 input via GICv2 INTID 33 for the selected display owner")
     parser.add_argument("--uart-rx-standby", choices=("2",), action=SinglePath, metavar="SLOT",
@@ -582,7 +633,7 @@ def main():
     if args.linux_source_driver:
         option = f"--linux-source-{args.linux_source_driver}"
         allowed = {"out", "board", "kernel_profile", "linux_source_driver", "linux_source_net_rx_irq_rearm_test", "linux_source_net_restart_pending_test", "elf", "peer_elf",
-                   "policy", "priority", "peer_priority", "arg", "peer_arg"}
+                   "policy", "priority", "peer_priority", "arg", "peer_arg", "env"}
         conflicts = [a.option_strings[0] for a in parser._actions if a.dest not in allowed
                      and hasattr(args, a.dest) and getattr(args, a.dest) != a.default]
         peers = 2 if args.linux_source_driver == "net-restart" else 1
@@ -671,7 +722,7 @@ def main():
         if not routes:
             continue
         count = 1 + len(args.peer_elf)
-        maximum = 4 if kind == "ipc" else 3
+        maximum = (5 if args.display_standby else 4) if kind == "ipc" else 3
         if board != "virt" or policy not in ("fifo", "rr") or args.threads or not 2 <= count <= maximum:
             parser.error(f"--{kind}-route requires 2..{maximum} native processes under FIFO or RR on virt")
         if len(set(routes)) != len(routes):
@@ -773,6 +824,7 @@ def main():
             topology, raw_topology = parse_topology(hierarchy_source, 1 + len(args.peer_elf))
         except (ValueError, OSError, RecursionError) as exc:
             parser.error(f"invalid --hierarchy: {exc}")
+    environments, encoded_environment = encode_environment(parser, args, vectors, policy)
     peer_inputs = [path.resolve(strict=True) for path in args.peer_elf]
     if service:
         peer_inputs.append(service.resolve(strict=True))
@@ -923,6 +975,19 @@ def main():
             "width": 320, "height": 240, "stride": 1280, "format": "XRGB8888",
             "syscalls": {"init": 72, "write_row": 73, "poll_key": 74},
         }
+        if args.pointer_tablet:
+            env["JNOX_NATIVE_POINTER_TABLET"] = "1"
+            metadata["pointer_tablet"] = {"device": "virtio-tablet-device", "owner_slot": display_slot,
+                                          "transport": "virtio-mmio-modern", "service": 197,
+                                          "queue_size": 16, "irq_mode": "polled"}
+        if args.display_standby is not None:
+            env["JNOX_NATIVE_DISPLAY_STANDBY"] = args.display_standby
+            metadata["display_standby"] = {"owner_slot": 0, "client_slot": 1, "standby_slot": 2,
+                                           "broker_slot": 3, "headless_slot": 4, "max_handoffs": 1}
+            if args.pointer_tablet:
+                metadata["pointer_tablet"].update(standby_slot=2, max_handoffs=1,
+                                                 handoff_requires_acknowledged_reset=True)
+            metadata["package_argv"] = sys.argv[:]
         if args.uart_rx_irq:
             env["JNOX_NATIVE_UART_RX_IRQ"] = "1"
             metadata["uart_rx_irq"] = {"device": "pl011", "controller": "gicv2", "intid": 33,
@@ -1047,6 +1112,7 @@ def main():
                 slot["amc_task"] = amc["tasks"][slot["slot"]]
             slot["argv"] = (["/bin/app", *vectors[slot["slot"]]] if app == "process"
                             else ["/bin/native_startup_probe", "8", "13"])
+            slot["environment"] = environments[slot["slot"]]
             slot["priority"] = priorities[slot["slot"]] if priorities else None
             if weights:
                 slot["weight"] = weights[slot["slot"]]
@@ -1128,9 +1194,10 @@ def main():
                 env["JNOX_NATIVE_LOTTERY_FLOORS"] = ",".join(map(str, floors))
                 metadata.update(lottery_window=[horizon, width], lottery_floors=floors)
         metadata.update(policy=policy or "cooperative", quantum_ticks=quantum, slots=slots)
-        if len(slots) == 4 and policy in ("fifo", "rr"):
-            metadata["fixed_event_layout"] = {"fields": 24, "ready_start": 12, "service_start": 16,
-                                              "remaining_start": 20, "slots_per_group": 4}
+        if len(slots) >= 4 and policy in ("fifo", "rr"):
+            metadata["fixed_event_layout"] = {"fields": 12 + 3 * len(slots), "ready_start": 12,
+                                              "service_start": 12 + len(slots), "remaining_start": 12 + 2 * len(slots),
+                                              "slots_per_group": len(slots)}
         if policy:
             env["JNOX_NATIVE_POLICY"] = policy
         if priorities:
@@ -1140,6 +1207,7 @@ def main():
         if quantum is not None:
             env["JNOX_NATIVE_QUANTUM_TICKS"] = str(quantum)
         env.update(encoded_arguments)
+        env.update(encoded_environment)
         env.update(JNOX_BOARD=board, JNOX_PROFILE="native", JNOX_APP=app,
                    JNOX_NATIVE_ELF=str(user_elf), JNOX_NATIVE_ELF_SHA256=digest,
                    CARGO_TARGET_DIR=str(out / "target"))
@@ -1152,7 +1220,7 @@ def main():
                     build_log_sha256=sha256(out / "build.log"))
     if (policy == "amc" or args.uart_rx_standby or args.net_standby is not None
             or args.linux_source_driver == "net-restart"
-            or (policy in ("fifo", "rr") and len(slots) == 4)):
+            or (policy in ("fifo", "rr") and len(slots) >= 4)):
         for slot, root in zip(slots, linked_roots(kernel_elf, len(slots))):
             slot["expected_ttbr0_el1"] = root
     (out / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")

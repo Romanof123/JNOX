@@ -14,11 +14,15 @@ import subprocess
 
 HERE = Path(__file__).resolve().parent
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("phase", choices=["prepare", "protocols", "ffi", "client"])
+parser.add_argument("phase", choices=["prepare", "protocols", "ffi", "client", "registry"])
 parser.add_argument("inputs", type=Path)
 parser.add_argument("runtime", type=Path, help="frozen graphics runtime containing jnox.ini and target/")
 parser.add_argument("work", type=Path, help="new for prepare; reused by later phases")
+parser.add_argument("--env-connect", action="store_true",
+                    help="link roundtrip-env.elf with the upstream wl_display_connect(NULL) route")
 args = parser.parse_args()
+if args.env_connect and args.phase not in ("client", "registry"):
+    parser.error("--env-connect applies to the client and registry phases")
 inputs, runtime, work = (p.resolve() for p in (args.inputs, args.runtime, args.work))
 host, target = work/"host", work/"target"
 source = work/"wayland-1.23.1"
@@ -120,7 +124,7 @@ elif args.phase == "ffi":
     makefile.write_text(prepared)
     run("make", "-j1", "install", env=env, cwd=build)
     archive_check(target/"lib/libffi.a", ["ffi_call","ffi_prep_cif"])
-else:
+elif args.phase == "client":
     archive_check(target/"lib/libffi.a", ["ffi_call", "ffi_prep_cif"])
     env = pc_env(target/"lib/pkgconfig")
     env["PKG_CONFIG_PATH_FOR_BUILD"] = str(host/"lib/pkgconfig")
@@ -132,11 +136,16 @@ else:
         "--libdir", "lib", "--wrap-mode=nofallback", "-Ddefault_library=static", "-Dscanner=false",
         "-Dtests=false", "-Ddocumentation=false", env=env)
     run("ninja", "-j1", "-C", work/"client-build", "install", env=env)
+
+if args.phase in ("client", "registry"):
+    env = pc_env(target/"lib/pkgconfig")
     archive = target/"lib/libwayland-client.a"
     archive_check(archive, ["wl_display_connect_to_fd", "wl_display_roundtrip", "wl_proxy_marshal_flags",
                             "wl_connection_flush", "wl_list_init", "wl_os_recvmsg_cloexec"])
     cc, flags, ld = read_cross()
-    run(*cc, *flags, "-I"+str(target/"include"), "-c", HERE/"roundtrip.c", "-o", work/"roundtrip.o", env=env)
-    run(*cc, work/"roundtrip.o", archive, target/"lib/libffi.a", *ld,
-        "-Wl,-Map,"+str(work/"roundtrip.map"), "-o", work/"roundtrip.elf", env=env)
-    run("readelf", "-hW", "-lW", work/"roundtrip.elf")
+    stem = "roundtrip-env" if args.env_connect else "roundtrip"
+    variant_flags = ["-DJNOX_REGISTRY_ENV_CONNECT"] if args.env_connect else []
+    obj, link_map, elf = (work/(stem+ext) for ext in (".o", ".map", ".elf"))
+    run(*cc, *flags, *variant_flags, "-I"+str(target/"include"), "-c", HERE/"roundtrip.c", "-o", obj, env=env)
+    run(*cc, obj, archive, target/"lib/libffi.a", *ld, "-Wl,-Map,"+str(link_map), "-o", elf, env=env)
+    run("readelf", "-hW", "-lW", elf)

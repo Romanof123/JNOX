@@ -3,6 +3,7 @@
 set -eu
 local_socket=0
 pubsub=0
+cargo_features=
 pipe_define=
 shell_define=
 while [ "$#" -gt 0 ]; do
@@ -11,12 +12,19 @@ while [ "$#" -gt 0 ]; do
         --pipes) pipe_define=-DJNOX_SDK_PIPES ;;
         --local-socket) local_socket=1 ;;
         --pubsub) pubsub=1 ;;
+        --features)
+            if [ "$#" -lt 2 ] || [ -z "$2" ] || [ -n "$cargo_features" ]; then
+                echo "--features needs one Cargo feature list" >&2
+                exit 2
+            fi
+            cargo_features=$2
+            shift ;;
         *) break ;;
     esac
     shift
 done
 if [ "$#" -ne 2 ]; then
-    echo "usage: $0 [--pipes|--native-shell] [--local-socket] [--pubsub] Cargo.toml OUTPUT.elf" >&2
+    echo "usage: $0 [--pipes|--native-shell] [--local-socket] [--pubsub] [--features FEATURES] Cargo.toml OUTPUT.elf" >&2
     exit 2
 fi
 sdk=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -44,10 +52,13 @@ if [ "$pubsub" = 1 ]; then
         -c "$sdk/pubsub.c" -o "$tmp/pubsub.o"
     set -- "$@" -C link-arg="$tmp/pubsub.o"
 fi
-cargo rustc --manifest-path "$manifest" --release --target aarch64-unknown-none-softfloat \
-    --message-format=json-render-diagnostics -- -C panic=abort -C relocation-model=static \
+set -- --message-format=json-render-diagnostics -- -C panic=abort -C relocation-model=static \
     -C link-arg="$tmp/start.o" -C link-arg="$tmp/io.o" -C link-arg=-T"$sdk/app.ld" \
-    -C link-arg=-z -C link-arg=max-page-size=4096 -C link-arg=--build-id=none "$@" > "$tmp/artifacts"
+    -C link-arg=-z -C link-arg=max-page-size=4096 -C link-arg=--build-id=none "$@"
+if [ -n "$cargo_features" ]; then
+    set -- --features "$cargo_features" "$@"
+fi
+cargo rustc --manifest-path "$manifest" --release --target aarch64-unknown-none-softfloat "$@" > "$tmp/artifacts"
 python3 - "$tmp/artifacts" "$out" <<'PY'
 import json
 import shutil

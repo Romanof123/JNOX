@@ -1,0 +1,7 @@
+JNOX_REGISTRY env-connect /wayland-0 fd 64 absent-errno 2
+JNOX_REGISTRY global wl_compositor 1 4
+JNOX_REGISTRY global wl_shm 2 1
+JNOX_REGISTRY global xdg_wm_base 3 1
+JNOX_REGISTRY global wl_seat 4 4
+JNOX_REGISTRY global wl_output 5 3
+JNOX_REGISTRY disconnect-result 0

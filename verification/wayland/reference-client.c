@@ -24,7 +24,10 @@ struct client {
     struct wl_shm *shm;
     struct wl_seat *seat;
     struct wl_keyboard *keyboard;
+    struct wl_output *output;
     struct xdg_wm_base *shell;
+    bool test_output;
+    unsigned output_stage, enters, leaves;
     bool xrgb, argb, keymap, top_configured, configured, frame, released;
     uint32_t serial;
 };
@@ -92,6 +95,57 @@ static void ping(void *d, struct xdg_wm_base *shell, uint32_t serial)
 }
 static const struct xdg_wm_base_listener shell_events = {ping};
 
+static void output_geometry(void *data, struct wl_output *output, int32_t x, int32_t y,
+        int32_t width_mm, int32_t height_mm, int32_t subpixel, const char *make, const char *model,
+        int32_t transform)
+{
+    struct client *c = data;
+    require(c->output == output && c->output_stage == 0 && x == 0 && y == 0 &&
+            width_mm == 0 && height_mm == 0 && subpixel == WL_OUTPUT_SUBPIXEL_UNKNOWN &&
+            !strcmp(make, "JNOX") && !strcmp(model, "RAM framebuffer") &&
+            transform == WL_OUTPUT_TRANSFORM_NORMAL, "wl_output.geometry");
+    c->output_stage++;
+}
+
+static void output_mode(void *data, struct wl_output *o, uint32_t flags, int32_t w, int32_t h, int32_t hz)
+{
+    struct client *c = data;
+    require(c->output_stage == 1 && flags == (WL_OUTPUT_MODE_CURRENT | WL_OUTPUT_MODE_PREFERRED) &&
+            w == 320 && h == 240 && hz == 0, "wl_output.mode");
+    c->output_stage++;
+}
+
+static void output_scale(void *data, struct wl_output *o, int32_t scale)
+{
+    struct client *c = data;
+    require(c->output_stage == 2 && scale == 1, "wl_output.scale");
+    c->output_stage++;
+}
+
+static void output_done(void *data, struct wl_output *o)
+{
+    struct client *c = data;
+    require(c->output_stage == 3, "wl_output.done");
+    c->output_stage++;
+}
+static const struct wl_output_listener output_events = {
+    .geometry = output_geometry, .mode = output_mode, .scale = output_scale, .done = output_done,
+};
+
+static void surface_enter(void *data, struct wl_surface *s, struct wl_output *output)
+{
+    struct client *c = data;
+    require(c->output_stage == 4 && c->output == output && !c->enters, "wl_surface.enter");
+    ++c->enters;
+}
+static void surface_leave(void *data, struct wl_surface *s, struct wl_output *output)
+{
+    struct client *c = data;
+    require(c->output == output && c->enters == 1 && !c->leaves, "wl_surface.leave");
+    ++c->leaves;
+}
+static const struct wl_surface_listener output_membership = {.enter = surface_enter, .leave = surface_leave};
+
 static void global(void *data, struct wl_registry *r, uint32_t id, const char *name, uint32_t version)
 {
     struct client *c = data;
@@ -106,6 +160,10 @@ static void global(void *data, struct wl_registry *r, uint32_t id, const char *n
     } else if (!strcmp(name, wl_seat_interface.name) && version >= 4) {
         c->seat = wl_registry_bind(r, id, &wl_seat_interface, 4);
         require(c->seat && wl_seat_add_listener(c->seat, &seat_events, c) == 0, "bind seat");
+    } else if (c->test_output && !strcmp(name, wl_output_interface.name) && version >= 2) {
+        require(!c->output, "duplicate output global");
+        c->output = wl_registry_bind(r, id, &wl_output_interface, 2);
+        require(c->output && wl_output_add_listener(c->output, &output_events, c) == 0, "bind wl_output v2");
     }
 }
 static void removed(void *d, struct wl_registry *r, uint32_t id) {}
@@ -185,30 +243,34 @@ static int endpoint(const char *option, const char *value)
 
 int main(int argc, char **argv)
 {
-    bool hold = false, geometry = false;
+    bool hold = false, geometry = false, output = false;
     require(argc >= 3, "missing endpoint");
     for (int i = 3; i < argc; i++) {
         if (!strcmp(argv[i], "--hold-frame") && !hold) hold = true;
         else if (!strcmp(argv[i], "--geometry") && !geometry) geometry = true;
+        else if (!strcmp(argv[i], "--output") && !output) output = true;
         else require(false, "unexpected reference-client argument");
     }
     alarm(30);
-    struct client c = {0};
+    struct client c = {.test_output = output};
     c.display = wl_display_connect_to_fd(endpoint(argv[1], argv[2]));
     require(c.display != NULL, "connect libwayland-client");
     struct wl_registry *registry = wl_display_get_registry(c.display);
     require(registry && wl_registry_add_listener(registry, &registry_events, &c) == 0, "get registry");
     require(wl_display_roundtrip(c.display) >= 0 && c.compositor && c.shm && c.shell && c.seat,
             "missing required registry globals");
-    while (!c.keymap || !c.argb || !c.xrgb)
+    require(!output || c.output, "missing wl_output v2");
+    while (!c.keymap || !c.argb || !c.xrgb || (output && c.output_stage < 4))
         require(wl_display_dispatch(c.display) >= 0, "receive shm formats and XKB keymap");
 
     struct wl_surface *surface = wl_compositor_create_surface(c.compositor);
     require(surface != NULL, "create surface");
+    if (output) require(wl_surface_add_listener(surface, &output_membership, &c) == 0, "surface listener");
     struct xdg_surface *xdg = xdg_wm_base_get_xdg_surface(c.shell, surface);
     require(xdg && xdg_surface_add_listener(xdg, &surface_events, &c) == 0, "get xdg surface");
     struct xdg_toplevel *top = xdg_surface_get_toplevel(xdg);
     require(top && xdg_toplevel_add_listener(top, &top_events, &c) == 0, "get toplevel");
+    if (output) xdg_toplevel_set_fullscreen(top, c.output);
     wl_surface_commit(surface);
     while (!c.configured)
         require(wl_display_dispatch(c.display) >= 0, "receive initial configure");
@@ -226,6 +288,13 @@ int main(int argc, char **argv)
         puts("FRAME");
         fflush(stdout);
         require(getchar() == '\n', "frame capture handshake");
+    }
+    if (output) {
+        require(c.enters == 1 && !c.leaves, "mapped output membership");
+        wl_surface_attach(surface, NULL, 0, 0);
+        wl_surface_commit(surface);
+        require(wl_display_roundtrip(c.display) >= 0 && c.leaves == 1, "unmapped output membership");
+        wl_output_destroy(c.output); /* Local v2 proxy destructor. */
     }
     xdg_toplevel_destroy(top);
     xdg_surface_destroy(xdg);

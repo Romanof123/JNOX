@@ -9,6 +9,8 @@ _start:
     mov x30, xzr
     ldr x0, [sp]
     add x1, sp, #8
+    add x2, x1, x0, lsl #3
+    add x2, x2, #8
     bl jnox_graphics_start
     brk #0
 .section .note.jnox.abi,"a",%note

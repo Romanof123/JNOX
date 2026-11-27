@@ -104,6 +104,11 @@ pub(crate) fn unmap(pid: usize, address: usize, length: Option<usize>) -> Result
     Ok(())
 }
 
+#[cfg(jnox_native_display_standby)]
+pub(crate) fn mapping_count(pid: usize) -> usize {
+    unsafe { (&*(&raw const jnox_native_shared_maps[pid])).iter().filter(|m| m.size != 0).count() }
+}
+
 pub(crate) fn exit(pid: usize) {
     for slot in 0..MAPS {
         let mapping = unsafe { jnox_native_shared_maps[pid][slot] };

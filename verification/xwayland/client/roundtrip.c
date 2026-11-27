@@ -1,4 +1,7 @@
 /* Exercise the installed upstream registry, proxy, dispatch and sync implementations. */
+#ifdef JNOX_REGISTRY_ENV_CONNECT
+#include <stdlib.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -15,11 +18,13 @@ struct global {
     const char *interface;
     uint32_t version;
     uint32_t name;
+    int optional;
 };
 
 static struct global globals[] = {
-    {"wl_compositor", 4, 0}, {"wl_shm", 1, 0},
-    {"xdg_wm_base", 1, 0}, {"wl_seat", 4, 0}
+    {"wl_compositor", 4, 0, 0}, {"wl_shm", 1, 0, 0},
+    {"xdg_wm_base", 1, 0, 0}, {"wl_seat", 4, 0, 0},
+    {"wl_output", 3, 0, 1}
 };
 static int invalid;
 
@@ -36,14 +41,15 @@ static void advertised(void *data, struct wl_registry *registry, uint32_t name,
             if (!name || g->name || version != g->version)
                 invalid = 1;
             g->name = name;
-            char line[96];
-            int length = snprintf(line, sizeof(line), "JNOX_REGISTRY global %s %lu %lu\n",
-                                  interface, (unsigned long)name, (unsigned long)version);
-            if (length < 0 || (size_t)length >= sizeof(line) ||
-                jnox_graphics_emit(line, (size_t)length))
-                invalid = 1;
+            break;
         }
     }
+    char line[96];
+    int length = snprintf(line, sizeof(line), "JNOX_REGISTRY global %s %lu %lu\n",
+                          interface, (unsigned long)name, (unsigned long)version);
+    if (length < 0 || (size_t)length >= sizeof(line) ||
+        jnox_graphics_emit(line, (size_t)length))
+        invalid = 1;
 }
 
 static void removed(void *data, struct wl_registry *registry, uint32_t name)
@@ -59,6 +65,42 @@ static const struct wl_registry_listener listener = {advertised, removed};
 
 static int run(void)
 {
+#ifdef JNOX_REGISTRY_ENV_CONNECT
+    const char *name = getenv("WAYLAND_DISPLAY");
+    if (!name || strcmp(name, "/wayland-0") || getenv("WAYLAND_SOCKET"))
+        return 11;
+    if (jnox_socket_broker(3) < 0)
+        return 1;
+    struct wl_display *absent = wl_display_connect("/jnox-absent");
+    if (absent) {
+        wl_display_disconnect(absent);
+        return 12;
+    }
+    if (errno != ENOENT && errno != ECONNREFUSED)
+        return 13;
+    const int missing_errno = errno;
+    struct wl_display *display;
+    for (unsigned attempt = 0; !(display = wl_display_connect(NULL)); attempt++) {
+        if (attempt == 100 || (errno != ENOENT && errno != ECONNREFUSED && errno != EAGAIN))
+            return 3;
+        if (poll(NULL, 0, 10) < 0)
+            return 4;
+    }
+    int fd = wl_display_get_fd(display);
+    if (fd < 0 || fcntl(fd, F_GETFD) != FD_CLOEXEC) {
+        wl_display_disconnect(display);
+        return 14;
+    }
+    char connection[96];
+    int count = snprintf(connection, sizeof(connection),
+                         "JNOX_REGISTRY env-connect %s fd %d absent-errno %d\n",
+                         name, fd, missing_errno);
+    if (count <= 0 || (size_t)count >= sizeof(connection) ||
+        jnox_graphics_emit(connection, (size_t)count)) {
+        wl_display_disconnect(display);
+        return 15;
+    }
+#else
     struct sockaddr_un address = {AF_UNIX, "/wayland-0"};
     if (jnox_socket_broker(3) < 0)
         return 1;
@@ -79,6 +121,7 @@ static int run(void)
     struct wl_display *display = wl_display_connect_to_fd(fd);
     if (!display)
         return 5;
+#endif
     int result = 0;
     struct wl_registry *registry = wl_display_get_registry(display);
     if (!registry || wl_registry_add_listener(registry, &listener, NULL) < 0)
@@ -86,10 +129,16 @@ static int run(void)
     else if (wl_display_roundtrip(display) < 0)
         result = 7;
     else {
-        for (size_t i = 0; i < sizeof(globals) / sizeof(globals[0]); i++)
-            for (size_t j = 0; j <= i; j++)
-                if (!globals[i].name || (i != j && globals[i].name == globals[j].name))
+        for (size_t i = 0; i < sizeof(globals) / sizeof(globals[0]); i++) {
+            if (!globals[i].name) {
+                if (!globals[i].optional)
                     invalid = 1;
+                continue;
+            }
+            for (size_t j = 0; j < i; j++)
+                if (globals[i].name == globals[j].name)
+                    invalid = 1;
+        }
         if (invalid)
             result = 8;
     }
