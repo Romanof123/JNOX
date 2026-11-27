@@ -1,0 +1,367 @@
+{
+  "primary0": {
+    "epoch": 1,
+    "root": 1078026240,
+    "wire_messages": 37,
+    "key_count": 0,
+    "control_completions": 26
+  },
+  "primary1": {
+    "epoch": 1,
+    "root": 1078026240,
+    "wire_messages": 46,
+    "key_count": 1,
+    "control_completions": 43
+  },
+  "spare0": {
+    "epoch": 2,
+    "root": 1086586880,
+    "wire_messages": 37,
+    "key_count": 0,
+    "control_completions": 55
+  },
+  "spare1": {
+    "epoch": 2,
+    "root": 1086586880,
+    "wire_messages": 46,
+    "key_count": 1,
+    "control_completions": 73
+  },
+  "spare2": {
+    "epoch": 2,
+    "root": 1086586880,
+    "wire_messages": 55,
+    "key_count": 2,
+    "control_completions": 90
+  },
+  "kernel": {
+    "assertions": [
+      [
+        31192404,
+        0,
+        281476054736896,
+        1024,
+        4060087369,
+        4218676,
+        1610613568,
+        0,
+        16846528,
+        4217876
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "leases": [
+      [
+        31192404,
+        0,
+        1,
+        2,
+        2,
+        31236075
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        62686265,
+        2,
+        4,
+        18446744073709551615,
+        3,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "retirements": [
+      [
+        31192404,
+        256,
+        0,
+        2,
+        18446744073709551611,
+        4218676
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "cleanup": [
+      [
+        31209049,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        62115884,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        62686600,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        62694214,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        2563681234,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "broker_deaths": [
+      [
+        31252996,
+        3,
+        0
+      ],
+      [
+        62118754,
+        3,
+        1
+      ],
+      [
+        62689137,
+        3,
+        2
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    "first_spare_restore": [
+      31222998,
+      4194304,
+      16846784
+    ]
+  },
+  "client_terminal": {
+    "eof": [
+      1,
+      0
+    ],
+    "sessions": [
+      [
+        1,
+        4,
+        0,
+        0,
+        0,
+        15,
+        1,
+        444,
+        81907825,
+        1,
+        2,
+        1,
+        0,
+        1,
+        1,
+        0,
+        4,
+        2,
+        2,
+        2,
+        3762094298,
+        33554432,
+        96,
+        97,
+        0,
+        0,
+        2,
+        1,
+        3,
+        321,
+        45,
+        0
+      ],
+      [
+        1,
+        6,
+        0,
+        0,
+        0,
+        15,
+        1,
+        444,
+        81907825,
+        1,
+        2,
+        1,
+        0,
+        1,
+        2,
+        0,
+        6,
+        3,
+        3,
+        3,
+        1220788008,
+        33554432,
+        96,
+        97,
+        0,
+        1,
+        3,
+        2,
+        3,
+        793,
+        45,
+        1
+      ]
+    ]
+  },
+  "timing": {
+    "period_ms": 10,
+    "limit_ms": 20,
+    "maximum_gap_ms": "633619/62500",
+    "misses": [],
+    "sequence_start": 42,
+    "sequence_end": 90,
+    "timestamp_unit": "guest monotonic nanoseconds",
+    "reported_max_gap": 49418464,
+    "reported_missed": 3,
+    "all_completions": {
+      "period_ms": 10,
+      "limit_ms": 20,
+      "maximum_gap_ms": "1544327/31250",
+      "misses": [
+        [
+          4,
+          "1544327/31250"
+        ]
+      ]
+    },
+    "sample_count": 4096
+  },
+  "first_successor_frame": {
+    "lower_ns": 0,
+    "upper_ns": 130097024,
+    "lower_enclosing_completion": 42,
+    "upper_enclosing_completion": 55,
+    "lower_enclosing_guest_ns": 480782704,
+    "upper_enclosing_guest_ns": 610879728,
+    "basis": "Completion before last retired-owner frame and first completion after the confirmed successor frame"
+  }
+}

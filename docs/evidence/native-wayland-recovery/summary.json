@@ -1,0 +1,190 @@
+{
+  "restart-quit": {
+    "stage_counts": {
+      "primary0": 26,
+      "primary1": 43,
+      "spare0": 55,
+      "spare1": 73,
+      "spare2": 90
+    },
+    "timing": {
+      "period_ms": 10,
+      "limit_ms": 20,
+      "maximum_gap_ms": "633619/62500",
+      "misses": [],
+      "sequence_start": 42,
+      "sequence_end": 90,
+      "timestamp_unit": "guest monotonic nanoseconds",
+      "reported_max_gap": 49418464,
+      "reported_missed": 3,
+      "all_completions": {
+        "period_ms": 10,
+        "limit_ms": 20,
+        "maximum_gap_ms": "1544327/31250",
+        "misses": [
+          [
+            4,
+            "1544327/31250"
+          ]
+        ]
+      },
+      "sample_count": 4096
+    },
+    "first_successor_frame": {
+      "lower_ns": 0,
+      "upper_ns": 130097024,
+      "lower_enclosing_completion": 42,
+      "upper_enclosing_completion": 55,
+      "lower_enclosing_guest_ns": 480782704,
+      "upper_enclosing_guest_ns": 610879728,
+      "basis": "Completion before last retired-owner frame and first completion after the confirmed successor frame"
+    },
+    "mutations": {
+      "pixel": "independent full scanout spare2",
+      "owner": "fault origin",
+      "timing_misses": [
+        [
+          90,
+          "20000001/1000000"
+        ]
+      ]
+    },
+    "over_limit": [
+      [
+        4,
+        90777568,
+        140196032,
+        49418464
+      ]
+    ],
+    "release_at_least_one_period_late": [
+      4,
+      5,
+      6
+    ],
+    "max_gap_ns": 49418464
+  },
+  "primary-exit": {
+    "stage_counts": {
+      "primary0": 22,
+      "primary1": 39
+    },
+    "timing": null,
+    "first_successor_frame": null,
+    "over_limit": [],
+    "release_at_least_one_period_late": [],
+    "max_gap_ns": 10242352
+  },
+  "spare-fault": {
+    "stage_counts": {
+      "primary0": 68,
+      "primary1": 86,
+      "spare0": 98,
+      "spare1": 115,
+      "spare2": 133
+    },
+    "timing": {
+      "period_ms": 10,
+      "limit_ms": 20,
+      "maximum_gap_ms": "662441/62500",
+      "misses": [],
+      "sequence_start": 85,
+      "sequence_end": 133,
+      "timestamp_unit": "guest monotonic nanoseconds",
+      "reported_max_gap": 468369296,
+      "reported_missed": 45,
+      "all_completions": {
+        "period_ms": 10,
+        "limit_ms": 20,
+        "maximum_gap_ms": "29273081/62500",
+        "misses": [
+          [
+            10,
+            "29273081/62500"
+          ]
+        ]
+      },
+      "sample_count": 4096
+    },
+    "first_successor_frame": {
+      "lower_ns": 0,
+      "upper_ns": 129978944,
+      "lower_enclosing_completion": 85,
+      "upper_enclosing_completion": 98,
+      "lower_enclosing_guest_ns": 911445104,
+      "upper_enclosing_guest_ns": 1041424048,
+      "basis": "Completion before last retired-owner frame and first completion after the confirmed successor frame"
+    },
+    "mutations": {
+      "pixel": "independent full scanout spare2",
+      "owner": "fault origin",
+      "timing_misses": [
+        [
+          133,
+          "20000001/1000000"
+        ]
+      ]
+    },
+    "over_limit": [
+      [
+        10,
+        151514544,
+        619883840,
+        468369296
+      ]
+    ],
+    "release_at_least_one_period_late": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54
+    ],
+    "max_gap_ns": 468369296
+  },
+  "headless": {
+    "over_limit": [],
+    "release_at_least_one_period_late": [],
+    "max_gap_ns": 10296560
+  }
+}
