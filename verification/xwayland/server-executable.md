@@ -1,6 +1,6 @@
 # Building the Xwayland 24.1.6 software executable
 
-The first combined software build compiled every selected C source and reported 29 unresolved imports. The subsequent integrated interface build reduced that count to 18. [First link report](server-link.en-ko.md) · [Interface update #473](https://github.com/Romanof123/JNOX/pull/473) · [Current link tracking #471](https://github.com/Romanof123/JNOX/issues/471)
+The first combined build had 29 unresolved imports; the subsequent interface build reduced that count to 18. Integrated revision `f2e4f3d` resolved the required imports and produced a static AArch64 executable. [First link report](server-link.en-ko.md) · [ELF identity and public guest results](public-interface-runs.en-ko.md) · [Native interfaces #471](https://github.com/Romanof123/JNOX/issues/471)
 
 The JNOX Wayland input path uses the fixed wire values for buttons and keys
 from `linux/input-event-codes.h`. The builder verifies the numeric UAPI
@@ -28,7 +28,7 @@ Cross files record absolute installation paths. A relocated profile needs a rege
 
 The full chain uses target libXau, generated libxcb, libX11, libxkbfile, libmd for mandatory SHA-1, libXfont2/fontenc/zlib, Pixman, libxcvt, and libwayland-client/libffi. The build preserves the stock Meson X11 dependency, runs the full XKB+Xlib link probe, and allows upstream Ninja to generate the Wayland client protocol code using the native scanner. The pinned protocol metadata supplies xproto, randrproto, renderproto, xextproto, inputproto, kbproto, fontsproto, fixesproto, damageproto, xcmiscproto, bigreqsproto, presentproto, videoproto, compositeproto, recordproto, scrnsaverproto, resourceproto, xineramaproto and xf86vidmodeproto. The software profile disables glamor, GLX, DRM/DRI3, TCP and XDMCP. The existing one-hunk socket patch honors local-only transport.
 
-The guest XKB probe exercised the upstream keyboard reader. Separate Xtrans and Xlib probes exercised native stream I/O and geometry parsing. The full server still requires the remaining filesystem, identity and time interfaces listed in the link report. Display, input and server restart require observations from the running guest server.
+The guest XKB probe exercised the upstream keyboard reader. Separate Xtrans and Xlib probes exercised native stream I/O and geometry parsing. Integrated source now links the required filesystem, identity and time interfaces. Display, input and server restart require observations from the running guest server.
 
 The [libmd 1.1.0 source archive](https://deb.debian.org/debian/pool/main/libm/libmd/libmd_1.1.0.orig.tar.xz) is pinned by SHA-256 in the driver. The build retains its original COPYING.
 
