@@ -865,6 +865,9 @@ def main():
             metadata["linux_source_net_restart"] = {"primary_slot": 0, "survivor_slot": 1,
                 "dormant_spare_slot": 2, "intid": 79, "max_replacements": 1}
         if args.linux_source_driver == "net-duplex":
+            if vectors[0] == ["t"]:
+                env["JNOX_NATIVE_LINUX_SOURCE_NET_TX_IRQ"] = "1"
+                metadata["linux_source_net_tx_irq"] = {"queue": 1, "intid": 79, "arm": 3, "claim": 2, "svc": 169}
             metadata["linux_source_net_duplex"] = {"driver_slot": 0, "peer_slot": 1,
                 "rx_queue": 0, "tx_queue": 1, "queue_pairs": 1,
                 "tx_submit_notify_reap_svc": [164, 165, 166], "rx_post_reap_svc": [171, 172],

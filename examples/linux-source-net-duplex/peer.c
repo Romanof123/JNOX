@@ -1,6 +1,7 @@
 #include "protocol.h"
 
 volatile uint64_t jnox_duplex_peer[16];
+volatile long jnox_duplex_peer_tx_irq_denial;
 unsigned char jnox_duplex_peer_requests[FRAME_COUNT][MAX_FRAME];
 unsigned char jnox_duplex_peer_replies[FRAME_COUNT][MAX_FRAME];
 unsigned char jnox_duplex_peer_ack[ACK_SIZE];
@@ -34,6 +35,8 @@ static int run(void)
     p[11] = native_call(172, session.token, 0, 0);
     p[12] = native_call(174, session.token, 0, 0);
     p[14] = native_call(175, session.token, 0, 0);
+    jnox_duplex_peer_tx_irq_denial = native_call(169, session.token, 2, 0);
+    if (jnox_duplex_peer_tx_irq_denial != -13) return 46;
     if (p[9] != (uint64_t)-13L || p[10] != (uint64_t)-13L || p[11] != (uint64_t)-13L ||
         p[12] != (uint64_t)-13L || p[14] != (uint64_t)-13L)
         return 41;

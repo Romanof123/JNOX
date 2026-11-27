@@ -225,6 +225,15 @@ int virtqueue_add_outbuf(struct virtqueue *vq, struct scatterlist sg[], unsigned
 
 /* SVC169 updates the real TX avail-ring flags and checks the used index on
  * rearm. A reported pending completion makes Linux schedule another poll. */
+#ifdef JNOX_PACKET_DUPLEX_ABI
+long jnox_tx_irq_operation(unsigned int mode)
+{
+    unsigned long epoch = jnox_packet_token();
+    if (!epoch || (mode != 2 && mode != 3)) return -EINVAL;
+    return svc(169, epoch, (const void *)(unsigned long)mode, 0);
+}
+#endif
+
 static long tx_callbacks(struct virtqueue *vq, unsigned int mode)
 {
     unsigned long epoch = jnox_packet_token();

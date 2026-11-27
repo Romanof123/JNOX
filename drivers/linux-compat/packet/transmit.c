@@ -35,7 +35,17 @@ static struct netdev_queue netdev_queue;
 extern bool jnox_lifecycle_is_up_v1(void);
 static struct net_device *live_dev;
 static struct virtqueue *live_vq;
-static bool deferred_kick;
+static bool deferred_kick, irq_completion;
+extern long jnox_tx_irq_operation(unsigned int mode);
+extern volatile unsigned long long jnox_linux_tx_wake_calls;
+volatile unsigned long long jnox_duplex_tx_irq[128][8];
+
+int jnox_select_tx_irq(void)
+{
+    if (!live_vq || irq_completion) return -EINVAL;
+    irq_completion = true;
+    return 0;
+}
 volatile unsigned long long jnox_duplex_tx[16];
 #endif
 static struct sk_buff frame_skb;
@@ -87,6 +97,7 @@ static int bind_tx(void)
     live_vq = vq;
     bound_epoch = epoch;
     deferred_kick = false;
+    irq_completion = false;
     for (unsigned int i = 0; i < 16; ++i) jnox_duplex_tx[i] = 0;
     jnox_duplex_tx[0] = epoch;
     jnox_duplex_tx[1] = (unsigned long)dev;
@@ -243,6 +254,9 @@ static int submit(const unsigned char *frame, unsigned int len, unsigned int seq
         return -EINVAL;
     if (state != TX_IDLE)
         return -EBUSY;
+#ifdef JNOX_PACKET_DUPLEX_ABI
+    if (irq_completion && jnox_tx_irq_operation(3) != 1) return -EPROTO;
+#endif
     make_skb(frame, len, push);
     ret = jnox_tx_register_skb(&frame_skb, frame_memory, TX_LINEAR);
     if (ret)
@@ -332,7 +346,33 @@ int jnox_original_tx_complete(unsigned int sequence)
     int ret = enter_tx(false);
     if (ret)
         return ret;
-    ret = reap(sequence);
+#ifdef JNOX_PACKET_DUPLEX_ABI
+    if (irq_completion) {
+        if (!bound() || state != TX_POSTED || frame_sequence != sequence) {
+            ret = -ENOENT;
+        } else {
+            long receipt = jnox_tx_irq_operation(2);
+            ret = receipt < 0 ? (int)receipt : -EPROTO;
+            if (receipt > 0 && !deferred_kick) {
+                volatile unsigned long long *row = jnox_duplex_tx_irq[sequence % 128];
+                row[0] = bound_epoch;
+                row[1] = sequence;
+                row[2] = receipt - 1;
+                row[3] = (unsigned long)live_vq->callback;
+                row[4] = jnox_linux_tx_wake_calls;
+                live_vq->callback(live_vq);
+                row[5] = jnox_linux_tx_wake_calls;
+                if (row[5] == row[4] + 1 && jnox_tx_irq_operation(2) == -EAGAIN) {
+                    ret = reap(sequence);
+                    if (ret == -EAGAIN) ret = -EPROTO;
+                    row[6] = ret;
+                    row[7] = ret == 0;
+                }
+            }
+        }
+    } else
+#endif
+        ret = reap(sequence);
     jnox_packet_context_leave_v1();
     return ret;
 }
