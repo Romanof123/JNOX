@@ -6,6 +6,7 @@
 flowchart TB
   CONTROL[Control tasks and safety monitoring] --> IPC[IPC with permission checks and time limits]
   NATIVE[Native J-NOX Rust drivers] --> IPC
+  REUSE[Linux C source and J-NOX adapter] --> IPC
   APPS[POSIX services · sockets · user scripts] --> IPC
   RUST[Native J-NOX Rust app] --> SDK[J-NOX native user ABI]
   CAPP[Native J-NOX C app] --> SDK
@@ -13,7 +14,7 @@ flowchart TB
   ELF[Prebuilt Linux user ELF] --> COMPAT[Optional Linux user-space ABI]
   COMPAT --> IPC
   IPC --> KERNEL[no_std Rust microkernel]
-  LINUX[Linux domain · existing drivers] <--> GATE[Shared queues and dedicated message gateway]
+  LINUX[Optional Linux domain] <--> GATE[Shared queues and dedicated message gateway]
   GATE <--> IPC
   KERNEL --> BSP[Board port · timers · MMU/MPU · IRQ]
   LINUX --> PART[Platform isolation · DMA and reset controls]
@@ -26,7 +27,11 @@ The privileged kernel manages address spaces, threads and scheduling, timers, ex
 
 The kernel uses `no_std` Rust. Safe Rust represents scheduler state, queues, and IPC state machines. Narrow modules contain `unsafe` operations for boot, context switching, MMIO, page tables, DMA, and FFI. Each block requires review of its preconditions and invariants for access rights, lifetimes, and synchronization. Control paths use static or bounded pools and return explicit errors. The configuration defines how to handle panics, stack exhaustion, and detected integrity faults. [Rust unsafe contracts](https://doc.rust-lang.org/book/ch20-01-unsafe-rust.html)
 
-## DES-002 Linux driver domain
+## DES-002 Driver isolation
+
+The current reuse profile builds selected upstream C sources unchanged against a J-NOX adapter and runs their callbacks in a native service. The separate-domain design below records the earlier deployment option. [Driver scope](https://github.com/Romanof123/JNOX/issues/3) · [Virtual-device evidence](https://github.com/Romanof123/JNOX/tree/5dabcd904a83b0301650c971d4eba4e884fd1eb5/docs/evidence/native-linux-net-tx-irq)
+
+### Earlier separate-domain proposal
 
 Linux runs in an independent execution domain with compatible drivers. One candidate arrangement for heterogeneous cores places J-NOX on R52 and Linux on A76. On AArch64 or x86-64 platforms where the domains share a CPU family, the project will compare verifiable static partitioning and hypervisor options. Each board requires a record of who controls memory, devices, interrupts, DMA, boot, and reset.
 
