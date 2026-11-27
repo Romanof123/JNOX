@@ -1,0 +1,82 @@
+{
+  "raw_manifest_members": 269,
+  "commands": [
+    {
+      "name": "tx-first-v2",
+      "argv": [
+        "python3",
+        "producer/corrected/verify_linux_source_net_duplex.py",
+        "--package",
+        "456-build-01/tx",
+        "--driver-manifest",
+        "456-build-01/imported/import.json",
+        "--out",
+        "456-build-01/tx-first-v2",
+        "--require-tx-irq",
+        "--replay",
+        "--mutation-tests"
+      ],
+      "utc": "2026-11-27T03:43:28.828179+00:00",
+      "elapsed_s": 83.092161417,
+      "exit": 0
+    },
+    {
+      "name": "tx-repeat-v2",
+      "argv": [
+        "python3",
+        "producer/corrected/verify_linux_source_net_duplex.py",
+        "--package",
+        "456-build-01/tx",
+        "--driver-manifest",
+        "456-build-01/imported/import.json",
+        "--out",
+        "456-build-01/tx-repeat-v2",
+        "--require-tx-irq",
+        "--replay",
+        "--mutation-tests"
+      ],
+      "utc": "2026-11-27T03:44:51.922662+00:00",
+      "elapsed_s": 82.082996676,
+      "exit": 0
+    },
+    {
+      "name": "ordinary-v2",
+      "argv": [
+        "python3",
+        "producer/corrected/verify_linux_source_net_duplex.py",
+        "--package",
+        "456-build-01/ordinary",
+        "--driver-manifest",
+        "456-build-01/imported/import.json",
+        "--out",
+        "456-build-01/ordinary-v2",
+        "--replay",
+        "--mutation-tests"
+      ],
+      "utc": "2026-11-27T03:46:14.008005+00:00",
+      "elapsed_s": 46.25271591200004,
+      "exit": 0
+    },
+    {
+      "name": "independent",
+      "argv": [
+        "python3",
+        "suite.py"
+      ],
+      "utc": "2026-11-27T03:47:00.262994+00:00",
+      "elapsed_s": 143.391142958,
+      "exit": 0
+    },
+    {
+      "name": "compare",
+      "argv": [
+        "python3",
+        "-c",
+        "import json,pathlib\np=pathlib.Path('.'); expected=sorted((p/'independent-expected').glob('*.json'))\nassert expected\nfor x in expected:\n    assert json.loads(x.read_bytes()) == json.loads((p/'results'/x.name).read_bytes()),x\n    print(x.name)\n"
+      ],
+      "utc": "2026-11-27T03:49:23.656381+00:00",
+      "elapsed_s": 0.05334648300004119,
+      "exit": 0
+    }
+  ]
+}

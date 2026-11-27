@@ -1,0 +1,14 @@
+tx-first-v2 {'request': 80, 'reply': 80, 'ack': 1, 'reply_bytes': 5912} 127 SPI 79 transactions
+tx-repeat-v2 {'request': 80, 'reply': 80, 'ack': 1, 'reply_bytes': 5912} 137 SPI 79 transactions
+ordinary-v2 {'request': 80, 'reply': 80, 'ack': 1, 'reply_bytes': 5912} 81 SPI 79 transactions
+rejected wire: ValueError: reply 31
+rejected held-cookie: ValueError: held/retired cookie history
+rejected generation: ValueError: generation / ordinal / SPI / status / used head / claim
+rejected used-head: ValueError: generation / ordinal / SPI / status / used head / claim
+rejected used-id: ValueError: unique serial TX owner descriptor
+rejected duplicate: ValueError: generation / ordinal / SPI / status / used head / claim
+rejected callback-pointer: ValueError: registered callback and claimed used head
+rejected wake: ValueError: one contiguous wake per claimed head
+rejected deferred-free: ValueError: deferred cookie release after duplicate claim check
+rejected opcode: ValueError: executed image instruction
+rejected irq-ack: ValueError: Virtio interrupt ACK

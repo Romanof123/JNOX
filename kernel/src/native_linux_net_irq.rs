@@ -27,6 +27,66 @@ static mut DELIVERED: u64 = 0;
 // a later unannounced buffer must be classified as catch-up, even across wraps.
 static mut ANNOUNCED_HEAD: Option<u16> = None;
 
+#[cfg(jnox_linux_source_net_tx_irq)]
+mod tx {
+    use super::*;
+    // Receipt rows: token, ordinal, GIC IAR, virtio status, TX used index,
+    // returned descriptor ID, simultaneous RX work, claim ordinal.
+    #[unsafe(no_mangle)]
+    static mut jnox_linux_net_tx_irq_events: [[u64; 8]; 128] = [[0; 8]; 128];
+    static mut TX_COUNT: u64 = 0;
+    static mut TX_ARMED: bool = false;
+    static mut TX_PENDING: Option<(u16, u32)> = None;
+
+    pub(in crate::native_el0::linux_net) fn arm_tx() -> Result<(), i64> {
+        unsafe {
+            if EPOCH == 0 { return Err(-116); }
+            if TX_ARMED || matches!(TX_PENDING, Some(_)) { return Err(-16); }
+            TX_ARMED = true;
+        }
+        Ok(())
+    }
+
+    pub(super) fn announce_tx(iar: u32, bits: u32, rx_work: bool) {
+        unsafe {
+            if !TX_ARMED { return; }
+            let Some((head, id)) = queues::returned_tx() else { return; };
+            TX_COUNT += 1;
+            let slot = (TX_COUNT - 1) as usize % 128;
+            (&raw mut jnox_linux_net_tx_irq_events[slot]).write_volatile(
+                [EPOCH, TX_COUNT, u64::from(iar), u64::from(bits), u64::from(head), u64::from(id),
+                 u64::from(rx_work), 0]);
+            TX_PENDING = Some((head, id));
+            TX_ARMED = false;
+        }
+    }
+
+    pub(in crate::native_el0::linux_net) fn claim_tx() -> i64 {
+        unsafe {
+            let Some((head, id)) = TX_PENDING else { return -11; };
+            TX_PENDING = None;
+            if queues::returned_tx() != Some((head, id)) { return -116; }
+            let slot = (TX_COUNT - 1) as usize % 128;
+            (&raw mut jnox_linux_net_tx_irq_events[slot][7]).write_volatile(TX_COUNT);
+            i64::from(head) + 1
+        }
+    }
+
+    pub(super) fn reset(clear: bool) {
+        unsafe {
+            if clear {
+                ptr::write_bytes(&raw mut jnox_linux_net_tx_irq_events, 0, 1);
+                TX_COUNT = 0;
+            }
+            TX_ARMED = false;
+            TX_PENDING = None;
+        }
+    }
+}
+
+#[cfg(jnox_linux_source_net_tx_irq)]
+pub(super) use tx::{arm_tx, claim_tx};
+
 pub(super) fn consumed(head: u16) {
     unsafe {
         if ANNOUNCED_HEAD == Some(head) { ANNOUNCED_HEAD = None; }
@@ -79,6 +139,8 @@ pub(super) fn enable(token: u64) -> bool {
             && gic_read(GICC + 4) & 0xff > 0xa0) << 5;
     unsafe {
         ptr::write_bytes(&raw mut jnox_linux_net_irq_metrics, 0, 1);
+        #[cfg(jnox_linux_source_net_tx_irq)]
+        tx::reset(true);
         DELIVERED = 0;
         ANNOUNCED_HEAD = None;
     }
@@ -103,6 +165,8 @@ pub(super) fn retire() {
         set(24, u64::from(gic_read(PENDING) & LINE != 0));
         inc(26);
     }
+    #[cfg(jnox_linux_source_net_tx_irq)]
+    tx::reset(false);
     unsafe { EPOCH = 0; DELIVERED = 0; ANNOUNCED_HEAD = None; }
     set(22, 0);
     clear_pending();
@@ -167,6 +231,8 @@ pub(in crate::native_el0) fn interrupt(iar: u32, idle: bool) -> Option<u64> {
     if bits & 1 == 0 { return None; }
     inc(1);
     let (head, work) = queues::rx_progress();
+    #[cfg(jnox_linux_source_net_tx_irq)]
+    tx::announce_tx(iar, bits, work);
     let prior = get(18);
     set(17, prior);
     set(18, u64::from(head));

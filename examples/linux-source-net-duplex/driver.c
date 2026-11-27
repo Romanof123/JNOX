@@ -9,7 +9,8 @@ extern int jnox_lifecycle_close_v1(void), jnox_lifecycle_remove_v1(void);
 extern void jnox_lifecycle_stats_v1(unsigned long long out[12]);
 extern unsigned long jnox_packet_token(void), jnox_rx_posted_address_v1(unsigned int);
 extern int jnox_original_rx_read(void *, unsigned int);
-extern int jnox_original_tx_init(void);
+extern int jnox_original_tx_init(void), jnox_select_tx_irq(void);
+static int irq_completion;
 extern int jnox_original_tx_frame(const unsigned char *, unsigned int, unsigned int);
 extern int jnox_original_tx_defer(const unsigned char *, unsigned int, unsigned int);
 extern int jnox_original_tx_flush(unsigned int), jnox_original_tx_complete(unsigned int);
@@ -154,6 +155,7 @@ static int transfer(void)
     snapshot(DUPLEX_HELD);
     if (jnox_duplex_tx_queue[DUPLEX_HELD][6] != 1 || jnox_duplex_tx_queue[DUPLEX_HELD][1])
         return 29;
+    if (irq_completion && native_call(169, session.token, 2, 0) != -11) return 37;
     d[1] = 4;
     MARK("NET DUPLEX TX HELD");
 
@@ -164,6 +166,7 @@ static int transfer(void)
     if (jnox_duplex_tx_queue[DUPLEX_OVERLAP][6] != 1 || jnox_duplex_tx_queue[DUPLEX_OVERLAP][1] ||
         jnox_duplex_rx_queue[DUPLEX_OVERLAP][1] <= jnox_duplex_rx_queue[DUPLEX_HELD][1])
         return 30;
+    if (irq_completion && native_call(169, session.token, 2, 0) != -11) return 38;
     d[1] = 5;
     MARK("NET DUPLEX OVERLAP");
     /* Request two releases the external observation gate. TX zero has
@@ -217,6 +220,7 @@ static int run(void)
         (uint32_t)d[28] != 0x200001u || (uint32_t)d[29] != 0x200001u)
         return 16;
     if (jnox_lifecycle_open_v1() || jnox_original_tx_init()) return 17;
+    if (irq_completion && jnox_select_tx_irq()) return 39;
     d[16] = posted_rx();
     d[30] = native_call(160, 0, 0, 0);
     snapshot(DUPLEX_OPENED);
@@ -233,14 +237,17 @@ static int run(void)
     d[23] = jnox_packet_token();
     d[24] = posted_rx();
     d[27] = native_call(166, session.token, 0, 0);
+    if (irq_completion && native_call(169, session.token, 2, 0) != -116) return 40;
     if (d[20] != (uint64_t)-19L || d[21] != (uint64_t)-116L ||
         d[22] != (uint64_t)-116L || d[23] || d[24] || d[27] != (uint64_t)-116L)
         return 36;
     return 0;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+    if (argc == 2 && argv[1] && argv[1][0] == 't' && !argv[1][1]) irq_completion = 1;
+    else if (argc != 1) return 41;
     int rc = run();
     jnox_duplex_driver[31] = rc;
     if (!rc) {

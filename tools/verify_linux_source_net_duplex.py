@@ -47,11 +47,13 @@ def layout(pkg, imp):
                           ("virtio_net.packet.o",m["driver_object"]["sha256"]),("virtio_net.callback.o",m["callback_object"]["sha256"]),
                           ("service.map",m["link_map_sha256"])):
         require(sha(imp.parent/name)==expected,"import identity "+name)
+    tx_irq = native["slots"][0]["argv"][1:] == ["t"]
+    require(tx_irq == bool(native.get("linux_source_net_tx_irq")), "TX IRQ package feature and arguments")
     code={}
     linkmap=(imp.parent/"service.map").read_text().splitlines()
     with user.open("rb") as uf,(imp.parent/"virtio_net.packet.o").open("rb") as of:
         elf,obj=ELFFile(uf),ELFFile(of)
-        for name in ORIGINAL:
+        for name in ORIGINAL + (("skb_xmit_done",) if tx_irq else ()):
             sym,body=routine(elf,name)
             ref,raw=routine(obj,name)
             reloc={r["r_offset"]-ref["st_value"] for section in obj.iter_sections() if isinstance(section,RelocationSection)
@@ -86,8 +88,9 @@ def layout(pkg, imp):
     roots=linked_roots(kernel,2)
     ring,buf=dma_layout(pkg)
     journal=[{n:journal_location(pkg/native["slots"][slot]["elf"],n) for n in names}
-             for slot,names in enumerate((DRIVER,PEER))]
-    return dict(code=code,ops=ops,tx_callback=tx_callback,ndo=ops+offsets[0],roots=roots,journal=journal,ring=ring,buf=buf,
+             for slot,names in enumerate((DRIVER + (("jnox_duplex_tx_irq",) if tx_irq else ()),PEER + (("jnox_duplex_peer_tx_irq_denial",) if tx_irq else ())))]
+    tx_events = journal_location(kernel,"jnox_linux_net_tx_irq_events") if tx_irq else None
+    return dict(tx_events=tx_events,code=code,ops=ops,tx_callback=tx_callback,ndo=ops+offsets[0],roots=roots,journal=journal,ring=ring,buf=buf,
                 irq=journal_location(kernel,"jnox_linux_net_irq_metrics"),
                 grants=journal_location(kernel,"jnox_linux_net_lifecycle_grants"))
 
@@ -99,7 +102,7 @@ def snapshot(mem,L):
     irq_addr,irq_size=L["irq"]
     grant_addr,grant_size=L["grants"]
     require(grant_size==32*24,"protected grant table ABI")
-    for addr,size in (L["irq"],L["grants"]):
+    for addr,size in (L["irq"],L["grants"]) + ((L["tx_events"],) if L["tx_events"] else ()):
         protected.update(range(addr&~4095,(addr+size+4095)&~4095,4096))
     grants=list(struct.iter_unpack("<QQQ",mem.read(grant_addr,grant_size)))
     for token,va,n in grants:
@@ -132,7 +135,10 @@ def snapshot(mem,L):
                             require(pte&PA_MASK not in protected|pages[1-i],"user alias of peer or DMA")
             tables=next_tables
     require(int.from_bytes(vread(mem,L["roots"][0],L["ndo"],8),"little")==L["code"]["start_xmit"]["entry"],"live netdev operation")
-    return dict(grants=grants,driver=unpack(groups[0][DRIVER[0]]),tx=unpack(groups[0][DRIVER[1]]),peer=unpack(groups[1][PEER[0]]),
+    events = area(mem,*L["tx_events"]) if L["tx_events"] else b""
+    callbacks = groups[0].get("jnox_duplex_tx_irq", b"")
+    peer_denial = int.from_bytes(groups[1].get("jnox_duplex_peer_tx_irq_denial", b""),"little",signed=True)
+    return dict(peer_denial=peer_denial,events=list(struct.iter_unpack("<8Q",events)), callbacks=list(struct.iter_unpack("<8Q",callbacks)), grants=grants,driver=unpack(groups[0][DRIVER[0]]),tx=unpack(groups[0][DRIVER[1]]),peer=unpack(groups[1][PEER[0]]),
                 qtx=unpack(groups[0][DRIVER[2]]),qrx=unpack(groups[0][DRIVER[3]]),wire=[groups[1][n] for n in PEER[1:]],irq=unpack(mem.read(irq_addr,irq_size)),
                 rings=[area(mem,L["ring"]+i*4096,4096) for i in range(2)],buffers=area(mem,L["buf"],64*STRIDE))
 
@@ -379,6 +385,28 @@ def replay(pkg,imp,out,mutation=None):
             idx=next(i for i,g in enumerate(s["grants"]) if g[0])
             s["grants"][idx]=(0,0,0)
         check_rings(s,stage,L,frames+[ack],replies)
+    if L["tx_events"]:
+        require(stages["final"]["peer_denial"] == -13,"peer cannot claim current-owner TX IRQ")
+        if mutation == "tx-event":
+            stages["ack"]["events"][0] = (0,)*8
+        if mutation == "tx-callback":
+            stages["ack"]["callbacks"][0] = (0,)*8
+        for stage,total in zip(STAGES,(0,0,0,3,80,80)):
+            stopped=stages[stage]
+            for i,(event,callback) in enumerate(zip(stopped["events"],stopped["callbacks"],strict=True)):
+                if i >= total:
+                    require(not any(event) and not any(callback),"premature TX IRQ / callback at "+stage)
+                    continue
+                token=stopped["driver"][2]
+                require(event[:2]==(token,i+1) and event[2]&1023==79 and event[3]&1
+                        and event[4]==i+1 and event[5]<32 and event[6] in (0,1) and event[7]==i+1,
+                        "protected TX interrupt and claim at "+stage)
+                if i >= total-32 and stage != "final":
+                    ring=stopped["rings"][1]
+                    used=struct.unpack_from("<II",ring,588+(i%32)*8)
+                    require(used==(event[5],0),"TX IRQ descriptor versus hardware used ring")
+                require(callback[:4]==(token,i,i+1,L["tx_callback"]) and callback[5]==callback[4]+1
+                        and callback[6:]==(0,1),"registered TX wake and cookie release")
     require(stages["ready"]["irq"][22]==1 and stages["ready"]["irq"][2]==0 and stages["completed"]["irq"][2]>0,"genuine parked RX owner and subsequent device event")
     final=stages["final"]
     d,p=final["driver"],final["peer"]
@@ -415,7 +443,7 @@ def replay(pkg,imp,out,mutation=None):
     entries={}
     for name,fn in L["code"].items():
         _,hits=callback_attempts(lines,fn["entry"])
-        required={"virtnet_probe":1,"virtnet_open":1,"virtnet_close":1,"virtnet_remove":1,"start_xmit":80}
+        required={"virtnet_probe":1,"virtnet_open":1,"virtnet_close":1,"virtnet_remove":1,"start_xmit":80,"skb_xmit_done":80}
         require(hits,"missing original execution "+name)
         rx.verify_execution(lines,fn,required.get(name,len(hits)))
         entries[name]=hits
@@ -423,6 +451,11 @@ def replay(pkg,imp,out,mutation=None):
             and entries["start_xmit"][-1]<entries["virtnet_close"][0]<entries["virtnet_remove"][0]
             and any(epochs[0]["eoi"]<c<t<entries["start_xmit"][0] for c in entries["skb_recv_done"] for t in entries["virtnet_poll"]),
             "original IRQ callback, NAPI and netdev lifetime")
+    if L["tx_events"]:
+        for i,(submit,callback) in enumerate(zip(entries["start_xmit"],entries["skb_xmit_done"],strict=True)):
+            next_submit=(entries["start_xmit"]+[entries["virtnet_close"][0]])[i+1]
+            require(submit<callback<next_submit and any(submit<e["iar"]<e["eoi"]<callback
+                    and e["status"]&1 for e in epochs),"executed TX callback after real queue IRQ")
     uart=(out/"uart.log").read_bytes()
     require(b"NATIVE EL0 FAULT" not in uart and sorted(re.findall(rb"(?m)^NATIVE EL0 EXIT PID ([01]) (-?\d+)\r?$",uart))
             ==[(b"0",b"0"),(b"1",b"0")],"signed exits")
@@ -433,6 +466,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     for opt in ("package","driver-manifest","out"):
         parser.add_argument("--"+opt,required=True,type=Path)
+    parser.add_argument("--require-tx-irq",action="store_true")
     parser.add_argument("--replay",action="store_true")
     parser.add_argument("--mutation-tests",action="store_true")
     parser.add_argument("--qemu",default="qemu-system-aarch64")
@@ -441,11 +475,13 @@ def main():
     parser.add_argument("--timeout",type=int,default=180)
     a=parser.parse_args()
     pkg,imp,out=a.package.resolve(),a.driver_manifest.resolve(),a.out.resolve()
+    if a.require_tx_irq:
+        require(layout(pkg,imp)["tx_events"],"TX-IRQ mode requires primary argument t")
     if not a.replay:
         capture(pkg,imp,out,a.qemu,a.mac,a.mtu,a.timeout)
     result=replay(pkg,imp,out)
     if a.mutation_tests:
-        for case in ("pcap","used","peer","grant"):
+        for case in ("pcap","used","peer","grant") + (("tx-event","tx-callback") if a.require_tx_irq else ()):
             try:
                 replay(pkg,imp,out,case)
             except (ValueError,RuntimeError,AssertionError) as exc:

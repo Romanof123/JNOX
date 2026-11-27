@@ -63,6 +63,8 @@ pub(super) fn retirement_snapshot() -> (u64, [u64; 20]) {
 
 pub(super) fn quarantined() -> bool { unsafe { QUARANTINED } }
 
+#[cfg(jnox_linux_source_net_tx_irq)]
+pub(super) fn returned_tx() -> Option<(u16, u32)> { packets::returned_tx() }
 #[cfg(jnox_linux_source_net_rx_irq)]
 pub(super) fn rx_progress() -> (u16, bool) { packets::rx_progress() }
 #[cfg(jnox_linux_source_net_rx_irq)]

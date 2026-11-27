@@ -398,8 +398,10 @@ void netif_tx_stop_all_queues(struct net_device *dev)
     netif_tx_stop_queue(&tx);
 }
 
+volatile unsigned long long jnox_linux_tx_wake_calls;
 void netif_tx_wake_queue(struct netdev_queue *q)
 {
+    ++jnox_linux_tx_wake_calls;
     if (!allocated || q != &tx)
         fault(16);
     if (test_and_clear_bit(__QUEUE_STATE_DRV_XOFF, &q->state))

@@ -281,8 +281,36 @@ fn rx_callbacks(mode: u64, arg: u64) -> i64 {
     }
 }
 
+// The serialized IRQ-completion profile permits one outstanding TX frame.
+#[cfg(jnox_linux_source_net_tx_irq)]
+pub(super) fn returned_tx() -> Option<(u16, u32)> {
+    let cursor = unsafe { &*(&raw const CURSORS[TX]) };
+    let queue = ring(TX);
+    let head = unsafe { (&raw const (*queue).used_header[1]).read_volatile() };
+    fence();
+    if unsafe { (&raw const (*queue).available[0]).read_volatile() } != 0 { return None; }
+    if head != cursor.used.wrapping_add(1) || head != cursor.available || cursor.count != 0 {
+        return None;
+    }
+    let slot = usize::from(cursor.used) % SIZE;
+    let [id, len] = unsafe { (&raw const (*queue).used[slot]).read_volatile() };
+    (len == 0 && id < SIZE as u32 && cursor.device_owned == 1u32 << id).then_some((head, id))
+}
 fn tx_callbacks(mode: u64, reserved: u64) -> i64 {
-    if reserved != 0 || mode > 1 { return -22; }
+    if reserved != 0 { return -22; }
+    #[cfg(jnox_linux_source_net_tx_irq)]
+    match mode {
+        2 => return super::super::irq::claim_tx(),
+        3 => {
+            let cursor = unsafe { &*(&raw const CURSORS[TX]) };
+            if cursor.device_owned != 0 || cursor.held != 0 || cursor.count != 0 ||
+                cursor.available != cursor.used { return -16; }
+            if let Err(e) = super::super::irq::arm_tx() { return e; }
+            return tx_callbacks(1, 0);
+        }
+        _ => {}
+    }
+    if mode > 1 { return -22; }
     const NO_INTERRUPT: u16 = 1;
     let ring = ring(TX);
     // EVENT_IDX is excluded by feature negotiation. EL1 is the sole writer
