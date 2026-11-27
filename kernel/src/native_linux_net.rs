@@ -10,6 +10,19 @@ mod queues;
 #[path = "native_linux_net_irq.rs"]
 pub(super) mod irq;
 
+#[cfg(jnox_linux_source_net_restart)]
+#[path = "native_linux_net_restart.rs"]
+mod restart;
+#[cfg(jnox_linux_source_net_restart)]
+pub(super) use restart::{restart_exit, restart_owner};
+
+fn permitted(pid: usize) -> bool {
+    #[cfg(jnox_linux_source_net_restart)]
+    { restart_owner() == Some(pid) }
+    #[cfg(not(jnox_linux_source_net_restart))]
+    { pid == 0 }
+}
+
 const BASE: usize = 0x0a00_3e00;
 const FEATURES: usize = 0x10;
 const FEATURES_SEL: usize = 0x14;
@@ -78,6 +91,7 @@ fn release() -> i64 {
     if done { 0 } else { -110 }
 }
 
+#[cfg(not(jnox_linux_source_net_restart))]
 pub(super) fn release_on_exit() {
     if unsafe { PHASE } != Phase::Free {
         // A new claimant must also observe a completed reset before use.
@@ -135,15 +149,23 @@ fn commit(low: u64, high: u64) -> i64 {
 }
 
 pub(super) fn service(pid: usize, number: u64, arg: u64, value: u64) -> i64 {
-    if pid != 0 { return -13; }
+    if !permitted(pid) { return -13; }
     #[cfg(jnox_linux_packet_queues)]
     if number == 162 { return queues::inspect(arg, value); }
     if number == 156 {
-        if arg == 1 { return claim(); }
+        if arg == 1 {
+            #[cfg(jnox_linux_source_net_restart)]
+            { return restart::claim_once(pid); }
+            #[cfg(not(jnox_linux_source_net_restart))]
+            { return claim(); }
+        }
         if arg != 0 { return -22; }
     }
     if unsafe { PHASE } == Phase::Free { return -19; }
     match number {
+        #[cfg(jnox_linux_source_net_restart)]
+        156 => restart::voluntary_release(pid),
+        #[cfg(not(jnox_linux_source_net_restart))]
         156 => release(),
         157 if arg <= 1 => i64::from(offered(arg as u32)),
         158 => config(arg, value),
@@ -160,6 +182,6 @@ pub(super) fn service(pid: usize, number: u64, arg: u64, value: u64) -> i64 {
 
 #[cfg(jnox_linux_net_packets)]
 pub(super) fn packet_service(pid: usize, number: u64, token: u64, address: u64, len: u64) -> i64 {
-    if pid != 0 { return -13; }
+    if !permitted(pid) { return -13; }
     queues::packet_service(number, token, address, len)
 }

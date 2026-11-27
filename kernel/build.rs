@@ -721,9 +721,17 @@ fn main() {
     let rx_poll = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL");
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx_irq)");
     let rx_irq = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_restart)");
+    let restart = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RESTART");
+    if let Some(value) = restart.as_deref() {
+        assert!(value == "1" && rx_irq.as_deref() == Some("1")
+            && peer_image.is_some() && peer2_image.is_some() && peer3_image.is_none(),
+            "native Linux-source net restart requires the IRQ profile, one survivor and one spare");
+        println!("cargo::rustc-cfg=jnox_linux_source_net_restart");
+    }
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx_irq_rearm_test)");
     if let Some(test) = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST") {
-        assert!(test == "1" && rx_irq.as_deref() == Some("1"),
+        assert!(test == "1" && rx_irq.as_deref() == Some("1") && restart.is_none(),
             "native RX IRQ rearm test requires the IRQ grant profile");
         println!("cargo::rustc-cfg=jnox_linux_source_net_rx_irq_rearm_test");
     }
@@ -739,8 +747,9 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx)");
     if let Some(value) = rx_source.as_deref() {
+        let links = if restart.is_some() { "0:3:1:3,1:4:0:4,2:3:1:5,1:6:2:4" } else { "0:3:1:3,1:4:0:4" };
         assert!(value == "1" && packet_io.as_deref() == Some("1") && pipe_config.is_some()
-            && fifo_grants.is_none() && pipe_links.as_deref() == Some("0:3:1:3,1:4:0:4"),
+            && fifo_grants.is_none() && pipe_links.as_deref() == Some(links),
             "native Linux-source RX requires packet I/O and only the fixed consumer and reply pipes");
         println!("cargo::rustc-cfg=jnox_linux_source_net_rx");
     }
@@ -764,8 +773,8 @@ fn main() {
         let Some(value) = selection else { continue };
         assert!(value == "1" && board == "virt" && profile.as_deref() == Some("native")
             && app.as_deref() == Some("process") && policy.as_deref() == Some("fifo")
-            && priorities.is_some() && peer_image.is_some(),
-            "{env_key} requires two native virt FIFO processes");
+            && priorities.is_some() && peer_image.is_some() && peer2_image.is_some() == restart.is_some()
+            && peer3_image.is_none(), "{env_key} requires the packaged native virt FIFO processes");
         for (key, _) in env::vars_os() {
             let key = key.to_string_lossy();
             assert!(!key.starts_with("JNOX_") || key.as_ref() == env_key
@@ -775,6 +784,9 @@ fn main() {
                     && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RX" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL"
                         | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST"
                         | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
+                || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && restart.is_some()
+                    && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RESTART" | "JNOX_NATIVE_PEER2_ELF"
+                        | "JNOX_NATIVE_PEER2_ELF_SHA256" | "JNOX_NATIVE_ARGV2_HEX"))
                 || matches!(key.as_ref(),
                 "JNOX_ARCH" | "JNOX_BOARD" | "JNOX_PROFILE" | "JNOX_APP"
                 | "JNOX_NATIVE_ELF" | "JNOX_NATIVE_ELF_SHA256" | "JNOX_NATIVE_PEER_ELF"

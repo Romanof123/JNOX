@@ -53,7 +53,7 @@ enum State {
     BlockedIpc,
     #[cfg(jnox_linux_source_net_rx_irq)]
     BlockedIrq,
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
     Dormant,
     Sleeping(u64),
     Exited,
@@ -87,8 +87,8 @@ impl Fixed {
         Self::initial(tasks, mode, now, 1)
     }
 
-    #[cfg(jnox_native_uart_rx_standby)]
-    pub(crate) fn new_uart_standby(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
+    #[cfg(any(jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
+    pub(crate) fn new_with_standby(tasks: &[Config], mode: Mode, now: u64) -> Option<Self> {
         if tasks.len() != 3 || !matches!(mode, Mode::Fifo) { return None; }
         Self::initial(tasks, mode, now, 2)
     }
@@ -121,7 +121,7 @@ impl Fixed {
             if id < initially_ready {
                 policy.tasks[id].state = State::Sleeping(relative_deadline(now, config.delay)?);
             }
-            #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
+            #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
             if id >= initially_ready { policy.tasks[id].state = State::Dormant; }
         }
         policy.wake_due();
@@ -130,18 +130,18 @@ impl Fixed {
         Some(policy)
     }
 
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
     pub(crate) fn dormant(&self, id: usize) -> bool {
         id < self.count && self.tasks[id].state == State::Dormant
     }
 
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
     pub(crate) fn launch(&mut self, id: usize) {
         assert!(self.dormant(id));
         self.join_tail(id);
     }
 
-    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby))]
+    #[cfg(any(jnox_native_shell, jnox_native_uart_rx_standby, jnox_linux_source_net_restart))]
     pub(crate) fn dismiss(&mut self, id: usize) {
         assert!(self.dormant(id));
         self.tasks[id].state = State::Exited;

@@ -45,6 +45,7 @@ static mut CURSORS: [Cursor; 2] = unsafe { core::mem::zeroed() };
 static mut RUNNING_TOKEN: u64 = 0;
 
 #[cfg(jnox_linux_source_net_rx)]
+#[cfg_attr(jnox_linux_source_net_restart, repr(C))]
 #[derive(Clone, Copy)]
 struct RxGrant {
     token: u64,
@@ -54,7 +55,12 @@ struct RxGrant {
 
 #[cfg(jnox_linux_source_net_rx)]
 const EMPTY_GRANT: RxGrant = RxGrant { token: 0, address: 0, len: 0 };
+#[cfg(jnox_linux_source_net_restart)]
+const _: () = assert!(core::mem::size_of::<RxGrant>() == 24
+    && core::mem::offset_of!(RxGrant, address) == 8 && core::mem::offset_of!(RxGrant, len) == 16);
+
 #[cfg(jnox_linux_source_net_rx)]
+#[cfg_attr(jnox_linux_source_net_restart, unsafe(export_name = "jnox_linux_net_restart_grants"))]
 static mut RX_GRANTS: [RxGrant; SIZE] = [EMPTY_GRANT; SIZE];
 
 pub(super) fn running(token: u64) -> bool { token != 0 && token == unsafe { RUNNING_TOKEN } }
@@ -331,4 +337,56 @@ pub(super) fn rx_progress() -> (u16, bool) {
 #[cfg(jnox_linux_source_net_rx_irq)]
 pub(super) fn rx_callbacks_enabled() -> bool {
     unsafe { (&raw const (*ring(RX)).available[0]).read_volatile() == 0 }
+}
+
+#[cfg(jnox_linux_source_net_restart)]
+pub(super) fn retirement_snapshot() -> [u64; 20] {
+    let rx = unsafe { &*(&raw const CURSORS[RX]) };
+    let grants = unsafe { &*(&raw const RX_GRANTS) };
+    let r = ring(RX);
+    let load_head = || unsafe { (&raw const (*r).used_header[1]).read_volatile() };
+    let head = load_head();
+    fence();
+    let mut row = [0; 20];
+    row[0] = unsafe { (&raw const (*r).available[1]).read_volatile() as u64 };
+    row[1] = u64::from(head);
+    row[2] = u64::from(rx.used);
+    row[3] = u64::from(rx.used.wrapping_sub(rx.count as u16));
+    row[4] = u64::from(rx.device_owned);
+    row[5] = u64::from(rx.held);
+    let mut waiting_on_device = rx.device_owned;
+    let delta = usize::from(head.wrapping_sub(rx.used));
+    row[6] = delta as u64;
+    row[7] = u64::MAX;
+    row[12] = u64::MAX;
+    for (id, grant) in grants.iter().enumerate() {
+        if grant.token != 0 { row[17] |= 1u64 << id; }
+    }
+    if delta <= SIZE {
+        for i in 0..delta {
+            let entry = (usize::from(rx.used) + i) % SIZE;
+            let id = unsafe { (&raw const (*r).used[entry][0]).read_volatile() as usize };
+            if id >= SIZE { waiting_on_device = 0; break; }
+            waiting_on_device &= !(1u32 << id);
+            if i == 0 {
+                row[7] = id as u64;
+                row[8] = unsafe { (&raw const (*r).used[entry][1]).read_volatile() as u64 };
+                row[9] = grants[id].address as u64;
+                row[10] = grants[id].len as u64;
+                row[11] = unsafe { (&raw const (*r).desc[id][0]).read_volatile() };
+            }
+        }
+        if waiting_on_device != 0 {
+            let id = waiting_on_device.trailing_zeros() as usize;
+            row[12] = id as u64;
+            row[13] = unsafe { (&raw const (*r).desc[id][1]).read_volatile() };
+            row[14] = grants[id].address as u64;
+            row[15] = grants[id].token;
+        }
+    }
+    row[16] = u64::from(waiting_on_device);
+    fence();
+    row[18] = u64::from(load_head());
+    row[19] = unsafe { RUNNING_TOKEN };
+    row
 }

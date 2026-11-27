@@ -56,6 +56,11 @@ impl reset_protocol::ResetIo for Io {
     fn fence(&mut self) { fence(); }
 }
 
+#[cfg(jnox_linux_source_net_restart)]
+pub(super) fn retirement_snapshot() -> (u64, [u64; 20]) {
+    (unsafe { ACTIVE_TOKEN as u64 }, packets::retirement_snapshot())
+}
+
 pub(super) fn quarantined() -> bool { unsafe { QUARANTINED } }
 
 #[cfg(jnox_linux_source_net_rx_irq)]
@@ -79,6 +84,13 @@ pub(super) fn reset() -> bool {
     }
     #[cfg(jnox_linux_net_packets)]
     packets::retired();
+    #[cfg(jnox_linux_source_net_restart)]
+    {
+        // The verified full-device reset is the ownership barrier for all
+        // descriptor memory, even when the old application never reaped it.
+        unsafe { ptr::write_bytes(&raw mut jnox_linux_net_queue_pool, 0, 1); }
+        fence();
+    }
     true
 }
 
