@@ -212,6 +212,9 @@ pub(crate) fn amc_clock_alias(pid: usize) -> *mut u64 {
 }
 
 static mut PROCESS_COUNT: usize = 0;
+#[cfg(jnox_native_shared_fd)]
+#[path = "native_shared_mmu.rs"]
+pub(crate) mod shared;
 #[cfg(jnox_native_loan_ipc)]
 #[path = "native_loan_mmu.rs"]
 mod loan;
@@ -318,6 +321,8 @@ unsafe fn populate(pid: usize, plan: &LoadPlan<'_>, stack_tail: &[u8]) {
         link(&raw mut space.low, WEIGHTED_NOTIFICATION_VA, 21, &raw mut WEIGHTED_NOTIFICATION_TABLE);
         #[cfg(jnox_native_loan_ipc)]
         loan::install_table(pid, &raw mut space.low);
+        #[cfg(jnox_native_shared_fd)]
+        shared::install_table(pid, &raw mut space.low);
         #[cfg(jnox_native_shell)]
         link(&raw mut space.low, SHELL_ROM_VA, 21, &raw mut SHELL_ROM_TABLE);
         #[cfg(jnox_native_amc_clock_page)]
@@ -565,6 +570,10 @@ pub(crate) unsafe fn switch(pid: usize) -> Result<(), &'static str> {
 
 fn translation(pid: usize, addr: usize, write: bool) -> Option<usize> {
     space_id(pid)?;
+    #[cfg(jnox_native_shared_fd)]
+    if shared::contains(addr) {
+        return shared::translation(pid, addr, write);
+    }
     #[cfg(jnox_native_loan_ipc)]
     if loan::contains_range(addr, addr) {
         return loan::translation(pid, addr, write);
@@ -610,6 +619,8 @@ fn can_copy(pid: usize, addr: usize, len: usize, write: bool) -> bool {
     // Both endpoints must lie in a single admitted aperture. This also bounds
     // validation of adversarial integer lengths to at most 1024 user pages.
     let admitted = (addr >= IMAGE_LO && end < IMAGE_HI) || (addr >= STACK_BOTTOM && end < STACK_TOP);
+    #[cfg(jnox_native_shared_fd)]
+    let admitted = admitted || shared::valid_span(pid, addr, end);
     #[cfg(jnox_native_loan_ipc)]
     let admitted = admitted || loan::contains_range(addr, end);
     #[cfg(jnox_native_shell)]
@@ -625,9 +636,9 @@ pub(crate) fn user_range(addr: usize, len: usize, write: bool) -> bool {
 }
 
 pub(crate) fn user_return_pc(addr: usize) -> bool {
-    #[cfg(not(any(jnox_native_loan_ipc, jnox_native_shell, jnox_task_policy)))]
+    #[cfg(not(any(jnox_native_loan_ipc, jnox_native_shell, jnox_task_policy, jnox_native_shared_fd)))]
     { user_range(addr, 4, false) }
-    #[cfg(any(jnox_native_loan_ipc, jnox_native_shell, jnox_task_policy))]
+    #[cfg(any(jnox_native_loan_ipc, jnox_native_shell, jnox_task_policy, jnox_native_shared_fd))]
     {
         if addr % 4 != 0 || !(IMAGE_LO..IMAGE_HI).contains(&addr) || !irq_masked() {
             return false;

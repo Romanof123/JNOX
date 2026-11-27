@@ -137,6 +137,9 @@ def native_service_slots(parser, args, policy, board):
         parser.error("--net-service supports at most three native processes")
     display = int(args.display_service[0]) if args.display_service else None
     broker = int(args.socket_service[0]) if args.socket_service else None
+    if args.shared_fd and (args.shared_fd != 1 or broker is None or args.net_service
+                           or board != "virt" or policy not in ("fifo", "rr") or args.threads):
+        parser.error("--shared-fd requires one native AF_UNIX socket broker on virt FIFO or RR")
     standby = args.uart_rx_standby
     if standby is not None:
         if standby != "2" or slots != 3 or display != 0 or args.uart_rx_irq != 1:
@@ -556,6 +559,8 @@ def main():
                         help="allow one packaged process to claim raw NIC access after owner retirement")
     parser.add_argument("--socket-service", choices=("0", "1", "2", "3"), action="append", default=[], metavar="SLOT",
                         help="select the socket broker; slot 3 serves display owner 0 and clients 1 and 2 on virt FIFO")
+    parser.add_argument("--shared-fd", action="count", default=0,
+                        help="allow the selected AF_UNIX broker to pass shared-memory descriptors")
     parser.add_argument("--cap-grant", type=cap_grant, action="append", default=[], metavar="OWNER:TARGET:RIGHTS",
                         help="install a mailbox capability (SEND=1, DELEGATE=2); per-owner order is preserved")
     parser.add_argument("--cap-route", type=ipc_route, action="append", default=[], metavar="SRC:DST",
@@ -930,6 +935,11 @@ def main():
     if args.socket_service:
         env["JNOX_NATIVE_SOCKET_SERVICE"] = str(service_slot)
         metadata["socket_service"] = {"slot": service_slot, "authorized_clients": service_clients}
+    if args.shared_fd:
+        env["JNOX_NATIVE_SHARED_FD"] = "1"
+        metadata["shared_fd"] = {"broker_slot": service_slot, "client_slots": service_clients,
+                                 "fd_first": 96, "fds_per_client": 8, "mappings_per_client": 4,
+                                 "objects": 4, "max_bytes_per_object": 307200, "in_flight": 8}
     if args.cap_grant or args.cap_route:
         cap_routes = sorted(args.cap_route)
         for key, rows in (("JNOX_NATIVE_CAP_GRANTS", args.cap_grant), ("JNOX_NATIVE_CAP_ROUTES", cap_routes)):

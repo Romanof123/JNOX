@@ -23,12 +23,22 @@ def select(slots, *, display=None, socket=None, net=None, pubsub=None, routes=()
                               peer3_arg=option(mask), threads=threads, uart_rx_irq=irq,
                               exec_child=children, rom_file=rom, uart_rx_standby=standby,
                               mailbox_route=[], notify_route=[], loan_route=[], cap_grant=[],
-                              cap_route=[], pipes=0, waitset=0)
+                              cap_route=[], pipes=0, waitset=0, shared_fd=0)
     vars(args).update(ipc)
     return native_service_slots(Parser(), args, policy, board), args.peer3_arg
 
 
 class NativeServiceSlotTests(unittest.TestCase):
+    def test_shared_fd_requires_a_local_socket_broker(self):
+        base = dict(slots=3, socket=2, routes=[(0, 2), (1, 2)], shared_fd=1)
+        for policy in ("fifo", "rr"):
+            with self.subTest(policy=policy):
+                self.assertEqual(select(**base, policy=policy)[0], (None, 2, [0, 1]))
+        for change in (dict(socket=None), dict(net=2), dict(routes=[]), dict(board="pi4"),
+                       dict(policy="edf"), dict(threads=["2"]), dict(shared_fd=2)):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                select(**(base | change))
+
     def test_net_standby(self):
         base = dict(slots=3, socket=0, net=0, routes=[(1, 0)])
         expected = (None, 0, [1])

@@ -6,6 +6,19 @@ const FDS: usize = 4;
 const STREAM: u8 = 1;
 const DGRAM: u8 = 2;
 const SEQ: u8 = 5;
+pub const RIGHTS: usize = 8;
+
+// One first data byte owns each reference. A ring position stays occupied
+// until that byte is consumed or its receiving endpoint is discarded.
+#[derive(Clone, Copy)]
+struct Attachment {
+    escrow: u64,
+    socket: usize,
+    offset: usize,
+}
+impl Attachment {
+    const EMPTY: Self = Self { escrow: 0, socket: 0, offset: 0 };
+}
 
 #[derive(Clone, Copy)]
 struct Name {
@@ -98,6 +111,7 @@ pub struct Received {
     pub full_len: usize,
     pub source: [u8; 31],
     pub source_len: usize,
+    pub escrow: u64,
 }
 impl Received {
     fn new(count: usize, full_len: usize, source: Name) -> Self {
@@ -106,6 +120,7 @@ impl Received {
             full_len,
             source: source.bytes,
             source_len: source.len,
+            escrow: 0,
         }
     }
 }
@@ -113,19 +128,33 @@ impl Received {
 pub struct Local {
     objects: [Socket; OBJECTS],
     fds: [[Option<usize>; FDS]; CLIENTS],
+    rights: [Attachment; RIGHTS],
 }
 impl Local {
     /// Copy bounded value-only state directly between disjoint private banks.
     pub fn copy_from(&mut self, source: &Self) {
         self.objects.copy_from_slice(&source.objects);
         self.fds.copy_from_slice(&source.fds);
+        self.rights = source.rights;
     }
 
     pub const fn new() -> Self {
         Self {
             objects: [Socket::EMPTY; OBJECTS],
             fds: [[None; FDS]; CLIENTS],
+            rights: [Attachment::EMPTY; RIGHTS],
         }
+    }
+    pub fn escrows(&self) -> [u64; RIGHTS] {
+        self.rights.map(|right| right.escrow)
+    }
+    fn clear_rights(&mut self, socket: usize) {
+        for right in &mut self.rights {
+            if right.socket == socket { *right = Attachment::EMPTY; }
+        }
+    }
+    pub fn require_stream(&self, owner: usize, fd: u8) -> Result<(), i32> {
+        if self.objects[self.id(owner, fd)?].kind == STREAM { Ok(()) } else { Err(-95) }
     }
     fn id(&self, owner: usize, fd: u8) -> Result<usize, i32> {
         self.fds
@@ -299,6 +328,26 @@ impl Local {
             Ok(data.len())
         }
     }
+    pub fn send_rights(&mut self, owner: usize, fd: u8, data: &[u8], escrow: u64)
+        -> Result<usize, i32>
+    {
+        self.require_stream(owner, fd)?;
+        if data.is_empty() || escrow == 0 { return Err(-22); }
+        let src = &self.objects[self.id(owner, fd)?];
+        if !src.write_open { return Err(-32); }
+        let dst = match src.peer {
+            Link::Peer(index) => index,
+            Link::Closed => return Err(-32),
+            Link::Unconnected => return Err(-107),
+        };
+        let receiver = &self.objects[dst];
+        if !receiver.read_open { return Err(-32); }
+        let offset = (receiver.byte_head + receiver.nbytes) % receiver.bytes.len();
+        let slot = self.rights.iter().position(|entry| entry.escrow == 0).ok_or(-11)?;
+        let n = self.send(owner, fd, data, None)?;
+        self.rights[slot] = Attachment { escrow, socket: dst, offset };
+        Ok(n)
+    }
     pub fn recv(&mut self, owner: usize, fd: u8, out: &mut [u8]) -> Result<Received, i32> {
         let id = self.id(owner, fd)?;
         let s = &self.objects[id];
@@ -319,13 +368,26 @@ impl Local {
             if s.nbytes == 0 && !out.is_empty() && !eof {
                 return Err(-11);
             }
-            let n = out.len().min(s.nbytes);
+            let mut n = out.len().min(s.nbytes);
+            let mut escrow = 0;
+            if n > 0 {
+                for right in &mut self.rights {
+                    if right.escrow == 0 || right.socket != id { continue; }
+                    let distance = (s.bytes.len() + right.offset - s.byte_head) % s.bytes.len();
+                    if distance == 0 {
+                        escrow = right.escrow;
+                        *right = Attachment::EMPTY;
+                    } else {
+                        n = n.min(distance);
+                    }
+                }
+            }
             for b in &mut out[..n] {
                 *b = s.bytes[s.byte_head];
                 s.byte_head = (s.byte_head + 1) % 64;
             }
             s.nbytes -= n;
-            Ok(Received::new(n, n, Name::EMPTY))
+            Ok(Received { escrow, ..Received::new(n, n, Name::EMPTY) })
         } else {
             if s.nrecords == 0 && s.kind == DGRAM && s.peer == Link::Closed {
                 return Err(-111);
@@ -363,6 +425,7 @@ impl Local {
         if how != 0 {
             s.write_open = false;
         }
+        if how != 1 { self.clear_rights(id); }
         Ok(())
     }
     fn discard(&mut self, id: usize) {
@@ -372,6 +435,7 @@ impl Local {
             }
         }
         self.objects[id] = Socket::EMPTY;
+        self.clear_rights(id);
     }
     pub fn close(&mut self, owner: usize, fd: u8) -> Result<(), i32> {
         let id = self.id(owner, fd)?;

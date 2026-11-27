@@ -7,6 +7,7 @@ pub const SOCK_DGRAM: i32 = 2;
 pub const SOCK_SEQPACKET: i32 = 5;
 pub const MSG_TRUNC: i32 = 0x20;
 pub const MSG_DONTWAIT: i32 = 0x40;
+pub const MSG_CTRUNC: i32 = 0x08;
 pub const SHUT_RD: i32 = 0;
 pub const SHUT_WR: i32 = 1;
 pub const SHUT_RDWR: i32 = 2;
@@ -97,6 +98,9 @@ pub fn shutdown(fd: i32, how: i32) -> Result<(), i32> {
 pub fn close(fd: i32) -> Result<(), i32> {
     result(unsafe { c::close(fd) }).map(|_| ())
 }
+
+mod rights;
+pub use rights::{recvmsg, sendmsg, shm_create, shm_dup_readonly, shm_map, shm_size, ReceivedMessage, ShmMapping};
 
 /// IPv4 octets in network order and a host-order port number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

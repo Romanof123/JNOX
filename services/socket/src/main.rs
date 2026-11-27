@@ -10,10 +10,13 @@ const CLIENTS: usize = 3;
 const PATH: usize = 31;
 const PAYLOAD: usize = 64;
 const BUFFER: usize = PATH + PAYLOAD;
+const SEND_RIGHTS: u8 = 15;
+const RECV_RIGHTS: u8 = 16;
 
 #[derive(Clone, Copy)]
 struct Request {
     op: u8, fd: u8, arg: u8, path: usize, payload: usize, nonblock: bool,
+    accept_right: bool,
     bytes: [u8; BUFFER], used: usize,
 }
 
@@ -26,12 +29,15 @@ impl Request {
             4 | 8 => path == 0 && payload == 0,
             5 | 9 => path == 0 && payload == 0 && arg == 0,
             6 => arg == 0,
-            7 => usize::from(arg) <= PAYLOAD && path == 0 && payload == 0,
+            7 | RECV_RIGHTS => usize::from(arg) <= PAYLOAD && path == 0 && payload == 0,
+            SEND_RIGHTS => path == 0 && payload != 0,
             _ => false,
         };
-        if !valid || reserved != 0 || flags > 1 || usize::from(path) > PATH ||
+        let allowed_flags = if op == RECV_RIGHTS { 3 } else { 1 };
+        if !valid || reserved != 0 || flags > allowed_flags || usize::from(path) > PATH ||
             usize::from(payload) > PAYLOAD { return Err(-22); }
-        Ok(Self { op, fd, arg, path: path.into(), payload: payload.into(), nonblock: flags != 0,
+        Ok(Self { op, fd, arg, path: path.into(), payload: payload.into(),
+            nonblock: flags & 1 != 0, accept_right: flags & 2 != 0,
             bytes: [0; BUFFER], used: 0 })
     }
 
@@ -52,8 +58,13 @@ impl Request {
 struct Response {
     bytes: [u8; BUFFER],
     count: usize, full: usize, path: usize,
+    received_fd: u8, truncated: bool,
 }
 impl Response {
+    fn meta(&self) -> u64 {
+        (self.count | self.full << 8 | self.path << 16) as u64
+            | u64::from(self.received_fd) << 24 | u64::from(self.truncated) << 32
+    }
     fn read(&self, offset: usize) -> Result<u64, i32> {
         let len = self.count + self.path;
         if offset >= len { return Err(-22); }
@@ -76,7 +87,65 @@ const EMPTY: Client = Client { request: None, response: None, pending: None };
 static mut BANKS: [Local; 2] = [Local::new(), Local::new()];
 static mut CLIENT_STATE: [Client; CLIENTS] = [EMPTY; CLIENTS];
 
-fn execute(s: &mut Local, id: usize, r: &Request) -> Result<(u64, Option<Response>), i32> {
+#[derive(Clone, Copy)]
+enum Transfer {
+    None,
+    Hold(u8),
+    Install(u64),
+}
+
+#[derive(Clone, Copy)]
+struct Reply { word: u64, transfer: Transfer }
+
+impl Reply {
+    fn plain(word: u64) -> Self { Self { word, transfer: Transfer::None } }
+
+    // A successful special reply transfers ownership and accepts the original
+    // COMMIT at the same kernel boundary. On failure the ordinary error reply
+    // may itself see ESTALE if the client deadline has expired.
+    fn deliver(self, token: u64, client: &mut Client) -> Result<bool, i64> {
+        let (op, argument) = match self.transfer {
+            Transfer::None => {
+                ipc::reply(token, self.word)?;
+                return Ok(true);
+            }
+            Transfer::Hold(fd) => (184, u64::from(fd)),
+            Transfer::Install(escrow) => (185, escrow),
+        };
+        match rights_call(op, token, self.word, argument) {
+            Ok(value) => {
+                match self.transfer {
+                    Transfer::Hold(_) if value != token => return Err(-5),
+                    Transfer::Install(_) => {
+                        if !(96..=103).contains(&value) { return Err(-5); }
+                        client.response.as_mut().ok_or(-5i64)?.received_fd = value as u8;
+                    }
+                    _ => {}
+                }
+                Ok(true)
+            }
+            Err(errno) => {
+                client.response = None;
+                ipc::reply(token, errno as u64)?;
+                Ok(false)
+            }
+        }
+    }
+}
+
+fn rights_call(op: u64, argument: u64, word: u64, right: u64) -> Result<u64, i64> {
+    let status: i64;
+    let value: u64;
+    unsafe {
+        asm!("svc #0x4a01", in("x8") op, inout("x0") argument => status,
+             inout("x1") word => value, inout("x2") right => _, options(nostack));
+    }
+    if status == 0 { Ok(value) } else { Err(status) }
+}
+
+fn execute(s: &mut Local, id: usize, r: &Request, token: u64)
+    -> Result<(Reply, Option<Response>), i32>
+{
     let fd = r.fd;
     let path = &r.bytes[..r.path];
     let count = match r.op {
@@ -86,28 +155,41 @@ fn execute(s: &mut Local, id: usize, r: &Request) -> Result<(u64, Option<Respons
         4 => { s.listen(id, fd, r.arg.into())?; 0 }
         5 => usize::from(s.accept(id, fd)?),
         6 => s.send(id, fd, &r.bytes[r.path..r.used], (!path.is_empty()).then_some(path))?,
-        7 => {
-            let mut response = Response { bytes: [0; BUFFER], count: 0, full: 0, path: 0 };
+        SEND_RIGHTS => {
+            if !(96..=103).contains(&r.arg) { return Err(-9); }
+            let n = s.send_rights(id, fd, &r.bytes[..r.used], token)?;
+            return Ok((Reply { word: n as u64, transfer: Transfer::Hold(r.arg) }, None));
+        }
+        7 | RECV_RIGHTS => {
+            if r.op == RECV_RIGHTS { s.require_stream(id, fd)?; }
+            let mut response = Response { bytes: [0; BUFFER], count: 0, full: 0, path: 0,
+                received_fd: 0, truncated: false };
             let got = s.recv(id, fd, &mut response.bytes[..usize::from(r.arg)])?;
             response.count = got.count;
             response.full = got.full_len;
             response.path = got.source_len;
             response.bytes[got.count..got.count + got.source_len].copy_from_slice(&got.source[..got.source_len]);
-            return Ok((got.count as u64, Some(response)));
+            let transfer = if got.escrow != 0 && r.accept_right {
+                Transfer::Install(got.escrow)
+            } else {
+                response.truncated = r.op == RECV_RIGHTS && got.escrow != 0;
+                Transfer::None
+            };
+            return Ok((Reply { word: got.count as u64, transfer }, Some(response)));
         }
         8 => { s.shutdown(id, fd, r.arg)?; 0 }
         9 => { s.close(id, fd)?; 0 }
         _ => return Err(-22),
     };
-    Ok((count as u64, None))
+    Ok((Reply::plain(count as u64), None))
 }
 
 // None transfers the reply token to this client's bounded pending slot.
-fn commit(s: &mut Local, c: &mut Client, id: usize, token: u64) -> Option<Result<u64, i32>> {
+fn commit(s: &mut Local, c: &mut Client, id: usize, token: u64) -> Option<Result<Reply, i32>> {
     let Some(r) = c.request.as_ref() else { return Some(Err(-22)) };
     if r.used != r.path + r.payload { return Some(Err(-22)); }
-    let result = execute(s, id, r);
-    if matches!(result, Err(-11)) && !r.nonblock && matches!(r.op, 3 | 5 | 6 | 7) {
+    let result = execute(s, id, r, token);
+    if matches!(result, Err(-11)) && !r.nonblock && matches!(r.op, 3 | 5 | 6 | 7 | SEND_RIGHTS | RECV_RIGHTS) {
         c.pending = Some(token);
         return None;
     }
@@ -116,7 +198,7 @@ fn commit(s: &mut Local, c: &mut Client, id: usize, token: u64) -> Option<Result
     Some(result.map(|(n, response)| { c.response = response; n }))
 }
 
-fn request(s: &mut Local, c: &mut Client, id: usize, token: u64, w: u64) -> Option<Result<u64, i32>> {
+fn request(s: &mut Local, c: &mut Client, id: usize, token: u64, w: u64) -> Option<Result<Reply, i32>> {
     // The kernel permits only one outstanding CALL per authenticated slot.
     // A new token proves the older, still-pending call was canceled.
     debug_assert!(c.pending.is_none());
@@ -129,13 +211,12 @@ fn request(s: &mut Local, c: &mut Client, id: usize, token: u64, w: u64) -> Opti
         0x11 => Err(-16),
         0x12 => c.request.as_mut().ok_or(-22).and_then(|r| r.chunk(w)),
         0x13 if args == 0 => return commit(s, c, id, token),
-        0x14 if args == 0 => c.response.as_ref().ok_or(-22).map(|r|
-            (r.count | (r.full << 8) | (r.path << 16)) as u64),
+        0x14 if args == 0 => c.response.as_ref().ok_or(-22).map(Response::meta),
         0x15 if args & 0x0000_ffff_ffff_ffff == 0 => c.response.as_ref().ok_or(-22)
             .and_then(|r| r.read((args >> 48) as usize)),
         0x16 if args == 0 => { *c = EMPTY; Ok(0) }
         _ => Err(-22),
-    })
+    }.map(Reply::plain))
 }
 
 // A successful kernel reply consumes this unique token. The single broker
@@ -145,7 +226,35 @@ struct Service<'a> {
     live: usize,
 }
 
+// Entries keep their table indices while queued. INSTALL already consumed
+// its own entry. Closing a listener can discard several pending endpoints.
+fn discard_removed(before: [u64; local::RIGHTS], after: [u64; local::RIGHTS], installed: u64)
+    -> Result<(), i64>
+{
+    let mut status = Ok(());
+    for (old, new) in before.into_iter().zip(after) {
+        if old != 0 && old != new && old != installed {
+            if let Err(errno) = rights_call(186, old, 0, 0) { status = Err(errno); }
+        }
+    }
+    status
+}
+
 impl Service<'_> {
+    fn trial_bank(&mut self) -> usize {
+        let (left, right) = self.banks.split_at_mut(1);
+        if self.live == 0 { right[0].copy_from(&left[0]); }
+        else { left[0].copy_from(&right[0]); }
+        1 - self.live
+    }
+
+    fn publish(&mut self, bank: usize, transfer: Transfer) -> Result<(), i64> {
+        let previous = self.banks[self.live].escrows();
+        self.live = bank;
+        let installed = match transfer { Transfer::Install(escrow) => escrow, _ => 0 };
+        discard_removed(previous, self.banks[bank].escrows(), installed)
+    }
+
     fn step(&mut self, client: &mut Client, id: usize, token: u64, word: Option<u64>)
         -> Result<bool, i64>
     {
@@ -157,10 +266,7 @@ impl Service<'_> {
         let mut trial = *client;
         let is_commit = word.is_none() || word == Some(0x13u64 << 56);
         let bank = if is_commit {
-            let (left, right) = self.banks.split_at_mut(1);
-            if self.live == 0 { right[0].copy_from(&left[0]); }
-            else { left[0].copy_from(&right[0]); }
-            1 - self.live
+            self.trial_bank()
         } else {
             // Non-COMMIT framing operations only access the private client copy.
             self.live
@@ -173,10 +279,10 @@ impl Service<'_> {
             client.pending = Some(token);
             return Ok(false);
         };
-        let value = result.unwrap_or_else(|errno| i64::from(errno) as u64);
-        match ipc::reply(token, value) {
-            Ok(()) => {
-                if is_commit && result.is_ok() { self.live = bank; }
+        let reply = result.unwrap_or_else(|errno| Reply::plain(i64::from(errno) as u64));
+        match reply.deliver(token, &mut trial) {
+            Ok(accepted) => {
+                if is_commit && result.is_ok() && accepted { self.publish(bank, reply.transfer)?; }
                 *client = trial;
             }
             Err(-116) => {
@@ -200,6 +306,24 @@ impl Service<'_> {
             if !completed { return Ok(()); }
         }
     }
+
+    fn serve(&mut self, clients: &mut [Client; CLIENTS], mut live: u8) -> i32 {
+        while live != 0 {
+            let Ok((token, word, id)) = receive() else { return 82 };
+            if id >= CLIENTS || live & (1 << id) == 0 { return 83; }
+            if token == 0 {
+                let bank = self.trial_bank();
+                self.banks[bank].exit(id);
+                if self.publish(bank, Transfer::None).is_err() { return 85; }
+                clients[id] = EMPTY;
+                live &= !(1 << id);
+            } else if self.step(&mut clients[id], id, token, Some(word)).is_err() {
+                return 84;
+            }
+            if self.retry(clients).is_err() { return 84; }
+        }
+        0
+    }
 }
 
 fn receive() -> Result<(u64, u64, usize), i64> {
@@ -219,22 +343,15 @@ pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
     if argc != 2 || argv.is_null() { return 81; }
     let arg = *argv.add(1);
     if arg.is_null() || !(b'1'..=b'7').contains(&*arg) || *arg.add(1) != 0 { return 81; }
-    let mut live = *arg - b'0';
+    let live = *arg - b'0';
     // Native startup calls main once. Only this single-threaded broker loop
     // accesses these objects, including while a kernel receive is blocked.
     let mut service = Service { banks: &mut *core::ptr::addr_of_mut!(BANKS), live: 0 };
     let clients = &mut *core::ptr::addr_of_mut!(CLIENT_STATE);
-    while live != 0 {
-        let Ok((token, word, id)) = receive() else { return 82 };
-        if id >= CLIENTS || live & (1 << id) == 0 { return 83; }
-        if token == 0 {
-            service.banks[service.live].exit(id);
-            clients[id] = EMPTY;
-            live &= !(1 << id);
-        } else if service.step(&mut clients[id], id, token, Some(word)).is_err() {
-            return 84;
-        }
-        if service.retry(clients).is_err() { return 84; }
-    }
-    0
+    let status = service.serve(clients, live);
+    // Also release live queues on a controlled error exit. EL1 reclaims the
+    // broker's entire escrow table if execution terminates before this point.
+    let remaining = service.banks[service.live].escrows();
+    if discard_removed(remaining, [0; local::RIGHTS], 0).is_err() { return 85; }
+    status
 }

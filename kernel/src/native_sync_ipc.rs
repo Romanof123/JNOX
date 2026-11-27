@@ -74,6 +74,7 @@ pub(super) fn handles(service: u64) -> bool {
     (cfg!(jnox_native_sync_ipc) && matches!(service, 21..=23))
         || (cfg!(jnox_native_capability_ipc) && matches!(service, 53..=58))
         || (cfg!(jnox_native_socket_service) && service == 37)
+        || (cfg!(jnox_native_shared_fd) && matches!(service, 184..=186))
         || (cfg!(jnox_native_pubsub_service) && service == 52)
         || (cfg!(jnox_native_net_service) && matches!(service, 38..=40 | 76))
         || (cfg!(jnox_native_mailbox_ipc) && matches!(service, 24..=25))
@@ -163,6 +164,8 @@ fn advance(now: u64, exiting: Option<usize>) {
     }
     #[cfg(jnox_native_sync_ipc)]
     update!(ENDPOINTS);
+    #[cfg(jnox_native_shared_fd)]
+    if let Some(pid) = exiting { super::shared_fd::exit(pid); }
     #[cfg(jnox_native_mailbox_ipc)]
     update!(MAIL);
     #[cfg(jnox_native_capability_ipc)]
@@ -186,6 +189,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
     let now = monotonic_ns(stamp);
     advance(now, None);
     let op = frame.x[8];
+    #[cfg(jnox_native_shared_fd)]
+    let mut escrow_result = 0;
     let deadline = match op { 21 | 24 | 56 => frame.x[2], 25 | 27 | 32 => frame.x[0], 29 => frame.x[1], _ => u64::MAX };
     #[cfg(jnox_native_waitset)]
     let mut handle = 0;
@@ -207,6 +212,21 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
             37 if id == super::NATIVE_SOCKET_SERVICE => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_receive(id, now) },
             #[cfg(jnox_native_socket_service)]
             37 => Err(-13),
+            #[cfg(jnox_native_shared_fd)]
+            184..=186 if id != super::NATIVE_SOCKET_SERVICE => Err(-13),
+            #[cfg(jnox_native_shared_fd)]
+            184 | 185 => {
+                let (token, count, arg) = (frame.x[0], frame.x[1], frame.x[2]);
+                let endpoints = unsafe { &mut *(&raw mut ENDPOINTS) };
+                endpoints.reply_with(id, token, now, |caller, request| {
+                    // The socket broker authenticates the staged BEGIN/CHUNK
+                    // fields. Only an actual client COMMIT can move a right.
+                    if request != 0x13u64 << 56 { return Err(-22); }
+                    super::shared_fd::transfer(caller, op, token, count, arg)
+                }).map(|value| escrow_result = value)
+            }
+            #[cfg(jnox_native_shared_fd)]
+            186 => super::shared_fd::discard(frame.x[0]),
             #[cfg(jnox_native_pubsub_service)]
             52 if id == super::NATIVE_PUBSUB_SERVICE => unsafe { (&mut *(&raw mut ENDPOINTS)).broker_receive(id, now) },
             #[cfg(jnox_native_pubsub_service)]
@@ -251,6 +271,8 @@ pub(super) fn service(stamp: u64, frame: &mut NativeFrame) -> Action {
     #[cfg(jnox_native_net_service)]
     if matches!(op, 38 | 39) && result.is_ok() { frame.x[0] = transferred; }
     frame.x[1] = 0;
+    #[cfg(jnox_native_shared_fd)]
+    if matches!(op, 184..=186) { frame.x[1] = escrow_result; }
     #[cfg(jnox_native_waitset)]
     {
         if op == 30 { frame.x[1] = handle; }
