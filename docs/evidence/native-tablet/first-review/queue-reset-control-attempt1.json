@@ -1,0 +1,1132 @@
+{
+  "kernel": "b32a72d7ac8db78a20499948c645b76f5901997a9da352e5dba5c97ed9559ee2",
+  "source": "/home/ywcho/jnox406-lab/451-build-02/queue-reset-control",
+  "scopes": {
+    "initial_client_wire_screen": {
+      "outcome": "PASS",
+      "details": {
+        "clients": {
+          "Pulse": {
+            "receipt": [
+              3,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40815118"
+          },
+          "Tiles": {
+            "receipt": [
+              3,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40c2a118"
+          }
+        },
+        "wire": {
+          "Pulse": {
+            "fd": 65,
+            "events": [],
+            "caps": [
+              3
+            ],
+            "title": "Pulse",
+            "requests": [
+              [
+                19,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          },
+          "Tiles": {
+            "fd": 66,
+            "events": [],
+            "caps": [
+              3
+            ],
+            "title": "Tiles",
+            "requests": [
+              [
+                38,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          }
+        },
+        "screen": {
+          "frame": "c8b7e5719319a8c7c74a28a7ed129ac532656ce00dcc06931cab16d95f7ab541",
+          "client_buffers": {
+            "Tiles": "5a79d0fdb329397fb0d9fc4bac2627e6837f45b43b60029f62eae58537a7a321",
+            "Pulse": "14eaef13c689bf41d9f3debd8b6b1e6dac06d4fbdc47ad380cb5e1b2903c16ed"
+          }
+        }
+      }
+    },
+    "qemu_topology": {
+      "outcome": "PASS",
+      "details": [
+        {
+          "index": 1,
+          "name": "QEMU Virtio Tablet",
+          "current": true,
+          "absolute": true
+        }
+      ]
+    },
+    "four_guest_process_exits": {
+      "outcome": "PASS",
+      "details": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          71
+        ],
+        [
+          2,
+          72
+        ],
+        [
+          3,
+          0
+        ]
+      ]
+    },
+    "seat_capabilities": {
+      "outcome": "PASS",
+      "details": {
+        "Pulse": [
+          3
+        ],
+        "Tiles": [
+          3
+        ]
+      }
+    },
+    "nonowner_counters": {
+      "outcome": "PASS",
+      "details": {
+        "private_counters": {
+          "Pulse": 5,
+          "Tiles": 5
+        },
+        "limit": "Aggregate counter; per-command results require linked-client evidence."
+      }
+    },
+    "live_hardware": {
+      "outcome": "PASS",
+      "details": {
+        "base": "0xa003e00",
+        "mmio": {
+          "0": 1953655158,
+          "4": 2,
+          "8": 18,
+          "96": 0,
+          "112": 15,
+          "68": 1,
+          "256": 1310994,
+          "264": 0,
+          "268": 32767
+        },
+        "transport_receipt": [
+          2,
+          18,
+          805306368,
+          1,
+          0,
+          1,
+          79,
+          0,
+          1024,
+          1024,
+          15
+        ],
+        "kernel_axis_ranges": [
+          0,
+          32767,
+          0,
+          32767
+        ],
+        "selected_config": 1310994,
+        "raw_selected_axis_values": [
+          0,
+          32767
+        ]
+      }
+    },
+    "owner_exit_device_reset": {
+      "outcome": "PASS",
+      "details": {
+        "phys_base": "0xa003e00",
+        "live_regs": {
+          "0": 1953655158,
+          "4": 2,
+          "8": 18,
+          "96": 0,
+          "112": 15,
+          "68": 1,
+          "256": 1310994,
+          "264": 0,
+          "268": 32767
+        },
+        "terminal_regs": {
+          "0": 1953655158,
+          "4": 2,
+          "8": 18,
+          "96": 0,
+          "112": 0,
+          "68": 0,
+          "256": 1310994,
+          "264": 0,
+          "268": 32767
+        },
+        "terminal_state": [
+          167788032,
+          0,
+          2,
+          0,
+          32767,
+          0,
+          32767,
+          40,
+          24,
+          24,
+          10,
+          1
+        ],
+        "two_cleared_dma_pages": "9f1dcbc35c350d6027f98be0f5c8b43b42ca52b7604459c0c42be3aa88913d47",
+        "limit": "HMP records QueueReady for the selected queue; no individual read from the other queue."
+      }
+    },
+    "both_queue_ready_after_exit": {
+      "outcome": "PASS",
+      "details": [
+        [
+          0,
+          "000000000a003e44: 0x00000000\r\n"
+        ],
+        [
+          1,
+          "000000000a003e44: 0x00000000\r\n"
+        ]
+      ]
+    },
+    "qmp_dma_and_syn": {
+      "outcome": "PASS",
+      "details": [
+        {
+          "used": 3,
+          "available": 19,
+          "events": [
+            {
+              "desc": 0,
+              "pa": "0x4024f1a8",
+              "bytes": "030000000d100000",
+              "event": [
+                3,
+                0,
+                4109
+              ]
+            },
+            {
+              "desc": 1,
+              "pa": "0x4024f1b0",
+              "bytes": "03000100ec1c0000",
+              "event": [
+                3,
+                1,
+                7404
+              ]
+            },
+            {
+              "desc": 2,
+              "pa": "0x4024f1b8",
+              "bytes": "0000000000000000",
+              "event": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "used": 5,
+          "available": 21,
+          "events": [
+            {
+              "desc": 3,
+              "pa": "0x4024f1c0",
+              "bytes": "0100100101000000",
+              "event": [
+                1,
+                272,
+                1
+              ]
+            },
+            {
+              "desc": 4,
+              "pa": "0x4024f1c8",
+              "bytes": "0000000000000000",
+              "event": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "used": 7,
+          "available": 23,
+          "events": [
+            {
+              "desc": 5,
+              "pa": "0x4024f1d0",
+              "bytes": "0100100100000000",
+              "event": [
+                1,
+                272,
+                0
+              ]
+            },
+            {
+              "desc": 6,
+              "pa": "0x4024f1d8",
+              "bytes": "0000000000000000",
+              "event": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "used": 10,
+          "available": 26,
+          "events": [
+            {
+              "desc": 7,
+              "pa": "0x4024f1e0",
+              "bytes": "030000004a5c0000",
+              "event": [
+                3,
+                0,
+                23626
+              ]
+            },
+            {
+              "desc": 8,
+              "pa": "0x4024f1e8",
+              "bytes": "03000100314e0000",
+              "event": [
+                3,
+                1,
+                20017
+              ]
+            },
+            {
+              "desc": 9,
+              "pa": "0x4024f1f0",
+              "bytes": "0000000000000000",
+              "event": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "used": 12,
+          "available": 28,
+          "events": [
+            {
+              "desc": 10,
+              "pa": "0x4024f1f8",
+              "bytes": "0100100101000000",
+              "event": [
+                1,
+                272,
+                1
+              ]
+            },
+            {
+              "desc": 11,
+              "pa": "0x4024f200",
+              "bytes": "0000000000000000",
+              "event": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "used": 14,
+          "available": 30,
+          "events": [
+            {
+              "desc": 12,
+              "pa": "0x4024f208",
+              "bytes": "0100100100000000",
+              "event": [
+                1,
+                272,
+                0
+              ]
+            },
+            {
+              "desc": 13,
+              "pa": "0x4024f210",
+              "bytes": "0000000000000000",
+              "event": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "both_clicks_client_wire_screen": {
+      "outcome": "PASS",
+      "details": {
+        "clients": {
+          "Pulse": {
+            "receipt": [
+              3,
+              1,
+              1,
+              0,
+              1,
+              1,
+              6144,
+              7680,
+              6,
+              8,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40815118"
+          },
+          "Tiles": {
+            "receipt": [
+              3,
+              1,
+              0,
+              0,
+              1,
+              1,
+              30208,
+              16896,
+              10,
+              12,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40c2a118"
+          }
+        },
+        "wire": {
+          "Pulse": {
+            "fd": 65,
+            "events": [
+              [
+                48,
+                "enter",
+                6,
+                9,
+                6144,
+                7680
+              ],
+              [
+                49,
+                "button",
+                7,
+                351,
+                272,
+                1
+              ],
+              [
+                51,
+                "button",
+                8,
+                357,
+                272,
+                0
+              ],
+              [
+                52,
+                "leave",
+                9,
+                9
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Pulse",
+            "requests": [
+              [
+                19,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          },
+          "Tiles": {
+            "fd": 66,
+            "events": [
+              [
+                53,
+                "enter",
+                10,
+                9,
+                30208,
+                16896
+              ],
+              [
+                54,
+                "button",
+                11,
+                387,
+                272,
+                1
+              ],
+              [
+                56,
+                "button",
+                12,
+                393,
+                272,
+                0
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Tiles",
+            "requests": [
+              [
+                38,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          }
+        },
+        "screen": {
+          "frame": "afa72bef69d08841e300ec07394838c2dc9dd64b1d5e789a867db7694ebdbfbe",
+          "client_buffers": {
+            "Tiles": "d883e277e008fcb7e6c739e629b09364cf4f7fdd039aa6e55a0e08c4ba8772a5",
+            "Pulse": "c976dc594774e2963b079ef20ba26dab0fbc924ed3e376dd46d638f314af333b"
+          }
+        }
+      }
+    },
+    "overlap_client_wire_screen": {
+      "outcome": "PASS",
+      "details": {
+        "clients": {
+          "Pulse": {
+            "receipt": [
+              3,
+              2,
+              1,
+              1,
+              1,
+              1,
+              27904,
+              18176,
+              14,
+              8,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40815118"
+          },
+          "Tiles": {
+            "receipt": [
+              3,
+              1,
+              1,
+              0,
+              1,
+              1,
+              30208,
+              16896,
+              10,
+              12,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40c2a118"
+          }
+        },
+        "wire": {
+          "Pulse": {
+            "fd": 65,
+            "events": [
+              [
+                48,
+                "enter",
+                6,
+                9,
+                6144,
+                7680
+              ],
+              [
+                49,
+                "button",
+                7,
+                351,
+                272,
+                1
+              ],
+              [
+                51,
+                "button",
+                8,
+                357,
+                272,
+                0
+              ],
+              [
+                52,
+                "leave",
+                9,
+                9
+              ],
+              [
+                59,
+                "enter",
+                14,
+                9,
+                26624,
+                16896
+              ],
+              [
+                61,
+                "motion",
+                773,
+                27904,
+                18176
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Pulse",
+            "requests": [
+              [
+                19,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          },
+          "Tiles": {
+            "fd": 66,
+            "events": [
+              [
+                53,
+                "enter",
+                10,
+                9,
+                30208,
+                16896
+              ],
+              [
+                54,
+                "button",
+                11,
+                387,
+                272,
+                1
+              ],
+              [
+                56,
+                "button",
+                12,
+                393,
+                272,
+                0
+              ],
+              [
+                60,
+                "leave",
+                13,
+                9
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Tiles",
+            "requests": [
+              [
+                38,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          }
+        },
+        "screen": {
+          "frame": "afa72bef69d08841e300ec07394838c2dc9dd64b1d5e789a867db7694ebdbfbe",
+          "client_buffers": {
+            "Tiles": "d883e277e008fcb7e6c739e629b09364cf4f7fdd039aa6e55a0e08c4ba8772a5",
+            "Pulse": "c976dc594774e2963b079ef20ba26dab0fbc924ed3e376dd46d638f314af333b"
+          }
+        }
+      }
+    },
+    "axis_and_application_delivery": {
+      "outcome": "PASS",
+      "details": null
+    },
+    "overlap_focus": {
+      "outcome": "FAIL_OR_MISSING",
+      "reason": "overlap topmost recipient and local motion"
+    },
+    "focus_restack_scene": {
+      "outcome": "PASS",
+      "details": {
+        "clients": {
+          "Pulse": {
+            "receipt": [
+              3,
+              2,
+              2,
+              1,
+              1,
+              1,
+              27904,
+              18176,
+              14,
+              8,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40815118"
+          },
+          "Tiles": {
+            "receipt": [
+              3,
+              2,
+              1,
+              0,
+              1,
+              1,
+              3328,
+              3840,
+              18,
+              12,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40c2a118"
+          }
+        },
+        "wire": {
+          "Pulse": {
+            "fd": 65,
+            "events": [
+              [
+                48,
+                "enter",
+                6,
+                9,
+                6144,
+                7680
+              ],
+              [
+                49,
+                "button",
+                7,
+                351,
+                272,
+                1
+              ],
+              [
+                51,
+                "button",
+                8,
+                357,
+                272,
+                0
+              ],
+              [
+                52,
+                "leave",
+                9,
+                9
+              ],
+              [
+                59,
+                "enter",
+                14,
+                9,
+                26624,
+                16896
+              ],
+              [
+                61,
+                "motion",
+                773,
+                27904,
+                18176
+              ],
+              [
+                62,
+                "leave",
+                17,
+                9
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Pulse",
+            "requests": [
+              [
+                19,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          },
+          "Tiles": {
+            "fd": 66,
+            "events": [
+              [
+                53,
+                "enter",
+                10,
+                9,
+                30208,
+                16896
+              ],
+              [
+                54,
+                "button",
+                11,
+                387,
+                272,
+                1
+              ],
+              [
+                56,
+                "button",
+                12,
+                393,
+                272,
+                0
+              ],
+              [
+                60,
+                "leave",
+                13,
+                9
+              ],
+              [
+                64,
+                "enter",
+                18,
+                9,
+                3328,
+                3840
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Tiles",
+            "requests": [
+              [
+                38,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          }
+        },
+        "screen": {
+          "frame": "454e254dbeb2a19c77982197f72f0bd5d069b35d65ad46045ce20d69a8af3dc5",
+          "client_buffers": {
+            "Pulse": "c976dc594774e2963b079ef20ba26dab0fbc924ed3e376dd46d638f314af333b",
+            "Tiles": "d883e277e008fcb7e6c739e629b09364cf4f7fdd039aa6e55a0e08c4ba8772a5"
+          }
+        }
+      }
+    },
+    "focus_disconnect_scene": {
+      "outcome": "PASS",
+      "details": {
+        "clients": {
+          "Pulse": {
+            "receipt": [
+              3,
+              3,
+              2,
+              3,
+              1,
+              1,
+              29184,
+              19456,
+              22,
+              8,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40815118"
+          },
+          "Tiles": {
+            "receipt": [
+              3,
+              2,
+              1,
+              0,
+              1,
+              1,
+              3328,
+              3840,
+              18,
+              12,
+              0
+            ],
+            "direct_denials": 5,
+            "buffer_va": 33554432,
+            "receipt_pa": "0x40c2a118"
+          }
+        },
+        "wire": {
+          "Pulse": {
+            "fd": 65,
+            "events": [
+              [
+                48,
+                "enter",
+                6,
+                9,
+                6144,
+                7680
+              ],
+              [
+                49,
+                "button",
+                7,
+                351,
+                272,
+                1
+              ],
+              [
+                51,
+                "button",
+                8,
+                357,
+                272,
+                0
+              ],
+              [
+                52,
+                "leave",
+                9,
+                9
+              ],
+              [
+                59,
+                "enter",
+                14,
+                9,
+                26624,
+                16896
+              ],
+              [
+                61,
+                "motion",
+                773,
+                27904,
+                18176
+              ],
+              [
+                62,
+                "leave",
+                17,
+                9
+              ],
+              [
+                69,
+                "enter",
+                22,
+                9,
+                27904,
+                18176
+              ],
+              [
+                70,
+                "motion",
+                1170,
+                29184,
+                18176
+              ],
+              [
+                70,
+                "motion",
+                1170,
+                29184,
+                19456
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Pulse",
+            "requests": [
+              [
+                19,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": false
+          },
+          "Tiles": {
+            "fd": 66,
+            "events": [
+              [
+                53,
+                "enter",
+                10,
+                9,
+                30208,
+                16896
+              ],
+              [
+                54,
+                "button",
+                11,
+                387,
+                272,
+                1
+              ],
+              [
+                56,
+                "button",
+                12,
+                393,
+                272,
+                0
+              ],
+              [
+                60,
+                "leave",
+                13,
+                9
+              ],
+              [
+                64,
+                "enter",
+                18,
+                9,
+                3328,
+                3840
+              ]
+            ],
+            "caps": [
+              3
+            ],
+            "title": "Tiles",
+            "requests": [
+              [
+                38,
+                "get_pointer",
+                16
+              ]
+            ],
+            "closed": true
+          }
+        },
+        "screen": {
+          "frame": "600253939c6bfd354848ac8901807f672b2b886d18fb3c9fe20b6c9a0ea6f378",
+          "client_buffers": {
+            "Pulse": "c976dc594774e2963b079ef20ba26dab0fbc924ed3e376dd46d638f314af333b"
+          }
+        }
+      }
+    },
+    "focused_disconnect_retarget": {
+      "outcome": "PASS",
+      "details": {
+        "surviving_peer_events": [
+          [
+            69,
+            "enter",
+            22,
+            9,
+            27904,
+            18176
+          ],
+          [
+            70,
+            "motion",
+            1170,
+            29184,
+            18176
+          ],
+          [
+            70,
+            "motion",
+            1170,
+            29184,
+            19456
+          ]
+        ],
+        "disconnected_peer_events": []
+      }
+    }
+  }
+}

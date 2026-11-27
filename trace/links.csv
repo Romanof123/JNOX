@@ -2567,3 +2567,16 @@ IMP-338,partially-verified-by,VER-024
 VER-015,has-partial-evidence,EVD-338
 VER-024,has-partial-evidence,EVD-338
 IMP-338,tested-in,EVD-338
+CHG-341,affects,REQ-015
+CHG-341,affects,REQ-016
+CHG-341,affects,REQ-024
+CHG-341,affects,DES-009
+CHG-341,affects,DES-013
+REQ-015,partially-implemented-by,IMP-341
+REQ-016,partially-implemented-by,IMP-341
+REQ-024,partially-implemented-by,IMP-341
+CHG-341,affects,EVD-341
+IMP-341,tested-in,EVD-341
+VER-015,has-partial-evidence,EVD-341
+VER-016,has-partial-evidence,EVD-341
+VER-024,has-partial-evidence,EVD-341

@@ -1,0 +1,12 @@
+{
+  "DMA X value": "stage 1 event 0 QMP vs actual DMA (3, 0, 4108) != (3, 0, 4109)",
+  "used byte count": "used element length/id",
+  "descriptor writable bit": "writable descriptor points into captured event storage",
+  "used index": "stage 1 used and replenished lengths",
+  "replenished descriptor": "consumed buffer returned to available ring",
+  "QMP press replaced by release": "two independent motion/down/up triples",
+  "Pulse private press byte": "Pulse wire vs client [1, 1, 0, 1, 1, 6144, 7680, 6, 8] != [1, 1, 0, 0, 1, 6144, 7680, 6, 8]",
+  "duplicate serial in real Wayland packet": "duplicate or zero pointer serial",
+  "one QEMU RGB channel": "QEMU RGB mismatches process-private buffer composition",
+  "terminal DEVICE_STATUS still live": "MMIO status/selected ready reset"
+}

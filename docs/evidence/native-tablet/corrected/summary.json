@@ -1,0 +1,69 @@
+{
+  "commit": "560bcb768e6287da8732c2e81a9a4ece166ba9f6",
+  "denials": [
+    5,
+    5
+  ],
+  "retired": [
+    167788032,
+    0,
+    2,
+    0,
+    32767,
+    0,
+    32767,
+    40,
+    24,
+    24,
+    10,
+    1
+  ],
+  "queues": [
+    [
+      0,
+      "000000000a003e44: 0x00000000\r\n"
+    ],
+    [
+      1,
+      "000000000a003e44: 0x00000000\r\n"
+    ]
+  ],
+  "surviving apps": [
+    [
+      3,
+      3,
+      2,
+      3,
+      1,
+      1,
+      29184,
+      19456,
+      22,
+      8,
+      0
+    ],
+    [
+      3,
+      2,
+      1,
+      0,
+      1,
+      1,
+      3328,
+      3840,
+      18,
+      12,
+      0
+    ]
+  ],
+  "keyboard_runs": [
+    "cold-1",
+    "cold-2"
+  ],
+  "headless_uart": "JNOX M1 BOOT\nJNOX M1 READY\nNATIVE EL0 ELF 6a6a3fa813221ffef7561b68dd68c4a9d55f2749124e1fd292ffd8b69e608e32\nNATIVE EL0 EXIT 47\n",
+  "screens": {
+    "b-dead.png": "c86b50be6f77247ffe73378a559bf12ebc3b3703770e446f9089eb426a7bb275",
+    "both-clicked.png": "15a5a7c1d7fe1210492b4c9093182e0aedf175e0b0a37b53251460f2744a8c37",
+    "initial.png": "ea20f80a69de57214ffe42b781710dddc7bdb7af599e98fa8c92d46c137c3f14"
+  }
+}
