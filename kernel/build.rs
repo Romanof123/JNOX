@@ -736,7 +736,14 @@ fn main() {
         println!("cargo::rustc-cfg=jnox_linux_source_net_restart");
     }
     println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_rx_irq_rearm_test)");
-    if let Some(test) = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST") {
+    let rearm_test = selector("JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST");
+    println!("cargo::rustc-check-cfg=cfg(jnox_linux_source_net_lifecycle)");
+    if let Some(value) = selector("JNOX_NATIVE_LINUX_SOURCE_NET_LIFECYCLE") {
+        assert!(value == "1" && rx_irq.as_deref() == Some("1") && restart.is_none() && rearm_test.is_none(),
+            "native Linux-source lifecycle requires the ordinary two-process IRQ profile");
+        println!("cargo::rustc-cfg=jnox_linux_source_net_lifecycle");
+    }
+    if let Some(test) = rearm_test {
         assert!(test == "1" && rx_irq.as_deref() == Some("1") && restart.is_none(),
             "native RX IRQ rearm test requires the IRQ grant profile");
         println!("cargo::rustc-cfg=jnox_linux_source_net_rx_irq_rearm_test");
@@ -789,7 +796,7 @@ fn main() {
                 || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && rx_source.is_some()
                     && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RX" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_POLL"
                         | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ" | "JNOX_NATIVE_LINUX_SOURCE_NET_RX_IRQ_REARM_TEST"
-                        | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
+                        | "JNOX_NATIVE_LINUX_SOURCE_NET_LIFECYCLE" | "JNOX_NATIVE_PIPES" | "JNOX_NATIVE_PIPE_LINKS"))
                 || (env_key == "JNOX_NATIVE_LINUX_SOURCE_NET" && restart.is_some()
                     && matches!(key.as_ref(), "JNOX_NATIVE_LINUX_SOURCE_NET_RESTART" | "JNOX_NATIVE_LINUX_SOURCE_NET_RESTART_PENDING_TEST"
                         | "JNOX_NATIVE_PEER2_ELF"

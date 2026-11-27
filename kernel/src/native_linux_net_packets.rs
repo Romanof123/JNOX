@@ -140,7 +140,16 @@ fn start(token: u64) -> i64 {
         write(super::SELECT, q as u32);
         if read(super::READY) != 1 { return abort_setup(); }
     }
-    #[cfg(jnox_linux_source_net_rx)]
+    #[cfg(jnox_linux_source_net_lifecycle)]
+    {
+        let rx = unsafe { &*(&raw const CURSORS[RX]) };
+        let avail = unsafe { (&raw const (*ring(RX)).available[1]).read_volatile() };
+        let used = unsafe { (&raw const (*ring(RX)).used_header[1]).read_volatile() };
+        if rx.device_owned != 0 || rx.held != 0 || avail != 0 || used != 0 {
+            return abort_setup();
+        }
+    }
+    #[cfg(all(jnox_linux_source_net_rx, not(jnox_linux_source_net_lifecycle)))]
     if unsafe { CURSORS[RX].device_owned } != u32::MAX { return -11; }
     #[cfg(not(jnox_linux_source_net_rx))]
     {
@@ -159,6 +168,7 @@ fn start(token: u64) -> i64 {
     write(STATUS, LIVE);
     if read(STATUS) != LIVE { return abort_setup(); }
     unsafe { RUNNING_TOKEN = token };
+    #[cfg(not(jnox_linux_source_net_lifecycle))]
     write(NOTIFY, RX as u32);
     0
 }
@@ -200,6 +210,8 @@ fn grant_rx(token: u64, address: usize, len: usize) -> i64 {
     let Some(end) = address.checked_add(len) else { return -14; };
     if !crate::native_el0_mmu::user_range(address, len, true) { return -14; }
     let live = running(token);
+    #[cfg(jnox_linux_source_net_lifecycle)]
+    if !live { return -19; }
     let expected = if live { LIVE } else { ACK_DRIVER | FEATURES_OK };
     if read(STATUS) != expected { return abort_setup(); }
     let grants = unsafe { &mut *(&raw mut RX_GRANTS) };
@@ -293,6 +305,13 @@ pub(in crate::native_el0::linux_net) fn packet_service(number: u64, token: u64, 
     match number {
         163 | 167 => return -95,
         170 | 172 if address != 0 || len != 0 => return -22,
+        #[cfg(jnox_linux_source_net_lifecycle)]
+        170 => return -95,
+        #[cfg(jnox_linux_source_net_lifecycle)]
+        177 if address == 0 && len == 0 => return start(token),
+        #[cfg(jnox_linux_source_net_lifecycle)]
+        177 => return -22,
+        #[cfg(not(jnox_linux_source_net_lifecycle))]
         170 => return start(token),
         171 => return grant_rx(token, address as usize, len as usize),
         _ => {}

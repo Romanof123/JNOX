@@ -6,6 +6,9 @@
 #include <linux/virtio_config.h>
 #include <linux/virtio_net.h>
 
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+#include <lifecycle_bus.h>
+#endif
 extern int virtnet_validate(struct virtio_device *vdev);
 
 static struct virtio_device device;
@@ -46,6 +49,11 @@ int dynamic_might_resched(void)
 void virtio_check_driver_offered_feature(const struct virtio_device *vdev,
                                        unsigned int bit)
 {
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    if (vdev == &device && (run.active || validation_ok) &&
+        jnox_lifecycle_feature_v1(bit))
+        return;
+#endif
     /* All the device features inspected by the pinned callback are entries
      * in upstream VIRTNET_FEATURES. Transport bits bypass this Linux hook. */
 #ifdef JNOX_PACKET_TX_ABI
@@ -108,6 +116,12 @@ void _dev_warn(const struct device *dev, const char *fmt, ...)
 
 static void read_config(struct virtio_device *vdev, unsigned offset, void *buf, unsigned len)
 {
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    if (!run.active && validation_ok && vdev == &device) {
+        jnox_lifecycle_get_config_v1(vdev, offset, buf, len);
+        return;
+    }
+#endif
     /* Only virtnet_validate's 16-bit MTU access is supported. */
     if (!buf || vdev != &device || !run.active ||
         offset != offsetof(struct virtio_net_config, mtu) || len != sizeof(__le16)) {
@@ -139,7 +153,15 @@ void jnox_net_forget_validation(void)
 {
     validation_ok = false;
 }
-static const struct virtio_config_ops config = { .get = read_config, .find_vqs = jnox_queue_find_vqs };
+static const struct virtio_config_ops config = {
+    .get = read_config, .find_vqs = jnox_queue_find_vqs,
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    .get_status = jnox_lifecycle_get_status_v1,
+    .set_status = jnox_lifecycle_set_status_v1,
+    .reset = jnox_lifecycle_reset_v1,
+    .del_vqs = jnox_lifecycle_del_vqs_v1,
+#endif
+};
 #else
 static const struct virtio_config_ops config = { .get = read_config };
 #endif
@@ -161,7 +183,11 @@ long jnox_net_validate(unsigned long long *features, unsigned mode, unsigned *mt
     if (mode == 2)
         __virtio_set_bit(&device, VIRTIO_NET_F_CTRL_RX);
     device.config = mode == 1 ? &missing_get : &config;
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    int status = jnox_lifecycle_validate_v1(&device);
+#else
     int status = virtnet_validate(&device);
+#endif
     *features = device.features_array[0];
     *mtu = run.mtu;
     *reads = run.reads;

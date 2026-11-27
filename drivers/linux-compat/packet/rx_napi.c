@@ -90,10 +90,18 @@ void *jnox_rx_queue_calloc_v1(size_t count, size_t size, gfp_t flags)
 void kfree(const void *ptr)
 {
     if (!ptr) return;
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    extern bool jnox_lifecycle_common_free_v1(const void *);
+    if (jnox_lifecycle_common_free_v1(ptr)) return;
+#endif
 #ifdef JNOX_PACKET_RX_IRQ_ABI
     if (ptr == pair_tmp && pair_busy) { pair_busy = false; return; }
     if (ptr == info_tmp && info_busy) { info_busy = false; return; }
     if (ptr == ctx_tmp && ctx_busy) { ctx_busy = false; return; }
+#endif
+    #ifdef JNOX_PACKET_LIFECYCLE_ABI
+    if (ptr == &sq && list_empty(&sq.napi.dev_list)) sq.napi.dev = NULL;
+    if (ptr == &rq && list_empty(&rq.napi.dev_list)) rq.napi.dev = NULL;
 #endif
     if (ptr == &sq && sq_alloc && !sq.napi.dev) sq_alloc = false;
     else if (ptr == &rq && rq_alloc && !rq.napi.dev) rq_alloc = false;
@@ -106,6 +114,46 @@ int jnox_rx_queue_large_sg_v1(struct scatterlist *sg, unsigned int count)
            (sq_alloc && sg == sq.sg && count == ARRAY_SIZE(sq.sg));
 }
 
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+/* Only the device and queue objects of the current one-CPU service may
+ * acquire these mutexes. RTNL is independently owned by lifecycle_netdev. */
+static unsigned int initialized_locks, held_locks;
+static unsigned int mutex_slot(struct mutex *m)
+{
+    if (!owner) return 0;
+    if (m == &owner->lock) return 1;
+    struct virtnet_info *vi = netdev_priv(owner);
+    if (m == &vi->cvq_lock) return 2;
+    if (rq_alloc && m == &rq.dim_lock) return 4;
+    return 0;
+}
+void __mutex_init(struct mutex *m, const char *name, struct lock_class_key *key)
+{
+    unsigned int slot = mutex_slot(m);
+    if (!slot || (initialized_locks & slot)) bad(2);
+    memset(m, 0, sizeof(*m));
+    INIT_LIST_HEAD(&m->wait_list);
+    initialized_locks |= slot;
+}
+void mutex_lock(struct mutex *m)
+{
+    unsigned int slot = mutex_slot(m);
+    struct task_struct *task = jnox_packet_current_v1();
+    if (!(initialized_locks & slot) || !task || (held_locks & slot) ||
+        atomic_long_cmpxchg_acquire(&m->owner, 0, (long)task)) bad(3);
+    held_locks |= slot;
+    if (slot == 1) locked = true;
+}
+void mutex_unlock(struct mutex *m)
+{
+    unsigned int slot = mutex_slot(m);
+    struct task_struct *task = jnox_packet_current_v1();
+    if (!(held_locks & slot) || !task ||
+        atomic_long_cmpxchg_release(&m->owner, (long)task, 0) != (long)task) bad(4);
+    held_locks &= ~slot;
+    if (slot == 1) locked = false;
+}
+#else
 void __mutex_init(struct mutex *m, const char *name, struct lock_class_key *key)
 {
     (void)name;
@@ -128,6 +176,8 @@ void mutex_unlock(struct mutex *m)
     atomic_long_set(&m->owner, 0);
     locked = false;
 }
+
+#endif
 
 void timer_init_key(struct timer_list *t, void (*fn)(struct timer_list *), unsigned int flags,
                     const char *name, struct lock_class_key *key)
@@ -243,6 +293,10 @@ static void remove_napi(struct napi_struct *n)
 int jnox_rx_napi_release_v1(struct net_device *dev)
 {
     if (!dev || dev != owner || polling || locked || held_spin || rcu_owner) return -EBUSY;
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    if (held_locks) return -EBUSY;
+    initialized_locks = 0;
+#endif
     remove_napi(&rq.napi);
     remove_napi(&sq.napi);
     if (rq_alloc) kfree(&rq);
@@ -252,6 +306,10 @@ int jnox_rx_napi_release_v1(struct net_device *dev)
     vi->sq = NULL;
     dev->napi_config = NULL;
     queued = missed = false;
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    extern void jnox_lifecycle_clear_work_v1(void);
+    jnox_lifecycle_clear_work_v1();
+#endif
     owner = NULL;
     return 0;
 }
@@ -261,6 +319,9 @@ int jnox_rx_napi_release_v1(struct net_device *dev)
  * recursive blocking lock cannot progress on this worker. */
 static bool known_spin(raw_spinlock_t *lock)
 {
+    #ifdef JNOX_PACKET_LIFECYCLE_ABI
+    if (owner && lock == &((struct virtnet_info *)netdev_priv(owner))->refill_lock.rlock) return true;
+#endif
     return owner && owner->_tx && lock == &owner->_tx[0]._xmit_lock.rlock;
 }
 
@@ -330,7 +391,13 @@ void napi_disable(struct napi_struct *n)
 
 void napi_enable(struct napi_struct *n)
 {
-    if (!owner || n != &rq.napi || n->dev != owner || !(n->state & BIT(NAPI_STATE_DISABLED)))
+        if (!owner ||
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+        (n != &rq.napi && n != &sq.napi) ||
+#else
+        n != &rq.napi ||
+#endif
+        n->dev != owner || !(n->state & BIT(NAPI_STATE_DISABLED)))
         bad(19);
     n->state &= ~BIT(NAPI_STATE_DISABLED);
 }
@@ -342,6 +409,7 @@ struct workqueue_struct { unsigned int rejected; };
 static struct workqueue_struct refill_queue;
 struct workqueue_struct *system_percpu_wq = &refill_queue;
 
+#ifndef JNOX_PACKET_LIFECYCLE_ABI
 bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
                            struct delayed_work *work, unsigned long delay)
 {
@@ -352,6 +420,7 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
     ++refill_queue.rejected;
     bad(21);
 }
+#endif
 #ifdef JNOX_PACKET_RX_IRQ_ABI
 bool jnox_rx_equal_name_v1(const char *a, const char *b)
 {
@@ -373,5 +442,125 @@ int jnox_rx_queue_name_v1(char *dst, const char *fmt, unsigned int index)
         return sizeof("output.0") - 1;
     }
     bad(22);
+}
+#endif
+
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+void _raw_spin_lock_bh(raw_spinlock_t *lock) { _raw_spin_lock(lock); }
+void _raw_spin_unlock_bh(raw_spinlock_t *lock) { _raw_spin_unlock(lock); }
+
+void __netif_napi_del_locked(struct napi_struct *n)
+{
+    if (!owner || !locked || (n != &sq.napi && n != &rq.napi) || n->dev != owner ||
+        !(n->state & BIT(NAPI_STATE_DISABLED)) || list_empty(&n->dev_list)) bad(23);
+    remove_napi(n);
+    /* Header __netif_napi_del unlocks napi->dev after this call. */
+    n->dev = owner;
+}
+void synchronize_net(void)
+{
+    if (rcu_owner || polling) bad(24);
+    barrier();
+}
+
+struct work_entry {
+    struct work_struct *work;
+    unsigned disabled;
+    bool pending, executing;
+    u64 due;
+};
+static struct work_entry works[3];
+static struct work_entry *work_entry(struct work_struct *w)
+{
+    if (!owner || !w || !w->func) bad(25);
+    struct virtnet_info *vi = netdev_priv(owner);
+    unsigned i;
+    if (w == &vi->config_work) i = 0;
+    else if (w == &vi->rx_mode_work) i = 1;
+    else if (w == &vi->refill.work) i = 2;
+    else bad(26);
+    works[i].work = w;
+    return &works[i];
+}
+static u64 clock_ticks(void)
+{
+    u64 ticks;
+    asm volatile("isb; mrs %0,cntvct_el0" : "=r"(ticks));
+    return ticks;
+}
+static bool queue_entry(int cpu, struct workqueue_struct *q, struct work_struct *w, u64 due)
+{
+    if ((cpu != WORK_CPU_UNBOUND && cpu != 0) || q != system_percpu_wq) bad(27);
+    struct work_entry *e = work_entry(w);
+    if (e->disabled || e->pending) return false;
+    e->due = due;
+    e->pending = true;
+    atomic_long_or(WORK_STRUCT_PENDING, &w->data);
+    return true;
+}
+bool queue_work_on(int cpu, struct workqueue_struct *q, struct work_struct *w)
+{
+    return queue_entry(cpu,q,w,0);
+}
+bool queue_delayed_work_on(int cpu, struct workqueue_struct *q, struct delayed_work *w,
+                           unsigned long delay)
+{
+    u64 freq;
+    asm volatile("mrs %0,cntfrq_el0" : "=r"(freq));
+    if (!freq || delay > MAX_JIFFY_OFFSET || delay > (~0ULL / freq)) bad(28);
+    return queue_entry(cpu,q,&w->work,clock_ticks() + delay * freq / HZ);
+}
+static bool cancel_entry(struct work_entry *e)
+{
+    bool pending = e->pending;
+    e->pending = false;
+    atomic_long_andnot(WORK_STRUCT_PENDING, &e->work->data);
+    return pending;
+}
+bool cancel_work_sync(struct work_struct *w)
+{
+    struct work_entry *e = work_entry(w);
+    if (e->executing) bad(29);
+    return cancel_entry(e);
+}
+bool cancel_delayed_work_sync(struct delayed_work *w) { return cancel_work_sync(&w->work); }
+bool disable_work(struct work_struct *w)
+{
+    struct work_entry *e = work_entry(w);
+    ++e->disabled;
+    return cancel_entry(e);
+}
+bool disable_work_sync(struct work_struct *w)
+{
+    if (work_entry(w)->executing) bad(30);
+    return disable_work(w);
+}
+bool enable_work(struct work_struct *w)
+{
+    struct work_entry *e = work_entry(w);
+    if (!e->disabled) bad(31);
+    return --e->disabled == 0;
+}
+bool flush_work(struct work_struct *w)
+{
+    struct work_entry *e = work_entry(w);
+    if (e->executing) bad(32);
+    if (!cancel_entry(e)) return false;
+    e->executing = true;
+    w->func(w);
+    e->executing = false;
+    return true;
+}
+void jnox_lifecycle_run_work_v1(void)
+{
+    for (unsigned i = 0; i < ARRAY_SIZE(works); ++i)
+        if (works[i].pending && (s64)(clock_ticks() - works[i].due) >= 0)
+            flush_work(works[i].work);
+}
+void jnox_lifecycle_clear_work_v1(void)
+{
+    for (unsigned i = 0; i < ARRAY_SIZE(works); ++i)
+        if (works[i].pending || works[i].executing) bad(33);
+    memset(works, 0, sizeof(works));
 }
 #endif

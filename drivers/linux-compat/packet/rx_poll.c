@@ -17,12 +17,14 @@ extern int jnox_rx_napi_prepare_v1(struct net_device *);
 extern int jnox_rx_skb_read_v1(void *, unsigned int);
 
 enum { RX_DEPTH = 32, POLL_BUDGET = 8 };
+#ifndef JNOX_PACKET_LIFECYCLE_ABI
 static union {
     struct net_device alignment;
     unsigned char storage[offsetof(struct net_device, priv) + sizeof(struct virtnet_info)];
 } rx_netdev;
 static struct netdev_queue txq;
 static unsigned char mac[ETH_ALEN] __aligned(2);
+#endif
 static struct receive_queue *bound_rq;
 static unsigned long bound_epoch;
 static unsigned long long receipt[8];
@@ -77,6 +79,36 @@ static int schedule_rx(void)
 }
 #endif
 
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+int jnox_lifecycle_bind_worker_v1(struct virtio_device *vdev)
+{
+    struct virtnet_info *vi = vdev->priv;
+    struct virtqueue *rx = jnox_packet_active_vq(0);
+    if (!vi || !vi->rq || !rx || !rx->callback || vi->rq->vq != rx ||
+        rx->vdev != vdev || vi->rq->napi.poll != virtnet_poll ||
+        rx->index || !jnox_rx_equal_name_v1(rx->name, "input.0"))
+        return -EPROTO;
+    memset(receipt, 0, sizeof(receipt));
+    memset(irq_receipt, 0, sizeof(irq_receipt));
+    catchups = 0;
+    bound_epoch = jnox_packet_token();
+    bound_rq = vi->rq;
+    receipt[0] = (unsigned long)bound_rq->napi.poll;
+    receipt[1] = POLL_BUDGET;
+    irq_receipt[0] = (unsigned long)rx->callback;
+    irq_receipt[1] = rx->index;
+    for (unsigned i = 0; rx->name[i]; ++i)
+        irq_receipt[2] |= (unsigned long long)(unsigned char)rx->name[i] << (8*i);
+    return 0;
+}
+
+void jnox_lifecycle_unbind_worker_v1(void)
+{
+    if (bound_rq) irq_receipt[6] = bound_rq->calls;
+    bound_rq = NULL;
+    bound_epoch = 0;
+}
+#else
 static int read_mac(void)
 {
     for (unsigned int i = 0; i < ETH_ALEN; ++i) {
@@ -179,8 +211,14 @@ int jnox_original_rx_init(void)
     return ret;
 }
 
+#endif
+
 static int poll_read(void *out, unsigned int cap)
 {
+#ifdef JNOX_PACKET_LIFECYCLE_ABI
+    extern bool jnox_lifecycle_is_up_v1(void);
+    if (!jnox_lifecycle_is_up_v1()) return -ENETDOWN;
+#endif
     if (!out || !cap)
         return -EINVAL;
     if (!bound_rq || bound_epoch != jnox_packet_token() ||
