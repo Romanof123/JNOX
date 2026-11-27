@@ -160,6 +160,31 @@ struct Journal {
 #[unsafe(no_mangle)]
 static mut jnox_native_el0_journal: Journal = Journal { header: [0; 16], rows: [[0; 16]; 8] };
 
+// One terminal assertion per process. Only the masked exception handler on
+// CPU0 writes these kernel-owned records. The user register values are evidence.
+#[cfg(jnox_linux_source_net_rx_irq)]
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct DriverAssertion {
+    tick: u64,
+    pid: u64,
+    ttbr: u64,
+    vector: u64,
+    esr: u64,
+    elr: u64,
+    spsr: u64,
+    far: u64,
+    sp_el0: u64,
+    link_register: u64,
+}
+
+#[cfg(jnox_linux_source_net_rx_irq)]
+#[unsafe(no_mangle)]
+static mut jnox_linux_net_assertions: [DriverAssertion; COUNT] = [DriverAssertion {
+    tick: 0, pid: 0, ttbr: 0, vector: 0, esr: 0, elr: 0, spsr: 0,
+    far: 0, sp_el0: 0, link_register: 0,
+}; COUNT];
+
 fn head(index: usize, value: u64) {
     // One CPU. Boot and the EL1 vectors are masked and never nested.
     unsafe { ptr::write_volatile((&raw mut jnox_native_el0_journal.header).cast::<u64>().add(index), value) };
@@ -839,6 +864,40 @@ extern "C" fn native_el0_unexpected() -> ! {
     fail(1)
 }
 
+// An A64 BRK raised by a scheduled EL0 process has its own exception class.
+// No syscall operands, frame pointers or user memory are trusted as identity.
+#[cfg(jnox_linux_source_net_rx_irq)]
+fn terminate_asserting_process(f: &mut NativeFrame, entry: u64, vector: u64, vbar: u64,
+                              ttbr: u64, far: u64) -> bool {
+    const EC_BRK64: u64 = 0x3c;
+    const ASSERTION_EXIT: i32 = -5;
+    const ASSERTION_EVENT: u64 = 0x100;
+    if f.esr >> 26 != EC_BRK64 || f.esr & (1 << 25) == 0 {
+        return false;
+    }
+    let pid = unsafe { CURRENT };
+    if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64
+        || f.current_el != 4 || f.spsr & 0x1f != 0
+        || policy().current() != Some(pid) || native_el0_mmu::space_id(pid) != Some(ttbr)
+    {
+        return false;
+    }
+    unsafe {
+        let slot = &raw mut jnox_linux_net_assertions[pid];
+        if ptr::read_volatile(&raw const (*slot).esr) != 0 { fail(9); }
+        ptr::write_volatile(slot, DriverAssertion {
+            tick: entry, pid: pid as u64, ttbr, vector, esr: f.esr, elr: f.elr,
+            spsr: f.spsr, far, sp_el0: f.sp_el0, link_register: f.x[30],
+        });
+        asm!("dmb ishst", options(nostack, preserves_flags));
+        EXIT_STATUS[pid] = ASSERTION_EXIT;
+    }
+    // The ordinary Exit event retires owned IRQs, queues and pipe descriptors
+    // once and restores a surviving frame. It cannot resume the dead task.
+    fixed_dispatch(entry, Action::Exit, ASSERTION_EVENT, f);
+    true
+}
+
 #[unsafe(no_mangle)]
 extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) {
     // The lower-A64 vector created this private, 16-byte aligned EL1 frame.
@@ -851,6 +910,8 @@ extern "C" fn native_el0_sync(frame: *mut NativeFrame, vector: u64, entry: u64) 
             out(reg) vbar, out(reg) ttbr, out(reg) far, options(nostack, preserves_flags));
     }
     let count = unsafe { ptr::read_volatile(&raw const jnox_native_el0_journal.header[8]) as usize };
+    #[cfg(jnox_linux_source_net_rx_irq)]
+    if terminate_asserting_process(f, entry, vector, vbar, ttbr, far) { return; }
     #[cfg(jnox_native_proportional)]
     proportional::validate_sync(vector, f, vbar, ttbr, far, entry);
     if vector != 0x400 || vbar != (&raw const native_el0_vectors).addr() as u64

@@ -52,7 +52,7 @@ def data(elf,s):
     return section.data()[offset:offset+s["st_size"]]
 
 
-def layout(pkg,imp):
+def layout(pkg,imp,*,journal_names=(DRIVER,PEER)):
     manifest=load(pkg/"manifest.json")
     m=load(imp)
     require(m["mode"]=="lifecycle-service" and m["callback_input"]=="virtio_net.packet.o" and
@@ -124,7 +124,7 @@ def layout(pkg,imp):
     roots=linked_roots(kernel,2)
     ring,buf=dma_layout(pkg)
     journals=[{n:journal_location(pkg/manifest["slots"][slot]["elf"],n) for n in names}
-              for slot,names in enumerate((DRIVER,PEER))]
+              for slot,names in enumerate(journal_names)]
     faults={}
     for n in ("jnox_rx_napi_fault","jnox_rx_poll_fault_id","jnox_lifecycle_fault","jnox_lifecycle_fault_id",
               "jnox_lifecycle_bus_fault","jnox_lifecycle_platform_fault","jnox_lifecycle_netdev_fault"):

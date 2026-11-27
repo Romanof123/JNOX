@@ -470,6 +470,8 @@ def build(args, work, profile, data):
                     app_flags = [*app_flags, "-DJNOX_NATIVE_RX_IRQ_FIXTURE=1"]
                     if args.lifecycle_service:
                         app_flags.append("-DJNOX_NATIVE_LIFECYCLE_FIXTURE=1")
+                        if args.lifecycle_assert_test:
+                            app_flags.append("-DJNOX_LIFECYCLE_ASSERT_TEST=1")
                     if args.rx_restart_service:
                         app_flags.append("-DJNOX_NATIVE_RX_RESTART_FIXTURE=1")
                     if args.rx_irq_rearm_test:
@@ -494,6 +496,16 @@ def build(args, work, profile, data):
                    "--build-id=none", "-z", "max-page-size=4096", "-T", linkscript, "-Map=service.map",
                    "start.o", "io.o", "driver.o", "adapter.o", *extra_objects, derivative.name, "-o", "service.elf")
             service = inspect_elf(work / "service.elf", tools)
+            if args.lifecycle_service:
+                trap = defined(service, "jnox_lifecycle_assert_trap", "GLOBAL")
+                if len(trap) != int(args.lifecycle_assert_test):
+                    raise ValueError("unexpected lifecycle assertion symbol for selected fixture")
+                if args.lifecycle_assert_test:
+                    trap_vma = int(trap[0]["value"], 16)
+                    if load_address_bytes(work / "service.elf", trap_vma, 4) != bytes.fromhex("008820d4"):
+                        raise ValueError("assertion entry must execute BRK #0x440")
+                    result["lifecycle_assert_test"] = {"immediate": 0x440, "trap_symbol": trap[0],
+                        "driver_receipt": "jnox_assert_driver", "rx_slots": "jnox_assert_rx_slots"}
             if irq_service:
                 witness = [sym for sym in service["symbols"] if sym["name"] == "jnox_irq_race_gate"
                            and sym["index"].isdigit()]
@@ -561,6 +573,9 @@ def build(args, work, profile, data):
                     peer_source = ROOT / "examples/linux-source-net-lifecycle/peer.c"
                     peer_flags += ["-DJNOX_NATIVE_LIFECYCLE_FIXTURE=1", "-DJNOX_NATIVE_RX_POLL_FIXTURE=1"]
                     peer_symbol, peer_words = "jnox_lifecycle_peer", 24
+                    if args.lifecycle_assert_test:
+                        peer_flags.append("-DJNOX_LIFECYCLE_ASSERT_TEST=1")
+                        peer_symbol, peer_words = "jnox_assert_peer", 12
                 if args.rx_restart_service:
                     peer_source = fixture / "peer.c"
                     peer_symbol, peer_words = "jnox_restart_peer", 32
@@ -581,6 +596,8 @@ def build(args, work, profile, data):
                 if args.lifecycle_service:
                     expected = {"jnox_lifecycle_peer": 192, "jnox_lifecycle_peer_frames": 80 * 91,
                                 "jnox_lifecycle_peer_ack": 60, "jnox_lifecycle_peer_second": 120}
+                    if args.lifecycle_assert_test:
+                        expected = {"jnox_assert_peer": 96, "jnox_assert_peer_frame": 91}
                     for name, size in expected.items():
                         if len([sym for sym in peer["symbols"] if sym["name"] == name and sym["type"] == "OBJECT"
                                 and sym["bind"] == "GLOBAL" and sym["index"].isdigit() and sym["size"] == size]) != 1:
@@ -656,6 +673,8 @@ def main():
     mode.add_argument("--object-only", action="store_true")
     parser.add_argument("--rx-irq-rearm-test", action="store_true",
                         help="enable the test-only RX IRQ rearm fixture; requires --rx-irq-service")
+    parser.add_argument("--lifecycle-assert-test", action="store_true",
+                        help="assert at EL0 with outstanding RX after one ingress frame; requires --lifecycle-service")
     mode.add_argument("--lifecycle-service", action="store_true",
                       help="link original virtio-net driver, netdev operations and bounded native bus/core")
     mode.add_argument("--rx-restart-service", action="store_true",
@@ -677,6 +696,8 @@ def main():
                           ("clang", "clang"), ("ld", "ld.lld"), ("readelf", "readelf"), ("nm", "nm")]:
         parser.add_argument("--" + name, default=default)
     args = parser.parse_args()
+    if args.lifecycle_assert_test and not args.lifecycle_service:
+        parser.error("--lifecycle-assert-test requires --lifecycle-service")
     if args.rx_irq_rearm_test and not args.rx_irq_service:
         parser.error("--rx-irq-rearm-test requires --rx-irq-service")
     profile = json.loads(PROFILE.read_text(encoding="utf-8"))
