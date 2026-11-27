@@ -1,8 +1,20 @@
-# #434 Native NIC interrupt to blocked RX worker / 네이티브 NIC 인터럽트와 RX 작업자 깨우기
+# CHG-331 · Native NIC interrupt to blocked RX worker / 네이티브 NIC 인터럽트와 RX 작업자 깨우기
 
-Design for the native FIFO profile, based on the #432 source-net-poll checkout. The intended observation is an Ethernet frame arriving while the service is blocked, followed by an EL1 NIC interrupt, one FIFO wake, upstream RX callback dispatch, and delivery to the independent consumer. No IRQ run was performed for this design.
+**REQ-004/011 · DES-002 · IMP-331 · planned VER-004/011.** This change connects the native FIFO profile’s Linux-source RX service to the QEMU virt NIC interrupt. REQ-004 covers the selected Linux driver behavior. REQ-011 covers owner and generation checks on the privileged device interface. The earlier EVD-330 measured scheduled NAPI polling. The device-tree export below identifies INTID 79. Guest verification of IRQ delivery is pending. [IRQ issue #434](https://github.com/Romanof123/JNOX/issues/434) · [Parent #426](https://github.com/Romanof123/JNOX/issues/426) · [Polling evidence](evidence/native-linux-net-napi/README.md) · [Trace links](../trace/links.csv)
 
-네이티브 FIFO 프로필에서 서비스가 대기 중일 때 외부 프레임이 도착하도록 한다. EL1 NIC 인터럽트, FIFO 깨우기, 원본 RX 콜백 호출, 독립 소비자 전달까지 같은 실행에서 추적한다. 이 문서는 구현 계획이다.
+네이티브 FIFO 프로필에서 Linux 원본 수신 드라이버의 동작은 REQ-004, 특권 장치 인터페이스의 소유자·세대 검사는 REQ-011로 추적한다. EVD-330은 스케줄된 NAPI 폴링을 관측했고 장치 트리는 INTID 79를 식별했다. NIC 인터럽트가 대기 중인 서비스와 독립 소비자까지 이어지는지 확인하는 게스트 검증은 진행 중이다.
+
+### Implementation and first integration attempt / 구현과 최초 통합 시도
+
+IMP-331 adds a generation-checked wait, interrupt status and ACK handling at EL1, and a FIFO wake for a blocked owner. The EL0 path registers queue 0 through upstream `virtnet_find_vqs`, dispatches its saved callback and runs the scheduled NAPI poll. The packager selects the IRQ profile explicitly. [EL1 wait and IRQ](../kernel/src/native_linux_net_irq.rs) · [FIFO IRQ entry](../kernel/src/native_el0.rs) · [Queue registration and dispatch](../drivers/linux-compat/packet/rx_poll.c)
+
+IMP-331은 EL1에서 현재 세대의 대기 요청과 NIC 상태·ACK를 처리하고 대기 소유자를 FIFO 준비 큐로 돌려보내는 경로를 추가한다. EL0에서는 원본 `virtnet_find_vqs`로 큐 0 콜백을 등록하고 이 콜백이 예약한 NAPI 작업을 처리하도록 구현했다.
+
+The first build stopped at the service-symbol check with `missing queue-service implementation: jnox_net_setup_queues`. Its build log (`434-irq-01/build.log`) has SHA-256 `6f2a1d8af5c97095ffdce6cbdff61eb12e2a63305972c92fcae9cbc3699ad896`. The corrected check requires `virtnet_find_vqs` in the IRQ profile and preserves the earlier registrar check for the polling profile. The next package at `bc16d3359e1d99be718a61c3d83b18fd2ba99428` produced kernel ELF SHA-256 `601bab5fd3528f517b27167abaac303b070a101f3abdc3d80dd2bd3967755ad8`. These are build results. VER-004/011 still require guest observations for the acceptance cases below. [Profile-specific symbol check](../tools/build_linux_source_virtio_net.py)
+
+첫 빌드는 이전 큐 등록 함수 `jnox_net_setup_queues`를 찾는 심볼 검사에서 중단됐다. IRQ 프로필은 원본 등록 함수 `virtnet_find_vqs`를 검사하도록 수정했고 폴링 프로필에는 기존 검사를 유지했다. 후속 패키지에서 커널 ELF를 생성했다. VER-004/011의 판정에는 아래 시나리오별 게스트 관측이 필요하다.
+
+The following design and acceptance criteria were specified against the #432 polling baseline. 아래 설계와 검증 기준의 출발점은 #432의 폴링 구현이다.
 
 ### Board and interrupt ownership / 보드와 IRQ 소유권
 

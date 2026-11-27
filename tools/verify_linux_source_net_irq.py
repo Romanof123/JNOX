@@ -407,16 +407,35 @@ def capture(pkg,imp,out,binary,mtu,mac,timeout):
                 if proc.poll() is None:
                     try:
                         request(stream,"stop")
-                        for role,elf,symbols in (
-                            (root,"user.elf",(rx.PROBES[0][0],"jnox_rx_napi_fault","jnox_rx_poll_fault_id",*JOURNALS)),
-                            (peer_root,"native_peer.elf",(rx.PROBES[1][0],))):
-                            for symbol in symbols:
-                                location,size=journal_location(pkg/elf,symbol)
-                                data=vread(RAM({},read),role,location,size)
-                                width=4 if size==4 else 8
-                                diagnostic[symbol]=[int.from_bytes(data[i:i+width],"little") for i in range(0,size,width)]
+                        status=request(stream,"query-status")
+                        require(not status["running"],"failure snapshot CPU still running")
+                        diagnostic["halted"]=status
                     except Exception as error:
-                        diagnostic["snapshot_error"]=repr(error)
+                        diagnostic["stop_error"]=repr(error)
+                    else:
+                        groups=(
+                            (None,"kernel.elf",(KERNEL_METRICS,"jnox_linux_net_irq_scheduler")),
+                            (root,"user.elf",(rx.PROBES[0][0],"jnox_rx_napi_fault","jnox_rx_poll_fault_id",
+                                              "jnox_rx_owner_controls",*JOURNALS,*IRQ_JOURNALS[:-1],"jnox_irq_race_gate")),
+                            (peer_root,"native_peer.elf",(rx.PROBES[1][0],IRQ_JOURNALS[-1])))
+                        for role,elf,symbols in groups:
+                            for symbol in symbols:
+                                try:
+                                    where=journal_location(pkg/elf,symbol,optional=(symbol=="jnox_irq_race_gate"))
+                                    if where is None:
+                                        diagnostic[symbol]=None
+                                        continue
+                                    location,size=where
+                                    if role is None:
+                                        data=read(location,size)
+                                    else:
+                                        data=vread(RAM({},read),role,location,size)
+                                    width=4 if size==4 else 8
+                                    require(len(data)==size and size%width==0,"short diagnostic RAM read")
+                                    diagnostic[symbol]=[int.from_bytes(data[i:i+width],"little")
+                                                        for i in range(0,size,width)]
+                                except Exception as error:
+                                    diagnostic.setdefault("journal_errors",{})[symbol]=repr(error)
                 save(out/"failure.json",diagnostic)
                 raise
             finally:
@@ -441,6 +460,9 @@ def quiet_gate(stream,read,pkg,out,healthy):
     root=linked_roots(pkg/"kernel.elf",2)[1]
     while True:
         healthy()
+        uart=(out/"uart.log").read_bytes()
+        require(b"NATIVE EL0 FAULT" not in uart and b"NATIVE EL0 EXIT PID 0 " not in uart,
+                "native fault or driver exit before quiet IRQ gate")
         if int.from_bytes(read(kernel+22*8,8),"little")==1:
             tick=int.from_bytes(vread(RAM({},read),root,peer+8*8,8),"little")
             if tick==3:
