@@ -1,32 +1,38 @@
-# JNOX Wayland client cross-build candidate
+# Upstream Wayland client on JNOX · JNOX 게스트의 Wayland 클라이언트 (#448)
 
-The build has four separately callable phases. Only **prepare** has run. It verified seven pinned inputs, cross-checked the three upstream tarballs against the SHA-256 sections of their Debian source descriptors, checked the graphics runtime artifact hashes against its frozen manifest and applied the client-only patch. Signature authentication of the descriptors was not performed. Neither upstream code generation, a target archive nor a guest roundtrip has been observed for this candidate.
+An AArch64 QEMU guest ran Wayland 1.23.1 client code against the resident JNOX compositor. The client selected socket broker PID 3, connected a CLOEXEC AF_UNIX stream to the compositor at /wayland-0 and gave the descriptor to wl_display_connect_to_fd. The guest has no inherited display descriptor or runtime-directory requirement. The upstream registry listener received four globals, wl_display_roundtrip returned successfully, and F_GETFD returned EBADF after wl_display_disconnect. All four process slots exited with status zero. [Application UART lines](evidence/registry-uart.txt) · [Package SHA-256](evidence/package.sha256)
 
-Use a fresh work directory on Linux. Supply the directory emitted by the native Picolibc/Pixman graphics build, with its manifest.json, jnox.ini, original linker inputs and target/lib/{libc,libm,libpixman-1}.a. The measured runtime used 448-graphics-93e41a9/attempts/attempt05/runtime. The original cross file contains absolute paths that must still resolve. Host tools include Python 3.10+, Meson 0.61.2, Ninja, GNU make, GNU tar/patch/binutils, dpkg-deb, pkg-config and the same Clang/LLVM toolchain as the graphics build. Set MESON and PYTHONPATH for the locally extracted Meson if needed.
+| Registry interface | Name | Version |
+|---|---:|---:|
+| wl_compositor | 1 | 4 |
+| wl_shm | 2 | 1 |
+| xdg_wm_base | 3 | 1 |
+| wl_seat | 4 | 4 |
+
+The tested client source was f16fb53, the image packaging script was 3881fce, and the successful observer was c5a3872. On the first boot the client reported a successful disconnect, but the observer waited for a process exit before sending q. The kernel prints its exit summary after all roles finish. The second boot used the same image and sent q after the app reported disconnect. This release combines the source on parent 9eda83c; the hashes above identify the tested image. The scope is registry discovery and sync. Surface commits, file-descriptor transfer and Xwayland server startup require separate workloads.
+
+## Reproduce on Linux
+
+Start from a fresh native Picolibc/Pixman runtime built at its final absolute path. Install the target socket, poll, pthread and monotonic-clock adapter into that runtime. [Graphics runtime build](../../../sdk/native-aarch64/graphics/README.md) · [Wayland OS adapter](../../../sdk/native-aarch64/graphics/os/README.md)
+
+In the runtime's jnox.ini, prepend -D_GNU_SOURCE and -I followed immediately by the absolute target/include/jnox-wayland directory to c_args. In c_link_args insert the absolute target/lib/libjnox-wayland-os.a path between runtime.o and libc.a. Keep all original target ABI, startup, linker-script and Picolibc options. Set cache, runtime, work and output to absolute paths; work and output must be new directories.
+
+Use Python 3.10+, Meson, Ninja, GNU make, tar, patch, dpkg-deb, pkg-config, Clang/LLVM, GNU readelf, the repository's native Rust/AArch64 toolchain and qemu-system-aarch64. The scanner uses host Expat. The libffi and Wayland archives use the target toolchain. [Input digests](inputs.sha256) · [Build phases](build.py)
 
 ```sh
 tool=verification/xwayland/client
+python3 sdk/native-aarch64/graphics/os/install.py --prefix "$runtime/target"
 sh "$tool/fetch.sh" "$cache"
-python3 "$tool/build.py" prepare "$cache" "$runtime" "$work"
-python3 "$tool/build.py" protocols "$cache" "$runtime" "$work"
-python3 "$tool/build.py" ffi "$cache" "$runtime" "$work"
-python3 "$tool/build.py" client "$cache" "$runtime" "$work"
+for phase in prepare protocols ffi client; do
+    python3 "$tool/build.py" "$phase" "$cache" "$runtime" "$work" || exit 1
+done
+sh "$tool/registry-guest.sh" "$work/roundtrip.elf" "$output"
 ```
 
-* **protocols** builds the native Wayland 1.23.1 scanner from unmodified upstream source using the pinned Ubuntu amd64 Expat development files in a private directory. The unmodified wayland-protocols 1.44 Meson install generates its actual package metadata and headers. The scanner then produces code and headers from the installed xdg-shell, xwayland-shell and linux-drm-syncobj XML files. The host prefix supplies the executable and scanner pkg-config data for later Xwayland builds.
-* **ffi** uses the original libffi 3.4.4 configure script and AArch64 backend with the graphics cross compiler and Picolibc flags. The target pkg-config search excludes host metadata. Every archive member must identify as AArch64 and both ffi_call and ffi_prep_cif must have definitions. A failed bare-metal libffi configure or compile is evidence of a missing prerequisite.
-* **client** uses upstream's registry/proxy/queue/message/FD/closure implementations and the generated protocol metadata. The patch drops the server/cursor/EGL build and server-only epoll/credential/accept/remap routines from the separate target source tree. The original client uses exactly three OS helpers: socket creation, FD duplication and receiving ancillary FDs. All three bodies remain upstream. The patch includes the actual transport and utility objects in the installed static archive. An AArch64 symbol check precedes linking the actual wl_display_roundtrip path. Nothing substitutes a successful dummy mutex, socket, clock or FFI call.
+The observer records the run in the output directory. For public sharing, select the five application lines beginning JNOX_REGISTRY and the package hashes.
 
-The final probe requires a guest loader that supplies a connected Wayland stream in fd 3. A future guest gate must record the display.sync request, callback.done and process exit. It also needs a separate real registry/shm/SCM_RIGHTS exercise to validate surface and descriptor behavior. No guest launcher is part of this preparation.
+## 한국어
 
-### Known platform gaps
+AArch64 QEMU 게스트에서 Wayland 1.23.1 클라이언트가 PID 3의 소켓 브로커를 통해 상주 컴포지터의 /wayland-0에 접속했다. 실제 레지스트리 콜백에서 위 네 인터페이스의 이름과 버전을 받았다. 왕복 동기화가 완료됐으며 연결 해제 뒤 F_GETFD가 EBADF를 반환했다. 네 프로세스 모두 종료 코드 0을 기록했다. 첫 부팅에서는 관찰기가 종료 요약을 기다리며 시간 제한에 도달했다. 같은 이미지를 다시 부팅해 연결 해제 직후 q를 보냈을 때 정상 종료를 확인했다.
 
-Inspection of the frozen Picolibc include tree found fcntl.h, while sys/socket.h, sys/un.h, sys/mman.h, pthread.h, poll.h and sys/epoll.h were absent. The SDK has a different include scope. A real port must expose compatible AF_UNIX socket and socklen_t/msghdr/CMSG definitions, preserve SCM_RIGHTS and nonblocking semantics across sendmsg/recvmsg, implement fcntl duplication/close-on-exec, and actually support poll, clocks, pthread mutexes and condition-variable coordination. Inspect additional compiler/linker diagnostics once the gate is granted. The client-only patch removes server epoll and credential checks. It retains the client clock and transport requirements. Transitive linker requirements, errno/TLS behavior and concurrent prepare_read/dispatch still require validation.
-
-### Inputs
-
-The three source versions are Debian's Wayland 1.23.1, wayland-protocols 1.44 and libffi 3.4.4 upstream tarballs. Expat 2.4.7-1ubuntu0.10 is a native build-host dependency. All exact hashes and filenames are in inputs.sha256 and download origins are in fetch.sh. The previous Ubuntu 0.9 APT entry returned 404; the selected 0.10 archive was downloaded directly from the Ubuntu archive.
-
-### 한국어
-
-준비 단계에서는 원본 3종과 DSC의 해시, 호스트 Expat 및 기존 Picolibc 런타임을 확인했다. 다음 단계는 실제 호스트 scanner로 프로토콜 코드를 생성하고 AArch64 libffi와 libwayland-client 정적 라이브러리를 빌드하는 것이다. 현재 동결된 헤더에는 소켓과 poll, pthread 인터페이스가 빠져 있다. 실제 fd 전달과 동기화 구현 및 게스트 왕복은 미검증이다.
+재현하려면 Linux에서 Picolibc/Pixman 런타임과 소켓·클록 어댑터를 준비하고 위 명령으로 scanner, libffi, libwayland-client와 게스트를 순서대로 빌드한다. 공개 UART에는 애플리케이션이 직접 출력한 다섯 줄을 수록했다. 이 시험의 범위는 레지스트리 탐색, 왕복 동기화 및 연결 해제이다. [게스트 출력](evidence/registry-uart.txt) · [패키지 해시](evidence/package.sha256)

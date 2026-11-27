@@ -1,5 +1,7 @@
 # CHG-340 · Xwayland 24.1.6 native port (#448)
 
+[Upstream registry guest and receipts · 게스트 레지스트리 재현 및 결과](client/README.md)
+
 [Source integration order for #448 and #452](source-integration.en-ko.md)
 
 REQ-015/024 · DES-009/013 · VER-015/024. The target is a real Xwayland server connected to the guest compositor and serving the Mosaic X11 application. [Port acceptance #448](https://github.com/Romanof123/JNOX/issues/448) · [Guest compositor #446](https://github.com/Romanof123/JNOX/issues/446) · [Guest pointer #451](https://github.com/Romanof123/JNOX/issues/451)
