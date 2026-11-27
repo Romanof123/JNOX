@@ -1,0 +1,4 @@
+Both cold boots replayed
+Both cold boots replayed
+Corrupted client words and external pixel rejected
+PASS inventory, two frozen readers, controls, 12 PNGs, both host origins and binaries

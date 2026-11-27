@@ -2557,3 +2557,13 @@ CHG-338,affects,DES-009
 CHG-338,affects,DES-013
 CHG-338,affects,VER-015
 CHG-338,affects,VER-024
+REQ-015,partially-implemented-by,IMP-338
+REQ-024,partially-implemented-by,IMP-338
+DES-009,partially-implemented-by,IMP-338
+DES-013,partially-implemented-by,IMP-338
+CHG-338,affects,EVD-338
+IMP-338,partially-verified-by,VER-015
+IMP-338,partially-verified-by,VER-024
+VER-015,has-partial-evidence,EVD-338
+VER-024,has-partial-evidence,EVD-338
+IMP-338,tested-in,EVD-338

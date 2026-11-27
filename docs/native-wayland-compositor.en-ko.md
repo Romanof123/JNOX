@@ -21,3 +21,13 @@ The selected reference XML files are from Ubuntu Jammy packages. SHA-256 for cor
 JNOX 게스트 안에서 화면·입력을 소유한 합성기 한 개, 서로 격리된 앱 두 개, 로컬 소켓 브로커를 실행한다. 앱은 자신이 쓴 픽셀을 읽기 전용 FD로 보내고, 합성기는 버퍼가 가리키는 범위와 권한을 확인한다. 앱마다 객체 ID 공간을 따로 관리한다. 수신 메시지가 나뉘거나 여러 메시지가 붙어 도착해도 FD는 순서대로 올바른 요청에 연결한다.
 
 앱이 초기 설정 이벤트에 응답한 뒤 제출한 버퍼를 화면에 표시하고 읽기가 끝나면 반환을 알린다. 두 창이 겹친 상태에서 포커스를 바꾸고 실제 키를 입력한다. 한 앱이 버퍼를 제출한 직후 종료해도 다른 앱이 계속 화면을 갱신해야 한다. 표준 클라이언트 라이브러리와 호스트에서 확인한 프로토콜 호환, JNOX 게스트의 실행 결과, 합성기 재시작 중 제어 태스크의 연속 실행을 각각 기록한다.
+
+## EVD-338 · Native guest results / 게스트 검증 결과
+
+Two cold boots displayed the same six states. Pulse processed input, Tiles took focus and processed its own input, then Tiles exited with work outstanding. Pulse continued rendering and shut down through the standard toplevel close event. Both boots exited with status 0, 71, 72 and 0 for the compositor, Pulse, Tiles and the broker. Two host runs used Ubuntu libwayland-client and libxkbcommon and located all 320 client pixels at (16,24) and (13,22) after an offset window geometry. The host and native backends share the compositor dispatcher. [Originals, replay and limitations](evidence/native-wayland-compositor/README.md) · [PR #450](https://github.com/Romanof123/JNOX/pull/450) · [Restart acceptance #449](https://github.com/Romanof123/JNOX/issues/449)
+
+| Initial overlap / 처음 겹친 창 | Focus on Tiles / Tiles 포커스 | Pulse after Tiles exit / 종료 뒤 Pulse |
+|---|---|---|
+| ![Initial native windows](evidence/native-wayland-compositor/screens/cold-1/initial.png) | ![Tiles gains focus](evidence/native-wayland-compositor/screens/cold-1/b-front.png) | ![Pulse renders after Tiles exits](evidence/native-wayland-compositor/screens/cold-1/a2.png) |
+
+두 부팅에서 앱별 객체 ID, configure와 ack 순서, SHM 권한 전달, 버퍼 반환, 키 입력 전달, 클라이언트 종료 후 남은 앱의 화면을 독립 판독했다. 원본 UART 고정 기록에는 각각 11,708건과 11,884건의 누락이 있어 전체 이벤트 순서는 소켓 바이트·정지된 메모리·외부 화면을 함께 사용해 확인했다. 게스트 키맵의 원문 바이트, 실보드 화면과 장애 후 합성기 재시작은 별도 범위다.

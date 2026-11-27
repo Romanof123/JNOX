@@ -1,0 +1,142 @@
+{
+  "build_history": {
+    "446-build-01": "c368b805791d47f15a7babd45294cbe8cb8834eb",
+    "446-build-02": "1dfb89a1787dffb8b8771d01a4adc313ed55be50"
+  },
+  "guest": {
+    "cold-1": {
+      "exits": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          71
+        ],
+        [
+          2,
+          72
+        ],
+        [
+          3,
+          0
+        ]
+      ],
+      "fixed_dropped": 11708,
+      "frames": {
+        "a1": "262ac7b68d3437c94a49851c2acc9aa6b6e28db023adba648e7a04f4c0e2e2cf",
+        "a2": "9a191d92255d54c0c05a803397a45cc9f5018953f4504c1c8cbc67ccea8e8272",
+        "b-dead": "b82564e77d5ac77e106dcf395e66e15e3198d82d4f8b61c2cab2cfad72895977",
+        "b-front": "b0fae601c6c95422bcf143b056f568dad278e0d5560e579c980c8f5c06adc131",
+        "b1": "1804dfae43fab7b6186c72cca5b89dd285e9e1360180b3e2869ed987748a7333",
+        "initial": "3d1fab9727f9b6e6979d4991e91db0b31b4cad7bf32e4d634e47598fc65f7362"
+      },
+      "uart_sha256": "4a9927028a45a9e9f1f2dd14021a655c802c698a41021d5498928b6ede9f5904"
+    },
+    "cold-2": {
+      "exits": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          71
+        ],
+        [
+          2,
+          72
+        ],
+        [
+          3,
+          0
+        ]
+      ],
+      "fixed_dropped": 11884,
+      "frames": {
+        "a1": "262ac7b68d3437c94a49851c2acc9aa6b6e28db023adba648e7a04f4c0e2e2cf",
+        "a2": "9a191d92255d54c0c05a803397a45cc9f5018953f4504c1c8cbc67ccea8e8272",
+        "b-dead": "b82564e77d5ac77e106dcf395e66e15e3198d82d4f8b61c2cab2cfad72895977",
+        "b-front": "b0fae601c6c95422bcf143b056f568dad278e0d5560e579c980c8f5c06adc131",
+        "b1": "1804dfae43fab7b6186c72cca5b89dd285e9e1360180b3e2869ed987748a7333",
+        "initial": "3d1fab9727f9b6e6979d4991e91db0b31b4cad7bf32e4d634e47598fc65f7362"
+      },
+      "uart_sha256": "c6603632a7a7ce2591a763241857ba4d448bae9b3b70bcac2e8e45719a12a392"
+    }
+  },
+  "host": {
+    "geometry": {
+      "backend": "linux-host",
+      "client_result": "PASS configure_serial=2 frame=1 buffer_release=1 xkb_keymap=1",
+      "client_sha256": "c7847fb91ed011377ce57445afe8e2253dc421bea6845af3f905f135ab4f5b5a",
+      "frame": {
+        "matching_pixels": 320,
+        "origin": [
+          13,
+          22
+        ],
+        "sha256": "906d334c417d8909ac5ad27e5bcdad6ac9154e732db6205e76f6f3a6c4b3323b"
+      },
+      "libraries": {
+        "libwayland-client": "30a119138d812d6e1c3280a7c2d5a9f49f13ae07b31cda2beb397da4f68f6d54",
+        "libxkbcommon": "26773f54626af26f5f26f0279a9748ea2445c1adcfef50a7d572c9b54575bd86"
+      },
+      "server_sha256": "533ab26c7c0b697489f0d21f65a7b332dbbe910c57f156194d24e6d6a608fda9",
+      "window_geometry": [
+        3,
+        2,
+        14,
+        12
+      ],
+      "wire_sha256": "9fe5de2971dc337dbd676775f496d1d3588a5ad51f6447e8abb1aed08d0d2c1f"
+    },
+    "report": {
+      "backend": "linux-host",
+      "client_result": "PASS configure_serial=2 frame=1 buffer_release=1 xkb_keymap=1",
+      "client_sha256": "c7847fb91ed011377ce57445afe8e2253dc421bea6845af3f905f135ab4f5b5a",
+      "frame": {
+        "matching_pixels": 320,
+        "origin": [
+          16,
+          24
+        ],
+        "sha256": "ccd6cf77121f7d4a334e38ae17089a4ce3c520e3d9a9e28a0bec57b2e8eb480e"
+      },
+      "libraries": {
+        "libwayland-client": "30a119138d812d6e1c3280a7c2d5a9f49f13ae07b31cda2beb397da4f68f6d54",
+        "libxkbcommon": "26773f54626af26f5f26f0279a9748ea2445c1adcfef50a7d572c9b54575bd86"
+      },
+      "server_sha256": "533ab26c7c0b697489f0d21f65a7b332dbbe910c57f156194d24e6d6a608fda9",
+      "window_geometry": null,
+      "wire_sha256": "61ed71acd22f38e8d7dc46ca67b9f162bbbd5c1a58c19fc4a979dc39a5a25a55"
+    }
+  },
+  "readers": {
+    "guest-01/observer": {
+      "capture.py": "2a06bef874eb3fb8de7b02a372a16140213bc4bc25bf67350e34698ef8701f0b",
+      "controls.py": "b1633852e08b42d7d23920bf0f780f660489fb05a76ec8045162338571da9e92",
+      "fixture.py": "72d09954123482180f9a2755733a6913cba775e2c5ea049c1c271601fd33f698",
+      "replay.py": "b19178d8ca32faca5ba3775620e9aaf026d1e7c23d7258837c7acfb372321ca7",
+      "wayland.xml": "e20d8e766908e56828b3d39d20968382a3e725cfbca97bbbf0bbfab956cc7455",
+      "wire.py": "22fc785cdf0e7caf0acb714a1ce6c2dda7e779cabd7931c55a07e8f66a5a54f7",
+      "xdg-shell.xml": "637877607a10bcff2f33722d2607ab1edb53ff70325e9df46372c1afd811af43"
+    },
+    "review": {
+      "RESULTS.txt": "11c332629fe445b5e8da2898241ceeae10b0ad0d97baec49173c900a598ac718",
+      "capture.py": "2a06bef874eb3fb8de7b02a372a16140213bc4bc25bf67350e34698ef8701f0b",
+      "controls.py": "b1633852e08b42d7d23920bf0f780f660489fb05a76ec8045162338571da9e92",
+      "fixture.py": "72d09954123482180f9a2755733a6913cba775e2c5ea049c1c271601fd33f698",
+      "observer-digests.json": "086187ab841d2313922b196eed3a8c67763d830fdba23bf686f06b18e229b5bf",
+      "replay.py": "c601a79d71721979958c9f16332abcc611c7a87a08862fc29a2b597970aa988c",
+      "wayland.xml": "e20d8e766908e56828b3d39d20968382a3e725cfbca97bbbf0bbfab956cc7455",
+      "wire.py": "22fc785cdf0e7caf0acb714a1ce6c2dda7e779cabd7931c55a07e8f66a5a54f7",
+      "xdg-shell.xml": "637877607a10bcff2f33722d2607ab1edb53ff70325e9df46372c1afd811af43"
+    }
+  },
+  "source": {
+    "commit": "35f531a0f2f088cbcf1baaa7150e18570641d0e8",
+    "tree_object": "1261910d28fb1d6a747effcf61a67f16f3ef00b6",
+    "tree_sha256": "ef9b4f863f8fdf33d6b2df4548910d48dae0ccd4a62fea6e23f7f0cbb2907baf"
+  }
+}
