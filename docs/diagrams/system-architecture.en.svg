@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xml:lang="en" viewBox="0 0 792 518" width="792" height="518" role="img" aria-labelledby="title desc">
   <title id="title">J-NOX system architecture</title>
-  <desc id="desc">Five layers from user applications through application interfaces, the privileged Rust microkernel, drivers and board support to hardware. Native Rust driver services and the Linux driver domain are isolated from the microkernel. Dashed component boxes mark planned paths.</desc>
+  <desc id="desc">Five layers from user applications through application interfaces, the privileged Rust microkernel, drivers and board support to hardware. Native Rust drivers and services built from selected Linux C sources are isolated from the microkernel. Dashed component boxes mark planned paths.</desc>
   <style>
     text { font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif; }
     .platform { font-size: 22px; font-weight: 700; fill: #153746; }
@@ -66,14 +66,14 @@
     <rect x="14" y="329" width="764" height="82" rx="7" fill="#eef3f5" stroke="#bdccd2"/>
     <text class="layer-label" x="28" y="353" fill="#193c4b">Drivers and board support</text>
     <g class="component">
-      <rect x="26" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
+      <rect x="26" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85"/>
       <text class="name" x="147" y="380">Native Rust drivers</text>
       <text class="detail" x="147" y="395">Isolated driver services</text>
     </g>
     <g class="component">
-      <rect x="275" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
-      <text class="name" x="396" y="380">Linux driver domain</text>
-      <text class="detail" x="396" y="395">Existing drivers via gateway</text>
+      <rect x="275" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85"/>
+      <text class="name" x="396" y="380">Linux C source reuse</text>
+      <text class="detail" x="396" y="395">Native service + J-NOX adapter</text>
     </g>
     <g class="component">
       <rect x="524" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>

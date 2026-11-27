@@ -6,6 +6,7 @@
 flowchart TB
   CONTROL[제어 태스크와 안전 감시] --> IPC[권한 검사와 시간 제한이 있는 IPC]
   NATIVE[J-NOX 네이티브 Rust 드라이버] --> IPC
+  REUSE[Linux C 원본과 J-NOX 어댑터] --> IPC
   APPS[POSIX 서비스 · 소켓 · 사용자 스크립트] --> IPC
   RUST[J-NOX용 Rust 앱] --> SDK[J-NOX 네이티브 사용자 ABI]
   CAPP[J-NOX용 C 앱] --> SDK
@@ -13,7 +14,7 @@ flowchart TB
   ELF[기존 Linux 사용자 ELF] --> COMPAT[선택형 Linux 사용자 공간 ABI]
   COMPAT --> IPC
   IPC --> KERNEL[no_std Rust 마이크로커널]
-  LINUX[Linux 도메인 · 기존 드라이버] <--> GATE[공유 큐와 전용 메시지 게이트웨이]
+  LINUX[선택형 Linux 도메인] <--> GATE[공유 큐와 전용 메시지 게이트웨이]
   GATE <--> IPC
   KERNEL --> BSP[보드 포트 · 타이머 · MMU/MPU · IRQ]
   LINUX --> PART[플랫폼 격리 · DMA/리셋 제어]
@@ -26,7 +27,11 @@ flowchart TB
 
 커널은 `no_std` Rust를 사용한다. 스케줄러 상태, 큐와 IPC 상태 머신은 안전한 Rust로 표현한다. 부트 코드, 문맥 전환, MMIO, 페이지 테이블, DMA, FFI의 `unsafe`는 좁은 모듈에 모으고 각 블록의 전제와 권한·수명·동기화 불변식을 검토한다. 제어 경로에서 정적 또는 상한이 있는 풀과 명시적 오류 반환을 사용한다. 패닉, 스택 고갈과 검출된 무결성 오류에 대한 반응도 구성에서 결정한다. [Rust `unsafe` 계약](https://doc.rust-lang.org/book/ch20-01-unsafe-rust.html)
 
-## DES-002 Linux 드라이버 도메인
+## DES-002 드라이버 격리
+
+현재 소스 재사용 구성은 선별한 Linux C 원본을 J-NOX 어댑터와 함께 빌드해 네이티브 서비스에서 콜백을 실행한다. 아래에는 별도 도메인을 두는 초기 배치안을 보존한다. [드라이버 범위](https://github.com/Romanof123/JNOX/issues/3) · [가상 장치 시험](https://github.com/Romanof123/JNOX/tree/5dabcd904a83b0301650c971d4eba4e884fd1eb5/docs/evidence/native-linux-net-tx-irq)
+
+### 초기 별도 도메인 제안
 
 Linux는 호환 드라이버가 설치된 독립 실행 영역으로 구동한다. 서로 다른 코어를 쓰는 후보는 R52에 J-NOX, A76에 Linux를 배치한다. 한 CPU 계열을 공유하는 AArch64/x86-64에서는 검증 가능한 정적 파티셔닝과 하이퍼바이저를 후보로 비교한다. 어느 방식이든 메모리, 장치, IRQ, DMA, 부트·리셋 권한의 실제 소유자를 보드별로 문서화한다.
 

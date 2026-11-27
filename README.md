@@ -2,15 +2,17 @@
 
 English · [한국어](README.ko.md)
 
+[Developer guide](docs/developer-guide.en.md) · [Filesystem roadmap](docs/filesystem-plan.en.md)
+
 J-NOX is developing a full-featured real-time operating system in Rust for embedded systems with functional safety requirements. Its priorities are predictable timing, isolation, multithreading, applications and device drivers.
 
-The name stands for **Just-enough Nucleus, Open eXtensions**. The architecture keeps the trusted kernel small and calls for isolated services, native Rust drivers and a compatibility domain for Linux drivers.
+The name stands for **Just-enough Nucleus, Open eXtensions**. J-NOX keeps the trusted kernel small. Device support follows two paths: native Rust drivers and selected upstream Linux C drivers built for J-NOX.
 
 ## System architecture
 
 ![J-NOX layers, from user apps to the Rust microkernel, isolated drivers, board support and hardware](docs/diagrams/system-architecture.en.svg)
 
-Dashed boxes show planned components. The native Rust driver runs as an isolated service. Existing Linux drivers run in their own Linux domain and communicate with J-NOX through a validated gateway. The native app and kernel path has been exercised on AArch64 QEMU. [Architecture and isolation](docs/architecture.en.md) · [Native IPC evidence](docs/evidence/native-sync-ipc-release.en-ko.md)
+Dashed boxes show planned components. On AArch64 QEMU, selected upstream driver callbacks run in a native J-NOX service. An adapter provides the Linux APIs used by the selected source. This build boots the J-NOX kernel alone. [Driver evidence](https://github.com/Romanof123/JNOX/tree/5dabcd904a83b0301650c971d4eba4e884fd1eb5/docs/evidence/native-linux-net-tx-irq) · [Architecture and isolation](docs/architecture.en.md)
 
 ## Native applications and IPC
 
@@ -110,7 +112,7 @@ On the single-core QEMU `virt` model, linked Rust jobs also run under earliest-d
 | [Safety and cybersecurity concept](docs/safety-security-concept.en.md) | Candidate hazards and threats, assumptions, safety boundaries and initial analysis plan |
 | [First bench decision by the functional safety team](docs/safety-parameters.en.md) | Safe state and timing budget for a virtual output, and the evidence needed to set product values |
 | [System requirements](docs/requirements.en.md) | Requirements, trace IDs and acceptance criteria |
-| [System architecture](docs/architecture.en.md) | Kernel, Linux driver domain, scheduling, ports and user services |
+| [System architecture](docs/architecture.en.md) | Kernel, driver isolation, scheduling, ports and user services |
 | [Kernel architecture selection](arch/README.md) | AArch64 backend and build interface |
 | [Application tracing contract](docs/application-tracing.en.md) | Proposed events, request timelines, capture limits and verification stages |
 | [First boot of the M1 Rust kernel](docs/m1-boot.en.md) | Scope and UART acceptance criteria for the minimal AArch64 QEMU kernel |

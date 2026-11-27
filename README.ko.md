@@ -2,15 +2,17 @@
 
 [English](README.md) · 한국어
 
+[개발 가이드](docs/developer-guide.ko.md) · [파일시스템 계획](docs/filesystem-plan.md)
+
 J-NOX는 기능안전 요구사항이 있는 임베디드 시스템을 위해 Rust로 개발하는 실시간 운영체제입니다. 예측 가능한 실행 시간과 격리, 멀티스레딩, 응용 프로그램과 장치 드라이버 지원을 우선합니다.
 
-J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 설계의 중심에는 작은 신뢰 커널과 격리된 서비스가 있습니다. 네이티브 Rust 드라이버와 Linux 드라이버용 별도 호환 영역을 지원하는 것이 목표입니다.
+J-NOX는 **Just-enough Nucleus, Open eXtensions**의 약자입니다. 신뢰 커널을 작게 유지하며, 장치 드라이버는 J-NOX용 Rust로 작성하거나 선별한 Linux C 원본을 J-NOX용으로 빌드합니다.
 
 ## 시스템 아키텍처
 
 ![사용자 앱, Rust 마이크로커널, 격리된 드라이버, 보드 지원, 하드웨어 순서로 쌓은 J-NOX 계층도](docs/diagrams/system-architecture.ko.svg)
 
-점선 박스는 계획 중인 구성요소입니다. 네이티브 Rust 드라이버는 격리된 서비스에서 실행하고, 기존 Linux 드라이버는 별도 Linux 영역에서 게이트웨이를 통해 J-NOX와 통신하도록 설계했습니다. 네이티브 앱과 커널 경로는 AArch64 QEMU에서 검증했습니다. [아키텍처와 격리 설계](docs/architecture.md) · [네이티브 IPC 검증](docs/evidence/native-sync-ipc-release.en-ko.md)
+점선은 계획 중인 구성을 나타냅니다. AArch64 QEMU에서 선별한 Linux 드라이버의 원본 콜백은 J-NOX 네이티브 서비스로 실행됩니다. 소스가 사용하는 Linux API는 어댑터가 제공하며 커널은 J-NOX 하나만 부팅합니다. [드라이버 검증 기록](https://github.com/Romanof123/JNOX/tree/5dabcd904a83b0301650c971d4eba4e884fd1eb5/docs/evidence/native-linux-net-tx-irq) · [아키텍처와 격리 설계](docs/architecture.md)
 
 ## 네이티브 앱과 IPC
 
@@ -110,7 +112,7 @@ AArch64 QEMU에서 커널에 링크한 Rust 작업을 고정 우선순위 FIFO�
 | [안전·보안 개념](docs/safety-security-concept.md) | 위험·위협 후보, 가정, 안전 경계와 초기 분석 계획 |
 | [기능안전팀의 첫 벤치 결정](docs/safety-parameters.md) | 가상 출력의 안전 상태와 시간 예산, 제품 값 확정에 필요한 근거 |
 | [시스템 요구사항](docs/requirements.md) | 추적 ID가 붙은 요구사항과 합격 기준 |
-| [시스템 아키텍처](docs/architecture.md) | 커널, Linux 드라이버 도메인, 스케줄링, 포팅, 서비스 설계 |
+| [시스템 아키텍처](docs/architecture.md) | 커널, 드라이버 격리, 스케줄링, 포팅, 서비스 설계 |
 | [커널 아키텍처 선택](arch/README.ko.md) | AArch64 백엔드와 빌드 인터페이스 |
 | [애플리케이션 추적 계약](docs/application-tracing.md) | 사건과 요청 타임라인, 수집 한계 및 단계별 검증 제안 |
 | [M1 Rust 커널 첫 부팅](docs/m1-boot.md) | AArch64 QEMU에서 부팅할 최소 커널의 범위와 UART 합격 조건 |

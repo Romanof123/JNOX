@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xml:lang="ko" viewBox="0 0 792 518" width="792" height="518" role="img" aria-labelledby="title desc">
   <title id="title">J-NOX 시스템 아키텍처</title>
-  <desc id="desc">위에서부터 사용자 앱, 앱 인터페이스와 시스템 서비스, 특권 Rust 마이크로커널, 드라이버와 보드 지원, 하드웨어의 다섯 계층이다. 네이티브 Rust 드라이버 서비스와 Linux 드라이버 영역은 마이크로커널에서 격리된다. 점선 테두리는 계획 중인 구성을 뜻한다.</desc>
+  <desc id="desc">위에서부터 사용자 앱, 앱 인터페이스와 시스템 서비스, 특권 Rust 마이크로커널, 드라이버와 보드 지원, 하드웨어의 다섯 계층이다. Rust 드라이버와 선별한 Linux C 소스를 빌드한 서비스은 마이크로커널에서 격리된다. 점선 테두리는 계획 중인 구성을 뜻한다.</desc>
   <style>
     text { font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif; }
     .platform { font-size: 22px; font-weight: 700; fill: #153746; }
@@ -66,14 +66,14 @@
     <rect x="14" y="329" width="764" height="82" rx="7" fill="#eef3f5" stroke="#bdccd2"/>
     <text class="layer-label" x="28" y="353" fill="#193c4b">드라이버와 보드 지원</text>
     <g class="component">
-      <rect x="26" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
+      <rect x="26" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85"/>
       <text class="name" x="147" y="380">네이티브 Rust 드라이버</text>
       <text class="detail" x="147" y="395">격리된 드라이버 서비스</text>
     </g>
     <g class="component">
-      <rect x="275" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85" stroke-dasharray="5 3"/>
-      <text class="name" x="396" y="380">Linux 드라이버 영역</text>
-      <text class="detail" x="396" y="395">게이트웨이로 기존 드라이버 연결</text>
+      <rect x="275" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#6a7b85"/>
+      <text class="name" x="396" y="380">Linux C 소스 재사용</text>
+      <text class="detail" x="396" y="395">네이티브 서비스 + J-NOX 어댑터</text>
     </g>
     <g class="component">
       <rect x="524" y="362" width="242" height="39" rx="4" fill="#ffffff" stroke="#7495a1"/>
