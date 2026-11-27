@@ -13,3 +13,5 @@ An external host supplies a new nonce and 80 sequenced Ethernet requests. The ap
 The observer must compare external socket and PCAP data with private application memory, linked callback-table entries and executed instruction addresses. Confirm peer device-access denials, reset/cleanup, and clean exit under two MAC/MTU configurations. Record guest evidence and independent review separately when available. [Trace graph](../trace/links.csv)
 
 서로 다른 MAC·MTU에서 두 번 부팅하고, 외부 패킷·소비자 메모리·원본 콜백 포인터·장치 큐 상태를 연결한다. 변경 설계 시점에는 게스트 실행과 독립 검증이 남아 있다.
+
+EVD-336 records both cold boots and the independent reconstruction of all requests, replies, queue wraps, overlapping RX and TX, and checked device release. 두 부팅에서 소비자 메모리와 외부 송수신 기록을 대조했다. [Results and raw replay / 결과와 재현 자료](evidence/native-linux-net-duplex/README.md)

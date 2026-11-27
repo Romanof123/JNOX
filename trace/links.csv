@@ -2522,3 +2522,9 @@ CHG-336,affects,VER-011
 REQ-004,partially-implemented-by,IMP-336
 REQ-011,partially-implemented-by,IMP-336
 DES-002,partially-implemented-by,IMP-336
+CHG-336,affects,EVD-336
+IMP-336,partially-verified-by,VER-004
+IMP-336,partially-verified-by,VER-011
+VER-004,has-partial-evidence,EVD-336
+VER-011,has-partial-evidence,EVD-336
+IMP-336,tested-in,EVD-336
